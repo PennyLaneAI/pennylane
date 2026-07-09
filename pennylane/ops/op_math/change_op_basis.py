@@ -21,15 +21,10 @@ from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math, pytrees
+from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.resources import adjoint_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -391,6 +386,7 @@ def _controlled_change_op_basis_resources(
             Wire[num_control_wires],
             Wire[num_work_wires],
             work_wire_type,
+            num_zero_control_values,
         )
     ] += 1
     resources[base_params["uncompute_op"]] += 1

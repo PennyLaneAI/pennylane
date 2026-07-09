@@ -798,14 +798,20 @@ def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")
 
 
-def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
+def _ctrl_abstract(
+    op: AbstractOperatorLike,
+    control_wires: AbstractWires,
+    work_wires: AbstractWires,
+    work_wire_type: str,
+    num_zero_control_values: int = 0,
+):
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(
             op.op_type,
             op.params,
             num_control_wires=len(control_wires),
-            num_zero_control_values=0,
+            num_zero_control_values=num_zero_control_values,
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         )
@@ -813,10 +819,11 @@ def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wir
     if isinstance(op, type) and issubclass(op, Operator2):
         op = abstractify(op)
 
+    control_values = Bool[len(control_wires)] if num_zero_control_values else None
     return qp.ctrl(
         op,
         control=control_wires,
-        control_values=None,
+        control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )

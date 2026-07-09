@@ -222,8 +222,8 @@ class TestSelect:
         assert resource_obj.num_gates == 4
 
         expected_counts = {
-            _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 3,
-            _ctrl_abstract(abstractify(qp.Y), Wire[2], Wire[0], "borrowed"): 1,
+            _ctrl_abstract(qp.X, Wire[2], Wire[0], "borrowed"): 3,
+            _ctrl_abstract(qp.Y, Wire[2], Wire[0], "borrowed"): 1,
         }
         assert resource_obj.gate_counts == expected_counts
 
@@ -270,8 +270,8 @@ class TestSelect:
             }
         else:
             expected_counts = {
-                _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 2,
-                _ctrl_abstract(swap_rep, Wire[2], Wire[0], "borrowed"): 1,
+                _ctrl_abstract(qp.X, Wire[2], Wire[0], "borrowed"): 2,
+                _ctrl_abstract(swap_rep, Wire[2], Wire[0], "borrowed", 1): 1,
             }
         assert resource_obj.gate_counts == expected_counts
 
@@ -308,16 +308,11 @@ class TestSelect:
 
         assert resource_obj.num_gates == 1
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
-
-        kwargs = {"base_params": {}, "num_control_wires": 1, "num_work_wires": 0}
-
         if partial:
-
             expected_counts = {abstractify(qp.Z): 1}
         else:
+            expected_counts = {_ctrl_abstract(qp.Z, Wire[1], Wire[0], "borrowed"): 1}
 
-            expected_counts = {_ctrl_abstract(abstractify(qp.Z), Wire[1], Wire[0], "borrowed"): 1}
         assert resource_obj.gate_counts == expected_counts
 
         op = qp.Select(ops, control, partial=partial)

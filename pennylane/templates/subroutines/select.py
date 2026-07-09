@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operation, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -32,7 +32,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import CompressedResourceOp, auto_wrap
+from pennylane.decomposition.resources import auto_wrap
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
@@ -571,11 +571,14 @@ class Select(Operation):
         return self.hyperparameters["partial"]
 
 
-# Decomposition of Select using multi-control strategy
-
-
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
-    return _ctrl_abstract(target_rep, Wire[num_control_wires], Wire[num_work_wires], "borrowed")
+    return _ctrl_abstract(
+        target_rep,
+        Wire[num_control_wires],
+        Wire[num_work_wires],
+        "borrowed",
+        num_control_wires - sum(ctrl_state),
+    )
 
 
 def _select_resources_multi_control(op_reps, num_control_wires, partial, num_work_wires):
@@ -599,6 +602,7 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial, num_wor
 
 @register_resources(_select_resources_multi_control)
 def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
+    """Decomposition of Select using multi-control strategy."""
 
     if partial:
         if len(ops) == 1:
