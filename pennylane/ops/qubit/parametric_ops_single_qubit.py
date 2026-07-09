@@ -1282,7 +1282,7 @@ class U2(Operator2):
     parameter_frequencies = [(1,), (1,)]
 
     wire_sizes = (1,)
-    dynamic_argnames = ("phi",)
+    dynamic_argnames = ("phi", "delta")
     arg_specs = {"phi": Complex, "delta": Complex, "wires": Wire[1]}
 
     def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike):
@@ -1422,7 +1422,7 @@ class U3(Operator2):
     parameter_frequencies = [(1,), (1,), (1,)]
 
     wire_sizes = (1,)
-    dynamic_argnames = ("phi",)
+    dynamic_argnames = ("theta", "phi", "delta")
     arg_specs = {"theta": Complex, "phi": Complex, "delta": Complex, "wires": Wire[1]}
 
     # pylint: disable=too-many-positional-arguments
