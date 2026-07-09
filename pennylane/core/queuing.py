@@ -196,7 +196,7 @@ from typing import Optional
 
 from pennylane.capture import enabled  # tach-ignore
 from pennylane.exceptions import QueuingError
-
+from pennylane import pytrees
 
 class WrappedObj:
     """Wraps an object to make its hash dependent on its identity"""
@@ -542,7 +542,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         # Capture is active but the op has no _bind_primitive (e.g. minimal
         # legacy Operator subclass).  Reconstruct via the constructor so the
         # new instance auto-binds its primitive.
-        return type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
+        return pytrees.unflatten(*pytrees.flatten(op))
 
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
