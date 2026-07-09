@@ -533,7 +533,7 @@ def _controlled_x_decomp(base, control_wires, control_values, work_wires, work_w
 
     wires = control_wires + base.wires
 
-    if len(control_wires) == 1 and not control_values[0]:
+    if len(control_wires) == 1:
         qp.CNOT(wires=wires)
         qp.cond(control_values[0], qp.X)(wires[1])
         return
