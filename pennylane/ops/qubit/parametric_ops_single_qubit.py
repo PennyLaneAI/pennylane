@@ -43,6 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.ops.op_math.adjoint2 import _adjoint
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -422,12 +423,12 @@ def _ry_to_rz_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={adjoint_resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint(qp.S): 1, qp.Hadamard: 1},
             ),
             qp.RZ,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={qp.S: 1, qp.Hadamard: 1},
             ),
         ): 1
     }
@@ -692,12 +693,12 @@ def _rz_to_ry_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={qp.S: 1, qp.Hadamard: 1},
             ),
             qp.RY,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={adjoint_resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint(qp.S): 1, qp.Hadamard: 1},
             ),
         ): 1
     }

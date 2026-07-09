@@ -206,11 +206,9 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
         }
 
     prod_rep1 = resource_rep(
-        Prod, resources=defaultdict(int, {resource_rep(Hadamard): 1, adjoint_resource_rep(S): 1})
+        Prod, resources=defaultdict(int, {Hadmard: 1, adjoint_S: 1})
     )
-    prod_rep2 = resource_rep(
-        Prod, resources=defaultdict(int, {resource_rep(S): 1, resource_rep(Hadamard): 1})
-    )
+    prod_rep2 = resource_rep(Prod, resources=defaultdict(int, {S: 1, Hadmard: 1}))
 
     return {
         change_op_basis_resource_rep(

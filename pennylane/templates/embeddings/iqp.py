@@ -281,7 +281,7 @@ class IQPEmbedding(Operation):
 def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
     return {
         resource_rep(RZ): n_repeats * num_wires,
-        resource_rep(H): n_repeats * num_wires,
+        H: n_repeats * num_wires,
         resource_rep(MultiRZ, num_wires=2): pattern_size * n_repeats,
     }
 

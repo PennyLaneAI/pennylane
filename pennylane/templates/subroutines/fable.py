@@ -206,7 +206,7 @@ class FABLE(Operation):
 
 def _fable_resources(wires, thetas, control_wires, tol):
 
-    resources = Counter({resource_rep(Hadamard): len(wires) // 2 * 2})
+    resources = Counter({Hadmard: len(wires) // 2 * 2})
 
     wires_i = wires[1 : 1 + len(wires) // 2][::-1]
     wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]

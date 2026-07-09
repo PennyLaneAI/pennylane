@@ -147,7 +147,7 @@ class CosineWindow(StatePrepBase):
 
 def _cosine_window_resources(num_wires):
     return {
-        resource_rep(qp.Hadamard): 1,
+        qp.Hadamard: 1,
         resource_rep(qp.RZ): 1,
         adjoint_resource_rep(qp.QFT, {"num_wires": num_wires}): 1,
         resource_rep(qp.PhaseShift): num_wires,

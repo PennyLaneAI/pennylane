@@ -241,15 +241,15 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 comp_rep = resource_rep(
                     Prod,
                     resources={
-                        resource_rep(qp.Hadamard): 1,
-                        adjoint_resource_rep(qp.S): 1,
+                        qp.Hadamard: 1,
+                        _adjoint(qp.S): 1,
                     },
                 )
                 uncomp_rep = resource_rep(
                     Prod,
                     resources={
-                        resource_rep(qp.S): 1,
-                        resource_rep(qp.Hadamard): 1,
+                        qp.S: 1,
+                        qp.Hadamard: 1,
                     },
                 )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(

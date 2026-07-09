@@ -23,10 +23,16 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocation, math
 
-from .decomposition_rule import DecompositionRule, register_condition, register_resources
-from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep, \
-    AbstractOperatorLike, CompressedResourceOp
 from ..typing import Wire
+from .decomposition_rule import DecompositionRule, register_condition, register_resources
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    pow_resource_rep,
+    resource_rep,
+)
 
 
 def _adjoint(op: AbstractOperatorLike):
@@ -44,8 +50,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
-            _adjoint(decomp_op): count
-            for decomp_op, count in base_resources.gate_counts.items()
+            _adjoint(decomp_op): count for decomp_op, count in base_resources.gate_counts.items()
         }
 
     base_source = base_decomposition._source
@@ -240,7 +245,8 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     ):
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
-            _ctrl_abstract(base_op_rep,
+            _ctrl_abstract(
+                base_op_rep,
                 control_wires=Wire[num_control_wires],
                 work_wires=Wire[num_work_wires],
                 work_wire_type=work_wire_type,

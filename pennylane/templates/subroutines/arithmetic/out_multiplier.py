@@ -360,7 +360,7 @@ def _out_multiplier_with_qft_resources(
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        compute_rep = resource_rep(Prod, resources={resource_rep(H): qft_wires})
+        compute_rep = resource_rep(Prod, resources={H: qft_wires})
     else:
         compute_rep = resource_rep(QFT, num_wires=qft_wires)
 

@@ -44,7 +44,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
-from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
@@ -169,10 +169,10 @@ class TestAdjointDecompositionRules:
 
         assert rule.compute_resources(**op.resource_params) == Resources(
             {
-                adjoint_resource_rep(qp.T): 1,
+                _adjoint(qp.T): 1,
                 adjoint_resource_rep(qp.CNOT): 2,
                 adjoint_resource_rep(qp.RX): 1,
-                adjoint_resource_rep(qp.H): 1,
+                _adjoint(qp.H): 1,
             }
         )
 

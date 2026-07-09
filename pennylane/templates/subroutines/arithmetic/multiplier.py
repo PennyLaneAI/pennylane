@@ -271,7 +271,7 @@ def _multiplier_decomposition_resources(
                 resource_rep(QFT, num_wires=num_wires_aux),
                 resource_rep(ControlledSequence, **cs_base_params),
             ): 1,
-            resource_rep(Prod, resources={resource_rep(SWAP): num_x_wires}): 1,
+            resource_rep(Prod, resources={SWAP: num_x_wires}): 1,
             change_op_basis_resource_rep(
                 resource_rep(QFT, num_wires=num_wires_aux),
                 adjoint_resource_rep(ControlledSequence, cs_base_params),

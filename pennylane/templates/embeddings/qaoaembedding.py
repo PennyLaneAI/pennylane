@@ -354,7 +354,7 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
     resources.update(
         {
             resource_rep(RX): n_features * (repeat + 1),
-            resource_rep(H): (num_wires - n_features) * (repeat + 1),
+            H: (num_wires - n_features) * (repeat + 1),
         }
     )
 

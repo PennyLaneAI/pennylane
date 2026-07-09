@@ -1330,7 +1330,7 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     - One controlled RY for each entry.
     """
     return {
-        resource_rep(Hadamard): num_address_wires,
+        Hadmard: num_address_wires,
         resource_rep(PauliX): 2 * num_zero_bits,
         controlled_resource_rep(
             base_class=RY,

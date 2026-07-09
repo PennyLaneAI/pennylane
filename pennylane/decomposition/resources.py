@@ -433,7 +433,6 @@ def _adjoint(op: AbstractOperatorLike):
     return qp.ops.op_math.Adjoint2(op)
 
 
-
 def change_op_basis_resource_rep(
     compute_op: type[Operator] | CompressedResourceOp,
     target_op: type[Operator] | CompressedResourceOp,
