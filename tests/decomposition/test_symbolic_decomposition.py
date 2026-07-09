@@ -141,9 +141,7 @@ class TestAdjointDecompositionRules:
             )
             def _impl(*params, wires, base):
                 # pylint: disable=protected-access
-                qp.adjoint(base_decomposition._impl, lazy=False)(
-                    *params, wires=wires, **base.hyperparameters
-                )
+                qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
             where base_decomposition is defined as:
 
@@ -163,10 +161,10 @@ class TestAdjointDecompositionRules:
 
         assert q.queue == [
             qp.adjoint(qp.T(2)),
-            qp.CNOT(wires=[1, 2]),
-            qp.RX(-0.5, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.H(wires=0),
+            qp.adjoint(qp.CNOT(wires=[1, 2])),
+            qp.adjoint(qp.RX(0.5, wires=1)),
+            qp.adjoint(qp.CNOT(wires=[0, 1])),
+            qp.adjoint(qp.H(wires=0)),
         ]
 
         assert rule.compute_resources(**op.resource_params) == Resources(
