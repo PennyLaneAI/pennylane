@@ -26,10 +26,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from pennylane.capture.primitives import operator_p
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
+
+from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
