@@ -25,7 +25,12 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import allocation, math
 from pennylane.core.operator import Operator
-from pennylane.core.operator.operator2 import abstractify, operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import (  # tach-ignore
+    Operator2,
+    abstractify,
+    operator_p,
+    pop_op_eqns,
+)
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -804,6 +809,9 @@ def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wir
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         )
+
+    if isinstance(op, type) and issubclass(op, Operator2):
+        op = abstractify(op)
 
     return qp.ctrl(
         op,

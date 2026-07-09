@@ -575,8 +575,6 @@ class Select(Operation):
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
-    if isinstance(target_rep, type):
-        target_rep = abstractify(target_rep)
     return _ctrl_abstract(target_rep, Wire[num_control_wires], Wire[num_work_wires], "borrowed")
 
 
