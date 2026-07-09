@@ -28,6 +28,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -404,8 +405,7 @@ def _out_square_with_caddsub_resources(
     resources = defaultdict(int)
 
     cnot_rep = resource_rep(CNOT)
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
+    cnot_on_0_rep = ctrl(X(Wire[1]), Wire[1], Bool[1])
 
     # Controlled add-subtract loop
     loop_size = min(m, n)

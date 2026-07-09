@@ -39,6 +39,7 @@ from pennylane.ops import (
     ctrl,
     prod,
 )
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..controlled_sequence import ControlledSequence
@@ -504,8 +505,7 @@ def _out_multiplier_with_caddsub_resources(
     resources = defaultdict(int)
 
     # Some resource reps we will need:
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
+    cnot_on_0_rep = ctrl(X(Wire[1]), Wire[1], Bool[1])
 
     # Controlled add-subtract loop
     loop_size = min(k, n)
@@ -544,7 +544,7 @@ def _out_multiplier_with_caddsub_resources(
 
     # Subtract y+2^(n+m)
     # First negation
-    resources[x_rep] += k
+    resources[X] += k
     # Add y
     add_rep = resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
     resources[add_rep] += 1
@@ -555,7 +555,7 @@ def _out_multiplier_with_caddsub_resources(
         resources[resource_rep(Incrementer, num_wires=size, num_work_wires=num_work_wires - 1)] = 1
 
     # Second negation
-    resources[x_rep] += k
+    resources[X] += k
 
     # Add 2^n y
     if k > n:

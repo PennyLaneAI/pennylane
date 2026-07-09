@@ -33,7 +33,6 @@ from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
@@ -281,12 +280,10 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
     return {
         qp.H: 2,
         qp.RY: 2,
-        controlled_resource_rep(
-            qp.X,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.ctrl(
+            qp.X(Wire[1]),
+            control=Wire[num_control_wires],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 1,
     }

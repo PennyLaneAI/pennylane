@@ -25,7 +25,6 @@ from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.decomposition.resources import adjoint_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -33,6 +32,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 
@@ -353,7 +353,7 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
     target_op = base_params["target_op"]
-    resources[adjoint_resource_rep(target_op.op_type, target_op.params)] += 1
+    resources[_adjoint_abstract(target_op)] += 1
     return resources
 
 

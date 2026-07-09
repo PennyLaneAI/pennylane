@@ -852,7 +852,7 @@ class TestControlledDecompositions:
             qp.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {controlled_resource_rep(qp.X, {}, num_control_wires=3): 2, qp.CRot: 1}
+            {qp.ctrl(qp.X(Wire[1]), Wire[3]): 2, qp.CRot: 1}
         )
 
     def test_base_decomp_contains_mcms(self, _):

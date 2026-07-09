@@ -16,22 +16,21 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 import copy
 
 import numpy as np
 
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
+
+# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
 from .reflection import Reflection
@@ -227,19 +226,13 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
     if fixed_point and iters // 2 > 0:
 
         resources[resource_rep(Hadamard)] = 4 * (iters // 2)
-        resources[
-            controlled_resource_rep(
-                O.__class__,
-                O.resource_params,
-                num_control_wires=1,
-            )
-        ] = 2 * (iters // 2)
+        resources[_ctrl_abstract(O, Wire[1])] = 2 * (iters // 2)
         resources[resource_rep(PhaseShift)] = iters // 2
         resources[
             resource_rep(
                 Reflection,
                 base_class=U.__class__,
-                base_params=U.resource_params,
+                base_params=U.arguments if isinstance(U, Operator2) else U.resource_params,
                 num_wires=len(U.wires),
                 num_reflection_wires=num_reflection_wires,
             )
@@ -247,12 +240,12 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
             iters // 2
         )
     elif not fixed_point and iters > 0:
-        resources[resource_rep(O.__class__, **O.resource_params)] = iters
+        resources[_abstractify(O)] = iters
         resources[
             resource_rep(
                 Reflection,
                 base_class=U.__class__,
-                base_params=U.resource_params,
+                base_params=U.arguments if isinstance(U, Operator2) else U.resource_params,
                 num_wires=len(U.wires),
                 num_reflection_wires=num_reflection_wires,
             )

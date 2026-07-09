@@ -30,7 +30,9 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -219,13 +221,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         return {
             resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
             adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
-            controlled_resource_rep(
-                ops.X,
-                {},
-                num_control_wires=len_k2,
-                num_work_wires=len_k1,
-                work_wire_type="borrowed",
-            ): 6,
+            ops.ctrl(ops.X(Wire[1]), control=Wire[len_k2], work_wires=Wire[len_k1]): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
             controlled_resource_rep(
@@ -239,20 +235,8 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
-        controlled_resource_rep(
-            ops.X,
-            {},
-            num_control_wires=len_k2,
-            num_work_wires=len_k1,
-            work_wire_type="borrowed",
-        ): 4,
-        controlled_resource_rep(
-            ops.X,
-            {},
-            num_control_wires=len_k1,
-            num_work_wires=len_k2,
-            work_wire_type="borrowed",
-        ): 2,
+        ops.ctrl(ops.X(Wire[1]), control=Wire[len_k2], work_wires=Wire[len_k1]): 4,
+        ops.ctrl(ops.X(Wire[1]), control=Wire[len_k1], work_wires=Wire[len_k2]): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
         ops.Hadamard: 2,
         controlled_resource_rep(
@@ -323,11 +307,10 @@ def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wir
     return {
         ops.CRZ: 3,
         ops.CRY: 2,
-        controlled_resource_rep(
-            ops.X,
-            {},
-            num_control_wires=num_control_wires - 1,
-            num_work_wires=num_work_wires,
+        ops.ctrl(
+            ops.X(Wire[1]),
+            control=Wire[num_control_wires - 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
         controlled_resource_rep(
@@ -369,13 +352,8 @@ def _controlled_two_qubit_unitary_resource(
 ):
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
     gate_counts = {
-        controlled_resource_rep(
-            base_class=base_op_rep.op_type,
-            base_params=base_op_rep.params,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+        _ctrl_abstract(
+            base_op_rep, Wire[num_control_wires], Wire[num_work_wires], work_wire_type
         ): count
         for base_op_rep, count in base_resources.gate_counts.items()
     }
@@ -755,33 +733,15 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
         return {
             ops.Hadamard: 2,
             resource_rep(ops.QubitUnitary, num_wires=1): 2,
-            controlled_resource_rep(
-                ops.X,
-                {},
-                num_control_wires=len_k2,
-                num_work_wires=len_k1,
-                work_wire_type="borrowed",
-            ): 4,
+            ops.ctrl(ops.X(Wire[1]), Wire[len_k2], work_wires=Wire[len_k1]): 4,
             adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
             controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
         }
     return {
         ops.Hadamard: 2,
         resource_rep(ops.QubitUnitary, num_wires=1): 2,
-        controlled_resource_rep(
-            ops.X,
-            {},
-            num_control_wires=len_k2,
-            num_work_wires=len_k1,
-            work_wire_type="borrowed",
-        ): 2,
-        controlled_resource_rep(
-            ops.X,
-            {},
-            num_control_wires=len_k1,
-            num_work_wires=len_k2,
-            work_wire_type="borrowed",
-        ): 2,
+        ops.ctrl(ops.X(Wire[1]), Wire[len_k2], work_wires=Wire[len_k1]): 2,
+        ops.ctrl(ops.X(Wire[1]), Wire[len_k1], work_wires=Wire[len_k2]): 2,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
         controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
     }

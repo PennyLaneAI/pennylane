@@ -672,9 +672,7 @@ class TestControlledDecomposition:
                     num_work_wires=1,
                 ): 1,
                 qp.resource_rep(qp.CCZ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
+                qp.ctrl(qp.Z(Wire[1]), Wire[3], work_wires=Wire[1]): 1,
             }
         )
 
@@ -794,12 +792,8 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=4, num_work_wires=1
-                ): 1,
+                qp.ctrl(qp.Z(Wire[1]), {}, Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.Z(Wire[1]), {}, Wire[4], work_wires=Wire[1]): 1,
             }
         )
 
@@ -1018,7 +1012,7 @@ class TestControlledDecomposition:
             {
                 qp.X: 3,
                 ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1]): 1,
-                controlled_resource_rep(qp.X, {}, num_control_wires=3): 2,
+                qp.ctrl(qp.X(Wire[1]), Wire[3]): 2,
             }
         )
 

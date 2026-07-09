@@ -222,8 +222,8 @@ class TestSelect:
         assert resource_obj.num_gates == 4
 
         expected_counts = {
-            _ctrl_abstract(qp.X, Wire[2], Wire[0], "borrowed"): 3,
-            _ctrl_abstract(qp.Y, Wire[2], Wire[0], "borrowed"): 1,
+            qp.ctrl(qp.X(Wire[1]), Wire[2]): 3,
+            qp.ctrl(qp.Y(Wire[1]), Wire[2]): 1,
         }
         assert resource_obj.gate_counts == expected_counts
 
@@ -264,14 +264,14 @@ class TestSelect:
         swap_rep = qp.resource_rep(qp.SWAP)
         if partial:
             expected_counts = {
-                _ctrl_abstract(qp.X, Wire[2], Wire[0], "borrowed"): 1,
-                _ctrl_abstract(qp.X, Wire[1], Wire[0], "borrowed"): 1,
-                _ctrl_abstract(swap_rep, Wire[1], Wire[0], "borrowed"): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[2]): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[1]): 1,
+                _ctrl_abstract(swap_rep, Wire[1]): 1,
             }
         else:
             expected_counts = {
-                _ctrl_abstract(qp.X, Wire[2], Wire[0], "borrowed"): 2,
-                _ctrl_abstract(swap_rep, Wire[2], Wire[0], "borrowed", 1): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[2]): 2,
+                _ctrl_abstract(swap_rep, Wire[2], num_zero_control_values=1): 1,
             }
         assert resource_obj.gate_counts == expected_counts
 
@@ -311,7 +311,7 @@ class TestSelect:
         if partial:
             expected_counts = {abstractify(qp.Z): 1}
         else:
-            expected_counts = {_ctrl_abstract(qp.Z, Wire[1], Wire[0], "borrowed"): 1}
+            expected_counts = {qp.ctrl(qp.Z(Wire[1]), Wire[1]): 1}
 
         assert resource_obj.gate_counts == expected_counts
 
