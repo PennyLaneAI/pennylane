@@ -82,9 +82,13 @@ class RX(Operator2):
     """
 
     wire_sizes = (1,)
+    num_wires = 1
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
 
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
@@ -290,12 +294,15 @@ class RY(Operator2):
         wires (WiresLike): the wire the operation acts on
     """
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
+
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -512,12 +519,15 @@ class RZ(Operator2):
         wires (WiresLike): the wire the operation acts on
     """
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
+
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
