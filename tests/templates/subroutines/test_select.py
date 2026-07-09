@@ -264,8 +264,8 @@ class TestSelect:
         swap_rep = qp.resource_rep(qp.SWAP)
         if partial:
             expected_counts = {
-                _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 1,
-                _ctrl_abstract(abstractify(qp.X), Wire[1], Wire[0], "borrowed"): 1,
+                _ctrl_abstract(qp.X, Wire[2], Wire[0], "borrowed"): 1,
+                _ctrl_abstract(qp.X, Wire[1], Wire[0], "borrowed"): 1,
                 _ctrl_abstract(swap_rep, Wire[1], Wire[0], "borrowed"): 1,
             }
         else:
