@@ -461,8 +461,14 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies 
+  an unsigned-integer register with a signed-integer register into an unsigned-integer register.
+  This specific setup is useful for a vibronic dynamics workflow.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
+
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
+
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
   decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
@@ -637,8 +643,12 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Plxpr transforms have been removed.
+* The :class:`pennylane.resource.Resources`, :class:`~.ResourceOperator`, and :class:`~.ErrorOperator` classes as well as the entire :mod:`pennylane.resource.error` module have been removed.
+  [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
+
+* Plxpr transforms and associated infrastructure have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
+  [(#9797)](https://github.com/PennyLaneAI/pennylane/pull/9797)
 
 * Support for executing PLxPR without qjit has been removed.
   [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
@@ -753,6 +763,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* PennyLane primitives are now explicitly called with a turned-off JAX compile time constant evaluation context
+  ``jax._src.config.eager_constant_folding(False)``. This enables JAX's compile time constant evaluation
+  to only evaluate classical constants, and ignore all quantum primitives.
+  [(#9755)](https://github.com/PennyLaneAI/pennylane/pull/9755)
+
 * Adds `qp.capture.symbolic_array` for producing tracers with the correct shape and dtype but no known values.
   Could be used for dry-runs and resource calculations with program capture.
   [(#9763)](https://github.com/PennyLaneAI/pennylane/pull/9763)
@@ -835,7 +850,9 @@
     [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
     [(#9758)](https://github.com/PennyLaneAI/pennylane/pull/9758)
     [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
+    [(#9793)](https://github.com/PennyLaneAI/pennylane/pull/9793)
     [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
+    [(#9805)](https://github.com/PennyLaneAI/pennylane/pull/9805)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
@@ -919,6 +936,11 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g., 
+  from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
+  singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
+  [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
+
 <h3>Documentation 📝</h3>
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
@@ -951,6 +973,16 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires 
+  were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors. 
+  Also adjusted the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier`
+  to be compatible with traced wires.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
+
+* Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to 
+  :class:`~.Incrementer` were also included in the target wires.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
 * Fixed a bug in :class:~.OutMultiplier` for small output registers.
   [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
