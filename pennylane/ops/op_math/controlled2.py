@@ -718,8 +718,8 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         ).gate_counts
         # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
         #       gates for no reason. It'll be like this until we have a better solution.
-        base_x_count = gate_counts.get(qp.X, 0)
-        gate_counts[qp.X] = base_x_count + len(control_values)
+        base_x_count = gate_counts.get(qp.X(Wire[1]), 0)
+        gate_counts[qp.X(Wire[1])] = base_x_count + len(control_values)
         return gate_counts
 
     # pylint: disable=protected-access

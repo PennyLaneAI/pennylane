@@ -221,14 +221,14 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         # pylint: disable=import-outside-toplevel
         # Lazy import: pennylane.decomposition loads before pennylane.ops
         from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-        from pennylane.typing import AbstractWires
+        from pennylane.typing import Wire
 
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
             _ctrl_abstract(
                 base_op_rep,
-                AbstractWires(num_control_wires),
-                AbstractWires(num_work_wires),
+                Wire[num_control_wires],
+                Wire[num_work_wires],
                 work_wire_type,
             ): count
             for base_op_rep, count in base_resources.gate_counts.items()

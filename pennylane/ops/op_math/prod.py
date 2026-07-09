@@ -556,7 +556,7 @@ def _ctrl_prod_resources_with_one_work_wire(
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
-        resources[_ctrl_abstract(rep, [0], [], "borrowed")] += count
+        resources[_ctrl_abstract(rep, Wire[1], Wire[0], "borrowed")] += count
 
     return dict(resources)
 
