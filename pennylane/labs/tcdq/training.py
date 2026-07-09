@@ -129,6 +129,20 @@ class BatchResult(NamedTuple):
             shape ``(unroll_steps,)``.
         val_losses (jnp.ndarray): Validation loss values for each step in this
             batch (zeros if validation is disabled), shape ``(unroll_steps,)``.
+
+    **Example**
+
+    >>> from pennylane.labs.tcdq import training_iterator, TrainingOptions
+    >>> options = TrainingOptions(unroll_steps=5)
+    >>> iterator = training_iterator(
+    ...     optimizer="Adam", loss=my_loss, stepsize=0.01,
+    ...     loss_kwargs={"params": params}, options=options,
+    ... )
+    >>> batch = next(iterator)
+    >>> batch.params.shape
+    (10,)
+    >>> batch.losses.shape
+    (5,)
     """
 
     #: Circuit parameters at the end of this batch.
