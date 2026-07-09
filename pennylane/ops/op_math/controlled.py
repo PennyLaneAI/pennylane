@@ -215,8 +215,7 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
             work_wire_type,
         )
     ) is not NotImplemented:
-        # TODO: remove the no cover as we migrate operators to `Operator2` [sc-123701]
-        return custom_op  # pragma: no cover
+        return custom_op
 
     if isinstance(op, Controlled2):
         _ = pop_op_eqns((op,))
