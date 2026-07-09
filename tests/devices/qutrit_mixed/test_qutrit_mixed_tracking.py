@@ -62,7 +62,6 @@ class TestTracking:
             "simulations": [1],
             "results": [1.0],
             "resources": [res],
-            "errors": [{}],
         }
         assert tracker.totals == {
             "batches": 1,
@@ -75,7 +74,6 @@ class TestTracking:
             "simulations": 1,
             "results": 1,
             "resources": res,
-            "errors": {},
         }
 
     def test_tracking_resources(self):

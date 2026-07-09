@@ -19,7 +19,7 @@ import warnings
 
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
@@ -228,7 +228,7 @@ def _AQFT_decomposition(wires, order):
     n_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
-    if capture.enabled():
+    if compiler.active() or capture.enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
