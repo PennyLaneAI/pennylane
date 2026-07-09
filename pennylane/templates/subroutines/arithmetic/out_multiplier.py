@@ -45,7 +45,7 @@ from ..controlled_sequence import ControlledSequence
 from ..qft import QFT
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
-from .semi_adder import SemiAdder, _semiadder, _semiadder_resources
+from .semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
 from .temporary_and import TemporaryAND
 
 
@@ -529,13 +529,13 @@ def _out_multiplier_with_caddsub_resources(
     # Decomposed SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
         size = min(k - i, m + 1) if output_wires_zeroed else k - i
-        adder_resources = _semiadder_resources(num_x_wires=m, num_y_wires=size)
+        adder_resources = _semi_adder_resources(num_x_wires=m, num_y_wires=size)
         for key, value in adder_resources.items():
             resources[key] += value
 
     # Add 2^m(x+1)
     if k > m:
-        adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=k - m)
+        adder_resources = _semi_adder_resources(num_x_wires=n, num_y_wires=k - m)
         for key, value in adder_resources.items():
             resources[key] += value
         # bit flips corresponding to input carry activated. Accounts for the fact that
@@ -589,7 +589,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     """
 
     with AnnotatedQueue() as q:
-        _semiadder(x_wires, y_wires, work_wires)
+        _semi_adder(x_wires, y_wires, work_wires)
     adder_ops = q.queue
     if work_wires:
         # We insert work wire bit flips where a carry-in qubit would cause them,
