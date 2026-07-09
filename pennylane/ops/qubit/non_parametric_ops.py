@@ -712,29 +712,6 @@ class PauliY(Operator2):
             Hadamard(wires=wires),
         ]
 
-    @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.Y.decomposition`.
-
-        Args:
-            wires (Any, Wires): Single wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.Y.compute_decomposition(0))
-        [RY(3.141592653589793, wires=[0]),
-        GlobalPhase(-1.5707963267948966, wires=[0])]
-
-        """
-        return [qp.RY(np.pi, wires=wires), qp.GlobalPhase(-np.pi / 2, wires=wires)]
-
     def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)
 
@@ -967,28 +944,6 @@ class PauliZ(Operator2):
         []
         """
         return []
-
-    @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.Z.decomposition`.
-
-        Args:
-            wires (Any, Wires): Single wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.Z.compute_decomposition(0))
-        [PhaseShift(3.141592653589793, wires=[0])]
-
-        """
-        return [qp.PhaseShift(np.pi, wires=wires)]
 
     def adjoint(self) -> "PauliZ":
         return Z(wires=self.wires)
