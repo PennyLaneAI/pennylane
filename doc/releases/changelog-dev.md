@@ -966,10 +966,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to 
-  :class:`~.Incrementer` were also included in the target wires.
-  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
-  
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires 
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors. 
   Also adjusted the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier`
