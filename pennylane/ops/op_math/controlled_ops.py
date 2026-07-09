@@ -47,6 +47,7 @@ from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
     ControlledOp,
+    ControlledOp2,
     _is_empty_or_all_true,
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
@@ -434,7 +435,7 @@ add_decomps("Adjoint(CH)", self_adjoint)
 add_decomps("Pow(CH)", pow_involutory)
 
 
-class CY(ControlledOp):
+class CY(ControlledOp2):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -584,7 +585,7 @@ add_decomps("Adjoint(CY)", self_adjoint)
 add_decomps("Pow(CY)", pow_involutory)
 
 
-class CZ(ControlledOp):
+class CZ(ControlledOp2):
     r"""CZ(wires)
     The controlled-Z operator
 
