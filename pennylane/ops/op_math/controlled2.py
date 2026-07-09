@@ -525,6 +525,10 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"
 
+    @property
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
+        return any(rule.is_applicable(**self.arguments) for rule in list_decomps(self))
+
     @override
     def _bind_primitive(self):
         """Bind the operator primitive. ``ControlledOp2`` has to override the method of
