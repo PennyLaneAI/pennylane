@@ -27,29 +27,34 @@ from .half_signed_out_multiplier import half_signed_out_multiplier
 def fragment_to_dense(fragment: RealspaceMatrix, op_type: tuple[str]):
     """Test helper function that converts the coefficients for a specific operator type
     (e.g. ``("P", "P")`` or ``("Q",)``) of a vibronic fragment into a dense matrix. The output
-    shape depends on ``op_type``.
+    shape depends on the order of the operator type, i.e., the length of ``op_type``.
 
     Args:
         fragment (RealspaceMatrix): vibronic fragment from which to extract the coefficients.
-        n_states (int): number of electronic states
-        n_modes (int): number of vibrational modes
         op_type (tuple[str]): operator type for which to extract the coefficients.
 
     Returns:
         np.ndarray: dense coefficients tensor for the specific operator type. Has shape
         ``(n_states, n_states) + (n_modes,) * len(op_type)``.
+
     """
     n_states = fragment.states
     n_modes = fragment.modes
     order = len(op_type)
+    # Initialize dense coefficients tensor
     dense = np.zeros((n_states, n_states) + (n_modes,) * order)
+
+    # Iterate over all electronic state pairs and corresponding coupling terms in the fragment
     for elec_key, val in fragment.get_coefficients().items():
+        # Extract the values for the requested operator type
         terms = val.get(op_type, None)
         if terms is None:
             continue
         if order == 0:
+            # For order=0, there is just a single constant term, no mode dependency
             dense[elec_key] = terms.get((), 0.0)
             continue
+        # Iterate over all combinations of modes with the given order
         for modes in combinations_with_replacement(range(n_modes), r=order):
             dense[elec_key][modes] = terms.get(modes, 0.0)
     return dense
@@ -57,7 +62,6 @@ def fragment_to_dense(fragment: RealspaceMatrix, op_type: tuple[str]):
 
 def get_position_coefficients(fragment: RealspaceMatrix):
     """Get the coefficients for a given position fragment.
-    Also validates that the terms in the fragment are limited to expected terms.
 
     Args:
         fragment (RealspaceMatrix): fragment of which to read the coefficients
@@ -74,28 +78,23 @@ def get_position_coefficients(fragment: RealspaceMatrix):
     n_modes = fragment.modes
     wires = list(range(qp.math.ceil_log2(n_states)))
     diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
-    M = qp.matrix(_diagonalize_vibronic, wires)(key=diag_key, wires=wires)[:n_states, :n_states]
-    constant = M.T @ fragment_to_dense(fragment, ()) @ M
-    # constant.shape = (n_states, n_states)
-    constant_diag = np.diag(constant)
-    # constant_diag.shape = (n_states,)
+    M = qp.matrix(diagonalize_vibronic_mat, wires)(key=diag_key, wires=wires)[:n_states, :n_states]
+    constant = M.T @ fragment_to_dense(fragment, ()) @ M  # shape = (n_states, n_states)
+    constant_diag = np.diag(constant)  # shape = (n_states,)
 
+    # linear will have shape = (n_modes, n_states, n_states)
     linear = np.einsum("ba,bcz,cd->zad", M, fragment_to_dense(fragment, ("Q",)), M)
-    # linear.shape = (n_modes, n_states, n_states)
-    linear_diag = np.diagonal(linear, axis1=1, axis2=2)
-    # linear_diag.shape = (n_modes, n_states)
+    linear_diag = np.diagonal(linear, axis1=1, axis2=2)  # shape = (n_modes, n_states)
 
+    # sec_order will have shape = (n_modes, n_modes, n_states, n_states)
     sec_order = np.einsum("ba,bcyz,cd->yzad", M, fragment_to_dense(fragment, ("Q", "Q")), M)
-    # sec_order.shape = (n_modes, n_modes, n_states, n_states)
-    sec_order_diag = np.diagonal(sec_order, axis1=2, axis2=3)
-    # sec_order_diag.shape = (n_modes, n_modes, n_states)
+    sec_order_diag = np.diagonal(
+        sec_order, axis1=2, axis2=3
+    )  # shape = (n_modes, n_modes, n_states)
 
-    quadratic = np.diagonal(sec_order_diag).copy().T
-    # quadratic.shape = (n_modes, n_states)
-    bilinear = sec_order_diag.copy()
-    # bilinear.shape = (n_modes, n_modes, n_states)
-    bilinear[np.tril_indices(n_modes)] = 0.0
-    # now only upper triangle w.r.t. axes=(0, 1) populated
+    quadratic = np.diagonal(sec_order_diag).copy().T  # shape = (n_modes, n_states)
+    bilinear = sec_order_diag.copy()  # shape = (n_modes, n_modes, n_states)
+    bilinear[np.tril_indices(n_modes)] = 0.0  # only upper triangle w.r.t. axes=(0, 1) populated
     return constant_diag, linear_diag, quadratic, bilinear
 
 
@@ -110,18 +109,18 @@ def get_momentum_coefficients(fragment: RealspaceMatrix):
         np.ndarray: Array of momentum coefficients with shape ``(fragment.modes,)``
 
     """
-    coeffs = fragment_to_dense(fragment, ("P", "P"))
-    # coeffs.shape = (n_states, n_states, n_modes, n_modes)
-    coeffs_diag = np.diagonal(coeffs, axis1=2, axis2=3)
-    # coeffs_diag.shape = (n_states, n_states, n_modes)
-    coeffs_diag2 = np.diagonal(coeffs_diag)
-    # coeffs_diag2.shape = (n_modes, n_states) (diagonal puts new axis last)
-    coeffs_final = coeffs_diag2[:, 0]
-    # coeffs_final.shape = (n_modes,)
+    coeffs = fragment_to_dense(
+        fragment, ("P", "P")
+    )  #  shape=(n_states, n_states, n_modes, n_modes)
+    coeffs_diag = np.diagonal(coeffs, axis1=2, axis2=3)  # shape = (n_states, n_states, n_modes)
+    coeffs_diag2 = np.diagonal(
+        coeffs_diag
+    )  # shape = (n_modes, n_states) (np.diagonal: new ax last)
+    coeffs_final = coeffs_diag2[:, 0]  # shape = (n_modes,)
     return coeffs_final
 
 
-def _diagonalize_vibronic(*, key: tuple[int], wires: WiresLike):
+def diagonalize_vibronic_mat(*, key: tuple[int], wires: WiresLike):
     r"""Diagonalize a vibronic fragment by applying Clifford operations.
     Based on Fig.2 of `Motlagh et al, arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`__.
 
@@ -130,6 +129,8 @@ def _diagonalize_vibronic(*, key: tuple[int], wires: WiresLike):
             that contains a non-zero matrix element at all.
         wires (WiresLike): electronic wires on which the fragment acts. These wires are the only
             ones to which we need to apply operations for the diagonalization.
+
+    This function is intended for the computation of the diagonalization *matrix* of a fragment.
 
     .. warning::
 
@@ -147,19 +148,21 @@ def _diagonalize_vibronic(*, key: tuple[int], wires: WiresLike):
     if key[0] == key[1]:
         # No diagonalization needed
         return
-    diagonalization_key = (
-        qp.math.int_to_binary(key[0], len(wires)) + qp.math.int_to_binary(key[1], len(wires))
-    ) % 2
+
+    key_bitstrings = [qp.math.int_to_binary(k, len(wires)) for k in key]
+    diagonalization_key = (key_bitstrings[0] + key_bitstrings[1]) % 2
     support = np.where(diagonalization_key)[0][::-1]
     control = support[0]
     qp.H(wires=wires[control])
     _ = [qp.CNOT(wires=[wires[control], wires[k]]) for k in support[1:]]
 
 
-def diagonalize_vibronic(*, key, wires):
+def diagonalize_vibronic_qjit(*, key, wires):
     r"""Diagonalize a vibronic fragment by applying Clifford operations.
+    Based on Fig.2 of `Motlagh et al, arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`__.
 
-    qjit-compatible. ``key[0]`` and ``key[1]`` may be Python ints (compile-time)
+    This is the qjit-compatible variant of ``diagonalize_vibronic``.
+    ``key[0]`` and ``key[1]`` may be Python ints (compile-time)
     or traced integer scalars (runtime). The circuit structure -- whether any
     gates are applied, which wire is the control, and which targets receive a
     CNOT -- is expressed with ``catalyst.cond`` / ``catalyst.for_loop`` so it can
@@ -169,19 +172,32 @@ def diagonalize_vibronic(*, key, wires):
         key (tuple[int]): Row and column index of the only non-zero matrix
             element in the first row that contains a non-zero element at all.
         wires (WiresLike): electronic wires on which the fragment acts.
+
+    This function is intended for the computation of the diagonalization *circuit* of a fragment.
+
+    .. warning::
+
+        Note that this function is tailored to the vibronic fragments computed by
+        :func:`~.pennylane.labs.trotter_error.vibronic_fragments`. In particular, we assume
+        that all populated coefficients other than the provided key follow the pattern imposed by
+        ``vibronic_fragments``.
+
+    Note that the diagonalization only is required on the electronic register, which should be
+    passed in as the ``wires`` argument, and that it only requires one :class:`~.Hadamard` gate
+    and at most :math:`\lceil\log_2(N)\rceil-1` :class:`~.CNOT` gates, where :math:`N` is the
+    number of electronic states the Hamiltonian acts on.
     """
     n = len(wires)
-    k0, k1 = key[0], key[1]
 
     # Wire w holds bit (n-1-w) (MSB-first), matching qp.math.int_to_binary.
     # diff[w] is the XOR of the wire-w bit of k0 and k1 -- this is exactly
-    # (int_to_binary(k0) + int_to_binary(k1)) % 2 from the original.
+    # (int_to_binary(k0) + int_to_binary(k1)) % 2 from the matrix function.
     shifts = np.arange(n - 1, -1, -1, dtype=np.int64)
-    diff = ((k0 >> shifts) & 1) ^ ((k1 >> shifts) & 1)  # shape (n,)
+    diff = ((key[0] >> shifts) & 1) ^ ((key[1] >> shifts) & 1)
 
     any_diff = np.sum(diff) > 0
-    # Original takes support = where(diff)[::-1] then control = support[0],
-    # i.e. the largest wire index whose diff bit is set.
+    # qjit-compatible version of support = where(diff)[::-1]; control = support[0],
+    # i.e. control_pos is the largest wire index whose diff bit is set.
     control_pos = qp.math.max(qp.math.where(diff > 0, qp.math.arange(n), -1))
     if qp.compiler.active():
         any_diff = qp.math.array(any_diff, like="jax")
@@ -194,8 +210,13 @@ def diagonalize_vibronic(*, key, wires):
     def apply():
         qp.H(wires=[control_wire])
 
-        @qp.for_loop(0, n, 1)
+        # This loop goes over the full range in order to not have a dynamic range that depends
+        # on control_pos
+
+        @qp.for_loop(n)
         def loop(w):
+
+            # If the diff bit is set and the wire is not the control wire
             @qp.cond((diff[w] > 0) & (w != control_pos))
             def maybe_cnot():
                 qp.CNOT(wires=[control_wire, wires[w]])
@@ -207,18 +228,57 @@ def diagonalize_vibronic(*, key, wires):
     apply()
 
 
-def load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires):
+def load_coefficients(
+    coefficients: np.ndarray, precision: int, prev_bitstrings: np.ndarray, qrom_wires: dict
+):
     """Extract bit strings for one-dimensional coefficients array, XOR them with
-    ``prev_bitstrings``, and load the result with a QROM, using the registers in ``qrom_wires``."""
+    ``prev_bitstrings``, and load the result with a QROM, using the registers in ``qrom_wires``.
+
+    Args:
+        coefficients (np.ndarray): Coefficients to load. Should be one-dimensional.
+        precision (int): Bit precision with which to load the coefficients.
+        prev_bitstrings (np.ndarray): Bit string array representing the currently loaded reference
+            point in the data loading register. Should have shape ``(len(coefficients), precision)``
+        qrom_wires (dict[WiresLike]): Wire registers on which the data loading :class:`~.QROM`
+            should act
+
+    Returns:
+        np.ndarray: Bitstrings corresponding to ``coefficients``. These bitstrings represent the
+        newly loaded reference point in the data loading register, so that they can be used in the
+        subsequent data loading step.
+
+    """
     new_bitstrings = qp.math.binary_decimals(coefficients, precision, unit=2 * np.pi)
-    # np.bitwise_xor is not tracing-compatible
     change_bitstrings = (prev_bitstrings + new_bitstrings) % 2
     qp.QROM(change_bitstrings, **qrom_wires)
     return new_bitstrings
 
 
 def _extract_registers(registers, mode_registers, term, *mode_ids):
-    """Extract registers for a specific term of the vibronic Trotter time evolution."""
+    r"""Extract registers for a specific term of the vibronic Trotter time evolution.
+
+    Args:
+        registers (dict): A dictionary of wire registers from which the needed registers for a
+            given term are extracted.
+        mode_registers (np.ndarray): Array of wire registers for vibrational modes from which to
+            extract the registers for a given term.
+        term (str): Which term to extract the registers for. Must be one of
+            - ``"constant"`` for the adder of the constant term
+            - ``"linear"`` for the multiplier of the linear term
+            - ``"quadratic"`` for the squaring and the multiplier of the quadratic term
+            - ``"bilinear"`` for the two multipliers of the bilinear term
+            - ``"QROM"`` for the data loading :class:`~.QROM` used across all terms.
+        mode_ids (tuple[int]): Index/indices for the mode(s) involved in the term. Should be a
+            sequence of (0 , 1 , 2) integers for ``term`` being (``"constant"``/``"QROM"`` ,
+            ``"linear"``/``"quadratic"``, ``"bilinear"``).
+
+    Returns:
+        dict or tuple[dict]: One or multiple sets of registers required for the given ``term``,
+        extracted from ``registers`` and ``mode_registers``. If ``term`` is one of ``"constant"``,
+        ``"linear"``, or ``"QROM"``, a single ``dict`` is returned. For ``"quadratic"`` and
+        ``"bilinear"``, two ``dict``\ s are returned.
+
+    """
     if term == "quadratic":
         (k,) = mode_ids
         square_wires = {"output_wires": "cache", "work_wires": "work"}
@@ -347,7 +407,9 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
 
-        qp.adjoint(diagonalize_vibronic, lazy=False)(key=diag_key, wires=registers["electronic"])
+        qp.adjoint(diagonalize_vibronic_qjit, lazy=False)(
+            key=diag_key, wires=registers["electronic"]
+        )
 
         def constant_term(prev_bitstrings):
             def skip_fn():
@@ -435,12 +497,12 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
         # Finish up the coefficients register by unloading the last loaded coefficients
         qp.QROM(prev_bitstrings, **qrom_wires)
-        diagonalize_vibronic(key=diag_key, wires=registers["electronic"])
+        diagonalize_vibronic_qjit(key=diag_key, wires=registers["electronic"])
 
     def kinetic_fragment(fragment, aqft_order):
-        # use time, not first_order_time_step because the kinetic fragment is the
+        # use ``time``, not ``first_order_time_step`` because the kinetic fragment is the
         # middle one in second-order Trotter, so we immediately merge the two neighbouring
-        # fragments with first_order_time_step duration.
+        # fragments, each with duration ``first_order_time_step``.
         kinetic_coeffs = get_momentum_coefficients(fragment) * time
         if qp.compiler.active():
             kinetic_coeffs = qp.math.array(kinetic_coeffs, like="jax")
@@ -479,8 +541,8 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
 
 def _validate_registers(registers, fragments):
-    """Validate wire register sizes for vibronic algorithm. See documentation of trotter_vibronic
-    for details on the expected sizes."""
+    """Validate wire register sizes for vibronic algorithm. See documentation of
+    ``trotter_vibronic`` for details on the expected sizes."""
     n_states = fragments[0].states
     n_modes = fragments[0].modes
 
