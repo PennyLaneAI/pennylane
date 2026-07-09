@@ -461,6 +461,10 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added a Trotter time evolution template for vibronic workflows, 
+  :func:`~.labs.templates.trotter_vibronic`. See the documentation for details.
+  [(#9708)](https://github.com/PennyLaneAI/pennylane/pull/9708)
+
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies 
   an unsigned-integer register with a signed-integer register into an unsigned-integer register.
   This specific setup is useful for a vibronic dynamics workflow.
