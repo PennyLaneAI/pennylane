@@ -286,7 +286,7 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
 
         @custom_ctrl_dispatch.register
         def _ctrl_y(base: qp.PauliY, control, control_values, *_):
-            if len(control) == 1 and is_empty_or_all_true(control_values):
+            if len(control) == 1 and _is_empty_or_all_true(control_values):
                 return qp.CY(control + base.wires)
             return NotImplemented
 
