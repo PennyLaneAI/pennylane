@@ -177,7 +177,7 @@ class RX(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_rx(base: RX, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRX(base.data[0], wires=control + base.wires)
+        return qp.CRX(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
@@ -385,7 +385,7 @@ class RY(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_ry(base: RY, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRY(base.data[0], wires=control + base.wires)
+        return qp.CRY(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
@@ -651,7 +651,7 @@ class RZ(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_rz(base: RZ, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRZ(base.data[0], wires=control + base.wires)
+        return qp.CRZ(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
@@ -904,13 +904,13 @@ class PhaseShift(Operator2):
         return qp.math.exp(product)
 
     def adjoint(self) -> "PhaseShift":
-        return PhaseShift(-self.data[0], wires=self.wires)
+        return PhaseShift(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [PhaseShift(self.data[0] * z, wires=self.wires)]
+        return [PhaseShift(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "PhaseShift":
-        phi = self.data[0] % (2 * np.pi)
+        phi = self.phi % (2 * np.pi)
 
         if _can_replace(phi, 0):
             return I(wires=self.wires)
@@ -921,7 +921,7 @@ class PhaseShift(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_ps(base: PhaseShift, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.ControlledPhaseShift(base.data[0], wires=control + base.wires)
+        return qp.ControlledPhaseShift(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
@@ -1093,7 +1093,7 @@ class Rot(Operator2):
         H(0)
 
         """
-        p0, p1, p2 = (p % (4 * np.pi) for p in self.data)
+        p0, p1, p2 = (p % (4 * np.pi) for p in (self.phi, self.theta, self.omega))
 
         if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
             return I(wires=self.wires)
@@ -1112,7 +1112,7 @@ class Rot(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_rot(base: Rot, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRot(*base.data, wires=control + base.wires)
+        return qp.CRot(base.phi, base.theta, base.omega, wires=control + base.wires)
     return NotImplemented
 
 
@@ -1259,13 +1259,13 @@ class U1(Operator2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     def adjoint(self) -> "U1":
-        return U1(-self.data[0], wires=self.wires)
+        return U1(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [U1(self.data[0] * z, wires=self.wires)]
+        return [U1(self.phi, wires=self.wires)]
 
     def simplify(self) -> "U1":
-        phi = self.data[0] % (2 * np.pi)
+        phi = self.phi % (2 * np.pi)
 
         if _can_replace(phi, 0):
             return I(wires=self.wires)
@@ -1389,7 +1389,7 @@ class U2(Operator2):
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
-        phi, delta = (p % (2 * np.pi) for p in self.data)
+        phi, delta = (p % (2 * np.pi) for p in (self.phi, self.delta))
 
         if _can_replace(delta, 0) and _can_replace(phi, 0):
             return RY(np.pi / 2, wires=wires)
