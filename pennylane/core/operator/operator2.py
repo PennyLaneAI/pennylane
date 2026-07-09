@@ -1232,11 +1232,20 @@ class Operator2(metaclass=OperatorMeta):
                 wire_lens.append(len(value))
 
         hybrid_lens, hybrid_trees = [], []
+        forward_mask = []
         for name in self.hybrid_argnames:
             # Partial flattening to extract operators used as data so their
             # equations can be deleted from the jaxpr.
-            op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
-            _ = pop_op_eqns(filter(_is_op, op_leaves))
+            partial_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
+            _ = pop_op_eqns(filter(_is_op, partial_leaves))
+
+            # Update masks to track which hybrid arguments correspond to the flattened
+            # dynamic data of any operator arguments
+            for l in partial_leaves:
+                if isinstance(l, Operator2):
+                    forward_mask.extend(True for _ in flatten(l)[0])
+                else:
+                    forward_mask.append(False)
 
             # Full flattening to feed the operator's dynamic data to the primitive.
             leaves, tree = flatten(self.arguments[name])
@@ -1257,6 +1266,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            forward_mask=forward_mask,
             n_ctrls=0,
             adjoint=False,
             **static_args,
@@ -1560,7 +1570,7 @@ if has_jax:
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,unused-argument
     @operator_p.def_impl
     def _op_impl(
         *all_args,
@@ -1568,6 +1578,7 @@ if has_jax:
         wire_lens,
         hybrid_lens,
         hybrid_trees,
+        forward_mask,
         n_ctrls=0,
         adjoint=False,
         **static_args,

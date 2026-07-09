@@ -247,6 +247,56 @@ class TestHybridCapture:
         [op] = _eval(jaxpr, 0.7)
         qp.assert_equal(op, MixedHybridOp(0.7, [0.7, 1.0], [[0], [1, 2]], wires=3))
 
+    def test_no_hybrid_forward_mask(self):
+        """Operators without hybrid arguments should have an empty forward mask."""
+        jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == ()
+
+    def test_numeric_hybrid_forward_mask(self):
+        """Numeric hybrid leaves should not be marked as forward arguments."""
+        jaxpr = jax.make_jaxpr(lambda x: HybridOp([x, 1.0], wires=0))(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (False, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_nested_operator_forward_mask(self):
+        """Nested operator leaves should be marked as forward arguments."""
+
+        def f(x):
+            inner = DynOp(x, wires=0)
+            HybridOp([inner], wires=0)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (True, True)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_scalar_and_operator_tuple_forward_mask(self):
+        """Hybrid tuples with scalar and operator leaves should partition the mask."""
+
+        class TupleHybridOp(qp.core.Operator2):
+
+            hybrid_argnames = ("data",)
+
+            def __init__(self, data, wires):
+                super().__init__(data, wires=wires)
+
+        def f(x):
+            TupleHybridOp((x, DynOp(x, wires=0)), wires=0)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (False, True, True)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_mixed_hybrid_forward_mask(self):
+        """Forward masks should only mark non-wire hybrid leaves."""
+        jaxpr = jax.make_jaxpr(lambda x: MixedHybridOp(x, [x, 1.5], [[0], [1, 2]], wires=3))(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (False, False, False, False, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
 
 class TestReconstruction:
     """Tests that evaluating a captured jaxpr reconstructs the operator."""
