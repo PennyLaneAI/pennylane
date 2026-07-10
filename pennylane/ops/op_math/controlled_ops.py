@@ -1631,11 +1631,8 @@ class MultiControlledX(Controlled2):
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.X, wires=wires)
         super().__init__(
-            base,
+            base=qp.X(wires),
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -1651,7 +1648,7 @@ class MultiControlledX(Controlled2):
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         super().__abstract_init__(
-            base=type.__call__(qp.X, wires=Wire[1]),
+            base=qp.X(Wire[1]),
             control_wires=Wire[wires.num_wires - 1],
             control_values=control_values,
             work_wires=work_wires,
