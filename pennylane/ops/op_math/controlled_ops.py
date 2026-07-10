@@ -1277,7 +1277,7 @@ def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-def _cnot_cz_h_resources():
+def _cnot_cz_h_resources(wires: WiresLike=None):
     return {qp.H: 2, qp.CZ: 1}
 
 
@@ -1288,7 +1288,7 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qp.H(wires[1])
 
 
-def _cnot_to_ppr_resource():
+def _cnot_to_ppr_resource(wires: WiresLike=None):
     return {
         resource_rep(qp.PauliRot, pauli_word="X"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -1465,7 +1465,7 @@ def _check_and_convert_control_values(control_values, control_wires):
     return control_values
 
 
-def _toffoli_resources():
+def _toffoli_resources(wires: WiresLike=None):
     return {
         qp.Hadamard: 2,
         qp.CNOT: 6,
@@ -1493,7 +1493,7 @@ def _toffoli(wires: WiresLike, **__):
     CNOT(wires=[wires[0], wires[1]])
 
 
-def _toffoli_to_ppr_resource():
+def _toffoli_to_ppr_resource(wires: WiresLike=None):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZX"): 2,
