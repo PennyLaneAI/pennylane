@@ -23,7 +23,6 @@ from functools import cached_property
 
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
 from .utils import to_name
 
@@ -447,10 +446,13 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    compute_op = auto_wrap(compute_op)
-    target_op = auto_wrap(target_op)
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+    compute_op = abstractify(compute_op)
+    target_op = abstractify(target_op)
     uncompute_op = uncompute_op or _adjoint_abstract(compute_op)
-    uncompute_op = auto_wrap(uncompute_op)
+    uncompute_op = abstractify(uncompute_op)
     return CompressedResourceOp(
         qp.ops.ChangeOpBasis,
         {
@@ -589,28 +591,6 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-
-
-def auto_wrap(op_type) -> AbstractOperatorLike:
-    """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
-        return op_type
-    if isinstance(op_type, Operator2):
-        return abstractify(op_type)
-    if isinstance(op_type, type) and issubclass(op_type, Operator2):
-        return abstractify(op_type)
-    if not issubclass(op_type, Operator):
-        raise TypeError(
-            "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qp.resource_rep"
-        )
-    try:
-        return resource_rep(op_type)
-    except TypeError as e:
-        raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
-            f"representation must be explicitly constructed using qp.resource_rep"
-        ) from e
 
 
 @to_name.register

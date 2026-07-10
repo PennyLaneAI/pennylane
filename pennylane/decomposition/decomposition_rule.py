@@ -33,7 +33,7 @@ from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, auto_wrap
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
 from .utils import to_name
 
 
@@ -457,7 +457,7 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
-            op = auto_wrap(op)
+            op = abstractify(op)
             _verify_is_abstract_and_fixed(op)
             if count > 0:
                 gate_counter.update({op: count})
