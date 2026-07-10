@@ -17,10 +17,10 @@
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
+    _abstractify,
     adjoint_resource_rep,
     controlled_resource_rep,
     custom_ctrl_op_to_base,

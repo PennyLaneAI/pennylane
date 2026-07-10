@@ -31,7 +31,7 @@ from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import adjoint_resource_rep, resource_rep
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow import Pow

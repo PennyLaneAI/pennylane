@@ -28,7 +28,7 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator, Operator1, Operator2
 from pennylane.decomposition import DecompositionRule
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires

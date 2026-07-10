@@ -23,7 +23,6 @@ from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import (
-    _abstractify,
     _DecompositionNode,
     _OperatorNode,
 )
@@ -31,6 +30,7 @@ from pennylane.decomposition.decomposition_rule import _DecompInfo, _DecompInfoC
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
+from ..decomposition.resources import _abstractify
 from .decompose import _resolve_gate_set
 
 

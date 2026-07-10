@@ -31,8 +31,7 @@ from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.decomposition_graph import _abstractify
-from pennylane.decomposition.resources import change_op_basis_resource_rep
+from pennylane.decomposition.resources import _abstractify, change_op_basis_resource_rep
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 

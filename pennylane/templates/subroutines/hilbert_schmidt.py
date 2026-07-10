@@ -29,7 +29,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.math import is_abstract
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.typing import TensorLike

@@ -46,7 +46,13 @@ from .decomposition_rule import (
     list_decomps,
     null_decomp,
 )
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    Resources,
+    _abstractify,
+    resource_rep,
+)
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
@@ -70,12 +76,6 @@ def _get_kwargs(op: AbstractOperatorLike):
     if isinstance(op, Operator2):
         return op.arguments
     return op.params
-
-
-def _abstractify(op: Operator):
-    if isinstance(op, Operator1):
-        return resource_rep(type(op), **op.resource_params)
-    return abstractify(op)
 
 
 @dataclass(frozen=True)

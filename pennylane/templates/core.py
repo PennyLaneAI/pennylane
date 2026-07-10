@@ -49,8 +49,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.decomposition_graph import _abstractify
-from pennylane.decomposition.resources import AbstractOperatorLike, auto_wrap
+from pennylane.decomposition.resources import AbstractOperatorLike, _abstractify, auto_wrap
 from pennylane.ops import ChangeOpBasis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.pytrees import flatten, unflatten

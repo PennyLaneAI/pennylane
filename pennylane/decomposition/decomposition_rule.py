@@ -29,7 +29,6 @@ from typing import overload
 import pennylane as qp
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
-from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
@@ -38,6 +37,7 @@ from .resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
     Resources,
+    _abstractify,
     auto_wrap,
     resource_rep,
 )

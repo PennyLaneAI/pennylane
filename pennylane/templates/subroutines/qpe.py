@@ -28,7 +28,7 @@ from pennylane.decomposition import (
 )
 
 # pylint: disable=arguments-differ
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
 from pennylane.wires import Wires

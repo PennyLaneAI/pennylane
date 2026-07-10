@@ -31,7 +31,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Bool, Wire

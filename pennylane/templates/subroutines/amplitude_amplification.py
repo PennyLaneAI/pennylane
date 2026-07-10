@@ -24,7 +24,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
 

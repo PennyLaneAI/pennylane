@@ -28,7 +28,7 @@ from pennylane.decomposition import (
 )
 
 # pylint: disable=arguments-differ
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp

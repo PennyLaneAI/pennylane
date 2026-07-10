@@ -25,7 +25,7 @@ from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.decomposition_graph import _abstractify
+from pennylane.decomposition.resources import _abstractify
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
