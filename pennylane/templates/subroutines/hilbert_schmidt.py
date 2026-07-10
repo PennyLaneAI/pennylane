@@ -434,7 +434,7 @@ def _hilbert_schmidt_resources(
     resources.update(
         {
             resource_rep(Hadamard): num_first_range * 2,
-            resource_rep(CNOT): min(num_first_range, num_second_range) * 2,
+            CNOT: min(num_first_range, num_second_range) * 2,
         }
     )
 
@@ -458,7 +458,7 @@ def _local_hilbert_schmidt_resources(
     resources.update(
         {
             resource_rep(Hadamard): num_first_range + 1,
-            resource_rep(CNOT): min(num_first_range, num_second_range) + 1,
+            CNOT: min(num_first_range, num_second_range) + 1,
         }
     )
 

@@ -343,7 +343,7 @@ class TestDecomposition:
             qp.resource_rep(qp.GlobalPhase): 1,
             qp.resource_rep(qp.RY): n,
             qp.resource_rep(qp.RZ): n,
-            qp.resource_rep(qp.CNOT): 2 * (n - 1),
+            qp.CNOT: 2 * (n - 1),
         }
 
         with qp.queuing.AnnotatedQueue() as q:

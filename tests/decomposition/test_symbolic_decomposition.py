@@ -170,7 +170,7 @@ class TestAdjointDecompositionRules:
         assert rule.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(qp.T): 1,
-                adjoint_resource_rep(qp.CNOT): 2,
+                _adjoint(qp.CNOT): 2,
                 adjoint_resource_rep(qp.RX): 1,
                 adjoint_resource_rep(qp.H): 1,
             }
@@ -461,7 +461,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.CNOT): 1,
+                qp.CNOT: 1,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,

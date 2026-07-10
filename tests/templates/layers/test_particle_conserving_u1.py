@@ -48,7 +48,7 @@ def test_resources():
         qp.resource_rep(qp.CZ): 3 * (num_wires - 1) * n_layers,
         qp.resource_rep(qp.CRot): 3 * (num_wires - 1) * n_layers,
         qp.resource_rep(qp.PhaseShift): 6 * (num_wires - 1) * n_layers,
-        qp.resource_rep(qp.CNOT): 4 * (num_wires - 1) * n_layers,
+        qp.CNOT: 4 * (num_wires - 1) * n_layers,
     }
     assert expected == rule.compute_resources(n_layers=n_layers, num_wires=num_wires).gate_counts
 
