@@ -46,12 +46,7 @@ from .decomposition_rule import (
     list_decomps,
     null_decomp,
 )
-from .resources import (
-    AbstractOperatorLike,
-    CompressedResourceOp,
-    Resources,
-    resource_rep,
-)
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,

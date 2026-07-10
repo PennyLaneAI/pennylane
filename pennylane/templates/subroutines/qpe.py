@@ -16,7 +16,6 @@ Contains the QuantumPhaseEstimation template.
 """
 
 # pylint: disable=arguments-differ
-
 import copy
 
 from pennylane import ops

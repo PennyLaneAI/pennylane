@@ -16,7 +16,6 @@ Contains the PrepSelPrep template.
 """
 
 # pylint: disable=arguments-differ
-
 import copy
 
 from pennylane import math
