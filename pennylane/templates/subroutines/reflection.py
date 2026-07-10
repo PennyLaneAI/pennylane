@@ -26,10 +26,11 @@ from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    controlled_resource_rep,
     register_resources,
     resource_rep,
 )
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -233,15 +234,12 @@ def _reflection_decomposition_resources(
 
     if num_wires > 1:
         resources[
-            controlled_resource_rep(
-                ops.PhaseShift,
-                {},
-                num_control_wires=num_wires - 1,
-                num_zero_control_values=num_wires - 1,
+            _ctrl_abstract(
+                ops.PhaseShift, Wire[num_wires - 1], num_zero_control_values=num_wires - 1
             )
         ] = 1
     else:
-        resources[resource_rep(ops.PhaseShift)] = 1
+        resources[ops.PhaseShift] = 1
 
     resources[resource_rep(base_class, **base_params)] = 1
 

@@ -515,9 +515,9 @@ def _qrom_decomposition_resources(
                 (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
             )
             if num_swaps > 1:
-                swap_resources[resource_rep(qp_ops.CSWAP)] += num_swaps
+                swap_resources[qp_ops.CSWAP] += num_swaps
             else:
-                swap_resources[resource_rep(qp_ops.CSWAP)] += 1
+                swap_resources[qp_ops.CSWAP] += 1
 
     if not clean or depth == 1:
         resources = swap_resources

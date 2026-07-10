@@ -15,19 +15,20 @@ r"""
 Decomposition rule for SelectPauliRot in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
 """
 
-# pylint: disable=too-many-branches
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import (
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     controlled_resource_rep,
     resource_rep,
 )
 from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
+
+# pylint: disable=too-many-branches
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.wires import WireError, Wires
 
 from .decomp_rz_phase_gradient import validate_phase_gradient_wires
@@ -183,11 +184,11 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         if num_control_wires == 0:
             match rot_axis:
                 case "X":
-                    return {resource_rep(qp.RX): 1}
+                    return {qp.RX: 1}
                 case "Y":
-                    return {resource_rep(qp.RY): 1}
+                    return {qp.RY: 1}
                 case "Z":
-                    return {resource_rep(qp.RZ): 1}
+                    return {qp.RZ: 1}
 
         # 1. QROM compressed rep
         qrom_rep = resource_rep(
@@ -233,23 +234,21 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         match rot_axis:
             case "X":
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
-                    resource_rep(qp.Hadamard),
-                    change_basis_rep,
-                    resource_rep(qp.Hadamard),
+                    qp.Hadamard, change_basis_rep, qp.Hadamard
                 )
             case "Y":
                 comp_rep = resource_rep(
                     Prod,
                     resources={
-                        resource_rep(qp.Hadamard): 1,
-                        adjoint_resource_rep(qp.S): 1,
+                        abstractify(qp.Hadamard): 1,
+                        _adjoint_abstract(abstractify(qp.S)): 1,
                     },
                 )
                 uncomp_rep = resource_rep(
                     Prod,
                     resources={
-                        resource_rep(qp.S): 1,
-                        resource_rep(qp.Hadamard): 1,
+                        abstractify(qp.S): 1,
+                        abstractify(qp.Hadamard): 1,
                     },
                 )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(

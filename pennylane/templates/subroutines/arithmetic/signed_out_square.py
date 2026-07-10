@@ -318,8 +318,7 @@ def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed
         cadd_resources[basis_rep] = cadd_resources.get(basis_rep, 0) + 2
 
     # Bit flips on output and work registers
-    x_rep = resource_rep(X)
-    cadd_resources[x_rep] = cadd_resources.get(x_rep, 0) + (2 + 2 * (num_work_wires > 0))
+    cadd_resources[X] = cadd_resources.get(X, 0) + (2 + 2 * (num_work_wires > 0))
     return cadd_resources
 
 
@@ -386,8 +385,7 @@ def _signed_out_square_resources(
         if m >= 2 * n - 1:
             # Subtract x_s 2^{2n-2}
             size = min(m - (2 * n - 2), 2) if output_wires_zeroed else m - (2 * n - 2)
-            x_rep = resource_rep(X)
-            resources[x_rep] += 2 * size
+            resources[X] += 2 * size
             add_rep = resource_rep(
                 SemiAdder, num_x_wires=1, num_y_wires=size, num_work_wires=num_work_wires
             )

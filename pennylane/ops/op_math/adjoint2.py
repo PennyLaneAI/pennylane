@@ -20,7 +20,7 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -196,7 +196,7 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     def _resource_fn(base):
         base_res = base_rule.compute_resources(**base.arguments)
         base_gates = base_res.gate_counts
-        return {_adjoint(op): count for op, count in base_gates.items()}
+        return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
     base_source = base_rule._source
 
@@ -221,7 +221,9 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     return _impl
 
 
-def _adjoint(op: AbstractOperatorLike):
+def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
+    if isinstance(op, type):
+        op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
     return Adjoint2(op)

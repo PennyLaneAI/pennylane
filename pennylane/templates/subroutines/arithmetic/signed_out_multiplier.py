@@ -30,7 +30,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.ops import CNOT, Controlled, PauliX
+from pennylane.ops import CNOT, Controlled
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -383,9 +383,7 @@ def _zeroed_signed_out_multiplier_resources(
     """
     resources = defaultdict(int)
 
-    resources[controlled_resource_rep(PauliX, {}, 1, 0)] = (
-        (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
-    )
+    resources[CNOT] = (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
     resources[
         controlled_resource_rep(
             Incrementer,
@@ -421,8 +419,7 @@ def _zeroed_signed_out_multiplier_resources(
             num_control_wires=1,
         )
     ] += 2
-
-    resources[resource_rep(CNOT)] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
+    resources[CNOT] += 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
 
     return resources
 

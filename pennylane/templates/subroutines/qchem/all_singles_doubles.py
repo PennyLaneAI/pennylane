@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.typing import TensorLike
@@ -290,8 +290,8 @@ if AllSinglesDoubles._primitive is not None:
 def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
     return {
         resource_rep(BasisState, num_wires=num_wires): 1,
-        resource_rep(DoubleExcitation): num_doubles,
-        resource_rep(SingleExcitation): num_singles,
+        abstractify(DoubleExcitation): num_doubles,
+        abstractify(SingleExcitation): num_singles,
     }
 
 

@@ -19,7 +19,7 @@ Contains the PrepSelPrep template.
 import copy
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
@@ -90,7 +90,7 @@ class PrepSelPrep(Operation):
     @property
     def resource_params(self):
         ops = self.lcu.terms()[1]
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        op_reps = tuple(abstractify(op) for op in ops)
         return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None

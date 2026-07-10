@@ -264,9 +264,9 @@ def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
 
     return {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(RZ): n_layers * num_wires,
-        resource_rep(CNOT): 2 * num_nm_wires * n_layers,
-        resource_rep(CRX): num_nm_wires * n_layers,
+        RZ: n_layers * num_wires,
+        CNOT: 2 * num_nm_wires * n_layers,
+        CRX: num_nm_wires * n_layers,
     }
 
 

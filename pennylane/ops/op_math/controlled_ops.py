@@ -27,9 +27,9 @@ from scipy.linalg import block_diag
 
 import pennylane as qp
 from pennylane.allocation import allocate
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
@@ -42,6 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -1097,7 +1098,7 @@ class CCZ(ControlledOp):
 def _ccz_resources():
     return {
         qp.CNOT: 6,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(abstractify(qp.T)): 3,
         qp.T: 4,
         qp.Hadamard: 2,
     }
@@ -1541,7 +1542,7 @@ def _toffoli_resources():
         qp.Hadamard: 2,
         qp.CNOT: 6,
         qp.T: 4,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(abstractify(qp.T)): 3,
     }
 
 
@@ -1593,7 +1594,7 @@ add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 def _toffoli_elbow_resources():
-    return {change_op_basis_resource_rep(resource_rep(qp.Elbow), qp.CNOT): 1}
+    return {change_op_basis_resource_rep(abstractify(qp.Elbow), qp.CNOT): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
@@ -1910,7 +1911,7 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
 
 
 def _2cx_elbow_explicit_resources(**__):
-    return {qp.Elbow: 1, qp.CNOT: 1, adjoint_resource_rep(qp.Elbow): 1}
+    return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(abstractify(qp.Elbow)): 1}
 
 
 def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):

@@ -28,19 +28,17 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import (
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    resource_rep,
-)
+from pennylane.decomposition import resource_rep
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -254,7 +252,7 @@ class Prod(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = dict(Counter(qp.resource_rep(type(op), **op.resource_params) for op in self))
+        resources = dict(Counter(abstractify(op) for op in self))
         return {"resources": resources}
 
     _op_symbol = "@"
@@ -497,23 +495,15 @@ def _ctrl_prod_resources(
     **_,
 ):
     factor_reps = base_params["resources"]
-    tand_rep = resource_rep(qp.TemporaryAND)
+    tand_rep = abstractify(qp.TemporaryAND)
 
     resources = Counter()
     resources[tand_rep] += num_control_wires - 1
-    resources[adjoint_resource_rep(qp.TemporaryAND, tand_rep.params)] += num_control_wires - 1
+    resources[_adjoint_abstract(tand_rep)] += num_control_wires - 1
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
-        resources[
-            controlled_resource_rep(
-                base_class=rep.op_type,
-                base_params=rep.params,
-                num_control_wires=1,
-                num_zero_control_values=0,
-                num_work_wires=0,
-            )
-        ] += count
+        resources[_ctrl_abstract(rep, Wire[1])] += count
 
     return dict(resources)
 
@@ -555,15 +545,7 @@ def _ctrl_prod_resources_with_one_work_wire(
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
-        resources[
-            controlled_resource_rep(
-                base_class=rep.op_type,
-                base_params=rep.params,
-                num_control_wires=1,
-                num_zero_control_values=0,
-                num_work_wires=0,
-            )
-        ] += count
+        resources[_ctrl_abstract(rep, Wire[1])] += count
 
     return dict(resources)
 
