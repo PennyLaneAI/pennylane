@@ -317,6 +317,8 @@ class PlxprInterpreter:
 
         """
         invals = (self.read(invar) for invar in eqn.invars)
+        if issubclass(eqn.params.get("op_cls", object), qp.core.Operator2):
+            return eqn.primitive.bind(*invals, **eqn.params)
         with qp.QueuingManager.stop_recording():
             op = eqn.primitive.impl(*invals, **eqn.params)
         if isinstance(eqn.outvars[0], jax.core.DropVar):

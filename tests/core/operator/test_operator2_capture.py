@@ -12,7 +12,7 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-position,ungrouped-imports
+# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking
 
 import pytest
 from operator2_utils import (
@@ -28,9 +28,9 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import apply
+from pennylane.capture import PlxprInterpreter
 
 jax = pytest.importorskip("jax")
-from jax.extend import core as jax_core
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -252,35 +252,18 @@ class TestHybridCapture:
 class TestReconstruction:
     """Tests that evaluating a captured jaxpr reconstructs the operator."""
 
-    def test_impl_preserves_traced_wires(self):
-        """Test primitive reconstruction while wire values are still traced."""
+    def test_interpreter_rebinds_with_traced_wires(self):
+        """Test that interpreting an Operator2 equation rebinds its primitive."""
+        captured = jax.make_jaxpr(lambda wire: DynOp(0.5, wires=wire).tracer)(0)
 
-        def f(wire):
-            op = operator_p.impl(
-                0.5,
-                wire,
-                op_cls=DynOp,
-                wire_lens=(1,),
-                hybrid_lens=(),
-                hybrid_trees=(),
-            )
-            assert qp.math.is_abstract(op.wires[0])
-            return op.wires[0]
+        def interpret(wire):
+            [op] = PlxprInterpreter().eval(captured.jaxpr, captured.consts, wire)
+            return op
 
-        jaxpr = jax.make_jaxpr(f)(0)
+        interpreted = jax.make_jaxpr(interpret)(0)
 
-        assert not jaxpr.consts
-        assert not jaxpr.eqns
-        assert not jaxpr.jaxpr.effects
-
-        [wire_invar] = jaxpr.jaxpr.invars
-        [wire_outvar] = jaxpr.jaxpr.outvars
-        assert isinstance(wire_invar, jax_core.Var)
-        assert wire_outvar is wire_invar
-        assert wire_invar.aval == jax.core.get_aval(0)
-
-        [wire] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert wire == 2
+        assert len(interpreted.eqns) == 1
+        assert interpreted.eqns[0].primitive is operator_p
 
     def test_simple_roundtrip(self):
         """Test that a simple operator round-trips through capture and evaluation."""

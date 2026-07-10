@@ -1583,9 +1583,9 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                args[name] = Wires(
-                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
-                )
+                # We can safely cast to `int` inside the concrete impl because there
+                # there should not be any abstract values when calling the concrete impl.
+                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
