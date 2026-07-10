@@ -337,7 +337,7 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+        with pytest.raises(AssertionError, match="different values"):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
@@ -354,7 +354,7 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(AssertionError, match="different wires"):
             assert_equal(
                 test_operator,
                 test_operator_diff_wire,
@@ -418,7 +418,7 @@ class TestEqual:
             is False
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="differ in trainability"):
             assert_equal(
                 op1(param_qp, wires=wire),
                 op1(param_qp_1, wires=wire),
@@ -1434,7 +1434,7 @@ class TestPauliErrorEqual:
         pes = [qp.PauliError("XY", x1, (0, 1)), qp.PauliError("XY", 0.5, (0, 1))]
 
         assert qp.equal(pes[0], pes[1]) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="differ in trainability"):
             assert_equal(pes[0], pes[1])
 
         with pytest.raises(AssertionError, match="Parameters have different interfaces"):
@@ -1516,7 +1516,7 @@ class TestPauliSentencesEqual:
         ps4 = pws[0] * x4 - 0.7 * pws[1]
 
         assert qp.equal(ps1, ps2) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="differ in trainability"):
             assert_equal(ps1, ps2)
         assert qp.equal(ps1, ps3) is False
         assert qp.equal(ps1, ps4) is False
@@ -1535,7 +1535,7 @@ class TestPauliSentencesEqual:
         assert qp.equal(ps3, ps4, check_trainability=False) is True
 
         assert qp.equal(ps1, ps2, check_interface=False) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="differ in trainability"):
             assert_equal(ps1, ps2, check_interface=False)
         assert qp.equal(ps1, ps3, check_interface=False) is True
         assert_equal(ps1, ps3, check_interface=False)
@@ -3065,7 +3065,7 @@ def test_ops_with_abstract_parameters_not_equal():
     import jax
 
     assert not jax.jit(qp.equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
-    with pytest.raises(AssertionError, match="Data contains a tracer"):
+    with pytest.raises(AssertionError, match="has one or more tracer values"):
         jax.jit(assert_equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
 
     assert not jax.jit(qp.equal)(qp.exp(qp.X(0), 0.5), qp.exp(qp.X(0), 0.5))
@@ -3154,7 +3154,6 @@ def test_select():
 
 # pylint: disable=unused-argument
 class TestCompareSubroutines:
-
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 

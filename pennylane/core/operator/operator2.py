@@ -396,6 +396,16 @@ class Operator2(metaclass=OperatorMeta):
         return len(self.dynamic_argnames)
 
     @property
+    def num_wires(self):
+        """Number of wires."""
+        return len(self.wires)
+
+    @property
+    def ndim_params(self) -> tuple[int, ...]:
+        """Legacy compatibility view of parameter dimensions."""
+        return (0,) * self.num_params
+
+    @property
     def data(self) -> tuple:
         """Legacy Operator compatibility view of dynamic numerical arguments."""
         return tuple(self.arguments[name] for name in self.dynamic_argnames)
