@@ -303,7 +303,7 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             Wires: wires
         """
-        return self._wires
+        return self._wires or Wires([])
 
     @property
     def batch_size(self) -> int | None:
