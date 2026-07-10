@@ -12,7 +12,7 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking
+# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-order,ungrouped-imports
 
 import pytest
 from operator2_utils import (
@@ -30,7 +30,7 @@ import pennylane as qp
 from pennylane import apply
 
 jax = pytest.importorskip("jax")
-from jax.extend import core as jax_core  # pylint: disable=wrong-import-position
+from jax.extend import core as jax_core
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
