@@ -15,7 +15,6 @@
 Contains the SignedOutMultiplier template.
 """
 
-from collections import defaultdict
 from collections.abc import Hashable, Iterable
 from itertools import combinations
 from typing import Any
@@ -381,16 +380,22 @@ def _zeroed_signed_out_multiplier_resources(
     """
     Computes the resources for the SignedOutMultiplier.
     """
-    resources = defaultdict(int)
-
-    resources[
+    return {
         controlled_resource_rep(
             Incrementer,
             {"num_wires": num_x_wires, "num_work_wires": num_work_wires - 2},
             num_control_wires=1,
-        )
-    ] += 2
-    resources[
+        ): 2,
+        controlled_resource_rep(
+            Incrementer,
+            {"num_wires": num_output_wires - 1, "num_work_wires": num_work_wires - 2},
+            num_control_wires=1,
+        ): 1,
+        controlled_resource_rep(
+            Incrementer,
+            {"num_wires": num_y_wires, "num_work_wires": num_work_wires - 2},
+            num_control_wires=1,
+        ): 2,
         resource_rep(
             OutMultiplier,
             num_output_wires=num_output_wires - 1,
@@ -399,25 +404,9 @@ def _zeroed_signed_out_multiplier_resources(
             num_work_wires=num_work_wires - 2,
             mod=2 ** (num_output_wires - 1),
             output_wires_zeroed=True,
-        )
-    ] += 1
-    resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_output_wires - 1, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
-    ] += 1
-    resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_y_wires, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
-    ] += 2
-    resources[CNOT] += 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
-
-    return resources
+        ): 1,
+        CNOT: 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1),
+    }
 
 
 def _not_zeroed_signed_out_multiplier_resources(
