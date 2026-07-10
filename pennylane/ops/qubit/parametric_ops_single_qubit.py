@@ -442,7 +442,7 @@ def _ry_to_rz_cliff_resources():
             qp.RZ,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
         ): 1
     }
