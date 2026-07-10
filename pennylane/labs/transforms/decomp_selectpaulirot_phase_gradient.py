@@ -15,6 +15,7 @@ r"""
 Decomposition rule for SelectPauliRot in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
 """
 
+# pylint: disable=too-many-branches
 import numpy as np
 
 import pennylane as qp
@@ -24,8 +25,6 @@ from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-
-# pylint: disable=too-many-branches
 from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
