@@ -23,7 +23,9 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
+from pennylane.typing import Wire, AbstractWires
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -841,3 +843,39 @@ def test_CNOT_decomposition():
 
     with pytest.raises(qp.operation.DecompositionUndefinedError):
         qp.CNOT([0, 1]).decomposition()
+
+
+@pytest.mark.parametrize(
+    "op_type, wires",
+    [
+        (qp.CNOT, Wire[2]),
+        (qp.Toffoli, Wire[3]),
+    ]
+)
+def test_abstract_controlled_ops(op_type, wires):
+    """Tests creating abstract controlled ops as one might for resource keys."""
+    key = op_type(wires)
+
+    assert isinstance(key, op_type)
+    assert isinstance(key.wires, AbstractWires)
+    assert len(key.wires) == len(wires)
+
+
+@pytest.mark.parametrize(
+    "base, control_wires, control_values, expected",
+    [
+        (qp.X(Wire[1]), Wire[1], [1], qp.CNOT(Wire[2])),
+        (qp.CNOT(Wire[2]), Wire[1], [1], qp.Toffoli(Wire[3])),
+    ]
+)
+def test_custom_controlled_ops_dispatch(base, control_wires, control_values, expected):
+    """Tests that we can use the custom dispatch logic with abstract controlled ops."""
+    mapped_op = custom_ctrl_dispatch(
+        base,
+        control_wires,
+        control_values,
+        None,
+        "borrowed"
+    )
+
+    assert mapped_op == expected

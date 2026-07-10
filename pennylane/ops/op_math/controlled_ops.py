@@ -20,7 +20,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal
+from typing import Literal, override, Sequence
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -42,7 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -68,6 +68,8 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
+from pennylane.ops.op_math.controlled2 import Controlled2
+from ...core import Operator
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
@@ -1138,7 +1140,7 @@ add_decomps("Adjoint(CCZ)", self_adjoint_legacy)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
-class CNOT(ControlledOp):
+class CNOT(Controlled2):
     r"""CNOT(wires)
     The controlled-NOT operator
 
@@ -1182,6 +1184,10 @@ class CNOT(ControlledOp):
 
     """
 
+    wire_argnames = ("wires",)
+    arg_specs = {"wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -1212,6 +1218,19 @@ class CNOT(ControlledOp):
         base = type.__call__(qp.X, wires=wires[1:])
         super().__init__(base, wires[:1])
 
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        wires: WiresLike
+    ):
+        super().__abstract_init__(
+            base=type.__call__(qp.X, wires=Wire[1]),
+            control_wires=Wire[1],
+            control_values=[1],
+            work_wires=None,
+            work_wire_type="borrowed",
+        )
+
     def adjoint(self):
         return CNOT(self.wires)
 
@@ -1241,16 +1260,12 @@ class CNOT(ControlledOp):
         """
         raise qp.operation.DecompositionUndefinedError
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1320,7 +1335,7 @@ add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
-class Toffoli(ControlledOp):
+class Toffoli(Controlled2):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
 
@@ -1373,6 +1388,10 @@ class Toffoli(ControlledOp):
 
     """
 
+    wire_argnames = ("wires",)
+    arg_specs = {"wires": Wire[3]}
+    wire_sizes = (3,)
+
     num_wires = 3
     """int: Number of wires that the operator acts on."""
 
@@ -1405,19 +1424,28 @@ class Toffoli(ControlledOp):
         base = type.__call__(qp.X, wires=target_wires)
         super().__init__(base, control_wires)
 
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        wires: WiresLike
+    ):
+        super().__abstract_init__(
+            base=type.__call__(qp.X, wires=Wire[1]),
+            control_wires=Wire[2],
+            control_values=[1, 1],
+            work_wires=None,
+            work_wire_type="borrowed",
+        )
+
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return Toffoli(self.wires)
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
