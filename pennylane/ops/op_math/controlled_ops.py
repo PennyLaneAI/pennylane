@@ -1224,7 +1224,7 @@ class CNOT(Controlled2):
         wires: WiresLike
     ):
         super().__abstract_init__(
-            base=type.__call__(qp.X, wires=Wire[1]),
+            base=qp.X(Wire[1]),
             control_wires=Wire[1],
             control_values=[1],
             work_wires=None,
