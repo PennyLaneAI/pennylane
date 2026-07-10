@@ -293,26 +293,26 @@ class CondCallable:
 
         # consts go after the len(branches) +1 conditions, first const at len(branches) +1
         # +1 due to `True` inserted for otherwise_fn
-        end_const_ind = len(self.branch_fns) + 1
+        end_const_ind = len(self.branch_fns)  # + 1
         conditions = []
         jaxpr_branches = []
         consts = []
         consts_slices = []
 
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
-
         for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
-            # otherwise_fn always has pred=True
-            pred = self.preds[i] if i < len(self.preds) else True
+            # otherwise_fn does not have a pred
+            pred = self.preds[i] if i < len(self.preds) else None  # True
             fn = _no_return(_fn)
             if i == 0:
                 flat_true_fn = FlatFn(fn)
                 fn = flat_true_fn
-            if (pred_shape := math.shape(pred)) != ():
-                raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
-            if getattr(pred, "dtype", None) != jax.numpy.bool:
-                pred = jax.numpy.bool(pred)
-            conditions.append(pred)
+            if pred is not None:
+                if (pred_shape := math.shape(pred)) != ():
+                    raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
+                if getattr(pred, "dtype", None) != jax.numpy.bool:
+                    pred = jax.numpy.bool(pred)
+                conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
             f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
@@ -802,7 +802,7 @@ def _get_cond_qfunc_prim():
         consts_slices = [slice(*s) for s in consts_slices]
 
         n_branches = len(jaxpr_branches)
-        conditions = all_args[:n_branches]
+        conditions = all_args[: n_branches - 1]
         args = all_args[args_slice]
 
         # Find predicates that use mid-circuit measurements. We don't check the last
@@ -811,12 +811,14 @@ def _get_cond_qfunc_prim():
             pred for pred in conditions[:-1] if isinstance(pred, qp.ops.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
-            if len(mcm_conditions) != len(conditions) - 1:
+            if len(mcm_conditions) != len(conditions):
                 raise ConditionalTransformError(
                     "Cannot use qp.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
             conditions = qp.measurements.get_mcm_predicates(mcm_conditions)
+        else:
+            conditions = (*conditions, True)
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
             consts = all_args[const_slice]
