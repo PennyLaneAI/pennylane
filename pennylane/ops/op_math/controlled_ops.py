@@ -42,7 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -182,7 +182,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type="borrowed",
     ):
-
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
@@ -202,7 +201,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: str | None = "borrowed",
     ):
-
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
@@ -1097,7 +1095,7 @@ class CCZ(ControlledOp):
 def _ccz_resources():
     return {
         qp.CNOT: 6,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        qp.adjoint(qp.T(Wire[1])): 3,
         qp.T: 4,
         qp.Hadamard: 2,
     }
@@ -1541,7 +1539,7 @@ def _toffoli_resources():
         qp.Hadamard: 2,
         qp.CNOT: 6,
         qp.T: 4,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        qp.adjoint(qp.T(Wire[1])): 3,
     }
 
 
