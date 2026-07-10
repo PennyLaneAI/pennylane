@@ -25,7 +25,12 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import allocation, math
 from pennylane.core.operator import Operator
-from pennylane.core.operator.operator2 import abstractify, operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import (  # tach-ignore
+    Operator2,
+    abstractify,
+    operator_p,
+    pop_op_eqns,
+)
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -616,8 +621,8 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_counts.items()
         }
-        base_x_count = gate_counts.get(resource_rep(qp.X), 0)
-        gate_counts[resource_rep(qp.X)] = base_x_count + len(control_values)
+        base_x_count = gate_counts.get(qp.X(Wire[1]), 0)
+        gate_counts[qp.X(Wire[1])] = base_x_count + len(control_values)
         return gate_counts
 
     @register_condition(_condition_fn)
@@ -722,8 +727,8 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         ).gate_counts
         # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
         #       gates for no reason. It'll be like this until we have a better solution.
-        base_x_count = gate_counts.get(resource_rep(qp.X), 0)
-        gate_counts[resource_rep(qp.X)] = base_x_count + len(control_values)
+        base_x_count = gate_counts.get(qp.X(Wire[1]), 0)
+        gate_counts[qp.X(Wire[1])] = base_x_count + len(control_values)
         return gate_counts
 
     # pylint: disable=protected-access
@@ -793,22 +798,32 @@ def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")
 
 
-def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
+def _ctrl_abstract(
+    op: AbstractOperatorLike,
+    control_wires: AbstractWires,
+    work_wires: AbstractWires,
+    work_wire_type: str,
+    num_zero_control_values: int = 0,
+):
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(
             op.op_type,
             op.params,
             num_control_wires=len(control_wires),
-            num_zero_control_values=0,
+            num_zero_control_values=num_zero_control_values,
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         )
 
+    if isinstance(op, type) and issubclass(op, Operator2):
+        op = abstractify(op)
+
+    control_values = Bool[len(control_wires)] if num_zero_control_values else None
     return qp.ctrl(
         op,
         control=control_wires,
-        control_values=None,
+        control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
