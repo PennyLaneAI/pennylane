@@ -797,9 +797,7 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    op_name = to_name(op)
-    _decompositions = _decompositions_var.get()
-    return op_name in _decompositions and len(_decompositions[op_name]) > 0
+    return len(list_decomps(op)) > 0
 
 
 @contextmanager
