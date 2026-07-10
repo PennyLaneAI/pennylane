@@ -586,7 +586,7 @@ def _qrom_decomposition(
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
-def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_values=None):
+def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
     """Measurement-based uncomputation from Fig 18a) https://arxiv.org/abs/2211.15465
 
     Args:
@@ -594,21 +594,12 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_valu
         ctrl_wires: [ctrl0, ctrl1] -- the two AND control wires (for CZ correction). First and second qubit on the figure.
         targets: target register wires.
         product: bitstring indicating the X positions in the target register.
-        control_values: list of 0/1 indicating the effective AND polarity at the
-                       point of uncomputation. If None, defaults to [1, 1].
     """
     x_wires = [targets[i] for i, bit in enumerate(product) if bit == 1]
 
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
 
-    if control_values is not None:
-        flip = np.array([1 - cv for cv in control_values])
-        BasisState(flip, wires=ctrl_wires)
-
     cond(m1 == 1, CZ)(wires=ctrl_wires)
-
-    if control_values is not None:
-        BasisState(flip, wires=ctrl_wires)
 
     m2 = pauli_measure("Z", [work_wire])
     cond(m2 == 1, X)(wires=work_wire)
@@ -654,12 +645,16 @@ def _measurement_qrom_inner(controls, targets, bitstrings):
     _measurement_uncompute(work, [flag, sel], targets, product)
 
 
-def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disable=too-many-branches
+def _measurement_qrom_outer(controls, targets, bitstrings, k):
     """Outer 4-quarter split with measurement-based uncomputation.
 
     Splits k items into quarters [Q0, Q1 | Q2, Q3] and processes each.
-    Base corrections absorbed into measurements where possible (MID, CLOSE).
-    Remaining corrections (diff_q1 in variant 3, diff_q2) are explicit CNOTs.
+    Base corrections absorbed into measurements where possible (CLOSE).
+    Remaining corrections (diff_q1, diff_q2) are explicit CNOTs.
+
+    ``k`` is always a power of two (the caller pads the data up to the next
+    power of two), so the middle split reduces to merging the close+open of
+    the two halves into two CNOTs.
     """
     a = math.ceil_log2(k)
     controls = list(controls[: 2 * a - 1])
@@ -670,7 +665,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
     k01 = 2 ** (a - 1)
     k0 = k1 = 2 ** (a - 2)
     l = k - k01
-    k2 = 2 ** (math.ceil_log2(l) - 1) if l > 1 else l
+    k2 = 2 ** (math.ceil_log2(l) - 1)
     k3 = k - k01 - k2
 
     # --- OPEN ---
@@ -687,37 +682,14 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
     if k1 > 1:
         _measurement_qrom_inner(child_controls, targets, bitstrings[k0:k01])
 
-    # --- MIDDLE ---
-    if l == 1:
-        # Variant 1: close first half + single controlled op
-        _measurement_uncompute(
-            controls[2], [controls[0], controls[1]], targets, diff_q1, control_values=[0, 1]
-        )
-        diff_single = np.bitwise_xor(bitstrings[0], bitstrings[k01])
-        for i, bit in enumerate(diff_single):
-            if bit == 1:
-                ctrl(X(targets[i]), control=controls[0], control_values=[1])
-        return
-
-    c_bar = 2 * (a - math.ceil_log2(l) - 1)
-
-    if c_bar > 0:
-        # Variant 2: close first half via measurement, open new AND for second half
-        _measurement_uncompute(
-            controls[2], [controls[0], controls[1]], targets, diff_q1, control_values=[0, 1]
-        )
-        sec_wires = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
-        sec_child = controls[c_bar + 2 :]
-        TemporaryAND(sec_wires, control_values=[1, 0])
-    else:
-        # Variant 3: merge close+open into 2 CNOTs (no measurement here)
-        for i, bit in enumerate(diff_q1):
-            if bit == 1:
-                CNOT(wires=[controls[2], targets[i]])
-        CNOT(wires=[and_wires[0], and_wires[2]])
-        CNOT(wires=[and_wires[1], and_wires[2]])
-        sec_wires = and_wires
-        sec_child = child_controls
+    # --- MIDDLE: merge close+open into 2 CNOTs (no measurement here) ---
+    for i, bit in enumerate(diff_q1):
+        if bit == 1:
+            CNOT(wires=[controls[2], targets[i]])
+    CNOT(wires=[and_wires[0], and_wires[2]])
+    CNOT(wires=[and_wires[1], and_wires[2]])
+    sec_wires = and_wires
+    sec_child = child_controls
 
     # --- Q2 base correction (explicit, no measurement available here) ---
     diff_q2 = np.bitwise_xor(bitstrings[0], bitstrings[k01])
