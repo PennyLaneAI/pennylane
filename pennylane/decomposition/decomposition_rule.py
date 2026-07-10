@@ -33,7 +33,7 @@ from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, auto_wrap
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
 from .utils import to_name
 
 
@@ -457,15 +457,6 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
-            if not (
-                isinstance(op, (CompressedResourceOp, Operator2))
-                or (isinstance(op, type) and issubclass(op, Operator))
-            ):
-                raise TypeError(
-                    "The keys of the dictionary returned by the resource function must be a "
-                    "subclass of Operator or a CompressedResourceOp constructed with "
-                    "qp.resource_rep, or an Operator2 constructed with abstract inputs."
-                )
             op = abstractify(op)
             _verify_is_abstract_and_fixed(op)
             if count > 0:
