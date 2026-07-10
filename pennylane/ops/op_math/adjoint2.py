@@ -127,6 +127,10 @@ class Adjoint2(SymbolicOp2):
     def generator(self):
         return -1 * self.base.generator()
 
+    @property
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
+        return any(rule.is_applicable(**self.arguments) for rule in list_decomps(self))
+
     @override
     def _bind_primitive(self):
         """Bind the operator primitive. ``Adjoint2`` has to override the method of the base
