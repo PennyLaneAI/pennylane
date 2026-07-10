@@ -29,7 +29,9 @@ from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
     _count_tempAND_in_measurement_qrom,
     _qrom_decomposition,
+    _qrom_measurement_condition,
     _qrom_measurement_decomposition,
+    _qrom_measurement_resources,
 )
 from pennylane.templates.subroutines.select import _select_decomp_unary
 
@@ -582,6 +584,118 @@ class TestMeasurementQROM:
     def test_count_TemporaryAnd(self, L, expected_ands):
         """Test that TemporaryAND count matches expected values."""
         assert _count_tempAND_in_measurement_qrom(L) == expected_ands
+
+    def test_resources_small_cases(self):
+        """Test resource estimates for the L <= 1 and L == 2 edge cases."""
+        res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
+        assert res_one[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+
+        res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
+        assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+        assert res_two[qp.resource_rep(qp.CNOT)] == 3
+
+    def test_resources_general_case(self):
+        """Test that the general resource estimate contains the expected gate types."""
+        res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
+        assert res[qp.resource_rep(PauliMeasure)] > 0
+        assert res[qp.resource_rep(qp.CZ)] > 0
+
+    def test_resources_from_base_params(self):
+        """Test that resources are extracted from ``base_params`` (Adjoint path)."""
+        base_params = {"num_bitstrings": 8, "num_target_wires": 3}
+        res_direct = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
+        res_base = _qrom_measurement_resources(base_params=base_params)
+        assert res_base == res_direct
+
+    def test_condition_without_compiler(self):
+        """Test that the measurement decomposition is disabled without an active compiler."""
+        assert (
+            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
+            is False
+        )
+
+    def test_condition_with_compiler(self, mocker):
+        """Test the condition logic when a compiler is active."""
+        mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
+
+        # Small tables (<= 2 bitstrings) are always applicable.
+        assert (
+            _qrom_measurement_condition(num_bitstrings=2, num_work_wires=0, num_control_wires=1)
+            is True
+        )
+        # Enough work wires: applicable.
+        assert (
+            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
+            is True
+        )
+        # Too few work wires: not applicable.
+        assert (
+            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=0, num_control_wires=3)
+            is False
+        )
+        # Parameters extracted from ``base_params`` (Adjoint path).
+        assert (
+            _qrom_measurement_condition(
+                base_params={
+                    "num_bitstrings": 8,
+                    "num_work_wires": 2,
+                    "num_control_wires": 3,
+                }
+            )
+            is True
+        )
+
+    def test_decomposition_single_bitstring(self):
+        """Test the L == 1 branch of the measurement decomposition."""
+        with qp.queuing.AnnotatedQueue() as q:
+            _qrom_measurement_decomposition(
+                data=np.array([[1, 0, 1]]),
+                control_wires=[0],
+                target_wires=[1, 2, 3],
+                work_wires=[],
+            )
+        ops = q.queue
+        assert len(ops) == 1
+        assert isinstance(ops[0], qp.BasisState)
+        assert ops[0].wires == qp.wires.Wires([1, 2, 3])
+        assert np.array_equal(ops[0].data[0], np.array([1, 0, 1]))
+
+    def test_decomposition_two_bitstrings(self):
+        """Test the L == 2 branch of the measurement decomposition."""
+        with qp.queuing.AnnotatedQueue() as q:
+            _qrom_measurement_decomposition(
+                data=np.array([[1, 0, 1], [0, 0, 1]]),
+                control_wires=[0],
+                target_wires=[1, 2, 3],
+                work_wires=[],
+            )
+        ops = q.queue
+        assert isinstance(ops[0], qp.BasisState)
+        # Only the differing bit (index 0) produces a controlled load.
+        assert all(isinstance(op, qp.CNOT) for op in ops[1:])
+        assert len(ops[1:]) == 1
+
+    def test_decomposition_from_base_operator(self):
+        """Test that the decomposition extracts arguments from ``base`` (Adjoint path)."""
+        op = qp.QROM(
+            [[1], [0], [0], [1]],
+            control_wires=[0, 1],
+            target_wires=[2],
+            work_wires=[3],
+        )
+        with qp.queuing.AnnotatedQueue() as q_base:
+            _qrom_measurement_decomposition(base=op)
+        with qp.queuing.AnnotatedQueue() as q_direct:
+            _qrom_measurement_decomposition(
+                data=op.data[0],
+                control_wires=op.control_wires,
+                target_wires=op.target_wires,
+                work_wires=op.work_wires,
+            )
+        assert len(q_base.queue) == len(q_direct.queue)
+        for op_base, op_direct in zip(q_base.queue, q_direct.queue):
+            assert type(op_base) is type(op_direct)
+            assert op_base.wires == op_direct.wires
 
     @pytest.mark.external
     @pytest.mark.parametrize(
