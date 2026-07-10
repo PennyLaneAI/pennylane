@@ -47,7 +47,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Wire, AbstractWires
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -844,7 +844,6 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
     if num_control_wires == 1:
         return {qp.CY: 1}
     return {
-        qp.S: 1,
         _adjoint_abstract(qp.S): 1,
         _ctrl_abstract(
             qp.X,

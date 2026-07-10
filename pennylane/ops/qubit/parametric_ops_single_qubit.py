@@ -47,7 +47,6 @@ from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import WiresLike
 
-from ..op_math.adjoint2 import _adjoint
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
 stack_last = functools.partial(qp.math.stack, axis=-1)
