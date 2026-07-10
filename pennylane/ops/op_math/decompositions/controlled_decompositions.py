@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocation, compiler, control_flow, math, ops
 from pennylane.core import queuing
-from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     adjoint_resource_rep,
     register_condition,
@@ -221,19 +221,19 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         return {
             resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
             adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
-            _ctrl_abstract(abstractify(ops.X), Wire[len_k2], Wire[len_k1]): 6,
+            _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
-            _ctrl_abstract(abstractify(ops.GlobalPhase), Wire[num_control_wires], Wire[1]): 1,
+            _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires], Wire[1]): 1,
         }
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
-        _ctrl_abstract(abstractify(ops.X), Wire[len_k2], Wire[len_k1]): 4,
-        _ctrl_abstract(abstractify(ops.X), Wire[len_k1], Wire[len_k2]): 2,
+        _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 4,
+        _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
         ops.Hadamard: 2,
-        _ctrl_abstract(abstractify(ops.GlobalPhase), Wire[num_control_wires], Wire[1]): 1,
+        _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires], Wire[1]): 1,
     }
 
 
@@ -271,7 +271,7 @@ def _single_ctrl_decomp_zyz_resources(**__):
         ops.RZ: 3,
         ops.RY: 2,
         ops.CNOT: 2,
-        _ctrl_abstract(abstractify(ops.GlobalPhase), Wire[1]): 1,
+        _ctrl_abstract(ops.GlobalPhase, Wire[1]): 1,
     }
 
 
@@ -296,12 +296,12 @@ def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wir
         ops.CRZ: 3,
         ops.CRY: 2,
         _ctrl_abstract(
-            abstractify(ops.X),
+            ops.X,
             Wire[num_control_wires - 1],
             Wire[num_work_wires],
             work_wire_type,
         ): 2,
-        _ctrl_abstract(abstractify(ops.GlobalPhase), Wire[num_control_wires], Wire[1]): 1,
+        _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires], Wire[1]): 1,
     }
 
 
@@ -373,7 +373,7 @@ def _mcx_many_workers_resource(num_control_wires, work_wire_type, num_work_wires
     if work_wire_type == "borrowed":
         return {ops.Toffoli: 4 * num_used_work_wires}
     if num_work_wires == num_used_work_wires:
-        mcx_rep = abstractify(qp.Toffoli)
+        mcx_rep = qp.Toffoli
     else:
         mcx_rep = resource_rep(
             ops.MultiControlledX,
@@ -385,7 +385,7 @@ def _mcx_many_workers_resource(num_control_wires, work_wire_type, num_work_wires
         )
     return {
         qp.TemporaryAND: num_used_work_wires,
-        _adjoint_abstract(abstractify(qp.TemporaryAND)): num_used_work_wires,
+        _adjoint_abstract(qp.TemporaryAND): num_used_work_wires,
         mcx_rep: 1,
     }
 
@@ -507,7 +507,7 @@ def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
             ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
             ops.X: n_ccx - 3 if is_small_mcx else n_ccx - 5,
             qp.TemporaryAND: n_temporary_ccx_pairs,
-            _adjoint_abstract(abstractify(qp.TemporaryAND)): n_temporary_ccx_pairs,
+            _adjoint_abstract(qp.TemporaryAND): n_temporary_ccx_pairs,
         }
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
@@ -622,7 +622,7 @@ def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
         return {
             ops.Toffoli: n_ccx,
             qp.TemporaryAND: 1,
-            _adjoint_abstract(abstractify(qp.TemporaryAND)): 1,
+            _adjoint_abstract(qp.TemporaryAND): 1,
             ops.X: n_ccx - 1,
         }
     # Otherwise, we assume the work wire is borrowed
@@ -718,17 +718,17 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
         return {
             ops.Hadamard: 2,
             resource_rep(ops.QubitUnitary, num_wires=1): 2,
-            _ctrl_abstract(abstractify(ops.X), Wire[len_k2], Wire[len_k1]): 4,
+            _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 4,
             adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
-            _ctrl_abstract(abstractify(ops.GlobalPhase), Wire[num_control_wires]): 1,
+            _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires]): 1,
         }
     return {
         ops.Hadamard: 2,
         resource_rep(ops.QubitUnitary, num_wires=1): 2,
-        _ctrl_abstract(abstractify(ops.X), Wire[len_k2], Wire[len_k1]): 2,
-        _ctrl_abstract(abstractify(ops.X), Wire[len_k1], Wire[len_k2]): 2,
+        _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 2,
+        _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
-        _ctrl_abstract(abstractify(ops.GlobalPhase), Wire[num_control_wires]): 1,
+        _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires]): 1,
     }
 
 

@@ -562,10 +562,6 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
-    if num_work_wires < max(n_subspace - 1, 1):
-        resources[abstractify(qp.allocation.Allocate)] += 1
-        resources[abstractify(qp.allocation.Deallocate)] += 1
-
     num_work_wires = max(num_work_wires, n_subspace - 1, 1)
     resources[qp.resource_rep(qp.MultiplexerStatePreparation, num_wires=n_subspace)] += 1
 

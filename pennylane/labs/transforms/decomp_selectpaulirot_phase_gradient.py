@@ -19,18 +19,14 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operator, abstractify
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
-from pennylane.decomposition import (
-    change_op_basis_resource_rep,
-    controlled_resource_rep,
-    resource_rep,
-)
+from pennylane.decomposition import change_op_basis_resource_rep, resource_rep
 from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
 # pylint: disable=too-many-branches
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
 from .decomp_rz_phase_gradient import validate_phase_gradient_wires
@@ -235,18 +231,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 )
             case "Y":
                 comp_rep = resource_rep(
-                    Prod,
-                    resources={
-                        abstractify(qp.Hadamard): 1,
-                        _adjoint_abstract(abstractify(qp.S)): 1,
-                    },
+                    Prod, resources={abstractify(qp.Hadamard): 1, _adjoint_abstract(qp.S): 1}
                 )
                 uncomp_rep = resource_rep(
-                    Prod,
-                    resources={
-                        abstractify(qp.S): 1,
-                        abstractify(qp.Hadamard): 1,
-                    },
+                    Prod, resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1}
                 )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
                     comp_rep, change_basis_rep, uncomp_rep
