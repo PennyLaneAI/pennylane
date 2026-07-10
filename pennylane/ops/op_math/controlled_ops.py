@@ -52,7 +52,6 @@ from .controlled import (
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
 )
-from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
@@ -1540,11 +1539,11 @@ class MultiControlledX(Controlled2):
     * Gradient recipe: None
 
     Args:
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
+        wires (WiresLike): control wire(s) followed by a single target wire (the last entry of ``wires``) where
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as :code:`int(bool(x))`.
-        work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
+        work_wires (WiresLike): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
         work_wire_type (str): whether the work wires are ``"zeroed"`` or ``"borrowed"``. ``"zeroed"`` indicates that
             the work wires are in the state :math:`|0\rangle`, while ``"borrowed"`` indicates that the
@@ -1586,18 +1585,6 @@ class MultiControlledX(Controlled2):
 
     name = "MultiControlledX"
 
-    def _flatten(self):
-        return (), (self.wires, tuple(self.control_values), self.work_wires, self.work_wire_type)
-
-    @classmethod
-    def _unflatten(cls, _, metadata):
-        return cls(
-            wires=metadata[0],
-            control_values=metadata[1],
-            work_wires=metadata[2],
-            work_wire_type=metadata[3],
-        )
-
     @staticmethod
     def _validate_control_values(control_values):
         if control_values is not None:
@@ -1613,13 +1600,11 @@ class MultiControlledX(Controlled2):
 
     dynamic_argnames = ("control_values",)
 
-    wire_argnames = ("control_wires", "work_wires", "wires")
-
-    hybrid_argnames = ("base",)
+    wire_argnames = ("work_wires", "wires")
 
     static_argnames = ("work_wire_type",)
 
-    arg_specs = {"control_values": Bool[-1], "control_wires": Wire[-1], "work_wires": Wire[-1]}
+    arg_specs = {"control_values": Bool[-1], "work_wires": Wire[-1]}
 
     def __init__(
         self,
@@ -1656,6 +1641,22 @@ class MultiControlledX(Controlled2):
             work_wire_type=work_wire_type,
         )
 
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        wires,
+        control_values: None | bool | list[bool] | int | list[int] = None,
+        work_wires: WiresLike = (),
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
+        super().__abstract_init__(
+            base=type.__call__(qp.X, wires=Wire[1]),
+            control_wires=Wire[wires.num_wires - 1],
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+
     def adjoint(self):
         return MultiControlledX(
             wires=self.wires,
@@ -1664,14 +1665,13 @@ class MultiControlledX(Controlled2):
             work_wire_type=self.work_wire_type,
         )
 
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
         wires: WiresLike,
         control_values: None | bool | list[bool] | int | list[int] = None,
         work_wires: WiresLike = (),
-        work_wire_type: Literal[
-            "zeroed", "borrowed"
-        ] = "borrowed",  # pylint: disable=unused-argument
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1702,7 +1702,7 @@ class MultiControlledX(Controlled2):
          [0. 0. 0. 1.]]
 
         """
-
+        control_wires = wires[:-1]
         control_values = _check_and_convert_control_values(control_values, control_wires)
         padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
