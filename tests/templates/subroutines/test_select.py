@@ -22,8 +22,8 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane import abstractify
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.select import (
     _partial_select,
