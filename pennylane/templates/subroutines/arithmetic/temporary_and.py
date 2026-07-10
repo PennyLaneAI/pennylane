@@ -26,6 +26,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -212,9 +213,9 @@ def _temporary_and_resources():
         ops.Prod,
         resources={
             resource_rep(ops.Hadamard): 1,
-            resource_rep(ops.T): 1,
+            ops.T(Wire[1]): 1,
             resource_rep(ops.CNOT): 1,
-            adjoint_resource_rep(ops.T, {}): 1,
+            ops.T(Wire[1]): 1,
         },
     )
     return {
@@ -226,7 +227,6 @@ def _temporary_and_resources():
 
 @register_resources(_temporary_and_resources, exact=False)
 def _temporary_and(wires: WiresLike, **kwargs):
-
     control_values = kwargs["control_values"]
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])

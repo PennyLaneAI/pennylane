@@ -26,6 +26,7 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.typing import Wire
 
 
 @pytest.mark.unit
@@ -264,7 +265,7 @@ class TestCompressedResourceOp:
         [
             (resource_rep(qp.RX), "RX"),
             (adjoint_resource_rep(qp.RX, {}), "Adjoint(RX)"),
-            (controlled_resource_rep(qp.T, {}, 1, 0, 0), "C(T)"),
+            (qp.ctrl(qp.T(Wire[1]), Wire[1]), "C(T)"),
             (pow_resource_rep(qp.RX, {}, 2), "Pow(RX)"),
         ],
     )
