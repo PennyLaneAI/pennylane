@@ -244,7 +244,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         zipped = sum(zip(wires[1:], work_wires), start=tuple())
         if compiler.active() or enabled():
             zipped = math.array(zipped, like="jax")
-            all_wires = math.concatenate([wires[:1], zipped], like="jax")
+            all_wires = math.concatenate([wires[:1], zipped])
         else:
             all_wires = wires[:1] + zipped
 
