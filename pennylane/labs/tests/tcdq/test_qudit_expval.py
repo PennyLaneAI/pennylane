@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=too-many-arguments,too-few-public-methods,unbalanced-tuple-unpacking
-"""
-Tests for the qudit IQP expectation value function.
-"""
+"""Reference and regression tests for the qudit IQP expectation estimator."""
 
 import itertools
 from functools import reduce
@@ -37,7 +35,7 @@ NUM_SAMPLES = 10000
 
 
 def _build_qudit_expval_func_exact(config):
-    """Exact (brute-force sum over all basis states) qudit IQP expectation value factory."""
+    """Build a brute-force reference evaluator by summing over all basis states."""
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
     all_states = jnp.array(
@@ -87,7 +85,7 @@ def _build_qudit_expval_func_exact(config):
 
 
 def _shift_operator(d):
-    """X|j> = |j+1 mod d>"""
+    """Return the single-qudit shift operator used by the dense reference code."""
     X = np.zeros((d, d), dtype=complex)
     for j in range(d):
         X[(j + 1) % d, j] = 1.0
@@ -95,12 +93,12 @@ def _shift_operator(d):
 
 
 def _clock_operator(d):
-    """Z|j> = exp(2*pi*i*j/d)|j>"""
+    """Return the single-qudit clock operator used by the dense reference code."""
     return np.diag([np.exp(2j * np.pi * j / d) for j in range(d)])
 
 
 def _displacement_operator(l, m, d):
-    """O(l, m) = Z^l X^m exp(-i*pi*l*m/d)  [eqn 36]"""
+    """Return one dense Heisenberg-Weyl displacement operator."""
     Z = _clock_operator(d)
     X = _shift_operator(d)
     Z_l = np.linalg.matrix_power(Z, int(l % d))
@@ -110,53 +108,43 @@ def _displacement_operator(l, m, d):
 
 
 def _hermitian_observable(l, m, d):
-    """Q(l, m) = chi * O(l, m) + chi^* O^dag(l, m), with chi = (1+i)/2"""
+    """Return the Hermitian observable used by the dense reference circuit."""
     chi = (1 + 1j) / 2
     O = _displacement_operator(l, m, d)
     return chi * O + np.conj(chi) * O.conj().T
 
 
 def _dft_matrix(d):
-    """Discrete Fourier transform matrix for Z_d."""
+    """Return the single-qudit discrete Fourier transform matrix."""
     j = np.arange(d)
     return np.exp(2j * np.pi * np.outer(j, j) / d) / np.sqrt(d)
 
 
 def _kron_n(mats):
-    """Tensor product of a list of matrices."""
+    """Return the Kronecker product of a sequence of matrices."""
     return reduce(np.kron, mats)
 
 
 def qudit_expectation_brute_force(
     n, d, gates, thetas, l_vec, m_vec, init_state_elems=None, init_state_amps=None
 ):
-    """Brute-force computation of qudit IQP-type expectation values.
+    """Compute one exact expectation value with a dense-matrix reference path.
 
-    Computes  <psi_in| U^dag(theta) O(l, m) U(theta) |psi_in>   where
-
-        U(theta) = (F^{x n})^dag  D(theta)  F^{x n}           [eqn 44]
-        D(theta) = prod_g exp(i theta_g Q_g)                   [eqn 43]
-        O(l, m)  = bigotimes_i O(l_i, m_i)                     [eqn 46]
-        O(l, m)  = Z^l X^m exp(-i pi l m / d)                  [eqn 36]
-
-    When init_state_elems and init_state_amps are None, the initial state
-    is |0>.
+    This helper mirrors the mathematical definition of the circuit and is used
+    only in tests where full enumeration is still feasible.
 
     Args:
-        n:      Number of qudits.
-        d:      Local dimension (cyclic group Z_d).
-        gates:  Sequence of gate vectors g in Z_d^n.  Each g is a
-                length-n sequence of integers in {0, ..., d-1}.
-        thetas: Sequence of rotation angles, one per gate.
-        l_vec:  Length-n sequence specifying l_i for the observable.
-        m_vec:  Length-n sequence specifying m_i for the observable.
-        init_state_elems: Optional array of shape (N, n) with dit-string
-                support elements in {0, ..., d-1}.
-        init_state_amps:  Optional array of shape (N,) with complex
-                amplitudes for each support element.
+        n: Number of qudits.
+        d: Local dimension.
+        gates: Sequence of gate vectors.
+        thetas: Sequence of gate angles.
+        l_vec: Observable frequency indices.
+        m_vec: Observable shift indices.
+        init_state_elems: Optional sparse support of the input state.
+        init_state_amps: Optional amplitudes for ``init_state_elems``.
 
     Returns:
-        Complex expectation value <O(l, m)>.
+        complex: Exact expectation value of the requested observable.
     """
     dim = d**n
 
@@ -191,11 +179,7 @@ def qudit_expectation_brute_force(
 
 
 def _pennylane_qubit_expval(generators_list, thetas_list, l_vec, m_vec):
-    """
-    Compute <D(l, m)> via PennyLane for d=2 (qubit) circuits.
-
-    Returns the real expectation value.
-    """
+    """Use ``default.qubit`` as a ``d=2`` reference implementation."""
     n = len(l_vec)
 
     def pauli_map(l, m, n):
@@ -302,7 +286,7 @@ class TestQuditExpvalVsPennyLane:
             pl_val = _pennylane_qubit_expval(generators_arr.tolist(), thetas_arr.tolist(), l, m)
             assert np.isclose(our_vals[i], pl_val, atol=1e-6), (
                 f"Observable {i} (l={l}, m={m}): got {our_vals[i]:.8f}, "
-                "PennyLane gives {pl_val:.8f}"
+                f"PennyLane gives {pl_val:.8f}"
             )
 
 
