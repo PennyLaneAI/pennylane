@@ -99,7 +99,7 @@ def test_mode_based_fragments():
 
     frags = vibronic_fragments(n_blocks, modes, omegas, taylor_coeffs, scheme="mode")
 
-    # Q^2 term: beta[0,0,0,0] gets omegas[0]/2 added inside vibronic_fragments_modebased
+    # Q^2 term
     exp0 = RealspaceMatrix.zero(n_blocks, modes)
     M = np.zeros((modes, modes))
     M[idx0, idx0] = omegas[idx0] / 2
@@ -120,9 +120,6 @@ def test_mode_based_fragments():
     exp_kinetic = RealspaceMatrix.zero(n_blocks, modes)
     PP = RealspaceOperator(modes, ("P", "P"), RealspaceCoeffs(np.diag(omegas) / 2, label="omega"))
     exp_kinetic.set_block(0, 0, RealspaceSum(modes, (PP,)))
-
-    print(frags[1].matrix(2))
-    print(exp_kinetic.matrix(2))
 
     assert len(frags) == 2
     assert np.allclose(frags[0].matrix(2), exp_potential.matrix(2))
