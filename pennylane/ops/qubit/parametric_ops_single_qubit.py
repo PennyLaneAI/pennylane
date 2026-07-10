@@ -44,7 +44,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -438,7 +438,7 @@ def _ry_to_rz_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={_adjoint(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint(qp.S(Wire[1])): 1, resource_rep(qp.Hadamard): 1},
             ),
             qp.RZ,
             resource_rep(
@@ -720,7 +720,7 @@ def _rz_to_ry_cliff_resources():
             qp.RY,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={_adjoint(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint(qp.S(Wire[1])): 1, resource_rep(qp.Hadamard): 1},
             ),
         ): 1
     }

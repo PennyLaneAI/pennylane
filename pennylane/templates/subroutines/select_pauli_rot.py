@@ -31,6 +31,7 @@ from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math import Prod
 from pennylane.ops.op_math.adjoint2 import _adjoint
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -207,7 +208,7 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
         }
 
     prod_rep1 = resource_rep(
-        Prod, resources=defaultdict(int, {resource_rep(Hadamard): 1, _adjoint(S): 1})
+        Prod, resources=defaultdict(int, {resource_rep(Hadamard): 1, _adjoint(S(Wire[1])): 1})
     )
     prod_rep2 = resource_rep(
         Prod, resources=defaultdict(int, {S: 1, resource_rep(Hadamard): 1})
