@@ -79,12 +79,12 @@ def test_frag_schemes_equal(states, modes):
     assert np.allclose(mat_og, mat_mode)
 
 
-def test_mode_based_fragments():
+def test_mode_based_fragments_1_state():
     """Test the mode based fragmentation scheme against a known example"""
 
     states = 1
     modes = 1
-    n_blocks = 2 ** math.ceil(math.log2(states))
+    blocks = 2 ** math.ceil(math.log2(states))
 
     idx0 = 0
 
@@ -97,17 +97,17 @@ def test_mode_based_fragments():
 
     taylor_coeffs = [lambdas.copy(), alphas.copy(), betas.copy()]
 
-    frags = vibronic_fragments(n_blocks, modes, omegas, taylor_coeffs, scheme="mode")
+    frags = vibronic_fragments(blocks, modes, omegas, taylor_coeffs, scheme="mode")
 
     # Q^2 term
-    exp0 = RealspaceMatrix.zero(n_blocks, modes)
+    exp0 = RealspaceMatrix.zero(blocks, modes)
     M = np.zeros((modes, modes))
     M[idx0, idx0] = omegas[idx0] / 2
     op = RealspaceOperator(modes, ("Q", "Q"), RealspaceCoeffs(M, label=f"beta[{idx0}][0,0]"))
     exp0.set_block(0, 0, RealspaceSum(modes, (op,)))
 
     # Q linear term
-    exp1 = RealspaceMatrix.zero(n_blocks, modes)
+    exp1 = RealspaceMatrix.zero(blocks, modes)
     v = np.zeros(modes)
     v[idx0] = alphas[0, 0, idx0]
     opL = RealspaceOperator(modes, ("Q",), RealspaceCoeffs(v, label=f"alpha[{idx0}][0,0]"))
@@ -117,13 +117,90 @@ def test_mode_based_fragments():
     exp_potential = exp0 + exp1
 
     # kinetic term (appended after grouping)
-    exp_kinetic = RealspaceMatrix.zero(n_blocks, modes)
+    exp_kinetic = RealspaceMatrix.zero(blocks, modes)
     PP = RealspaceOperator(modes, ("P", "P"), RealspaceCoeffs(np.diag(omegas) / 2, label="omega"))
     exp_kinetic.set_block(0, 0, RealspaceSum(modes, (PP,)))
 
     assert len(frags) == 2
     assert np.allclose(frags[0].matrix(2), exp_potential.matrix(2))
     assert np.allclose(frags[1].matrix(2), exp_kinetic.matrix(2))
+
+
+def test_mode_based_fragments_2_states():
+    """Test the mode based fragmentation scheme against a known example"""
+    states = 2
+    modes = 2
+    blocks = 2 ** math.ceil(math.log2(states))
+
+    omegas = np.array([6.0, 4.0])
+
+    lambdas = np.zeros((states, states))
+    alphas = np.zeros((states, states, modes))
+
+    # unequal diagonal on mode 0 -> coupling mat diag(2.5, 1.5)
+    alphas[0, 0, 0] = 2.5
+    alphas[1, 1, 0] = 1.5
+
+    # off-diagonal on mode 1 -> coupling mat [[0, 0.7],[0.7, 0]] (does not commute)
+    alphas[0, 1, 1] = 0.7
+    alphas[1, 0, 1] = 0.7
+    betas = np.zeros((states, states, modes, modes))
+
+    taylor_coeffs = [lambdas.copy(), alphas.copy(), betas.copy()]
+
+    frags = vibronic_fragments(states, modes, omegas, taylor_coeffs, scheme="mode")
+
+    # Q^2 per mode (harmonic on electronic diagonal) — coupling ~ I, merges with diagonal Q
+    q2_frags = []
+    for r in range(modes):
+        frag = RealspaceMatrix.zero(blocks, modes)
+        for i in range(states):
+            M = np.zeros((modes, modes))
+            M[r, r] = omegas[r] / 2
+            op = RealspaceOperator(
+                modes, ("Q", "Q"), RealspaceCoeffs(M, label=f"beta[{r}][{i},{i}]")
+            )
+            frag.set_block(i, i, RealspaceSum(modes, (op,)))
+        q2_frags.append(frag)
+
+    # diagonal Q on mode 0
+    exp_Q_diag = RealspaceMatrix.zero(blocks, modes)
+    for i in range(states):
+        v = np.zeros(modes)
+        v[0] = alphas[i, i, 0]
+        opL = RealspaceOperator(modes, ("Q",), RealspaceCoeffs(v, label=f"alpha[0][{i},{i}]"))
+        exp_Q_diag.set_block(i, i, RealspaceSum(modes, (opL,)))
+
+    # off-diagonal Q on mode 1
+    exp_Q_off = RealspaceMatrix.zero(blocks, modes)
+    for i in range(states):
+        for j in range(states):
+            if abs(alphas[i, j, 1]) > 1e-15:
+                v = np.zeros(modes)
+                v[1] = alphas[i, j, 1]
+                opL = RealspaceOperator(
+                    modes, ("Q",), RealspaceCoeffs(v, label=f"alpha[1][{i},{j}]")
+                )
+                exp_Q_off.set_block(i, j, RealspaceSum(modes, (opL,)))
+
+    # FC group 0: Q2 modes + diagonal Q (commuting)
+    exp0 = RealspaceMatrix.zero(blocks, modes)
+    for frag in q2_frags + [exp_Q_diag]:
+        exp0 = exp0 + frag
+
+    # FC group 1: off-diagonal Q
+    exp1 = exp_Q_off
+
+    # kinetic
+    exp2 = RealspaceMatrix.zero(blocks, modes)
+    PP = RealspaceOperator(modes, ("P", "P"), RealspaceCoeffs(np.diag(omegas) / 2, label="omega"))
+    for i in range(states):
+        exp2.set_block(i, i, RealspaceSum(modes, (PP,)))
+
+    assert len(frags) == 3
+    assert frags[0] == exp0
+    assert frags[1] == exp1
+    assert frags[2] == exp2
 
 
 class Test1Mode:
