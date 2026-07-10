@@ -151,9 +151,8 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     conditions = all_args[: n_branches - 1]
     args = all_args[slice(*args_slice)]
 
-    # Find predicates that use mid-circuit measurements. We don't check the last
-    # condition as that is always `True`.
-    mcm_conditions = tuple(pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue))
+    # Find predicates that use mid-circuit measurements
+    mcm_conditions = tuple(pred for pred in conditions if isinstance(pred, MeasurementValue))
     if mcm_conditions:
         if len(mcm_conditions) != len(conditions):
             raise ValueError(

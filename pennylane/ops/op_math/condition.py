@@ -805,10 +805,9 @@ def _get_cond_qfunc_prim():
         conditions = all_args[: n_branches - 1]
         args = all_args[args_slice]
 
-        # Find predicates that use mid-circuit measurements. We don't check the last
-        # condition as that is always `True`.
+        # Find predicates that use mid-circuit measurements.
         mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, qp.ops.MeasurementValue)
+            pred for pred in conditions if isinstance(pred, qp.ops.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions):
