@@ -337,6 +337,11 @@ class Operator2(metaclass=OperatorMeta):
         return self._ndim_params
 
     @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
+
+    @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
