@@ -1213,6 +1213,8 @@ class S(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
+        if isinstance(self.wires, AbstractWires):
+            return "S"
         wire = self.wires[0]
         if isinstance(wire, str):
             return f"S('{wire}')"
