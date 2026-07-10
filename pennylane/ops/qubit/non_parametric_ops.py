@@ -1428,15 +1428,13 @@ def _t_phaseshift(wires=None):
     qp.PhaseShift(np.pi / 4, wires=wires)
 
 
-add_decomps(T, _t_phaseshift)
-
-
 @register_resources(_t_phaseshift_resources)
 def _pow_t(wires, z, **_):
     z_mod8 = qp.math.array(z) % 8
     qp.PhaseShift(np.pi * z_mod8 / 4, wires=wires)
 
 
+add_decomps(T, _t_phaseshift)
 add_decomps("Pow(T)", make_pow_decomp_with_period(8), _pow_t)
 
 
