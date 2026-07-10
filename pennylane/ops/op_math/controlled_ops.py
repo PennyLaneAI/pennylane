@@ -1391,13 +1391,7 @@ class Toffoli(Controlled2):
         self,
         wires: WiresLike
     ):
-        super().__abstract_init__(
-            base=type.__call__(qp.X, wires=Wire[1]),
-            control_wires=Wire[2],
-            control_values=[1, 1],
-            work_wires=None,
-            work_wire_type="borrowed",
-        )
+        super().__abstract_init__(qp.X(Wire[1]), Wire[2])
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
