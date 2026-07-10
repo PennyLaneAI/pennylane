@@ -171,11 +171,7 @@ def _scale_dict(dict1: dict, scalar: int):
 
 def _make_hashable(d):
     if isinstance(d, dict):
-        return tuple(
-            sorted(
-                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
-            )
-        )
+        return ((_make_hashable(k), _make_hashable(v)) for k, v in d.items())
     if isinstance(d, CompressedResourceOp):
         # Since the params are guaranteed to be hashable, we can use them here
         return (d.op_type.__name__, d._hashable_params)  # pylint: disable=protected-access

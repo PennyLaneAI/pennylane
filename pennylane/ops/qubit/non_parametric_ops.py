@@ -46,6 +46,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.op_math.adjoint2 import _adjoint
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -847,7 +848,7 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
         return {qp.CY: 1}
     return {
         qp.S: 1,
-        _adjoint(qp.S): 1,
+        _adjoint(qp.S(Wire[1])): 1,
         controlled_resource_rep(
             qp.X,
             {},
