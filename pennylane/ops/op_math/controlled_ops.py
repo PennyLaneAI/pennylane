@@ -1238,28 +1238,6 @@ class CNOT(Controlled2):
     def has_decomposition(self):
         return False
 
-    @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):  # -> List["Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. note::
-            Operations making up the decomposition should be queued within the
-            ``compute_decomposition`` method.
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
-
-        Args:
-            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
-
-        Raises:
-            qp.DecompositionUndefinedError
-        """
-        raise qp.operation.DecompositionUndefinedError
-
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
 
@@ -1286,9 +1264,6 @@ class CNOT(Controlled2):
          [0 0 1 0]]
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-
-    def _controlled(self, wire):
-        return qp.Toffoli(wires=wire + self.wires)
 
 
 @custom_ctrl_dispatch.register
@@ -1405,17 +1380,6 @@ class Toffoli(Controlled2):
 
     name = "Toffoli"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, _, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=3)
-
     def __init__(self, wires):
         control_wires = wires[:2]
         target_wires = wires[2:]
@@ -1481,61 +1445,6 @@ class Toffoli(Controlled2):
                 [0, 0, 0, 0, 0, 0, 1, 0],
             ]
         )
-
-    @staticmethod
-    def compute_decomposition(
-        wires: WiresLike,
-    ) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Toffoli.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.Toffoli.compute_decomposition((0,1,2))
-        [H(2),
-         CNOT(wires=[1, 2]),
-         Adjoint(T(2)),
-         CNOT(wires=[0, 2]),
-         T(2),
-         CNOT(wires=[1, 2]),
-         Adjoint(T(2)),
-         CNOT(wires=[0, 2]),
-         T(2),
-         T(1),
-         CNOT(wires=[0, 1]),
-         H(2),
-         T(0),
-         Adjoint(T(1)),
-         CNOT(wires=[0, 1])]
-
-        """
-        return [
-            qp.Hadamard(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            qp.adjoint(qp.T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            qp.T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            qp.adjoint(qp.T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            qp.T(wires=wires[2]),
-            qp.T(wires=wires[1]),
-            CNOT(wires=[wires[0], wires[1]]),
-            qp.Hadamard(wires=wires[2]),
-            qp.T(wires=wires[0]),
-            qp.adjoint(qp.T(wires=wires[1])),
-            CNOT(wires=[wires[0], wires[1]]),
-        ]
 
 
 @custom_ctrl_dispatch.register
