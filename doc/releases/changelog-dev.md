@@ -939,6 +939,11 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g., 
+  from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
+  singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
+  [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
+
 <h3>Documentation 📝</h3>
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
