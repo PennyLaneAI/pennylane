@@ -1215,7 +1215,7 @@ class CNOT(Controlled2):
     def __init__(self, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
-        base = type.__call__(qp.X, wires=wires[1:])
+        base = qp.X(wires[1])
         super().__init__(base, wires[:1])
 
     @override
@@ -1383,9 +1383,7 @@ class Toffoli(Controlled2):
     def __init__(self, wires):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.X, wires=target_wires)
+        base = qp.X(target_wires)
         super().__init__(base, control_wires)
 
     @override
