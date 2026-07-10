@@ -1019,7 +1019,7 @@ pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, e
         [2],
         [0, 1],
         None,
-        qp.Toffoli.compute_decomposition(wires=[0, 1, 2]),
+        qp.Toffoli(wires=[0, 1, 2]).decomposition(),
     ),
     (
         qp.PauliX,
@@ -1033,7 +1033,7 @@ pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, e
         [1, 2],
         [0],
         None,
-        qp.Toffoli.compute_decomposition(wires=[0, 1, 2]),
+        qp.Toffoli(wires=[0, 1, 2]).decomposition(),
     ),
     (
         qp.CNOT,
