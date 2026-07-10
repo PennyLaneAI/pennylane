@@ -69,7 +69,7 @@ from .decompositions.controlled_decompositions import (
     single_ctrl_decomp_zyz_rule,
 )
 from pennylane.ops.op_math.controlled2 import Controlled2
-from ...core import Operator
+from pennylane.core import Operator
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
