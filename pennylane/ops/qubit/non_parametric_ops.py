@@ -48,7 +48,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.typing import Wire
+from pennylane.typing import Wire, AbstractWires
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -1218,6 +1218,8 @@ class S(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
+        if isinstance(self.wires, AbstractWires):
+            return "S"
         wire = self.wires[0]
         if isinstance(wire, str):
             return f"S('{wire}')"
