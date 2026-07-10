@@ -1226,9 +1226,6 @@ class CNOT(Controlled2):
         super().__abstract_init__(
             base=qp.X(Wire[1]),
             control_wires=Wire[1],
-            control_values=[1],
-            work_wires=None,
-            work_wire_type="borrowed",
         )
 
     def adjoint(self):
