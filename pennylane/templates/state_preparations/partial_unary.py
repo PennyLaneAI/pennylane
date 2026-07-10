@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, math
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation
 from pennylane.decomposition import controlled_resource_rep
 from pennylane.wires import Wires
 
@@ -591,8 +591,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
-    swap_rep = abstractify(qp.SWAP)
-    resources[swap_rep] += num_wires
+    resources[qp.SWAP] += num_wires
 
     num_toffolis = int(num_wires / 10) + 1
     toffoli_params = {"num_control_wires": 2, "num_work_wires": 1, "work_wire_type": "zeroed"}
