@@ -20,25 +20,8 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.ops import (
-    CNOT,
-    CSWAP,
-    RY,
-    SWAP,
-    Controlled,
-    Hadamard,
-    PauliX,
-    PauliZ,
-    adjoint,
-    cond,
-    ctrl,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike, Wire
