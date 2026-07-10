@@ -41,7 +41,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -49,7 +49,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import AbstractOperatorLike, _abstractify, auto_wrap
+from pennylane.decomposition.resources import AbstractOperatorLike, auto_wrap
 from pennylane.ops import ChangeOpBasis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.pytrees import flatten, unflatten
@@ -72,7 +72,7 @@ def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"
     if isinstance(initial, CompressedResourceOp):
         return auto_wrap(initial)
     if isinstance(initial, Operator):
-        return _abstractify(initial)
+        return abstractify(initial)
     return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
@@ -413,7 +413,7 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
 
     resources = defaultdict(int)
     for op in q.queue:
-        resources[_abstractify(op)] += 1
+        resources[abstractify(op)] += 1
     return resources
 
 

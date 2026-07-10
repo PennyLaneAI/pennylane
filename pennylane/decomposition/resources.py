@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 
 from .utils import to_name
 
@@ -612,7 +612,6 @@ def _compressed_op_to_name(op: CompressedResourceOp):
     return to_name(op.name)
 
 
+@abstractify.register
 def _abstractify(op: Operator):
-    if isinstance(op, Operator1):
-        return resource_rep(type(op), **op.resource_params)
-    return abstractify(op)
+    return resource_rep(type(op), **op.resource_params)

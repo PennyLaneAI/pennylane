@@ -21,10 +21,9 @@ import copy
 import numpy as np
 
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.decomposition.resources import _abstractify
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
 
@@ -240,7 +239,7 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
             iters // 2
         )
     elif not fixed_point and iters > 0:
-        resources[_abstractify(O)] = iters
+        resources[abstractify(O)] = iters
         resources[
             resource_rep(
                 Reflection,

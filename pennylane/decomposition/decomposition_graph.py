@@ -50,7 +50,6 @@ from .resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
     Resources,
-    _abstractify,
     resource_rep,
 )
 from .symbolic_decomposition import (
@@ -728,7 +727,7 @@ class DecompGraphSolution:
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
-        op_rep = _abstractify(op)
+        op_rep = abstractify(op)
         if op_rep not in self._op_to_op_nodes:
             return []
 

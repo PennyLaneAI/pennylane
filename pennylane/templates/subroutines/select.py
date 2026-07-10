@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -31,7 +31,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import _abstractify
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Bool, Wire
@@ -355,7 +354,7 @@ class Select(Operation):
 
     @property
     def resource_params(self):
-        op_reps = tuple(_abstractify(op) for op in self.ops)
+        op_reps = tuple(abstractify(op) for op in self.ops)
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),

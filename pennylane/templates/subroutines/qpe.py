@@ -15,10 +15,12 @@
 Contains the QuantumPhaseEstimation template.
 """
 
+# pylint: disable=arguments-differ
+
 import copy
 
 from pennylane import ops
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
@@ -26,9 +28,6 @@ from pennylane.decomposition import (
     controlled_resource_rep,
     register_resources,
 )
-
-# pylint: disable=arguments-differ
-from pennylane.decomposition.resources import _abstractify
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
 from pennylane.wires import Wires
@@ -173,7 +172,7 @@ class QuantumPhaseEstimation(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "base_resource_rep": _abstractify(self.hyperparameters["unitary"]),
+            "base_resource_rep": abstractify(self.hyperparameters["unitary"]),
             "num_estimation_wires": len(self.estimation_wires),
         }
 
