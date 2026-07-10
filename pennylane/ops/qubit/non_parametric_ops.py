@@ -1338,10 +1338,6 @@ class T(Operator2):
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
 
-    num_wires = 1
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         """Defines the basis of the operator."""
