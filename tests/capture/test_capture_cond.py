@@ -345,8 +345,8 @@ def test_no_predicate_for_else_branch():
     cond_eqn = jaxpr.eqns[0]
     assert len(cond_eqn.invars) == 2
     assert len(cond_eqn.params["jaxpr_branches"]) == 3
-    assert isinstance(cond_eqn.invars[0], jax._src.core.Var)
-    assert isinstance(cond_eqn.invars[1], jax._src.core.Var)
+    assert isinstance(cond_eqn.invars[0], jax._src.core.Var)  # pylint: disable=protected-access
+    assert isinstance(cond_eqn.invars[1], jax._src.core.Var)  # pylint: disable=protected-access
 
 
 def test_keyword_argument():
