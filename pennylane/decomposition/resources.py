@@ -173,8 +173,7 @@ def _make_hashable(d):
     if isinstance(d, dict):
         return tuple(
             sorted(
-                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()),
-                key=lambda x: repr(x[0]),
+                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: repr(x[0])
             )
         )
     if isinstance(d, CompressedResourceOp):
