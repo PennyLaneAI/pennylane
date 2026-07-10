@@ -22,8 +22,9 @@ import numbers
 from copy import copy
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
+from pennylane.pytrees import flatten, unflatten
 
 from .sprod import SProd
 from .sum import Sum
@@ -118,7 +119,21 @@ class LinearCombination(Sum):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
-        return cls._primitive.bind(*coeffs, *observables, **kwargs, n_obs=len(observables))
+        leaves, structure = flatten(observables, is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_observables = unflatten(new_leaves, structure)
+
+        return cls._primitive.bind(*coeffs, *new_observables, **kwargs, n_obs=len(observables))
 
     def __init__(
         self,
