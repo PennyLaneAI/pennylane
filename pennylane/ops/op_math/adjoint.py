@@ -25,9 +25,10 @@ from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.queuing import QueuingManager
 
 from .adjoint2 import Adjoint2
 from .symbolicop import SymbolicOp
@@ -279,6 +280,8 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
+            if isinstance(op, Operator2):
+                _ = pop_op_eqns((op,))
             QueuingManager.remove(op)
             QueuingManager.append(adj)
         return adj
@@ -506,7 +509,11 @@ class AdjointOperation(Adjoint, Operation):
 
 
 def _make_adjoint_op(op: Operator) -> Adjoint | Adjoint2:
-    return Adjoint2(op) if isinstance(op, Operator2) else Adjoint(op)
+    if isinstance(op, Operator2):
+        _ = pop_op_eqns((op,))
+        return Adjoint2(op)
+
+    return Adjoint(op)
 
 
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access

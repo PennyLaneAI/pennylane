@@ -20,10 +20,10 @@ from itertools import product
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import Adjoint, MeasurementValue
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
-from pennylane.queuing import QueuingManager
 from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -431,16 +431,8 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
-# pylint: disable=unused-argument
-def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
-    raise NotImplementedError(
-        "The clifford_t_decomposition is incompatible with program capture. "
-        "Please use qp.decompose and qp.transforms.gridsynth instead."
-    )
-
-
 # pylint: disable=too-many-branches,too-many-statements
-@partial(transform, plxpr_transform=_clifford_t_plxpr_transform)
+@transform
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,

@@ -28,10 +28,10 @@ from typing import Any, ParamSpec, TypeVar
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.core.shots import Shots, ShotsLike
 from pennylane.exceptions import DiagGatesUndefinedError, PennyLaneDeprecationWarning
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -966,8 +966,8 @@ class QuantumScript:
                 resources_from_tape,
             )
 
-            resources, errors = resources_from_tape(self, compute_errors=True)
-            self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
+            resources = resources_from_tape(self)
+            self._specs = {"resources": resources, "shots": self.shots}
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

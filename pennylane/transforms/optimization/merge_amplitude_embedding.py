@@ -15,9 +15,9 @@
 
 from pennylane import AmplitudeEmbedding
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DeviceError
 from pennylane.math import flatten, reshape
-from pennylane.queuing import QueuingManager
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 

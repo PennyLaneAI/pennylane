@@ -12,6 +12,17 @@
 # limitations under the License.
 """The core abstractions of PennyLane.
 
+Queuing
+~~~~~~~
+
+.. currentmodule:: pennylane.core.queuing
+.. autosummary::
+    :toctree: api
+
+    ~QueuingManager
+    ~AnnotatedQueue
+    ~apply
+
 Operator Types
 ~~~~~~~~~~~~~~
 
@@ -72,7 +83,22 @@ Quantum Script
     ~process_queue
 
 
+Transforms
+~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.transforms
+.. autosummary::
+    :toctree: api
+
+    ~Transform
+    ~transform
+    ~BoundTransform
+    ~CompilePipeline
+
+
 """
+
+from .queuing import QueuingManager, AnnotatedQueue, apply
 
 from .operator import (
     CV,
@@ -100,8 +126,12 @@ from .qscript import (
     make_qscript,
     process_queue,
 )
+from .transforms import transform, Transform, BoundTransform, CompilePipeline
 
 __all__ = [
+    "QueuingManager",
+    "AnnotatedQueue",
+    "apply",
     "Operator",
     "Operator1",
     "Operator2",
@@ -124,4 +154,8 @@ __all__ = [
     "QuantumScriptOrBatch",
     "make_qscript",
     "process_queue",
+    "transform",
+    "Transform",
+    "BoundTransform",
+    "CompilePipeline",
 ]

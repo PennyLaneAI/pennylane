@@ -12,16 +12,36 @@
 # limitations under the License.
 """Shared ``Operator2`` subclasses used across the ``tests/core/`` suite."""
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,useless-parent-delegation
 
+import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
+
+
+class NonParametricOp(Operator2):
+    """Non parametric operator2."""
+
+    def __init__(self, wires):
+        super().__init__(wires)
 
 
 class DynOp(Operator2):
     """Operator with one dynamic parameter and wires."""
 
     dynamic_argnames = ("phi",)
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires)
+
+
+class OneWireDynOp(Operator2):
+    """Operator with one dynamic parameter and wires."""
+
+    dynamic_argnames = ("phi",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
 
     def __init__(self, phi, wires):
         super().__init__(phi, wires=wires)
@@ -34,6 +54,19 @@ class TwoDynOp(Operator2):
 
     def __init__(self, phi, theta, wires):
         super().__init__(phi, theta, wires=wires)
+
+
+class DynOpWithMatrix(Operator2):
+    """Operator with a matrix defined."""
+
+    dynamic_argnames = ("phi", "theta", "omega")
+
+    def __init__(self, phi, theta, omega, wires):
+        super().__init__(phi, theta, omega, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi, theta, omega, wires):  # pylint: disable=unused-argument
+        return qp.Rot.compute_matrix(phi, theta, omega)
 
 
 class StaticOp(Operator2):
@@ -70,6 +103,20 @@ class HybridOp(Operator2):
 
     def __init__(self, ops, wires):
         super().__init__(ops, wires=wires)
+
+
+class ParametrizedHybridOp(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    hybrid_argnames = ("op",)
+
+    arg_specs = {"params": Float[-1], "wires": Wire[-1]}
+
+    def __init__(self, params, wires, op):
+        super().__init__(params, wires, op)
 
 
 class HybridWireOp(Operator2):
