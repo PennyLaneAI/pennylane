@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires:
+    def wires(self) -> Wires | None:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -303,7 +303,7 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             Wires: wires
         """
-        return self._wires or Wires([])
+        return self._wires
 
     @property
     def batch_size(self) -> int | None:
