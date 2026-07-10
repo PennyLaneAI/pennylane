@@ -159,11 +159,10 @@ def _mode_frags(
     _, alphas, betas = taylor_coeffs
 
     for i, j in product(range(states), range(modes)):
-        betas[i, i, j, j] += freqs[j]/2
+        betas[i, i, j, j] += freqs[j] / 2
 
     quadratic_frags = [
-        _mode_quadratic(states, modes, index, betas)
-        for index in product(range(modes), repeat=2)
+        _mode_quadratic(states, modes, index, betas) for index in product(range(modes), repeat=2)
     ]
     linear_frags = [_mode_linear(states, modes, index, alphas) for index in range(modes)]
 
