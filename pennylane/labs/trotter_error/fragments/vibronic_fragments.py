@@ -157,6 +157,7 @@ def _mode_frags(
         )
 
     _, alphas, betas = taylor_coeffs
+    betas = betas.copy()
 
     for i, j in product(range(states), range(modes)):
         betas[i, i, j, j] += freqs[j] / 2
