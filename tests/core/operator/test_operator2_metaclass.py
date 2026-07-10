@@ -14,7 +14,7 @@
 
 import numpy as np
 import pytest
-from operator2_utils import DynOp, MultiWireOp, TwoDynOp
+from operator2_utils import DynOp, FullOp, MultiWireOp, TwoDynOp
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
@@ -44,6 +44,20 @@ def test_child_constructor_runs_when_concrete():
 
 class TestOperatorAbstractInputs:
     """Tests that the metaclass canonicalizes abstract operators."""
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            ((Float, Float[2], [Float, Int, Complex], Wire[1]), True),
+            ((np.pi, Float[2], [np.pi, 7, 5 + 2j], Wire[1]), True),
+            ((Float, Float[2], [np.pi, 7, 5 + 2j], (0,)), True),
+            ((np.pi, np.array([1.5, 1.25]), [np.pi, 7, 5 + 2j], (0,)), False),
+        ],
+    )
+    def test_is_abstract_set(self, args, expected):
+        """Tests that is_abstract is set appropriately."""
+        op = FullOp(*args)
+        assert op.is_abstract == expected
 
     def test_child_init_is_skipped(self):
         """Tests that the child constructor is skipped."""
@@ -258,6 +272,29 @@ class TestOperatorAbstractInputs:
         ):
             _ = DynOp(input, AbstractWires(1))
 
+    def test_override_abstract_init(self):
+        """Tests that an operator can override __abstract_init__."""
+
+        class CustomOp(Operator2):  # pylint: disable=too-few-public-methods
+            dynamic_argnames = ("theta",)
+
+            wire_argnames = ("wires", "work_wires")
+
+            arg_specs = {"theta": Float, "wires": Wire[1], "work_wires": Wire[-1]}
+
+            def __init__(self, theta, wires, work_wires=None):
+                if work_wires is None:
+                    work_wires = Wires([])
+                super().__init__(self, theta, wires, work_wires)
+
+            def __abstract_init__(self, theta, wires, work_wires=None):
+                if work_wires is None:
+                    work_wires = Wire[0]
+                super().__abstract_init__(theta, wires, work_wires)
+
+        op = CustomOp(Float, Wire[1])
+        assert op.work_wires == Wire[0]
+
 
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
@@ -320,7 +357,8 @@ class TestArgSpecValidationAbstractInputs:
 
         # Abstract inputs that are not compatible raise an error
         # NOTE: Cannot downcast complex to float
-        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
+        expected_msg = r"Parameter \'dynamic_arg\' does not match the operator\'s expected \'arg_specs\' dtype. Expected float64 but received complex128."
+        with pytest.raises(ValueError, match=expected_msg):
             _ = MixedArgOp(Complex[2, 3], Wire[3])
 
         # Concrete inputs go through as normal
@@ -378,7 +416,9 @@ class TestArgSpecValidationAbstractInputs:
             def __init__(self, dynamic_arg, wires):
                 super().__init__(dynamic_arg, wires=wires)
 
-        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
+        with pytest.raises(
+            ValueError, match=r"expected 'arg_specs' shape\. Expected \(3,\) but received .*"
+        ):
             _ = MixedArgOp(bad_dynamic_arg, Wire[3])
 
 

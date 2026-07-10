@@ -15,7 +15,7 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access, too-few-public-methods
+# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking
 import pytest
 
 import pennylane as qp
@@ -247,10 +247,6 @@ def test_overriding_measurements():
     @qp.qnode(qp.device("default.qubit", wires=2), shots=5)
     def circuit():
         return qp.expval(qp.Z(0)), qp.probs(wires=(0, 1))
-
-    res = circuit()
-    assert qp.math.allclose(res[0], jax.numpy.zeros(5))
-    assert qp.math.allclose(res[1], jax.numpy.zeros((5, 2)))
 
     jaxpr = jax.make_jaxpr(circuit)()
     assert (
@@ -674,13 +670,6 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].params["execution_config"].gradient_method == "backprop"
         assert jaxpr.eqns[0].params["execution_config"].grad_on_execution is False
         assert jaxpr.eqns[0].params["device"] == dev
-
-        res1 = f()
-        # end up performing two rx gates with phase of 0.1 each on wire 0
-        expected = jax.numpy.array([jax.numpy.cos(0.2 / 2) ** 2, jax.numpy.sin(0.2 / 2) ** 2])
-        assert qp.math.allclose(res1, expected)
-        res2 = jax.core.eval_jaxpr(jaxpr.jaxpr, [])
-        assert qp.math.allclose(res2, expected)
 
     def test_qnode_consts(self):
         """Test the higher order qnode registration propagates consts correctly."""

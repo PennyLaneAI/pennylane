@@ -45,7 +45,12 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .controlled import ControlledOp
+from .controlled import (
+    ControlledOp,
+    _is_empty_or_all_true,
+    _resolve_ctrl_values,
+    custom_ctrl_dispatch,
+)
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
@@ -672,6 +677,13 @@ class CZ(ControlledOp):
         return [qp.ControlledPhaseShift(np.pi, wires=wires)]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_cz(base: CZ, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CCZ(control + base.wires)
+    return NotImplemented
+
+
 def _cz_to_cps_resources():
     return {qp.ControlledPhaseShift: 1}
 
@@ -1264,6 +1276,17 @@ class CNOT(ControlledOp):
         return qp.Toffoli(wires=wire + self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
+    wires = control + base.wires
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True], len(control))
+        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+    if len(control) == 1 and not work_wires:
+        return qp.Toffoli(control + base.wires)
+    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
 def _cnot_cz_h_resources():
     return {qp.H: 2, qp.CZ: 1}
 
@@ -1487,6 +1510,15 @@ class Toffoli(ControlledOp):
         ]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_toffoli(base: Toffoli, control, control_values, work_wires, work_wire_type):
+    wires = control + base.wires
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control))
+        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
 def _check_and_convert_control_values(control_values, control_wires):
     if isinstance(control_values, str):
         # Make sure all values are either 0 or 1
@@ -1676,6 +1708,7 @@ class MultiControlledX(ControlledOp):
                     isinstance(control_values, (list, tuple))
                     and all(isinstance(val, (bool, int)) for val in control_values)
                 )
+                or (hasattr(control_values, "dtype") and control_values.dtype.kind in ("i", "b"))
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
 
