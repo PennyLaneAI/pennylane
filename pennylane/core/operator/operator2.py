@@ -1649,7 +1649,7 @@ def pop_op_eqns(ops: Iterable):
     return old_eqns
 
 
-def _operator_forward_mask_leaves(op: Operator2) -> list[bool]:
+def _op_arg_forward_mask(op: Operator2) -> list[bool]:
     """Build ``forward_mask`` entries for an operator argument."""
     op_leaves, _ = flatten(op, is_leaf=_is_wires)
     hybrid_mask = []
@@ -1673,7 +1673,7 @@ def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, 
     hybrid_mask: list[bool] = []
     for partial_leaf in partial_leaves:
         if isinstance(partial_leaf, Operator2):
-            hybrid_mask.extend(_operator_forward_mask_leaves(partial_leaf))
+            hybrid_mask.extend(_op_arg_forward_mask(partial_leaf))
         else:
             hybrid_mask.append(False)
 
