@@ -1347,8 +1347,6 @@ class T(Operator2):
         )
         return "Z"
 
-    batch_size = None
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
