@@ -1213,13 +1213,6 @@ class S(Operator2):
             )
         return self._pauli_rep
 
-    def __repr__(self) -> str:
-        """String representation."""
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"S('{wire}')"
-        return f"S({wire})"
-
     @staticmethod
     @lru_cache
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
