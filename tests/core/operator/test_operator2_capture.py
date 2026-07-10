@@ -269,7 +269,7 @@ class TestHybridCapture:
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         eqn = _single_op_eqn(jaxpr)
-        assert eqn.params["forward_mask"] == (True, True)
+        assert eqn.params["forward_mask"] == (True, False)
         assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
 
     def test_scalar_and_operator_tuple_forward_mask(self):
@@ -287,7 +287,25 @@ class TestHybridCapture:
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         eqn = _single_op_eqn(jaxpr)
-        assert eqn.params["forward_mask"] == (False, True, True)
+        assert eqn.params["forward_mask"] == (False, True, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_multi_wire_operator_forward_mask(self):
+        """Nested operators with multi-wire arguments should mark each wire leaf."""
+
+        class MultiWireDyn(qp.core.Operator2):
+
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        def f(x):
+            HybridOp([MultiWireDyn(x, wires=[0, 1, 2])], wires=0)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (True, False, False, False)
         assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
 
     def test_mixed_hybrid_forward_mask(self):
