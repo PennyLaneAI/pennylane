@@ -64,7 +64,7 @@ Workflows
 The following examples demonstrate several of the key workflows supported by this module.
 
 Estimating expectation values
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -104,7 +104,7 @@ Estimating expectation values
 
 
 Training with a custom loss
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Below is a training loop that minimizes the sum of all two-body ``Z``
 correlators on the same ``3×3`` lattice. The loss function reuses the
@@ -136,7 +136,7 @@ compiled ``expval_fn`` from above.
 
 
 Training with MMD loss (distribution matching)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To train a circuit so that its output distribution reproduces a target
 dataset of bitstrings, use the built-in Maximum Mean Discrepancy (MMD)
@@ -182,7 +182,7 @@ For more detail on how the loss is constructed, see
 
 
 Qudit circuits
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 The same workflow applies to qudit circuits (``d > 2``). Replace
 :class:`~CircuitConfig` with :class:`~QuditCircuitConfig` and
@@ -231,7 +231,7 @@ qudit.
 
 
 Training qudit circuits with MMD loss
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Qudit distribution matching uses
 :func:`~build_qudit_mmd_loss`, which returns a reusable loss function
