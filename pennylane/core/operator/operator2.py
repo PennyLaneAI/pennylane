@@ -342,11 +342,6 @@ class Operator2(metaclass=OperatorMeta):
         return len(self.ndim_params)
 
     @property
-    def num_wires(self):
-        """Number of trainable parameters."""
-        return len(self.wires)
-
-    @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
