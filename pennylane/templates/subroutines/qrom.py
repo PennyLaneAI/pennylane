@@ -21,8 +21,7 @@ from functools import reduce
 
 import numpy as np
 
-from pennylane import compiler
-from pennylane import math
+from pennylane import compiler, math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager, apply
@@ -36,7 +35,6 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
