@@ -48,6 +48,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
+from ..op_math.adjoint2 import _adjoint
 
 stack_last = functools.partial(qp.math.stack, axis=-1)
 
@@ -714,12 +715,20 @@ def _rz_to_ry_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
+<<<<<<< HEAD
                 resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+=======
+                resources={qp.S: 1, resource_rep(qp.Hadamard): 1},
+>>>>>>> 52ffd0ba1e (Port S)
             ),
             qp.RY,
             resource_rep(
                 qp.ops.op_math.Prod,
+<<<<<<< HEAD
                 resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+=======
+                resources={_adjoint(qp.S): 1, resource_rep(qp.Hadamard): 1},
+>>>>>>> 52ffd0ba1e (Port S)
             ),
         ): 1
     }
