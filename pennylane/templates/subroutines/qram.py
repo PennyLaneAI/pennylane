@@ -20,25 +20,8 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.ops import (
-    CNOT,
-    CSWAP,
-    RY,
-    SWAP,
-    Controlled,
-    Hadamard,
-    PauliX,
-    PauliZ,
-    adjoint,
-    cond,
-    ctrl,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike, Wire
@@ -592,37 +575,9 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
         * 2
     )
 
-    resources[
-        controlled_resource_rep(
-            base_class=Controlled,
-            base_params={
-                "base_class": SWAP,
-                "base_params": {},
-                "num_control_wires": 1,
-                "num_zero_control_values": 0,
-                "num_work_wires": 0,
-                "work_wire_type": "borrowed",
-            },
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += ccswap_count
+    resources[_ctrl_abstract(SWAP, Wire[2])] += ccswap_count
 
-    resources[
-        controlled_resource_rep(
-            base_class=Controlled,
-            base_params={
-                "base_class": SWAP,
-                "base_params": {},
-                "num_control_wires": 1,
-                "num_zero_control_values": 1,
-                "num_work_wires": 0,
-                "work_wire_type": "borrowed",
-            },
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += ccswap_count
+    resources[_ctrl_abstract(SWAP, Wire[2], num_zero_control_values=1)] += ccswap_count
 
     resources[_ctrl_abstract(Hadamard, Wire[1])] += num_target_wires * num_blocks * 2
 

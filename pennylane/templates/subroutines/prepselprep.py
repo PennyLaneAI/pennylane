@@ -223,7 +223,7 @@ class PrepSelPrep(Operation):
 
 def _prepselprep_resources(op_reps, num_control):
     prod_reps = tuple(
-        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
+        resource_rep(Prod, resources={abstractify(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     return {
         change_op_basis_resource_rep(

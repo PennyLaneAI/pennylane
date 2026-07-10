@@ -32,7 +32,6 @@ import pennylane as qp
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
@@ -715,12 +714,12 @@ def _rz_to_ry_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
             qp.RY,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={adjoint_resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
         ): 1
     }

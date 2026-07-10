@@ -263,23 +263,17 @@ class TestSelect:
 
         assert resource_obj.num_gates == 3
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
-
-        kwargs22 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 2}
-        kwargs21 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 1}
-        kwargs10 = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 0}
-
         if partial:
             expected_counts = {
-                c_resource(base_class=qp.X, **kwargs22): 1,
-                c_resource(base_class=qp.X, **kwargs10): 1,
-                c_resource(base_class=qp.SWAP, **kwargs10): 1,
+                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
+                _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=0): 1,
+                _ctrl_abstract(qp.SWAP, Wire[1], num_zero_control_values=0): 1,
             }
         else:
             expected_counts = {
-                c_resource(base_class=qp.X, **kwargs22): 1,
-                c_resource(base_class=qp.X, **kwargs21): 1,
-                c_resource(base_class=qp.SWAP, **kwargs21): 1,
+                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
+                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=1): 1,
+                _ctrl_abstract(qp.SWAP, Wire[2], num_zero_control_values=1): 1,
             }
         assert resource_obj.gate_counts == expected_counts
 
