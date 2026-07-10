@@ -321,6 +321,34 @@ def test_convert_predicate_to_bool():
     assert jaxpr.eqns[2].invars[1].aval.dtype == jax.numpy.bool
 
 
+def test_no_predicate_for_else_branch():
+    """Test that the else branch does not have a Literal True predicate."""
+
+    def w(pred0, pred1):
+        @qp.cond(pred0)
+        def f():
+            return 1
+
+        @f.else_if(pred1)
+        def _elif():
+            return 2
+
+        @f.otherwise
+        def _else():
+            return 3
+
+        return f()
+
+    jaxpr = jax.make_jaxpr(w)(True, False)
+
+    assert jaxpr.eqns[0].primitive == cond_prim
+    cond_eqn = jaxpr.eqns[0]
+    assert len(cond_eqn.invars) == 2
+    assert len(cond_eqn.params["jaxpr_branches"]) == 3
+    assert isinstance(cond_eqn.invars[0], jax._src.core.Var)
+    assert isinstance(cond_eqn.invars[1], jax._src.core.Var)
+
+
 def test_keyword_argument():
     """Test that keyword arguments are treated as traceable inputs."""
 
