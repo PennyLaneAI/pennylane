@@ -1239,7 +1239,8 @@ class CNOT(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, unused-argument
+    def compute_matrix(wires: WiresLike = None):  
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
