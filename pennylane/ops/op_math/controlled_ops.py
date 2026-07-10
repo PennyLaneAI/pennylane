@@ -1226,9 +1226,6 @@ class CNOT(Controlled2):
         super().__abstract_init__(
             base=qp.X(Wire[1]),
             control_wires=Wire[1],
-            control_values=[1],
-            work_wires=None,
-            work_wire_type="borrowed",
         )
 
     def adjoint(self):
@@ -1387,10 +1384,8 @@ class Toffoli(Controlled2):
         super().__init__(base, control_wires)
 
     @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
-        self,
-        wires: WiresLike
-    ):
+    # pylint: disable=too-many-arguments,arguments-differ
+    def __abstract_init__(self, wires: WiresLike):
         super().__abstract_init__(qp.X(Wire[1]), Wire[2])
 
     def __repr__(self):
