@@ -48,7 +48,7 @@ def test_resources():
     expected = {
         qp.resource_rep(qp.BasisEmbedding, num_wires=num_wires): 1,
         qp.resource_rep(qp.RZ): n_layers * num_wires,
-        qp.resource_rep(qp.CNOT): 2 * (num_wires - 1) * n_layers,
+        qp.CNOT: 2 * (num_wires - 1) * n_layers,
         qp.resource_rep(qp.CRX): (num_wires - 1) * n_layers,
     }
     assert expected == rule.compute_resources(n_layers=n_layers, num_wires=num_wires).gate_counts
