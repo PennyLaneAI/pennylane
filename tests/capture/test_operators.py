@@ -172,16 +172,10 @@ def test_different_wires(w, as_kwarg, autograph):
 
     jaxpr = jax.make_jaxpr(qfunc)()
 
-    if isinstance(w, jax.numpy.ndarray) and w.shape != ():
-        offset = 1
-    else:
-        offset = 0
+    assert len(jaxpr.eqns) == 1
 
-    assert len(jaxpr.eqns) == 1 + offset
-
-    eqn = jaxpr.eqns[offset + 0]
+    eqn = jaxpr.eqns[0]
     assert eqn.primitive == operator_p
-    assert eqn.params["op_cls"] is qp.X
     assert len(eqn.invars) == 1
     if not isinstance(w, jax.numpy.ndarray):
         assert isinstance(eqn.invars[0], jax.extend.core.Literal)
@@ -190,13 +184,17 @@ def test_different_wires(w, as_kwarg, autograph):
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-    assert eqn.params == {"n_wires": 1}
+    assert eqn.params == {
+        "op_cls": qp.X,
+        "wire_lens": (1,),
+        "hybrid_lens": (),
+        "hybrid_trees": (),
+        "n_ctrls": 0,
+        "adjoint": False,
+    }
 
-    with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-    assert len(q) == 1
-    qp.assert_equal(q.queue[0], qp.X(0))
+    op = eqn.primitive.impl(*(invar.val for invar in eqn.invars), **eqn.params)
+    qp.assert_equal(op, qp.X(0))
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
@@ -392,21 +390,16 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(qp.adjoint)(qp.X(0))
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is qp.X
-
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Adjoint._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == operator_p
+        assert eqn.params["op_cls"] is qp.X
+        assert eqn.params["adjoint"] is True
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {}
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.adjoint(qp.X(0)))
+        reconstructed = eqn.primitive.impl(0, **eqn.params)
+        qp.assert_equal(reconstructed, qp.adjoint(qp.X(0)))
 
     def test_adjoint_op_outside_qfunc(self):
         """Test that an op can be constructed outside a function and still be adjointed."""
@@ -418,15 +411,13 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is qp.X
-
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Adjoint._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == operator_p
+        assert eqn.params["op_cls"] is qp.X
+        assert eqn.params["adjoint"] is True
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {}
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
     def test_controlled_with_non_int_control_wires(self):
         """Tests that controlled works with non int control wires."""
@@ -443,15 +434,15 @@ class TestOpmath:
         assert base_eqn.params["op_cls"] is qp.X
 
         ctrl_eqn = cjaxpr.eqns[1]
-        assert ctrl_eqn.primitive == qp.ops.Controlled._primitive
-        assert ctrl_eqn.invars[0] == base_eqn.outvars[0]
-        assert ctrl_eqn.invars[1] == cjaxpr.jaxpr.invars[0]
+        assert ctrl_eqn.primitive == qp.CNOT._primitive
+        assert ctrl_eqn.invars[0] == cjaxpr.jaxpr.invars[0]
+        assert ctrl_eqn.invars[1].val == 0
 
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(cjaxpr.jaxpr, cjaxpr.consts, jax.numpy.array(1))
 
         assert len(q) == 1
-        expected = qp.ctrl(qp.X(0), control=1)
+        expected = qp.CNOT(wires=[1, 0])
         qp.assert_equal(q.queue[0], expected)
 
     def test_Controlled(self):

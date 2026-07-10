@@ -316,7 +316,10 @@ class TestIntegration:
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
-        assert inner_jaxpr.eqns[1].primitive.name == "Adjoint"
+        adjoint_eqn = inner_jaxpr.eqns[0]
+        assert adjoint_eqn.primitive.name == "operator"
+        assert adjoint_eqn.params["op_cls"] is qp.X
+        assert adjoint_eqn.params["adjoint"] is True
 
     def test_adjoint_of_operator_type(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
@@ -332,7 +335,9 @@ class TestIntegration:
         assert adjoint_transform.primitive.name == "adjoint_transform"
         jaxpr_inside_adjoint = adjoint_transform.params["jaxpr"]
         assert len(jaxpr_inside_adjoint.eqns) == 1
-        assert jaxpr_inside_adjoint.eqns[0].primitive.name == "PauliX"
+        op_eqn = jaxpr_inside_adjoint.eqns[0]
+        assert op_eqn.primitive.name == "operator"
+        assert op_eqn.params["op_cls"] is qp.X
 
     def test_adjoint_no_argument(self):
         """Test that passing no argument to qp.adjoint raises an error."""
@@ -404,7 +409,7 @@ class TestIntegration:
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
-        assert inner_jaxpr.eqns[2].primitive.name == "Controlled"
+        assert inner_jaxpr.eqns[2].primitive.name == "CNOT"
 
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""
@@ -421,7 +426,9 @@ class TestIntegration:
         assert ctrl_transform.primitive.name == "ctrl_transform"
         jaxpr_inside_ctrl = ctrl_transform.params["jaxpr"]
         assert len(jaxpr_inside_ctrl.eqns) == 1
-        assert jaxpr_inside_ctrl.eqns[0].primitive.name == "PauliX"
+        op_eqn = jaxpr_inside_ctrl.eqns[0]
+        assert op_eqn.primitive.name == "operator"
+        assert op_eqn.params["op_cls"] is qp.X
 
     def test_ctrl_no_argument(self):
         """Test that passing no argument to qp.ctrl raises an error."""
