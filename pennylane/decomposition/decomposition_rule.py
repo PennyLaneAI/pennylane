@@ -416,7 +416,6 @@ class DecompositionRule:
         exact_resources: bool = True,
         name: str = "",
     ):
-
         self._impl = func
 
         try:
@@ -644,7 +643,7 @@ _decompositions_private = defaultdict(DecompCollection)
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::

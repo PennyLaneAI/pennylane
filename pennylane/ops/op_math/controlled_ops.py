@@ -26,6 +26,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qp
+from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,
@@ -1714,42 +1715,54 @@ class MultiControlledX(Controlled2):
         return qp.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
 
-def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
-    if num_control_wires == 1:
-        return {qp.CNOT: 1, qp.X: num_zero_control_values}
-    return {qp.Toffoli: 1, qp.X: num_zero_control_values * 2}
+def _mcx_to_cnot_or_toffoli_resource(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
+    # Assume worst case when control_values are all zero
+    # which requires additional PauliX gates to flip the control state
+    if len(wires) - 1 == 1:
+        return {qp.CNOT: 1, qp.X: 1}
+    return {qp.Toffoli: 1, qp.X: 2}
 
 
 @register_condition(lambda num_control_wires, **_: num_control_wires < 3)
-@register_resources(_mcx_to_cnot_or_toffoli_resource)
-def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
-    if len(wires) == 2 and not control_values[0]:
+@register_resources(_mcx_to_cnot_or_toffoli_resource, exact=False)
+def _mcx_to_cnot_or_toffoli(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
+    # Case 1: Decompose to single CNOT
+    if len(wires) == 2:
         qp.CNOT(wires=wires)
-        qp.X(wires[1])
-    elif len(wires) == 2:
-        qp.CNOT(wires=wires)
+        qp.cond(control_values[0], qp.X)(wires[1])
+    # Case 2: Decompose to Toffoli
     elif len(wires) == 3:
-        zero_control_wires = [
-            w for w, val in zip(control_wires, control_values, strict=True) if not val
-        ]
-        for w in zero_control_wires:
-            qp.PauliX(w)
+        control_wires = wires[:-1]
+
+        @qp.for_loop(0, len(control_values))
+        def _x_flips(i):
+            qp.cond(math.logical_not(control_values[i]), qp.X)(control_wires[i])
+
+        _x_flips()
         qp.Toffoli(wires=wires)
-        for w in zero_control_wires:
-            qp.PauliX(w)
+        _x_flips()
 
 
 def _2cx_elbow_explicit_resources(**__):
     return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(qp.Elbow): 1}
 
 
-def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
-    return num_work_wires >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
+def _2cx_elbow_explicit_condition(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
+    num_control_wires = len(wires) - 1
+    return len(work_wires) >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
 
 
 @register_condition(_2cx_elbow_explicit_condition)
 @register_resources(_2cx_elbow_explicit_resources)
-def _2cx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
+def _2cx_elbow_explicit(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
     elbow_wires = [wires[0], wires[1], work_wires[0]]
     qp.Elbow(elbow_wires, control_values)
     qp.CNOT([work_wires[0], wires[2]])
