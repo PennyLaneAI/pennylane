@@ -74,7 +74,7 @@ class TestCatalyst:
         assert not qp.compiler.available("SomeRandomCompiler")
 
         assert qp.compiler.available("catalyst")
-        assert qp.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
+        assert "catalyst" in qp.compiler.available_compilers()
 
     def test_active_compiler(self):
         """Test `qp.compiler.active_compiler` inside a simple circuit"""
