@@ -291,9 +291,8 @@ class CondCallable:
 
         cond_prim = _get_cond_qfunc_prim()
 
-        # consts go after the len(branches) +1 conditions, first const at len(branches) +1
-        # +1 due to `True` inserted for otherwise_fn
-        end_const_ind = len(self.branch_fns)  # + 1
+        # consts go after the len(branches) conditions
+        end_const_ind = len(self.branch_fns)
         conditions = []
         jaxpr_branches = []
         consts = []
@@ -302,12 +301,13 @@ class CondCallable:
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
         for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
             # otherwise_fn does not have a pred
-            pred = self.preds[i] if i < len(self.preds) else None  # True
+            is_otherwise = i == len(self.preds)
             fn = _no_return(_fn)
             if i == 0:
                 flat_true_fn = FlatFn(fn)
                 fn = flat_true_fn
-            if pred is not None:
+            if not is_otherwise:
+                pred = self.preds[i]
                 if (pred_shape := math.shape(pred)) != ():
                     raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
                 if getattr(pred, "dtype", None) != jax.numpy.bool:
