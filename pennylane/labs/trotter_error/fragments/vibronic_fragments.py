@@ -158,8 +158,11 @@ def _mode_frags(
 
     _, alphas, betas = taylor_coeffs
 
+    for i, j in product(range(states), range(modes)):
+        betas[i, i, j, j] += freqs[j]/2
+
     quadratic_frags = [
-        _mode_quadratic(states, modes, index, betas, freqs)
+        _mode_quadratic(states, modes, index, betas)
         for index in product(range(modes), repeat=2)
     ]
     linear_frags = [_mode_linear(states, modes, index, alphas) for index in range(modes)]
@@ -172,14 +175,14 @@ def _mode_frags(
     return frags
 
 
-def _mode_quadratic(states, modes, index, betas, omegas) -> tuple[RealspaceMatrix, np.ndarray]:
+def _mode_quadratic(states, modes, index, betas) -> tuple[RealspaceMatrix, np.ndarray]:
     m1, m2 = index
 
     frag = RealspaceMatrix.zero(states, modes)
     mat = np.zeros((states, states))
 
     for i, j in product(range(states), repeat=2):
-        h = betas[i, j, m1, m2] + (omegas[i] / 2 if i == j else 0)
+        h = betas[i, j, m1, m2]
 
         if np.isclose(h, 0):
             continue

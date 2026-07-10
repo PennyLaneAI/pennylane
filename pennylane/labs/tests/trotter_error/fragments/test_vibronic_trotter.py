@@ -38,12 +38,11 @@ def _vibronic_hamiltonian(states, modes, freqs, taylor_coeffs):
     return sum(frags, RealspaceMatrix.zero(states, modes))
 
 
-def test_vibronic_fragments():
+@pytest.mark.parametrize("states", range(1, 6))
+@pytest.mark.parametrize("modes", range(1, 6))
+def test_vibronic_fragments(states, modes):
     """Test that vibronic_fragments returns ``RealspaceMatrix`` objects with the correct number of
     states and modes."""
-    states = 5
-    modes = 5
-
     freqs = np.random.random(modes)
     lambdas = np.random.random(size=(states, states))
     alphas = np.random.random(size=(states, states, modes))
@@ -58,11 +57,10 @@ def test_vibronic_fragments():
         assert frag.modes == modes
 
 
-def test_frag_schemes_equal():
+@pytest.mark.parametrize("states", range(1, 6))
+@pytest.mark.parametrize("modes", range(1, 6))
+def test_frag_schemes_equal(states, modes):
     """Test the two fragmentation schemes sum to the same Hamiltonian"""
-    states = 1
-    modes = 1
-
     freqs = np.random.random(modes)
     lambdas = np.random.random(size=(states, states))
     alphas = np.random.random(size=(states, states, modes))
@@ -71,14 +69,14 @@ def test_frag_schemes_equal():
 
     frags_og = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="og")
     ham_og = sum(frags_og, RealspaceMatrix.zero(states, modes))
+    mat_og = ham_og.matrix(2)
 
     frags_mode = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="mode")
     ham_mode = sum(frags_mode, RealspaceMatrix.zero(states, modes))
+    mat_mode = ham_mode.matrix(2)
 
-    print(ham_og.matrix(2))
-    print(ham_mode.matrix(2))
-
-    assert np.allclose(ham_og.matrix(2), ham_mode.matrix(2))
+    assert mat_og.shape == mat_mode.shape
+    assert np.allclose(mat_og, mat_mode)
 
 
 def test_mode_based_fragments():
