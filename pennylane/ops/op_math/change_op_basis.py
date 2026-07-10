@@ -23,8 +23,9 @@ from functools import reduce
 
 from pennylane import capture, math
 from pennylane.core import queuing
-from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.operator import Operator, Operator2
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -270,18 +271,9 @@ class ChangeOpBasis(CompositeOp):
     @handle_recursion_error
     def resource_params(self):
         resources = {}
-        if isinstance(self[2], Operator2):
-            resources["compute_op"] = abstractify(self[2])
-        else:
-            resources["compute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
-        if isinstance(self[1], Operator2):
-            resources["target_op"] = abstractify(self[1])
-        else:
-            resources["target_op"] = resource_rep(type(self[1]), **self[1].resource_params)
-        if isinstance(self[0], Operator2):
-            resources["uncompute_op"] = abstractify(self[0])
-        else:
-            resources["uncompute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
+        resources["compute_op"] = _abstractify(self[2])
+        resources["target_op"] = _abstractify(self[1])
+        resources["uncompute_op"] = _abstractify(self[0])
         return resources
 
     grad_method = None

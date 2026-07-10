@@ -27,10 +27,11 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops, pytrees
+from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -692,19 +693,14 @@ class QSVT(Operation):
 
 def _QSVT_resources(projectors, UA):
     resources = defaultdict(int)
-    resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] = 1
+    resources[_abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
-        resources[
-            change_op_basis_resource_rep(
-                resource_rep(type(UA), **UA.resource_params),
-                resource_rep(type(projectors[i]), **projectors[i].resource_params),
-            )
-        ] += 1
-        resources[resource_rep(type(projectors[i + 1]), **projectors[i + 1].resource_params)] += 1
+        resources[change_op_basis_resource_rep(_abstractify(UA), _abstractify(projectors[i]))] += 1
+        resources[_abstractify(projectors[i + 1])] += 1
 
     if len(projectors) % 2 == 0:
-        resources[resource_rep(type(UA), **UA.resource_params)] += 1
-        resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] += 1
+        resources[_abstractify(UA)] += 1
+        resources[_abstractify(projectors[0])] += 1
 
     return dict(resources)
 

@@ -31,6 +31,7 @@ from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import adjoint_resource_rep, resource_rep
+from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow import Pow
@@ -251,7 +252,7 @@ class Prod(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = dict(Counter(qp.resource_rep(type(op), **op.resource_params) for op in self))
+        resources = dict(Counter(_abstractify(op) for op in self))
         return {"resources": resources}
 
     _op_symbol = "@"

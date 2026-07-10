@@ -17,6 +17,7 @@
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
@@ -350,7 +351,7 @@ class TestControlledResourceRep:
 
         # Also verify consistency with the resource_rep path (from actual ops)
         actual_op = qp.ctrl(qp.BasisEmbedding(features=1, wires=[0, 1, 2]), control=3)
-        from_actual = resource_rep(type(actual_op), **actual_op.resource_params)
+        from_actual = _abstractify(actual_op)
         assert rep == from_actual
 
     def test_controlled_resource_rep_flatten(self):

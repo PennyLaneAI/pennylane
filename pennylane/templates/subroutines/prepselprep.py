@@ -15,7 +15,6 @@
 Contains the PrepSelPrep template.
 """
 
-# pylint: disable=arguments-differ
 import copy
 
 from pennylane import math
@@ -27,6 +26,9 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+
+# pylint: disable=arguments-differ
+from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -90,7 +92,7 @@ class PrepSelPrep(Operation):
     @property
     def resource_params(self):
         ops = self.lcu.terms()[1]
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        op_reps = tuple(_abstractify(op) for op in ops)
         return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None

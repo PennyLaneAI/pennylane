@@ -29,6 +29,7 @@ from typing import overload
 import pennylane as qp
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
+from pennylane.decomposition.decomposition_graph import _abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
@@ -1082,7 +1083,7 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
             continue
         if isinstance(_op, qp.allocation.Deallocate):
             continue
-        op_rep = resource_rep(_op.__class__, **_op.resource_params)
+        op_rep = _abstractify(_op)
         actual_gate_counts[op_rep] += 1
 
     return dict(actual_gate_counts), dict(allocations)

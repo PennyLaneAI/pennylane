@@ -30,6 +30,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -277,7 +278,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
     basis_op_resources1 = defaultdict(
         int,
         {
-            resource_rep(ops.X): 1,
+            ops.X(Wire[1]): 1,
             adjoint_resource_rep(QFT, {"num_wires": num_x_wires}): 1,
             adjoint_resource_rep(ops.PhaseShift): num_x_wires,
         },
@@ -288,7 +289,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         {
             resource_rep(ops.PhaseShift): num_x_wires,
             resource_rep(QFT, num_wires=num_x_wires): 1,
-            resource_rep(ops.X): 1,
+            ops.X(Wire[1]): 1,
         },
     )
 

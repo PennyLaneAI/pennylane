@@ -26,6 +26,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -218,7 +219,7 @@ def _temporary_and_resources():
         },
     )
     return {
-        resource_rep(ops.X): _number_xs,
+        ops.X(Wire[1]): _number_xs,
         change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
         adjoint_resource_rep(ops.S, {}): 1,
     }

@@ -64,7 +64,7 @@ class TestInitialization:
 
         resources = S.compute_resources(0.5, wires=0)
         expected = defaultdict(int)
-        expected[qp.resource_rep(qp.RX)] = 1
+        expected[resource_rep(qp.RX)] = 1
         assert resources == expected
 
     def test_wire_argnames(self):
@@ -165,7 +165,7 @@ def Example1SetupInputs(x, y, reg1, reg2, pauli_words):
 
 def Example1Resources(x, y, reg1, reg2, pauli_words):
     return {
-        qp.resource_rep(qp.PauliRot, pauli_word=pw): num for pw, num in Counter(pauli_words).items()
+        resource_rep(qp.PauliRot, pauli_word=pw): num for pw, num in Counter(pauli_words).items()
     }
 
 
@@ -217,9 +217,9 @@ def test_fallback_creating_resources_AbstractArray():
 
     resources = f.compute_resources({"a": p}, w, "Z")
     expected = defaultdict(int)
-    expected[qp.resource_rep(qp.PauliRot, pauli_word="Z")] = 3
+    expected[resource_rep(qp.PauliRot, pauli_word="Z")] = 3
 
-    r = qp.resource_rep(
+    r = resource_rep(
         qp.MultiControlledX,
         num_control_wires=2,
         num_zero_control_values=0,
