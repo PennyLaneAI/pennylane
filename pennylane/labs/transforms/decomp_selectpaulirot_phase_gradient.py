@@ -29,7 +29,6 @@ from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
 from .decomp_rz_phase_gradient import validate_phase_gradient_wires
-from ...ops.op_math.adjoint2 import _adjoint
 
 
 # pylint: disable=too-many-arguments
@@ -231,7 +230,11 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 )
             case "Y":
                 comp_rep = resource_rep(
-                    Prod, resources={abstractify(qp.Hadamard): 1, _adjoint_abstract(qp.S): 1}
+                    Prod,
+                    resources={
+                        resource_rep(qp.Hadamard): 1,
+                        _adjoint_abstract(qp.S(Wire[1])): 1,
+                    },
                 )
                 uncomp_rep = resource_rep(
                     Prod, resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1}
