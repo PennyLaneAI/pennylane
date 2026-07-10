@@ -57,6 +57,9 @@ Circuit construction utilities
     ~create_random_gates
     ~generate_pauli_observables
 
+Workflows
+~~~~~~~~~~
+
 
 The following examples demonstrate several of the key workflows supported by this module.
 
