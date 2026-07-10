@@ -28,6 +28,7 @@ from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math import Prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
