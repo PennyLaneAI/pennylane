@@ -633,7 +633,6 @@ class TestMeasurementQROM:
         rng = np.random.default_rng(42 + L)
         n_target = 3
 
-        # Aseguramos que existan al menos 1 wire de control y 1 de trabajo para L=1 y L=2
         n_input = max(1, math.ceil(math.log2(L)))
         n_work = max(1, n_input - 1)
 
