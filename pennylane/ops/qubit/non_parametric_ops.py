@@ -846,7 +846,7 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
         return {qp.CY: 1}
     return {
         qp.S: 1,
-        adjoint_resource_rep(qp.S): 1,
+        _adjoint(qp.S): 1,
         controlled_resource_rep(
             qp.X,
             {},
@@ -1162,7 +1162,7 @@ def _controlled_z_decomp(*_, wires, control_wires, work_wires, work_wire_type, *
 add_decomps("C(PauliZ)", flip_zero_control(_controlled_z_decomp))
 
 
-class S(Operation):
+class S(Operator2):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -1180,9 +1180,15 @@ class S(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -1215,13 +1221,9 @@ class S(Operation):
             return f"S('{wire}')"
         return f"S({wire})"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     @lru_cache
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1241,7 +1243,7 @@ class S(Operation):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_eigvals(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1265,29 +1267,6 @@ class S(Operation):
         """
         return np.array([1, 1j])
 
-    @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.S.decomposition`.
-
-        Args:
-            wires (Any, Wires): Single wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.S.compute_decomposition(0))
-        [PhaseShift(1.5707963267948966, wires=[0])]
-
-        """
-        return [qp.PhaseShift(np.pi / 2, wires=wires)]
-
     def pow(self, z: int | float) -> list[qp.operation.Operator]:
         z_mod4 = z % 4
         pow_map = {
@@ -1301,12 +1280,12 @@ class S(Operation):
         )
 
 
-def _s_phaseshift_resources():
+def _s_phaseshift_resources(wires: WiresLike = None):
     return {qp.PhaseShift: 1}
 
 
 @register_resources(_s_phaseshift_resources)
-def _s_phaseshift(wires, **__):
+def _s_phaseshift(wires: WiresLike, **__):
     qp.PhaseShift(np.pi / 2, wires=wires)
 
 
