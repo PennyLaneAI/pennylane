@@ -442,7 +442,7 @@ def _ry_to_rz_cliff_resources():
             qp.RZ,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
         ): 1
     }
@@ -983,7 +983,7 @@ def _cphase_to_ppr_resource(num_control_wires, **_):
         resource_rep(qp.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
         for i in range(1, num_control_wires + 2)
     }
-    resources[qp.GlobalPhase] = 1
+    resources[abstractify(qp.GlobalPhase)] = 1
     return resources
 
 

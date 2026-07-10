@@ -29,7 +29,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -281,7 +281,7 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
         qp.H: 2,
         qp.RY: 2,
         _ctrl_abstract(
-            qp.X,
+            abstractify(qp.X),
             Wire[num_control_wires],
             Wire[num_work_wires],
             work_wire_type,
@@ -844,9 +844,9 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
         return {qp.CY: 1}
     return {
         qp.S: 1,
-        _adjoint_abstract(qp.S): 1,
+        _adjoint_abstract(abstractify(qp.S)): 1,
         _ctrl_abstract(
-            qp.X,
+            abstractify(qp.X),
             Wire[num_control_wires],
             Wire[num_work_wires],
             work_wire_type,

@@ -16,7 +16,6 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 import copy
 
 import numpy as np
@@ -27,6 +26,8 @@ from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
+
+# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires

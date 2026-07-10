@@ -226,10 +226,10 @@ def _basic_entangler_resources(repeat, num_wires, rotation):
     resources = {abstractify(rotation): repeat * num_wires}
 
     if num_wires == 2:
-        resources[CNOT] = repeat
+        resources[abstractify(CNOT)] = repeat
 
     elif num_wires > 2:
-        resources[CNOT] = repeat * num_wires
+        resources[abstractify(CNOT)] = repeat * num_wires
 
     return resources
 

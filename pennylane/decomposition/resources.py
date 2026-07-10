@@ -23,6 +23,7 @@ from functools import cached_property
 
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
 from .utils import to_name
 
@@ -111,7 +112,7 @@ class CompressedResourceOp:
 AbstractOperatorLike = CompressedResourceOp | Operator2
 
 
-@abstractify.register(CompressedResourceOp)
+@abstractify.register
 def _abstractify_resource_rep(op_rep: CompressedResourceOp):
     return op_rep
 

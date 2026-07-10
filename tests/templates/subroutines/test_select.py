@@ -15,7 +15,6 @@
 Tests for the Select template.
 """
 
-# pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import copy
 
 import numpy as np
@@ -23,6 +22,7 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane import abstractify
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -31,6 +31,9 @@ from pennylane.templates.subroutines.select import (
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
+from pennylane.typing import Wire
+
+# pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 from pennylane.typing import Wire
 
 

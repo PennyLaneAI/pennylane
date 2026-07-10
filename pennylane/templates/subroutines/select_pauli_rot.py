@@ -14,6 +14,7 @@
 r"""
 Contains the SelectPauliRot template.
 """
+from collections import defaultdict
 
 from pennylane import math
 from pennylane.core.operator import Operation, abstractify
@@ -197,12 +198,18 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
     if rot_axis == "X":
         return {
             change_op_basis_resource_rep(
-                Hadamard, resource_rep(Prod, resources=prod_res), Hadamard
+                Hadamard,
+                resource_rep(Prod, resources=defaultdict(int, prod_res)),
+                Hadamard,
             ): 1,
         }
 
-    prod_rep1 = resource_rep(Prod, resources={abstractify(Hadamard): 1, _adjoint_abstract(S): 1})
-    prod_rep2 = resource_rep(Prod, resources={abstractify(S): 1, abstractify(Hadamard): 1})
+    prod_rep1 = resource_rep(
+        Prod, resources=defaultdict(int, {abstractify(Hadamard): 1, _adjoint_abstract(S): 1})
+    )
+    prod_rep2 = resource_rep(
+        Prod, resources=defaultdict(int, {abstractify(S): 1, abstractify(Hadamard): 1})
+    )
 
     return {
         change_op_basis_resource_rep(

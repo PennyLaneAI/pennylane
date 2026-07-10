@@ -353,12 +353,18 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
     resources = defaultdict(
         int,
         {
-            RX: n_features * (repeat + 1),
-            H: (num_wires - n_features) * (repeat + 1),
-            resource_rep(MultiRZ, num_wires=2): multi_rz_count,
-        },
+            abstractify(RX): n_features * (repeat + 1),
+            abstractify(H): (num_wires - n_features) * (repeat + 1),
+        }
     )
+
     resources[abstractify(local_field)] += num_wires * repeat
+
+    if num_wires == 2:
+        resources[resource_rep(MultiRZ, num_wires=2)] = repeat
+    elif num_wires > 2:
+        resources[resource_rep(MultiRZ, num_wires=2)] = num_wires * repeat
+
     return resources
 
 

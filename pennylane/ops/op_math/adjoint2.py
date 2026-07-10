@@ -222,7 +222,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
 
 
 def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
-    op = abstractify(op)
+    if isinstance(op, type):
+        op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
     return qp.adjoint(op)

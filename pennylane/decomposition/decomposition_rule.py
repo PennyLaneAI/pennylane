@@ -33,7 +33,7 @@ from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, auto_wrap
 from .utils import to_name
 
 

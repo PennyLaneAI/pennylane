@@ -29,7 +29,16 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import (
+    BasisState,
+    H,
+    Prod,
+    X,
+    adjoint,
+    change_op_basis,
+    ctrl,
+    prod,
+)
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike

@@ -21,8 +21,12 @@ from functools import reduce
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.operator import Operation, abstractify
+from pennylane.decomposition import (
+    add_decomps,
+    register_resources,
+    resource_rep,
+)
 from pennylane.math import expand_matrix
 from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
 from pennylane.typing import TensorLike
@@ -149,7 +153,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
             )
         ] = 1
 
-    resources[Hadamard] = 2 * num_wires
+    resources[abstractify(Hadamard)] = 2 * num_wires
 
     for gate in pattern:
         for gen in gate:

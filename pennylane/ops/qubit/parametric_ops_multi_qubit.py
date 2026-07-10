@@ -17,7 +17,6 @@ This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
 
-# pylint: disable=arguments-differ
 import functools
 from collections import Counter
 from operator import matmul
@@ -35,6 +34,8 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
+
+# pylint: disable=arguments-differ
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import FlatPytree, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike

@@ -769,7 +769,9 @@ def _ctrl_single_work_wire_resource(
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         ): 1,
-        _ctrl_abstract(qp.X, Wire[len(control_wires)], Wire[len(work_wires)], work_wire_type): 2,
+        _ctrl_abstract(
+            abstractify(qp.X), Wire[len(control_wires)], Wire[len(work_wires)], work_wire_type
+        ): 2,
     }
 
 
@@ -793,7 +795,8 @@ def _ctrl_abstract(
     work_wire_type: str = "borrowed",
     num_zero_control_values: int = 0,
 ):
-    op = abstractify(op)
+    if isinstance(op, type):
+        op = abstractify(op)
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(

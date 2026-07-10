@@ -495,10 +495,11 @@ def _ctrl_prod_resources(
     **_,
 ):
     factor_reps = base_params["resources"]
+    tand_rep = abstractify(qp.TemporaryAND)
 
     resources = Counter()
-    resources[qp.TemporaryAND] += num_control_wires - 1
-    resources[_adjoint_abstract(qp.TemporaryAND)] += num_control_wires - 1
+    resources[tand_rep] += num_control_wires - 1
+    resources[_adjoint_abstract(tand_rep)] += num_control_wires - 1
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():

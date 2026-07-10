@@ -382,6 +382,7 @@ def _zeroed_signed_out_multiplier_resources(
     Computes the resources for the SignedOutMultiplier.
     """
     resources = defaultdict(int)
+
     resources[
         controlled_resource_rep(
             Incrementer,
@@ -414,10 +415,9 @@ def _zeroed_signed_out_multiplier_resources(
             num_control_wires=1,
         )
     ] += 2
-    resources[CNOT] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
-    # Convert to a builtin dict so downstream lookups of missing gates
-    # don't accidentally insert them with a value of 0
-    return dict(resources)
+    resources[CNOT] += 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
+
+    return resources
 
 
 def _not_zeroed_signed_out_multiplier_resources(

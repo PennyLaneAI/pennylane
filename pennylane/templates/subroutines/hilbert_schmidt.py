@@ -432,7 +432,10 @@ def _hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {Hadamard: num_first_range * 2, CNOT: min(num_first_range, num_second_range) * 2}
+        {
+            abstractify(Hadamard): num_first_range * 2,
+            abstractify(CNOT): min(num_first_range, num_second_range) * 2,
+        }
     )
 
     for op_rep in u_reps:
@@ -453,7 +456,10 @@ def _local_hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {Hadamard: num_first_range + 1, CNOT: min(num_first_range, num_second_range) + 1}
+        {
+            abstractify(Hadamard): num_first_range + 1,
+            abstractify(CNOT): min(num_first_range, num_second_range) + 1,
+        }
     )
 
     for op_rep in u_reps:
