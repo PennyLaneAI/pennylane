@@ -15,7 +15,7 @@ r"""
 This module contains features to enable Train Classical, Deploy Quantum (TCDQ) workflows.
 
 The supported workflows include fast optimization of instantaneous quantum polynomial (IQP) circuits and their extensions.
-See [arXiv:2501.04776](https://arxiv.org/abs/2501.04776) and [arXiv:2607.06675](https://arxiv.org/abs/2607.06675) for theoretical details.
+See `arXiv:2501.04776 <https://arxiv.org/abs/2501.04776>`_ and `arXiv:2607.06675 <https://arxiv.org/abs/2607.06675>`_ for theoretical details.
 
 .. currentmodule:: pennylane.labs.tcdq
 
