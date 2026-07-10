@@ -42,6 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
+from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -1136,7 +1137,7 @@ add_decomps("Adjoint(CCZ)", self_adjoint)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
-class CNOT(ControlledOp):
+class CNOT(Controlled2):
     r"""CNOT(wires)
     The controlled-NOT operator
 
@@ -1180,6 +1181,10 @@ class CNOT(ControlledOp):
 
     """
 
+    wire_argnames = ("wires",)
+    arg_specs = {"wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -1193,22 +1198,23 @@ class CNOT(ControlledOp):
 
     name = "CNOT"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
     def __init__(self, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.X, wires=wires[1:])
         super().__init__(base, wires[:1])
+
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ, unused-argument
+        self, wires: WiresLike
+    ):
+        super().__abstract_init__(
+            base=type.__call__(qp.X, wires=Wire[1]),
+            control_wires=Wire[1],
+            control_values=[1],
+            work_wires=None,
+            work_wire_type="borrowed",
+        )
 
     def adjoint(self):
         return CNOT(self.wires)
@@ -1239,16 +1245,14 @@ class CNOT(ControlledOp):
         """
         raise qp.operation.DecompositionUndefinedError
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(
+        wires: WiresLike = None,
+    ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1318,7 +1322,7 @@ add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
-class Toffoli(ControlledOp):
+class Toffoli(Controlled2):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
 
@@ -1371,6 +1375,10 @@ class Toffoli(ControlledOp):
 
     """
 
+    wire_argnames = ("wires",)
+    arg_specs = {"wires": Wire[3]}
+    wire_sizes = (3,)
+
     num_wires = 3
     """int: Number of wires that the operator acts on."""
 
@@ -1384,17 +1392,6 @@ class Toffoli(ControlledOp):
 
     name = "Toffoli"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, _, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=3)
-
     def __init__(self, wires):
         control_wires = wires[:2]
         target_wires = wires[2:]
@@ -1403,19 +1400,29 @@ class Toffoli(ControlledOp):
         base = type.__call__(qp.X, wires=target_wires)
         super().__init__(base, control_wires)
 
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ, unused-argument
+        self, wires: WiresLike
+    ):
+        super().__abstract_init__(
+            base=type.__call__(qp.X, wires=Wire[1]),
+            control_wires=Wire[2],
+            control_values=[1, 1],
+            work_wires=None,
+            work_wire_type="borrowed",
+        )
+
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return Toffoli(self.wires)
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(
+        wires: WiresLike = None,
+    ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
