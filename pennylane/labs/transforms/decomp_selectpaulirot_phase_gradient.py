@@ -19,16 +19,14 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operator, abstractify
-from pennylane.decomposition import (
-    change_op_basis_resource_rep,
-    controlled_resource_rep,
-    resource_rep,
-)
+from pennylane.decomposition import change_op_basis_resource_rep, resource_rep
 from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
 # pylint: disable=too-many-branches
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
 from .decomp_rz_phase_gradient import validate_phase_gradient_wires
@@ -202,15 +200,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         # 2. ctrl(X, control=target_wire, control_values=[0])
         #    -> Controlled X with 1 control, 1 zero-ctrl
-        ctrl_x_rep = controlled_resource_rep(
-            qp.X, base_params={}, num_control_wires=1, num_zero_control_values=1
-        )
+        ctrl_x_rep = _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=1)
 
         # 3. Prod: MUST be a dict {CompressedResourceOp: count}
-        prod_res = {
-            ctrl_x_rep: len(phase_grad_wires),
-            qrom_rep: 1,
-        }
+        prod_res = {ctrl_x_rep: len(phase_grad_wires), qrom_rep: 1}
         prod_rep = resource_rep(Prod, resources=prod_res)
 
         # 4. SemiAdder as the target_op
@@ -238,18 +231,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 )
             case "Y":
                 comp_rep = resource_rep(
-                    Prod,
-                    resources={
-                        abstractify(qp.Hadamard): 1,
-                        _adjoint_abstract(abstractify(qp.S)): 1,
-                    },
+                    Prod, resources={abstractify(qp.Hadamard): 1, _adjoint_abstract(qp.S): 1}
                 )
                 uncomp_rep = resource_rep(
-                    Prod,
-                    resources={
-                        abstractify(qp.S): 1,
-                        abstractify(qp.Hadamard): 1,
-                    },
+                    Prod, resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1}
                 )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
                     comp_rep, change_basis_rep, uncomp_rep

@@ -984,7 +984,7 @@ def _cphase_to_ppr_resource(num_control_wires, **_):
         resource_rep(qp.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
         for i in range(1, num_control_wires + 2)
     }
-    resources[abstractify(qp.GlobalPhase)] = 1
+    resources[qp.GlobalPhase] = 1
     return resources
 
 

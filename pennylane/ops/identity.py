@@ -22,7 +22,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import CVObservable, Operation, abstractify
+from pennylane.core.operator import CVObservable, Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -488,11 +488,7 @@ def _controlled_g_phase_resource(
 
     return {
         qp.X: num_zero_control_values * 2,
-        _ctrl_abstract(
-            abstractify(qp.PhaseShift),
-            Wire[num_control_wires - 1],
-            Wire[num_work_wires],
-        ): 1,
+        _ctrl_abstract(qp.PhaseShift, Wire[num_control_wires - 1], Wire[num_work_wires]): 1,
     }
 
 
