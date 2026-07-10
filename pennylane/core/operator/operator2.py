@@ -1677,12 +1677,6 @@ def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, 
         else:
             hybrid_mask.append(False)
 
-    if len(hybrid_mask) != len(leaves):
-        raise RuntimeError(
-            "forward_mask length does not match flattened hybrid leaves. "
-            f"Expected {len(leaves)} entries, got {len(hybrid_mask)}."
-        )
-
     return leaves, tree, hybrid_mask
 
 
