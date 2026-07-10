@@ -14,7 +14,7 @@
 """
 Contains the 'label' function for customizing operator labels.
 """
-from pennylane.ops.op_math import SymbolicOp2
+
 # pylint: disable=unused-argument
 
 from pennylane.core.operator import Operator
@@ -28,7 +28,7 @@ from pennylane.ops.functions.equal import (
 from pennylane.ops.op_math import SymbolicOp
 
 
-class LabelledOp(SymbolicOp2):
+class LabelledOp(SymbolicOp):
     """Creates a labelled operator.
 
     Args:
@@ -48,10 +48,6 @@ class LabelledOp(SymbolicOp2):
 
     """
 
-    hybrid_argnames = ("base",)
-    static_argnames = ("custom_label",)
-    wire_argnames = ()
-
     resource_keys = {"base_class", "base_params"}
 
     @property
@@ -68,10 +64,16 @@ class LabelledOp(SymbolicOp2):
         return cls(data[0], **hyperparams_dict)
 
     def __init__(self, base: Operator, custom_label: str):
-        super().__init__(base, custom_label)
+        super().__init__(base)
+        self.hyperparameters["custom_label"] = custom_label
 
     def __repr__(self):
         return f'LabelledOp({self.base}, custom_label="{self.custom_label}")'
+
+    @property
+    def custom_label(self) -> str:
+        """Retrieve the custom label set on this operator."""
+        return self.hyperparameters["custom_label"]
 
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         """Retrieve the label for this operator.
@@ -105,7 +107,7 @@ def _resources(base_class, base_params):
 
 
 @register_resources(_resources)
-def _custom_label_decomp(*params, base, **_):
+def _custom_label_decomp(*params, wires, base, **_):
     apply(base)
 
 
