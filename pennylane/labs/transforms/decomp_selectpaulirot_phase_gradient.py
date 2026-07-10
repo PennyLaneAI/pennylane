@@ -30,6 +30,7 @@ from pennylane.wires import WireError, Wires
 
 from .decomp_rz_phase_gradient import validate_phase_gradient_wires
 from ...ops.op_math.adjoint2 import _adjoint
+from ...typing import Wire
 
 
 # pylint: disable=too-many-arguments
