@@ -948,6 +948,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Added an example to the documentation of :func:`~.to_openqasm` showing how to use the ``wires``
+  argument to preserve the wire ordering of the original circuit.
+  [(#9824)](https://github.com/PennyLaneAI/pennylane/pull/9824)
+
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
   [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
 
@@ -1080,6 +1084,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Aly Abouzaid,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
