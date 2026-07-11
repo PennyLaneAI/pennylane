@@ -146,3 +146,7 @@ If you are doing research using PennyLane, please cite [our paper](https://arxiv
 ## License
 
 PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
+
+---
+
+*[Mukller](https://github.com/Mukller)*
