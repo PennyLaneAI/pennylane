@@ -19,6 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
@@ -27,7 +28,6 @@ from pennylane.gradients.parameter_shift import (
     _make_zero_rep,
     _put_zeros_in_pdA2_involutory,
 )
-from pennylane.measurements.shots import Shots
 
 # Constants for TestEvaluateGradient
 # Coefficients and expectation values
@@ -606,7 +606,7 @@ class TestParamShift:
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_no_trainable_params_tape(self, broadcast):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -629,7 +629,7 @@ class TestParamShift:
         assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         dev = qp.device("default.qubit", wires=2)
 

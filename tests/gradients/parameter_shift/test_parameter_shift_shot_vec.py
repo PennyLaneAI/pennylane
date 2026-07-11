@@ -22,8 +22,8 @@ from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.shots import Shots
 from pennylane.gradients import param_shift
-from pennylane.measurements import Shots
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
@@ -103,7 +103,7 @@ class TestParamShift:
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_no_trainable_params_tape(self, broadcast):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         shot_vec = default_shot_vector
         dev = qp.device("default.qubit", wires=2)
@@ -130,7 +130,7 @@ class TestParamShift:
             assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         shot_vec = default_shot_vector
         dev = qp.device("default.qubit", wires=2)
@@ -559,12 +559,14 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
-    def test_Rot_gradient(self, mocker, theta, shift, broadcast):
+    def test_Rot_gradient(
+        self, mocker, theta, shift, broadcast, seed
+    ):  # pylint: disable=too-many-arguments
         """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
 
         shot_vec = tuple([1000000] * 2)
-        dev = qp.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1, seed=seed)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qp.queuing.AnnotatedQueue() as q:

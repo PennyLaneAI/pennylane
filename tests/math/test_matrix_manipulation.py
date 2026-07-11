@@ -945,6 +945,45 @@ class TestPartialTrace:
         assert qp.math.allclose(result, expected)
 
     @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_single_density_matrix_qutrit(self, ml_framework, c_dtype):
+        """Test partial trace on a single density matrix."""
+        # Define a 2-qutrit density matrix
+        rho = np.zeros((9, 9))
+        rho[0, 0] = 1
+        rho = qp.math.asarray(rho, like=ml_framework)
+
+        # Expected result after tracing out the second qubit
+        expected = qp.math.asarray(
+            np.array([[[1, 0, 0], [0, 0, 0], [0, 0, 0]]], dtype=c_dtype), like=ml_framework
+        )
+
+        # Perform the partial trace
+        result = qp.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype, qudit_dim=3)
+        assert qp.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_batched_density_matrices_qutrit(self, ml_framework, c_dtype):
+        """Test partial trace on a batch of density matrices."""
+        # Define a batch of 2-qutrit density matrices
+        rho = np.zeros((2, 9, 9))
+        rho[0, 0, 0] = 1
+        rho[1, 1, 1] = 1
+        rho = qp.math.asarray(rho, like=ml_framework)
+
+        # Expected result after tracing out the first qubit for each matrix
+        expected = qp.math.asarray(
+            np.array(
+                [[[1, 0, 0], [0, 0, 0], [0, 0, 0]], [[1, 0, 0], [0, 0, 0], [0, 0, 0]]],
+                dtype=c_dtype,
+            ),
+            like=ml_framework,
+        )
+
+        # Perform the partial trace
+        result = qp.math.quantum.partial_trace(rho, [1], c_dtype=c_dtype, qudit_dim=3)
+        assert qp.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_over_no_wires(self, ml_framework, c_dtype):
         """Test that tracing over no wires returns the original matrix."""
         # Define a 2-qubit density matrix
@@ -1299,7 +1338,7 @@ class TestConvertToSUMatrices:
         """Tests the conversion of a simple matrix to SU(2)"""
 
         matrix = _random_unitary(size)
-        su, phase = converter(matrix, return_global_phase=True)
+        su, phase = converter(matrix)
         self._assert_correct(matrix, su, phase)
 
     def test_batched(self, size, converter):
@@ -1307,7 +1346,7 @@ class TestConvertToSUMatrices:
 
         matrices = [_random_unitary(size) for _ in range(3)]
         matrices = np.stack(matrices)
-        sus, phases = converter(matrices, return_global_phase=True)
+        sus, phases = converter(matrices)
         assert qp.math.shape(sus) == (3, size, size)
         assert qp.math.shape(phases) == (3,)
         for matrix, su2, phase in zip(matrices, sus, phases):

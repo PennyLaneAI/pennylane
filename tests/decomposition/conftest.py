@@ -22,10 +22,10 @@ import pennylane as qp
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
     pow_involutory,
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
-    qjit_compatible_self_adjoint,
+    pow_rotation,
+    self_adjoint,
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
@@ -33,16 +33,12 @@ from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _contro
 decompositions = defaultdict(list)
 
 
-def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
+def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources(
-        {auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
-        (
-            sum(count for gate, count in gate_count.items())
-            if weighted_cost is None
-            else weighted_cost
-        ),
-    )
+    if weighted_cost is None:
+        weighted_cost = sum(count for count in gate_count.values())
+    gate_count = {auto_wrap(op): count for op, count in gate_count.items() if count >= 0}
+    return Resources(gate_count, weighted_cost=weighted_cost)
 
 
 @qp.register_resources({qp.Hadamard: 2, qp.CNOT: 1})
@@ -161,10 +157,10 @@ decompositions["CRot"] = [_crot]
 decompositions["C(PauliX)"] = [_controlled_x_decomp]
 decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
 decompositions["C(Hadamard)"] = [_controlled_hadamard]
-decompositions["Adjoint(Hadamard)"] = [qjit_compatible_self_adjoint]
+decompositions["Adjoint(Hadamard)"] = [self_adjoint]
 decompositions["Pow(Hadamard)"] = [pow_involutory]
-decompositions["Adjoint(RX)"] = [qjit_compatible_adjoint_rotation]
-decompositions["Pow(RX)"] = [qjit_compatible_pow_rotation]
-decompositions["Adjoint(CNOT)"] = [qjit_compatible_self_adjoint]
-decompositions["Adjoint(PhaseShift)"] = [qjit_compatible_adjoint_rotation]
-decompositions["Adjoint(ControlledPhaseShift)"] = [qjit_compatible_adjoint_rotation]
+decompositions["Adjoint(RX)"] = [adjoint_rotation]
+decompositions["Pow(RX)"] = [pow_rotation]
+decompositions["Adjoint(CNOT)"] = [self_adjoint]
+decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]
+decompositions["Adjoint(ControlledPhaseShift)"] = [adjoint_rotation]

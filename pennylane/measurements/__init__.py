@@ -14,11 +14,75 @@
 r"""
 This module contains all the measurements supported by PennyLane.
 
+
+Overview
+--------
+
+Top-level measurement functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :mod:`~pennylane.measurements` functions for creating standard PennyLane measurement
+processes are top-level imports:
+
+.. autosummary::
+
+    ~pennylane.classical_shadow
+    ~pennylane.counts
+    ~pennylane.density_matrix
+    ~pennylane.expval
+    ~pennylane.measure
+    ~pennylane.mutual_info
+    ~pennylane.probs
+    ~pennylane.purity
+    ~pennylane.sample
+    ~pennylane.shadow_expval
+    ~pennylane.state
+    ~pennylane.var
+    ~pennylane.vn_entropy
+
+
+Core Infrastructure
+^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.core.measurements
+
+.. autosummary::
+    :toctree: api
+
+    ~MeasurementProcess
+    ~StateMeasurement
+    ~SampleMeasurement
+    ~MeasurementTransform
+
+
+Measurement Classes
+^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.measurements
+
+.. autosummary::
+    :toctree: api
+
+    ~ClassicalShadowMP
+    ~CountsMP
+    ~DensityMatrixMP
+    ~ExpectationMP
+    ~MutualInfoMP
+    ~NullMeasurement
+    ~ProbabilityMP
+    ~PurityMP
+    ~SampleMP
+    ~ShadowExpvalMP
+    ~StateMP
+    ~VarianceMP
+    ~VnEntropyMP
+
 Description
 -----------
 
 Measurements
-~~~~~~~~~~~~
+^^^^^^^^^^^^
+
 The :class:`MeasurementProcess` class serves as a base class for measurements, and is inherited
 from by the :class:`SampleMeasurement`, :class:`StateMeasurement` and :class:`MeasurementTransform`
 classes. These classes are subclassed to implement measurements in PennyLane.
@@ -137,7 +201,7 @@ obtained of a given state:
 .. code-block:: python
 
     import pennylane as qp
-    from pennylane.measurements import SampleMeasurement
+    from pennylane.core.measurements import SampleMeasurement
 
     class CountState(SampleMeasurement):
         def __init__(self, state: str):
@@ -158,7 +222,7 @@ obtained of a given state:
 
 .. note::
 
-    The ``__copy__`` method needs to be overriden when new arguments are added into the ``__init__``
+    The ``__copy__`` method needs to be overridden when new arguments are added into the ``__init__``
     method.
 
 The measurement process in this example uses the :func:`~pennylane.counts` function, which is a
@@ -266,25 +330,26 @@ You can find more about Pennylane standards in the guidelines on :doc:`/developm
 """
 
 from pennylane.exceptions import MeasurementShapeError
-
-from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
-from .counts import CountsMP, counts
-from .expval import ExpectationMP, expval
-from .measurements import (
+from pennylane.core.shots import Shots, ShotCopies, ShotsLike
+from pennylane.core.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
 )
+
+from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
+from .counts import CountsMP, counts
+from .expval import ExpectationMP, expval
 from .mutual_info import MutualInfoMP, mutual_info
 from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import ShotCopies, Shots, ShotsLike, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
+from .shots import add_shots
 
 
 # pylint: disable=import-outside-toplevel

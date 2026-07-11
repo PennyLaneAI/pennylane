@@ -15,11 +15,15 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
+import copy
+import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math, pytrees, queuing
+from pennylane import capture, math, pytrees
+from pennylane.core import queuing
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -33,20 +37,42 @@ from pennylane.exceptions import (
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operator
 from pennylane.ops.op_math import adjoint, ctrl, prod
 
 from .composite import CompositeOp, handle_recursion_error
 
 
-def _apply_op_or_func(op_or_func):
-    if isinstance(op_or_func, Callable):
-        try:
-            op_or_func()
-        except TypeError as e:
+def _validate_callable(func: Callable) -> None:
+    """Validates that a callable has no unbound mandatory parameters."""
+    sig = inspect.signature(func)
+
+    for param in sig.parameters.values():
+        # The function,
+        #
+        # def f(*args, **kwargs):
+        #     pass
+        #
+        # technically doesn't have any required parameters.
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
+
+        # If param has no default we can early exit
+        if param.default is inspect.Parameter.empty:
             raise TypeError(
-                "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
-            ) from e
+                "change_op_basis requires that Callable inputs have no unbound mandatory parameters. Please use functools.partial to bind them."
+            )
+
+
+def _apply_op_or_func(op_or_func):
+    if callable(op_or_func):
+        _validate_callable(op_or_func)
+        op_or_func()
+    elif isinstance(op_or_func, Operator2):
+        # NOTE: An Operator2 built outside the trace context has no equation
+        # so we need to emit one.
+        if op_or_func.tracer is None:
+            # pylint: disable-next=protected-access
+            op_or_func._bind_primitive()
     elif isinstance(op_or_func, Operator):
         type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
     elif math.is_abstract(op_or_func):
@@ -58,13 +84,9 @@ def _apply_op_or_func(op_or_func):
 
 
 def _convert_to_prod(op_or_func):
-    if isinstance(op_or_func, Callable):
-        try:
-            return prod(op_or_func)()
-        except TypeError as e:
-            raise TypeError(
-                "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
-            ) from e
+    if callable(op_or_func):
+        _validate_callable(op_or_func)
+        return prod(op_or_func)()
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(
@@ -123,9 +145,9 @@ def change_op_basis(
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤  State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    0: ──H──────╭●────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
 
     A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
     function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
@@ -155,8 +177,8 @@ def change_op_basis(
         circuit3 = qp.decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
-    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤  State
-    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤  State
+    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
+    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤ ╰State
 
     .. warning::
 
@@ -173,6 +195,14 @@ def change_op_basis(
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
             _apply_op_or_func(uncompute_op)
+        elif isinstance(compute_op, Operator2):
+            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
+            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
+            # we can feed a copy of the op to adjoint and detach its tracer as if it was
+            # removed from the jaxpr.
+            dummy = copy.copy(compute_op)
+            dummy.tracer = None
+            _apply_op_or_func(adjoint(dummy))
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:

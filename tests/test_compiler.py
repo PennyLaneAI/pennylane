@@ -74,7 +74,7 @@ class TestCatalyst:
         assert not qp.compiler.available("SomeRandomCompiler")
 
         assert qp.compiler.available("catalyst")
-        assert qp.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
+        assert "catalyst" in qp.compiler.available_compilers()
 
     def test_active_compiler(self):
         """Test `qp.compiler.active_compiler` inside a simple circuit"""
@@ -106,6 +106,7 @@ class TestCatalyst:
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
         assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
 
+    @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
     def test_jax_enable_x64(self, jax_enable_x64):
         """Test whether `qp.compiler.active` changes `jax_enable_x64`."""

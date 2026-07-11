@@ -939,7 +939,7 @@ class TestToBloqDecomposition:
         ],
     )
     def test_build_call_graph(self, op, qp_call_graph):
-        """ "Tests that the defined call_graphs match the expected decompostions"""
+        """ "Tests that the defined call_graphs match the expected decompositions"""
         bloq_call_graph = {}
 
         for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
@@ -1499,7 +1499,7 @@ class TestToBloqEstimator:
         ],
     )
     def test_build_call_graph(self, op, qp_call_graph):
-        """ "Tests that the defined call_graphs match the expected decompostions"""
+        """ "Tests that the defined call_graphs match the expected decompositions"""
         bloq_call_graph = {}
 
         for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)

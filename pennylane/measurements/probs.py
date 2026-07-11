@@ -21,15 +21,15 @@ from collections.abc import Sequence
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import SampleMeasurement, StateMeasurement
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import LinearCombination, MeasurementValue
 from pennylane.ops.qubit.observables import Hermitian
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .counts import CountsMP
-from .measurements import SampleMeasurement, StateMeasurement
 
 
 class ProbabilityMP(SampleMeasurement, StateMeasurement):

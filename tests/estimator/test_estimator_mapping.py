@@ -24,8 +24,8 @@ import pennylane.estimator as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane.core.operator import Operation
 from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
-from pennylane.operation import Operation
 
 # pylint: disable= no-self-use,too-few-public-methods
 
@@ -174,7 +174,9 @@ class TestMapToResourceOp:
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.IQP(weights=[0.1, 0.2], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False),
+                qtemps.IQP(
+                    weights=[0.1, 0.2], wires=range(2), pattern=[[[0]], [[1]]], spin_sym=False
+                ),
                 re_temps.IQP(num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False, wires=[0, 1]),
             ),
             (

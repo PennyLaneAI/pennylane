@@ -23,17 +23,17 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     StateMP,
     VarianceMP,
     expval,
 )
 from pennylane.ops.cv import PolyXP
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

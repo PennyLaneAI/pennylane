@@ -18,12 +18,12 @@ This module contains the qp.expval measurement.
 from collections.abc import Sequence
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.measurements import SampleMeasurement, StateMeasurement
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import I, MeasurementValue
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement
 from .probs import probs
 from .sample import SampleMP
 

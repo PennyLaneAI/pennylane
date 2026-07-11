@@ -18,7 +18,9 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=arguments-differ
 import copy
 
-from pennylane import math, ops
+from pennylane import ops
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -27,16 +29,13 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.operation import Operator
 from pennylane.ops import pow as qp_pow
-from pennylane.queuing import QueuingManager
-from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
 from .qft import QFT
 
 
-class QuantumPhaseEstimation(ErrorOperation):
+class QuantumPhaseEstimation(Operation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -228,35 +227,6 @@ class QuantumPhaseEstimation(ErrorOperation):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
 
-    def error(self):
-        """The QPE error computed from the spectral norm error of the input unitary operator.
-
-        **Example**
-
-        >>> class CustomOP(qp.resource.ErrorOperation):
-        ...    def error(self):
-        ...       return qp.resource.SpectralNormError(0.005)
-        >>> Op = CustomOP(wires=[0])
-        >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
-        >>> QPE.error()
-        SpectralNormError(0.075)
-
-        """
-        base_unitary = self._hyperparameters["unitary"]
-        if not isinstance(base_unitary, ErrorOperation):
-            return SpectralNormError(0.0)
-
-        unitary_error = base_unitary.error().error
-
-        sequence_error = math.array(
-            [unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)],
-            like=math.get_interface(unitary_error),
-        )
-
-        additive_error = math.sum(sequence_error)
-
-        return SpectralNormError(additive_error)
-
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
@@ -298,7 +268,7 @@ class QuantumPhaseEstimation(ErrorOperation):
         # pylint: disable=arguments-differ
         op_list = [ops.Hadamard(w) for w in estimation_wires]
         pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
-        op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
+        op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires, strict=True))
         op_list.append(ops.adjoint(QFT(wires=estimation_wires)))
 
         return op_list
