@@ -173,9 +173,9 @@ Once a program is created, individual transforms can be added to the program wit
     program.add_transform(qp.defer_measurements)
     program.add_transform(qp.transforms.split_non_commuting)
 
-    def supports_operation(op): 
+    def supports_operation(op):
         return getattr(op, "name", None) in operation_names
-        
+
     program.add_transform(decompose, stopping_condition=supports_operation, name="my_device")
     program.add_transform(qp.transforms.broadcast_expand)
 
@@ -194,7 +194,7 @@ classical component of any decompositions or compilation. For example,
 ...     return qp.expval(qp.X(0))
 >>> print(qp.draw(circuit, level="device")(0.5))
 0: ─╭●──RX(0.50)─╭●────────────╭●──RY(-1.57)─┤  <Z>
-1: ─╰X───────────╰X──RY(-0.79)─╰Z──RY(0.79)──┤     
+1: ─╰X───────────╰X──RY(-0.79)─╰Z──RY(0.79)──┤
 
 Allows the user to see that both ``IsingXX`` and ``CH`` are decomposed by the device, and that
 the diagonalizing gates for ``qp.expval(qp.X(0))`` are applied.
@@ -232,7 +232,7 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
-  
+
 Custom Device Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -249,15 +249,15 @@ can be specified like so:
 
     def stopping_condition(op):
         return op.name in {"CNOT", "RX", "RZ"}
-    
+
     program.add_transform(decompose, stopping_condition=stopping_condition, name="my_device")
 
 However, if the device native gate set is unreachable with the default decompositions defined in PennyLane,
 an error will be raised. In this case, you may need to override the decompositions of certain operators
-via the ``decomposer`` argument. 
+via the ``decomposer`` argument.
 
 For example, consider a device with ``RX``, ``RY`` and ``IsingXX`` as native gates but we want
-to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decomposition for ``CNOT`` 
+to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decomposition for ``CNOT``
 (e.g., ``custom_decomposer``) and pass it to the decomposer kwarg:
 
 .. code-block:: python
@@ -276,7 +276,7 @@ to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decom
                 qp.RY(-np.pi/2, wires=wires[1])
             ]
         return op.decomposition()
-    
+
     program.add_transform(
         decompose,
         stopping_condition=stopping_condition,
@@ -487,8 +487,8 @@ WireError: Cannot run circuit(s) of default.qubit as they contain wires not foun
 
 PennyLane wires can be any hashable object, where wire labels are distinguished by their equality and hash.
 If working with successive integers (``0``, ``1``, ``2``, ...) is preferred internally,
-the :meth:`~.QuantumScript.map_to_standard_wires` method can be used inside of 
-the :meth:`~.devices.Device.execute` method. The :class:`~.map_wires` transform can also 
+the :meth:`~.QuantumScript.map_to_standard_wires` method can be used inside of
+the :meth:`~.devices.Device.execute` method. The :class:`~.map_wires` transform can also
 map the wires of the submitted circuit to internal labels.
 
 Sometimes, hardware qubit labels cannot be arbitrarily mapped without a change in behaviour.
@@ -588,8 +588,8 @@ Note that these properties are only applicable to devices that provided derivati
 does not provide derivatives, you can safely ignore these properties.
 
 The workflow options are ``use_device_gradient``, ``use_device_jacobian_product``, ``grad_on_execution``,
-and ``convert_to_numpy``. 
-``use_device_gradient=True`` indicates that workflow should request derivatives from the device. 
+and ``convert_to_numpy``.
+``use_device_gradient=True`` indicates that workflow should request derivatives from the device.
 ``grad_on_execution=True`` indicates a preference to use ``execute_and_compute_derivatives`` instead
 of ``execute`` followed by ``compute_derivatives``. ``use_device_jacobian_product`` indicates
 a request to call ``compute_vjp`` instead of ``compute_derivatives``. Note that if ``use_device_jacobian_product``
@@ -615,7 +615,7 @@ For documentation on the expected result type output, please refer to :ref:`Retu
 
 The device API allows individual devices to calculate results in whatever way makes sense for
 the individual device. With this freedom over the implementation does come more responsibility
-to handle each stage in the process. 
+to handle each stage in the process.
 
 PennyLane does provide some helper functions to assist in executing
 circuits. Any ``StateMeasurement`` has ``process_state`` and ``process_density_matrix`` methods for
@@ -642,7 +642,7 @@ to squeeze out singleton dimensions when we have no shot vector or a single meas
         if tape.shots.has_partitioned_shots:
             results = results[0]
         return results
-    
+
 
 Device Modifiers
 ----------------
@@ -675,10 +675,13 @@ to handle a single circuit. See the documentation for each modifier for more det
  'simulations': [1],
  'executions': [1],
  'results': [0.0],
- 'resources': [Resources(num_wires=1, num_gates=1,
- gate_types=defaultdict(<class 'int'>, {'S': 1}),
- gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1,
- shots=Shots(total_shots=None, shot_vector=()))]}
+ 'resources': [SpecsResources(
+    gate_types={'S': 1},
+    gate_sizes={1: 1},
+    measurements={'expval(PauliX)': 1},
+    num_allocs=1,
+    depth=1)]
+}
 
 
 Device tracker support
@@ -723,7 +726,7 @@ If the device provides differentiation logic, we also recommend tracking the num
 number of execute and derivative batches, and number of derivatives.
 
 While this is the recommended usage, the ``update`` and ``record`` methods can be called at any location
-within the device. While the above example tracks executions, shots, and batches, the 
+within the device. While the above example tracks executions, shots, and batches, the
 :meth:`~pennylane.devices.Tracker.update` method can accept any combination of
 keyword-value pairs.  For example, a device could also track cost and a job ID via:
 

@@ -36,6 +36,7 @@ from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 from pennylane.workflow._capture_qnode import qnode_prim
 
 from .subroutine import quantum_subroutine_prim
+from .symbolic_array import _symbolic_array_primitive
 
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
@@ -51,12 +52,14 @@ while_loop_prim = _get_while_loop_qfunc_prim()
 measure_prim = _create_mid_measure_primitive()
 pauli_measure_prim = _create_pauli_measure_primitive()
 transform_prim = _create_transform_primitive()
+symbolic_array_prim = _symbolic_array_primitive()
 
 __all__ = [
     "AbstractOperator",
     "AbstractMeasurement",
     "adjoint_transform_prim",
     "ctrl_transform_prim",
+    "symbolic_array_prim",
     "jacobian_prim",
     "vjp_prim",
     "jvp_prim",
