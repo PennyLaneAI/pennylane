@@ -111,7 +111,7 @@ class CompressedResourceOp:
 AbstractOperatorLike = CompressedResourceOp | Operator2
 
 
-@abstractify.register
+@abstractify.register(CompressedResourceOp)
 def _abstractify_resource_rep(op_rep: CompressedResourceOp):
     return op_rep
 
