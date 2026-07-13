@@ -41,7 +41,9 @@ from pennylane.templates.subroutines import (
     CommutingEvolution,
     ControlledSequence,
     FermionicDoubleExcitation,
+    PrepSelPrep,
     QDrift,
+    Select,
     TrotterProduct,
 )
 from pennylane.typing import TensorLike
@@ -216,6 +218,23 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
 def bind_new_parameters_controlled_sequence(op: ControlledSequence, params: Sequence[TensorLike]):
     new_base = bind_new_parameters(op.base, params)
     return op.__class__(new_base, control=op.control)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_prep_sel_prep(op: PrepSelPrep, params: Sequence[TensorLike]):
+    new_lcu = bind_new_parameters(op.lcu, params)
+    return op.__class__(new_lcu, control=op.control)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_select(op: Select, params: Sequence[TensorLike]):
+    new_ops = []
+    for operand in op.ops:
+        operand_num_params = operand.num_params
+        new_ops.append(bind_new_parameters(operand, params[:operand_num_params]))
+        params = params[operand_num_params:]
+
+    return op.__class__(new_ops, control=op.control, work_wires=op.work_wires, partial=op.partial)
 
 
 @bind_new_parameters.register

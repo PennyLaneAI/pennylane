@@ -410,7 +410,8 @@ class Select(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires)
+        data = tuple(d for op in ops for d in op.data)
+        super().__init__(*data, wires=all_wires)
 
     def map_wires(self, wire_map: dict) -> "Select":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
@@ -420,32 +421,13 @@ class Select(Operation):
 
     def __copy__(self):
         """Copy this op"""
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-
-        new_data = copy.copy(self.data)
-
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
-
-        copied_op.data = new_data
-
-        return copied_op
-
-    @property
-    def data(self):
-        """Create data property"""
-        return tuple(d for op in self.ops for d in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        for op in self.ops:
-            op_num_params = op.num_params
-            if op_num_params > 0:
-                op.data = new_data[:op_num_params]
-                new_data = new_data[op_num_params:]
+        with QueuingManager.stop_recording():
+            return type(self)(
+                [copy.copy(op) for op in self.ops],
+                copy.copy(self.control),
+                work_wires=copy.copy(self.work_wires),
+                partial=self.partial,
+            )
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
