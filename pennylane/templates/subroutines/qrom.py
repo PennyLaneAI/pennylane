@@ -624,7 +624,7 @@ def _measurement_qrom_inner(controls, targets, bitstrings):
     if k <= 1:
         return
 
-    num_bits = math.ceil_log2(k)
+    num_bits = ceil_log2(k)
     needed = 2 * num_bits + 1
     controls = list(controls[:1]) + list(controls[-(needed - 1) :])
 
@@ -656,7 +656,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     power of two), so the middle split reduces to merging the close+open of
     the two halves into two CNOTs.
     """
-    a = math.ceil_log2(k)
+    a = ceil_log2(k)
     controls = list(controls[: 2 * a - 1])
 
     and_wires = controls[:3]
@@ -665,7 +665,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     k01 = 2 ** (a - 1)
     k0 = k1 = 2 ** (a - 2)
     l = k - k01
-    k2 = 2 ** (math.ceil_log2(l) - 1)
+    k2 = 2 ** (ceil_log2(l) - 1)
     k3 = k - k01 - k2
 
     # --- OPEN ---
@@ -718,7 +718,7 @@ def _count_tempAND_in_measurement_qrom(k):
 
     if k < 3:
         return 0
-    if k > 3 / 4 * 2 ** math.ceil_log2(k):
+    if k > 3 / 4 * 2 ** ceil_log2(k):
         return k - 3
     return k - 2
 
@@ -778,7 +778,7 @@ def _qrom_measurement_condition(
         num_bitstrings = base_params["num_bitstrings"]
         num_work_wires = base_params["num_work_wires"]
 
-    n_input = max(1, math.ceil_log2(num_bitstrings))
+    n_input = max(1, ceil_log2(num_bitstrings))
     if num_bitstrings <= 2:
         return True
     return num_work_wires >= n_input - 1
@@ -815,7 +815,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
 
     # TODO: allowing partial qrom will remove this padding
     # Pad data up to the next power of 2 with all-zero bitstrings
-    next_pow2 = 1 << math.ceil_log2(L)
+    next_pow2 = 1 << ceil_log2(L)
     if L < next_pow2:
         width = len(data[0])
         data = np.concatenate([data, np.zeros((next_pow2 - L, width), dtype=int)])
