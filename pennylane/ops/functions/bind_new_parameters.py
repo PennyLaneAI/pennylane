@@ -21,7 +21,7 @@ import copy
 from collections.abc import Sequence
 from functools import singledispatch
 
-from pennylane import ops
+from pennylane import capture, ops, queuing
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops import (
@@ -68,7 +68,9 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
     except (TypeError, ValueError):
         # operation is doing something different with its call signature.
         new_op = copy.deepcopy(op)
-        new_op.data = tuple(params)
+        setattr(new_op, "data", tuple(params))
+        if queuing.QueuingManager.recording() or capture.enabled():
+            return queuing.apply(new_op)
         return new_op
 
 
