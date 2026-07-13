@@ -22,7 +22,8 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator
+from pennylane.core import Operator2
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -194,11 +195,18 @@ class Pow(ScalarSymbolicOp):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params,
-            "z": self.z,
-        }
+        if isinstance(self.base, Operator2):
+            return {
+                "base_class": type(self.base),
+                "base_params": abstractify(self.base).arguments,
+                "z": self.z,
+            }
+        else:
+            return {
+                "base_class": type(self.base),
+                "base_params": self.base.resource_params,
+                "z": self.z,
+            }
 
     @property
     def z(self):
