@@ -23,6 +23,8 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import controlled_resource_rep
 from pennylane.wires import Wires
 
+from .partial_unary_fast import PUIsometryFinderFast
+
 
 class PUIsometryFinder:
     r"""Classical algorithm that finds the isometry circuit and bijection for
@@ -187,7 +189,7 @@ class PUIsometryFinder:
         """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - batch_size
-        self.circuit.append(("PUI", k_start, k))
+        self.circuit.append((0, k_start, k, 0, 0, 0))
 
         # Update tableau for PUI effect
         target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.n_subspace)
@@ -205,7 +207,8 @@ class PUIsometryFinder:
 
     def fanout(self, control: int, bits: np.ndarray):
         """Add a Fanout operation to the circuit ops and apply corresponding CNOTs to the tableau."""
-        self.circuit.append(("Fanout", control, np.delete(bits, control)))
+        target_int = 2 ** np.arange(len(bits) - 2, -1, -1) @ np.delete(bits, control)
+        self.circuit.append((1, control, target_int, 0, 0, 0))
         ctrl_bits = self.tableau[:, control].copy()
         target_bits = np.where(bits)[0]
         self.tableau[:, target_bits] ^= ctrl_bits[:, None]
@@ -213,12 +216,12 @@ class PUIsometryFinder:
 
     def toffoli(self, controls, control_values, target):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
-        self.circuit.append(("Toffoli", controls + [target], control_values))
+        self.circuit.append((3, *controls, target, *control_values))
         self.apply_multi_controlled_x(controls, np.array(control_values), target)
 
     def swap(self, w0, w1):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
-        self.circuit.append(("SWAP", [w0, w1]))
+        self.circuit.append((2, w0, w1, 0, 0, 0))
         self.tableau[:, [w0, w1]] = self.tableau[:, [w1, w0]]
 
     def _next_state_with_target_set(self, target_qubit):
@@ -628,8 +631,15 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         # be cheaper in terms of quantum resources used in the isometry circuit.
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
-    iso_finder = PUIsometryFinder(np.array(indices), len(wires))
+    iso_finder = PUIsometryFinderFast(np.array(indices), len(wires))
+    assert (
+        iso_finder.m <= 16
+    ), "This qjit-compatible variant of the code is not compatible with m>16. Got m={iso_finder.m}"
+    print(iso_finder.m)
+
+    print(f"Starting to find the isometry")
     circuit, bijection = iso_finder.find_isometry()
+    print(f"Done with finding the isometry")
 
     subspace_wires = Wires(wires[:n_subspace])
     nonsubspace_wires = Wires(wires[n_subspace:])
@@ -638,30 +648,233 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     dense_state = np.zeros(2**n_subspace, dtype=complex)
     ids = np.array([bijection[i] for i in range(len(coefficients))])
     dense_state[ids] = coefficients
-    qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+    # qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+
+    if qp.compiler.active():
+        circuit = qp.math.array(circuit, like="jax")
+        wires = qp.math.array(wires, like="jax")
+
+    print(f"{len(circuit)=}")
 
     # Step 2: Apply the inverse of the isometry circuit
-    for _type, *data in reversed(circuit):
-        if _type == "PUI":
-            k_start, k = data
+    # for _type, *data in reversed(circuit):
+    @qp.for_loop(len(circuit) - 1, -1, -1)
+    def main_loop(i):
+        data = circuit[i]
+
+        @qp.cond(data[0] == 0)
+        def branches():
+            k_start, k = data[1:3]
             qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires[: n_subspace - 1])
-            qp.BasisState(k_start, subspace_wires)
-            continue
-        if _type == "Fanout":
-            control, bits = data
-            qp.ctrl(qp.BasisState(bits, wires[:control] + wires[control + 1 :]), wires[control])
-            continue
 
-        ids = data[0]
-        _wires = [wires[idx] for idx in ids]
-        if _type == "SWAP":
+            @qp.cond(b == 1)
+            def qrom_branches():
+                qp.QROM(
+                    np.eye(1), subspace_wires, nonsubspace_wires[:1], work_wires[: n_subspace - 1]
+                )
+
+            if iso_finder.m > 1:
+
+                @qrom_branches.else_if(b == 2)
+                def b_equals_2():
+                    qp.QROM(
+                        np.eye(2),
+                        subspace_wires,
+                        nonsubspace_wires[:2],
+                        work_wires[: n_subspace - 1],
+                    )
+
+            if iso_finder.m > 2:
+
+                @qrom_branches.else_if(b == 3)
+                def b_equals_3():
+                    qp.QROM(
+                        np.eye(3),
+                        subspace_wires,
+                        nonsubspace_wires[:3],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 4)
+                def b_equals_4():
+                    qp.QROM(
+                        np.eye(4),
+                        subspace_wires,
+                        nonsubspace_wires[:4],
+                        work_wires[: n_subspace - 1],
+                    )
+
+            if iso_finder.m > 4:
+
+                @qrom_branches.else_if(b == 5)
+                def b_equals_5():
+                    qp.QROM(
+                        np.eye(5),
+                        subspace_wires,
+                        nonsubspace_wires[:5],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 6)
+                def b_equals_6():
+                    qp.QROM(
+                        np.eye(6),
+                        subspace_wires,
+                        nonsubspace_wires[:6],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 7)
+                def b_equals_7():
+                    qp.QROM(
+                        np.eye(7),
+                        subspace_wires,
+                        nonsubspace_wires[:7],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 8)
+                def b_equals_8():
+                    qp.QROM(
+                        np.eye(8),
+                        subspace_wires,
+                        nonsubspace_wires[:8],
+                        work_wires[: n_subspace - 1],
+                    )
+
+            if iso_finder.m > 8:
+
+                @qrom_branches.else_if(b == 9)
+                def b_equals_9():
+                    qp.QROM(
+                        np.eye(9),
+                        subspace_wires,
+                        nonsubspace_wires[:9],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 10)
+                def b_equals_10():
+                    qp.QROM(
+                        np.eye(10),
+                        subspace_wires,
+                        nonsubspace_wires[:10],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 11)
+                def b_equals_11():
+                    qp.QROM(
+                        np.eye(11),
+                        subspace_wires,
+                        nonsubspace_wires[:11],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 12)
+                def b_equals_12():
+                    qp.QROM(
+                        np.eye(12),
+                        subspace_wires,
+                        nonsubspace_wires[:12],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 13)
+                def b_equals_13():
+                    qp.QROM(
+                        np.eye(13),
+                        subspace_wires,
+                        nonsubspace_wires[:13],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 14)
+                def b_equals_14():
+                    qp.QROM(
+                        np.eye(14),
+                        subspace_wires,
+                        nonsubspace_wires[:14],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 15)
+                def b_equals_15():
+                    qp.QROM(
+                        np.eye(15),
+                        subspace_wires,
+                        nonsubspace_wires[:15],
+                        work_wires[: n_subspace - 1],
+                    )
+
+                @qrom_branches.else_if(b == 16)
+                def b_equals_16():
+                    qp.QROM(
+                        np.eye(16),
+                        subspace_wires,
+                        nonsubspace_wires[:16],
+                        work_wires[: n_subspace - 1],
+                    )
+
+            qrom_branches()
+            qp.BasisState(k_start, subspace_wires)
+
+        @branches.else_if(data[0] == 1)
+        def fanout():
+            control, target_int = data[1:3]
+
+            @qp.cond(control == 0)
+            def inner_fanout():
+                qp.ctrl(qp.BasisState(target_int, wires[1:]), wires[0])
+
+            @inner_fanout.else_if(control == 1)
+            def control_equals_1():
+                qp.ctrl(qp.BasisState(target_int, list(wires[:1]) + list(wires[2:])), wires[1])
+
+            @inner_fanout.else_if(control == 2)
+            def control_equals_2():
+                qp.ctrl(qp.BasisState(target_int, list(wires[:2]) + list(wires[3:])), wires[2])
+
+            @inner_fanout.else_if(control == 3)
+            def control_equals_3():
+                qp.ctrl(qp.BasisState(target_int, list(wires[:3]) + list(wires[4:])), wires[3])
+
+            @inner_fanout.else_if(control == 4)
+            def control_equals_4():
+                qp.ctrl(qp.BasisState(target_int, list(wires[:4]) + list(wires[5:])), wires[4])
+
+            @inner_fanout.else_if(control == 5)
+            def control_equals_5():
+                qp.ctrl(qp.BasisState(target_int, list(wires[:5]) + list(wires[6:])), wires[5])
+
+            @inner_fanout.else_if(control == 6)
+            def control_equals_6():
+                qp.ctrl(qp.BasisState(target_int, list(wires[:6]) + list(wires[7:])), wires[6])
+
+            @inner_fanout.else_if(control == 7)
+            def control_equals_7():
+                qp.ctrl(qp.BasisState(target_int, list(wires[:7]) + list(wires[8:])), wires[7])
+
+            inner_fanout()
+
+        @branches.else_if(data[0] == 2)
+        def swap():
+            _wires = [wires[idx] for idx in data[1:3]]
             qp.SWAP(_wires)
-        elif _type == "Toffoli":
-            qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
-        else:
-            raise NotImplementedError  # pragma: no cover
+
+        @branches.else_if(data[0] == 3)
+        def toffoli():
+            _wires = [wires[idx] for idx in data[1:4]]
+            qp.BasisState(data[4:], _wires[:2])
+            qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
+            qp.BasisState(data[4:], _wires[:2])
+
+        branches()
+        # else:
+        # raise NotImplementedError  # pragma: no cover
+
+    main_loop()  # pylint: disable=no-value-for-parameter
 
 
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
