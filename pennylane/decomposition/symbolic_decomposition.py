@@ -27,12 +27,7 @@ from pennylane.core.queuing import apply
 from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
-from .resources import (
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    pow_resource_rep,
-    resource_rep,
-)
+from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -302,7 +297,7 @@ def flip_zero_control_legacy(inner_decomp: DecompositionRule, name: str = "") ->
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[qp.X] = gate_counts.get(qp.X, 0) + num_x * 2
+        gate_counts[qp.X(Wire[1])] = gate_counts.get(qp.X(Wire[1]), 0) + num_x * 2
         return gate_counts
 
     # pylint: disable=protected-access

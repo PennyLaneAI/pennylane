@@ -400,11 +400,6 @@ class Operator2(metaclass=OperatorMeta):
         """Legacy Operator compatibility view of dynamic numerical arguments."""
         return tuple(self.arguments[name] for name in self.dynamic_argnames)
 
-    @data.setter
-    def data(self, new_data):
-        for name, d in zip(self.dynamic_argnames, new_data):
-            self.arguments[name] = d
-
     @property
     def parameters(self) -> list:
         """Legacy Operator compatibility view of dynamic numerical arguments as a list."""
