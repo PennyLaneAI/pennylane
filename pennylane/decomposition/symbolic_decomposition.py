@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core.operator import abstractify
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
@@ -186,15 +187,28 @@ def pow_rotation(phi, wires, base, z, **__):
     base._unflatten((phi * z,), struct)
 
 
-def _decompose_to_base_resource(base_class, base_params, **__):
+def _decomp_to_base_legacy_res(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_decompose_to_base_resource)
-def decompose_to_base(*params, wires, base, **__):
+@register_resources(_decomp_to_base_legacy_res)
+def decompose_to_base_legacy(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
     qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+
+
+self_adjoint_legacy: DecompositionRule = decompose_to_base_legacy
+
+
+def _decompose_to_base_resource(base):
+    return {abstractify(base): 1}
+
+
+@register_resources(_decompose_to_base_resource)
+def decompose_to_base(base):
+    """Decompose a symbolic operator to its base."""
+    qp.apply(base)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
