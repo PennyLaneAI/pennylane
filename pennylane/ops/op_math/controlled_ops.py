@@ -39,7 +39,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_involutory,
     pow_rotation,
-    self_adjoint,
+    self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import TensorLike
@@ -430,7 +430,7 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
-add_decomps("Adjoint(CH)", self_adjoint)
+add_decomps("Adjoint(CH)", self_adjoint_legacy)
 add_decomps("Pow(CH)", pow_involutory)
 
 
@@ -580,7 +580,7 @@ def _cy_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CY, _cy, _cy_to_ppr)
-add_decomps("Adjoint(CY)", self_adjoint)
+add_decomps("Adjoint(CY)", self_adjoint_legacy)
 add_decomps("Pow(CY)", pow_involutory)
 
 
@@ -721,7 +721,7 @@ def _cz_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
-add_decomps("Adjoint(CZ)", self_adjoint)
+add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
@@ -897,7 +897,7 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
-add_decomps("Adjoint(CSWAP)", self_adjoint)
+add_decomps("Adjoint(CSWAP)", self_adjoint_legacy)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
@@ -1134,7 +1134,7 @@ def _ccz_to_toffoli(wires: WiresLike, **__):
 
 
 add_decomps(CCZ, _ccz, _ccz_to_toffoli)
-add_decomps("Adjoint(CCZ)", self_adjoint)
+add_decomps("Adjoint(CCZ)", self_adjoint_legacy)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
@@ -1316,7 +1316,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
-add_decomps("Adjoint(CNOT)", self_adjoint)
+add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
@@ -1588,7 +1588,7 @@ def _toffoli_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
-add_decomps("Adjoint(Toffoli)", self_adjoint)
+add_decomps("Adjoint(Toffoli)", self_adjoint_legacy)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
@@ -1943,7 +1943,7 @@ add_decomps(
     decompose_mcx_with_no_worker,
     decompose_mcx_two_controls_elbows,
 )
-add_decomps("Adjoint(MultiControlledX)", self_adjoint)
+add_decomps("Adjoint(MultiControlledX)", self_adjoint_legacy)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
