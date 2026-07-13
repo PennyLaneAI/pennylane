@@ -20,7 +20,7 @@ import copy
 
 import numpy as np
 import pytest
-from operator2_utils import CompOp, DynOp, FullOp, HybridWireOp
+from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
@@ -2426,7 +2426,7 @@ class TestLegacyCompatibilityViews:
 
     def test_compilable_args_in_hyperparameters(self):
         """Test that compilable args appear in the legacy hyperparameter view."""
-        op = CompOp(n=3, wires=0)
+        op = CompilableOp(n=3, wires=0)
         assert op.hyperparameters == {"n": 3}
 
     def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
