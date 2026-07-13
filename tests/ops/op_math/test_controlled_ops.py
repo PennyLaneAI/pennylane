@@ -23,7 +23,7 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.core.operator.operator2 import operator_p
+from pennylane.core.operator.operator2 import Operator2, operator_p
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
 from pennylane.typing import AbstractWires, Wire
@@ -857,6 +857,7 @@ def test_cy_cz_are_operator2(op_type, base_type):
     assert op.control_wires == Wires([0])
     assert op.control_values == [True]
     assert qp.math.allclose(op_type.compute_matrix(wires=[0, 1]), op.matrix())
+    assert op_type.compute_decomposition is Operator2.compute_decomposition
 
 
 @pytest.mark.parametrize("op_type", [qp.CY, qp.CZ])

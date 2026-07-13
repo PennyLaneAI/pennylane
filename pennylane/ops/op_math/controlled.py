@@ -1061,6 +1061,10 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
+        if issubclass(custom_op_cls, Operator2):
+            with qp.QueuingManager.stop_recording():
+                custom_op = custom_op_cls(*op.data, op.wires)
+            return custom_op.decomposition()
         return custom_op_cls.compute_decomposition(*op.data, op.wires)
     if isinstance(op.base, pauli_x_based_ctrl_ops):
         # has some special case handling of its own for further decomposition

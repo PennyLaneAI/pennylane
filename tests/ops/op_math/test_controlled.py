@@ -1192,9 +1192,11 @@ class TestDecomposition:
         assert ctrl_op.decomposition() == expected
         assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
         assert custom_ctrl_op.decomposition() == expected
-        # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
-        # to test, just the controlled decompositions logic.
-        if base_cls not in (qp.GlobalPhase, qp.Identity):
+        # Operator2 custom controls use registered decomposition rules instead of defining
+        # `compute_decomposition`.
+        if base_cls not in (qp.GlobalPhase, qp.Identity) and not issubclass(
+            custom_ctrl_cls, Operator2
+        ):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
