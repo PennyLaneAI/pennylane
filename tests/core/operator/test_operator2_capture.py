@@ -264,6 +264,7 @@ class TestReconstruction:
 
         assert len(interpreted.eqns) == 1
         assert interpreted.eqns[0].primitive is operator_p
+        assert interpreted.eqns[0].params["op_cls"] is DynOp
 
     def test_simple_roundtrip(self):
         """Test that a simple operator round-trips through capture and evaluation."""
