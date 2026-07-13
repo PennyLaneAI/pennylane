@@ -32,6 +32,7 @@ from pennylane.exceptions import (
 )
 from pennylane.ops.identity import Identity
 
+from ...core import Operator2
 from .symbolicop import ScalarSymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
@@ -194,11 +195,18 @@ class Pow(ScalarSymbolicOp):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params,
-            "z": self.z,
-        }
+        if isinstance(self.base, Operator2):
+            return {
+                "base_class": type(self.base),
+                "base_params": {},
+                "z": self.z,
+            }
+        else:
+            return {
+                "base_class": type(self.base),
+                "base_params": self.base.resource_params,
+                "z": self.z,
+            }
 
     @property
     def z(self):
