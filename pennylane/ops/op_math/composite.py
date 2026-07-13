@@ -26,6 +26,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
@@ -49,6 +50,19 @@ def handle_recursion_error(func):
             ) from e
 
     return wrapper
+
+
+def _set_operand_data(op, new_data):
+    """Update a legacy composite operator's operand without mutating an Operator2."""
+    if isinstance(op, Operator2):
+        # Local import avoids a circular import while the operator modules are initialized.
+        from pennylane.ops.functions.bind_new_parameters import bind_new_parameters
+
+        with QueuingManager.stop_recording():
+            return bind_new_parameters(op, new_data)
+
+    op.data = new_data
+    return op
 
 
 class CompositeOp(Operator):
@@ -164,11 +178,16 @@ class CompositeOp(Operator):
     @data.setter
     def data(self, new_data):
         """Set the data property"""
+        operands = []
         for op in self:
             op_num_params = op.num_params
             if op_num_params > 0:
-                op.data = new_data[:op_num_params]
+                op = _set_operand_data(op, new_data[:op_num_params])
                 new_data = new_data[op_num_params:]
+            operands.append(op)
+
+        self.operands = tuple(operands)
+        self.hyperparameters["operands"] = self.operands
 
     @property
     def num_wires(self):

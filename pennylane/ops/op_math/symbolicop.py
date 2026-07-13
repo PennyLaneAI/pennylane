@@ -32,6 +32,18 @@ from pennylane.pytrees import flatten, unflatten
 from .composite import handle_recursion_error
 
 
+def _set_base_data(op, new_data):
+    """Update a legacy symbolic operator's base without mutating an Operator2."""
+    if isinstance(op.base, Operator2):
+        # Local import avoids a circular import while the operator modules are initialized.
+        from pennylane.ops.functions.bind_new_parameters import bind_new_parameters
+
+        with QueuingManager.stop_recording():
+            op.hyperparameters["base"] = bind_new_parameters(op.base, new_data)
+    else:
+        op.base.data = new_data
+
+
 class SymbolicOp(Operator):
     """Developer-facing base class for single-operator symbolic operators.
 
@@ -112,7 +124,7 @@ class SymbolicOp(Operator):
 
     @data.setter
     def data(self, new_data):
-        self.base.data = new_data
+        _set_base_data(self, new_data)
 
     @property
     def num_params(self):
@@ -218,7 +230,7 @@ class ScalarSymbolicOp(SymbolicOp):
     @data.setter
     def data(self, new_data):
         self.scalar = new_data[0]
-        self.base.data = new_data[1:]
+        _set_base_data(self, new_data[1:])
 
     @property
     @handle_recursion_error
