@@ -317,7 +317,7 @@ class PlxprInterpreter:
 
         """
         invals = (self.read(invar) for invar in eqn.invars)
-        if eqn.primitive is qp.capture.primitives.operator_p:
+        if eqn.primitive is operator_p:
             return eqn.primitive.bind(*invals, **eqn.params)
         with qp.QueuingManager.stop_recording():
             op = eqn.primitive.impl(*invals, **eqn.params)
