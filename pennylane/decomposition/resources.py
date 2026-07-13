@@ -567,9 +567,9 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
 
     if base_class is qp.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qp.CNOT)
+            return abstractify(qp.CNOT)
         if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
-            return resource_rep(qp.Toffoli)
+            return abstractify(qp.Toffoli)
         return resource_rep(
             qp.MultiControlledX,
             num_control_wires=num_control_wires,
