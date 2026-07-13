@@ -14,7 +14,7 @@
 r"""Resource operators for symbolic operations."""
 
 from functools import wraps
-from inspect import Signature, signature
+from inspect import signature
 from typing import Callable, Iterable
 
 import pennylane.labs.estimator_beta as qre
@@ -25,28 +25,26 @@ from pennylane.labs.estimator_beta import (
     ResourceOperator,
 )
 from pennylane.queuing import AnnotatedQueue, QueuingManager
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ
 
 
 def _generate_name(
-    func_name: str,
-    func_sig: Signature,
+    qfunc,
     include_params: Iterable[str] | None = None,
     *args,
     **kwargs,
 ):  # pylint: disable=keyword-arg-before-vararg
-    r"""Format a string representing the name of a function from its signature.
+    r"""Make a string representing the name of a function from its signature.
 
     Args:
-        func_name (str): the name of the function
-        func_sig (Signature): the function signature
+        qfunc (Calleable): the function to name
         include_params (Iterable[str] | None): An optional iterable of strings listing the
             parameters to include in the name.
 
     Returns:
-        str: formatted string representing the name of the function
+        str: the name of the function
 
     **Example**
 
@@ -72,6 +70,9 @@ def _generate_name(
     'my_func(arg1=10, kwarg1=b)'
 
     """
+    func_name = qfunc.__name__
+    func_sig = signature(qfunc)
+
     if include_params is None:
         return func_name
 
@@ -81,7 +82,11 @@ def _generate_name(
         param_kind = str(func_sig.parameters[param_name].kind)
         param_index = list(func_sig.parameters.keys()).index(param_name)
         if param_kind in ("KEYWORD_ONLY", "POSITIONAL_OR_KEYWORD"):
-            default_val = args[param_index] if param_index < len(args) else None
+            default_val = (
+                args[param_index]
+                if param_index < len(args)
+                else func_sig.parameters[param_name].default
+            )
             param_value = kwargs.get(param_name, default_val)
 
         elif param_kind == "VAR_POSITIONAL":
@@ -97,7 +102,9 @@ def _generate_name(
     return name
 
 
-def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None):
+def mark_subroutine(
+    qfunc: Callable, include_params: Iterable[str] | None = None, num_wires: int | None = None
+):
     r"""A decorator that can be used to promote a quantum function to a resource operator.
     This allows users to explicitly track counts of subroutines which have been implemented as
     quantum functions.
@@ -106,6 +113,8 @@ def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None
         qfunc (Callable): the quantum function representing the subroutine we wish to capture
         include_params (Iterable[str] | None): An optional iterable of strings listing the
             parameters to include in the name.
+        num_wires (int | None): An optional integer which asserts the number of total wires to prescribe
+            to this subroutine.
 
     Returns:
         Callable: A function which, when executed, returns a :class:`~.estimator.ResourceOperator`
@@ -181,11 +190,8 @@ def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None
 
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        func_name = qfunc.__name__
-        func_sig = signature(qfunc)
-
-        name = _generate_name(func_name, func_sig, include_params, *args, **kwargs)
-        return ResourceQfunc(name, qfunc, *args, **kwargs)
+        name = _generate_name(qfunc, include_params, *args, **kwargs)
+        return ResourceQfunc(name, qfunc, *args, num_wires_=num_wires, **kwargs)
 
     return wrapper
 
@@ -197,10 +203,16 @@ class ResourceQfunc(ResourceOperator):
     operators defined in the quantum function represent the resources of the subroutine. This allows users
     to quickly define and track the resources at higher levels of abstraction.
 
+    .. note::
+        The quantum function to be promoted should NOT have arguments called ``name_``,
+        ``resource_decomp_fn_``, or ``num_wires_`` as these would result in a syntax clash. Please rename
+        those parameters to avoid unexpected behaviour.
+
     Args:
-        name (str): the name used to track the counts of the subroutine
-        resource_decomp_fn (Callable): the quantum function representing the subroutine
+        name_ (str): the name used to track the counts of the subroutine
+        resource_decomp_fn_ (Callable): the quantum function representing the subroutine
         *resource_args: positional arguments of the ``resource_decomp_fn``
+        num_wires_: the number of wires that this subroutine acts upon
         **resource_kwargs: keyword arguments of the ``resource_decomp_fn``
 
     Resources:
@@ -228,8 +240,8 @@ class ResourceQfunc(ResourceOperator):
     We obtain the expected resources when a suitable gate set is chosen:
 
     >>> op = qre.ResourceQfunc(
-    ...     name = "SubA",
-    ...     resource_decomp_fn = SubroutineA,
+    ...     name_ = "SubA",
+    ...     resource_decomp_fn_ = SubroutineA,
     ...     num_iter = 3,
     ...     op_type = "X",
     ... )
@@ -257,13 +269,13 @@ class ResourceQfunc(ResourceOperator):
     resource_keys = {"name", "num_wires", "cmpr_ops"}
 
     def __init__(
-        self, name, resource_decomp_fn, *resource_args, **resource_kwargs
+        self, name_, resource_decomp_fn_, *resource_args, num_wires_=None, **resource_kwargs
     ):  # pylint: disable=super-init-not-called
-        self.name = name
+        self.name = name_
 
         with QueuingManager.stop_recording():
             with AnnotatedQueue() as q:
-                resource_decomp_fn(*resource_args, **resource_kwargs)
+                resource_decomp_fn_(*resource_args, **resource_kwargs)
 
             decomp = []
             for op in q.queue:  # Filter the queue and only pull the operators
@@ -281,20 +293,30 @@ class ResourceQfunc(ResourceOperator):
                 else:
                     continue
 
+        if len(decomp) == 0:
+            raise ValueError(
+                "No operators were found in the `resource_decomp_fn_`. Must provide at least one operator."
+            )
+
         self.cmpr_ops = tuple(op.resource_rep_from_op() for op in decomp)
 
         ops_wires = Wires.all_wires([op.wires for op in decomp if op.wires is not None])
         num_unique_wires_required = max(op.num_wires for op in self.cmpr_ops)
 
-        if (
-            len(ops_wires) < num_unique_wires_required
-        ):  # If factors didn't provide enough wire labels
-            self.wires = None  # we assume they all act on the same set
-            self.num_wires = num_unique_wires_required
+        if num_wires_:  # The total number of wires to expect is set by the user.
+            self.num_wires = num_wires_
+            self.wires = ops_wires if len(ops_wires) == self.num_wires else None
 
-        else:  # If there are more wire labels, use that as the operator wires
-            self.wires = ops_wires
-            self.num_wires = len(self.wires)
+        else:  # We determine the total number of wires to expect
+            if (
+                len(ops_wires) < num_unique_wires_required
+            ):  # If factors didn't provide enough wire labels
+                self.wires = None  # we assume they all act on the same set
+                self.num_wires = num_unique_wires_required
+
+            else:  # If there are more wire labels, use that as the operator wires
+                self.wires = ops_wires
+                self.num_wires = len(self.wires)
 
         self.queue()
 

@@ -34,29 +34,43 @@ from pennylane.labs.estimator_beta.ops.op_math.symbolic import (
 class TestGenerateName:
     """Tests for the ``_generate_name`` helper function."""
 
-    def test_no_include_params(self):
+    @pytest.mark.parametrize(
+        "args, kwargs",
+        (
+            ((10, True, "b"), {}),
+            ((10, True), {"kwarg1": "b"}),
+            ((10,), {"arg2": True, "kwarg1": "b"}),
+            (tuple(), {"arg1": 10, "arg2": True, "kwarg1": "b"}),
+        ),
+    )
+    def test_no_include_params(self, args, kwargs):
         """Test that the bare function name is returned when no params are included."""
 
         def my_func(arg1, arg2, kwarg1="a"):  # pylint: disable=unused-argument
             return
 
-        f_sig = signature(my_func)
-        assert _generate_name("my_func", f_sig) == "my_func"
+        assert _generate_name(my_func, None, *args, **kwargs) == "my_func"
 
-    def test_include_params_positional_and_keyword(self):
+    @pytest.mark.parametrize(
+        "args, kwargs",
+        (
+            ((10, True, "b"), {}),
+            ((10, True), {"kwarg1": "b"}),
+            ((10,), {"arg2": True, "kwarg1": "b"}),
+            (tuple(), {"arg1": 10, "arg2": True, "kwarg1": "b"}),
+        ),
+    )
+    def test_include_params_positional_and_keyword(self, args, kwargs):
         """Test that selected positional and keyword params are formatted into the name."""
 
         def my_func(arg1, arg2, kwarg1="a"):  # pylint: disable=unused-argument
             return
 
-        f_sig = signature(my_func)
         name = _generate_name(
-            "my_func",
-            f_sig,
+            my_func,
             ["arg1", "kwarg1"],
-            10,
-            True,
-            kwarg1="b",
+            *args,
+            **kwargs,
         )
         assert name == "my_func(arg1=10, kwarg1=b)"
 
@@ -75,6 +89,20 @@ class TestMarkSubroutine:
         op = SubroutineA(3)
         assert isinstance(op, ResourceQfunc)
         assert op.name == "SubroutineA"
+
+    def test_set_num_wires(self):
+        """Test that the decorated function returns a ResourceQfunc instance with set num_wires."""
+
+        @mark_subroutine
+        @partial(mark_subroutine, num_wires=11)
+        def SubroutineA(num_iter):
+            for _ in range(num_iter):
+                qre.Z()
+
+        op = SubroutineA(3)
+        assert isinstance(op, ResourceQfunc)
+        assert op.name == "SubroutineA"
+        assert op.num_wires == 11
 
     def test_include_params_naming(self):
         """Test that the include_params keyword configures the tracking name."""
@@ -127,6 +155,15 @@ class TestMarkSubroutine:
 class TestResourceQfunc:
     """Tests for the ResourceQfunc resource operator."""
 
+    def test_init_raises_error_no_ops(self):
+        """Test that an error is raised if there were no operators queued in the qfunc"""
+
+        def qfunc():
+            return
+
+        with pytest.raises(ValueError, match="No operators were found"):
+            _ = ResourceQfunc("EmptyFunc", qfunc)
+
     def test_init(self):
         """Test that the operator is instantiated correctly."""
 
@@ -151,6 +188,18 @@ class TestResourceQfunc:
         assert op.name == "SubB"
         assert op.num_wires == 3
         assert op.wires == qp.wires.Wires([0, 1, 2])
+
+    def test_init_set_wires_from_factors(self):
+        """Test that the num_wires can be provided."""
+
+        def qfunc():
+            qre.CNOT(wires=[0, 1])
+            qre.X(wires=[2])
+
+        op = ResourceQfunc("SubB", qfunc, num_wires_=11)
+        assert op.name == "SubB"
+        assert op.num_wires == 11
+        assert op.wires == None
 
     def test_init_maps_plain_operator(self):
         """Test that plain PennyLane operators are mapped to resource operators."""
