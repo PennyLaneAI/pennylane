@@ -126,7 +126,7 @@ def _kron_n(mats):
 
 
 def qudit_expectation_brute_force(
-    n, d, gates, thetas, l_vec, m_vec, init_state_elems=None, init_state_amps=None
+    n, d, gates, thetas, l_vec, m_vec, init_state_elems=None, init_state_amps=None, phase_diag=None
 ):
     """Compute one exact expectation value with a dense-matrix reference path.
 
@@ -142,6 +142,7 @@ def qudit_expectation_brute_force(
         m_vec: Observable shift indices.
         init_state_elems: Optional sparse support of the input state.
         init_state_amps: Optional amplitudes for ``init_state_elems``.
+        phase_diag: Optional phase layer for ``phase_fn``.
 
     Returns:
         complex: Exact expectation value of the requested observable.
@@ -157,6 +158,9 @@ def qudit_expectation_brute_force(
     for g, theta in zip(gates, thetas):
         Q_g = _kron_n([_hermitian_observable(g[i], 0, d) for i in range(n)])
         D = expm(1j * theta * Q_g) @ D
+
+    if phase_diag is not None:
+        D = np.diag(np.exp(1j * np.asarray(phase_diag, dtype=complex))) @ D
 
     # U(theta) = (F^{otimes n})^dag  D(theta)  F^{otimes n}  [eqn 44]
     U = F_n.conj().T @ D @ F_n
@@ -1247,3 +1251,139 @@ def test_qudit_expval_batched_init_state_matches_brute_force(
     assert np.isclose(
         mc_vals[0], ref, atol=tol
     ), f"Mismatch: batched={mc_vals[0]}, matrix={ref}, tol={tol:.2e}"
+
+class TestQuditExpvalWithPhaseLayer:
+    """Test batched MC with a custom phase layer against brute-force reference."""
+
+    @staticmethod
+    def _phase_fn(params, z):
+        """Polynomial in normalised mean of z: f(params, z) = sum_t params[t] * (mean(z)/d)^t."""
+        x = jnp.mean(z.astype(jnp.float32)) / 3.0
+        powers = jnp.array([x**t for t in range(len(params))])
+        return jnp.sum(params * powers)
+
+    @staticmethod
+    def _build_phase_diag(phase_fn, phase_params, d, n):
+        """Evaluate phase_fn at every z in Z_d^n to build the diagonal vector."""
+        all_states = list(itertools.product(range(d), repeat=n))
+        return np.array([
+            float(phase_fn(phase_params, jnp.array(z))) for z in all_states
+        ])
+
+    def test_phase_layer_default_state(self):
+        """Phase layer with default |0> input, d=3, nonzero l, nontrivial params."""
+        d, n = 3, 2
+        generators = np.array([[1, 0], [0, 2], [1, 2]])
+        thetas = np.array([0.5, 0.3, 0.7])
+        l_vecs = np.array([[2, 1], [0, 1], [1, 0]])
+        m_vecs = np.array([[0, 0], [0, 0], [0, 0]])
+        phase_params = jnp.array([0.1, 0.5, 2.0, 1.0])
+        n_samples = 80000
+
+        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        config = QuditCircuitConfig(
+            d=d,
+            n_qudits=n,
+            gates=gates,
+            observables=(l_vecs, m_vecs),
+            n_samples=n_samples,
+            key=jax.random.PRNGKey(42),
+            phase_fn=self._phase_fn,
+        )
+
+        batched_fn = build_qudit_expval_func(config)
+        mc_vals, mc_cov = batched_fn(jnp.array(thetas), phase_params)
+        mc_err_re = np.sqrt(mc_cov[:, 0, 0])
+        mc_err_im = np.sqrt(mc_cov[:, 1, 1])
+
+        phase_diag = self._build_phase_diag(self._phase_fn, phase_params, d, n)
+
+        for i, (l, m) in enumerate(zip(l_vecs, m_vecs)):
+            ref = qudit_expectation_brute_force(
+                n, d, generators, thetas, l, m, phase_diag=phase_diag,
+            )
+            tol = max(3.5 * float(mc_err_re[i]), 3.5 * float(mc_err_im[i]), 1e-5)
+            assert np.isclose(mc_vals[i], ref, atol=tol), (
+                f"Observable {i} (l={l}, m={m}): got {mc_vals[i]}, "
+                f"expected {ref}, tol={tol:.2e}"
+            )
+
+    def test_phase_layer_with_init_state(self):
+        """Phase layer combined with a sparse initial state."""
+        d, n = 3, 2
+        generators = np.array([[1, 0], [0, 1]])
+        thetas = np.array([0.4, 0.6])
+        l_vecs = np.array([[1, 2], [2, 0]])
+        m_vecs = np.array([[0, 0], [0, 0]])
+        phase_params = jnp.array([0.2, 1.5, -0.3])
+        state_elems = np.array([[0, 0], [1, 2], [2, 1]])
+        state_amps = np.array(
+            [1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3)], dtype=complex
+        )
+        n_samples = 80000
+
+        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        config = QuditCircuitConfig(
+            d=d,
+            n_qudits=n,
+            gates=gates,
+            observables=(l_vecs, m_vecs),
+            n_samples=n_samples,
+            key=jax.random.PRNGKey(99),
+            phase_fn=self._phase_fn,
+        )
+
+        batched_fn = build_qudit_expval_func(config)
+        mc_vals, mc_cov = batched_fn(
+            jnp.array(thetas),
+            phase_params,
+            init_state_elems=jnp.array(state_elems),
+            init_state_amps=jnp.array(state_amps),
+        )
+        mc_err_re = np.sqrt(mc_cov[:, 0, 0])
+        mc_err_im = np.sqrt(mc_cov[:, 1, 1])
+
+        phase_diag = self._build_phase_diag(self._phase_fn, phase_params, d, n)
+
+        for i, (l, m) in enumerate(zip(l_vecs, m_vecs)):
+            ref = qudit_expectation_brute_force(
+                n, d, generators, thetas, l, m,
+                init_state_elems=state_elems,
+                init_state_amps=state_amps,
+                phase_diag=phase_diag,
+            )
+            tol = max(3.5 * float(mc_err_re[i]), 3.5 * float(mc_err_im[i]), 1e-5)
+            assert np.isclose(mc_vals[i], ref, atol=tol), (
+                f"Observable {i} (l={l}, m={m}): got {mc_vals[i]}, "
+                f"expected {ref}, tol={tol:.2e}"
+            )
+
+    def test_phase_layer_grad(self):
+        """Verify gradients flow through phase_fn_params."""
+        d, n = 3, 2
+        generators = np.array([[1, 0], [0, 2]])
+        thetas = np.array([0.5, 0.3])
+        l_vecs = np.array([[2, 1]])
+        m_vecs = np.array([[0, 0]])
+        phase_params = jnp.array([0.1, 0.5, 2.0])
+
+        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        config = QuditCircuitConfig(
+            d=d,
+            n_qudits=n,
+            gates=gates,
+            observables=(l_vecs, m_vecs),
+            n_samples=5000,
+            key=jax.random.PRNGKey(0),
+            phase_fn=self._phase_fn,
+        )
+
+        batched_fn = build_qudit_expval_func(config)
+
+        def loss(p_params):
+            vals, _ = batched_fn(jnp.array(thetas), p_params)
+            return jnp.sum(jnp.real(vals) ** 2)
+
+        grad_val = jax.grad(loss)(phase_params)
+        assert grad_val.shape == phase_params.shape
+        assert not jnp.allclose(grad_val, 0.0)

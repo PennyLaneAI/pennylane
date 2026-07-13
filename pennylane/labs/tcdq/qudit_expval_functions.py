@@ -75,6 +75,12 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         init_state_amps (ArrayLike | None): Complex amplitudes of shape ``(N,)``
             for the custom initial state. Must be provided together with
             ``init_state_elems``.
+        phase_fn (Callable | None): Optional learnable phase layer function with
+            signature ``(params: ArrayLike, z: ArrayLike) -> scalar`` where ``z``
+            is a single dit-string of shape ``(n_qudits,)`` with entries in
+            ``{0, ..., d-1}``. When supplied, its phase-difference contribution
+            ``f(params, z) - f(params, (z - l) % d)`` is added to the accumulated
+            phase matrix after the gate phases.
 
     **Example**
 
@@ -110,6 +116,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_elems: ArrayLike | None = None
     #: Amplitudes for the custom initial state, or ``None``.
     init_state_amps: ArrayLike | None = None
+    #: Learnable phase layer
+    phase_fn: Callable | None = None
 
 
 def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudits: int):
@@ -430,6 +438,7 @@ def build_qudit_expval_func(
 
             expval_fn(
                 gates_params,
+                phase_fn_params=None,
                 key=None,
                 n_samples=None,
                 observables=None,
@@ -444,6 +453,9 @@ def build_qudit_expval_func(
         for each observable. When ``return_mean_y_sq=True``, also returns the
         per-observable mean of :math:`|y|^2` (needed internally by the MMD
         loss).
+
+        When ``config.phase_fn`` is set, the returned callable requires ``phase_fn_params`` to be
+        passed as teh second argument (the trainable parameters of the phase layer).
 
     Raises:
         ValueError: If no observables are provided either in ``config`` or at
@@ -482,6 +494,17 @@ def build_qudit_expval_func(
 
     default_samples = _compute_qudit_samples(config.key, config.n_samples, n, d)
 
+    vmapped_phase_func = None
+    if config.phase_fn is not None:
+
+        def compute_phase_diff(p_params, sample, l_vec):
+            return config.phase_fn(p_params, sample) - config.phase_fn(p_params, (sample - l_vec) % d)
+
+        vmapped_phase_func = jax.vmap(
+            jax.vmap(compute_phase_diff, in_axes=(None, 0, None)),
+            in_axes=(None, None, 0),
+        )
+
     gen_np = np.array(generators)
     pm_np = np.array(param_map)
     gate_weights = np.sum(gen_np != 0, axis=1)
@@ -507,6 +530,7 @@ def build_qudit_expval_func(
 
     def qudit_expval_batched(
         gates_params: ArrayLike,
+        phase_fn_params: ArrayLike | None = None,
         key: ArrayLike | None = None,
         n_samples: int | None = None,
         observables: tuple[ArrayLike, ArrayLike] | None = None,
@@ -520,6 +544,8 @@ def build_qudit_expval_func(
 
         Args:
             gates_params (ArrayLike): 1-D array of gate parameters.
+            phase_fn_params (ArrayLike | None, optional): Trainable parameters for the
+                custom phase function. Defaults to None.
             key (ArrayLike | None, optional): Runtime override for the JAX PRNG key
                 used for sampling. Defaults to None.
             n_samples (int | None, optional): Runtime override for the number of
@@ -579,6 +605,9 @@ def build_qudit_expval_func(
             w_data = _build_all_weight_groups(gen_np, pm_np, gate_weights, samples, l_vecs, d)
 
         accumulated_phase_diffs = _accumulate_phase_diffs(gates_params, w_data, n_obs, _n)
+
+        if vmapped_phase_func is not None:
+            accumulated_phase_diffs = accumulated_phase_diffs + vmapped_phase_func(phase_fn_params, samples, l_vecs)
 
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
