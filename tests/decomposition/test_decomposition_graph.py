@@ -919,9 +919,10 @@ class TestSymbolicDecompositions:
             alt_decomps={CustomOp: [custom_decomp]},
         )
         # 10 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX, A(PhaseShift), PhaseShift
-        # 6 decomposition nodes for: A(CustomOp), A(CNOT), A(RX), A(T), A(PhaseShift), A(H)
+        # 2 decomposition nodes for: A(CustomOp), A(T). The rest of the operators are
+        # already in the gate set - no need to add their rules.
         # 1 dummy starting node
-        assert len(graph._graph.nodes()) == 17
+        assert len(graph._graph.nodes()) == 13
         # 9 edges from ops to decompositions and 6 edges from decompositions to ops.
         # and 4 edges from the dummy starting node to the target gate set.
         assert len(graph._graph.edges()) == 19

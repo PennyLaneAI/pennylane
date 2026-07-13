@@ -1097,7 +1097,7 @@ class TestDecomposition:
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
                     qp.CH(wires=[2, 0]),
-                    Controlled(qp.S(wires=1), control_wires=2),
+                    qp.ctrl(qp.S(wires=1), 2),
                     qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
@@ -2108,7 +2108,6 @@ class TestCtrl:
         """Tests that custom controlled dispatchers work for `Operator2`."""
 
         class CustomOp(Operator2):
-
             def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
