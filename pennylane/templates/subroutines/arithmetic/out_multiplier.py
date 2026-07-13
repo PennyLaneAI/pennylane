@@ -503,34 +503,10 @@ def _out_multiplier_with_caddsub_resources(
 
     resources = defaultdict(int)
 
-    # Some resource reps we will need:
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = resource_rep(X)
-
     # Controlled add-subtract loop
-    loop_size = min(k, n)
-    # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
-    if num_y_wires > 1:
-        c_flips = controlled_resource_rep(
-            BasisState,
-            base_params={"num_wires": num_y_wires - 1},
-            num_control_wires=1,
-            num_zero_control_values=1,
-        )
-        resources[c_flips] += 2 * loop_size
-
-    # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
-    resources[cnot_on_0_rep] += 2 * loop_size
-    # Bit flip on LSB work wire, controlled on |0>: two per ctrl-add-subtract that has work wires
-    c_add_subs_with_work_wires = min(n, k - 1)
-    resources[cnot_on_0_rep] += 2 * c_add_subs_with_work_wires
-
-    # Decomposed SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
-    for i in range(loop_size):
+    for i in range(min(k, n)):
         size = min(k - i, m + 1) if output_wires_zeroed else k - i
-        adder_resources = _semi_adder_resources(num_x_wires=m, num_y_wires=size)
-        for key, value in adder_resources.items():
+        for key, value in _c_add_sub_resources(m, size).items():
             resources[key] += value
 
     # Add 2^m(x+1)
@@ -541,11 +517,11 @@ def _out_multiplier_with_caddsub_resources(
         # bit flips corresponding to input carry activated. Accounts for the fact that
         # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
         has_work_wires = int(k > m + 1)
-        resources[x_rep] += 4 + 2 * has_work_wires
+        resources[resource_rep(X)] += 4 + 2 * has_work_wires
 
     # Subtract y+2^(n+m)
     # First negation
-    resources[x_rep] += k
+    resources[resource_rep(X)] += k
     # Add y
     add_rep = resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
     resources[add_rep] += 1
@@ -556,7 +532,7 @@ def _out_multiplier_with_caddsub_resources(
         resources[resource_rep(Incrementer, num_wires=size, num_work_wires=num_work_wires - 1)] = 1
 
     # Second negation
-    resources[x_rep] += k
+    resources[resource_rep(X)] += k
 
     # Add 2^n y
     if k > n:
@@ -622,6 +598,28 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     _adder_flipped_first_work_wire(x_wires, y_wires, work_wires)
     X(y_wires[-1])
     X(x_wires[-1])
+
+
+def _c_add_sub_resources(num_x_wires, num_y_wires):
+    """Resources for _c_add_sub."""
+    resources = defaultdict(int)
+    if num_x_wires > 1:
+        resources[
+            controlled_resource_rep(
+                BasisState,
+                base_params={"num_wires": num_x_wires - 1},
+                num_control_wires=1,
+                num_zero_control_values=1,
+            )
+        ] += 2
+
+    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
+    resources[controlled_resource_rep(X, **cnot_on_0_kwargs)] += 2 * (1 + int(num_y_wires > 1))
+
+    for key, value in _semi_adder_resources(num_x_wires, num_y_wires).items():
+        resources[key] += value
+
+    return dict(resources)
 
 
 def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
