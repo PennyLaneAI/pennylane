@@ -51,14 +51,14 @@ from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
     ctrl_single_work_wire,
-    decompose_to_base,
+    decompose_to_base_legacy,
     flip_control_adjoint,
     flip_pow_adjoint,
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
     repeat_pow_base,
-    self_adjoint,
+    self_adjoint_legacy,
     to_controlled_qubit_unitary,
 )
 from .utils import to_name
@@ -510,7 +510,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
-            and self_adjoint not in decomps
+            and self_adjoint_legacy not in decomps
             and adjoint_rotation not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
@@ -558,7 +558,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [decompose_to_base]
+            return [decompose_to_base_legacy]
 
         # Special case: power of a power
         if issubclass(op.params["base_class"], qp.ops.Pow):
