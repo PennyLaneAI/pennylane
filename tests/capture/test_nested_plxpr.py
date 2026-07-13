@@ -19,6 +19,7 @@ Tests for capturing nested plxpr.
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator.operator2 import operator_p
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -43,7 +44,8 @@ class TestAdjointQfunc:
 
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
-        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == qp.S._primitive
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == operator_p
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].params["op_cls"] == qp.S
 
     def test_adjoint_qfunc(self):
         """Test that the adjoint qfunc transform can be captured."""
@@ -307,7 +309,8 @@ class TestCtrlQfunc:
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         assert jaxpr.eqns[0].invars[1].val == 1
-        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == qp.S._primitive
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == operator_p
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].params["op_cls"] is qp.S
 
     def test_operator_type_input(self):
         """Test that an operator type can be the callable."""
