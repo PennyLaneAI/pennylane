@@ -31,6 +31,7 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -348,6 +349,17 @@ class QubitUnitary(Operation):
         cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+@custom_ctrl_dispatch.register
+def _ctrl_qu(base: QubitUnitary, control, control_values, work_wires, work_wire_type):
+    return qp.ControlledQubitUnitary(
+        *base.data,
+        wires=control + base.wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
 
 
 add_decomps(

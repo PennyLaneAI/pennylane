@@ -27,7 +27,7 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops, pytrees
+from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
@@ -711,15 +711,15 @@ def _QSVT_resources(projectors, UA):
 
 @register_resources(_QSVT_resources)
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
-    pytrees.unflatten(*pytrees.flatten(projectors[0]))
+    apply(projectors[0])
 
     for i in range(1, len(projectors) - 1, 2):
         ops.change_op_basis(UA, projectors[i])
-        pytrees.unflatten(*pytrees.flatten(projectors[i + 1]))
+        apply(projectors[i + 1])
 
     if len(projectors) % 2 == 0:
-        pytrees.unflatten(*pytrees.flatten(UA))
-        pytrees.unflatten(*pytrees.flatten(projectors[-1]))
+        apply(UA)
+        apply(projectors[-1])
 
 
 add_decomps(QSVT, _QSVT_decomposition)

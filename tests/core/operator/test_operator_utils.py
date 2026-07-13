@@ -14,7 +14,7 @@
 
 import numpy as np
 import pytest
-from operator2_utils import CompOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
+from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
 
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
@@ -253,7 +253,7 @@ class TestAbstractifyOperatorInstances:
     def test_comp_op_is_passed_through(self):
         """Tests that a compilable static arg is passed through."""
 
-        op = CompOp(5, wires=[0])
+        op = CompilableOp(5, wires=[0])
         result = abstractify(op)
         assert result.n == 5
         assert result.wires == Wire[1]

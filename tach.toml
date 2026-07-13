@@ -105,7 +105,7 @@ from = ["pennylane.core.qscript"]
 
 [[modules]]
 path = "pennylane.core.queuing"
-depends_on = ["pennylane.exceptions"]
+depends_on = ["pennylane.exceptions", "pennylane.pytrees"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
@@ -131,7 +131,7 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.pytrees"
-depends_on = ["pennylane.core.queuing"]
+depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
@@ -414,6 +414,10 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "specs"]
+from = ["pennylane.resource"]
 
 [[modules]]
 path = "pennylane.decomposition"
