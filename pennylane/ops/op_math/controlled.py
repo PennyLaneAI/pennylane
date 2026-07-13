@@ -35,9 +35,17 @@ from pennylane.allocation import Allocate, Deallocate
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.core import Operator2
-from pennylane.core.operator import Operation, Operator
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
-from pennylane.decomposition.resources import resolve_work_wire_type
+from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.operator.operator2 import (  # tach-ignore
+    _normalize_concrete_wire_sequence,
+    pop_op_eqns,
+)
+from pennylane.decomposition.resources import (
+    _op_type_and_params,
+    _resource_rep_from_op,
+    resolve_work_wire_type,
+    resource_rep,
+)
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
@@ -46,7 +54,7 @@ from pennylane.exceptions import (
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
-from .controlled2 import Controlled2, ControlledOp2
+from .controlled2 import Controlled2, ControlledOp2, _ctrl_abstract
 from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
@@ -197,9 +205,11 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
     """New implementation of qp.ctrl that works better with Operator2."""
 
     if not isinstance(control_wires, AbstractWires):
-        control_wires = Wires(control_wires)
+        control_wires = Wires(_normalize_concrete_wire_sequence(control_wires))
     if not isinstance(work_wires, AbstractWires):
-        work_wires = Wires([] if work_wires is None else work_wires)
+        work_wires = Wires(
+            _normalize_concrete_wire_sequence([] if work_wires is None else work_wires)
+        )
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
 
@@ -215,6 +225,8 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
             work_wire_type,
         )
     ) is not NotImplemented:
+        # The custom controlled gate replaces the base instruction in both the queue and plxpr.
+        _ = pop_op_eqns((op,))
         return custom_op
 
     if isinstance(op, Controlled2):
@@ -460,9 +472,10 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
-        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
-            *args
-        )
+        with qp.QueuingManager.stop_recording():
+            jaxpr = jax.make_jaxpr(
+                functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes
+            )(*args)
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qp.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
@@ -800,9 +813,11 @@ class Controlled(SymbolicOp):
 
     @property
     def resource_params(self):
+        base_rep = _resource_rep_from_op(self.base)
+        base_class, base_params = _op_type_and_params(base_rep)
         return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params,
+            "base_class": base_class,
+            "base_params": base_params,
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
@@ -1039,10 +1054,10 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
         return [qp.CNOT(wires=op.wires)]
 
     if isinstance(op.base, qp.PauliX) and len(op.control_wires) == 2:
-        return qp.Toffoli.compute_decomposition(wires=op.wires)
+        return type.__call__(qp.Toffoli, wires=op.wires).decomposition()
 
     if isinstance(op.base, qp.CNOT) and len(op.control_wires) == 1:
-        return qp.Toffoli.compute_decomposition(wires=op.wires)
+        return type.__call__(qp.Toffoli, wires=op.wires).decomposition()
 
     return qp.MultiControlledX.compute_decomposition(
         wires=op.wires,
@@ -1061,6 +1076,8 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
+        if issubclass(custom_op_cls, Operator2):
+            return type.__call__(custom_op_cls, *op.data, wires=op.wires).decomposition()
         return custom_op_cls.compute_decomposition(*op.data, op.wires)
     if isinstance(op.base, pauli_x_based_ctrl_ops):
         # has some special case handling of its own for further decomposition
@@ -1123,6 +1140,24 @@ def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
         ctrl(newop, op.control_wires, work_wires=op.work_wires, work_wire_type=op.work_wire_type)
         for newop in base_decomp
     ]
+
+
+@abstractify.register(Controlled)
+def _abstractify_controlled(op):
+    if isinstance(op, qp.MultiControlledX) or not isinstance(op.base, Operator2):
+        # This explicit legacy Controlled representation is the input of the decomposition that
+        # turns a legacy controlled operator into its custom controlled form, while an explicitly
+        # constructed MultiControlledX has decomposition rules keyed by its own resource
+        # representation. Canonicalizing either through _ctrl_abstract would change that identity
+        # prematurely. Controlled Operator2 bases still use the new canonical dispatch below.
+        return resource_rep(type(op), **op.resource_params)
+    return _ctrl_abstract(
+        _resource_rep_from_op(op.base),
+        Wire[len(op.control_wires)],
+        Wire[len(op.work_wires)],
+        op.work_wire_type,
+        sum(not value for value in op.control_values),
+    )
 
 
 class ControlledOp(Controlled, Operation):

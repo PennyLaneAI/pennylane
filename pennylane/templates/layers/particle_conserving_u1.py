@@ -374,10 +374,10 @@ def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
 
     resources = {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(CZ): 3 * num_nm_wires * n_layers,
+        CZ: 3 * num_nm_wires * n_layers,
         resource_rep(CRot): 3 * num_nm_wires * n_layers,
         resource_rep(PhaseShift): 6 * num_nm_wires * n_layers,
-        resource_rep(CNOT): 4 * num_nm_wires * n_layers,
+        CNOT: 4 * num_nm_wires * n_layers,
     }
 
     return resources

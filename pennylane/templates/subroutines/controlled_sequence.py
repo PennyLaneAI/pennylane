@@ -19,12 +19,14 @@ from copy import copy
 
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     pow_resource_rep,
     register_resources,
 )
+from pennylane.decomposition.resources import _op_type_and_params, _resource_rep_from_op
 from pennylane.ops.op_math import SymbolicOp, ctrl
 from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires
@@ -88,6 +90,11 @@ class ControlledSequence(SymbolicOp, Operation):
     def _unflatten(cls, data, metadata):
         return cls(data[0], control=metadata[0])
 
+    @classmethod
+    def _primitive_bind_call(cls, base, control):
+        base = _get_or_bind_operator_tracers(base)
+        return cls._primitive.bind(base, control=tuple(Wires(control)))
+
     def __init__(self, base, control):
         control_wires = Wires(control)
 
@@ -103,9 +110,11 @@ class ControlledSequence(SymbolicOp, Operation):
 
     @property
     def resource_params(self) -> dict:
+        base_rep = _resource_rep_from_op(self.hyperparameters["base"])
+        base_class, base_params = _op_type_and_params(base_rep)
         params = {
-            "base_class": self.hyperparameters["base"].__class__,
-            "base_params": self.hyperparameters["base"].resource_params,
+            "base_class": base_class,
+            "base_params": base_params,
             "num_control_wires": len(self.hyperparameters["control_wires"]),
         }
         return params
@@ -220,9 +229,10 @@ def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires
 
     for z in powers_of_two[::-1]:
         controlled_rep = controlled_resource_rep(base_class, base_params, 1)
+        controlled_class, controlled_params = _op_type_and_params(controlled_rep)
         rep = pow_resource_rep(
-            base_class=controlled_rep.op_type,
-            base_params=controlled_rep.params,
+            base_class=controlled_class,
+            base_params=controlled_params,
             z=z,
         )
         resources[rep] = 1

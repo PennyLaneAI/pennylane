@@ -308,8 +308,8 @@ class TestPrepSelPrep:
         op = qp.PrepSelPrep(lcu, (3, 4))
 
         op_reps = (
-            qp.X,
-            qp.X,
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
             qp.resource_rep(qp.ops.Prod, **ops[-1].resource_params),
         )
         assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
@@ -319,8 +319,8 @@ class TestPrepSelPrep:
 
         ops = [qp.X(0), qp.X(1), qp.X(0) @ qp.Y(1)]
         grep = qp.resource_rep(qp.GlobalPhase)
-        xrep = qp.X
-        yrep = qp.Y
+        xrep = qp.resource_rep(qp.X)
+        yrep = qp.resource_rep(qp.Y)
         prodrep = qp.resource_rep(qp.ops.Prod, resources={xrep: 1, yrep: 1})
         op_reps = (
             qp.resource_rep(qp.ops.Prod, resources={grep: 1, xrep: 1}),

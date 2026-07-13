@@ -242,6 +242,20 @@ class TestUnwrapControls:
                 [False, False, True, True],
                 qp.X,
             ),
+            (
+                qp.ops.op_math.ControlledOp2(
+                    qp.ops.op_math.ControlledOp2(
+                        qp.X(wires="d"),
+                        control_wires=["a", "b"],
+                        control_values=[False, True],
+                    ),
+                    control_wires=["e"],
+                    control_values=[False],
+                ),
+                Wires(["e", "a", "b"]),
+                [False, False, True],
+                qp.X,
+            ),
         ],
     )
     def test_multi_defined_control_values(

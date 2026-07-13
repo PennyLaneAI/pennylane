@@ -26,9 +26,9 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator, Operator1, Operator2
-from pennylane.core.operator import abstractify
+from pennylane.core.operator import Operator, Operator1, Operator2
 from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition.resources import _resource_rep_from_op
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
@@ -115,7 +115,9 @@ def _check_decomposition(op, skip_wire_mapping):
         compute_decomp = _resolve_dynamic_wires(compute_decomp, total_work_wires)
         processed_queue = _resolve_dynamic_wires(processed_queue, total_work_wires)
 
-    assert op not in decomp, "an operator should not be included in its own decomposition"
+    assert not any(
+        type(decomp_op) is type(op) and decomp_op == op for decomp_op in decomp
+    ), "an operator should not be included in its own decomposition"
     compute_decomp_msg = "decomposition must match compute_decomposition"
     queue_msg = "decomposition must match queued operations"
     assert len(decomp) == len(compute_decomp), compute_decomp_msg
@@ -129,11 +131,19 @@ def _check_decomposition(op, skip_wire_mapping):
     # Check that mapping wires transitions to the decomposition
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
-    # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
-    # base, so may return a different class of operator. We only compare decomps of `op` and
-    # `mapped_op` if `mapped_op` **has** a decomposition.
-    # see MultiControlledX([0, 1]) and CNOT([0, 1]) as an example
-    if mapped_op.has_decomposition:
+    # The legacy ``Controlled.map_wires`` implementation rebuilds through ``qp.ctrl`` and can
+    # intentionally specialize to CNOT, CY, CZ, CH, CRX, Toffoli, and related custom classes.
+    # Trust only that inherited implementation; arbitrary type-changing ``map_wires`` methods
+    # must still fail validation.
+    is_controlled_specialization = (
+        type(mapped_op) is not type(op) and type(op).map_wires is qp.ops.Controlled.map_wires
+    )
+    assert type(mapped_op) is type(op) or is_controlled_specialization, (
+        "map_wires must preserve the operator type, except for specializations produced by "
+        "Controlled.map_wires"
+    )
+
+    if not is_controlled_specialization and mapped_op.has_decomposition:
         mapped_decomp = mapped_op.decomposition()
         if allocations:
             mapped_decomp = _resolve_dynamic_wires(mapped_decomp, total_work_wires)
@@ -235,10 +245,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        if isinstance(_op, Operator2):
-            op_rep = abstractify(_op)
-        else:
-            op_rep = qp.resource_rep(type(_op), **_op.resource_params)
+        op_rep = _resource_rep_from_op(_op)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
@@ -373,7 +380,7 @@ def _check_eigendecomposition(op):
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
-        decomp_mat = qp.matrix(decomp)
+        decomp_mat = qp.matrix(decomp, wire_order=op.wires)
         original_mat = qp.matrix(op)
         failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
         assert qp.math.allclose(decomp_mat, original_mat), failure_comment
@@ -449,7 +456,27 @@ def _check_pytree(op):
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
     if isinstance(op, Operator1):
-        for d1, d2 in zip(op.data, leaves, strict=True):
+        # Nested operators can contribute Operator2 wire/hybrid leaves, and nested measurement
+        # processes can contribute observable metadata, even though neither appears directly in
+        # the outer legacy ``data`` view. Stop at those PennyLane objects, then expand only the
+        # nested operators' numerical data when checking the legacy order.
+        def nested_pl_object(obj):
+            return obj is not op and isinstance(
+                obj, (Operator2, qp.measurements.MeasurementProcess)
+            )
+
+        legacy_leaves, _ = flatten(op, is_leaf=nested_pl_object)
+        expected_data = []
+        for leaf in legacy_leaves:
+            if isinstance(leaf, Operator2):
+                expected_data.extend(leaf.data)
+            elif not isinstance(leaf, qp.measurements.MeasurementProcess):
+                expected_data.append(leaf)
+
+        assert len(op.data) == len(expected_data), (
+            "data must be the terminal leaves of the pytree. " f"Got {op.data} and {expected_data}"
+        )
+        for d1, d2 in zip(op.data, expected_data, strict=True):
             assert qp.math.allclose(
                 d1, d2
             ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"

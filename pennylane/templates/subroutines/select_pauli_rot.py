@@ -18,7 +18,7 @@ Contains the SelectPauliRot template.
 from collections import defaultdict
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -191,7 +191,7 @@ class SelectPauliRot(Operation):
 def _select_pauli_rot_resource(num_wires, rot_axis):
     prod_res = {
         resource_rep(RZ): 2 ** (num_wires - 1),
-        resource_rep(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
+        abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
     }
     if rot_axis == "Z":
         return prod_res

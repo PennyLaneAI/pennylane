@@ -16,6 +16,7 @@
 
 from textwrap import dedent
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -60,6 +61,23 @@ class TestInspectDecompGraph:
         )
         assert str(result) == expected
         assert result._repr_markdown_() == expected
+
+    def test_operator2_exact_zero_control_lookup_and_counts(self):
+        """The inspector finds an exact controlled root and invokes its native rule arguments."""
+
+        @decomp_inspector(gate_set={qp.X, qp.CCZ})
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.ctrl(qp.Z(2), [0, 1], control_values=[False, False])
+            return qp.probs()
+
+        inspector = circuit()
+        op = qp.ctrl(qp.Z(2), [0, 1], control_values=[False, False])
+        result = str(inspector.inspect_decomps(op))
+
+        assert "CHOSEN:" in result
+        assert "First-Level Expansion Gates: {CCZ: 1, PauliX: 4}" in result
+        assert "Full Expansion Gates: {PauliX: 4, CCZ: 1}" in result
 
     def test_op_type_error(self):
         """Tests that a proper error is raised when an operator type is provided."""
@@ -275,7 +293,11 @@ class TestInspectDecompGraph:
             """).strip()
 
         op = qp.MultiControlledX([0, 1, 2, 3])
-        assert str(inspector.inspect_decomps(op, num_work_wires=1)) == dedent("""
+        # Inspector output must not depend on process-global NumPy formatting changed by
+        # an earlier test or third-party library.
+        with np.printoptions(suppress=True):
+            result = str(inspector.inspect_decomps(op, num_work_wires=1))
+        assert result == dedent("""
             Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
             Not applicable (provided operator instance does not meet all conditions for this rule).
 

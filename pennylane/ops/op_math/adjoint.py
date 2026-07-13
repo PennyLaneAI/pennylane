@@ -27,6 +27,7 @@ from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.core.queuing import QueuingManager
+from pennylane.decomposition.resources import _op_type_and_params, _resource_rep_from_op
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
 
@@ -241,7 +242,8 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
-        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        with qp.QueuingManager.stop_recording():
+            jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
         flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
             *jaxpr.consts,
@@ -381,7 +383,9 @@ class Adjoint(SymbolicOp):
 
     @property
     def resource_params(self) -> dict:
-        return {"base_class": type(self.base), "base_params": self.base.resource_params}
+        base_rep = _resource_rep_from_op(self.base)
+        base_class, base_params = _op_type_and_params(base_rep)
+        return {"base_class": base_class, "base_params": base_params}
 
     @property
     def ndim_params(self):

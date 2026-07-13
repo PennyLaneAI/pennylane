@@ -1146,6 +1146,10 @@ class TestHash:
             name,
             (Operator2,),
             {
+                # Leaving the bare dynamically-created name here re-registers canonical
+                # pytrees such as ``qp.RX`` for the rest of the test process.  Also avoid a
+                # ``.RX`` suffix, which would make legacy namespace lookup ambiguous.
+                "__qualname__": f"TestHash._HashOnly{name}Operator",
                 "dynamic_argnames": ("phi",),
                 "__init__": lambda self, phi, wires: Operator2.__init__(self, phi, wires=wires),
             },

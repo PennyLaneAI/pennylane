@@ -199,7 +199,7 @@ class TestDynamicDecomposition:
         import jax
         from jax import numpy as jnp
 
-        from pennylane.capture.primitives import for_loop_prim
+        from pennylane.capture.primitives import for_loop_prim, operator_p
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -230,7 +230,10 @@ class TestDynamicDecomposition:
         assert rot_inner_eqn[-1].primitive == qp.Rot._primitive
 
         cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
-        assert cnot_inner_eqn[-1].primitive == qp.CNOT._primitive
+        cnot_eqn = cnot_inner_eqn[-1]
+        assert cnot_eqn.primitive is operator_p
+        assert cnot_eqn.params["op_cls"] is qp.CNOT
+        assert cnot_eqn.params["wire_lens"] == (2,)
         # Validate Ops
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)

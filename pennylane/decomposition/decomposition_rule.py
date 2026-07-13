@@ -26,9 +26,11 @@ from functools import singledispatch
 from textwrap import dedent
 from typing import overload
 
+import numpy as np
+
 import pennylane as qp
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
@@ -37,6 +39,7 @@ from .resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
     Resources,
+    _resource_rep_from_op,
     auto_wrap,
     resource_rep,
 )
@@ -357,13 +360,13 @@ def register_resources(
 
           import pennylane as qp
           from pennylane.allocation import allocate
-          from pennylane.decomposition import controlled_resource_rep
+          from pennylane.typing import Wire
 
           qp.decomposition.enable_graph()
 
           def _ops_fn(num_control_wires, **_):
               return {
-                  controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+                  qp.ctrl(qp.X(Wire[1]), Wire[num_control_wires]): 2,
                   qp.CRot: 1
               }
 
@@ -641,7 +644,7 @@ _decompositions_private = defaultdict(DecompCollection)
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -822,8 +825,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        self._conditions_met = rule.is_applicable(**op.resource_params)
-        self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+        resource_kwargs = op.arguments if isinstance(op, Operator2) else op.resource_params
+        self._conditions_met = rule.is_applicable(**resource_kwargs)
+        self._work_wire_spec = rule.get_work_wire_spec(**resource_kwargs)
         n_work_wires = self._work_wire_spec.total
         self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires
@@ -858,7 +862,14 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
         assert self._conditions_met and self._enough_work_wires
-        return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **self._op.hyperparameters)
+        # Matrix labels in ``qp.draw`` use NumPy's global print options. Keep inspector output
+        # stable when another test or dependency changes ``suppress`` process-wide.
+        with np.printoptions(suppress=False):
+            if isinstance(self._op, Operator2):
+                return qp.draw(self._rule)(**self._op.arguments)
+            return qp.draw(self._rule)(
+                *self._op.data, wires=self._op.wires, **self._op.hyperparameters
+            )
 
     @property
     def _name(self) -> str:
@@ -869,7 +880,10 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations(self) -> str:
         """The actual and estimated gate counts of this rule."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        resource_kwargs = (
+            self._op.arguments if isinstance(self._op, Operator2) else self._op.resource_params
+        )
+        estimated_count = self._rule.compute_resources(**resource_kwargs).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
         if allocations:
@@ -880,7 +894,10 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations_md(self) -> str:
         """The actual and estimated gate counts of this rule in the Markdown format."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        resource_kwargs = (
+            self._op.arguments if isinstance(self._op, Operator2) else self._op.resource_params
+        )
+        estimated_count = self._rule.compute_resources(**resource_kwargs).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
         if allocations:
@@ -1071,7 +1088,10 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
     """Count the gates that a decomposition rule produced."""
 
     with queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        if isinstance(op, Operator2):
+            rule(**op.arguments)
+        else:
+            rule(*op.data, wires=op.wires, **op.hyperparameters)
 
     actual_gate_counts = defaultdict(int)
     allocations = defaultdict(int)
@@ -1083,7 +1103,7 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
             continue
         if isinstance(_op, qp.allocation.Deallocate):
             continue
-        op_rep = resource_rep(_op.__class__, **_op.resource_params)
+        op_rep = _resource_rep_from_op(_op)
         actual_gate_counts[op_rep] += 1
 
     return dict(actual_gate_counts), dict(allocations)

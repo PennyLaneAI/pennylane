@@ -129,18 +129,26 @@ class TestStandardValidityBasisState:
             state_traced, wires_traced, closure_state, closure_wires
         )
 
-        tapes = qp.qjit(abstract_check)(state, wires)
-        for tape in tapes[:-1]:
-            assert len(tape) == 1
-            assert isinstance(tape[0], qp.X)
+        def qjit_check(state, wires):
+            tapes = abstract_check(state, wires)
+            for tape in tapes[:-1]:
+                assert len(tape) == 1
+                assert isinstance(tape[0], qp.X)
 
-        tape = tapes[-1]
-        if state_traced:
-            assert len(tape) == 6
-            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
-        else:
-            assert len(tape) == 2
-            assert all(isinstance(op, qp.X) for op in tape)
+            tape = tapes[-1]
+            if state_traced:
+                assert len(tape) == 6
+                assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
+            else:
+                assert len(tape) == 2
+                assert all(isinstance(op, qp.X) for op in tape)
+
+            # QuantumScripts created by a compiled loop may contain values scoped to that
+            # loop, so validate them while tracing and return a regular qjit-compatible value.
+            return state
+
+        result = qp.qjit(qjit_check)(state, wires)
+        assert np.array_equal(result, state)
 
 
 @pytest.mark.parametrize(

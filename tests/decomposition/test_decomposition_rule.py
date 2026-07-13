@@ -25,6 +25,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     WorkWireSpec,
+    _count_gates,
     _decompositions_private,
     register_condition,
     register_resources,
@@ -46,6 +47,25 @@ class CustomOp(Operator):
 @pytest.mark.unit
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
+
+    def test_count_gates_preserves_zero_control_count(self):
+        """Concrete gate counting must retain zero controls in the resource key."""
+
+        @register_resources({})
+        def zero_control_decomp(wires, **_):
+            qp.ctrl(qp.Z(wires[1]), control=wires[0], control_values=[False])
+
+        counts, allocations = _count_gates(CustomOp(wires=[0, 1]), zero_control_decomp)
+
+        expected = qp.decomposition.controlled_resource_rep(
+            qp.Z,
+            {},
+            num_control_wires=1,
+            num_zero_control_values=1,
+            num_work_wires=0,
+        )
+        assert counts == {expected: 1}
+        assert allocations == {}
 
     @pytest.mark.parametrize("exact_resources", [False, True])
     def test_create_decomposition_rule(self, exact_resources):
@@ -82,7 +102,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 1, qp.resource_rep(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -119,7 +139,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 1, qp.resource_rep(qp.CNOT): 4},
         )
 
     def test_decomposition_condition(self):
@@ -136,7 +156,7 @@ class TestDecompositionRule:
         assert rule_1.compute_resources(num_wires=3) == Resources(
             {
                 CompressedResourceOp(qp.H): 2,
-                CompressedResourceOp(qp.Toffoli): 1,
+                qp.resource_rep(qp.Toffoli): 1,
             }
         )
 
@@ -151,7 +171,7 @@ class TestDecompositionRule:
         assert rule_2.compute_resources(num_wires=3) == Resources(
             {
                 CompressedResourceOp(qp.H): 2,
-                CompressedResourceOp(qp.Toffoli): 1,
+                qp.resource_rep(qp.Toffoli): 1,
             }
         )
 
@@ -169,7 +189,7 @@ class TestDecompositionRule:
         assert rule_3.compute_resources(num_wires=3) == Resources(
             {
                 CompressedResourceOp(qp.H): 2,
-                CompressedResourceOp(qp.Toffoli): 1,
+                qp.resource_rep(qp.Toffoli): 1,
             }
         )
 
@@ -428,7 +448,7 @@ class TestDecompositionRule:
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 500, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 500, qp.resource_rep(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -438,7 +458,7 @@ class TestDecompositionRule:
         )
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={CompressedResourceOp(qp.RZ): 1, qp.resource_rep(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
 

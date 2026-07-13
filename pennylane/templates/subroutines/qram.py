@@ -39,8 +39,9 @@ from pennylane.ops import (
     cond,
     ctrl,
 )
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates import BasisEmbedding
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -651,25 +652,19 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
             (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
         ].count(0)
         if zero_control_values == 0:
-            resources[resource_rep(CNOT)] += (num_select_wires > 0) * 2
+            resources[CNOT] += (num_select_wires > 0) * 2
         else:
             resources[
-                controlled_resource_rep(
-                    base_class=PauliX,
-                    base_params={},
-                    num_control_wires=num_select_wires,
+                _ctrl_abstract(
+                    PauliX(Wire[1]),
+                    Wire[num_select_wires],
                     num_zero_control_values=zero_control_values,
                 )
             ] += (num_select_wires > 0) * 2
 
-        resources[
-            controlled_resource_rep(
-                base_class=PauliZ,
-                base_params={},
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += (1 << num_tree_control_wires) * num_target_wires
+        resources[_ctrl_abstract(PauliZ(Wire[1]), Wire[1])] += (
+            1 << num_tree_control_wires
+        ) * num_target_wires
 
     return resources
 
@@ -1036,14 +1031,7 @@ def _select_only_qram_resources(
 
         resources[PauliX] += control_values.count(0) * 2
 
-        resources[
-            controlled_resource_rep(
-                base_class=PauliX,
-                base_params={},
-                num_control_wires=n_total,
-                num_zero_control_values=0,
-            )
-        ] += num_target_wires
+        resources[_ctrl_abstract(PauliX(Wire[1]), Wire[n_total])] += num_target_wires
 
     return resources
 

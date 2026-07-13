@@ -31,6 +31,26 @@ class TestCollectResourceOps:
     """Unit tests for the CollectResourceOps interpreter."""
 
     @pytest.mark.unit
+    def test_direct_zero_controlled_operator(self):
+        """Directly captured Operator2 controls retain their exact zero count."""
+
+        def circuit():
+            qp.ctrl(qp.Z(3), control=[0, 1], control_values=[False, True])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        collector = CollectResourceOps()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+
+        expected = qp.decomposition.controlled_resource_rep(
+            qp.Z,
+            {},
+            num_control_wires=2,
+            num_zero_control_values=1,
+            num_work_wires=0,
+        )
+        assert collector.state["ops"] == {expected}
+
+    @pytest.mark.unit
     def test_flat_body_fn(self):
         """Tests a function without classical structure."""
 

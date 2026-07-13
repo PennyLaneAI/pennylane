@@ -41,7 +41,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -49,8 +49,12 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import auto_wrap
+from pennylane.decomposition.resources import (
+    _resource_rep_from_op,
+    auto_wrap,
+)
 from pennylane.ops import ChangeOpBasis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, Wire
 from pennylane.wires import Wires, is_abstract_qubit
@@ -68,18 +72,24 @@ def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
 
 
 def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
-    if isinstance(initial, CompressedResourceOp):
+    if isinstance(initial, CompressedResourceOp) or (
+        isinstance(initial, type) and issubclass(initial, Operator)
+    ):
         return auto_wrap(initial)
     if isinstance(initial, Operator):
-        return resource_rep(type(initial), **initial.resource_params)
+        return _resource_rep_from_op(initial)
     return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
 def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, type) and issubclass(initial, Operator):
+        return _adjoint_abstract(auto_wrap(initial))
+    if isinstance(initial, Operator2):
+        return _adjoint_abstract(_resource_rep_from_op(initial))
+    if isinstance(initial, CompressedResourceOp):
+        return _adjoint_abstract(initial)
     if isinstance(initial, Operator):
         return adjoint_resource_rep(type(initial), initial.resource_params)
-    if isinstance(initial, CompressedResourceOp):
-        return adjoint_resource_rep(initial.op_type, initial.params)
     return adjoint_subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
@@ -412,7 +422,7 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
 
     resources = defaultdict(int)
     for op in q.queue:
-        resources[resource_rep(type(op), **op.resource_params)] += 1
+        resources[_resource_rep_from_op(op)] += 1
     return resources
 
 

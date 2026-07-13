@@ -46,6 +46,21 @@ def test_weighted_graph_handles_negative_weight():
 
 
 @pytest.mark.unit
+def test_controlled_operator2_and_legacy_base_use_custom_gates():
+    """Controlled Operator2 and legacy bases reach their custom controlled gates."""
+    tape = qp.tape.QuantumScript(
+        [
+            qp.ops.Controlled(qp.X(0), control_wires=[1]),
+            qp.ops.Controlled(qp.H(0), control_wires=[1]),
+        ]
+    )
+
+    [new_tape], _ = qp.transforms.decompose(tape, gate_set={qp.CNOT, qp.CH})
+
+    assert new_tape.operations == [qp.CNOT(wires=[1, 0]), qp.CH(wires=[1, 0])]
+
+
+@pytest.mark.unit
 def test_weights_affect_graph_decomposition():
     tape = qp.tape.QuantumScript([qp.CRX(0.1, wires=[0, 1]), qp.Toffoli(wires=[0, 1, 2])])
 

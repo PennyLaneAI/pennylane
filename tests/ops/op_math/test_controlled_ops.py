@@ -15,6 +15,8 @@
 Unit tests for Operators inheriting from ControlledOp.
 """
 
+from collections import namedtuple
+
 import numpy as np
 import pytest
 from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
@@ -23,7 +25,9 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
+from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -824,6 +828,51 @@ def test_tuple_control_wires_non_parametric_ops(op_type):
     assert op_type([(0, 1), 2]).wires == qp.wires.Wires([(0, 1), 2])
 
 
+@pytest.mark.parametrize(
+    "op_type, wires",
+    [
+        (qp.CY, [0, None]),
+        (qp.CZ, [0, None]),
+        (qp.CNOT, [0, None]),
+        (qp.Toffoli, [0, 1, None]),
+    ],
+)
+def test_none_target_wire(op_type, wires):
+    """Test that None can be used as an explicit target wire label."""
+    op = op_type(wires)
+
+    assert op.wires == Wires(wires)
+    assert op.base.wires == Wires([None])
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    "op_type, wires", [(qp.CY, [0, 1]), (qp.CZ, [0, 1]), (qp.CNOT, [0, 1]), (qp.Toffoli, [0, 1, 2])]
+)
+def test_concrete_jax_scalar_wires(op_type, wires):
+    """Concrete JAX scalars inside a wire sequence should be normalized to wire labels."""
+    from jax import numpy as jnp
+
+    op = op_type([jnp.array(wire) for wire in wires])
+
+    assert op.wires == Wires(wires)
+
+
+@pytest.mark.parametrize("op_type", (qp.CY, qp.CZ, qp.CNOT))
+@pytest.mark.parametrize("use_jax_scalars", (False, pytest.param(True, marks=pytest.mark.jax)))
+def test_tuple_subclass_wires(op_type, use_jax_scalars):
+    """Tuple subclasses need not preserve their constructor when normalized as wires."""
+    pair_type = namedtuple("WirePair", ("control", "target"))
+    wires = (0, 1)
+    if use_jax_scalars:
+        jnp = pytest.importorskip("jax.numpy")
+        wires = tuple(jnp.array(wire) for wire in wires)
+
+    op = op_type(pair_type(*wires))
+
+    assert op.wires == Wires([0, 1])
+
+
 @pytest.mark.parametrize("op_type", (qp.CRX, qp.CRY, qp.CRZ, qp.CPhase))
 def test_tuple_control_wires_parametric_ops(op_type):
     """Test that tuples can be provided as control wire labels."""
@@ -832,12 +881,104 @@ def test_tuple_control_wires_parametric_ops(op_type):
 
 
 def test_CNOT_decomposition():
-    """Test that CNOT raises a DecompositionUndefinedError instead of using the
-    controlled_op decomposition functions"""
-    assert not qp.CNOT((0, 1)).has_decomposition
+    """Test that CNOT is terminal for legacy recursion but exposes graph decompositions."""
+    op = qp.CNOT((0, 1))
+    assert not op.has_decomposition
+    assert qp.decomposition.has_decomp(qp.CNOT)
 
     with pytest.raises(qp.operation.DecompositionUndefinedError):
         qp.CNOT.compute_decomposition()
 
     with pytest.raises(qp.operation.DecompositionUndefinedError):
-        qp.CNOT([0, 1]).decomposition()
+        op.decomposition()
+
+
+@pytest.mark.parametrize("op_type, expected", NON_PARAMETRIC_OPS_DECOMPOSITIONS)
+def test_non_parametric_compute_decomposition(op_type, expected):
+    """The public static decomposition API should return and queue each operation once."""
+    with qp.queuing.AnnotatedQueue() as queue:
+        decomposition = op_type.compute_decomposition(wires=[0, 1])
+
+    assert len(decomposition) == len(expected) == len(queue.queue)
+    for actual, target, queued in zip(decomposition, expected, queue.queue, strict=True):
+        qp.assert_equal(actual, target)
+        assert actual is queued
+
+
+def test_toffoli_compute_decomposition():
+    """The public Toffoli static decomposition should use its registered default rule."""
+    wires = [0, 1, 2]
+    expected = [
+        qp.Hadamard(wires=2),
+        qp.CNOT(wires=[1, 2]),
+        qp.adjoint(qp.T(wires=2)),
+        qp.CNOT(wires=[0, 2]),
+        qp.T(wires=2),
+        qp.CNOT(wires=[1, 2]),
+        qp.adjoint(qp.T(wires=2)),
+        qp.CNOT(wires=[0, 2]),
+        qp.T(wires=2),
+        qp.T(wires=1),
+        qp.CNOT(wires=[0, 1]),
+        qp.Hadamard(wires=2),
+        qp.T(wires=0),
+        qp.adjoint(qp.T(wires=1)),
+        qp.CNOT(wires=[0, 1]),
+    ]
+
+    with qp.queuing.AnnotatedQueue() as queue:
+        decomposition = qp.Toffoli.compute_decomposition(wires=wires)
+
+    assert len(decomposition) == len(expected) == len(queue.queue)
+    for actual, target, queued in zip(decomposition, expected, queue.queue, strict=True):
+        qp.assert_equal(actual, target)
+        assert actual is queued
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "op_type, wires, expected_num_ops",
+    [(qp.CY, [0, 1], 2), (qp.CZ, [0, 1], 1), (qp.Toffoli, [0, 1, 2], 15)],
+)
+def test_compute_decomposition_capture_binds_once(op_type, wires, expected_num_ops):
+    """Static decompositions should bind each operation exactly once under capture."""
+    import jax
+
+    def decompose():
+        op_type.compute_decomposition(wires=wires)
+
+    jaxpr = jax.make_jaxpr(decompose)()
+    with qp.queuing.AnnotatedQueue() as queue:
+        qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+    assert len(queue.queue) == expected_num_ops
+
+
+@pytest.mark.parametrize(
+    "op_type, wires",
+    [
+        (qp.CNOT, Wire[2]),
+        (qp.Toffoli, Wire[3]),
+    ],
+)
+def test_abstract_controlled_ops(op_type, wires):
+    """Tests creating abstract controlled ops as one might for resource keys."""
+    key = op_type(wires)
+
+    assert isinstance(key, op_type)
+    assert isinstance(key.wires, AbstractWires)
+    assert len(key.wires) == len(wires)
+
+
+@pytest.mark.parametrize(
+    "base, control_wires, control_values, expected",
+    [
+        (qp.X(Wire[1]), Wire[1], [1], qp.CNOT(Wire[2])),
+        (qp.CNOT(Wire[2]), Wire[1], [1], qp.Toffoli(Wire[3])),
+    ],
+)
+def test_custom_controlled_ops_dispatch(base, control_wires, control_values, expected):
+    """Tests that we can use the custom dispatch logic with abstract controlled ops."""
+    mapped_op = custom_ctrl_dispatch(base, control_wires, control_values, None, "borrowed")
+
+    assert mapped_op == expected

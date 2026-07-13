@@ -27,6 +27,7 @@ from pennylane import allocation, math
 from pennylane.core.operator import Operator
 from pennylane.core.operator.operator2 import (  # tach-ignore
     Operator2,
+    _normalize_concrete_wire_sequence,
     abstractify,
     operator_p,
     pop_op_eqns,
@@ -42,18 +43,28 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
+    _op_type_and_params,
     controlled_resource_rep,
     resolve_work_wire_type,
     resource_rep,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.typing import AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
 
 # pylint: disable=unused-argument,protected-access,no-value-for-parameter
+
+
+def _concrete_zero_control_count(control_values):
+    """Return the number of concrete zero controls, or ``None`` for abstract values."""
+    if isinstance(control_values, AbstractArray):
+        return None
+    if control_values is None:
+        return 0
+    return sum(not bool(value) for value in control_values)
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
@@ -137,8 +148,10 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        control_wires = Wires(control_wires)
-        work_wires = Wires([] if work_wires is None else work_wires)
+        control_wires = Wires(_normalize_concrete_wire_sequence(control_wires))
+        work_wires = Wires(
+            _normalize_concrete_wire_sequence([] if work_wires is None else work_wires)
+        )
 
         if Wires.shared_wires([base.wires, control_wires]):
             raise ValueError("control_wires must not overlap with the base operator.")
@@ -203,6 +216,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             control_values = Bool[1]
         elif isinstance(control_values, (list, tuple, Wires)):
             control_values = Bool[len(control_values)]
+        elif isinstance(control_values, AbstractArray):
+            control_values = Bool[control_values.shape[0] if control_values.shape else 1]
 
         # abstractify the base
         base = abstractify(base)
@@ -387,6 +402,19 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             work_wire_type=self.work_wire_type,
         )
 
+    @override
+    def pow(self, z):
+        return [
+            qp.ctrl(
+                op,
+                self.control_wires,
+                control_values=self.control_values,
+                work_wires=self.work_wires,
+                work_wire_type=self.work_wire_type,
+            )
+            for op in self.base.pow(z)
+        ]
+
     @property
     @override
     # pylint: disable=invalid-overridden-method,arguments-differ
@@ -541,32 +569,62 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if not qp.capture.enabled():
             return
 
-        if self.base.tracer is None:
-            # pylint: disable=protected-access
-            self.base._bind_primitive()
-            # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
-            # In that case, there is nothing to do, so return early.
-            if self.base.tracer is None:
+        eqns = pop_op_eqns((self.base,))
+        if len(eqns) == 0:
+            # The base may not have been bound in this trace, or its stored tracer may be stale.
+            # Bind it now and consume only the equation produced in the current trace.
+            self.base._bind_primitive()  # pylint: disable=protected-access
+            eqns = pop_op_eqns((self.base,))
+            if len(eqns) == 0:
+                # Capture can be enabled outside a tracing context, in which case there is no
+                # equation to edit.
                 return
 
-        eqns = pop_op_eqns((self.base,))
         assert len(eqns) == 1, f"Expected exactly one plxpr equation for {self.base}."
-        params = eqns[0].params
+        params = dict(eqns[0].params)
         n_ctrls = params["n_ctrls"]
+        n_work_wires = params.get("n_work_wires", 0)
+        base_work_wire_type = params.get("work_wire_type", "borrowed")
 
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values.
-        if n_ctrls == 0:
-            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
+        controls_start = len(eqns[0].invars) - 2 * n_ctrls
+        base_and_work_wires = eqns[0].invars[:controls_start]
+        if n_work_wires:
+            base_invars = base_and_work_wires[:-n_work_wires]
+            base_work_wires = base_and_work_wires[-n_work_wires:]
         else:
-            # invars are ordered as (*other_args, *control_wires, *control_values), so we
-            # need to insert the new control wires before the old ones, and do the same
-            # for control values too.
-            control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
-            control_values = self.control_values + eqns[0].invars[-n_ctrls:]
-            invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
+            base_invars = base_and_work_wires
+            base_work_wires = []
+
+        # Preserve the trailing ``(*control_wires, *control_values)`` layout while
+        # prepending outer controls to controls already folded into the base equation.
+        base_control_wires = eqns[0].invars[controls_start : controls_start + n_ctrls]
+        base_control_values = eqns[0].invars[controls_start + n_ctrls :]
+        control_wires = self.control_wires.tolist() + base_control_wires
+        control_values = self.control_values + base_control_values
+
+        work_wires = self.work_wires.tolist() + base_work_wires
+        work_wire_type = (
+            resolve_work_wire_type(
+                base_work_wires,
+                base_work_wire_type,
+                self.work_wires,
+                self.work_wire_type,
+            )
+            if n_ctrls
+            else self.work_wire_type
+        )
+        invars = base_invars + work_wires + control_wires + control_values
 
         params["n_ctrls"] += len(self.control_wires)
+        if work_wires or work_wire_type != "borrowed":
+            params["n_work_wires"] = len(work_wires)
+            params["work_wire_type"] = work_wire_type
+        else:
+            # Keep the original primitive schema for the default no-work-wire case.
+            params.pop("n_work_wires", None)
+            params.pop("work_wire_type", None)
         res = operator_p.bind(*invars, **params)
 
         self.base.tracer = None
@@ -615,14 +673,14 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
     def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
         base_counts = base_rule.compute_resources(**base.arguments).gate_counts
-        # TODO: we need a better startegy for control values, but for now
-        #       we're assuming that half the control values are 0s
         gate_counts = {
             _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_counts.items()
         }
         base_x_count = gate_counts.get(qp.X(Wire[1]), 0)
-        gate_counts[qp.X(Wire[1])] = base_x_count + len(control_values)
+        num_zero_controls = _concrete_zero_control_count(control_values)
+        num_x_flips = len(control_values) if num_zero_controls is None else 2 * num_zero_controls
+        gate_counts[qp.X(Wire[1])] = base_x_count + num_x_flips
         return gate_counts
 
     @register_condition(_condition_fn)
@@ -685,14 +743,16 @@ def flip_control_adjoint(base, control_wires, control_values, work_wires, work_w
 
 
 def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    num_zero_controls = _concrete_zero_control_count(control_values)
+    if num_zero_controls is None:
+        # Preserve the previous half-zero estimate when only an abstract boolean shape is known.
+        num_zero_controls = len(control_wires) // 2
     return {
         resource_rep(
             qp.ControlledQubitUnitary,
             num_target_wires=1,
             num_control_wires=len(control_wires),
-            # TODO: again assuming that half the control values are 0s, fix
-            #       when we have a better solution here.
-            num_zero_control_values=len(control_wires) // 2,
+            num_zero_control_values=num_zero_controls,
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         ): 1
@@ -725,10 +785,10 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         ).gate_counts
-        # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
-        #       gates for no reason. It'll be like this until we have a better solution.
         base_x_count = gate_counts.get(qp.X(Wire[1]), 0)
-        gate_counts[qp.X(Wire[1])] = base_x_count + len(control_values)
+        num_zero_controls = _concrete_zero_control_count(control_values)
+        num_x_flips = len(control_values) if num_zero_controls is None else 2 * num_zero_controls
+        gate_counts[qp.X(Wire[1])] = base_x_count + num_x_flips
         return gate_counts
 
     # pylint: disable=protected-access
@@ -774,13 +834,11 @@ def _ctrl_single_work_wire_resource(
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         ): 1,
-        controlled_resource_rep(
-            qp.X,
-            {},
-            num_control_wires=len(control_wires),
-            num_zero_control_values=0,
-            num_work_wires=len(work_wires),
-            work_wire_type=work_wire_type,
+        _ctrl_abstract(
+            qp.X(Wire[1]),
+            Wire[len(control_wires)],
+            Wire[len(work_wires)],
+            work_wire_type,
         ): 2,
     }
 
@@ -801,8 +859,8 @@ ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_sin
 def _ctrl_abstract(
     op: AbstractOperatorLike,
     control_wires: AbstractWires,
-    work_wires: AbstractWires,
-    work_wire_type: str,
+    work_wires: AbstractWires = Wire[0],
+    work_wire_type: str = "borrowed",
     num_zero_control_values: int = 0,
 ):
 
@@ -818,6 +876,44 @@ def _ctrl_abstract(
 
     if isinstance(op, type) and issubclass(op, Operator2):
         op = abstractify(op)
+
+    # Controlling an X-family gate dispatches to CNOT, Toffoli, or MultiControlledX for
+    # concrete operators. Construct the matching resource representation directly here:
+    # legacy MultiControlledX cannot be initialized with AbstractWires, and routing the
+    # abstract operator through ``qp.ctrl`` would therefore fail before resources are computed.
+    x_control_counts = {qp.X: 0, qp.CNOT: 1, qp.Toffoli: 2}
+    if type(op) in x_control_counts:
+        num_control_wires = len(control_wires) + x_control_counts[type(op)]
+        if num_zero_control_values == 0 and num_control_wires == 1:
+            return abstractify(qp.CNOT)
+        if num_zero_control_values == 0 and num_control_wires == 2 and not work_wires:
+            return abstractify(qp.Toffoli)
+        return resource_rep(
+            qp.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=len(work_wires),
+            work_wire_type=work_wire_type,
+        )
+
+    if num_zero_control_values == 0:
+        if type(op) is qp.Z and len(control_wires) == 1:
+            return abstractify(qp.CZ)
+        if (type(op) is qp.Z and len(control_wires) == 2) or (
+            type(op) is qp.CZ and len(control_wires) == 1
+        ):
+            return resource_rep(qp.CCZ)
+
+    if num_zero_control_values and isinstance(op, Operator2):
+        base_class, base_params = _op_type_and_params(op)
+        return controlled_resource_rep(
+            base_class,
+            base_params,
+            num_control_wires=len(control_wires),
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=len(work_wires),
+            work_wire_type=work_wire_type,
+        )
 
     control_values = Bool[len(control_wires)] if num_zero_control_values else None
     return qp.ctrl(

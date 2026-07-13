@@ -195,6 +195,10 @@ class Operator2(metaclass=OperatorMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    # Compatibility defaults used by legacy symbolic wrappers while operators are migrated.
+    grad_method = None
+    grad_recipe = None
+
     def __init__(self, *args, **kwargs):
         # Union[PauliSentence, None]: Representation of the operator as a
         # pauli sentence, if applicable
@@ -1304,6 +1308,27 @@ class Operator2(metaclass=OperatorMeta):
 # ---------------------------------------------------------------------------------
 
 
+def _normalize_concrete_wire_sequence(wires):
+    """Convert concrete scalar JAX values inside a wire sequence to Python scalars."""
+    if not isinstance(wires, (list, tuple, Wires)):
+        return wires
+    normalized_wires = tuple(
+        (
+            wire.item()
+            if math.get_interface(wire) == "jax"
+            and not math.is_abstract(wire)
+            and getattr(wire, "ndim", None) == 0
+            else wire
+        )
+        for wire in wires
+    )
+    if isinstance(wires, Wires):
+        return Wires(normalized_wires)
+    if isinstance(wires, list):
+        return list(normalized_wires)
+    return normalized_wires
+
+
 def _init_wires(op: Operator2):
     """Initialize operator wires.
 
@@ -1317,6 +1342,20 @@ def _init_wires(op: Operator2):
     for wname, wsize in zip(op.wire_argnames, op.wire_sizes, strict=True):
         if wname not in op.hybrid_argnames:
             warg = op._bound_args.arguments[wname]
+            if (
+                isinstance(warg, np.ndarray)
+                and math.get_interface(warg) == "numpy"
+                and warg.ndim == 0
+            ):
+                # Match the legacy capture binder, which treats a scalar NumPy array as one
+                # concrete wire rather than as an unhashable wire label. Preserve ndarray
+                # subclasses such as ``pennylane.numpy.tensor`` as legacy wire labels.
+                warg = warg.item()
+            else:
+                # Captured decomposition rules can replay concrete JAX scalar wires inside a
+                # Python sequence. Normalize only those scalar values, preserving abstract
+                # tracers and arbitrary hashable wire labels.
+                warg = _normalize_concrete_wire_sequence(warg)
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
             op._bound_args.arguments[wname] = canonical_wires
 
@@ -1376,8 +1415,13 @@ def _init_arg_types(op: Operator2) -> None:
             continue
 
         # Dynamic argument
-        if isinstance(argval, (Number, list, tuple)):
+        if isinstance(argval, Number):
             argval = np.array(argval)
+        elif isinstance(argval, (list, tuple)):
+            # NumPy otherwise assigns float64 to an empty sequence, even when the sequence was
+            # normalized for an argument with a different declared dtype (for example, an empty
+            # collection of boolean control values).
+            argval = np.array(argval, dtype=exp_type.dtype if not argval else None)
         # If the argument is batched, compare the shape other than that batch dimension
         arg_shape = argval.shape if isinstance(argval, AbstractArray) else math.shape(argval)
         either_is_ellipsis = exp_type.shape is Ellipsis or arg_shape is Ellipsis
@@ -1579,6 +1623,8 @@ if has_jax:
         hybrid_lens,
         hybrid_trees,
         n_ctrls=0,
+        n_work_wires=0,
+        work_wire_type="borrowed",
         adjoint=False,
         **static_args,
     ):
@@ -1593,9 +1639,9 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete impl.
-                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
+                args[name] = Wires(
+                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
+                )
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
@@ -1604,13 +1650,19 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        # Work wires precede controls so the established trailing
+        # ``(*control_wires, *control_values)`` ABI remains intact.
+        work_wires = all_args[i : i + n_work_wires]
+        i += n_work_wires
+
         if n_ctrls:
             control_wires = all_args[i : i + n_ctrls]
             i += n_ctrls
-            control_values = all_args[i:]
-            assert len(control_wires) == len(control_values)
+            control_values = all_args[i : i + n_ctrls]
+            i += n_ctrls
         else:
             control_wires = control_values = ()
+        assert i == len(all_args)
 
         op = type.__call__(op_cls, **args)
         if adjoint:
@@ -1621,6 +1673,8 @@ if has_jax:
                 op,
                 control_wires=control_wires,
                 control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
             )
         return op
 
@@ -1633,6 +1687,54 @@ else:  # pragma: no cover
     operator_p = None
 
 
+def _get_live_operator_tracer(op: Operator2):
+    """Return an operator's tracer only while its producing equation is still active.
+
+    ``Operator2.tracer`` is temporary capture state, not a cache that can be reused by a
+    later JAX trace.  A finalized trace clears its frame's equation list, while a live
+    operator equation remains present as a weak reference.  Clear stale state eagerly so
+    that the operator can be rebound in the current trace.
+    """
+    tracer = op.tracer
+    if tracer is None:
+        return None
+
+    # pylint: disable=protected-access
+    frame = tracer._trace.frame
+    eqn = tracer.parent
+    if any(eqn_ref() is eqn for eqn_ref in frame.tracing_eqns):
+        return tracer
+
+    op.tracer = None
+    return None
+
+
+def _get_or_bind_operator_tracer(op: Operator2):
+    """Return a live tracer for ``op``, binding its primitive when necessary."""
+    tracer = _get_live_operator_tracer(op)
+    if tracer is None:
+        op._bind_primitive()  # pylint: disable=protected-access
+        tracer = _get_live_operator_tracer(op)
+    return tracer
+
+
+def _get_or_bind_operator_tracers(value):
+    """Replace ``Operator2`` leaves in ``value`` with live capture tracers.
+
+    The input pytree structure is preserved.  When capture is enabled outside a JAX
+    tracing context, binding produces no tracer and the concrete operator leaf is kept.
+    Legacy operators are treated as leaves and left unchanged.
+    """
+    leaves, structure = flatten(value, is_leaf=lambda leaf: isinstance(leaf, Operator))
+    bound_leaves = []
+    for leaf in leaves:
+        if isinstance(leaf, Operator2):
+            tracer = _get_or_bind_operator_tracer(leaf)
+            leaf = leaf if tracer is None else tracer
+        bound_leaves.append(leaf)
+    return unflatten(bound_leaves, structure)
+
+
 def pop_op_eqns(ops: Iterable):
     """Delete the jaxpr equations for operators that have been used as data.
 
@@ -1643,13 +1745,14 @@ def pop_op_eqns(ops: Iterable):
     old_eqns = []
 
     for op in ops:
-        if op.tracer is not None:
+        tracer = _get_live_operator_tracer(op)
+        if tracer is not None:
             # pylint: disable=protected-access
-            frame = op.tracer._trace.frame
+            frame = tracer._trace.frame
             assert frame.auto_dce is False  # eqns are stored differently if this is enabled
 
             # for some reason the frame now wraps equations in lambdas
-            eqn = op.tracer.parent
+            eqn = tracer.parent
             old_eqns.append(eqn)
             frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
 

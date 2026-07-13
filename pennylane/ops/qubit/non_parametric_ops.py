@@ -33,7 +33,6 @@ from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
@@ -46,6 +45,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
@@ -281,12 +281,10 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
     return {
         qp.H: 2,
         qp.RY: 2,
-        controlled_resource_rep(
-            qp.X,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        _ctrl_abstract(
+            qp.X(Wire[1]),
+            control_wires=Wire[num_control_wires],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 1,
     }
@@ -313,6 +311,28 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
+def _flatten_pauli_operator(op):
+    """Keep concrete Pauli wires static while allowing traced wires to remain dynamic."""
+    if (
+        getattr(op, "_dynamic_wire_pytree", False)
+        or isinstance(op.wires, AbstractWires)
+        or any(math.is_abstract(wire) for wire in op.wires)
+    ):
+        return Operator2._flatten(op)
+    return op.data, (op.wires, tuple(op.hyperparameters.items()))
+
+
+def _unflatten_pauli_operator(cls, data, metadata):
+    """Reconstruct a Pauli operator from either its legacy or Operator2 pytree format."""
+    if len(metadata) == 2 and isinstance(metadata[0], (Wires, list)):
+        with qp.QueuingManager.stop_recording():
+            with qp.capture.pause():
+                return cls(*data, wires=metadata[0], **dict(metadata[1]))
+    op = Operator2._unflatten.__func__(cls, data, metadata)
+    op._dynamic_wire_pytree = True  # pylint: disable=protected-access
+    return op
+
+
 class PauliX(Operator2):
     r"""
     The Pauli X operator
@@ -333,6 +353,9 @@ class PauliX(Operator2):
     wire_sizes = (1,)
 
     arg_specs = {"wires": Wire[1]}
+
+    _flatten = _flatten_pauli_operator
+    _unflatten = classmethod(_unflatten_pauli_operator)
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -600,6 +623,9 @@ class PauliY(Operator2):
 
     arg_specs = {"wires": Wire[1]}
 
+    _flatten = _flatten_pauli_operator
+    _unflatten = classmethod(_unflatten_pauli_operator)
+
     is_verified_hermitian = True
 
     num_wires = 1
@@ -842,6 +868,9 @@ class PauliZ(Operator2):
     wire_sizes = (1,)
 
     arg_specs = {"wires": Wire[1]}
+
+    _flatten = _flatten_pauli_operator
+    _unflatten = classmethod(_unflatten_pauli_operator)
 
     is_verified_hermitian = True
 

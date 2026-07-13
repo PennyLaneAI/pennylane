@@ -101,7 +101,7 @@ def test_hybrid_capture_wires():
     assert jaxpr.eqns[1].params["op_cls"] is qp.X
 
     with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
+        qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
 
     assert len(q) == 1
     qp.assert_equal(q.queue[0], qp.X(3))
@@ -172,28 +172,27 @@ def test_different_wires(w, as_kwarg, autograph):
 
     jaxpr = jax.make_jaxpr(qfunc)()
 
-    if isinstance(w, jax.numpy.ndarray) and w.shape != ():
-        offset = 1
-    else:
-        offset = 0
-
-    assert len(jaxpr.eqns) == 1 + offset
-
-    eqn = jaxpr.eqns[offset + 0]
+    op_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive == operator_p]
+    assert len(op_eqns) == 1
+    eqn = op_eqns[0]
     assert eqn.primitive == operator_p
     assert eqn.params["op_cls"] is qp.X
     assert len(eqn.invars) == 1
-    if not isinstance(w, jax.numpy.ndarray):
-        assert isinstance(eqn.invars[0], jax.extend.core.Literal)
-        assert eqn.invars[0].val == 0
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-    assert eqn.params == {"n_wires": 1}
+    assert eqn.params == {
+        "op_cls": qp.X,
+        "wire_lens": (1,),
+        "hybrid_lens": (),
+        "hybrid_trees": (),
+        "n_ctrls": 0,
+        "adjoint": False,
+    }
 
     with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
     assert len(q) == 1
     qp.assert_equal(q.queue[0], qp.X(0))
@@ -246,6 +245,24 @@ def test_parametrized_op():
 
 
 class TestSpecialOps:
+    def test_explicit_multi_controlled_x(self):
+        """An explicit MCX must capture and replay as one MCX without a queued base X."""
+
+        def qfunc():
+            qp.MultiControlledX([0, 1, 2], control_values=[False, True])
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive is qp.MultiControlledX._primitive
+        with qp.queuing.AnnotatedQueue() as queue:
+            qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(queue) == 1
+        qp.assert_equal(
+            queue.queue[0], qp.MultiControlledX([0, 1, 2], control_values=[False, True])
+        )
+
     def test_pauli_rot(self):
         """Test a special operation that has positional metadata and overrides binding."""
 
@@ -392,18 +409,15 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(qp.adjoint)(qp.X(0))
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is qp.X
-
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Adjoint._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == operator_p
+        assert eqn.params["op_cls"] is qp.X
+        assert eqn.params["adjoint"] is True
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {}
 
         with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.adjoint(qp.X(0)))
@@ -418,15 +432,12 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is qp.X
-
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Adjoint._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == operator_p
+        assert eqn.params["op_cls"] is qp.X
+        assert eqn.params["adjoint"] is True
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {}
 
     def test_controlled_with_non_int_control_wires(self):
         """Tests that controlled works with non int control wires."""
@@ -436,19 +447,14 @@ class TestOpmath:
 
         cjaxpr = jax.make_jaxpr(qfunc)(jax.numpy.array(1))
 
-        assert len(cjaxpr.eqns) == 2
-
-        base_eqn = cjaxpr.eqns[0]
-        assert base_eqn.primitive == operator_p
-        assert base_eqn.params["op_cls"] is qp.X
-
-        ctrl_eqn = cjaxpr.eqns[1]
-        assert ctrl_eqn.primitive == qp.ops.Controlled._primitive
-        assert ctrl_eqn.invars[0] == base_eqn.outvars[0]
-        assert ctrl_eqn.invars[1] == cjaxpr.jaxpr.invars[0]
+        assert len(cjaxpr.eqns) == 1
+        ctrl_eqn = cjaxpr.eqns[0]
+        assert ctrl_eqn.primitive == operator_p
+        assert ctrl_eqn.params["op_cls"] is qp.CNOT
+        assert ctrl_eqn.invars[0] == cjaxpr.jaxpr.invars[0]
 
         with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(cjaxpr.jaxpr, cjaxpr.consts, jax.numpy.array(1))
+            qp.capture.eval_jaxpr(cjaxpr.jaxpr, cjaxpr.consts, jax.numpy.array(1))
 
         assert len(q) == 1
         expected = qp.ctrl(qp.X(0), control=1)

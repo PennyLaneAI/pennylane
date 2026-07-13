@@ -20,6 +20,7 @@ from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
+    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
@@ -201,7 +202,7 @@ def _incrementer_resources(num_wires, **_):
         # Forward ladder
         resources[resource_rep(TemporaryAND)] = num_wires - 2
         # Backward ladder and trailing CNOT
-        resources[resource_rep(CNOT)] = num_wires - 2 + 1
+        resources[CNOT] = num_wires - 2 + 1
         resources[adjoint_resource_rep(TemporaryAND, {})] = num_wires - 2
     resources[X] = 1
     return resources
@@ -267,7 +268,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
                 _slice = lax.dynamic_slice(all_wires, (2 * k,), (3,))
             else:
                 _slice = all_wires[2 * k : 2 * k + 3]
-            adjoint(TemporaryAND)(_slice)
+            adjoint(TemporaryAND(_slice))
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 
@@ -337,8 +338,8 @@ def _controlled_incrementer_resources(base_params, num_control_wires, **_):
     resources = _incrementer_resources(base_params["num_wires"] + num_control_wires)
     resources[X] = 0
     if num_control_wires > 2:
-        resources[resource_rep(CNOT)] -= num_control_wires - 2
-    resources[resource_rep(CNOT)] -= num_control_wires > 1
+        resources[CNOT] -= num_control_wires - 2
+    resources[CNOT] -= num_control_wires > 1
     return resources
 
 

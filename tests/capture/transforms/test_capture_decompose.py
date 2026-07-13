@@ -32,6 +32,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.core import Operator2
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
@@ -92,6 +93,59 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[0].primitive == qp.RZ._primitive
         assert jaxpr.eqns[1].primitive == qp.RY._primitive
         assert jaxpr.eqns[2].primitive == qp.RZ._primitive
+
+    def test_graph_invokes_native_controlled_operator2_rule(self):
+        """Graph capture reconstructs native Operator2 arguments from the operator equation."""
+
+        @qp.register_resources({qp.X: 2, qp.CCZ: 1})
+        def custom_controlled_y(base, control_wires, control_values, **_):
+            qp.cond(qp.math.logical_not(control_values[0]), qp.X)(control_wires[0])
+            qp.CCZ(control_wires + base.wires)
+            qp.cond(qp.math.logical_not(control_values[0]), qp.X)(control_wires[0])
+
+        with qp.decomposition.toggle_graph_ctx(True):
+
+            @DecomposeInterpreter(
+                gate_set={qp.X, qp.CCZ},
+                fixed_decomps={"C(PauliY)": custom_controlled_y},
+            )
+            def f():
+                qp.ctrl(qp.Y(2), [0, 1], control_values=[False, True])
+
+            jaxpr = jax.make_jaxpr(f)()
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        assert collector.state["ops"] == [qp.X(0), qp.CCZ([0, 1, 2]), qp.X(0)]
+
+    def test_graph_preserves_controlled_operator2_work_wire_metadata(self):
+        """Graph decomposition receives captured work wires and their allocation type."""
+
+        @qp.register_resources({qp.X: 1})
+        def custom_controlled_y(base, control_wires, control_values, work_wires, work_wire_type):
+            assert work_wire_type == "zeroed"
+            qp.X(work_wires[0])
+
+        with qp.decomposition.toggle_graph_ctx(True):
+
+            @DecomposeInterpreter(
+                gate_set={qp.X},
+                fixed_decomps={"C(PauliY)": custom_controlled_y},
+            )
+            def f(work_wire):
+                qp.ctrl(
+                    qp.Y(2),
+                    [0, 1],
+                    control_values=[False, True],
+                    work_wires=[work_wire],
+                    work_wire_type="zeroed",
+                )
+
+            jaxpr = jax.make_jaxpr(f)(3)
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert collector.state["ops"] == [qp.X(4)]
 
     def test_returned_op_not_decomposed(self):
         """Test that operators that are returned by the input function are not decomposed."""
@@ -160,9 +214,11 @@ class TestDecomposeInterpreter:
         for eqn in [eqn1, eqn2]:
             assert eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
             j = eqn.params["jaxpr"]
-            assert j.eqns[4].primitive == qp.CNOT._primitive
+            assert j.eqns[4].primitive == operator_p
+            assert j.eqns[4].params["op_cls"] is qp.CNOT
             assert j.eqns[5].primitive == qp.RX._primitive
-            assert j.eqns[6].primitive == qp.CNOT._primitive
+            assert j.eqns[6].primitive == operator_p
+            assert j.eqns[6].params["op_cls"] is qp.CNOT
 
         assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
 
@@ -291,15 +347,25 @@ class TestDecomposeInterpreter:
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
-            op_prims = [
-                eqn.primitive
+            op_eqns = [
+                eqn
                 for eqn in transformed_jaxpr.eqns
                 if eqn.outvars[0].aval == qp.capture.AbstractOperator()
             ]
-            expected_prims = [op._primitive for op in qp.ctrl(qp.RX(*args, 0), 1).decomposition()]
-            assert all(
-                prim == exp_prim for prim, exp_prim in zip(op_prims, expected_prims, strict=True)
-            )
+            expected_ops = qp.ctrl(qp.RX(*args, 0), 1).decomposition()
+            for eqn, expected_op in zip(op_eqns, expected_ops, strict=True):
+                if isinstance(expected_op, Operator2):
+                    assert eqn.primitive is operator_p
+                    assert eqn.params["op_cls"] is type(expected_op)
+                else:
+                    assert eqn.primitive is type(expected_op)._primitive
+
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.capture.eval_jaxpr(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *args)
+
+            assert len(q.queue) == len(expected_ops)
+            for captured_op, expected_op in zip(q.queue, expected_ops, strict=True):
+                qp.assert_equal(captured_op, expected_op, check_interface=False)
         else:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive

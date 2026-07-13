@@ -304,6 +304,18 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
+        if qp.QueuingManager.recording():
+            # Re-apply dropped operations when an interpreter is replayed into a queue. Operator2
+            # reconstruction intentionally pauses capture, so pytree unflattening alone would
+            # otherwise drop these operations from the replayed circuit.
+            with qp.capture.pause():
+                return qp.apply(op)
+        if isinstance(op, qp.core.operator.Operator2):
+            # Pytree reconstruction pauses capture for Operator2. Explicitly bind while an outer
+            # JAX trace is active so transform interpreters re-emit the generic operator equation;
+            # outside tracing this harmlessly returns the same concrete operator.
+            op._bind_primitive()  # pylint: disable=protected-access
+            return op
         data, struct = jax.tree_util.tree_flatten(op)
         return jax.tree_util.tree_unflatten(struct, data)
 
@@ -806,7 +818,7 @@ FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
 def eval_jaxpr(jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
-    """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
+    """Evaluate a jaxpr with PennyLane's capture interpreter.
 
     Args:
         jaxpr (jax.extend.core.Jaxpr): a jaxpr
@@ -816,8 +828,9 @@ def eval_jaxpr(jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
     Returns:
         list[TensorLike]
 
-    This function only differs from ``jax.core.eval_jaxpr`` in that it can handle the creation
-    of dynamically shaped arrays via ``iota`` and ``broadcast_in_dim``.
+    Unlike ``jax.core.eval_jaxpr``, this function dispatches PennyLane capture primitives through
+    :class:`~.PlxprInterpreter`. It also supports creating dynamically shaped arrays via ``iota``
+    and ``broadcast_in_dim``.
 
     >>> import jax
     >>> jax.config.update("jax_dynamic_shapes", True)

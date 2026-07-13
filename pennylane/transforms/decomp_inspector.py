@@ -24,7 +24,7 @@ from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
 from pennylane.decomposition.decomposition_rule import _DecompInfo, _DecompInfoCollection
-from pennylane.decomposition.resources import resource_rep
+from pennylane.decomposition.resources import _resource_rep_from_op
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -249,7 +249,7 @@ class DecompGraphInspector:
                 "first argument, not an operator type."
             )
 
-        op_rep = resource_rep(op.__class__, **op.resource_params)
+        op_rep = _resource_rep_from_op(op)
         if op_rep not in self._decomp_graph._op_to_op_nodes:
             return (
                 "This operator is not found in the decomposition graph! This typically "

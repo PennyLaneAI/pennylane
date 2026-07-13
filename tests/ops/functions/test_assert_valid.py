@@ -28,7 +28,12 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import (
+    _check_capture,
+    _check_decomposition,
+    _check_pytree,
+    _test_decomposition_rule,
+)
 from pennylane.wires import Wires
 
 
@@ -133,6 +138,34 @@ class TestDecompositionErrors:
             assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)
         assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True, skip_wire_mapping=True)
 
+    @pytest.mark.parametrize("wires", ([0, 1], [0, 1, 2]))
+    def test_mcx_wire_mapping_can_specialize(self, wires):
+        """One- and two-control explicit MCX operations can specialize during wire mapping."""
+        _check_decomposition(qp.MultiControlledX(wires=wires), skip_wire_mapping=False)
+
+    @pytest.mark.parametrize(
+        ("base_cls", "args"),
+        [(qp.X, ()), (qp.Y, ()), (qp.Z, ()), (qp.H, ()), (qp.RX, (0.2,))],
+    )
+    def test_controlled_wire_mapping_can_specialize(self, base_cls, args):
+        """Controlled.map_wires may legitimately rebuild an operator as a custom class."""
+        op = qp.ops.Controlled(base_cls(*args, wires=0), control_wires=1)
+        _check_decomposition(op, skip_wire_mapping=False)
+
+    def test_unexpected_wire_mapping_type_change(self):
+        """An arbitrary type change during wire mapping must not bypass validation."""
+
+        class BadWireMapType(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return [qp.X(wires)]
+
+            def map_wires(self, wire_map):
+                return qp.H(wire_map[self.wires[0]])
+
+        with pytest.raises(AssertionError, match="map_wires must preserve the operator type"):
+            _check_decomposition(BadWireMapType(0), skip_wire_mapping=False)
+
     def test_error_has_decomposition_but_claims_not_to(self):
         """Test that an error is raised if has_decomposition is False but a decomposition is
         defined."""
@@ -193,6 +226,17 @@ class TestDecompositionErrors:
         rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2})(rule)
         with pytest.raises(AssertionError, match="Missing entirely in gate counts"):
             _test_decomposition_rule(op, rule_wrong_ops)
+
+    def test_zero_controlled_change_op_basis_resources_are_exact(self):
+        """Validation matches exact zero-control resources for an Operator2 target."""
+        op = qp.ops.Controlled(
+            qp.change_op_basis(qp.H(0), qp.Z(1), qp.H(0)),
+            control_wires=[4],
+            control_values=[0],
+            work_wires=[2, 3],
+        )
+
+        assert_valid(op, skip_capture=True)
 
     def test_bad_new_decomposition_rule_inexact(self):
         """Test that an informative error is raised if the
@@ -299,7 +343,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():
+        def compute_eigvals(wires=None):  # pylint: disable=unused-argument
             return [-1, 1]
 
     with pytest.raises(
@@ -430,6 +474,34 @@ class TestPytree:
 
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
             assert_valid(op, skip_pickle=True)
+
+    def test_unexpected_extra_leaf(self):
+        """Only leaves contributed by nested Operator2 instances may be absent from data."""
+
+        class BadExtraLeaf(qp.RX):
+            def _flatten(self):
+                return (self.data[0], "unexpected"), (self.wires, ())
+
+            @classmethod
+            def _unflatten(cls, data, metadata):
+                return cls(data[0], wires=metadata[0])
+
+        with pytest.raises(AssertionError, match="data must be the terminal leaves"):
+            _check_pytree(BadExtraLeaf(0.5, wires=0))
+
+    def test_unexpected_extra_leaf_in_nested_legacy_operator(self):
+        """An outer operator must not hide malformed leaves from a nested legacy operator."""
+
+        class BadInner(Operator):
+            def _flatten(self):
+                return (42.0,), (self.wires, ())
+
+            @classmethod
+            def _unflatten(cls, _, metadata):
+                return cls(wires=metadata[0])
+
+        with pytest.raises(AssertionError, match="data must be the terminal leaves"):
+            _check_pytree(qp.s_prod(2.0, BadInner(wires=0)))
 
 
 @pytest.mark.jax

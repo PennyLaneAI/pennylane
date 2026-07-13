@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     DecompositionGraph,
     adjoint_resource_rep,
@@ -31,6 +31,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
+from pennylane.decomposition.decomposition_rule import local_decomps
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.typing import Float, Wire
@@ -740,7 +741,7 @@ class TestControlledDecompositions:
         ]
 
     def test_custom_controlled_op(self, _):
-        """Tests that a general controlled op can be decomposed into a custom op if applicable."""
+        """Tests that controlled ops use their canonical custom resource representations."""
 
         op1 = qp.ops.Controlled(qp.X(0), control_wires=[1])
         op2 = qp.ops.Controlled(qp.H(0), control_wires=[1])
@@ -748,16 +749,20 @@ class TestControlledDecompositions:
             operations=[op1, op2],
             gate_set={"CNOT", "CH"},
         )
-        assert len(graph._graph.nodes()) == 34
-        assert len(graph._graph.edges()) == 51
+        assert len(graph._graph.nodes()) == 29
+        assert len(graph._graph.edges()) == 43
 
-        # Verify the decompositions
+        # Controlled Operator2 gates use their specialized representation directly,
+        # while controlled legacy gates retain the generic representation and rule.
+        assert abstractify(op1) == qp.resource_rep(qp.CNOT)
+        assert abstractify(op2) == qp.resource_rep(type(op2), **op2.resource_params)
+
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
             solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
-        assert q.queue == [qp.CNOT(wires=[1, 0]), qp.CH(wires=[1, 0])]
+        assert q.queue == [qp.CH(wires=[1, 0])]
+        assert solution.resource_estimate(op2) == to_resources({qp.CH: 1})
 
     def test_controlled_base_decomposition(self, _):
         """Tests applying control on the decomposition of the target operator."""
@@ -1127,3 +1132,38 @@ class TestSymbolicDecompositions:
         rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
         assert all("_custom_rule" not in rule.name for rule in rules)
         assert all("_another_rule" not in rule.name for rule in rules)
+
+
+@pytest.mark.unit
+class TestOperator2ExactControlResources:
+    """Regression tests for exact zero controls at graph roots."""
+
+    @pytest.mark.parametrize(
+        "control_values, expected_x_count",
+        (([False, True], 2), ([False, False], 4)),
+    )
+    def test_fixed_operator2_zero_counts(self, control_values, expected_x_count):
+        """A controlled fixed-signature Operator2 keeps its concrete number of zeros."""
+        op = qp.ctrl(qp.Z(3), [0, 1], control_values=control_values)
+        solution = DecompositionGraph([op], gate_set={qp.X, qp.CCZ}).solve()
+
+        assert solution.resource_estimate(op) == to_resources({qp.X: expected_x_count, qp.CCZ: 1})
+
+    @pytest.mark.parametrize(
+        "control_values, expected_x_count",
+        (([False, True], 2), ([False, False], 4)),
+    )
+    def test_non_fixed_operator2_uses_native_rule(self, control_values, expected_x_count):
+        """Tagged non-fixed bases use native Operator2 rules without legacy-argument errors."""
+
+        @qp.register_resources({qp.Z: 1})
+        def dyn_to_z(phi, wires):  # pylint: disable=unused-argument
+            qp.Z(wires[0])
+
+        op = qp.ctrl(DynOp([0.1, 0.2], wires=3), [0, 1], control_values=control_values)
+        with local_decomps():
+            qp.add_decomps(DynOp, dyn_to_z)
+            solution = DecompositionGraph([op], gate_set={qp.X, qp.CCZ}).solve()
+
+        assert solution.resource_estimate(op) == to_resources({qp.X: expected_x_count, qp.CCZ: 1})
+        assert solution.decomposition(op).name == "controlled(dyn_to_z)"

@@ -20,7 +20,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal
+from typing import Literal, override
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -42,7 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -51,6 +51,7 @@ from .controlled import (
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
 )
+from .controlled2 import Controlled2
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
@@ -434,7 +435,7 @@ add_decomps("Adjoint(CH)", self_adjoint)
 add_decomps("Pow(CH)", pow_involutory)
 
 
-class CY(ControlledOp):
+class CY(Controlled2):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -456,6 +457,10 @@ class CY(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    wire_argnames = ("wires",)
+    wire_sizes = (2,)
+    arg_specs = {"wires": Wire[2]}
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -469,36 +474,27 @@ class CY(ControlledOp):
 
     name = "CY"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
-    def __init__(self, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
+    def __init__(self, wires: WiresLike):
+        # Avoid recording the base as a separate operator during program capture.
         base = type.__call__(qp.Y, wires=wires[1:])
         super().__init__(base, wires[:1])
 
-    def __repr__(self):
-        return f"CY(wires={self.wires.tolist()})"
+    @override
+    def __abstract_init__(self, wires: WiresLike):
+        del wires
+        super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    def __repr__(self):
+        if isinstance(self.wires, AbstractWires):
+            return "CY"
+        return f"CY(wires={self.wires.tolist()})"
 
     def adjoint(self):
         return CY(self.wires)
 
     @staticmethod
-    @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -528,41 +524,33 @@ class CY(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
-
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CY.decomposition`.
 
         Args:
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
-
+            list[Operator]: decomposition into lower-level operations
         """
-        return [qp.CRY(np.pi, wires=wires), qp.S(wires=wires[0])]
+        return _cy_decomposition(wires)
 
 
-def _cy_to_cry_s_resources():
+def _cy_to_cry_s_resources(wires: AbstractWires):  # pylint: disable=unused-argument
     return {qp.CRY: 1, qp.S: 1}
 
 
 @register_resources(_cy_to_cry_s_resources)
 def _cy(wires: WiresLike, **__):
-    qp.CRY(np.pi, wires=wires)
-    qp.S(wires=wires[0])
+    _cy_decomposition(wires)
 
 
-def _cy_to_ppr_resource():
+def _cy_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
+    """Construct the default CY decomposition."""
+    return [qp.CRY(np.pi, wires=wires), qp.S(wires=wires[0])]
+
+
+def _cy_to_ppr_resource(wires: AbstractWires):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="Y"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -584,7 +572,7 @@ add_decomps("Adjoint(CY)", self_adjoint)
 add_decomps("Pow(CY)", pow_involutory)
 
 
-class CZ(ControlledOp):
+class CZ(Controlled2):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -606,6 +594,10 @@ class CZ(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    wire_argnames = ("wires",)
+    wire_sizes = (2,)
+    arg_specs = {"wires": Wire[2]}
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -619,36 +611,27 @@ class CZ(ControlledOp):
 
     name = "CZ"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
-    def __init__(self, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
+    def __init__(self, wires: WiresLike):
+        # Avoid recording the base as a separate operator during program capture.
         base = type.__call__(qp.Z, wires=wires[1:])
         super().__init__(base, wires[:1])
 
-    def __repr__(self):
-        return f"CZ(wires={self.wires.tolist()})"
+    @override
+    def __abstract_init__(self, wires: WiresLike):
+        del wires
+        super().__abstract_init__(qp.Z(Wire[1]), Wire[1])
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    def __repr__(self):
+        if isinstance(self.wires, AbstractWires):
+            return "CZ"
+        return f"CZ(wires={self.wires.tolist()})"
 
     def adjoint(self):
         return CZ(self.wires)
 
     @staticmethod
-    @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -669,12 +652,10 @@ class CZ(ControlledOp):
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
-    def _controlled(self, wire):
-        return qp.CCZ(wires=wire + self.wires)
-
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
-        return [qp.ControlledPhaseShift(np.pi, wires=wires)]
+    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
+        """Representation of the operator as a product of other operators (static method)."""
+        return _cz_to_cps_decomposition(wires)
 
 
 @custom_ctrl_dispatch.register
@@ -684,16 +665,21 @@ def _ctrl_cz(base: CZ, control, control_values, *_):
     return NotImplemented
 
 
-def _cz_to_cps_resources():
+def _cz_to_cps_resources(wires: AbstractWires):  # pylint: disable=unused-argument
     return {qp.ControlledPhaseShift: 1}
 
 
 @register_resources(_cz_to_cps_resources)
 def _cz_to_cps(wires: WiresLike, **__):
-    qp.ControlledPhaseShift(np.pi, wires=wires)
+    _cz_to_cps_decomposition(wires)
 
 
-def _cz_to_cnot_resources():
+def _cz_to_cps_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
+    """Construct the default CZ decomposition."""
+    return [qp.ControlledPhaseShift(np.pi, wires=wires)]
+
+
+def _cz_to_cnot_resources(wires: AbstractWires):  # pylint: disable=unused-argument
     return {qp.H: 2, qp.CNOT: 1}
 
 
@@ -704,7 +690,7 @@ def _cz_to_cnot(wires: WiresLike, **__):
     qp.H(wires=wires[1])
 
 
-def _cz_to_ppr_resource():
+def _cz_to_ppr_resource(wires: AbstractWires):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="Z"): 2,
         resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
@@ -1138,7 +1124,7 @@ add_decomps("Adjoint(CCZ)", self_adjoint)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
-class CNOT(ControlledOp):
+class CNOT(Controlled2):
     r"""CNOT(wires)
     The controlled-NOT operator
 
@@ -1182,6 +1168,10 @@ class CNOT(ControlledOp):
 
     """
 
+    wire_argnames = ("wires",)
+    arg_specs = {"wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -1195,62 +1185,34 @@ class CNOT(ControlledOp):
 
     name = "CNOT"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
+    # CNOT is a terminal operation for legacy recursive decomposition. It still exposes its
+    # registered decomposition rules directly and through graph-based decomposition.
+    has_decomposition = False
 
     def __init__(self, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
+        # Avoid recording the base as a separate operator during program capture.
         base = type.__call__(qp.X, wires=wires[1:])
         super().__init__(base, wires[:1])
+
+    @override
+    def __abstract_init__(self, wires: WiresLike):  # pylint: disable=arguments-differ
+        del wires
+        super().__abstract_init__(qp.X(Wire[1]), Wire[1])
 
     def adjoint(self):
         return CNOT(self.wires)
 
-    @property
-    def has_decomposition(self):
-        return False
-
-    @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):  # -> List["Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. note::
-            Operations making up the decomposition should be queued within the
-            ``compute_decomposition`` method.
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
-
-        Args:
-            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
-
-        Raises:
-            qp.DecompositionUndefinedError
-        """
+    def decomposition(self):
         raise qp.operation.DecompositionUndefinedError
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def __repr__(self):
+        if isinstance(self.wires, AbstractWires):
+            return "CNOT"
         return f"CNOT(wires={self.wires.tolist()})"
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike | None = None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1272,9 +1234,6 @@ class CNOT(ControlledOp):
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
-    def _controlled(self, wire):
-        return qp.Toffoli(wires=wire + self.wires)
-
 
 @custom_ctrl_dispatch.register
 def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
@@ -1287,7 +1246,7 @@ def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-def _cnot_cz_h_resources():
+def _cnot_cz_h_resources(wires: WiresLike = None):
     return {qp.H: 2, qp.CZ: 1}
 
 
@@ -1298,7 +1257,7 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qp.H(wires[1])
 
 
-def _cnot_to_ppr_resource():
+def _cnot_to_ppr_resource(wires: WiresLike = None):
     return {
         resource_rep(qp.PauliRot, pauli_word="X"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -1320,7 +1279,7 @@ add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
-class Toffoli(ControlledOp):
+class Toffoli(Controlled2):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
 
@@ -1373,6 +1332,10 @@ class Toffoli(ControlledOp):
 
     """
 
+    wire_argnames = ("wires",)
+    arg_specs = {"wires": Wire[3]}
+    wire_sizes = (3,)
+
     num_wires = 3
     """int: Number of wires that the operator acts on."""
 
@@ -1386,38 +1349,29 @@ class Toffoli(ControlledOp):
 
     name = "Toffoli"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, _, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=3)
-
     def __init__(self, wires):
+        # Avoid recording the base as a separate operator during program capture.
         control_wires = wires[:2]
-        target_wires = wires[2:]
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.X, wires=target_wires)
+        base = type.__call__(qp.X, wires=wires[2:])
         super().__init__(base, control_wires)
 
-    def __repr__(self):
-        return f"Toffoli(wires={self.wires.tolist()})"
+    @override
+    # pylint: disable=too-many-arguments,arguments-differ
+    def __abstract_init__(self, wires: WiresLike):
+        del wires
+        super().__abstract_init__(qp.X(Wire[1]), Wire[2])
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    def __repr__(self):
+        if isinstance(self.wires, AbstractWires):
+            return "Toffoli"
+        return f"Toffoli(wires={self.wires.tolist()})"
 
     def adjoint(self):
         return Toffoli(self.wires)
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike | None = None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1455,59 +1409,16 @@ class Toffoli(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(
-        wires: WiresLike,
-    ) -> list[qp.operation.Operator]:
+    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Toffoli.decomposition`.
 
         Args:
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.Toffoli.compute_decomposition((0,1,2))
-        [H(2),
-         CNOT(wires=[1, 2]),
-         Adjoint(T(2)),
-         CNOT(wires=[0, 2]),
-         T(2),
-         CNOT(wires=[1, 2]),
-         Adjoint(T(2)),
-         CNOT(wires=[0, 2]),
-         T(2),
-         T(1),
-         CNOT(wires=[0, 1]),
-         H(2),
-         T(0),
-         Adjoint(T(1)),
-         CNOT(wires=[0, 1])]
-
+            list[Operator]: decomposition into lower-level operations
         """
-        return [
-            qp.Hadamard(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            qp.adjoint(qp.T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            qp.T(wires=wires[2]),
-            CNOT(wires=[wires[1], wires[2]]),
-            qp.adjoint(qp.T(wires=wires[2])),
-            CNOT(wires=[wires[0], wires[2]]),
-            qp.T(wires=wires[2]),
-            qp.T(wires=wires[1]),
-            CNOT(wires=[wires[0], wires[1]]),
-            qp.Hadamard(wires=wires[2]),
-            qp.T(wires=wires[0]),
-            qp.adjoint(qp.T(wires=wires[1])),
-            CNOT(wires=[wires[0], wires[1]]),
-        ]
+        return _toffoli_decomposition(wires)
 
 
 @custom_ctrl_dispatch.register
@@ -1536,7 +1447,7 @@ def _check_and_convert_control_values(control_values, control_wires):
     return control_values
 
 
-def _toffoli_resources():
+def _toffoli_resources(wires: WiresLike = None):
     return {
         qp.Hadamard: 2,
         qp.CNOT: 6,
@@ -1547,24 +1458,31 @@ def _toffoli_resources():
 
 @register_resources(_toffoli_resources)
 def _toffoli(wires: WiresLike, **__):
-    qp.Hadamard(wires=wires[2])
-    CNOT(wires=[wires[1], wires[2]])
-    qp.adjoint(qp.T(wires=wires[2]))
-    CNOT(wires=[wires[0], wires[2]])
-    qp.T(wires=wires[2])
-    CNOT(wires=[wires[1], wires[2]])
-    qp.adjoint(qp.T(wires=wires[2]))
-    CNOT(wires=[wires[0], wires[2]])
-    qp.T(wires=wires[2])
-    qp.T(wires=wires[1])
-    CNOT(wires=[wires[0], wires[1]])
-    qp.Hadamard(wires=wires[2])
-    qp.T(wires=wires[0])
-    qp.adjoint(qp.T(wires=wires[1]))
-    CNOT(wires=[wires[0], wires[1]])
+    _toffoli_decomposition(wires)
 
 
-def _toffoli_to_ppr_resource():
+def _toffoli_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
+    """Construct the default Toffoli decomposition."""
+    return [
+        qp.Hadamard(wires=wires[2]),
+        CNOT(wires=[wires[1], wires[2]]),
+        qp.adjoint(qp.T(wires=wires[2])),
+        CNOT(wires=[wires[0], wires[2]]),
+        qp.T(wires=wires[2]),
+        CNOT(wires=[wires[1], wires[2]]),
+        qp.adjoint(qp.T(wires=wires[2])),
+        CNOT(wires=[wires[0], wires[2]]),
+        qp.T(wires=wires[2]),
+        qp.T(wires=wires[1]),
+        CNOT(wires=[wires[0], wires[1]]),
+        qp.Hadamard(wires=wires[2]),
+        qp.T(wires=wires[0]),
+        qp.adjoint(qp.T(wires=wires[1])),
+        CNOT(wires=[wires[0], wires[1]]),
+    ]
+
+
+def _toffoli_to_ppr_resource(wires: WiresLike = None):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZX"): 2,
@@ -1592,7 +1510,7 @@ add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
-def _toffoli_elbow_resources():
+def _toffoli_elbow_resources(**_):
     return {change_op_basis_resource_rep(resource_rep(qp.Elbow), qp.CNOT): 1}
 
 

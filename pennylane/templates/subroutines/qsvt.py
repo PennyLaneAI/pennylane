@@ -27,11 +27,15 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops, pytrees
+from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.decomposition.resources import change_op_basis_resource_rep
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import (
+    _resource_rep_from_op,
+    change_op_basis_resource_rep,
+)
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -502,6 +506,7 @@ class QSVT(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, UA, projectors, **kwargs):  # kwarg is id
+        UA, projectors = _get_or_bind_operator_tracers((UA, tuple(projectors)))
         return cls._primitive.bind(UA, *projectors, **kwargs)
 
     @classmethod
@@ -692,19 +697,16 @@ class QSVT(Operation):
 
 def _QSVT_resources(projectors, UA):
     resources = defaultdict(int)
-    resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] = 1
+    projectors = tuple(_resource_rep_from_op(op) for op in projectors)
+    UA = _resource_rep_from_op(UA)
+    resources[projectors[0]] = 1
     for i in range(1, len(projectors) - 1, 2):
-        resources[
-            change_op_basis_resource_rep(
-                resource_rep(type(UA), **UA.resource_params),
-                resource_rep(type(projectors[i]), **projectors[i].resource_params),
-            )
-        ] += 1
-        resources[resource_rep(type(projectors[i + 1]), **projectors[i + 1].resource_params)] += 1
+        resources[change_op_basis_resource_rep(UA, projectors[i])] += 1
+        resources[projectors[i + 1]] += 1
 
     if len(projectors) % 2 == 0:
-        resources[resource_rep(type(UA), **UA.resource_params)] += 1
-        resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] += 1
+        resources[UA] += 1
+        resources[projectors[0]] += 1
 
     return dict(resources)
 

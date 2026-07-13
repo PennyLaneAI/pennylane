@@ -50,7 +50,11 @@ def decompose_mcx(
     if n_ctrl_wires == 1:
         return [qp.CNOT(wires=control_wires + Wires(target_wire))]
     if n_ctrl_wires == 2:
-        return qp.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
+        # Constructing the migrated Operator2 queues the Toffoli itself. Only suppress that
+        # construction; its decomposition must still queue the returned operations.
+        with qp.QueuingManager.stop_recording():
+            toffoli = qp.Toffoli(wires=control_wires + Wires(target_wire))
+        return toffoli.decomposition()
 
     if n_work_wires >= n_ctrl_wires - 2:
         # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_

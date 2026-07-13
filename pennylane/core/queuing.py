@@ -534,8 +534,17 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
 
     """
     if hasattr(op, "_bind_primitive") and enabled():
+        # ``tracer`` belongs to one particular JAX trace. Detach any live or stale
+        # producer before explicitly applying the operator: each call to ``apply``
+        # represents one new instruction.
+        op.tracer = None
         op._bind_primitive()  # pylint: disable=protected-access
-        if op.tracer is not None:
+        # Import locally to avoid a module cycle: Operator2 imports queuing helpers.
+        from .operator.operator2 import (  # tach-ignore
+            _get_live_operator_tracer,
+        )  # pylint: disable=import-outside-toplevel
+
+        if _get_live_operator_tracer(op) is not None:
             return op
         raise RuntimeError("Trying to use apply in a non-tracing context.")
 

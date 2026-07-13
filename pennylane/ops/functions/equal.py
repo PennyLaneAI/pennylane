@@ -35,6 +35,7 @@ from pennylane.ops import (
     CompositeOp,
     Conditional,
     Controlled,
+    Controlled2,
     Exp,
     MeasurementValue,
     MidMeasure,
@@ -723,6 +724,29 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
 
     return True
+
+
+@_equal_dispatch.register
+def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
+    """Determine whether two ``Controlled2`` operators are equal.
+
+    Concrete controlled operators retain the legacy ``Controlled`` semantics where control
+    wire/value pairs are compared without regard for their order. Abstract or traced operators
+    continue to use the generic ``Operator2`` comparison.
+    """
+    wire_args = (op1.control_wires, op2.control_wires, op1.work_wires, op2.work_wires)
+    control_values = (op1.control_values, op2.control_values)
+    if any(isinstance(wires, AbstractWires) for wires in wire_args) or any(
+        isinstance(values, AbstractArray) for values in control_values
+    ):
+        return _equal_operator2(op1, op2, **kwargs)
+
+    if any(math.is_abstract(wire) for wires in wire_args for wire in wires) or any(
+        math.is_abstract(value) for values in control_values for value in values
+    ):
+        return _equal_operator2(op1, op2, **kwargs)
+
+    return _equal_controlled(op1, op2, **kwargs)
 
 
 @_equal_dispatch.register

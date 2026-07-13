@@ -18,7 +18,7 @@ its utility functions.
 
 # pylint: disable=arguments-differ, import-outside-toplevel
 from functools import lru_cache, reduce
-from itertools import product
+from itertools import islice, product
 from typing import Literal
 
 import numpy as np
@@ -484,6 +484,10 @@ class SpecialUnitary(Operation):
             matrices = product(_pauli_matrices, repeat=num_wires)
             # Drop the identity from the generator of matrices
             _ = next(matrices)
+            # This streaming path also supports prefixes of the full Pauli-coordinate vector.
+            # Match the generator to the supplied coefficients while keeping strict validation
+            # for the case where more coefficients than Pauli generators are provided.
+            matrices = islice(matrices, len(theta))
             A = sum(
                 t * qp.math.asarray(reduce(qp.math.kron, pauli_ops), like=qp.math.get_interface(t))
                 for t, pauli_ops in zip(theta, matrices, strict=True)

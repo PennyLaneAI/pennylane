@@ -19,8 +19,12 @@ import copy
 
 from pennylane import capture, ops
 from pennylane.core.operator import Operation
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import _resource_rep_from_op
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 has_jax = True
@@ -115,6 +119,7 @@ class GQSP(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, unitary, angles, control):
+        unitary = _get_or_bind_operator_tracers(unitary)
         return super()._primitive_bind_call(unitary, angles, wires=control)
 
     def map_wires(self, wire_map: dict):
@@ -185,11 +190,8 @@ def _GQSP_resources(unitary, num_iters):
         ops.X: 2 + 2 * (num_iters - 1),
         ops.U3: num_iters,
         ops.Z: num_iters,
-        controlled_resource_rep(
-            base_class=unitary.__class__,
-            base_params=unitary.resource_params,
-            num_control_wires=1,
-            num_zero_control_values=1,
+        _ctrl_abstract(
+            _resource_rep_from_op(unitary), Wire[1], num_zero_control_values=1
         ): num_iters
         - 1,
     }

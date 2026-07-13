@@ -30,11 +30,8 @@ from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import (
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    resource_rep,
-)
+from pennylane.decomposition import adjoint_resource_rep, resource_rep
+from pennylane.decomposition.resources import _op_type_and_params, _resource_rep_from_op
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow import Pow
@@ -255,7 +252,7 @@ class Prod(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = dict(Counter(qp.resource_rep(type(op), **op.resource_params) for op in self))
+        resources = dict(Counter(_resource_rep_from_op(op) for op in self))
         return {"resources": resources}
 
     _op_symbol = "@"
@@ -502,19 +499,12 @@ def _ctrl_prod_resources(
 
     resources = Counter()
     resources[tand_rep] += num_control_wires - 1
-    resources[adjoint_resource_rep(qp.TemporaryAND, tand_rep.params)] += num_control_wires - 1
+    tand_class, tand_params = _op_type_and_params(tand_rep)
+    resources[adjoint_resource_rep(tand_class, tand_params)] += num_control_wires - 1
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
-        resources[
-            controlled_resource_rep(
-                base_class=rep.op_type,
-                base_params=rep.params,
-                num_control_wires=1,
-                num_zero_control_values=0,
-                num_work_wires=0,
-            )
-        ] += count
+        resources[_ctrl_abstract(rep, Wire[1], Wire[0])] += count
 
     return dict(resources)
 

@@ -170,7 +170,7 @@ class TestAdjointDecompositionRules:
         assert rule.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(qp.T): 1,
-                adjoint_resource_rep(qp.CNOT): 2,
+                qp.adjoint(qp.CNOT(Wire[2])): 2,
                 adjoint_resource_rep(qp.RX): 1,
                 adjoint_resource_rep(qp.H): 1,
             }
@@ -461,7 +461,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.CNOT): 1,
+                qp.CNOT(Wire[2]): 1,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,
@@ -506,7 +506,7 @@ class TestControlledDecomposition:
                     num_control_wires=1,
                     num_work_wires=1,
                 ): 1,
-                qp.resource_rep(qp.CZ): 1,
+                qp.CZ(Wire[2]): 1,
                 qp.resource_rep(qp.CCZ): 1,
             }
         )
@@ -605,7 +605,7 @@ class TestControlledDecomposition:
                 work_wires=[8],
             ),
             qp.CCZ(wires=[6, 7, 0]),
-            qp.ops.Controlled(qp.Z(1), control_wires=[6, 7, 0], work_wires=[8]),
+            qp.ctrl(qp.Z(1), control=[6, 7, 0], work_wires=[8]),
             qp.X(6),
         ]
 
@@ -615,7 +615,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.X: 2,
+                qp.X(Wire[1]): 2,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,
@@ -672,9 +672,7 @@ class TestControlledDecomposition:
                     num_work_wires=1,
                 ): 1,
                 qp.resource_rep(qp.CCZ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
+                qp.ctrl(qp.Z(Wire[1]), Wire[3], work_wires=Wire[1]): 1,
             }
         )
 
@@ -726,8 +724,8 @@ class TestControlledDecomposition:
                 control_wires=[6, 7, 9],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(qp.Z(0), control_wires=[6, 7, 9], work_wires=[8]),
-            qp.ops.Controlled(qp.Z(1), control_wires=[6, 7, 9, 0], work_wires=[8]),
+            qp.ctrl(qp.Z(0), control=[6, 7, 9], work_wires=[8]),
+            qp.ctrl(qp.Z(1), control=[6, 7, 9, 0], work_wires=[8]),
             qp.X(6),
             qp.X(9),
         ]
@@ -738,7 +736,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.X: 4,
+                qp.X(Wire[1]): 4,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=3,
@@ -794,12 +792,8 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=4, num_work_wires=1
-                ): 1,
+                qp.ctrl(qp.Z(Wire[1]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.Z(Wire[1]), Wire[4], work_wires=Wire[1]): 1,
             }
         )
 
@@ -847,7 +841,7 @@ class TestControlledDecomposition:
         ]
 
         assert ctrl_rule.compute_resources(**op.arguments) == to_resources(
-            {ControlledOp2(OneWireDynOp, control_wires=Wire[1]): 3, qp.Toffoli: 2, qp.X: 1}
+            {ControlledOp2(OneWireDynOp, control_wires=Wire[1]): 3, qp.Toffoli: 2}
         )
 
     def test_flip_control_adjoint(self):
@@ -972,7 +966,7 @@ class TestControlledDecomposition:
         assert custom_rule.is_applicable(**op.arguments)
 
         resources = custom_rule.compute_resources(**op.arguments)
-        assert resources == to_resources({qp.CNOT: 3, qp.H: 2, qp.X: 3})
+        assert resources == to_resources({qp.CNOT: 3, qp.H: 2, qp.X: 2})
 
         with qp.queuing.AnnotatedQueue() as q:
             custom_rule(**op.arguments)
@@ -1016,7 +1010,7 @@ class TestControlledDecomposition:
 
         assert ctrl_single_work_wire2.compute_resources(**op.arguments) == to_resources(
             {
-                qp.X: 3,
+                qp.X: 2,
                 ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1]): 1,
                 controlled_resource_rep(qp.X, {}, num_control_wires=3): 2,
             }
@@ -1087,7 +1081,7 @@ class TestControlledDecomposition:
                     qp.ControlledQubitUnitary,
                     num_target_wires=1,
                     num_control_wires=3,
-                    num_zero_control_values=1,
+                    num_zero_control_values=0,
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1

@@ -20,16 +20,18 @@ import copy
 
 import numpy as np
 
-from pennylane import ops, pytrees
+from pennylane import ops
 from pennylane.core.operator import Operation
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _op_type_and_params, _resource_rep_from_op
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.wires import Wires
 
 
@@ -123,6 +125,7 @@ class Reflection(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
+        U = _get_or_bind_operator_tracers(U)
         return super()._primitive_bind_call(U, alpha, wires=reflection_wires, **kwargs)
 
     @classmethod
@@ -149,9 +152,12 @@ class Reflection(Operation):
 
     @property
     def resource_params(self) -> dict:
+        base = self.hyperparameters["base"]
+        base_rep = _resource_rep_from_op(base)
+        base_class, base_params = _op_type_and_params(base_rep)
         return {
-            "base_class": self.hyperparameters["base"].__class__,
-            "base_params": self.hyperparameters["base"].resource_params,
+            "base_class": base_class,
+            "base_params": base_params,
             "num_wires": len(self.wires),
             "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
         }
@@ -224,10 +230,11 @@ def _reflection_decomposition_resources(
 ) -> dict:
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
+    base_rep = resource_rep(base_class, **base_params)
 
     resources = {
         ops.GlobalPhase: 1,
-        adjoint_resource_rep(base_class, base_params): 1,
+        _adjoint_abstract(base_rep): 1,
         ops.PauliX: 2,
     }
 
@@ -243,7 +250,7 @@ def _reflection_decomposition_resources(
     else:
         resources[resource_rep(ops.PhaseShift)] = 1
 
-    resources[resource_rep(base_class, **base_params)] = 1
+    resources[base_rep] = resources.get(base_rep, 0) + 1
 
     return resources
 

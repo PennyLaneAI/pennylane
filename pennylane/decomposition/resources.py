@@ -26,6 +26,49 @@ from pennylane.core.operator import Operator, Operator2, abstractify
 
 from .utils import to_name
 
+_OPERATOR2_REP_KEY = "__operator2_rep__"
+
+
+def _op_type_and_params(rep):
+    """Extract an operator type and its static resource parameters from a resource rep."""
+    if isinstance(rep, Operator2):
+        if type(rep).has_fixed_sig:
+            return type(rep), {}
+        return type(rep), {_OPERATOR2_REP_KEY: rep}
+    return rep.op_type, rep.params
+
+
+def _resource_rep_from_type_and_params(op_type, params):
+    """Reconstruct a resource representation from its packed type and parameters."""
+    if not (isinstance(op_type, type) and issubclass(op_type, Operator2)):
+        return resource_rep(op_type, **params)
+
+    if _OPERATOR2_REP_KEY in params:
+        if set(params) != {_OPERATOR2_REP_KEY}:
+            raise TypeError(
+                f"The tagged resource representation for {op_type.__name__} cannot contain "
+                "additional parameters."
+            )
+        rep = params[_OPERATOR2_REP_KEY]
+        if not isinstance(rep, op_type) or not rep.is_abstract:
+            raise TypeError(
+                f"The tagged resource representation for {op_type.__name__} must contain an "
+                f"abstract {op_type.__name__} instance."
+            )
+        return rep
+
+    if params:
+        raise TypeError(
+            f"Operator2 class {op_type.__name__} does not accept legacy resource parameters; "
+            "use a concrete or abstract operator instance instead."
+        )
+    if op_type.has_fixed_sig:
+        return abstractify(op_type)
+    raise TypeError(
+        f"Operator2 class {op_type.__name__} does not have a fixed abstract signature. "
+        "Use a concrete or abstract operator instance to construct its resource representation."
+    )
+
 
 class CompressedResourceOp:
     """A lightweight representation of an operator to be decomposed.
@@ -65,6 +108,11 @@ class CompressedResourceOp:
             raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, qp.operation.Operator):
             raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
+        if issubclass(op_type, Operator2):
+            raise TypeError(
+                "CompressedResourceOp cannot represent an Operator2 class directly. Use "
+                "resource_rep, abstractify, or a concrete Operator2 instance instead."
+            )
         self.op_type = op_type
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
@@ -73,10 +121,14 @@ class CompressedResourceOp:
     def name(self) -> str:
         """The name of the operator type."""
         if issubclass(self.op_type, (qp.ops.Adjoint, qp.ops.Pow)):
-            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            base_rep = _resource_rep_from_type_and_params(
+                self.params["base_class"], self.params["base_params"]
+            )
             return f"{self.op_type.__name__}({base_rep.name})"
         if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
-            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            base_rep = _resource_rep_from_type_and_params(
+                self.params["base_class"], self.params["base_params"]
+            )
             return f"C({base_rep.name})"
         if self.op_type is qp.ops.MidMeasure:
             return "MidMeasureMP"
@@ -94,14 +146,20 @@ class CompressedResourceOp:
 
     def __repr__(self):
         if issubclass(self.op_type, qp.ops.Adjoint):
-            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            base_rep = _resource_rep_from_type_and_params(
+                self.params["base_class"], self.params["base_params"]
+            )
             return f"Adjoint({repr(base_rep)})"
         if issubclass(self.op_type, qp.ops.Pow):
-            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            base_rep = _resource_rep_from_type_and_params(
+                self.params["base_class"], self.params["base_params"]
+            )
             return f"Pow({repr(base_rep)}, z={self.params['z']})"
         if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
             params = self.params.copy()
-            base_rep = resource_rep(params.pop("base_class"), **params.pop("base_params"))
+            base_rep = _resource_rep_from_type_and_params(
+                params.pop("base_class"), params.pop("base_params")
+            )
             param_str = ", " + ", ".join(f"{k}={v}" for k, v in sorted(params.items()))
             return f"Controlled({repr(base_rep)}{param_str})"
         params = ", ".join(f"{k}={v}" for k, v in sorted(self.params.items()))
@@ -171,11 +229,7 @@ def _scale_dict(dict1: dict, scalar: int):
 
 def _make_hashable(d):
     if isinstance(d, dict):
-        return tuple(
-            sorted(
-                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
-            )
-        )
+        return frozenset((_make_hashable(key), _make_hashable(value)) for key, value in d.items())
     if isinstance(d, CompressedResourceOp):
         # Since the params are guaranteed to be hashable, we can use them here
         return (d.op_type.__name__, d._hashable_params)  # pylint: disable=protected-access
@@ -214,7 +268,7 @@ def _validate_resource_rep(op_type, params):
         )
 
 
-def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
+def resource_rep(op_type: type[Operator], **params) -> AbstractOperatorLike:
     """Binds an operator type with additional resource parameters.
 
     .. note::
@@ -302,6 +356,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
+    if isinstance(op_type, type) and issubclass(op_type, Operator2):
+        return _resource_rep_from_type_and_params(op_type, params)
     _validate_resource_rep(op_type, params)
     if issubclass(op_type, qp.ops.Adjoint):
         return adjoint_resource_rep(**params)
@@ -312,9 +368,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     if op_type is qp.ops.ControlledOp:
         op_type = qp.ops.Controlled
     if op_type is qp.ops.Controlled:
-        base_rep = resource_rep(params["base_class"], **params["base_params"])
-        params["base_class"] = base_rep.op_type
-        params["base_params"] = base_rep.params
+        base_rep = _resource_rep_from_type_and_params(params["base_class"], params["base_params"])
+        params["base_class"], params["base_params"] = _op_type_and_params(base_rep)
     if op_type is qp.BasisEmbedding:
         op_type = qp.BasisState
     return CompressedResourceOp(op_type, params)
@@ -345,7 +400,12 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
 
     """
 
-    _validate_resource_rep(base_class, base_params)
+    if isinstance(base_class, type) and issubclass(base_class, Operator2):
+        base_class, base_params = _op_type_and_params(
+            _resource_rep_from_type_and_params(base_class, base_params)
+        )
+    else:
+        _validate_resource_rep(base_class, base_params)
 
     # Normalize base class aliases (e.g., BasisEmbedding -> BasisState)
     if base_class is qp.BasisEmbedding:
@@ -411,7 +471,9 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     )
 
 
-def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
+def adjoint_resource_rep(
+    base_class: type[Operator], base_params: dict = None
+) -> AbstractOperatorLike:
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
@@ -420,17 +482,25 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
 
     """
     base_params = base_params or {}
-    base_resource_rep = resource_rep(base_class, **base_params)  # flattens any nested structures
+    base_resource_rep = _resource_rep_from_type_and_params(
+        base_class, base_params
+    )  # flattens any nested structures
+    if isinstance(base_resource_rep, Operator2):
+        # Local import avoids a circular import through the decomposition module.
+        from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+        return _adjoint_abstract(base_resource_rep)
+    base_class, base_params = _op_type_and_params(base_resource_rep)
     return CompressedResourceOp(
         qp.ops.Adjoint,
-        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
+        {"base_class": base_class, "base_params": base_params},
     )
 
 
 def change_op_basis_resource_rep(
-    compute_op: type[Operator] | CompressedResourceOp,
-    target_op: type[Operator] | CompressedResourceOp,
-    uncompute_op: type[Operator] | CompressedResourceOp | None = None,
+    compute_op: type[Operator] | AbstractOperatorLike,
+    target_op: type[Operator] | AbstractOperatorLike,
+    uncompute_op: type[Operator] | AbstractOperatorLike | None = None,
 ):
     """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern
     :class:`~.ChangeOpBasis` of operators.
@@ -443,7 +513,14 @@ def change_op_basis_resource_rep(
     """
     compute_op = auto_wrap(compute_op)
     target_op = auto_wrap(target_op)
-    uncompute_op = uncompute_op or adjoint_resource_rep(compute_op.op_type, compute_op.params)
+    if uncompute_op is None:
+        if isinstance(compute_op, Operator2):
+            # Local import avoids a circular import through the decomposition module.
+            from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+            uncompute_op = _adjoint_abstract(compute_op)
+        else:
+            uncompute_op = adjoint_resource_rep(compute_op.op_type, compute_op.params)
     uncompute_op = auto_wrap(uncompute_op)
     return CompressedResourceOp(
         qp.ops.ChangeOpBasis,
@@ -464,10 +541,11 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    base_resource_rep = resource_rep(base_class, **base_params)
+    base_resource_rep = _resource_rep_from_type_and_params(base_class, base_params)
+    base_class, base_params = _op_type_and_params(base_resource_rep)
     return CompressedResourceOp(
         qp.ops.Pow,
-        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},
+        {"base_class": base_class, "base_params": base_params, "z": z},
     )
 
 
@@ -553,14 +631,14 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     num_zero_control_values,
     num_work_wires,
     work_wire_type="borrowed",
-) -> CompressedResourceOp | None:
+) -> AbstractOperatorLike | None:
     """Helper function that handles custom logic for controlled X gates."""
 
     if base_class is qp.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qp.CNOT)
+            return abstractify(qp.CNOT)
         if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
-            return resource_rep(qp.Toffoli)
+            return abstractify(qp.Toffoli)
         return resource_rep(
             qp.MultiControlledX,
             num_control_wires=num_control_wires,
@@ -607,6 +685,49 @@ def auto_wrap(op_type) -> AbstractOperatorLike:
         ) from e
 
 
+def _resource_rep_from_op(op: Operator | AbstractOperatorLike) -> AbstractOperatorLike:
+    """Create a resource representation from a concrete operator.
+
+    Unlike general-purpose abstractification, resource normalization must retain the exact
+    number of zero control values because that number can change a decomposition's gate count.
+    ``ControlledOp2`` otherwise abstracts the values to a boolean array specification, which
+    intentionally preserves only shape and dtype.
+    """
+    # Local imports avoid a cycle through ``controlled2``, which imports this module.
+    from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+    from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+    from pennylane.typing import Wire
+
+    if isinstance(op, CompressedResourceOp):
+        return op
+
+    if isinstance(op, Adjoint2):
+        return _adjoint_abstract(_resource_rep_from_op(op.base))
+
+    if isinstance(op, ControlledOp2) and not op.is_abstract:
+        num_zero_control_values = sum(not value for value in op.control_values)
+        return _ctrl_abstract(
+            _resource_rep_from_op(op.base),
+            Wire[len(op.control_wires)],
+            Wire[len(op.work_wires)],
+            op.work_wire_type,
+            num_zero_control_values,
+        )
+
+    return abstractify(op)
+
+
 @to_name.register
 def _compressed_op_to_name(op: CompressedResourceOp):
     return to_name(op.name)
+
+
+@abstractify.register
+def _abstractify_compressed_resource_op(op: CompressedResourceOp):
+    """Return an already-compressed resource representation unchanged."""
+    return op
+
+
+@abstractify.register
+def _abstractify(op: Operator):
+    return resource_rep(type(op), **op.resource_params)

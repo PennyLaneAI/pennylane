@@ -25,7 +25,7 @@ from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
-from pennylane.typing import Bool, Float, Wire
+from pennylane.typing import AbstractArray, Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, OneWireDynOp
 
@@ -467,12 +467,18 @@ class TestControlledOp2:
         op = ControlledOp2(OneWireDynOp, Wire[2], control_values=[0, 1])
         assert op.control_values == Bool[2]
 
+        op = ControlledOp2(OneWireDynOp, Wire[2], control_values=AbstractArray((2,), np.float64))
+        assert op.control_values == Bool[2]
+
     def test_create_controlled_op2(self):
         """Tests qp.ctrl on Operator2 creates a ControlledOp2."""
 
         op = OneWireDynOp(0.5, wires=[0])
         op = qp.ctrl(OneWireDynOp(0.5, wires=[0]), control=[1], control_values=0)
         assert isinstance(op, ControlledOp2)
+
+        op = ControlledOp2(OneWireDynOp(0.5, wires=[0]), control_wires=[], control_values=[])
+        assert op.control_values == []
 
     @pytest.mark.parametrize(
         "copy_fn", (copy.copy, copy.deepcopy, lambda obj: pickle.loads(pickle.dumps(obj)))

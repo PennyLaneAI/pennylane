@@ -24,9 +24,11 @@ import numpy as np
 from pennylane import math
 from pennylane.core.measurements import MeasurementTransform
 from pennylane.core.operator import Operator
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
+from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires, WiresLike
 
 
@@ -466,6 +468,10 @@ class ShadowExpvalMP(MeasurementTransform):
     ):
         if cls._obs_primitive is None:  # pragma: no cover
             return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
+        H = _get_or_bind_operator_tracers(H)
+        if isinstance(H, Sequence) and not isinstance(H, Operator):
+            H, H_tree = flatten(H, is_leaf=lambda value: isinstance(value, Operator))
+            return cls._obs_primitive.bind(*H, H_tree=H_tree, seed=seed, k=k, **kwargs)
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
@@ -821,5 +827,6 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 if ShadowExpvalMP._obs_primitive is not None:  # pylint: disable=protected-access
 
     @ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
-    def _(H, **kwargs):
+    def _(*H, H_tree=None, **kwargs):
+        H = H[0] if H_tree is None else unflatten(H, H_tree)
         return type.__call__(ShadowExpvalMP, H, **kwargs)

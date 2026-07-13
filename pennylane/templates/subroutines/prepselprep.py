@@ -20,6 +20,7 @@ import copy
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
@@ -27,6 +28,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _resource_rep_from_op
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -90,7 +92,7 @@ class PrepSelPrep(Operation):
     @property
     def resource_params(self):
         ops = self.lcu.terms()[1]
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        op_reps = tuple(_resource_rep_from_op(op) for op in ops)
         return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None
@@ -114,6 +116,7 @@ class PrepSelPrep(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, lcu, control, **kwargs):
+        lcu = _get_or_bind_operator_tracers(lcu)
         return super()._primitive_bind_call(lcu, wires=control, **kwargs)
 
     @classmethod

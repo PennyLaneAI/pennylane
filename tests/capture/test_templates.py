@@ -31,6 +31,7 @@ jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-import-position
+from pennylane.core import Operator2  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
@@ -514,19 +515,18 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qp.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
 
-    def test_controlled_sequence(self):
+    @pytest.mark.parametrize("use_keyword", [False, True])
+    def test_controlled_sequence(self, use_keyword):
         """Test the primitive bind call of ControlledSequence."""
-
-        assert (
-            qp.ControlledSequence._primitive_bind_call.__code__
-            == qp.ops.op_math.SymbolicOp._primitive_bind_call.__code__
-        )
 
         base = qp.RX(0.5, 0)
         control = [1, 5]
 
         def fn(base):
-            qp.ControlledSequence(base, control=control)
+            if use_keyword:
+                qp.ControlledSequence(base, control=control)
+            else:
+                qp.ControlledSequence(base, control)
 
         # Validate inputs
         fn(base)
@@ -817,6 +817,36 @@ class TestModifiedTemplates:
         block_encode = qp.BlockEncode(A, wires=[0, 1])
         shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
         assert q.queue[0] == qp.QSVT(block_encode, shifts)
+
+    def test_qsvt_preconstructed_operator2_retraces(self):
+        """QSVT must rebind preconstructed Operator2 inputs in each JAX trace."""
+        ua = qp.X(0)
+        projectors = [qp.Z(0), qp.Y(0), qp.Z(0)]
+
+        def qfunc(dummy):
+            del dummy
+            qp.QSVT(ua, projectors)
+
+        first = jax.make_jaxpr(qfunc)(0.0)
+        second = jax.make_jaxpr(qfunc)(jnp.zeros(1))
+
+        with qp.capture.pause():
+            expected = qp.QSVT(ua, projectors)
+
+        for closed_jaxpr, arg in ((first, 0.0), (second, jnp.zeros(1))):
+            assert not closed_jaxpr.consts
+            assert [eqn.params["op_cls"] for eqn in closed_jaxpr.eqns[:-1]] == [
+                qp.X,
+                qp.Z,
+                qp.Y,
+                qp.Z,
+            ]
+            assert all(eqn.primitive is operator_p for eqn in closed_jaxpr.eqns[:-1])
+            assert closed_jaxpr.eqns[-1].primitive is qp.QSVT._primitive
+            with qp.queuing.AnnotatedQueue() as queue:
+                qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+            assert len(queue) == 1
+            qp.assert_equal(queue.queue[0], expected)
 
     def test_mps_prep(self):
         """Test the primitive bind call of MPSPrep."""
@@ -1729,25 +1759,53 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 5  # four operator-creating eqns and one for Select itself
 
         op_eqns = jaxpr.eqns[:4]
-        op_types = [qp.X, qp.RX, qp.Y, qp.Z]
-        assert all(
-            eqn.primitive == op_type._primitive
-            for eqn, op_type in zip(op_eqns, op_types, strict=True)
-        )
+        assert op_eqns[0].primitive == qp.RX._primitive
+        for op_eqn, op_type in zip(op_eqns[1:], (qp.X, qp.Y, qp.Z), strict=True):
+            assert issubclass(op_type, Operator2)
+            assert op_eqn.primitive == operator_p
+            assert op_eqn.params["op_cls"] is op_type
         eqn = jaxpr.eqns[4]
         assert eqn.primitive == qp.Select._primitive
-        assert eqn.invars[:-2] == [eqn.outvars[0] for eqn in op_eqns]
+        assert eqn.invars[:-2] == [
+            op_eqns[1].outvars[0],
+            op_eqns[0].outvars[0],
+            op_eqns[2].outvars[0],
+            op_eqns[3].outvars[0],
+        ]
         assert [invar.val for invar in eqn.invars[-2:]] == [0, 1]
         assert eqn.params == {"n_wires": 2}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qp.queuing.AnnotatedQueue() as q:
-            # Need to pass in angle for RX as argument to jaxpr
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
+            qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Select(ops, **kwargs))
+
+    def test_select_preconstructed_operator2_retraces(self):
+        """Select must rebind preconstructed Operator2 inputs in each JAX trace."""
+        ops = [qp.X(2), qp.Y(3)]
+
+        def qfunc(dummy):
+            del dummy
+            qp.Select(ops, control=[0])
+
+        first = jax.make_jaxpr(qfunc)(0.0)
+        second = jax.make_jaxpr(qfunc)(jnp.zeros(1))
+
+        with qp.capture.pause():
+            expected = qp.Select(ops, control=[0])
+
+        for closed_jaxpr, arg in ((first, 0.0), (second, jnp.zeros(1))):
+            assert not closed_jaxpr.consts
+            assert [eqn.params["op_cls"] for eqn in closed_jaxpr.eqns[:-1]] == [qp.X, qp.Y]
+            assert all(eqn.primitive is operator_p for eqn in closed_jaxpr.eqns[:-1])
+            assert closed_jaxpr.eqns[-1].primitive is qp.Select._primitive
+            with qp.queuing.AnnotatedQueue() as queue:
+                qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+            assert len(queue) == 1
+            qp.assert_equal(queue.queue[0], expected)
 
     def test_superposition(self):
         """Test the primitive bind call of Superposition."""

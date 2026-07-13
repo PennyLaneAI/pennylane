@@ -22,7 +22,6 @@ import numpy as np
 
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator2
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
@@ -235,12 +234,8 @@ def unwrap_controls(op):
     """
     # Get wires and control values of base operation; need to make a copy of
     # control values, otherwise it will modify the list in the operation itself.
-    if isinstance(op, Operator2):
-        control_wires = op.arguments.get("control_wires", Wires([]))
-        control_values = op.arguments.get("control_values", None)
-    else:
-        control_wires = getattr(op, "control_wires", [])
-        control_values = getattr(op, "hyperparameters", {}).get("control_values", None)
+    control_wires = getattr(op, "control_wires", Wires([]))
+    control_values = getattr(op, "control_values", None)
 
     if isinstance(control_values, list):
         control_values = control_values.copy()
@@ -252,8 +247,8 @@ def unwrap_controls(op):
                 base_control_wires = getattr(next_ctrl.base, "control_wires", [])
                 control_wires += base_control_wires
 
-                base_control_values = next_ctrl.base.hyperparameters.get(
-                    "control_values", [True] * len(base_control_wires)
+                base_control_values = getattr(
+                    next_ctrl.base, "control_values", [True] * len(base_control_wires)
                 )
 
                 if control_values is not None:

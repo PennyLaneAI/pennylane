@@ -24,6 +24,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.queuing import QueuingManager, apply
+from pennylane.decomposition.resources import _op_type_and_params, _resource_rep_from_op
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -194,9 +195,11 @@ class Pow(ScalarSymbolicOp):
 
     @property
     def resource_params(self) -> dict:
+        base_rep = _resource_rep_from_op(self.base)
+        base_class, base_params = _op_type_and_params(base_rep)
         return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params,
+            "base_class": base_class,
+            "base_params": base_params,
             "z": self.z,
         }
 

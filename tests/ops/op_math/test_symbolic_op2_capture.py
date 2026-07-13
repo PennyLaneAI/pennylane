@@ -15,10 +15,13 @@
 
 from functools import partial
 
+import numpy as np
 import pytest
 from test_adjoint2 import RX2
 
 import pennylane as qp
+from pennylane.drawer.label import LabelledOp
+from pennylane.fourier.mark import MarkedOp
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 
@@ -183,12 +186,16 @@ class TestControlledCapture:
 
         assert eqn.params["op_cls"] is RX2
         assert eqn.params["n_ctrls"] == 1
+        assert eqn.params.get("n_work_wires", 0) == 0
+        assert eqn.params.get("work_wire_type", "borrowed") == "borrowed"
         assert eqn.params["adjoint"] is False
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(RX2(0.7, 1), [0])
         qp.assert_equal(op, expected)
+        assert not op.work_wires
+        assert op.work_wire_type == "borrowed"
 
     def test_dynamic_params_flow_to_inputs(self, ctrl_fn):
         """Test that dynamic base parameters are passed as equation inputs."""
@@ -212,6 +219,42 @@ class TestControlledCapture:
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(RX2(0.7, 2), [0, 1], [True, False])
         qp.assert_equal(op, expected)
+
+    def test_work_wire_metadata_retraces_and_replays(self, ctrl_fn):
+        """Control and work-wire metadata survive repeated capture and concrete replay."""
+        base = RX2(0.5, wires=2)
+
+        def f(dummy):
+            del dummy
+            return ctrl_fn(
+                base,
+                [0, 1],
+                control_values=[False, True],
+                work_wires=[3],
+                work_wire_type="zeroed",
+            ).tracer
+
+        first = jax.make_jaxpr(f)(0.0)
+        second = jax.make_jaxpr(f)(jax.numpy.zeros(1))
+
+        for closed_jaxpr, arg in ((first, 0.0), (second, jax.numpy.zeros(1))):
+            eqn = _single_op_eqn(closed_jaxpr)
+            assert eqn.params["n_ctrls"] == 2
+            assert eqn.params["n_work_wires"] == 1
+            assert eqn.params["work_wire_type"] == "zeroed"
+            assert [invar.val for invar in eqn.invars[-5:]] == [3, 0, 1, False, True]
+
+            [op] = qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+            expected = ControlledOp2(
+                RX2(0.5, wires=2),
+                [0, 1],
+                control_values=[False, True],
+                work_wires=[3],
+                work_wire_type="zeroed",
+            )
+            qp.assert_equal(op, expected)
+            assert op.work_wires == qp.wires.Wires([3])
+            assert op.work_wire_type == "zeroed"
 
     def test_construction_attaches_tracer(self, ctrl_fn):
         """Test that capture returns a ControlledOp2 with an attached tracer."""
@@ -380,6 +423,203 @@ def test_public_prod_binding():
     # Prod primitive consumes the ops
     assert eqns[1].outvars[0] == eqns[2].invars[0]
     assert eqns[0].outvars[0] == eqns[2].invars[1]
+
+
+@pytest.mark.parametrize(
+    "make_op",
+    [
+        pytest.param(lambda x, _: qp.s_prod(2.0, x), id="symbolic"),
+        pytest.param(lambda x, y: qp.prod(x, y), id="composite"),
+        pytest.param(
+            lambda x, y: qp.ops.LinearCombination([1.0, 2.0], [x, y]),
+            id="linear-combination",
+        ),
+    ],
+)
+def test_preconstructed_operator_data_retraces(make_op):
+    """Operator2 inputs to legacy arithmetic primitives must not reuse a stale tracer."""
+    x, y = qp.X(0), qp.Y(1)
+
+    def f(dummy):
+        del dummy
+        return make_op(x, y)
+
+    first = jax.make_jaxpr(f)(0.0)
+    second = jax.make_jaxpr(f)(jax.numpy.zeros(1))
+
+    with qp.capture.pause():
+        expected = make_op(x, y)
+
+    for closed_jaxpr, arg in ((first, 0.0), (second, jax.numpy.zeros(1))):
+        assert not closed_jaxpr.consts
+        [actual] = qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+        qp.assert_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "make_op",
+    [
+        pytest.param(lambda base: qp.ops.SProd(scalar=2.0, base=base), id="sprod"),
+        pytest.param(lambda base: qp.ops.Pow(base=base, z=2), id="pow"),
+    ],
+)
+def test_keyword_operator_data_is_a_primitive_input(make_op):
+    """Operator2 keyword arguments must not be stored as static primitive params."""
+    base = qp.X(0)
+
+    def f(dummy):
+        del dummy
+        return make_op(base)
+
+    first = jax.make_jaxpr(f)(0.0)
+    second = jax.make_jaxpr(f)(jax.numpy.zeros(1))
+
+    with qp.capture.pause():
+        expected = make_op(base)
+
+    for closed_jaxpr, arg in ((first, 0.0), (second, jax.numpy.zeros(1))):
+        base_eqn = _single_op_eqn(closed_jaxpr)
+        [symbolic_eqn] = [eqn for eqn in closed_jaxpr.eqns if eqn is not base_eqn]
+        assert base_eqn.outvars[0] in symbolic_eqn.invars
+        assert "base" not in symbolic_eqn.params
+        [actual] = qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+        qp.assert_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "make_op,param_name",
+    [
+        pytest.param(lambda base, value: qp.ops.Pow(base=base, z=value), "z", id="pow"),
+        pytest.param(lambda base, value: qp.ops.Exp(base=base, coeff=value), "coeff", id="exp"),
+    ],
+)
+def test_keyword_dynamic_data_is_a_primitive_input(make_op, param_name):
+    """Numeric keyword tracers must remain data when a symbolic operation is retraced."""
+    base = qp.X(0)
+
+    def f(value):
+        return make_op(base, value)
+
+    first = jax.make_jaxpr(f)(2.0)
+    second = jax.make_jaxpr(f)(3.0)
+
+    for closed_jaxpr, value in ((first, 4.0), (second, 5.0)):
+        base_eqn = _single_op_eqn(closed_jaxpr)
+        [symbolic_eqn] = [eqn for eqn in closed_jaxpr.eqns if eqn is not base_eqn]
+        assert symbolic_eqn.invars == [base_eqn.outvars[0], closed_jaxpr.jaxpr.invars[0]]
+        assert param_name not in symbolic_eqn.params
+
+        [actual] = qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, value)
+        with qp.capture.pause():
+            expected = make_op(base, value)
+        qp.assert_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "make_op,param_name,value",
+    [
+        pytest.param(lambda base, value: qp.ops.Pow(base=base, z=value), "z", 2, id="pow"),
+        pytest.param(
+            lambda base, value: qp.ops.Exp(base=base, coeff=value), "coeff", 0.5, id="exp"
+        ),
+    ],
+)
+def test_closed_numpy_keyword_data_is_a_primitive_input(make_op, param_name, value):
+    """Closed-over NumPy arrays must be primitive data rather than unhashable parameters."""
+    base = qp.X(0)
+    value = np.array(value)
+    closed_jaxpr = jax.make_jaxpr(lambda: make_op(base, value))()
+
+    base_eqn = _single_op_eqn(closed_jaxpr)
+    [symbolic_eqn] = [eqn for eqn in closed_jaxpr.eqns if eqn is not base_eqn]
+    assert symbolic_eqn.invars[0] == base_eqn.outvars[0]
+    assert len(symbolic_eqn.invars) == 2
+    assert param_name not in symbolic_eqn.params
+
+    [actual] = qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts)
+    with qp.capture.pause():
+        expected = make_op(base, value)
+    qp.assert_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "make_op,param_name,value",
+    [
+        pytest.param(lambda base, value: MarkedOp(base, value), "marker", "mark", id="marked"),
+        pytest.param(
+            lambda base, value: LabelledOp(base, value),
+            "custom_label",
+            "label",
+            id="labelled",
+        ),
+    ],
+)
+def test_positional_static_metadata_is_a_primitive_parameter(make_op, param_name, value):
+    """Trailing positional metadata must not be treated as a JAX primitive input."""
+    base = qp.X(0)
+
+    def f(dummy):
+        del dummy
+        return make_op(base, value)
+
+    first = jax.make_jaxpr(f)(0.0)
+    second = jax.make_jaxpr(f)(jax.numpy.zeros(1))
+
+    with qp.capture.pause():
+        expected = make_op(base, value)
+
+    for closed_jaxpr, arg in ((first, 0.0), (second, jax.numpy.zeros(1))):
+        base_eqn = _single_op_eqn(closed_jaxpr)
+        [symbolic_eqn] = [eqn for eqn in closed_jaxpr.eqns if eqn is not base_eqn]
+        assert symbolic_eqn.invars == [base_eqn.outvars[0]]
+        assert symbolic_eqn.params == {param_name: value}
+
+        [actual] = qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+        qp.assert_equal(actual, expected)
+
+
+def test_adjoint_pop_does_not_mutate_a_finalized_jaxpr():
+    """Popping an operator equation in a new trace must not edit the old trace."""
+    adj = Adjoint2(qp.X(0))
+    first = jax.make_jaxpr(lambda: qp.apply(adj))()
+    first_eqn = _single_op_eqn(first)
+    assert first_eqn.params["adjoint"] is True
+
+    second = jax.make_jaxpr(lambda: Adjoint2(adj))()
+
+    assert first_eqn.params["adjoint"] is True
+    assert not first.consts
+    assert not second.consts
+    with qp.queuing.AnnotatedQueue() as first_queue:
+        qp.capture.eval_jaxpr(first.jaxpr, first.consts)
+    with qp.queuing.AnnotatedQueue() as second_queue:
+        qp.capture.eval_jaxpr(second.jaxpr, second.consts)
+
+    assert len(first_queue) == len(second_queue) == 1
+    qp.assert_equal(first_queue.queue[0], Adjoint2(qp.X(0)))
+    qp.assert_equal(second_queue.queue[0], qp.X(0))
+
+
+def test_control_pop_does_not_mutate_a_finalized_jaxpr():
+    """Controlling an operator in a new trace must not edit its old producer equation."""
+    adj = Adjoint2(qp.X(0))
+    first = jax.make_jaxpr(lambda: qp.apply(adj))()
+    first_eqn = _single_op_eqn(first)
+    assert first_eqn.params["n_ctrls"] == 0
+
+    second = jax.make_jaxpr(lambda: qp.ctrl(adj, 1))()
+
+    assert first_eqn.params["n_ctrls"] == 0
+    assert not first.consts
+    assert not second.consts
+    with qp.queuing.AnnotatedQueue() as first_queue:
+        qp.capture.eval_jaxpr(first.jaxpr, first.consts)
+    with qp.queuing.AnnotatedQueue() as second_queue:
+        qp.capture.eval_jaxpr(second.jaxpr, second.consts)
+
+    assert len(first_queue) == len(second_queue) == 1
+    qp.assert_equal(first_queue.queue[0], Adjoint2(qp.X(0)))
+    qp.assert_equal(second_queue.queue[0], ControlledOp2(Adjoint2(qp.X(0)), [1]))
 
 
 if __name__ == "__main__":

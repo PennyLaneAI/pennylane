@@ -1673,7 +1673,7 @@ class TestDecomposition:
         """Test that the resource keys of `Prod` are op_reps."""
         assert Prod.resource_keys == frozenset({"resources"})
         product = qp.X(0) @ qp.Y(1) @ qp.X(2)
-        resources = {qp.X: 2, qp.Y: 1}
+        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.Y): 1}
         assert product.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
@@ -1683,7 +1683,10 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.X(1), qp.X(2), qp.MultiRZ(0.5, wires=(0, 1))]
-        resources = {qp.X: 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {
+            qp.resource_rep(qp.X): 3,
+            qp.resource_rep(qp.MultiRZ, num_wires=2): 1,
+        }
 
         resource_obj = default_decomp.compute_resources(resources=resources)
 
@@ -1744,6 +1747,7 @@ class TestDecomposition:
         for rule in qp.list_decomps("C(Prod)"):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.external
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
@@ -1765,8 +1769,6 @@ class TestDecomposition:
         """
 
         from catalyst.device.decomposition import catalyst_decompose
-
-        qp.decomposition.enable_graph()
 
         gate_set = {
             "X": 1,

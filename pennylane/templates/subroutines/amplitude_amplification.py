@@ -16,22 +16,22 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 import copy
+from inspect import signature
 
 import numpy as np
 
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition.resources import _op_type_and_params, _resource_rep_from_op
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
 from .reflection import Reflection
@@ -132,7 +132,11 @@ class AmplitudeAmplification(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+        bound = signature(cls).bind(*args, **kwargs)
+        U = bound.arguments.pop("U")
+        O = bound.arguments.pop("O")
+        U, O = _get_or_bind_operator_tracers((U, O))
+        return cls._primitive.bind(U, O, **bound.arguments)
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -223,23 +227,20 @@ class AmplitudeAmplification(Operation):
 
 def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wires, U):
     resources = {}
+    O_rep = _resource_rep_from_op(O)
+    U_rep = _resource_rep_from_op(U)
+    U_class, U_params = _op_type_and_params(U_rep)
 
     if fixed_point and iters // 2 > 0:
 
         resources[resource_rep(Hadamard)] = 4 * (iters // 2)
-        resources[
-            controlled_resource_rep(
-                O.__class__,
-                O.resource_params,
-                num_control_wires=1,
-            )
-        ] = 2 * (iters // 2)
+        resources[_ctrl_abstract(O_rep, Wire[1])] = 2 * (iters // 2)
         resources[resource_rep(PhaseShift)] = iters // 2
         resources[
             resource_rep(
                 Reflection,
-                base_class=U.__class__,
-                base_params=U.resource_params,
+                base_class=U_class,
+                base_params=U_params,
                 num_wires=len(U.wires),
                 num_reflection_wires=num_reflection_wires,
             )
@@ -247,12 +248,12 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
             iters // 2
         )
     elif not fixed_point and iters > 0:
-        resources[resource_rep(O.__class__, **O.resource_params)] = iters
+        resources[O_rep] = iters
         resources[
             resource_rep(
                 Reflection,
-                base_class=U.__class__,
-                base_params=U.resource_params,
+                base_class=U_class,
+                base_params=U_params,
                 num_wires=len(U.wires),
                 num_reflection_wires=num_reflection_wires,
             )

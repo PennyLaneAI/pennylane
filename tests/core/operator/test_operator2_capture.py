@@ -12,7 +12,7 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking
+# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-position
 
 import pytest
 from operator2_utils import (
@@ -331,11 +331,38 @@ class TestApply:
         eqn = _single_op_eqn(jaxpr)
         assert eqn.params["op_cls"] == type(op2)
 
+    def test_each_apply_adds_an_instruction(self):
+        """Each explicit application of the same instance must add a new equation."""
+        op = DynOp(1.0, wires=0)
+
+        def f():
+            apply(op)
+            apply(op)
+
+        jaxpr = jax.make_jaxpr(f)()
+        op_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p]
+        assert len(op_eqns) == 2
+
     def test_raises(self):
         """Tests that apply() raises outside of a tracing context."""
 
         with pytest.raises(RuntimeError, match="non-tracing context"):
             apply(DynOp(1.0, wires=0))
+
+    def test_stale_tracer_does_not_hide_non_tracing_context(self):
+        """A finalized producer must not make a later non-traced apply look valid."""
+        op = DynOp(1.0, wires=0)
+        first = jax.make_jaxpr(lambda: apply(op))()
+        first_eqn = _single_op_eqn(first)
+
+        with pytest.raises(RuntimeError, match="non-tracing context"):
+            apply(op)
+
+        assert _single_op_eqn(first) is first_eqn
+        with qp.queuing.AnnotatedQueue() as queue:
+            _eval(first)
+        assert len(queue) == 1
+        qp.assert_equal(queue.queue[0], op)
 
 
 if __name__ == "__main__":

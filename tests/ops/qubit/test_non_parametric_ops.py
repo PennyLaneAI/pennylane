@@ -122,6 +122,29 @@ def test_alias_XYZI(wire):
     assert qp.Hadamard(wire) == qp.H(wire)
 
 
+@pytest.mark.jax
+@pytest.mark.parametrize("op_cls", (qp.X, qp.Y, qp.Z))
+def test_concrete_pauli_wires_are_static_jax_pytree_metadata(op_cls):
+    """Concrete Pauli wires retain their legacy static JAX pytree representation."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    leaves, _ = jax.tree_util.tree_flatten(op_cls(0))
+
+    assert leaves == []
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("op_cls", (qp.X, qp.Y, qp.Z))
+def test_traced_pauli_wires_remain_dynamic_jax_pytree_leaves(op_cls):
+    """A traced Pauli wire remains a dynamic leaf and round-trips through JIT."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    jitted_op = jax.jit(lambda wire: op_cls(wire))
+
+    assert jitted_op(3).wires == Wires(3)
+    assert jitted_op(4).wires == Wires(4)
+
+
 class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_op_copy(self, op_cls, _, tol):
@@ -1056,8 +1079,8 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CH(("a", 0)))
 
     def test_CNOT(self):
-        """Test the CNOT _controlled method"""
-        out = qp.CNOT((0, 1))._controlled("a")
+        """Test controlling a CNOT through the public control transform."""
+        out = qp.ctrl(qp.CNOT((0, 1)), "a")
         qp.assert_equal(out, qp.Toffoli(("a", 0, 1)))
 
     def test_SWAP(self):
@@ -1072,8 +1095,8 @@ class TestControlledMethod:
         qp.assert_equal(original, out)
 
     def test_CZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qp.CZ(wires=[0, 1])._controlled("a")
+        """Test controlling a CZ through the public control transform."""
+        out = qp.ctrl(qp.CZ(wires=[0, 1]), "a")
         qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 

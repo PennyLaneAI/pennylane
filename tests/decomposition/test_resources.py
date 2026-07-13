@@ -17,15 +17,22 @@
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
+    _op_type_and_params,
+    _resource_rep_from_op,
+    _resource_rep_from_type_and_params,
     adjoint_resource_rep,
     controlled_resource_rep,
     custom_ctrl_op_to_base,
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
+from tests.core.operator.operator2_utils import DynOp, HybridOp, StaticOp
 
 
 @pytest.mark.unit
@@ -38,6 +45,99 @@ class TestResources:
         assert resources.num_gates == 0
         assert resources.gate_counts == {}
         assert resources.weighted_cost == 0.0
+
+    def test_abstractify_compressed_resource_op_is_idempotent(self):
+        """An abstract resource representation should not be abstractified a second time."""
+        rep = resource_rep(qp.MultiRZ, num_wires=3)
+        assert abstractify(rep) is rep
+
+    @pytest.mark.parametrize("base_cls", (qp.Y, qp.Z))
+    def test_zero_control_count_is_preserved(self, base_cls):
+        """Zero-controlled Operator2 resources must encode the exact number of zeros."""
+        one_zero = _ctrl_abstract(
+            abstractify(base_cls),
+            Wire[2],
+            Wire[1],
+            "zeroed",
+            num_zero_control_values=1,
+        )
+        two_zeros = _ctrl_abstract(
+            abstractify(base_cls),
+            Wire[2],
+            Wire[1],
+            "zeroed",
+            num_zero_control_values=2,
+        )
+
+        assert isinstance(one_zero, CompressedResourceOp)
+        assert one_zero != two_zeros
+        assert len({one_zero: 1, two_zeros: 1}) == 2
+        assert one_zero.op_type is qp.ops.Controlled
+        assert one_zero.params == {
+            "base_class": base_cls,
+            "base_params": {},
+            "num_control_wires": 2,
+            "num_zero_control_values": 1,
+            "num_work_wires": 1,
+            "work_wire_type": "zeroed",
+        }
+        assert two_zeros.params["num_zero_control_values"] == 2
+
+    def test_concrete_zero_control_count_is_preserved_only_for_resources(self):
+        """Resource normalization retains zero counts without changing abstractification."""
+        op = qp.ctrl(
+            qp.Z(4),
+            control=[0, 1],
+            control_values=[False, True],
+            work_wires=[2],
+            work_wire_type="zeroed",
+        )
+        expected = _ctrl_abstract(
+            abstractify(qp.Z),
+            Wire[2],
+            Wire[1],
+            "zeroed",
+            num_zero_control_values=1,
+        )
+
+        assert isinstance(abstractify(op), Operator2)
+        assert not isinstance(abstractify(op), CompressedResourceOp)
+        assert _resource_rep_from_op(op) == expected
+
+    def test_zero_control_non_fixed_operator2_is_tagged(self):
+        """Exact zero-control resources retain a non-fixed Operator2's full abstract form."""
+        base = abstractify(DynOp([0.1, 0.2], wires=[0, 1]))
+        rep = _ctrl_abstract(base, Wire[1], num_zero_control_values=1)
+
+        assert isinstance(rep, CompressedResourceOp)
+        assert rep.params["base_class"] is DynOp
+        assert (
+            _resource_rep_from_type_and_params(rep.params["base_class"], rep.params["base_params"])
+            == base
+        )
+
+    @pytest.mark.parametrize(
+        "op",
+        (
+            DynOp([0.1, 0.2], wires=[0, 1]),
+            StaticOp("label", wires=[0, 1]),
+            HybridOp([qp.X(0)], wires=[1]),
+        ),
+    )
+    def test_non_fixed_operator2_pack_roundtrip(self, op):
+        """Packing nested Operator2 bases retains dynamic, wire, static, and hybrid metadata."""
+        expected = abstractify(op)
+        op_type, params = _op_type_and_params(expected)
+
+        assert _resource_rep_from_type_and_params(op_type, params) == expected
+        assert resource_rep(op_type, **params) == expected
+
+    def test_recursive_adjoint_preserves_zero_control_count(self):
+        """Resource normalization recursively retains zeros below an Adjoint2 wrapper."""
+        one_zero = qp.adjoint(qp.ctrl(qp.Z(2), [0, 1], control_values=[False, True]))
+        two_zeros = qp.adjoint(qp.ctrl(qp.Z(2), [0, 1], control_values=[False, False]))
+
+        assert _resource_rep_from_op(one_zero) != _resource_rep_from_op(two_zeros)
 
     def test_negative_gate_counts(self):
         """Tests that an error is raised if the gate count is negative."""
@@ -133,6 +233,9 @@ class TestCompressedResourceOp:
         with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
             CompressedResourceOp(int, {})
 
+        with pytest.raises(TypeError, match="cannot represent an Operator2 class directly"):
+            CompressedResourceOp(qp.CNOT)
+
     def test_hash(self):
         """Tests that a CompressedResourceOp object is hashable."""
 
@@ -189,6 +292,18 @@ class TestCompressedResourceOp:
 
         op1 = CompressedResourceOp(qp.RX, {"a": 1, "b": 2})
         op2 = CompressedResourceOp(qp.RX, {"b": 2, "a": 1})
+        assert hash(op1) == hash(op2)
+
+    def test_mixed_operator_representations_same_hash(self):
+        """Mixed legacy and Operator2 resource keys are hashable independent of order."""
+
+        legacy_rep = CompressedResourceOp(qp.Hadamard)
+        operator2_rep = abstractify(qp.X(0))
+
+        op1 = CompressedResourceOp(qp.ops.Prod, {"resources": {legacy_rep: 1, operator2_rep: 2}})
+        op2 = CompressedResourceOp(qp.ops.Prod, {"resources": {operator2_rep: 2, legacy_rep: 1}})
+
+        assert op1 == op2
         assert hash(op1) == hash(op2)
 
     def test_empty_params_same_hash(self):
@@ -321,6 +436,14 @@ class TestResourceRep:
 class TestControlledResourceRep:
     """Tests the controlled_resource_rep function."""
 
+    @pytest.mark.parametrize("wires", [[0, 1], [0, 1, 2]])
+    def test_abstractify_explicit_multicontrolled_x(self, wires):
+        """An explicit MultiControlledX should retain its resource identity."""
+
+        op = qp.MultiControlledX(wires)
+
+        assert abstractify(op) == resource_rep(qp.MultiControlledX, **op.resource_params)
+
     def test_controlled_resource_rep(self):
         """Tests creating the resource rep of a general controlled operation."""
 
@@ -350,7 +473,7 @@ class TestControlledResourceRep:
 
         # Also verify consistency with the resource_rep path (from actual ops)
         actual_op = qp.ctrl(qp.BasisEmbedding(features=1, wires=[0, 1, 2]), control=3)
-        from_actual = resource_rep(type(actual_op), **actual_op.resource_params)
+        from_actual = abstractify(actual_op)
         assert rep == from_actual
 
     def test_controlled_resource_rep_flatten(self):
@@ -424,8 +547,8 @@ class TestControlledResourceRep:
     @pytest.mark.parametrize(
         "num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, expected",
         [
-            (1, 0, 0, "zeroed", CompressedResourceOp(qp.CNOT)),
-            (1, 0, 1, "zeroed", CompressedResourceOp(qp.CNOT)),
+            (1, 0, 0, "zeroed", resource_rep(qp.CNOT)),
+            (1, 0, 1, "zeroed", resource_rep(qp.CNOT)),
             (
                 1,
                 1,
@@ -456,7 +579,7 @@ class TestControlledResourceRep:
                     },
                 ),
             ),
-            (2, 0, 0, "zeroed", CompressedResourceOp(qp.Toffoli)),
+            (2, 0, 0, "zeroed", resource_rep(qp.Toffoli)),
             (
                 2,
                 0,
@@ -587,7 +710,12 @@ class TestControlledResourceRep:
 
         for op_type in custom_ctrl_op_to_base():
             rep = resource_rep(op_type)
-            assert rep == CompressedResourceOp(op_type, {})
+            expected = (
+                abstractify(op_type)
+                if issubclass(op_type, Operator2)
+                else CompressedResourceOp(op_type, {})
+            )
+            assert rep == expected
 
 
 @pytest.mark.unit
@@ -622,13 +750,18 @@ class TestSymbolicResourceRep:
 
         for op_type in custom_ctrl_op_to_base():
             rep = qp.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
-            assert rep == CompressedResourceOp(
-                qp.ops.Adjoint,
-                {
-                    "base_class": op_type,
-                    "base_params": {},
-                },
+            expected = (
+                qp.adjoint(abstractify(op_type))
+                if issubclass(op_type, Operator2)
+                else CompressedResourceOp(
+                    qp.ops.Adjoint,
+                    {
+                        "base_class": op_type,
+                        "base_params": {},
+                    },
+                )
             )
+            assert rep == expected
 
     def test_pow_resource_rep(self):
         """Tests the pow_resource_rep utility function."""

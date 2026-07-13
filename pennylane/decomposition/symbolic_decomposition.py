@@ -27,6 +27,8 @@ from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import (
+    _op_type_and_params,
+    _resource_rep_from_op,
     adjoint_resource_rep,
     controlled_resource_rep,
     pow_resource_rep,
@@ -197,14 +199,17 @@ def pow_rotation(phi, wires, base, z, **__):
     base._unflatten((phi * z,), struct)
 
 
-def _decompose_to_base_resource(base_class, base_params, **__):
+def _decompose_to_base_resource(base_class=None, base_params=None, base=None, **__):
+    if base is not None:
+        return {_resource_rep_from_op(base): 1}
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(_decompose_to_base_resource)
-def decompose_to_base(*params, wires, base, **__):
+def decompose_to_base(*params, wires=None, base=None, **__):
     """Decompose a symbolic operator to its base."""
+    del params, wires, __
     apply(base)
 
 
@@ -342,7 +347,8 @@ def _flip_control_adjoint_resource(
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-    return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
+    inner_class, inner_params = _op_type_and_params(inner_rep)
+    return {adjoint_resource_rep(inner_class, inner_params): 1}
 
 
 # pylint: disable=too-many-arguments
@@ -365,9 +371,13 @@ def flip_control_adjoint(
 
 
 def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
+    # Lazy import: decomposition modules load before operator-math modules.
+    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
+    base_rep = resource_rep(base_class, **base_params)
     return {
-        controlled_resource_rep(qp.X, {}, num_control_wires): 2,
-        controlled_resource_rep(base_class, base_params, 1): 1,
+        _ctrl_abstract(resource_rep(qp.X), Wire[num_control_wires]): 2,
+        _ctrl_abstract(base_rep, Wire[1]): 1,
     }
 
 

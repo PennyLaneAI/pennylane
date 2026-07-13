@@ -19,7 +19,8 @@ Contains the 'label' function for customizing operator labels.
 
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import apply
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import _resource_rep_from_op
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal,
@@ -53,7 +54,7 @@ class MarkedOp(SymbolicOp):
         hyperparams_dict = dict(metadata)
         return cls(data[0], **hyperparams_dict)
 
-    resource_keys = {"base_class", "base_params"}
+    resource_keys = {"base_rep"}
 
     def __init__(self, base: Operator, marker: str):
         super().__init__(base)
@@ -64,7 +65,7 @@ class MarkedOp(SymbolicOp):
 
     @property
     def resource_params(self) -> dict:
-        return {"base_class": type(self.base), "base_params": self.base.resource_params}
+        return {"base_rep": _resource_rep_from_op(self.base)}
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -94,8 +95,8 @@ class MarkedOp(SymbolicOp):
         return self.base.matrix(wire_order=wire_order)
 
 
-def _resources(base_class, base_params):
-    return {resource_rep(base_class, **base_params): 1}
+def _resources(base_rep):
+    return {base_rep: 1}
 
 
 @register_resources(_resources)

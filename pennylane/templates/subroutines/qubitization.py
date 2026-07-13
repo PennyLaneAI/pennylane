@@ -17,9 +17,11 @@ This submodule contains the template for Qubitization.
 
 import copy
 
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition.resources import _resource_rep_from_op
 from pennylane.ops import I, Prod, prod
 from pennylane.wires import Wires
 
@@ -78,8 +80,11 @@ class Qubitization(Operation):
     resource_keys = {"num_control_wires", "hamiltonian"}
 
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, hamiltonian, control):
+        if isinstance(hamiltonian, Operator) and not isinstance(hamiltonian, Operator2):
+            return cls._primitive.bind(hamiltonian=hamiltonian, control=control)
+        hamiltonian = _get_or_bind_operator_tracers(hamiltonian)
+        return super()._primitive_bind_call(hamiltonian, wires=control)
 
     def __init__(self, hamiltonian, control):
         wires = Wires(control) + hamiltonian.wires
@@ -181,17 +186,18 @@ class Qubitization(Operation):
 
 
 def _qubitization_resources(num_control_wires, hamiltonian):
+    op_reps = tuple(_resource_rep_from_op(op) for op in hamiltonian.terms()[1])
     return {
         resource_rep(
             Reflection,
             base_class=Prod,
             base_params={"resources": {resource_rep(I): num_control_wires}},
-            num_wires=1,
-            num_reflection_wires=1,
+            num_wires=num_control_wires,
+            num_reflection_wires=num_control_wires,
         ): 1,
         resource_rep(
             PrepSelPrep,
-            op_reps=(resource_rep(type(hamiltonian), **hamiltonian.resource_params),),
+            op_reps=op_reps,
             num_control=num_control_wires,
         ): 1,
     }
@@ -207,3 +213,13 @@ def _qubitization_decomposition(*_, **kwargs):
 
 
 add_decomps(Qubitization, _qubitization_decomposition)
+
+# pylint: disable=protected-access
+if Qubitization._primitive is not None:
+
+    @Qubitization._primitive.def_impl
+    def _(*args, n_wires=None, hamiltonian=None, control=None, **kwargs):
+        if n_wires is None:
+            return type.__call__(Qubitization, hamiltonian, control=control, **kwargs)
+        (hamiltonian,), control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(Qubitization, hamiltonian, control=control, **kwargs)

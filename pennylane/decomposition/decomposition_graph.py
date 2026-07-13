@@ -35,9 +35,10 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
+from pennylane.typing import Wire
 
 from .decomposition_rule import (
     DecompositionRule,
@@ -46,7 +47,13 @@ from .decomposition_rule import (
     list_decomps,
     null_decomp,
 )
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    Resources,
+    _resource_rep_from_op,
+    _resource_rep_from_type_and_params,
+)
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
@@ -66,16 +73,46 @@ from .utils import to_name
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
+def _operator2_controlled_kwargs(op: AbstractOperatorLike):
+    """Return native ``ControlledOp2`` arguments for an exact compressed representation."""
+    if not isinstance(op, CompressedResourceOp) or op.op_type is not qp.ops.Controlled:
+        return None
+
+    base = _resource_rep_from_type_and_params(op.params["base_class"], op.params["base_params"])
+    if not isinstance(base, Operator2):
+        return None
+
+    num_control_wires = op.params["num_control_wires"]
+    num_zero_controls = op.params["num_zero_control_values"]
+    control_values = (False,) * num_zero_controls + (True,) * (
+        num_control_wires - num_zero_controls
+    )
+    return {
+        "base": base,
+        "control_wires": Wire[num_control_wires],
+        "control_values": control_values,
+        "work_wires": Wire[op.params["num_work_wires"]],
+        "work_wire_type": op.params["work_wire_type"],
+    }
+
+
+def _logical_operator2_controlled(op: AbstractOperatorLike):
+    """Reconstruct the logical Operator2 used to discover native controlled rules."""
+    kwargs = _operator2_controlled_kwargs(op)
+    if kwargs is None:
+        return None
+    # Local import avoids a module cycle during decomposition initialization.
+    from pennylane.ops.op_math.controlled2 import ControlledOp2
+
+    return ControlledOp2(**kwargs)
+
+
 def _get_kwargs(op: AbstractOperatorLike):
     if isinstance(op, Operator2):
         return op.arguments
+    if (kwargs := _operator2_controlled_kwargs(op)) is not None:
+        return kwargs
     return op.params
-
-
-def _abstractify(op: Operator):
-    if isinstance(op, Operator1):
-        return resource_rep(type(op), **op.resource_params)
-    return abstractify(op)
 
 
 @dataclass(frozen=True)
@@ -301,10 +338,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         for op in operations:
             if isinstance(op, qp.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
-            if isinstance(op, Operator1):
-                op = resource_rep(type(op), **op.resource_params)
-            if isinstance(op, Operator2):
-                op = abstractify(op)
+            op = _resource_rep_from_op(op)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
             self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
@@ -502,7 +536,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
 
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+        logical_controlled = _logical_operator2_controlled(op)
+        decomps = self._alt_decomps.get(op_name, []) + list_decomps(logical_controlled or op_name)
+
+        if logical_controlled is not None:
+            return decomps
 
         # TODO: symbolic decomposition rules for Operator2 are handled in a follow-up [sc-123156]
         if isinstance(op, Operator2):
@@ -541,12 +579,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [cancel_adjoint]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
-        base = resource_rep(base_class, **base_params)
+        base = _resource_rep_from_type_and_params(base_class, base_params)
+        base_kwargs = _get_kwargs(base)
         return [
             make_adjoint_decomp(base_decomp)
             for base_decomp in self._get_decompositions(base)
-            if base_decomp.get_work_wire_spec(**base_params).total == 0
-            and not _decomp_contains_mcm(base_decomp, base_params)
+            if base_decomp.get_work_wire_spec(**base_kwargs).total == 0
+            and not _decomp_contains_mcm(base_decomp, base_kwargs)
         ]
 
     @staticmethod
@@ -588,11 +627,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return []
 
         # General case: apply control to the base op's decomposition rules.
-        base = resource_rep(base_class, **base_params)
+        base = _resource_rep_from_type_and_params(base_class, base_params)
+        base_kwargs = _get_kwargs(base)
         rules = [
             make_controlled_decomp(decomp)
             for decomp in self._get_decompositions(base)
-            if not _decomp_contains_mcm(decomp, base_params)
+            if not _decomp_contains_mcm(decomp, base_kwargs)
         ]
 
         # There's always the option of turning the controlled operator into a controlled
@@ -660,10 +700,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         )
 
 
-def _get_base_rep_if_applicable(op: CompressedResourceOp) -> CompressedResourceOp | None:
+def _get_base_rep_if_applicable(op: CompressedResourceOp) -> AbstractOperatorLike | None:
     if op.op_type in (qp.ops.Adjoint, qp.ops.Controlled):
         base_class, base_params = op.params["base_class"], op.params["base_params"]
-        return resource_rep(base_class, **base_params)
+        return _resource_rep_from_type_and_params(base_class, base_params)
     return None
 
 
@@ -728,7 +768,7 @@ class DecompGraphSolution:
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
-        op_rep = _abstractify(op)
+        op_rep = _resource_rep_from_op(op)
         if op_rep not in self._op_to_op_nodes:
             return []
 

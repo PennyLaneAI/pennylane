@@ -22,6 +22,7 @@ from collections.abc import Iterable
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -29,6 +30,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _resource_rep_from_op
 from pennylane.math import is_abstract
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.typing import TensorLike
@@ -117,6 +119,7 @@ class HilbertSchmidt(Operation):
         # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
         V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
+        V, U = _get_or_bind_operator_tracers((tuple(V), tuple(U)))
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
@@ -134,7 +137,7 @@ class HilbertSchmidt(Operation):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [_resource_rep_from_op(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -397,7 +400,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [_resource_rep_from_op(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -434,7 +437,7 @@ def _hilbert_schmidt_resources(
     resources.update(
         {
             resource_rep(Hadamard): num_first_range * 2,
-            resource_rep(CNOT): min(num_first_range, num_second_range) * 2,
+            CNOT: min(num_first_range, num_second_range) * 2,
         }
     )
 
@@ -458,7 +461,7 @@ def _local_hilbert_schmidt_resources(
     resources.update(
         {
             resource_rep(Hadamard): num_first_range + 1,
-            resource_rep(CNOT): min(num_first_range, num_second_range) + 1,
+            CNOT: min(num_first_range, num_second_range) + 1,
         }
     )
 

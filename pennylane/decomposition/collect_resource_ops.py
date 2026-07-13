@@ -26,8 +26,11 @@ from pennylane.capture.primitives import (
     pauli_measure_prim,
     qnode_prim,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
-from .resources import adjoint_resource_rep, controlled_resource_rep, resource_rep
+from .resources import _resource_rep_from_op
 
 
 class CollectResourceOps(FlattenedInterpreter):
@@ -38,7 +41,7 @@ class CollectResourceOps(FlattenedInterpreter):
         self.state = {"ops": set()}
 
     def interpret_operation(self, op):
-        self.state["ops"].add(resource_rep(type(op), **op.resource_params))
+        self.state["ops"].add(_resource_rep_from_op(op))
         return op
 
     def interpret_measurement_eqn(self, eqn):
@@ -87,7 +90,7 @@ def _adjoint_transform_prim(
     child = CollectResourceOps()
     child.eval(jaxpr, consts, *args)
     for op in child.state["ops"]:
-        self.state["ops"].add(adjoint_resource_rep(op.op_type, op.params))
+        self.state["ops"].add(_adjoint_abstract(op))
     return []
 
 
@@ -107,12 +110,17 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     num_control_wires = len(control)
     num_zero_control_values = sum(1 for v in control_values if not v) if control_values else 0
     num_work_wires = len(work_wires) if work_wires else 0
+    work_wire_type = params.get("work_wire_type", "borrowed")
 
     # Create resource reps
     for op in child.state["ops"]:
         self.state["ops"].add(
-            controlled_resource_rep(
-                op.op_type, op.params, num_control_wires, num_zero_control_values, num_work_wires
+            _ctrl_abstract(
+                op,
+                Wire[num_control_wires],
+                Wire[num_work_wires],
+                work_wire_type,
+                num_zero_control_values,
             )
         )
 

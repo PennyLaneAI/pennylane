@@ -17,17 +17,19 @@ This submodule defines a base class for symbolic operations representing operato
 
 from abc import abstractmethod
 from copy import copy
+from inspect import Parameter, signature
 from warnings import warn
 
 import numpy as np
 
 import pennylane as qp
 from pennylane import math as pl_math
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.pytrees import flatten, unflatten
+from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
 
@@ -55,19 +57,57 @@ class SymbolicOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+        sig = signature(cls)
+        sig.bind(*args, **kwargs)  # Validate the constructor call before binding the primitive.
+        new_args, new_kwargs = _get_or_bind_operator_tracers((args, kwargs))
 
-        new_leaves = []
-        for leaf in leaves:
-            if isinstance(leaf, Operator2):
-                if leaf.tracer is None:
-                    # pylint: disable-next=protected-access
-                    leaf._bind_primitive()
-                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+        # Move only the positional-or-keyword prefix ending at an operator tracer into
+        # primitive inputs. Numeric tracers and arrays supplied by keyword must also be
+        # inputs rather than leaking into static primitive parameters. Non-array metadata
+        # (for example, labels, wire lists, and cached Pauli representations) stays static.
+        positional_params = tuple(
+            param
+            for param in sig.parameters.values()
+            if param.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
+        )
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        def is_dynamic_primitive_arg(param, value):
+            if param.name == "_pauli_rep" or isinstance(value, (str, bytes, list, tuple, Wires)):
+                return False
+            return getattr(value, "aval", None) is not None or jax.core.valid_jaxtype(value)
+
+        new_args = list(new_args)
+        # A variadic positional tail cannot be represented as named primitive parameters.
+        positional_end = len(new_args) - 1 if len(new_args) > len(positional_params) else -1
+        for index, param in enumerate(positional_params):
+            if index < len(new_args):
+                value = new_args[index]
+            elif param.name in new_kwargs:
+                value = new_kwargs[param.name]
             else:
-                new_leaves.append(leaf)
+                continue
+            if is_dynamic_primitive_arg(param, value):
+                positional_end = max(positional_end, index)
 
-        new_args, new_kwargs = unflatten(new_leaves, structure)
+        # Positional metadata after the dynamic prefix must be passed by name so JAX does
+        # not try to abstractify values such as labels. Positional-only parameters cannot
+        # be moved and therefore remain in the primitive input prefix.
+        while len(new_args) - 1 > positional_end:
+            index = len(new_args) - 1
+            param = positional_params[index]
+            if param.kind is Parameter.POSITIONAL_ONLY:
+                positional_end = index
+                break
+            new_kwargs[param.name] = new_args.pop()
+
+        for param in positional_params[len(new_args) : positional_end + 1]:
+            if param.name in new_kwargs:
+                new_args.append(new_kwargs.pop(param.name))
+            else:
+                new_args.append(param.default)
+
         # needs to be overwritten because it doesnt take wires
         return cls._primitive.bind(*new_args, **new_kwargs)
 

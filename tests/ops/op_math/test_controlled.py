@@ -1856,6 +1856,8 @@ class TestCtrl:
                 control_wires=ctrl_wires + op.control_wires,
                 control_values=ctrl_values + op.control_values,
             )
+        elif isinstance(op, Operator2):
+            expected = ControlledOp2(op, control_wires=ctrl_wires, control_values=ctrl_values)
         else:
             expected = Controlled(op, control_wires=ctrl_wires, control_values=ctrl_values)
 
@@ -1877,6 +1879,8 @@ class TestCtrl:
                 op.base,
                 control_wires=ctrl_wires + op.control_wires,
             )
+        elif isinstance(op, Operator2):
+            expected = ControlledOp2(op, control_wires=ctrl_wires)
         else:
             expected = Controlled(op, control_wires=ctrl_wires)
 
@@ -1928,7 +1932,8 @@ class TestCtrl:
             ),
             control=["a"],
         )
-        expected = Controlled(
+        expected_cls = ControlledOp2 if isinstance(expected_base, Operator2) else Controlled
+        expected = expected_cls(
             expected_base,
             control_wires=["a", "b"] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,
@@ -2343,7 +2348,7 @@ class TestTapeExpansionWithControlled:
         [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         assert tape.circuit == [
             *qp.CRX(0.123, wires=[2, 0]).decomposition(),
-            *qp.Toffoli(wires=[2, 0, 1]).decomposition(),
+            *qp.Toffoli.compute_decomposition(wires=[2, 0, 1]),
             *qp.CRX(0.456, wires=[2, 0]).decomposition(),
         ]
 

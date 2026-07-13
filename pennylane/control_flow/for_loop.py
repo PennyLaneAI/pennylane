@@ -22,6 +22,7 @@ from pennylane import capture, math
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import CaptureWarning
 
 from ._loop_abstract_axes import (
@@ -444,9 +445,12 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             new_body_fn = _reverse_iterator(new_body_fn, self.start, self.step)
 
         try:
-            jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
-                0, *dummy_init_state
-            )
+            # Tracing discovers the loop body; it must not also leak one trace-time copy of every
+            # operation into an active queue. The interpreter will replay the complete loop.
+            with QueuingManager.stop_recording():
+                jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
+                    0, *dummy_init_state
+                )
         except ValueError as e:  # pragma: no cover
             handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
 

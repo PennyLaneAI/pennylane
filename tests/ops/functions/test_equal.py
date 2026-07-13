@@ -2007,6 +2007,44 @@ class TestSymbolicOpComparison:
 
         assert qp.equal(op1, op2) == res
 
+    @pytest.mark.parametrize(
+        ("wires2", "controls2", "expected"),
+        [
+            ([2, 1], [True, False], True),
+            ([2, 1], [False, True], False),
+        ],
+    )
+    def test_controlled2_differing_control_wire_order(self, wires2, controls2, expected):
+        """Controlled2 compares control wire/value pairs without regard for wire order."""
+        op1 = qp.ops.op_math.ControlledOp2(
+            qp.PauliX(0), control_wires=[1, 2], control_values=[False, True]
+        )
+        op2 = qp.ops.op_math.ControlledOp2(
+            qp.PauliX(0), control_wires=wires2, control_values=controls2
+        )
+
+        assert qp.equal(op1, op2) is expected
+
+    def test_toffoli_control_wire_order(self):
+        """Toffoli control wires are interchangeable under operator equality."""
+        assert qp.equal(qp.Toffoli([0, 2, 1]), qp.Toffoli([2, 0, 1]))
+
+    @pytest.mark.parametrize(
+        "op2",
+        [
+            qp.ops.op_math.ControlledOp2(qp.PauliX("target"), [1, 2], work_wires=[4]),
+            qp.ops.op_math.ControlledOp2(qp.PauliX(0), [1, 2], work_wires=[5]),
+            qp.ops.op_math.ControlledOp2(
+                qp.PauliX(0), [1, 2], work_wires=[4], work_wire_type="zeroed"
+            ),
+        ],
+    )
+    def test_controlled2_compares_base_and_work_semantics(self, op2):
+        """Controlled2 equality still distinguishes base and work-wire semantics."""
+        op1 = qp.ops.op_math.ControlledOp2(qp.PauliX(0), [1, 2], work_wires=[4])
+
+        assert not qp.equal(op1, op2)
+
     @pytest.mark.parametrize(("wires1", "wires2", "res"), CONTROL_WIRES_SEQUENCE)
     def test_control_sequence_wires_comparison(self, wires1, wires2, res):
         """Test that equal compares control for ControlledSequence operators"""

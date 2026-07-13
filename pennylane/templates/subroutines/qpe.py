@@ -17,17 +17,19 @@ Contains the QuantumPhaseEstimation template.
 
 # pylint: disable=arguments-differ
 import copy
+from inspect import signature
 
 from pennylane import ops
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
-    resource_rep,
 )
+from pennylane.decomposition.resources import _op_type_and_params, _resource_rep_from_op
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
 from pennylane.wires import Wires
@@ -163,7 +165,10 @@ class QuantumPhaseEstimation(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+        bound = signature(cls).bind(*args, **kwargs)
+        unitary = bound.arguments.pop("unitary")
+        unitary = _get_or_bind_operator_tracers(unitary)
+        return cls._primitive.bind(unitary, **bound.arguments)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
@@ -172,10 +177,7 @@ class QuantumPhaseEstimation(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "base_resource_rep": resource_rep(
-                type(self.hyperparameters["unitary"]),
-                **self.hyperparameters["unitary"].resource_params,
-            ),
+            "base_resource_rep": _resource_rep_from_op(self.hyperparameters["unitary"]),
             "num_estimation_wires": len(self.estimation_wires),
         }
 
@@ -275,6 +277,7 @@ class QuantumPhaseEstimation(Operation):
 
 
 def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
+    base_class, base_params = _op_type_and_params(base_resource_rep)
     gate_count = {
         ops.Hadamard: num_estimation_wires,
         adjoint_resource_rep(QFT, {"num_wires": num_estimation_wires}): 1,
@@ -284,8 +287,8 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
             controlled_resource_rep(
                 ops.Pow,
                 {
-                    "base_class": base_resource_rep.op_type,
-                    "base_params": base_resource_rep.params,
+                    "base_class": base_class,
+                    "base_params": base_params,
                     "z": 2**i,
                 },
                 num_control_wires=1,

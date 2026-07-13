@@ -330,6 +330,34 @@ def test_capture_and_eval(func):
     qp.assert_equal(mp, out)
 
 
+@pytest.mark.parametrize(
+    "make_measurement",
+    [
+        pytest.param(qp.expval, id="expval"),
+        pytest.param(qp.var, id="var"),
+        pytest.param(qp.shadow_expval, id="shadow-expval"),
+    ],
+)
+def test_preconstructed_operator_observable_retraces(make_measurement):
+    """Measurement primitives must not reuse an observable's tracer across JAX traces."""
+    observable = qp.X(0)
+
+    def f(dummy):
+        del dummy
+        return make_measurement(observable)
+
+    first = jax.make_jaxpr(f)(0.0)
+    second = jax.make_jaxpr(f)(jax.numpy.zeros(1))
+
+    with qp.capture.pause():
+        expected = make_measurement(observable)
+
+    for closed_jaxpr, arg in ((first, 0.0), (second, jax.numpy.zeros(1))):
+        assert not closed_jaxpr.consts
+        [actual] = jax.core.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+        qp.assert_equal(actual, expected)
+
+
 @pytest.mark.parametrize("state_wires, shape", [(None, 16), (qp.wires.Wires((0, 1, 2, 3, 4)), 32)])
 def test_state(state_wires, shape):
     """Test the capture of a state measurement."""
@@ -719,6 +747,32 @@ def test_shadow_expval(seed):
     assert shapes[0] == jax.core.ShapedArray(
         (), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
+
+
+@pytest.mark.parametrize("container", [list, tuple])
+def test_shadow_expval_operator2_sequence_retraces(container):
+    """A sequence of preconstructed Operator2 observables retains its tree on replay."""
+    observables = container((qp.X(0), qp.Y(1)))
+
+    def f(dummy):
+        del dummy
+        return qp.shadow_expval(observables, seed=123, k=2)
+
+    first = jax.make_jaxpr(f)(0.0)
+    second = jax.make_jaxpr(f)(jax.numpy.zeros(1))
+
+    for closed_jaxpr, arg in ((first, 0.0), (second, jax.numpy.zeros(1))):
+        op_eqns = [eqn for eqn in closed_jaxpr.eqns if eqn.primitive is operator_p]
+        assert [eqn.params["op_cls"] for eqn in op_eqns] == [qp.X, qp.Y]
+        measurement_eqn = closed_jaxpr.eqns[-1]
+        assert measurement_eqn.primitive is ShadowExpvalMP._obs_primitive
+        assert measurement_eqn.invars == [eqn.outvars[0] for eqn in op_eqns]
+        assert "H_tree" in measurement_eqn.params
+
+        [actual] = jax.core.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+        assert isinstance(actual.H, container)
+        for observed, expected in zip(actual.H, observables, strict=True):
+            qp.assert_equal(observed, expected)
 
 
 @pytest.mark.parametrize("mtype, kwargs", [(VnEntropyMP, {"log_base": 2}), (PurityMP, {})])

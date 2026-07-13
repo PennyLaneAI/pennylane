@@ -22,20 +22,20 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation
+from pennylane.core.operator.operator2 import _get_or_bind_operator_tracers  # tach-ignore
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import auto_wrap
+from pennylane.decomposition.resources import _resource_rep_from_op
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -356,14 +356,7 @@ class Select(Operation):
 
     @property
     def resource_params(self):
-        op_reps = tuple(
-            (
-                auto_wrap(op)
-                if isinstance(op, Operator2)
-                else resource_rep(type(op), **op.resource_params)
-            )
-            for op in self.ops
-        )
+        op_reps = tuple(_resource_rep_from_op(op) for op in self.ops)
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
@@ -381,7 +374,8 @@ class Select(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, ops, control, **kwargs):
-        return super()._primitive_bind_call(*ops, wires=control, **kwargs)
+        bound_ops = _get_or_bind_operator_tracers(tuple(ops))
+        return super()._primitive_bind_call(*bound_ops, wires=control, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
@@ -752,12 +746,11 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
     if c == 1:
         for i, target_rep in enumerate(op_reps):
             resources[
-                controlled_resource_rep(
-                    base_class=target_rep.op_type,
-                    base_params=target_rep.params,
-                    num_control_wires=1,
+                _ctrl_abstract(
+                    target_rep,
+                    Wire[1],
+                    Wire[num_work_wires],
                     num_zero_control_values=(1 - i),
-                    num_work_wires=num_work_wires,
                 )
             ] += 1
         return dict(resources)
@@ -782,18 +775,10 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
     resources[adjoint_resource_rep(TemporaryAND)] += num_elbows
     more_than_a_quarter = int(K > 2 ** (c - 2))
     more_than_a_half = int(K > 2 ** (c - 1))
-    resources[resource_rep(CNOT)] += K - 1 + more_than_a_half - more_than_a_quarter
-    resources[
-        controlled_resource_rep(
-            base_class=X, base_params={}, num_control_wires=1, num_zero_control_values=1
-        )
-    ] += more_than_a_quarter
+    resources[CNOT] += K - 1 + more_than_a_half - more_than_a_quarter
+    resources[_ctrl_abstract(X(Wire[1]), Wire[1], num_zero_control_values=1)] += more_than_a_quarter
     for op_rep in op_reps:
-        resources[
-            controlled_resource_rep(
-                op_rep.op_type, op_rep.params, num_control_wires=1, num_work_wires=num_work_wires
-            )
-        ] += 1
+        resources[_ctrl_abstract(op_rep, Wire[1], Wire[num_work_wires])] += 1
 
     return dict(resources)
 
@@ -812,11 +797,10 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
 
     if num_ops == 2:
         return {
-            controlled_resource_rep(
-                op_rep.op_type,
-                op_rep.params,
-                num_control_wires=1,
-                num_work_wires=num_work_wires,
+            _ctrl_abstract(
+                op_rep,
+                Wire[1],
+                Wire[num_work_wires],
                 num_zero_control_values=1 - i,
             ): 1
             for i, op_rep in enumerate(op_reps)
@@ -827,7 +811,7 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
                 resource_rep(TemporaryAND): num_ops - 3,
                 adjoint_resource_rep(TemporaryAND): num_ops - 3,
                 CNOT: num_ops - 1,
-                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+                _ctrl_abstract(X(Wire[1]), Wire[1], num_zero_control_values=1): 1,
             }
         )
     else:
@@ -836,7 +820,7 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
                 resource_rep(TemporaryAND): num_ops - 2,
                 adjoint_resource_rep(TemporaryAND): num_ops - 2,
                 CNOT: num_ops - 3,
-                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+                _ctrl_abstract(X(Wire[1]), Wire[1], num_zero_control_values=1): 1,
             }
         )
 
@@ -844,11 +828,7 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     unary_control_wires = max(math.ceil_log2(num_ops) - 1, 0)
     num_work_wires = num_work_wires - unary_control_wires
     for op in op_reps:
-        counts[
-            controlled_resource_rep(
-                op.op_type, op.params, num_control_wires=1, num_work_wires=num_work_wires
-            )
-        ] += 1
+        counts[_ctrl_abstract(op, Wire[1], Wire[num_work_wires])] += 1
 
     return dict(counts)
 

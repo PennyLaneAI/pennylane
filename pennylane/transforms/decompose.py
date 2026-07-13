@@ -37,7 +37,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
-from pennylane.wires import is_abstract_qubit
+from pennylane.wires import Wires, is_abstract_qubit
 
 
 def null_postprocessing(results):
@@ -179,7 +179,9 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
             return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
 
-        def _evaluate_jaxpr_decomposition(self, op: Operator):
+        def _evaluate_jaxpr_decomposition(
+            self, op: Operator, eqn: jax.extend.core.JaxprEqn | None = None, invals=()
+        ):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
 
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
@@ -191,6 +193,39 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             rule = self._decomp_graph_solution.decomposition(
                 op, num_work_wires=self._num_work_wires
             )
+
+            if isinstance(op, Operator2):
+                assert eqn is not None
+                n_ctrls = eqn.params.get("n_ctrls", 0)
+
+                if n_ctrls:
+
+                    def compute_operator2_decomposition(*args):
+                        base_params = dict(eqn.params)
+                        base_params["n_ctrls"] = 0
+                        base = eqn.primitive.impl(*args[: -2 * n_ctrls], **base_params)
+                        rule(
+                            base=base,
+                            control_wires=Wires(args[-2 * n_ctrls : -n_ctrls]),
+                            control_values=args[-n_ctrls:],
+                            work_wires=op.work_wires,
+                            work_wire_type=op.work_wire_type,
+                        )
+
+                else:
+
+                    def compute_operator2_decomposition(*args):
+                        inner_op = eqn.primitive.impl(*args, **eqn.params)
+                        rule(**inner_op.arguments)
+
+                args = tuple(invals)
+                jaxpr_decomp = make_plxpr(compute_operator2_decomposition)(*args)
+
+                self._current_depth += 1
+                out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
+                self._current_depth -= 1
+                return out
+
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
@@ -302,7 +337,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
             """
 
-            invals = (self.read(invar) for invar in eqn.invars)
+            invals = tuple(self.read(invar) for invar in eqn.invars)
 
             with queuing.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
@@ -316,7 +351,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
                 op, self._num_work_wires
             ):
-                return self._evaluate_jaxpr_decomposition(op)
+                return self._evaluate_jaxpr_decomposition(op, eqn, invals)
 
             return self.decompose_operation(op)
 

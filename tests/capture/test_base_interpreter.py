@@ -33,6 +33,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.core import Operator2  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -170,7 +171,11 @@ def test_controlled_operator_handling(op_class, args, kwargs):
         return qp.expval(qp.Z(0))
 
     jaxpr = jax.make_jaxpr(f)()
-    assert jaxpr.eqns[0].primitive == op_class._primitive
+    if issubclass(op_class, Operator2):
+        assert jaxpr.eqns[0].primitive == operator_p
+        assert jaxpr.eqns[0].params["op_cls"] is op_class
+    else:
+        assert jaxpr.eqns[0].primitive == op_class._primitive
 
 
 def test_default_measurement_handling():

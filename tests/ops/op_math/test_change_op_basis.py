@@ -25,6 +25,7 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
+from pennylane.core.operator import Operator2
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
@@ -122,7 +123,8 @@ def test_change_op_basis_callables_capture_with_none():
 
     assert jaxpr.eqns[-1].primitive.name == "adjoint_transform"
     assert jaxpr.eqns[-1].params["jaxpr"].eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-2].primitive.name == "PauliX"
+    assert jaxpr.eqns[-2].primitive.name == "operator"
+    assert jaxpr.eqns[-2].params["op_cls"] is qp.X
     assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
 
 
@@ -195,7 +197,8 @@ def test_change_op_basis_callables_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert jaxpr.eqns[-3].primitive.name == "operator"
+    assert jaxpr.eqns[-3].params["op_cls"] is qp.X
     assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
 
 
@@ -388,9 +391,9 @@ class TestDecomposition:
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
         assert change_op_basis_op.resource_params == {
-            "compute_op": qp.X,
-            "target_op": qp.Y,
-            "uncompute_op": qp.X,
+            "compute_op": qp.resource_rep(qp.X),
+            "target_op": qp.resource_rep(qp.Y),
+            "uncompute_op": qp.resource_rep(qp.X),
         }
 
     def test_registered_decomp(self):
@@ -400,7 +403,10 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {qp.X: 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {
+            qp.resource_rep(qp.X): 2,
+            qp.resource_rep(qp.MultiRZ, num_wires=2): 1,
+        }
 
         resource_obj = default_decomp.compute_resources(
             compute_op=qp.X,
@@ -439,13 +445,86 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
-        """Test the qfunc decomposition."""
+        """Test that the qfunc decomposition captures each input operator in order."""
+        import jax
+
+        jaxpr = jax.make_jaxpr(lambda: change_op_basis(*ops_lst))()
+        assert len(jaxpr.eqns) == len(ops_lst)
+        for eqn, op in zip(jaxpr.eqns, ops_lst, strict=True):
+            if isinstance(op, Operator2):
+                assert eqn.primitive.name == "operator"
+                assert eqn.params["op_cls"] is type(op)
+            else:
+                assert eqn.primitive is type(op)._primitive
 
         with AnnotatedQueue() as q:
-            change_op_basis(*ops_lst)
+            qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
-        for i, op in enumerate(q.queue):
-            assert op == ops_lst[i]
+        assert len(q.queue) == len(ops_lst)
+        for captured_op, expected_op in zip(q.queue, ops_lst, strict=True):
+            qp.assert_equal(captured_op, expected_op)
+
+    @pytest.mark.capture
+    def test_preconstructed_operator2_retraces(self):
+        """Preconstructed compute and target operators must rebind in each JAX trace."""
+        import jax
+
+        compute_op, target_op = qp.X(0), qp.Y(0)
+
+        def f(dummy):
+            del dummy
+            change_op_basis(compute_op, target_op)
+
+        first = jax.make_jaxpr(f)(0.0)
+        second = jax.make_jaxpr(f)(jax.numpy.zeros(1))
+
+        with qp.capture.pause():
+            expected = [compute_op, target_op, qp.adjoint(compute_op)]
+
+        for closed_jaxpr, arg in ((first, 0.0), (second, jax.numpy.zeros(1))):
+            assert not closed_jaxpr.consts
+            with AnnotatedQueue() as queue:
+                qp.capture.eval_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.consts, arg)
+            assert len(queue) == 3
+            for actual_op, expected_op in zip(queue.queue, expected, strict=True):
+                qp.assert_equal(actual_op, expected_op)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("explicit_uncompute", (False, True))
+    def test_repeated_preconstructed_operator2_is_applied_at_each_position(
+        self, explicit_uncompute
+    ):
+        """A live data tracer must not deduplicate repeated instruction uses."""
+        import jax
+
+        op = qp.X(0)
+
+        def circuit():
+            change_op_basis(op, op, op if explicit_uncompute else None)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 3
+
+        with AnnotatedQueue() as queue:
+            qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        with qp.capture.pause():
+            expected = [op, op, op if explicit_uncompute else qp.adjoint(op)]
+        assert len(queue) == 3
+        for actual_op, expected_op in zip(queue.queue, expected, strict=True):
+            qp.assert_equal(actual_op, expected_op)
+
+    @pytest.mark.capture
+    def test_inline_operator2_producer_is_not_applied_twice(self):
+        """The equation emitted by an inline constructor accounts for its first instruction use."""
+        import jax
+
+        jaxpr = jax.make_jaxpr(lambda: change_op_basis(qp.X(0), qp.Y(1), qp.Z(2)))()
+
+        assert len(jaxpr.eqns) == 3
+        with AnnotatedQueue() as queue:
+            qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert [type(op) for op in queue.queue] == [qp.X, qp.Y, qp.Z]
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_controlled_decomposition_new(self, ops_lst):
@@ -459,6 +538,32 @@ class TestDecomposition:
             work_wires=work_wires,
         )
         for rule in qp.list_decomps("C(ChangeOpBasis)"):
+            _test_decomposition_rule(op, rule)
+
+    def test_zero_controlled_decomposition_new(self):
+        """Exact resource validation retains zero controls on an Operator2 target."""
+        op = qp.ops.Controlled(
+            change_op_basis(qp.H(0), qp.Z(1), qp.H(0)),
+            control_wires=[4],
+            control_values=[0],
+            work_wires=[2, 3],
+        )
+
+        for rule in qp.list_decomps("C(ChangeOpBasis)"):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("zero_controlled_position", ("compute", "target"))
+    def test_nested_zero_controlled_resources_are_exact(self, zero_controlled_position):
+        """Nested resource keys retain exact zero controls, including default uncompute."""
+        zero_controlled = qp.ctrl(qp.Z(0), control=[1, 2], control_values=[False, True])
+        compute, target = (
+            (zero_controlled, qp.X(3))
+            if zero_controlled_position == "compute"
+            else (qp.X(3), zero_controlled)
+        )
+        op = change_op_basis(compute, target)
+
+        for rule in qp.list_decomps(ChangeOpBasis):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("ops_lst", ops)
