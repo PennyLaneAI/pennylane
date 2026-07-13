@@ -212,19 +212,6 @@ def decompose_to_base(base):
     qp.apply(base)
 
 
-self_adjoint_legacy: DecompositionRule = decompose_to_base_legacy
-
-
-def _decompose_to_base_resource(base):
-    return {abstractify(base): 1}
-
-
-@register_resources(_decompose_to_base_resource)
-def decompose_to_base(base):
-    """Decompose a symbolic operator to its base."""
-    qp.apply(base)
-
-
 self_adjoint: DecompositionRule = decompose_to_base
 
 
@@ -241,6 +228,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         # pylint: disable=import-outside-toplevel
         from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
+        base_resources = base_decomposition.compute_resources(**base_params)
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
             _ctrl_abstract(

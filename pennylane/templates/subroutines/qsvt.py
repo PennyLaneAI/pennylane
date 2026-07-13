@@ -27,7 +27,7 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops, pytrees
+from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
