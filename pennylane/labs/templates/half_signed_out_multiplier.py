@@ -17,6 +17,7 @@ an unsigned input and an unsigned output."""
 import pennylane as qp
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
 
+# TEST 
 
 def half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     r"""Multiplier of an unsigned register and a signed register.
