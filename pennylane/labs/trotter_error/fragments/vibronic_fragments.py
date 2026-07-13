@@ -37,7 +37,8 @@ def vibronic_fragments(
     taylor_coeffs: Sequence[ArrayLike],
     scheme: str = "og",
 ) -> list[RealspaceMatrix]:
-    """Returns a list of fragments summing to a vibronic Hamiltonian.
+    """Returns a list of fragments summing to a vibronic Hamiltonian. Two different fragmentation schemes
+    are available. The blah scheme is taken from Section III of `arXiv:2412.13669 <https://arxiv.org/abs/2411.13669>`_.
 
     Args:
         states (int): the number of electronic states
@@ -150,6 +151,7 @@ def _realspace_sum(
 def _mode_frags(
     states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
 ) -> list[RealspaceMatrix]:
+    """Returns the mode based fragmentation scheme"""
 
     if len(taylor_coeffs) != 3:
         raise ValueError(
@@ -159,11 +161,8 @@ def _mode_frags(
     _, alphas, betas = taylor_coeffs
     betas = betas.copy()
 
-    for i, j in product(range(states), range(modes)):
-        betas[i, i, j, j] += freqs[j] / 2
-
     quadratic_frags = [
-        _mode_quadratic(states, modes, index, betas) for index in product(range(modes), repeat=2)
+        _mode_quadratic(states, modes, index, freqs, betas) for index in product(range(modes), repeat=2)
     ]
     linear_frags = [_mode_linear(states, modes, index, alphas) for index in range(modes)]
 
@@ -175,7 +174,8 @@ def _mode_frags(
     return frags
 
 
-def _mode_quadratic(states, modes, index, betas) -> tuple[RealspaceMatrix, np.ndarray]:
+def _mode_quadratic(states, modes, index, freqs, betas) -> tuple[RealspaceMatrix, np.ndarray]:
+    """Returns the quadratic terms of the mode based fragmentation scheme"""
     m1, m2 = index
 
     frag = RealspaceMatrix.zero(states, modes)
@@ -184,7 +184,10 @@ def _mode_quadratic(states, modes, index, betas) -> tuple[RealspaceMatrix, np.nd
     for i, j in product(range(states), repeat=2):
         h = betas[i, j, m1, m2]
 
-        if np.isclose(h, 0):
+        if i == j and m1 == m2:
+            h += freqs[m1] / 2
+
+        if np.isclose(h, 1e-10):
             continue
 
         coeffs = np.zeros((modes, modes))
@@ -199,6 +202,7 @@ def _mode_quadratic(states, modes, index, betas) -> tuple[RealspaceMatrix, np.nd
 
 
 def _mode_linear(states, modes, index, alphas) -> tuple[RealspaceMatrix, np.ndarray]:
+    """Returns the linear terms of the mode based fragmentation scheme"""
     frag = RealspaceMatrix.zero(states, modes)
     mat = np.zeros((states, states))
 
@@ -220,6 +224,7 @@ def _mode_linear(states, modes, index, alphas) -> tuple[RealspaceMatrix, np.ndar
 
 
 def _mode_group_commuting(frags: list[tuple[RealspaceMatrix, np.ndarray]]) -> list[RealspaceMatrix]:
+    """Sums the commuting fragments. This operation is order dependent."""
     remaining = frags
     groups = []
 
@@ -249,6 +254,7 @@ def _mode_group_commuting(frags: list[tuple[RealspaceMatrix, np.ndarray]]) -> li
 def _mode_potential_fragment(
     states: int, modes: int, taylor_coeffs: Sequence[ArrayLike]
 ) -> RealspaceMatrix:
+    """Returns the potential fragment in the mode based fragmentation scheme"""
     frag = RealspaceMatrix.zero(states, modes)
 
     for i, j in product(range(states), repeat=2):
