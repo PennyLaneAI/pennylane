@@ -32,7 +32,7 @@ from pennylane.exceptions import (
 )
 from pennylane.ops.identity import Identity
 
-from ...core import Operator2
+from pennylane.core.operator import Operator2
 from .symbolicop import ScalarSymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
