@@ -245,7 +245,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         }
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
-        gate_counts[qp.PauliX] = num_zero_control_values * 2
+        gate_counts[abstractify(qp.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
     # pylint: disable=protected-access,too-many-arguments
@@ -297,7 +297,7 @@ def flip_zero_control_legacy(inner_decomp: DecompositionRule, name: str = "") ->
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[qp.X(Wire[1])] = gate_counts.get(qp.X(Wire[1]), 0) + num_x * 2
+        gate_counts[abstractify(qp.X)] = gate_counts.get(abstractify(qp.X), 0) + num_x * 2
         return gate_counts
 
     # pylint: disable=protected-access
@@ -374,8 +374,12 @@ def flip_control_adjoint(
 
 
 def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
     return {
-        controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+        _ctrl_abstract(qp.X, Wire[num_control_wires]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
