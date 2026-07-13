@@ -81,7 +81,7 @@ def _cancel_adjoint_resource(base_class, base_params):  # pylint:disable=unused-
 @register_resources(_cancel_adjoint_resource)
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
-    apply(base.base)
+    qp.apply(base.base)
 
 
 def _adjoint_rotation_resource(base_class, base_params):
@@ -92,8 +92,7 @@ def _adjoint_rotation_resource(base_class, base_params):
 @register_resources(_adjoint_rotation_resource)
 def adjoint_rotation(phi, wires, base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    _, struct = qp.pytrees.flatten(base)
-    qp.pytrees.unflatten((-phi,), struct)
+    qp.ops.functions.bind_new_parameters(base, (-phi,))
 
 
 def is_integer(x):
@@ -110,7 +109,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
 
     @qp.for_loop(0, z)
     def _loop(i):
-        apply(base)
+        qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -129,8 +128,7 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
-    base_op = apply(base.base)
-    qp.pow(base_op, z * base.z)
+    qp.pow(base.base, z * base.z)
 
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
@@ -148,8 +146,7 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    base_op = apply(base.base)
-    qp.adjoint(qp.pow(base_op, z))
+    qp.adjoint(qp.pow(base.base, z))
 
 
 def make_pow_decomp_with_period(period) -> DecompositionRule:
@@ -171,7 +168,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
-            apply(base)
+            qp.apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
             qp.pow(base, z_mod_period)
 
@@ -189,8 +186,7 @@ def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_pow_rotation_resource)
 def pow_rotation(phi, wires, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    _, struct = base._flatten()
-    base._unflatten((phi * z,), struct)
+    qp.ops.functions.bind_new_parameters(base, (phi * z,))
 
 
 def _decomp_to_base_legacy_res(base_class, base_params, **__):
@@ -201,7 +197,7 @@ def _decomp_to_base_legacy_res(base_class, base_params, **__):
 @register_resources(_decomp_to_base_legacy_res)
 def decompose_to_base_legacy(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    apply(base)
+    qp.apply(base)
 
 
 self_adjoint_legacy: DecompositionRule = decompose_to_base_legacy
@@ -361,10 +357,9 @@ def flip_control_adjoint(
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    base_op = apply(base.base)
     qp.adjoint(
         qp.ctrl(
-            base_op,
+            base.base,
             control=wires[: len(control_wires)],
             control_values=control_values,
             work_wires=work_wires,
@@ -389,10 +384,9 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
-    base_op = apply(base)
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
-        qp.ctrl(base_op, control=work_wires[0])
+        qp.ctrl(base, control=work_wires[0])
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
 
 
