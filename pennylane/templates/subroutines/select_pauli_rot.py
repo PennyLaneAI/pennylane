@@ -198,7 +198,7 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
     if rot_axis == "X":
         return {
             change_op_basis_resource_rep(
-                Hadamard, resource_rep(Prod, resources=prod_res), Hadamard
+                abstractify(Hadamard), resource_rep(Prod, resources=prod_res), abstractify(Hadamard)
             ): 1,
         }
 
