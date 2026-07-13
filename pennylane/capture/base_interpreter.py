@@ -36,6 +36,7 @@ from .primitives import (
     for_loop_prim,
     jacobian_prim,
     jvp_prim,
+    operator_p,
     qnode_prim,
     quantum_subroutine_prim,
     value_and_grad_prim,
