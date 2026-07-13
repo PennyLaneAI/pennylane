@@ -244,7 +244,17 @@ class ChangeOpBasis(CompositeOp):
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
-        return cls._primitive.bind(compute_op, target_op, uncompute_op)
+
+        def _process(leaf):
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    leaf._bind_primitive()  # pylint: disable=protected-access
+                return leaf if leaf.tracer is None else leaf.tracer
+            return leaf
+
+        return cls._primitive.bind(
+            _process(compute_op), _process(target_op), _process(uncompute_op)
+        )
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
 
