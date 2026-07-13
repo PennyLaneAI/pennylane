@@ -84,6 +84,7 @@ from .qchem_ops import (
 )
 from .special_unitary import SpecialUnitary, TmpPauliRot
 from .state_preparation import BasisState, StatePrep, QubitDensityMatrix
+from .fabricate import Fabricate, fabricate
 
 __ops__ = {
     "Identity",
@@ -144,6 +145,7 @@ __ops__ = {
     "Barrier",
     "WireCut",
     "GlobalPhase",
+    "Fabricate",
 }
 
 

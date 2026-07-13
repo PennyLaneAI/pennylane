@@ -28,6 +28,7 @@ from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
+    fabricate_prim,
     jacobian_prim,
     jvp_prim,
     measure_prim,
@@ -48,6 +49,7 @@ from pennylane.ops.mid_measure import (
     measure,
     pauli_measure,
 )
+from pennylane.ops.qubit.fabricate import Fabricate
 from pennylane.templates.core import CollectedSubroutine
 from pennylane.wires import DynamicWire
 
@@ -192,6 +194,16 @@ def _(self, *wires, pauli_word="", postselect=None):
     m0 = pauli_measure(pauli_word, wires, postselect)
     self.state["ops"].extend(m0.measurements)
     return m0
+
+
+@CollectOpsandMeas.register_primitive(fabricate_prim)
+def _fabricate_primitive(self, *_, init_state=""):
+    wire = DynamicWire()
+    num_dynamic_wires = len(self.state["dynamic_wire_map"])
+    int_wire = np.iinfo(np.int32).max - num_dynamic_wires
+    self.state["dynamic_wire_map"][int_wire] = wire
+    self.state["ops"].append(Fabricate(init_state))
+    return [int_wire]
 
 
 @CollectOpsandMeas.register_primitive(jacobian_prim)
