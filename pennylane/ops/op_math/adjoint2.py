@@ -127,6 +127,10 @@ class Adjoint2(SymbolicOp2):
     def generator(self):
         return -1 * self.base.generator()
 
+    @property
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
+        return any(rule.is_applicable(**self.arguments) for rule in list_decomps(self))
+
     @override
     def _bind_primitive(self):
         """Bind the operator primitive. ``Adjoint2`` has to override the method of the base
@@ -192,7 +196,7 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     def _resource_fn(base):
         base_res = base_rule.compute_resources(**base.arguments)
         base_gates = base_res.gate_counts
-        return {_adjoint(op): count for op, count in base_gates.items()}
+        return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
     base_source = base_rule._source
 
@@ -217,7 +221,7 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     return _impl
 
 
-def _adjoint(op: AbstractOperatorLike):
+def _adjoint_abstract(op: AbstractOperatorLike):
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
     return Adjoint2(op)

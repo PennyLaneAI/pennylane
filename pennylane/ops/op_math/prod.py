@@ -36,11 +36,12 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -555,15 +556,7 @@ def _ctrl_prod_resources_with_one_work_wire(
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
-        resources[
-            controlled_resource_rep(
-                base_class=rep.op_type,
-                base_params=rep.params,
-                num_control_wires=1,
-                num_zero_control_values=0,
-                num_work_wires=0,
-            )
-        ] += count
+        resources[_ctrl_abstract(rep, Wire[1], Wire[0], "borrowed")] += count
 
     return dict(resources)
 

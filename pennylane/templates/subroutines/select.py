@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -32,7 +32,10 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import auto_wrap
 from pennylane.ops import CNOT, X, adjoint, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -353,7 +356,14 @@ class Select(Operation):
 
     @property
     def resource_params(self):
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in self.ops)
+        op_reps = tuple(
+            (
+                auto_wrap(op)
+                if isinstance(op, Operator2)
+                else resource_rep(type(op), **op.resource_params)
+            )
+            for op in self.ops
+        )
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
@@ -561,15 +571,12 @@ class Select(Operation):
         return self.hyperparameters["partial"]
 
 
-# Decomposition of Select using multi-control strategy
-
-
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
-    return controlled_resource_rep(
-        base_class=target_rep.op_type,
-        base_params=target_rep.params,
-        num_control_wires=num_control_wires,
-        num_work_wires=num_work_wires,
+    return _ctrl_abstract(
+        op=target_rep,
+        control_wires=Wire[num_control_wires],
+        work_wires=Wire[num_work_wires],
+        work_wire_type="borrowed",
         num_zero_control_values=num_control_wires - sum(ctrl_state),
     )
 
@@ -595,6 +602,7 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial, num_wor
 
 @register_resources(_select_resources_multi_control)
 def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
+    """Decomposition of Select using multi-control strategy."""
 
     if partial:
         if len(ops) == 1:
@@ -1098,7 +1106,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
             resources[_multi_controlled_rep(op_reps[0], 1, [1], num_work_wires - 1)] += 1
             resources[
                 _multi_controlled_rep(
-                    resource_rep(X), num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                    X, num_control_wires, [0] * num_control_wires, num_work_wires - 1
                 )
             ] += 2
         else:
@@ -1106,11 +1114,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
             ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
             for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps, strict=True):
                 resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-                resources[
-                    _multi_controlled_rep(
-                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
-                    )
-                ] += 2
+                resources[_multi_controlled_rep(X, len(ctrl_), ctrl_state, num_work_wires - 1)] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
@@ -1118,9 +1122,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
         for state, rep in zip(state_iterator, op_reps, strict=False):
 
             resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-            resources[
-                _multi_controlled_rep(resource_rep(X), num_control_wires, state, num_work_wires - 1)
-            ] += 2
+            resources[_multi_controlled_rep(X, num_control_wires, state, num_work_wires - 1)] += 2
     return dict(resources)
 
 
