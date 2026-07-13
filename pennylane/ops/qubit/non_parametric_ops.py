@@ -1326,6 +1326,7 @@ class T(Operator2):
 
     wire_sizes = (1,)
     num_wires = 1
+    num_params = 0
 
     arg_specs = {"wires": Wire[1]}
 
