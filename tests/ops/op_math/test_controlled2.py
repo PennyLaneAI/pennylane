@@ -22,11 +22,12 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import Operator2
+from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
-from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
+from tests.core.operator.operator2_utils import DynOp, NonParametricOp, OneWireDynOp
 
 # pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
 
@@ -481,3 +482,17 @@ class TestControlledOp2:
 
         op = ControlledOp2(DynOp(0.5, 0), control_wires=1)
         assert op == copy_fn(op)
+
+    def test_old_decomp_integration(self):
+        """Tests that ControlledOp2 is compatible with the old decomposition convention."""
+
+        @register_resources({qp.RX: 1})
+        def _custom_decomp(wires):
+            qp.RX(np.pi / 2, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(NonParametricOp, _custom_decomp)
+            op = qp.ctrl(NonParametricOp(0), control=1)
+            assert op.has_decomposition
+            assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]

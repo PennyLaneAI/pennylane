@@ -644,11 +644,17 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Support for compiling PennyLane workflows with CUDA Quantum through :func:`~.qjit` has been
+  removed following the removal of the CUDA Quantum integration from Catalyst.
+  [(Catalyst #2984)](https://github.com/PennyLaneAI/catalyst/pull/2984)
+  [(#9817)](https://github.com/PennyLaneAI/pennylane/pull/9817)
+
 * The :class:`pennylane.resource.Resources`, :class:`~.ResourceOperator`, and :class:`~.ErrorOperator` classes as well as the entire :mod:`pennylane.resource.error` module have been removed.
   [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
 
-* Plxpr transforms have been removed.
+* Plxpr transforms and associated infrastructure have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
+  [(#9797)](https://github.com/PennyLaneAI/pennylane/pull/9797)
 
 * Support for executing PLxPR without qjit has been removed.
   [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
@@ -852,11 +858,13 @@
     [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
     [(#9793)](https://github.com/PennyLaneAI/pennylane/pull/9793)
     [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
+    [(#9805)](https://github.com/PennyLaneAI/pennylane/pull/9805)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
     [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
     [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
+    [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -933,6 +941,11 @@
   allocated qubits.
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
+
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g., 
+  from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
+  singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
+  [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
 
 <h3>Documentation 📝</h3>
 
