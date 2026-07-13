@@ -32,8 +32,6 @@ from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
@@ -45,7 +43,10 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -279,13 +280,11 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
     return {
         qp.H: 2,
         qp.RY: 2,
-        controlled_resource_rep(
+        _ctrl_abstract(
             qp.X,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
         ): 1,
     }
 
@@ -845,14 +844,12 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
         return {qp.CY: 1}
     return {
         qp.S: 1,
-        adjoint_resource_rep(qp.S): 1,
-        controlled_resource_rep(
+        _adjoint_abstract(qp.S): 1,
+        _ctrl_abstract(
             qp.X,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
         ): 1,
     }
 

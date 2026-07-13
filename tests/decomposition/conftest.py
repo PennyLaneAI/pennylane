@@ -19,8 +19,8 @@
 from collections import defaultdict
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import Resources
-from pennylane.decomposition.decomposition_rule import auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_involutory,
@@ -37,7 +37,7 @@ def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resour
     """Wrap a dictionary of gate counts in a Resources object."""
     if weighted_cost is None:
         weighted_cost = sum(count for count in gate_count.values())
-    gate_count = {auto_wrap(op): count for op, count in gate_count.items() if count >= 0}
+    gate_count = {abstractify(op): count for op, count in gate_count.items() if count >= 0}
     return Resources(gate_count, weighted_cost=weighted_cost)
 
 
