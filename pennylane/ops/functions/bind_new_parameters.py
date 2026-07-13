@@ -68,7 +68,7 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
     except (TypeError, ValueError):
         # operation is doing something different with its call signature.
         new_op = copy.deepcopy(op)
-        setattr(new_op, "data", tuple(params))
+        new_op.data = tuple(params)
         if queuing.QueuingManager.recording() or capture.enabled():
             return queuing.apply(new_op)
         return new_op
