@@ -459,7 +459,6 @@ class CY(Controlled2):
     """
 
     wire_argnames = ("wires",)
-    wire_sizes = (2,)
     arg_specs = {"wires": Wire[2]}
 
     num_wires = 2
@@ -476,8 +475,9 @@ class CY(Controlled2):
     name = "CY"
 
     def __init__(self, wires: WiresLike):
+        wires = Wires(wires)
         # Avoid recording the base as a separate operator during program capture.
-        base = type.__call__(qp.Y, wires=wires[1])
+        base = type.__call__(qp.Y, wires=wires[1:])
         super().__init__(base, wires[:1])
 
     @override
@@ -582,7 +582,6 @@ class CZ(Controlled2):
     """
 
     wire_argnames = ("wires",)
-    wire_sizes = (2,)
     arg_specs = {"wires": Wire[2]}
 
     num_wires = 2
@@ -599,8 +598,9 @@ class CZ(Controlled2):
     name = "CZ"
 
     def __init__(self, wires: WiresLike):
+        wires = Wires(wires)
         # Avoid recording the base as a separate operator during program capture.
-        base = type.__call__(qp.Z, wires=wires[1])
+        base = type.__call__(qp.Z, wires=wires[1:])
         super().__init__(base, wires[:1])
 
     @override

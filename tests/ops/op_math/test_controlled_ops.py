@@ -23,7 +23,10 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.operator.operator2 import operator_p
+from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
+from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -841,3 +844,104 @@ def test_CNOT_decomposition():
 
     with pytest.raises(qp.operation.DecompositionUndefinedError):
         qp.CNOT([0, 1]).decomposition()
+
+
+@pytest.mark.parametrize("op_type, base_type", [(qp.CY, qp.Y), (qp.CZ, qp.Z)])
+def test_cy_cz_are_operator2(op_type, base_type):
+    """Test the concrete Operator2 contract for CY and CZ."""
+    op = op_type([0, 1])
+
+    assert isinstance(op, Controlled2)
+    assert op.arguments == {"wires": Wires([0, 1])}
+    assert op.base == base_type(1)
+    assert op.control_wires == Wires([0])
+    assert op.control_values == [True]
+    assert qp.math.allclose(op_type.compute_matrix(wires=[0, 1]), op.matrix())
+
+
+@pytest.mark.parametrize("op_type", [qp.CY, qp.CZ])
+def test_cy_cz_queue_only_final_gate(op_type):
+    """The internally constructed base is not a separate queued instruction."""
+    with qp.queuing.AnnotatedQueue() as queue:
+        op = op_type(["control", "target"])
+
+    assert queue.queue == [op]
+
+
+@pytest.mark.parametrize(("op_type", "expected"), NON_PARAMETRIC_OPS_DECOMPOSITIONS)
+def test_cy_cz_instance_decomposition(op_type, expected):
+    """The registered graph decomposition preserves the established sequence."""
+    op = op_type([0, 1])
+    with qp.queuing.AnnotatedQueue() as queue:
+        decomposition = op.decomposition()
+
+    assert decomposition == expected
+    assert queue.queue == [*decomposition]
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("op_type", [qp.CY, qp.CZ])
+def test_cy_cz_canonical_pytree_round_trip(op_type):
+    """CY and CZ use the shared Operator2 pytree representation."""
+    jax = pytest.importorskip("jax")
+    op = op_type(["control", 2])
+
+    leaves, structure = jax.tree_util.tree_flatten(op)
+    reconstructed = jax.tree_util.tree_unflatten(structure, leaves)
+
+    qp.assert_equal(reconstructed, op)
+
+
+def test_cy_cz_custom_control_dispatch_and_fallback():
+    """Supported controls specialize while false controls use the generic representation."""
+    qp.assert_equal(qp.ctrl(qp.Y("target"), "control"), qp.CY(["control", "target"]))
+    qp.assert_equal(qp.ctrl(qp.Z("target"), "control"), qp.CZ(["control", "target"]))
+    qp.assert_equal(qp.ctrl(qp.CZ([0, 1]), "extra"), qp.CCZ(["extra", 0, 1]))
+
+    fallback = qp.ctrl(qp.Y("target"), "control", control_values=[False])
+    assert not isinstance(fallback, qp.CY)
+    assert fallback.control_values == [False]
+
+
+@pytest.mark.parametrize("op_type, base_type", [(qp.CY, qp.Y), (qp.CZ, qp.Z)])
+def test_abstract_cy_cz(op_type, base_type):
+    """Test abstract CY and CZ instances used as resource representations."""
+    op = op_type(Wire[2])
+
+    assert isinstance(op.wires, AbstractWires)
+    assert op.wires == Wire[2]
+    assert op.base == base_type(Wire[1])
+    assert op.control_wires == Wire[1]
+    assert repr(op) == op_type.__name__
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("op_type", [qp.CY, qp.CZ])
+def test_cy_cz_capture_as_single_primitive(op_type):
+    """Test that the controlled gate is captured without a separate base-gate primitive."""
+    jax = pytest.importorskip("jax")
+    from pennylane.capture import PlxprInterpreter  # pylint: disable=import-outside-toplevel
+
+    def circuit(wires):
+        op_type(wires)
+
+    jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array([0, 1]))
+    op_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p]
+
+    assert len(op_eqns) == 1
+    assert op_eqns[0].params["op_cls"] is op_type
+
+    class RecordingInterpreter(PlxprInterpreter):
+        def __init__(self):
+            super().__init__()
+            self.ops = []
+
+        def interpret_operation(self, op):
+            self.ops.append(op)
+            return op
+
+    interpreter = RecordingInterpreter()
+    interpreter.eval(jaxpr.jaxpr, jaxpr.consts, np.array([0, 1]))
+
+    assert len(interpreter.ops) == 1
+    assert isinstance(interpreter.ops[0], op_type)
