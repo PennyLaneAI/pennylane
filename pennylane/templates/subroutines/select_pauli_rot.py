@@ -188,8 +188,8 @@ class SelectPauliRot(Operation):
 
 def _select_pauli_rot_resource(num_wires, rot_axis):
     prod_res = {
-        RZ: 2 ** (num_wires - 1),
-        CNOT: 2 ** (num_wires - 1) if num_wires > 1 else 0,
+        abstractify(RZ): 2 ** (num_wires - 1),
+        abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
     }
     if rot_axis == "Z":
         return prod_res
