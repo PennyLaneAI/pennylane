@@ -18,15 +18,14 @@ Contains the TemporaryAND template, which also is known as Elbow.
 from functools import lru_cache
 
 from pennylane import math, ops
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.typing import Wire
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.wires import Wires, WiresLike
 
 
@@ -212,16 +211,16 @@ def _temporary_and_resources():
     prod_rep = resource_rep(
         ops.Prod,
         resources={
-            resource_rep(ops.Hadamard): 1,
-            ops.T(Wire[1]): 1,
-            resource_rep(ops.CNOT): 1,
-            ops.T(Wire[1]): 1,
+            abstractify(ops.Hadamard): 1,
+            abstractify(ops.T): 1,
+            abstractify(ops.CNOT): 1,
+            _adjoint_abstract(ops.T): 1,
         },
     )
     return {
-        resource_rep(ops.X): _number_xs,
+        ops.X: _number_xs,
         change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
-        adjoint_resource_rep(ops.S, {}): 1,
+        _adjoint_abstract(ops.S): 1,
     }
 
 

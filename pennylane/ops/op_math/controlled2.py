@@ -774,14 +774,7 @@ def _ctrl_single_work_wire_resource(
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         ): 1,
-        controlled_resource_rep(
-            qp.X,
-            {},
-            num_control_wires=len(control_wires),
-            num_zero_control_values=0,
-            num_work_wires=len(work_wires),
-            work_wire_type=work_wire_type,
-        ): 2,
+        _ctrl_abstract(qp.X, Wire[len(control_wires)], Wire[len(work_wires)], work_wire_type): 2,
     }
 
 
@@ -799,12 +792,13 @@ ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_sin
 
 
 def _ctrl_abstract(
-    op: AbstractOperatorLike,
+    op: AbstractOperatorLike | type[Operator],
     control_wires: AbstractWires,
-    work_wires: AbstractWires,
-    work_wire_type: str,
+    work_wires: AbstractWires = Wire[0],
+    work_wire_type: str = "borrowed",
     num_zero_control_values: int = 0,
 ):
+    op = abstractify(op)
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(
@@ -816,14 +810,18 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    if isinstance(op, type) and issubclass(op, Operator2):
-        op = abstractify(op)
+    if not num_zero_control_values:
+        return qp.ctrl(
+            op,
+            control=control_wires,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
 
-    control_values = Bool[len(control_wires)] if num_zero_control_values else None
     return qp.ctrl(
         op,
         control=control_wires,
-        control_values=control_values,
+        control_values=Bool[len(control_wires)],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )

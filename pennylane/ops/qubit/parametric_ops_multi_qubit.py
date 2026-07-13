@@ -31,16 +31,12 @@ from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import FlatPytree, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -954,12 +950,11 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values,
     if n_control_wires == 0:
         return {qp.PhaseShift: 1}
     return {
-        controlled_resource_rep(
+        _ctrl_abstract(
             qp.PhaseShift,
-            {},
-            num_control_wires=n_control_wires,
+            Wire[n_control_wires],
+            Wire[n_work_wires],
             num_zero_control_values=n_zero_control_values,
-            num_work_wires=n_work_wires,
         ): 1,
         qp.X: 2 * (1 - subspace),
     }

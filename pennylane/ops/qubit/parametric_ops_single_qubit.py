@@ -29,10 +29,9 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qp
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
@@ -43,11 +42,11 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.typing import TensorLike, Wire
+from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
-from ..op_math.adjoint2 import _adjoint
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
 stack_last = functools.partial(qp.math.stack, axis=-1)
@@ -425,7 +424,7 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
 
 
 def _ry_to_rx_cliff_resources():
-    return {change_op_basis_resource_rep(adjoint_resource_rep(qp.S), qp.RX, qp.S): 1}
+    return {change_op_basis_resource_rep(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
 
 
 @register_resources(_ry_to_rx_cliff_resources)
@@ -438,12 +437,12 @@ def _ry_to_rz_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={_adjoint(qp.S(Wire[1])): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, qp.Hadamard: 1},
             ),
             qp.RZ,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={qp.S: 1, resource_rep(qp.Hadamard): 1},
+                resources={qp.S: 1, qp.Hadamard: 1},
             ),
         ): 1
     }
@@ -715,12 +714,12 @@ def _rz_to_ry_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={qp.S: 1, resource_rep(qp.Hadamard): 1},
+                resources={qp.S: 1, qp.Hadamard: 1},
             ),
             qp.RY,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={_adjoint(qp.S(Wire[1])): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, qp.Hadamard: 1},
             ),
         ): 1
     }
@@ -984,7 +983,7 @@ def _cphase_to_ppr_resource(num_control_wires, **_):
         resource_rep(qp.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
         for i in range(1, num_control_wires + 2)
     }
-    resources[resource_rep(qp.GlobalPhase)] = 1
+    resources[qp.GlobalPhase] = 1
     return resources
 
 

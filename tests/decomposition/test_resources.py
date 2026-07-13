@@ -17,6 +17,7 @@
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
@@ -26,6 +27,8 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 
 
@@ -263,9 +266,9 @@ class TestCompressedResourceOp:
     @pytest.mark.parametrize(
         "op, expected_name",
         [
-            (resource_rep(qp.RX), "RX"),
-            (adjoint_resource_rep(qp.RX, {}), "Adjoint(RX)"),
-            (qp.ctrl(qp.T(Wire[1]), Wire[1]), "C(T)"),
+            (abstractify(qp.RX), "RX"),
+            (_adjoint_abstract(qp.RX), "Adjoint(RX)"),
+            (_ctrl_abstract(qp.T, Wire[1]), "C(T)"),
             (pow_resource_rep(qp.RX, {}, 2), "Pow(RX)"),
         ],
     )
