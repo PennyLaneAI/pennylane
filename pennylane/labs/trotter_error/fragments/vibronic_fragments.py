@@ -38,7 +38,16 @@ def vibronic_fragments(
     scheme: str = "og",
 ) -> list[RealspaceMatrix]:
     """Returns a list of fragments summing to a vibronic Hamiltonian. Two different fragmentation schemes
-    are available. The blah scheme is taken from Section III of `arXiv:2412.13669 <https://arxiv.org/abs/2411.13669>`_.
+    are available.
+
+    1. The ``electronic`` scheme is taken from Section III of `arXiv:2412.13669 <https://arxiv.org/abs/2411.13669>`_ and
+    groups the fragments by their electronic-block structure such that all potential terms sharing the same
+    electronic coupling pattern are grouped together into a single fragment.
+
+    2. The ``mode`` scheme constructs fragments based on the vibrational modes and operator types, then
+    merges the fragments that commute electronically.
+
+    Both fragmentation schemes additionally return a fragment containing the kinetic term.
 
     Args:
         states (int): the number of electronic states
@@ -47,7 +56,7 @@ def vibronic_fragments(
         taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the
             Taylor expansion. The ith entry in the sequence corresponds to the ith degree Taylor coefficients
             and has shape (states, states) + (modes)*i.
-        scheme (str): the fragmentation scheme to use. Valid options are ``"og"`` and ``"mode"``, defaults to ``"og"``.
+        scheme (str): the fragmentation scheme to use. Valid options are ``electronic`` and ``mode``, defaults to ``electronic``.
 
     Returns:
         list[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of the vibronic Hamiltonian.
@@ -162,7 +171,8 @@ def _mode_frags(
     betas = betas.copy()
 
     quadratic_frags = [
-        _mode_quadratic(states, modes, index, freqs, betas) for index in product(range(modes), repeat=2)
+        _mode_quadratic(states, modes, index, freqs, betas)
+        for index in product(range(modes), repeat=2)
     ]
     linear_frags = [_mode_linear(states, modes, index, alphas) for index in range(modes)]
 
