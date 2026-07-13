@@ -787,7 +787,7 @@ ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_sin
 
 
 def _ctrl_abstract(
-    op: AbstractOperatorLike | type,
+    op: AbstractOperatorLike | type[Operator],
     control_wires: AbstractWires,
     work_wires: AbstractWires = Wire[0],
     work_wire_type: str = "borrowed",

@@ -25,7 +25,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_involutory,
     pow_rotation,
-    self_adjoint,
+    self_adjoint_legacy,
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
@@ -157,10 +157,10 @@ decompositions["CRot"] = [_crot]
 decompositions["C(PauliX)"] = [_controlled_x_decomp]
 decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
 decompositions["C(Hadamard)"] = [_controlled_hadamard]
-decompositions["Adjoint(Hadamard)"] = [self_adjoint]
+decompositions["Adjoint(Hadamard)"] = [self_adjoint_legacy]
 decompositions["Pow(Hadamard)"] = [pow_involutory]
 decompositions["Adjoint(RX)"] = [adjoint_rotation]
 decompositions["Pow(RX)"] = [pow_rotation]
-decompositions["Adjoint(CNOT)"] = [self_adjoint]
+decompositions["Adjoint(CNOT)"] = [self_adjoint_legacy]
 decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]
 decompositions["Adjoint(ControlledPhaseShift)"] = [adjoint_rotation]

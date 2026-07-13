@@ -43,6 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
+    self_adjoint_legacy,
     to_controlled_qubit_unitary,
 )
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
@@ -230,17 +231,27 @@ class TestAdjointDecompositionRules:
             {resource_rep(CustomOp, key=0): 1}
         )
 
-    def test_self_adjoint(self):
+    def test_self_adjoint_legacy(self):
         """Tests the self_adjoint decomposition."""
 
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
         with queuing.AnnotatedQueue() as q:
-            self_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+            self_adjoint_legacy(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [CustomOp(0.5, wires=[0, 1, 2])]
-        assert self_adjoint.compute_resources(**op.resource_params) == Resources(
+        assert self_adjoint_legacy.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
+
+    def test_self_adjoint(self):
+        """Tests the self_adjoint decomposition."""
+
+        op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
+        with queuing.AnnotatedQueue() as q:
+            self_adjoint(**op.arguments)
+
+        assert q.queue == [OneWireDynOp(0.5, wires=[0])]
+        assert self_adjoint.compute_resources(**op.arguments) == to_resources({OneWireDynOp: 1})
 
 
 @pytest.mark.unit
