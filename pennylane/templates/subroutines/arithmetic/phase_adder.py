@@ -303,9 +303,9 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         ): 1,
         ops.ControlledPhaseShift: num_x_wires,
         change_op_basis_resource_rep(
-            resource_rep(ops.Prod, resources=basis_op_resources1),
+            resource_rep(ops.Prod, resources=dict(basis_op_resources1)),
             ops.CNOT,
-            resource_rep(ops.Prod, resources=basis_op_resources2),
+            resource_rep(ops.Prod, resources=dict(basis_op_resources2)),
         ): 1,
     }
 
