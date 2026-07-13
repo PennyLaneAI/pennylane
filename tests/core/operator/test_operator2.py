@@ -1306,7 +1306,7 @@ class TestDunderMethods:
                 super().__init__(wires=wires)
 
         op = Op(wires=0)
-        assert repr(op) == "Op(wires=[0])"
+        assert repr(op) == "Op(0)"
 
     def test_repr_with_hybrid_wires(self):
         """Test that __repr__ prints correctly if there are hybrid wire arguments."""
