@@ -16,7 +16,7 @@
 
 import pytest
 from operator2_utils import (
-    CompOp,
+    CompilableOp,
     DynOp,
     FullOp,
     HybridOp,
@@ -151,7 +151,7 @@ class TestCaptureBasics:
 
     def test_compilable_arg_in_params(self):
         """Test that compilable arguments are stored as equation parameters."""
-        jaxpr = jax.make_jaxpr(lambda: CompOp(5, wires=0))()
+        jaxpr = jax.make_jaxpr(lambda: CompilableOp(5, wires=0))()
         eqn = _single_op_eqn(jaxpr)
         assert unflatten(*eqn.params["n"]) == 5
 
@@ -339,9 +339,9 @@ class TestReconstruction:
 
     def test_compilable_roundtrip(self):
         """Test that a compilable argument round-trips through capture and evaluation."""
-        jaxpr = jax.make_jaxpr(lambda x: CompOp(5, wires=x).tracer)(0)
+        jaxpr = jax.make_jaxpr(lambda x: CompilableOp(5, wires=x).tracer)(0)
         [op] = _eval(jaxpr, 1)
-        qp.assert_equal(op, CompOp(5, wires=1))
+        qp.assert_equal(op, CompilableOp(5, wires=1))
 
     def test_multiwire_roundtrip(self):
         """Test that an operator with multiple wire arguments round-trips."""
