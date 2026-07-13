@@ -815,10 +815,10 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
 
     # TODO: allowing partial qrom will remove this padding
     # Pad data up to the next power of 2 with all-zero bitstrings
-    next_pow2 = 1 << (L - 1).bit_length()
+    next_pow2 = 1 << math.ceil_log2(L)
     if L < next_pow2:
         width = len(data[0])
-        data = list(data) + [np.zeros(width, dtype=int) for _ in range(next_pow2 - L)]
+        data = np.concatenate([data, np.zeros((next_pow2 - L, width), dtype=int)])
         L = next_pow2
 
     if L == 1:
@@ -837,11 +837,10 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     BasisState(data[0], target_wires)
 
     # Build interleaved controls: [in[0], in[1], work[0], in[2], work[1], ...]
-    controls = [control_wires[0], control_wires[1]]
+    controls = [control_wires[0]]
     for i in range(n_input - 1):
+        controls.append(control_wires[i + 1])
         controls.append(work_wires[i])
-        if i + 2 < n_input:
-            controls.append(control_wires[i + 2])
 
     # XOR-relative encoding: bitstrings[i] = data[i] XOR data[0]
     base = list(data[0])
