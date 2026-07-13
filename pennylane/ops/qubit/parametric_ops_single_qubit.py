@@ -438,12 +438,12 @@ def _ry_to_rz_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, qp.Hadamard: 1},
             ),
             qp.RZ,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+                resources={qp.S: 1, qp.Hadamard: 1},
             ),
         ): 1
     }
@@ -715,12 +715,12 @@ def _rz_to_ry_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+                resources={qp.S: 1, qp.Hadamard: 1},
             ),
             qp.RY,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, qp.Hadamard: 1},
             ),
         ): 1
     }
