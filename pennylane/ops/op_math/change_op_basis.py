@@ -24,8 +24,7 @@ from functools import reduce
 from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.decomposition.resources import adjoint_resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -33,6 +32,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 
@@ -269,20 +269,11 @@ class ChangeOpBasis(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = {}
-        if isinstance(self[2], Operator2):
-            resources["compute_op"] = abstractify(self[2])
-        else:
-            resources["compute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
-        if isinstance(self[1], Operator2):
-            resources["target_op"] = abstractify(self[1])
-        else:
-            resources["target_op"] = resource_rep(type(self[1]), **self[1].resource_params)
-        if isinstance(self[0], Operator2):
-            resources["uncompute_op"] = abstractify(self[0])
-        else:
-            resources["uncompute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
-        return resources
+        return {
+            "compute_op": abstractify(self[2]),
+            "target_op": abstractify(self[1]),
+            "uncompute_op": abstractify(self[0]),
+        }
 
     grad_method = None
 
@@ -353,7 +344,7 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
     target_op = base_params["target_op"]
-    resources[adjoint_resource_rep(target_op.op_type, target_op.params)] += 1
+    resources[_adjoint_abstract(target_op)] += 1
     return resources
 
 

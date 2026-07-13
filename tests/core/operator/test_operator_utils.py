@@ -16,8 +16,10 @@ import numpy as np
 import pytest
 from operator2_utils import CompOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
 
+from pennylane.core import Operator1
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
@@ -308,6 +310,38 @@ class TestAbstractifyOperatorClasses:
 
         with pytest.raises(TypeError, match="must set 'arg_specs'"):
             _ = abstractify(FixedSigOp)
+
+
+class TestAbstractifyOperator1:
+    """Tests that abstractify dispatches to resource_rep for Operator1."""
+
+    def test_abstractify_op_type(self):
+        """Tests abstractifying an operator type."""
+
+        class CustomOp(Operator1):
+            pass
+
+        rep = abstractify(CustomOp)
+        assert isinstance(rep, CompressedResourceOp)
+        assert rep.op_type is CustomOp
+        assert rep.params == {}
+
+    def test_abstractify_op_instance(self):
+        """Tests abstractifying operator instance."""
+
+        class CustomOp2(Operator1):
+
+            resource_keys = {"num_wires"}
+
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        op = CustomOp2(wires=[1, 2, 3])
+        rep = abstractify(op)
+        assert isinstance(rep, CompressedResourceOp)
+        assert rep.op_type is CustomOp2
+        assert rep.params == {"num_wires": 3}
 
 
 if __name__ == "__main__":

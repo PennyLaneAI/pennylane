@@ -22,16 +22,12 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core.operator import abstractify
 from pennylane.core.queuing import apply
 from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
-from .resources import (
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    pow_resource_rep,
-    resource_rep,
-)
+from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -197,15 +193,28 @@ def pow_rotation(phi, wires, base, z, **__):
     base._unflatten((phi * z,), struct)
 
 
-def _decompose_to_base_resource(base_class, base_params, **__):
+def _decomp_to_base_legacy_res(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_decompose_to_base_resource)
-def decompose_to_base(*params, wires, base, **__):
+@register_resources(_decomp_to_base_legacy_res)
+def decompose_to_base_legacy(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
     apply(base)
+
+
+self_adjoint_legacy: DecompositionRule = decompose_to_base_legacy
+
+
+def _decompose_to_base_resource(base):
+    return {abstractify(base): 1}
+
+
+@register_resources(_decompose_to_base_resource)
+def decompose_to_base(base):
+    """Decompose a symbolic operator to its base."""
+    qp.apply(base)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
@@ -236,7 +245,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         }
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
-        gate_counts[qp.PauliX] = num_zero_control_values * 2
+        gate_counts[abstractify(qp.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
     # pylint: disable=protected-access,too-many-arguments
@@ -273,7 +282,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     return _impl
 
 
-def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
+def flip_zero_control_legacy(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):
@@ -288,7 +297,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[qp.X] = gate_counts.get(qp.X, 0) + num_x * 2
+        gate_counts[abstractify(qp.X)] = gate_counts.get(abstractify(qp.X), 0) + num_x * 2
         return gate_counts
 
     # pylint: disable=protected-access
@@ -365,8 +374,12 @@ def flip_control_adjoint(
 
 
 def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
     return {
-        controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+        _ctrl_abstract(qp.X, Wire[num_control_wires]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
@@ -383,7 +396,7 @@ def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
 
 
-ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
+ctrl_single_work_wire = flip_zero_control_legacy(_ctrl_single_work_wire)
 
 
 def _to_controlled_qu_condition(base_class, **__):
