@@ -21,7 +21,6 @@ import numpy as np
 import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     controlled_resource_rep,
     resource_rep,
