@@ -99,7 +99,7 @@ def _generate_name(
 
 def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None):
     r"""A decorator that can be used to promote a quantum function to a resource operator.
-    This allows users to explicitly track counts to subroutines which have been implented as
+    This allows users to explicitly track counts of subroutines which have been implemented as
     quantum functions.
 
     Args:
@@ -121,7 +121,7 @@ def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None
 
         @qre.mark_subroutine
         def SubroutineA(num_iter, op_type="Z"):
-            for i in range(num_iter):
+            for _ in range(num_iter):
                 if op_type == "Z":
                     qre.Z()
                 else:
@@ -308,7 +308,7 @@ class ResourceQfunc(ResourceOperator):
                 * num_wires (int): the number of wires the subroutine acts upon
                 * cmpr_ops (tuple[:class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`]): A
                   tuple containing the operations queued by the subroutine, in the compressed
-                  representation, corresponding to the factors of the product.
+                  representation.
 
         """
         return {
@@ -320,7 +320,7 @@ class ResourceQfunc(ResourceOperator):
     @classmethod
     def resource_rep(cls, name, num_wires, cmpr_ops):
         r"""Returns a compressed representation containing only the parameters of
-        the operator that are needed to compute a resource estimation.
+        the operator that are needed to estimate the resources.
 
         Args:
             name (str): the name used to track the counts of the subroutine
