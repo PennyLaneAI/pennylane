@@ -198,7 +198,7 @@ class Pow(ScalarSymbolicOp):
         if isinstance(self.base, Operator2):
             return {
                 "base_class": type(self.base),
-                "base_params": {},
+                "base_params": abstractify(self.base).arguments,
                 "z": self.z,
             }
         else:
