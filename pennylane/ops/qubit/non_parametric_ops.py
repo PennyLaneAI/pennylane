@@ -1344,6 +1344,8 @@ class T(Operator2):
 
     @property
     def pauli_rep(self):
+        if isinstance(self.wires, AbstractWires):
+            return None
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
