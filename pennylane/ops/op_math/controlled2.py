@@ -793,8 +793,7 @@ def _ctrl_abstract(
     work_wire_type: str = "borrowed",
     num_zero_control_values: int = 0,
 ):
-    if isinstance(op, type):
-        op = abstractify(op)
+    op = abstractify(op)
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(
