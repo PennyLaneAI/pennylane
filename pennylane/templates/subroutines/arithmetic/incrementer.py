@@ -19,12 +19,12 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
@@ -196,14 +196,13 @@ class Incrementer(Operator):
 
 
 def _incrementer_resources(num_wires, **_):
-    resources = {}
+    resources = {X: 1}
     if num_wires > 1:
         # Forward ladder
-        resources[resource_rep(TemporaryAND)] = num_wires - 2
+        resources[TemporaryAND] = num_wires - 2
         # Backward ladder and trailing CNOT
-        resources[resource_rep(CNOT)] = num_wires - 2 + 1
-        resources[adjoint_resource_rep(TemporaryAND, {})] = num_wires - 2
-    resources[X] = 1
+        resources[CNOT] = num_wires - 2 + 1
+        resources[_adjoint_abstract(TemporaryAND)] = num_wires - 2
     return resources
 
 
@@ -337,8 +336,8 @@ def _controlled_incrementer_resources(base_params, num_control_wires, **_):
     resources = _incrementer_resources(base_params["num_wires"] + num_control_wires)
     resources[X] = 0
     if num_control_wires > 2:
-        resources[resource_rep(CNOT)] -= num_control_wires - 2
-    resources[resource_rep(CNOT)] -= num_control_wires > 1
+        resources[CNOT] -= num_control_wires - 2
+    resources[CNOT] -= num_control_wires > 1
     return resources
 
 

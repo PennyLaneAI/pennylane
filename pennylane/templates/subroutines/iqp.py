@@ -153,7 +153,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
             )
         ] = 1
 
-    resources[resource_rep(Hadamard)] = 2 * num_wires
+    resources[Hadamard] = 2 * num_wires
 
     for gate in pattern:
         for gen in gate:

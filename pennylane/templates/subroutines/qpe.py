@@ -19,14 +19,13 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 from pennylane import ops
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
@@ -172,10 +171,7 @@ class QuantumPhaseEstimation(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "base_resource_rep": resource_rep(
-                type(self.hyperparameters["unitary"]),
-                **self.hyperparameters["unitary"].resource_params,
-            ),
+            "base_resource_rep": abstractify(self.hyperparameters["unitary"]),
             "num_estimation_wires": len(self.estimation_wires),
         }
 
