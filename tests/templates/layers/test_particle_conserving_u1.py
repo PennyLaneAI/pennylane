@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 
 
 @pytest.mark.jax
@@ -45,10 +46,10 @@ def test_resources():
 
     expected = {
         qp.resource_rep(qp.BasisEmbedding, num_wires=num_wires): 1,
-        qp.resource_rep(qp.CZ): 3 * (num_wires - 1) * n_layers,
-        qp.resource_rep(qp.CRot): 3 * (num_wires - 1) * n_layers,
-        qp.resource_rep(qp.PhaseShift): 6 * (num_wires - 1) * n_layers,
-        qp.resource_rep(qp.CNOT): 4 * (num_wires - 1) * n_layers,
+        abstractify(qp.CZ): 3 * (num_wires - 1) * n_layers,
+        abstractify(qp.CRot): 3 * (num_wires - 1) * n_layers,
+        abstractify(qp.PhaseShift): 6 * (num_wires - 1) * n_layers,
+        abstractify(qp.CNOT): 4 * (num_wires - 1) * n_layers,
     }
     assert expected == rule.compute_resources(n_layers=n_layers, num_wires=num_wires).gate_counts
 
