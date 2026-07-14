@@ -22,7 +22,7 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -32,7 +32,6 @@ from pennylane.exceptions import (
 )
 from pennylane.ops.identity import Identity
 
-from pennylane.core.operator import Operator2
 from .symbolicop import ScalarSymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
