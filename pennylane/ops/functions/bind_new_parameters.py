@@ -242,7 +242,8 @@ def bind_new_parameters_select(op: Select, params: Sequence[TensorLike]):
 
 
 def _bind_nested_operators(operators, params: Sequence[TensorLike]):
-    """Bind a flat parameter sequence to a sequence of operators."""
+    """Bind a flat parameter sequence to a sequence of operators.
+    Used by QSVT and HilbertSchmidt."""
     new_operators = []
     for operator in operators:
         num_params = operator.num_params
