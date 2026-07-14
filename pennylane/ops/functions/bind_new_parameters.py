@@ -37,13 +37,13 @@ from pennylane.ops import (
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
+    QSVT,
     ApproxTimeEvolution,
     CommutingEvolution,
     ControlledSequence,
     FermionicDoubleExcitation,
     PrepSelPrep,
     QDrift,
-    QSVT,
     Select,
     TrotterProduct,
 )
@@ -263,7 +263,9 @@ def bind_new_parameters_hilbert_schmidt(op: HilbertSchmidt, params: Sequence[Ten
 def bind_new_parameters_qsvt(op: QSVT, params: Sequence[TensorLike]):
     ua = op.hyperparameters["UA"]
     new_ua = bind_new_parameters(ua, params[: ua.num_params])
-    new_projectors = _bind_nested_operators(op.hyperparameters["projectors"], params[ua.num_params :])
+    new_projectors = _bind_nested_operators(
+        op.hyperparameters["projectors"], params[ua.num_params :]
+    )
     return QSVT(new_ua, new_projectors)
 
 
