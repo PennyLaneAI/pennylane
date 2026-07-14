@@ -15,7 +15,6 @@
 
 from collections import defaultdict
 from functools import partial
-from inspect import signature
 
 import pytest
 
@@ -199,7 +198,7 @@ class TestResourceQfunc:
         op = ResourceQfunc("SubB", qfunc, num_wires_=11)
         assert op.name == "SubB"
         assert op.num_wires == 11
-        assert op.wires == None
+        assert op.wires is None
 
     def test_init_maps_plain_operator(self):
         """Test that plain PennyLane operators are mapped to resource operators."""

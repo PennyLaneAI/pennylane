@@ -25,7 +25,7 @@ from pennylane.labs.estimator_beta import (
     ResourceOperator,
 )
 from pennylane.queuing import AnnotatedQueue, QueuingManager
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
 
