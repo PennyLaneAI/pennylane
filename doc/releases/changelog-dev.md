@@ -463,9 +463,12 @@
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
+* :func:`~core.queuing.apply` is now compatible with program capture.
+  [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies 
+* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
   an unsigned-integer register with a signed-integer register into an unsigned-integer register.
   This specific setup is useful for a vibronic dynamics workflow.
   [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
@@ -772,6 +775,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
+  else branch.
+  [(#9815)](https://github.com/PennyLaneAI/pennylane/pull/9815)
+
 * PennyLane primitives are now explicitly called with a turned-off JAX compile time constant evaluation context
   ``jax._src.config.eager_constant_folding(False)``. This enables JAX's compile time constant evaluation
   to only evaluate classical constants, and ignore all quantum primitives.
@@ -841,6 +848,7 @@
   - Some backwards compatibility with the legacy operator interface.
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+    [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
     [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
     [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
@@ -879,6 +887,7 @@
     [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
     [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
+    [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -983,13 +992,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires 
-  were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors. 
+* Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
+  were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
   Also adjusted the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier`
   to be compatible with traced wires.
   [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
-* Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to 
+* Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to
   :class:`~.Incrementer` were also included in the target wires.
   [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
