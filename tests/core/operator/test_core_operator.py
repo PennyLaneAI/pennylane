@@ -16,7 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 
 import copy
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -121,7 +121,7 @@ class TestOperator1:
         assert isinstance(op, Operator1)
         assert not op.has_matrix  # check it has an Operator thing
 
-    def test_instantiating_Opeartor1_on_its_own(self):
+    def test_instantiating_Operator1_on_its_own(self):
         """Test that an error is raised if someone tries to instantiate Operator1."""
 
         with pytest.raises(ValueError, match="Operator1 cannot be instantiated on its own."):
