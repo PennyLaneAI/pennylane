@@ -29,7 +29,7 @@ from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.ops.op_math import Controlled, ControlledOp
 
-from .expression import Expression, convert_int_vals_to_expression
+from .expression import Expression
 
 
 def _count_to_str(
@@ -129,10 +129,8 @@ class Resources:
         prefix = " " * preindent
         lines = []
 
-        if self.vars:
-            lines.append(
-                f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars)) if self.vars else 'None'}"
-            )
+        if self.is_symbolic:
+            lines.append(f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars))}")
 
         for field in fields(self):
             if field.repr is False:
@@ -181,20 +179,26 @@ class Resources:
         lines.append("| **Metric** | **Value** |")
         lines.append("| :--- | ---: |")
 
-        field_name = field.metadata.get("display_name", field.name)
-        if isinstance(getattr(self, field.name), dict):
-            lines.append(f"| **{field_name}** | |")
-            dict_items = getattr(self, field.name)
-            for k, v in dict_items.items():
-                # TODO: Figure out how best to handle nested dicts
-                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
-                lines.append(f"| {k} | {value_str} |")
-            if len(dict_items) == 0:
-                lines.append(f"| *None present*| |")
-        else:
-            value = getattr(self, field.name)
-            value_str = _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
-            lines.append(f"| **{field_name}** | {value_str} |")
+        for obj_field in fields(self):
+            if obj_field.repr is False:
+                # Skip fields that are not meant to be included in the representation
+                continue
+            field_name = obj_field.metadata.get("display_name", obj_field.name)
+            if isinstance(getattr(self, obj_field.name), dict):
+                lines.append(f"| **{field_name}** | |")
+                dict_items = getattr(self, obj_field.name)
+                for k, v in dict_items.items():
+                    # TODO: Figure out how best to handle nested dicts
+                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    lines.append(f"| {k} | {value_str} |")
+                if len(dict_items) == 0:
+                    lines.append("| *None present*| |")
+            else:
+                value = getattr(self, obj_field.name)
+                value_str = (
+                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                )
+                lines.append(f"| **{field_name}** | {value_str} |")
 
         return "\n".join(lines)
 
@@ -225,24 +229,25 @@ class Resources:
             )
 
         new_values = {}
-        for field in fields(self):
-            if field.init is False:
+        for obj_field in fields(self):
+            if obj_field.init is False:
                 continue
-            value = getattr(self, field.name)
+            value = getattr(self, obj_field.name)
             if isinstance(value, Expression):
-                new_values[field.name] = value.subs(substitutions)
+                new_values[obj_field.name] = value.subs(substitutions)
             elif isinstance(value, dict):
-                new_values[field.name] = {
+                new_values[obj_field.name] = {
                     k: v.subs(substitutions) if isinstance(v, Expression) else v
                     for k, v in value.items()
                 }
             else:
-                new_values[field.name] = value
+                new_values[obj_field.name] = value
 
         return type(self)(**new_values)
 
     @property
     def is_symbolic(self) -> bool:
+        """Returns True if this object contains any symbolic variables, False otherwise."""
         return bool(self.vars)
 
 
@@ -309,6 +314,9 @@ class SpecsResources(Resources):
         """
         prefix = " " * preindent
         lines = []
+
+        if self.is_symbolic:
+            lines.append(f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars))}")
 
         lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
         lines.append(f"{prefix}Total gates: {_count_to_str(self.num_gates)}")
@@ -411,7 +419,7 @@ class CircuitSpecs:
         ...     shots=Shots(1000),
         ...     level="device",
         ...     resources=SpecsResources(
-        ...         gate_types={"RX": 2, "CNOT": 1},
+        ...         gate_counts={"RX": 2, "CNOT": 1},
         ...         gate_sizes={1: 2, 2: 1},
         ...         measurements={"expval(PauliZ)": 1},
         ...         num_allocs=2,
@@ -556,13 +564,13 @@ class CircuitSpecs:
         max_column_size = max(len(level) for level in flat_resources) + 2
 
         # Use dict for these since they are sorted by default unlike a set
-        all_gate_types = {}
+        all_gate_counts = {}
         all_meas_types = {}
 
         # This iteration order will present the gates in the order in which they appear
         for res in flat_resources.values():
-            for gate, count in res.gate_types.items():
-                all_gate_types[gate] = True
+            for gate, count in res.gate_counts.items():
+                all_gate_counts[gate] = True
                 max_metric_length = max(max_metric_length, len(gate) + 2)
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
@@ -579,7 +587,7 @@ class CircuitSpecs:
                 len(_count_to_str(res.num_gates, extra_compact=True)) + 1,
             )
 
-        return max_metric_length, max_column_size, all_gate_types, all_meas_types
+        return max_metric_length, max_column_size, all_gate_counts, all_meas_types
 
     def _to_pretty_str_tabular(self) -> str:
         """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
@@ -587,8 +595,8 @@ class CircuitSpecs:
         lines = self._get_specs_header()
 
         flat_resources = self._flattened_resources()
-        max_metric_length, max_column_size, all_gate_types, all_meas_types = self._get_table_format(
-            flat_resources
+        max_metric_length, max_column_size, all_gate_counts, all_meas_types = (
+            self._get_table_format(flat_resources)
         )
 
         num_cols = len(flat_resources)
@@ -617,12 +625,12 @@ class CircuitSpecs:
         )
 
         lines.append("Gate counts:".ljust(max_metric_length) + " |")
-        for gate in all_gate_types:
+        for gate in all_gate_counts:
             lines.append(
                 f"- {gate}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.gate_types.get(gate, 0), extra_compact=True).rjust(
+                    _count_to_str(res.gate_counts.get(gate, 0), extra_compact=True).rjust(
                         max_column_size
                     )
                     for res in flat_resources.values()
@@ -678,11 +686,11 @@ class CircuitSpecs:
         flat_resources = self._flattened_resources()
         levels = list(flat_resources.keys())
 
-        all_gate_types: dict[str, None] = {}
+        all_gate_counts: dict[str, None] = {}
         all_meas_types: dict[str, None] = {}
         for res in flat_resources.values():
-            for gate in res.gate_types:
-                all_gate_types[gate] = None
+            for gate in res.gate_counts:
+                all_gate_counts[gate] = None
             for meas in res.measurements:
                 all_meas_types[meas] = None
 
@@ -705,12 +713,12 @@ class CircuitSpecs:
             )
         )
         lines.append(data_row("**Gate counts**", [""] * len(levels)))
-        for gate in all_gate_types:
+        for gate in all_gate_counts:
             lines.append(
                 data_row(
                     gate,
                     [
-                        _count_to_str(r.gate_types.get(gate, 0), markdown_safe=True)
+                        _count_to_str(r.gate_counts.get(gate, 0), markdown_safe=True)
                         for r in flat_resources.values()
                     ],
                 )
@@ -869,7 +877,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     num_wires = len(tape.wires)
     depth = tape.graph.get_depth() if compute_depth else None
 
-    gate_types = defaultdict(int)
+    gate_counts = defaultdict(int)
     measurements = defaultdict(int)
     gate_sizes = defaultdict(int)
     for op in tape.operations:
@@ -880,14 +888,14 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
             if n_ctrls > 1:
                 gate_name = f"{n_ctrls}{gate_name}"
 
-        gate_types[gate_name] += 1
+        gate_counts[gate_name] += 1
         gate_sizes[len(op.wires)] += 1
 
     for meas in tape.measurements:
         measurements[_mp_to_str(meas, num_wires)] += 1
 
     return SpecsResources(
-        counts=dict(gate_types),
+        counts=dict(gate_counts),
         gate_sizes=dict(gate_sizes),
         measurements=dict(measurements),
         num_allocs=num_wires,

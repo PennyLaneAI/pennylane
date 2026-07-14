@@ -114,7 +114,7 @@ def _specs_qjit_device_level_tracking(
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
             measurements=resource_data["measurements"],
             num_allocs=resource_data["num_wires"],
-            depth=resource_data["depth"],
+            circuit_depth=resource_data["depth"],
         )
 
 
