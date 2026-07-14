@@ -34,6 +34,7 @@ from pennylane.exceptions import (
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import Wire
 
 from .composite import CompositeOp, handle_recursion_error
@@ -244,6 +245,23 @@ class ChangeOpBasis(CompositeOp):
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
+
+        leaves, structure = flatten(
+            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, Operator)
+        )
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        compute_op, target_op, uncompute_op = unflatten(new_leaves, structure)
+
         return cls._primitive.bind(compute_op, target_op, uncompute_op)
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})

@@ -459,7 +459,7 @@
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
-* :func:`~.apply` is now compatible with program capture.
+* :func:`~core.queuing.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
