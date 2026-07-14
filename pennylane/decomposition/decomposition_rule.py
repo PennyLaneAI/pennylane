@@ -22,8 +22,9 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import partial, singledispatch
+from functools import lru_cache, singledispatch
 from textwrap import dedent
+from types import MappingProxyType
 from typing import overload
 
 import numpy as np
@@ -39,28 +40,45 @@ from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
 from .utils import to_name
 
 
-def _resources_fallback(op_type, rule, *args, **kwargs):
-    dummy_op = op_type(*args, **kwargs)
-    leaves, metadata = flatten(dummy_op)
-    new_leaves = []
-    wire_idx = 0
-    for l in leaves:
-        if isinstance(l, AbstractWires):
-            new_leaves.append(list(range(wire_idx, l.num_wires + wire_idx)))
-            wire_idx += l.num_wires
-        elif isinstance(l, AbstractArray):
-            new_leaves.append(np.empty(l.shape, dtype=l.dtype))
-        else:
-            new_leaves.append(l)
+def _cacheable_get_resources(rule):
+    def _get_resources(leaves, metadata):
+        new_leaves = []
+        wire_idx = 0
+        for l in leaves:
+            if isinstance(l, AbstractWires):
+                new_leaves.append(list(range(wire_idx, l.num_wires + wire_idx)))
+                wire_idx += l.num_wires
+            elif isinstance(l, AbstractArray):
+                new_leaves.append(np.empty(l.shape, dtype=l.dtype))
+            else:
+                new_leaves.append(l)
 
-    dummy_op2 = unflatten(new_leaves, metadata)
-    with queuing.AnnotatedQueue() as q:
-        rule(**dummy_op2.arguments)
+        dummy_op2 = unflatten(leaves, metadata)
+        with queuing.AnnotatedQueue() as q:
+            rule(**dummy_op2.arguments)
 
-    resources = defaultdict(int)
-    for op in q.queue:
-        resources[abstractify(op)] += 1
-    return resources
+        resources = defaultdict(int)
+        for op in q.queue:
+            resources[abstractify(op)] += 1
+        return MappingProxyType(resources)
+
+    return _get_resources
+
+
+def _create_resources_fallback(op_type, rule):
+
+    # dont think we particularily need to make this very big.
+    cached_get_resources = lru_cache(20)(_cacheable_get_resources(rule))
+
+    def rule_fallback(*args, **kwargs):
+        dummy_op = op_type(*args, **kwargs)
+        leaves, metadata = flatten(dummy_op)
+
+        if all(isinstance(l, (AbstractArray, AbstractWires)) for l in leaves):
+            return cached_get_resources(tuple(leaves), metadata)
+        return _cacheable_get_resources(rule)(leaves, metadata)
+
+    return rule_fallback
 
 
 @dataclass(frozen=True)
@@ -480,7 +498,9 @@ class DecompositionRule:
         if self._compute_resources is None:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
         raw_gate_counts = self._compute_resources(*args, **kwargs)
-        assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
+        assert isinstance(
+            raw_gate_counts, (dict, MappingProxyType)
+        ), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if not (
@@ -740,11 +760,11 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     """
 
     processed_rules = list(decomps)
-    if issubclass(op_type, Operator2):
+    if isinstance(op_type, type) and issubclass(op_type, Operator2):
         for i, rule in enumerate(processed_rules):
             if not isinstance(rule, DecompositionRule):
                 processed_rules[i] = DecompositionRule(
-                    rule, partial(_resources_fallback, op_type, rule)
+                    rule, _create_resources_fallback(op_type, rule)
                 )
     else:
         if not all(isinstance(d, DecompositionRule) for d in decomps):
