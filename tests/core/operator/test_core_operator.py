@@ -307,7 +307,7 @@ class TestOperatorConstruction:
         op = DummyOp(1.234, wires=0)
 
         with pytest.raises(AttributeError):
-            op.data = (5.678,)
+            setattr(op, "data", (5.678,))
 
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
