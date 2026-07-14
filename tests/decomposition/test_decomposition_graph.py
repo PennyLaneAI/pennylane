@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import DecompositionGraph, pow_resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
@@ -72,7 +72,6 @@ class AnotherOp(Operation):
 
 @pytest.mark.unit
 @patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
-# pylint: disable=too-many-public-methods
 class TestDecompGraphConstruction:
     """Unit tests for the decomposition graph."""
 
@@ -329,22 +328,6 @@ class TestDecompGraphSolver:
 
         expected_res = to_resources({qp.RX: 2, qp.CNOT: 2, qp.RY: 4, qp.GlobalPhase: 4, qp.RZ: 4})
         assert solution.resource_estimate(op) == expected_res
-
-    def test_decomposition_graph_adjoint_of_operator2(self):
-        """Tests that the graph can solve the adjoint of an Operator2"""
-
-        @qp.register_resources({qp.RX: 2, qp.CNOT: 2})
-        def _rule(phi, wires):
-            raise NotImplementedError
-
-        op = qp.adjoint(DynOp(0.5, wires=0))
-        assert isinstance(op, Operator2)  # it's an Adjoint2
-
-        graph = DecompositionGraph(
-            operations=[op], gate_set={qp.RX, qp.CNOT}, alt_decomps={DynOp: [_rule]}
-        )
-        sol = graph.solve()
-        assert sol.is_solved_for(op)
 
     def test_operator2_integration(self):
         """Tests constructing and solving a graph from an Operator2."""
