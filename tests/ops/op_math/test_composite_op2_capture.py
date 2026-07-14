@@ -29,6 +29,9 @@ from tests.core.operator.operator2_utils import NonParametricOp
 
 def test_public_dot_binding():
     """Tests that the public API for composite op captures properly."""
+    # Ensure op can be constructed outside tracing context
+    op = qp.dot([1, 2], [NonParametricOp(0), NonParametricOp(1)])
+    assert op == NonParametricOp(0) + 2 * NonParametricOp(1)
 
     # NOTE: Have one op be outside trace context to
     # cover the tracer-is-none fallback
@@ -63,6 +66,9 @@ def test_public_dot_binding():
 
 def test_public_sum_binding():
     """Tests that the public API for composite op captures properly."""
+    # Ensure op can be constructed outside tracing context
+    op = qp.sum(NonParametricOp(0), NonParametricOp(0))
+    assert op == NonParametricOp(0) + NonParametricOp(0)
 
     # NOTE: Have one op be outside trace context to
     # cover the tracer-is-none fallback
@@ -119,6 +125,9 @@ def test_change_op_basis(defined_outside):
 
 def test_linear_combination():
     """Tests that LinearCombination captures correctly."""
+    # Assert can be created outside tracing context
+    op = qp.Hamiltonian([1, 2], [NonParametricOp(0), NonParametricOp(1)])
+    assert op == 1 * NonParametricOp(0) + 2 * NonParametricOp(1)
 
     # NOTE: Have one op be outside trace context to
     # cover the tracer-is-none fallback

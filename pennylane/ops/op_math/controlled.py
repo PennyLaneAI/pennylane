@@ -43,6 +43,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled2 import Controlled2, ControlledOp2
@@ -173,7 +174,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             control_wires=control,
             control_values=control_values,
             work_wires=work_wires,
-            ww_type=work_wire_type,
+            work_wire_type=work_wire_type,
         )
     if math.is_abstract(op):
         return Controlled(
@@ -192,87 +193,155 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     )
 
 
-def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type):
+def create_controlled_op2(op, control_wires, control_values, work_wires, work_wire_type):
     """New implementation of qp.ctrl that works better with Operator2."""
 
-    control_wires = Wires(control_wires)
-    if control_values is None:
-        control_values = [True] * len(control_wires)
-    if work_wires is None:
-        work_wires = []
-    work_wires = Wires(work_wires)
+    if not isinstance(control_wires, AbstractWires):
+        control_wires = Wires(control_wires)
+    if not isinstance(work_wires, AbstractWires):
+        work_wires = Wires([] if work_wires is None else work_wires)
+    if isinstance(control_values, (int, bool)):
+        control_values = [control_values]
+
+    # Remove base operator from the queue.
+    qp.QueuingManager.remove(op)
+
+    if (
+        custom_op := custom_ctrl_dispatch(
+            op,
+            control_wires,
+            control_values,
+            work_wires,
+            work_wire_type,
+        )
+    ) is not NotImplemented:
+        return custom_op
 
     if isinstance(op, Controlled2):
         _ = pop_op_eqns((op,))
-        ww_type = resolve_work_wire_type(op.work_wires, op.work_wire_type, work_wires, ww_type)
-        ctrl_values = resolve_ctrl_values(control_values, op)
+        work_wire_type = resolve_work_wire_type(
+            op.work_wires,
+            op.work_wire_type,
+            work_wires,
+            work_wire_type,
+        )
+        ctrl_values = _resolve_ctrl_values(control_values, op.control_values, len(control_wires))
         return ctrl(
             op.base,
-            control=control_wires + op.control_wires,
+            control=_concat_wires(control_wires, op.control_wires),
             control_values=ctrl_values,
-            work_wires=work_wires + op.work_wires,
-            work_wire_type=ww_type,
+            work_wires=_concat_wires(work_wires, op.work_wires),
+            work_wire_type=work_wire_type,
         )
 
-    qp.QueuingManager.remove(op)
-    return ControlledOp2(op, control_wires, control_values, work_wires, ww_type)
+    return ControlledOp2(op, control_wires, control_values, work_wires, work_wire_type)
 
 
-def resolve_ctrl_values(control_values, base_ctrl_op: Controlled2):
+def _concat_wires(wire1, wire2):
+
+    if isinstance(wire2, AbstractWires):
+        return Wire[len(wire1) + len(wire2)]
+
+    return wire1 + wire2
+
+
+def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     """Resolves the new control values."""
 
-    if isinstance(control_values, (int, bool)):
-        control_values = [control_values]
+    if control_values is None:
+        control_values = [True] * num_control
 
-    return math.concatenate([control_values, base_ctrl_op.control_values])
+    if isinstance(base_ctrl_values, AbstractArray):
+        return Bool[len(control_values) + len(base_ctrl_values)]
+
+    return math.concatenate([control_values, base_ctrl_values])
 
 
-def create_controlled_op(
-    op, control, control_values=None, work_wires=None, work_wire_type="borrowed"
-):
+def _is_empty_or_all_true(control_values):
+    """Checks whether a control values argument is empty or all True."""
+    return control_values is None or (
+        not math.is_abstract(control_values)
+        and not isinstance(control_values, AbstractArray)
+        and all(control_values)
+    )
+
+
+# pylint: disable=unused-argument
+@functools.singledispatch
+def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_type) -> Operator:
+    """Dispatch a ``qp.ctrl`` call to return a custom operator.
+
+    This is a single-dispatch function to be registered for operators that produce
+    custom operators when controlled.
+
+    **Examples**
+
+    For example, a ``PauliY`` controlled on a single wire is a ``CY``:
+
+    .. code-block:: python
+
+        from pennylane.ops.op_math import custom_ctrl_dispatch
+        from pennylane.ops.op_math.controlled import _is_empty_or_all_true
+
+        @custom_ctrl_dispatch.register
+        def _ctrl_y(base: qp.PauliY, control, control_values, *_):
+            if len(control) == 1 and _is_empty_or_all_true(control_values):
+                return qp.CY(control + base.wires)
+            return NotImplemented
+
+    >>> qp.ctrl(qp.Y(0), control=1)
+    CY(wires=[1, 0])
+
+    """
+    return NotImplemented
+
+
+def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = Wires(control)
-    one_controlled = False
     if isinstance(control_values, (int, bool)):
-        control_values = [control_values]
-    elif control_values is None:
+        control_values = [bool(control_values)]
+    elif isinstance(control_values, tuple):
+        control_values = [bool(v) for v in control_values]
+
+    qp.QueuingManager.remove(op)
+
+    if isinstance(op, (qp.Barrier, qp.Snapshot)):
+        if qp.QueuingManager.recording():
+            # for example
+            # op = Barrier(), qp.X(), qp.ctrl(op, 1)
+            # new barrier should exist after the X
+            qp.QueuingManager.remove(op)
+            qp.QueuingManager.append(op)  # requeue in proper place
+        return op
+
+    if (
+        custom_op := custom_ctrl_dispatch(
+            op,
+            control,
+            control_values,
+            work_wires,
+            work_wire_type,
+        )
+    ) is not NotImplemented:
+        return custom_op
+
+    one_controlled = False
+    if control_values is None:
         control_values = [True] * len(control)
         one_controlled = True
-    elif isinstance(control_values, tuple):
-        control_values = list(control_values)
-
-    ctrl_op = _try_wrap_in_custom_ctrl_op(
-        op,
-        control=control,
-        control_values=control_values,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-    if ctrl_op is not None:
-        return ctrl_op
-
-    pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
-
-    # Special handling for PauliX-based controlled operations
-    if isinstance(op, pauli_x_based_ctrl_ops):
-        qp.QueuingManager.remove(op)
-        return _handle_pauli_x_based_controlled_ops(
-            op,
-            control=control,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
 
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
         work_wires = Wires(() if work_wires is None else work_wires)
         work_wire_type = resolve_work_wire_type(
-            op.work_wires, op.work_wire_type, work_wires, work_wire_type
+            op.work_wires,
+            op.work_wire_type,
+            work_wires,
+            work_wire_type,
         )
-        qp.QueuingManager.remove(op)
         return ctrl(
             op.base,
             control=control + op.control_wires,
@@ -409,88 +478,6 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         )
 
     return new_qfunc
-
-
-@functools.lru_cache(maxsize=1)
-def _get_pauli_x_based_ops():
-    """Gets a list of pauli-x based operations
-
-    This is placed inside a function to avoid circular imports.
-
-    """
-    return qp.X, qp.CNOT, qp.Toffoli, qp.MultiControlledX
-
-
-def _try_wrap_in_custom_ctrl_op(
-    op, control, control_values=None, work_wires=None, work_wire_type="borrowed"
-):
-    """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
-
-    ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
-    custom_key = (type(op), len(control))
-
-    if custom_key in ops_with_custom_ctrl_ops and all(control_values):
-        qp.QueuingManager.remove(op)
-        return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
-
-    if isinstance(op, (qp.Barrier, qp.Snapshot)):
-        if qp.QueuingManager.recording():
-            # for example
-            # op = Barrier(), qp.X(), qp.ctrl(op, 1)
-            # new barrier should exist after the X
-            qp.QueuingManager.remove(op)
-            qp.QueuingManager.append(op)  # requeue in proper place
-        return op
-
-    if isinstance(op, qp.QubitUnitary):
-        qp.QueuingManager.remove(op)
-        return qp.ControlledQubitUnitary(
-            op.matrix() if op.has_matrix else op.sparse_matrix(),
-            wires=control + op.wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    return None
-
-
-def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires, work_wire_type):
-    """Handles PauliX-based controlled operations."""
-
-    # We map some small combinations of base operators and control wires to custom operators.
-    # However, we only should map to custom operators if there is no benefit from having work wires
-    # or if no work wires are provided
-    op_map = {  # Key: (base cls, num_control_wires, has work wires)
-        (qp.PauliX, 1, False): qp.CNOT,
-        (qp.PauliX, 1, True): qp.CNOT,
-        (qp.PauliX, 2, False): qp.Toffoli,
-        (qp.CNOT, 1, False): qp.Toffoli,
-    }
-
-    custom_key = (type(op), len(control), bool(work_wires))
-    if custom_key in op_map and all(control_values):
-        qp.QueuingManager.remove(op)
-        return op_map[custom_key](wires=control + op.wires)
-
-    if isinstance(op, qp.PauliX):
-        return qp.MultiControlledX(
-            wires=control + op.wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    work_wires = Wires([] if work_wires is None else work_wires)
-    work_wire_type = resolve_work_wire_type(
-        op.work_wires, op.work_wire_type, work_wires, work_wire_type
-    )
-    return qp.MultiControlledX(
-        wires=control + op.wires,
-        control_values=control_values + op.control_values,
-        work_wires=work_wires + op.work_wires,
-        work_wire_type=work_wire_type,
-    )
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
@@ -1256,3 +1243,13 @@ def base_to_custom_ctrl_op():
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops
+
+
+@functools.lru_cache(maxsize=1)
+def _get_pauli_x_based_ops():
+    """Gets a list of pauli-x based operations
+
+    This is placed inside a function to avoid circular imports.
+
+    """
+    return qp.X, qp.CNOT, qp.Toffoli, qp.MultiControlledX
