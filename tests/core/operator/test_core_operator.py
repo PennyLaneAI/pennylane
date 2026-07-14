@@ -297,6 +297,18 @@ class TestOperatorConstruction:
         op2 = DummyOp((1, 2, 3), wires=0)
         assert isinstance(op2.data[0], np.ndarray)
 
+    def test_data_is_read_only(self):
+        """Test that operator data is exposed through a read-only property."""
+
+        class DummyOp(qp.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, wires=0)
+
+        with pytest.raises(AttributeError):
+            op.data = (5.678,)
+
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
 

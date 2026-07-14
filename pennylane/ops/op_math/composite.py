@@ -424,7 +424,6 @@ class CompositeOp(Operator):
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op.data = copy.copy(self.data)
         if self._overlapping_ops is not None:
             new_op._overlapping_ops = [
                 [o.map_wires(wire_map) for o in _ops] for _ops in self._overlapping_ops
@@ -435,6 +434,8 @@ class CompositeOp(Operator):
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires", "_overlapping_ops"}:
                 setattr(new_op, attr, value)
+        new_op._hyperparameters = copy.copy(self._hyperparameters)
+        new_op._hyperparameters["operands"] = new_op.operands
         if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
 
