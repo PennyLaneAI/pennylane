@@ -24,6 +24,7 @@ from functools import reduce
 from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -189,6 +190,13 @@ def change_op_basis(
     """
 
     if capture.enabled():
+        # NOTE: Need to pop any eagerly constructed operators present in the traced function
+        # out of the jaxpr. This ensures that the order is kept consistent if any operators
+        # were built outside of the traced function. '_apply_op_or_func' will bind the primitives
+        # and insert them in the correct order.
+        for _op in (compute_op, target_op):
+            if isinstance(_op, Operator2) and _op.tracer is not None:
+                pop_op_eqns((_op,))
         _apply_op_or_func(compute_op)
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
