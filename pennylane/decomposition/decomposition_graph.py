@@ -35,7 +35,7 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
@@ -70,12 +70,6 @@ def _get_kwargs(op: AbstractOperatorLike):
     if isinstance(op, Operator2):
         return op.arguments
     return op.params
-
-
-def _abstractify(op: Operator):
-    if isinstance(op, Operator1):
-        return resource_rep(type(op), **op.resource_params)
-    return abstractify(op)
 
 
 @dataclass(frozen=True)
@@ -301,9 +295,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         for op in operations:
             if isinstance(op, qp.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
-            if isinstance(op, Operator1):
-                op = resource_rep(type(op), **op.resource_params)
-            if isinstance(op, Operator2):
+            if isinstance(op, Operator):
                 op = abstractify(op)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
@@ -502,9 +494,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
 
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op)
 
-        # TODO: symbolic decomposition rules for Operator2 are handled in a follow-up [sc-123156]
+        # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
+        # are integrated into list_decomps so that the graph would not be responsible
+        # for populating these symbolic decomposition rules.
         if isinstance(op, Operator2):
             return decomps
 
@@ -728,7 +722,7 @@ class DecompGraphSolution:
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
-        op_rep = _abstractify(op)
+        op_rep = abstractify(op)
         if op_rep not in self._op_to_op_nodes:
             return []
 

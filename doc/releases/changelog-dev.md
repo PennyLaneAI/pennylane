@@ -424,6 +424,10 @@
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
+* Added a decomposition of :class:`~.QROM` using `qp.pauli_measure` operators. This decomposition reduces
+  the PPM count in the compilation pipeline.
+  [(#9531)](https://github.com/PennyLaneAI/pennylane/pull/9531)
+
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
@@ -458,6 +462,9 @@
   cheaper decomposition, and the graph-based decomposition system
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
+
+* :func:`~core.queuing.apply` is now compatible with program capture.
+  [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -846,6 +853,7 @@
   - Some backwards compatibility with the legacy operator interface.
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+    [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
     [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
     [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
@@ -884,6 +892,8 @@
     [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
     [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
+    [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
+    [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
