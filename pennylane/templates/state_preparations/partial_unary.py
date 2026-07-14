@@ -140,8 +140,7 @@ class PUIsometryFinder:
         """Add a Partial unary iterator circuit (in form of ``Select``) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - batch_size
-        # Pad data with zeros to allow for array casting later
-        self.circuit.append((0, k_start, k, 0, 0))
+        self.circuit.append(("PUI", k_start, k))
 
         # Update tableau for PUI effect
         # For batch element j, rows whose subspace value equals k_start + j get remainder
@@ -164,8 +163,7 @@ class PUIsometryFinder:
         column (per row), while the ``control`` column is left unchanged.
         """
         target_int = 2 ** np.arange(len(bits) - 2, -1, -1) @ np.delete(bits, control)
-        # Pad data with zeros to allow for array casting later
-        self.circuit.append((1, control, target_int, 0, 0))
+        self.circuit.append(("Fanout", control, target_int))
 
         # Packed flip mask: all set bits of ``bits`` except the control bit.
         flip_mask = self._zero
@@ -181,14 +179,12 @@ class PUIsometryFinder:
 
     def toffoli(self, controls, second_ctrl_val, target):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
-        # Flatten the data to allow for array casting later
-        self.circuit.append((3, *controls, target, second_ctrl_val))
+        self.circuit.append(("Toffoli", controls + [target], second_ctrl_val))
         self.apply_multi_controlled_x(controls, [1, second_ctrl_val], target)
 
     def swap(self, w0, w1):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
-        # Pad data with zeros to allow for array casting later
-        self.circuit.append((2, w0, w1, 0, 0))
+        self.circuit.append(("SWAP", w0, w1))
         # positions for the two qubits
         p0 = self._shifts[w0]
         p1 = self._shifts[w1]
@@ -635,10 +631,6 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
     iso_finder = PUIsometryFinder(np.array(indices), len(wires))
-    assert (
-        iso_finder.m <= 16
-    ), "This qjit-compatible variant of the code is not compatible with m>16. Got m={iso_finder.m}"
-
     circuit, bijection = iso_finder.find_isometry()
 
     subspace_wires = Wires(wires[:n_subspace])
@@ -648,105 +640,30 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     dense_state = np.zeros(2**n_subspace, dtype=complex)
     ids = np.array([bijection[i] for i in range(len(coefficients))])
     dense_state[ids] = coefficients
-    # qp.MultiplexerStatePreparation(dense_state, subspace_wires)
-
-    if qp.compiler.active():
-        circuit = qp.math.array(circuit, like="jax")
-        wires = qp.math.array(wires, like="jax")
+    qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
     # Step 2: Apply the inverse of the isometry circuit
-    @qp.for_loop(len(circuit) - 1, -1, -1)
-    def main_loop(i):
-        """This main loop exclusively reads ``circuit[i]`` and then calls a conditional function,
-        with the branches corresponding to the different data put into ``circuit`` by
-        ``PUIsometryFinder.find_isometry``. The first entry in ``circuit[i]`` encodes the object:
-
-        - 0: Partial unary iterator (realized via shifted ``QROM``)
-        - 1: Fanout (realized via controlled ``BasisState``)
-        - 2: SWAP of two remainder qubits (realized via a simple ``SWAP``)
-        - 3: Toffoli (realized via ``MultiControlledX`` in order to use work wires for elbow decomp)
-
-        Note that the entries in ``circuit`` have been padded with zeros to all have length 5,
-        in order to enable casting to an ``ndarray``. Each branch of the conditional reads out only
-        the number of entries it needs, and discards the padded zeros.
-        """
-        # pylint: disable=cell-var-from-loop
-
-        data = circuit[i]
-
-        @qp.cond(data[0] == 0)
-        def branches():
-            """The first branch calls a partial unary iterator, in form of a ``QROM`` of a given
-            size. In order to avoid dynamic shapes, we define an inner conditional function
-            ``qrom_branches`` and register ``iso_finder.m`` many branches to it, one for each
-            possible batch size. This is not optimal in terms of coding practice and resource
-            accounting, but it works in a stable manner and is sufficiently efficient.
-            """
-            k_start, k = data[1:3]
+    for _type, *data in reversed(circuit):
+        if _type == "PUI":
+            k_start, k = data
+            qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            _work_wires = work_wires[: n_subspace - 1]
-
-            @qp.cond(b == 1)
-            def qrom_branches():
-                qp.QROM(np.eye(1), subspace_wires, nonsubspace_wires[:1], _work_wires)
-
-            for case_b in range(2, iso_finder.m + 1):
-                # Register an additional branch to ``qrom_branches`` for each possible batch size.
-                @qrom_branches.else_if(b == case_b)
-                def _():
-                    target_wires = nonsubspace_wires[:case_b]
-                    qp.QROM(np.eye(case_b), subspace_wires, target_wires, _work_wires)
-
-            # Realize PUI via QROM, shifted by k_start
+            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires[: n_subspace - 1])
             qp.BasisState(k_start, subspace_wires)
-            qrom_branches()
-            qp.BasisState(k_start, subspace_wires)
+            continue
+        if _type == "Fanout":
+            control, bits = data
+            qp.ctrl(qp.BasisState(bits, wires[:control] + wires[control + 1 :]), wires[control])
+            continue
 
-        @branches.else_if(data[0] == 1)
-        def fanout():
-            """The second branch calls a fan-out, in form of a controlled ``BasisState``,
-            controlled by one of the (first ``iso_finder.m``) remainder qubits and targeting
-            all other qubits. In order to avoid dynamic (intermediate) shapes, we define an
-            inner conditional function ``fanout_branches`` and register ``iso_finder.m`` many
-            branches to it, one for each possible control qubit. This is not optimal in terms of
-            coding practice, but it works in a stable manner and is sufficiently efficient.
-            """
-            control, target_int = data[1:3]
-
-            @qp.cond(control == 0)
-            def fanout_branches():
-                qp.ctrl(qp.BasisState(target_int, wires[1:]), wires[0])
-
-            for case_control in range(1, iso_finder.m):
-                # Register an additional branch to ``fanout_branches`` for each possible control
-                @fanout_branches.else_if(control == case_control)
-                def _():
-                    target_wires = list(wires[:case_control]) + list(wires[case_control + 1 :])
-                    qp.ctrl(qp.BasisState(target_int, target_wires), control=wires[case_control])
-
-            fanout_branches()
-
-        @branches.else_if(data[0] == 2)
-        def swap():
-            """The third branch is a simple SWAP gate."""
-            _wires = [wires[idx] for idx in data[1:3]]
+        ids = data[0]
+        _wires = [wires[idx] for idx in ids]
+        if _type == "SWAP":
             qp.SWAP(_wires)
-
-        @branches.else_if(data[0] == 3)
-        def toffoli():
-            """The fourth branch is a simple Toffoli gate. We manually realize the control values
-            in order to avoid dynamic control values in MultiControlledX. We don't use ``Toffoli``
-            directly because it does not have ``work_wires`` and we would like to use the cheaper
-            elbow-based decomposition.
-            """
-            _wires = [wires[idx] for idx in data[1:4]]
-            qp.BasisState(data[4:], _wires[1:2])
-            qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
-            qp.BasisState(data[4:], _wires[1:2])
-
-        branches()
-
-    main_loop()  # pylint: disable=no-value-for-parameter
+        elif _type == "Toffoli":
+            qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
+        else:
+            raise NotImplementedError  # pragma: no cover
 
 
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
