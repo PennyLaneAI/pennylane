@@ -233,7 +233,7 @@ class TestScalarSymbolicOp:
         assert op.data == (2.2, 1.1)
 
         with pytest.raises(AttributeError):
-            op.data = (3.3, 4.4)
+            op.data = (3.3, 4.4)  # pylint:disable=attribute-defined-outside-init
 
     def test_hash(self):
         """Test that a hash correctly identifies ScalarSymbolicOps."""
