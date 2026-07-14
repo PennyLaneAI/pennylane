@@ -43,7 +43,10 @@ from .decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _decomp_contains_mcm,
+    _fix_decomp,
+    add_decomps,
     list_decomps,
+    local_decomps,
     null_decomp,
 )
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
@@ -288,7 +291,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._in_progress = []
         self._num_ctrl_wires_in_progress = defaultdict(list)
 
-        self._construct_graph(operations)
+        with local_decomps():
+
+            for op, decomps in self._alt_decomps.items():
+                add_decomps(op, *decomps)
+
+            for op, decomp in self._fixed_decomps.items():
+                _fix_decomp(op, decomp)
+
+            self._construct_graph(operations)
 
     def _construct_graph(self, operations: Iterable[Operator | AbstractOperatorLike]):
         """Constructs the decomposition graph."""
@@ -489,7 +500,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        decomps = list_decomps(op, self._fixed_decomps, self._alt_decomps)
+        decomps = list_decomps(op)
 
         # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
         # are integrated into list_decomps so that the graph would not be responsible

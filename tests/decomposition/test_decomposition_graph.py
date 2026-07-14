@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import DecompositionGraph, pow_resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
-from pennylane.decomposition.decomposition_rule import DecompCollection
+from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -121,7 +121,9 @@ class TestDecompGraphConstruction:
             gate_set={"RX", "RY", "RZ"},
             fixed_decomps={qp.Hadamard: custom_hadamard},
         )
-        assert graph._get_decompositions(h_rep) == DecompCollection([custom_hadamard])
+        with qp.decomposition.local_decomps():
+            _fix_decomp(qp.Hadamard, custom_hadamard)
+            assert graph._get_decompositions(h_rep) == DecompCollection([custom_hadamard])
 
         alt_dec = DecompCollection([custom_hadamard, custom_hadamard_2])
         graph = DecompositionGraph(
@@ -130,7 +132,9 @@ class TestDecompGraphConstruction:
             alt_decomps={qp.Hadamard: alt_dec},
         )
         exp_dec = alt_dec + decompositions.get()["Hadamard"]
-        assert graph._get_decompositions(h_rep) == exp_dec
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.Hadamard, custom_hadamard, custom_hadamard_2)
+            assert graph._get_decompositions(h_rep) == exp_dec
 
         graph = DecompositionGraph(
             operations=[qp.Hadamard(0)],
@@ -138,7 +142,10 @@ class TestDecompGraphConstruction:
             alt_decomps={qp.Hadamard: alt_dec},
             fixed_decomps={qp.Hadamard: custom_hadamard},
         )
-        assert graph._get_decompositions(h_rep) == DecompCollection([custom_hadamard])
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.Hadamard, *alt_dec)
+            _fix_decomp(qp.Hadamard, custom_hadamard)
+            assert graph._get_decompositions(h_rep) == DecompCollection([custom_hadamard])
 
     def test_get_decomps_symbolic2(self):
         """Tests that get_decomps works properly for symbolicop2."""

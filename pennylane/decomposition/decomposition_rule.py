@@ -724,11 +724,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
 
 
 @singledispatch
-def list_decomps(
-    op: type[Operator] | Operator | str,
-    fixed_decomps: dict[str, DecompositionRule] | None = None,
-    alt_decomps: dict[str, Sequence[DecompositionRule]] | None = None,
-) -> DecompCollection:
+def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -739,10 +735,9 @@ def list_decomps(
         decomposition rules for an operator.
 
     Args:
-        op (type or Operator or str): the operator or operator type to retrieve decomposition rules for.
-            For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
-        fixed_decomps (dict, optional): A dictionary mapping operator names to fixed decompositions.
-        alt_decomps (dict, optional): A dictionary mapping operator names to alternative decompositions.
+        op (type or Operator or str): the operator or operator type to retrieve decomposition
+            rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
+            ``"C(RX)"``, etc.
 
     Returns:
         DecompCollection: a collection of decomposition rules registered for the given operator.
@@ -786,14 +781,7 @@ def list_decomps(
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    fixed_decomps = fixed_decomps or {}
-    alt_decomps = alt_decomps or {}
-    if (op_name := to_name(op)) in fixed_decomps:
-        return DecompCollection([fixed_decomps[op_name]])
-    rules = _decompositions_var.get()[to_name(op)].copy()
-    if op_name in alt_decomps:
-        rules.extend(alt_decomps[op_name])
-    return rules
+    return _decompositions_var.get()[to_name(op)].copy()
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -807,8 +795,9 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         decomposition rules for an operator.
 
     Args:
-        op (type or Operator or str): the operator or operator type to check for decomposition rules.
-            For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to check for
+            decomposition rules. For symbolic operators, use strings like ``"Adjoint(RY)"``,
+            ``"Pow(H)"``, ``"C(RX)"``, etc.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.
@@ -824,13 +813,17 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    current_decomps = {k: v.copy() for k, v in _decompositions_private.items()}
+    current_decomps = {k: v.copy() for k, v in _decompositions_var.get().items()}
     _new_decomps = defaultdict(DecompCollection, current_decomps)
     token = _decompositions_var.set(_new_decomps)
     try:
         yield
     finally:
         _decompositions_var.reset(token)
+
+
+def _fix_decomp(op, rule):
+    _decompositions_var.get()[to_name(op)] = DecompCollection([rule])
 
 
 class _DecompInfo:  # pylint: disable=too-few-public-methods
