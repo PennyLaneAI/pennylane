@@ -246,6 +246,31 @@ def test_controlled_sequence():
     qp.assert_equal(new_op.base, qp.RX(0.5, wires=3))
 
 
+def test_prep_sel_prep():
+    """Test that rebinding PrepSelPrep replaces its LCU without mutating the original."""
+    lcu = qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
+    op = qp.PrepSelPrep(lcu, control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op.lcu, qp.dot([0.5, 0.5], [qp.Z(2), qp.X(1) @ qp.X(2)]))
+    assert new_op is not op
+    assert new_op.lcu is not op.lcu
+    assert op.data == (0.25, 0.75)
+
+
+def test_select():
+    """Test that rebinding Select replaces its operands without mutating the original."""
+    op = qp.Select([qp.RX(0.25, wires=2), qp.RY(0.75, wires=2)], control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op, qp.Select([qp.RX(0.5, wires=2), qp.RY(0.5, wires=2)], control=0))
+    assert new_op is not op
+    assert new_op.ops[0] is not op.ops[0]
+    assert op.data == (0.25, 0.75)
+
+
 TEST_BIND_LINEARCOMBINATION = [
     (  # LinearCombination with only data being the coeffs
         qp.ops.LinearCombination(
