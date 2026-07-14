@@ -424,6 +424,10 @@
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
+* Added :func:`~.fabricate` and :class:`~.Fabricate` to produce auxiliary qubits in logical factory
+  states (``plus_i``, ``minus_i``, ``magic``, or ``magic_conj``) for Pauli-based computation
+  workflows compiled with Catalyst.
+
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)

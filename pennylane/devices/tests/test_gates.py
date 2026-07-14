@@ -117,6 +117,7 @@ ops = {
     "OrbitalRotation": qp.OrbitalRotation(0, wires=[0, 1, 2, 3]),
     "FermionicSWAP": qp.FermionicSWAP(0, wires=[0, 1]),
     "GlobalPhase": qp.GlobalPhase(0.123),
+    "Fabricate": qp.Fabricate("magic"),
 }
 
 all_ops = ops.keys()
@@ -358,6 +359,9 @@ class TestSupportedGates:
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_can_be_implemented(self, device, operation, shots):
         """Test that the device can implement all its supported gates."""
+        if operation == "Fabricate":
+            pytest.skip("fabricate produces dynamic qubits and is not executable on devices")
+
         dev = device(wires=4)
 
         if isinstance(dev, qp.devices.LegacyDevice):

@@ -45,6 +45,7 @@ _INSTANCES_TO_TEST = [
     (MarkedOp(qp.X(0), "my-x"), {}),
     (qp.ops.MidMeasure(wires=0), {"skip_capture": True}),
     (qp.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
+    (qp.Fabricate("magic"), {"skip_capture": True}),
     (ChangeOpBasis(qp.T(0), qp.PauliZ(0)), {}),
     (qp.sum(qp.PauliX(0), qp.PauliZ(0)), {}),
     (qp.sum(qp.X(0), qp.X(0), qp.Z(0), qp.Z(0)), {}),

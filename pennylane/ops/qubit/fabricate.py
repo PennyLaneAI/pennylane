@@ -73,6 +73,11 @@ class Fabricate(Operator):
     def _primitive_bind_call(cls, *args, **kwargs):
         return type.__call__(cls, *args, **kwargs)
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hyperparameters_dict = dict(metadata[1])
+        return cls(hyperparameters_dict["init_state"])
+
 
 @lru_cache
 def _create_fabricate_primitive():
