@@ -108,7 +108,7 @@ class TestSpecsTransform:
             pass
 
         expected_resources = SpecsResources(
-            gate_types={}, gate_sizes={}, measurements={}, num_allocs=0, depth=0
+            counts={}, gate_sizes={}, measurements={}, num_allocs=0, circuit_depth=0
         )
 
         info = qp.specs(circ)()
@@ -137,13 +137,13 @@ class TestSpecsTransform:
         info = qp.specs(circuit)(x, y, add_RY=False)
 
         gate_sizes = {1: 2, 3: 1, 2: 1}
-        gate_types = {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1}
+        counts = {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1}
         expected_resources = SpecsResources(
             num_allocs=3,
-            gate_types=gate_types,
+            counts=counts,
             gate_sizes=gate_sizes,
             measurements={"expval(PauliZ)": 1, "expval(PauliX)": 1},
-            depth=3,
+            circuit_depth=3,
         )
         assert info["resources"] == expected_resources
 
@@ -164,7 +164,7 @@ class TestSpecsTransform:
 
         resources = qp.specs(partial(circuit, 3))(0.5)["resources"]
 
-        assert resources.gate_types == {"RX": 3, "RY": 1}
+        assert resources.counts == {"RX": 3, "RY": 1}
         assert resources.num_gates == 4
         assert resources.depth == 4
 
@@ -181,7 +181,7 @@ class TestSpecsTransform:
 
         resources = qp.specs(partial(circuit, n_layers=3, add_ry=False))(0.5)["resources"]
 
-        assert resources.gate_types == {"RX": 3}
+        assert resources.counts == {"RX": 3}
         assert resources.num_gates == 3
         assert resources.depth == 3
 
@@ -197,7 +197,7 @@ class TestSpecsTransform:
 
         resources = qp.specs(partial(partial(circuit, 3), y=0.25))(0.5)["resources"]
 
-        assert resources.gate_types == {"RX": 3, "RY": 1}
+        assert resources.counts == {"RX": 3, "RY": 1}
         assert resources.num_gates == 4
         assert resources.depth == 4
 
@@ -218,7 +218,7 @@ class TestSpecsTransform:
 
         resources = qp.specs(partial(circuit, 0.1, z=0.3), level=level)(0.2)["resources"]
 
-        assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert resources.counts == {"RX": 1, "RY": 1, "RZ": 1}
         assert resources.num_gates == 3
 
     @pytest.mark.external
@@ -239,7 +239,7 @@ class TestSpecsTransform:
 
         assert specs["level"] == {0: "Before MLIR Passes"}
         resources = specs["resources"]["Before MLIR Passes"]
-        assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert resources.counts == {"RX": 1, "RY": 1, "RZ": 1}
         assert resources.num_gates == 3
 
     @pytest.mark.parametrize("compute_depth", [True, False])
@@ -308,11 +308,11 @@ class TestSpecsTransform:
         info = qp.specs(circuit)()
 
         assert info.resources == SpecsResources(
-            gate_types={},
+            counts={},
             gate_sizes={},
             measurements={"state(all wires)": 1},
             num_allocs=0,  # Nothing actually used in this circuit
-            depth=0,
+            circuit_depth=0,
         )
 
         assert info.level == "gradient"
@@ -330,11 +330,11 @@ class TestSpecsTransform:
         info = qp.specs(circuit)()
 
         assert info.resources == SpecsResources(
-            gate_types={"MidMeasureMP": 1},
+            counts={"MidMeasureMP": 1},
             gate_sizes={1: 1},
             measurements={"sample(mcm)": 1},
             num_allocs=1,
-            depth=1,
+            circuit_depth=1,
         )
 
         assert info.level == "gradient"
@@ -355,14 +355,14 @@ class TestSpecsTransform:
         info = qp.specs(circuit)(0)
 
         assert info.resources == SpecsResources(
-            gate_types={},
+            counts={},
             gate_sizes={},
             measurements={
                 "expval(Hamiltonian(num_wires=3, num_terms=2))": 1,
                 "expval(Hamiltonian(num_wires=2, num_terms=1))": 1,
             },
             num_allocs=3,
-            depth=0,
+            circuit_depth=0,
         )
 
     def test_level_with_diagonalizing_gates(self):
@@ -449,28 +449,31 @@ class TestSpecsTransform:
             "level": 2,
             "resources": [
                 {
-                    "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
                     "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 2,
-                    "depth": 5,
+                    "circuit_depth": 5,
                     "num_gates": 5,
+                    "vars": frozenset(),
                 },
                 {
-                    "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
                     "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
-                    "depth": 5,
+                    "circuit_depth": 5,
                     "num_gates": 5,
+                    "vars": frozenset(),
                 },
                 {
-                    "gate_types": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
                     "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
-                    "depth": 5,
+                    "circuit_depth": 5,
                     "num_gates": 5,
+                    "vars": frozenset(),
                 },
             ],
         }
@@ -558,10 +561,10 @@ Batched tape c:
 
         expected = SpecsResources(
             num_allocs=1,
-            gate_types={"RX": 2},
+            counts={"RX": 2},
             gate_sizes={1: 2},
             measurements={"state(all wires)": 1},
-            depth=2,
+            circuit_depth=2,
         )
 
         assert qp.specs(c, level="my_level")()["resources"] == expected
@@ -617,7 +620,7 @@ class TestSpecsGraphModeExclusive:
         assert specs["resources"].num_allocs == 1
 
         # Check that the correct decomposition was used
-        assert expected_decomp in specs["resources"].gate_types
+        assert expected_decomp in specs["resources"].counts
 
     def test_specs_num_work_wires_with_insufficient_wires(self):
         """Test that qp.specs correctly reports work wires when decomposition fallback is used."""
@@ -650,7 +653,7 @@ class TestSpecsGraphModeExclusive:
         assert specs["num_device_wires"] == 2
         assert specs["resources"].num_allocs == 1
         # Fallback decomposition should be used (H gate)
-        assert "Hadamard" in specs["resources"].gate_types
+        assert "Hadamard" in specs["resources"].counts
 
     def test_specs_num_work_wires_no_available_wires(self):
         """Test qp.specs when all device wires are used by the circuit."""

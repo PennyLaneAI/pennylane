@@ -82,7 +82,7 @@ def _mlir_resources_to_specs_resources(
     measurements = defaultdict(
         int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
     )
-    gate_types = defaultdict(int)
+    gate_counts = defaultdict(int)
     gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
 
@@ -101,7 +101,7 @@ def _mlir_resources_to_specs_resources(
             # Separate out PPMs and PPRs by weight
             gate_name += f"-w{gate_size}"
 
-        gate_types[gate_name] += count
+        gate_counts[gate_name] += count
         gate_sizes[int(gate_size)] += count
 
     # Recurse through all function calls and combine resources with the appropriate multiplicative factors
@@ -126,8 +126,8 @@ def _mlir_resources_to_specs_resources(
             continue
 
         num_allocs += call_count * called_fn_resources.num_allocs
-        for gate, gate_count in called_fn_resources.gate_types.items():
-            gate_types[gate] += call_count * gate_count
+        for gate, gate_count in called_fn_resources.gate_counts.items():
+            gate_counts[gate] += call_count * gate_count
         for size, size_count in called_fn_resources.gate_sizes.items():
             gate_sizes[size] += call_count * size_count
         for meas, meas_count in called_fn_resources.measurements.items():
@@ -136,11 +136,11 @@ def _mlir_resources_to_specs_resources(
     # Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
     fn_resources[focus] = SpecsResources(
-        gate_types={k: gate_types[k] for k in sorted(gate_types.keys())},
+        counts={k: gate_counts[k] for k in sorted(gate_counts.keys())},
         gate_sizes={k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
         measurements={k: measurements[k] for k in sorted(measurements.keys())},
         num_allocs=num_allocs,
-        depth=None,  # Can't get depth from MLIR pass results
+        circuit_depth=None,  # Can't get depth from MLIR pass results
     )
 
 

@@ -82,9 +82,14 @@ def num_to_letters(num: int) -> str:
 @dataclass(frozen=True, slots=True)
 class Resources:
     counts: dict  # Intentionally vague name, aliased to gate_counts in most places
-    extra: dict = field(repr=False)  # Used to store extra fields for any derived type
+    # extra: dict = field(repr=False)  # Used to store extra fields for any derived type
 
-    _vars: frozenset[str] = field(init=False, repr=False)
+    vars: frozenset[str] = field(
+        init=False,
+        repr=False,
+        default_factory=frozenset,
+        metadata={"display_name": "Symbolic Variables"},
+    )
 
     def __post_init__(self):
         all_vars = set()
@@ -92,7 +97,7 @@ class Resources:
         # Iterate over all fields of the dataclass to find any Expression instances and
         # collect their variables
         for field in fields(self):
-            if field.name == "_vars":
+            if field.name == "vars":
                 continue
             value = getattr(self, field.name)
             if isinstance(value, Expression):
@@ -102,7 +107,7 @@ class Resources:
                     if isinstance(v, Expression):
                         all_vars |= v.vars
 
-        object.__setattr__(self, "_vars", frozenset(all_vars))
+        object.__setattr__(self, "vars", frozenset(all_vars))
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """Convert a :class:`Resources` object into a human-readable string representation.
@@ -238,11 +243,7 @@ class Resources:
 
     @property
     def is_symbolic(self) -> bool:
-        return bool(self._vars)
-
-    @property
-    def vars(self) -> frozenset[str]:
-        return self._vars
+        return bool(self.vars)
 
 
 @dataclass(frozen=True, slots=True)
@@ -268,14 +269,19 @@ class SpecsResources(Resources):
             )
         object.__setattr__(self, "num_gates", total_gate_counts)
 
+        # Fall through to parent post init
+        super().__post_init__()
+
     def __getitem__(self, key):
         # Need to match
         match key:
             # Properties need to be handled manually unlike true fields
-            case "num_wires":
-                return self.num_wires
+            case "gate_counts":
+                return self.gate_counts
             case "depth":
                 return self.depth
+            case "num_wires":
+                return self.num_wires
 
         return super().__getitem__(key)
 
@@ -343,10 +349,10 @@ class SpecsResources(Resources):
         )
         lines.append(f"| **Total gates** | {_count_to_str(self.num_gates, markdown_safe=True)} |")
         lines.append("| **Gate counts:** | |")
-        if not self.gate_types:
+        if not self.gate_counts:
             lines.append("| *No gates* | |")
         else:
-            for gate, count in self.gate_types.items():
+            for gate, count in self.gate_counts.items():
                 lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
         lines.append("| **Measurements:** | |")
         if not self.measurements:
@@ -361,6 +367,17 @@ class SpecsResources(Resources):
         )
         lines.append(f"| **Depth** | {depth_str} |")
         return "\n".join(lines)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert this :class:`SpecsResources` to a dictionary."""
+
+        # Need to explicitly include properties
+        d = asdict(self)
+        d["num_gates"] = self.num_gates
+        d["gate_counts"] = d["counts"]
+        del d["counts"]
+
+        return d
 
 
 @dataclass(frozen=True)
@@ -870,9 +887,9 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
         measurements[_mp_to_str(meas, num_wires)] += 1
 
     return SpecsResources(
-        gate_types=dict(gate_types),
+        counts=dict(gate_types),
         gate_sizes=dict(gate_sizes),
         measurements=dict(measurements),
         num_allocs=num_wires,
-        depth=depth,
+        circuit_depth=depth,
     )

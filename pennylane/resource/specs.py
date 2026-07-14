@@ -110,7 +110,7 @@ def _specs_qjit_device_level_tracking(
             resource_data = json.load(f)
 
         return SpecsResources(
-            gate_types=resource_data["gate_types"],
+            counts=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
             measurements=resource_data["measurements"],
             num_allocs=resource_data["num_wires"],
@@ -452,8 +452,8 @@ def specs(
         :class:`~.resource.SpecsResources` for each resulting tape:
 
         >>> qp.specs(circuit, level="user")().resources
-        [SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, depth=1),
-         SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, depth=1)]
+        [SpecsResources(counts={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, depth=1),
+         SpecsResources(counts={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, depth=1)]
 
     .. details::
         :title: Runtime Specs with Catalyst

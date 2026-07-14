@@ -154,11 +154,11 @@ class TestAnalysisPassConversion:
 
         assert actual == [
             SpecsResources(
-                gate_types={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
+                counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
                 gate_sizes={1: Expression({(var,): 2, (): 9})},
                 measurements={"expval(PauliZ)": 1},
                 num_allocs=10,
-                depth=None,
+                circuit_depth=None,
             ),
         ]
 
@@ -210,7 +210,7 @@ class TestAnalysisPassConversion:
 
         assert actual == [
             SpecsResources(
-                gate_types={
+                counts={
                     "Hadamard": 3,
                     "PPM-w3": 1,
                     "PPR-pi/2-w3": 1,
@@ -220,12 +220,12 @@ class TestAnalysisPassConversion:
                 gate_sizes={1: Expression({(var,): 2, (): 9}), 3: 2},
                 measurements={"expval(PauliZ)": Expression({(var,): 2, (): 1})},
                 num_allocs=10,
-                depth=None,
+                circuit_depth=None,
             ),
         ]
 
     def test_same_op_name_multiple_widths(self):
-        """A single op name at multiple qubit widths must accumulate in gate_types,
+        """A single op name at multiple qubit widths must accumulate in counts,
         not overwrite. Regression for the 'Inconsistent gate counts' ValueError."""
         actual = _get_resources_from_analysis_pass(
             {
@@ -252,11 +252,11 @@ class TestAnalysisPassConversion:
 
         assert actual == [
             SpecsResources(
-                gate_types={"Hadamard": 2, "MultiControlledX": 12},
+                counts={"Hadamard": 2, "MultiControlledX": 12},
                 gate_sizes={1: 2, 2: 5, 3: 7},
                 measurements={},
                 num_allocs=4,
-                depth=None,
+                circuit_depth=None,
             )
         ]
 
@@ -270,11 +270,11 @@ class TestAnalysisPassConversion:
             display_names=display_names,
         )
         assert fn_resources["dyn_for_loop_1"] == SpecsResources(
-            gate_types={"PauliX": 1},
+            counts={"PauliX": 1},
             gate_sizes={1: 1},
             measurements={},
             num_allocs=0,
-            depth=None,
+            circuit_depth=None,
         )
 
         # This should should also resolve the recursive call to for_loop_1
@@ -286,11 +286,11 @@ class TestAnalysisPassConversion:
         )
 
         assert fn_resources["for_loop_1"] == SpecsResources(
-            gate_types={"PauliZ": 1},
+            counts={"PauliZ": 1},
             gate_sizes={1: 1},
             measurements={},
             num_allocs=0,
-            depth=None,
+            circuit_depth=None,
         )
 
         assert len(display_names) == 1
@@ -298,11 +298,11 @@ class TestAnalysisPassConversion:
 
         a = fn_resources["for_loop_2"]
         b = SpecsResources(
-            gate_types={"PauliZ": 3, "Hadamard": 1, "PauliX": Expression({(var_name,): 1})},
+            counts={"PauliZ": 3, "Hadamard": 1, "PauliX": Expression({(var_name,): 1})},
             gate_sizes={1: Expression({(var_name,): 1, (): 4})},
             measurements={},
             num_allocs=0,
-            depth=None,
+            circuit_depth=None,
         )
 
         assert a == b

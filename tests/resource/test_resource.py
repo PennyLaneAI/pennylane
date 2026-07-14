@@ -59,18 +59,18 @@ class TestSpecsResources:
     def example_specs_resource(self):
         """Generate an example SpecsResources instance."""
         return SpecsResources(
-            gate_types={"Hadamard": 2, "CNOT": 1},
+            counts={"Hadamard": 2, "CNOT": 1},
             gate_sizes={1: 2, 2: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
-            depth=2,
+            circuit_depth=2,
         )
 
     def test_depth_autoassign(self):
         """Test that the SpecsResources class auto-assigns depth as None if not provided."""
 
         s = SpecsResources(
-            gate_types={"Hadamard": 2, "CNOT": 1},
+            counts={"Hadamard": 2, "CNOT": 1},
             gate_sizes={1: 2, 2: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
@@ -83,11 +83,11 @@ class TestSpecsResources:
 
         with pytest.raises(
             ValueError,
-            match="Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates.",
+            match="Inconsistent gate counts: `gate_counts` describes .* gates but `gate_sizes` describes .* gates.",
         ):
             # Gate counts don't match
             _ = SpecsResources(
-                gate_types={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
+                counts={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
             )
 
         s = example_specs_resource
@@ -100,45 +100,27 @@ class TestSpecsResources:
         s = example_specs_resource
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.gate_types = {}
-
-        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.gate_sizes = {}
+            s.counts = {}
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
             s.measurements = {}
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.num_allocs = 1
-
-        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.depth = 0
+            s.circuit_depth = 0
 
     def test_getitem(self, example_specs_resource):
         """Test that SpecsResources supports indexing via __getitem__."""
 
         s = example_specs_resource
 
-        assert s["gate_types"] == s.gate_types
-        assert s["gate_counts"] == s.gate_types
+        assert s["counts"] == s.counts
+        assert s["gate_counts"] == s.counts
         assert s["gate_sizes"] == s.gate_sizes
         assert s["measurements"] == s.measurements
         assert s["num_allocs"] == s.num_allocs
         assert s["depth"] == s.depth
 
         assert s["num_gates"] == s.num_gates
-
-        # Check removed keys
-        with pytest.raises(
-            KeyError,
-            match="shots is no longer included within specs's resources, check the top-level object instead.",
-        ):
-            _ = s["shots"]
-        with pytest.raises(
-            KeyError,
-            match="num_wires has been renamed to num_allocs to more accurate describe what it measures.",
-        ):
-            _ = s["num_wires"]
 
         # Try nonexistent key
         with pytest.raises(
@@ -169,7 +151,7 @@ class TestSpecsResources:
 
         # Check with no depth, gates, or measurements
 
-        s = SpecsResources(gate_types={}, gate_sizes={}, measurements={}, num_allocs=0)
+        s = SpecsResources(counts={}, gate_sizes={}, measurements={}, num_allocs=0)
 
         expected = "Wire allocations: 0\n"
         expected += "Total gates: 0\n"
@@ -191,12 +173,13 @@ class TestSpecsResources:
         s = example_specs_resource
 
         expected = {
-            "gate_types": {"Hadamard": 2, "CNOT": 1},
+            "gate_counts": {"Hadamard": 2, "CNOT": 1},
             "gate_sizes": {1: 2, 2: 1},
             "measurements": {"expval(PauliZ)": 1},
             "num_allocs": 2,
-            "depth": 2,
+            "circuit_depth": 2,
             "num_gates": 3,
+            "vars": frozenset(),
         }
 
         assert s.to_dict() == expected
@@ -223,7 +206,7 @@ class TestSymbolicSpecsResources:
                 return expval(qp.PauliZ(0))
         """
         return SpecsResources(
-            gate_types={
+            counts={
                 "Hadamard": Expression({(): 1}),
                 "PauliX": Expression({("x"): 1, (): 1}),
                 "CNOT": Expression({("x", "z"): 1}),
@@ -233,7 +216,7 @@ class TestSymbolicSpecsResources:
             measurements={"expval(PauliZ)": 1},
             # The values for allocs and depth are a bit off, but are helpful for testing substitutions
             num_allocs=Expression({("x",): 1, ("z",): 2, (): 1}),
-            depth=Expression({("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}),
+            circuit_depth=Expression({("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}),
         )
 
     @pytest.fixture
@@ -244,11 +227,11 @@ class TestSymbolicSpecsResources:
         Specifically, returns the resources for a simple Bell state circuit with a measurement.
         """
         return SpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 1},
+            counts={"Hadamard": 1, "CNOT": 1},
             gate_sizes={1: 1, 2: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=1,
-            depth=1,
+            circuit_depth=1,
         )
 
     def test_blank_subs(self, example_resource):
@@ -262,7 +245,7 @@ class TestSymbolicSpecsResources:
         partially_substituted = s.subs({"x": 2})
 
         expected = SpecsResources(
-            gate_types={
+            counts={
                 "Hadamard": Expression({(): 1}),
                 "PauliX": Expression({(): 3}),
                 "CNOT": Expression({("z",): 2}),
@@ -274,7 +257,7 @@ class TestSymbolicSpecsResources:
             },
             measurements={"expval(PauliZ)": 1},
             num_allocs=Expression({("z",): 2, (): 3}),
-            depth=Expression({("z",): 4, (): 4}),
+            circuit_depth=Expression({("z",): 4, (): 4}),
         )
 
         assert partially_substituted == expected
@@ -286,11 +269,11 @@ class TestSymbolicSpecsResources:
         fully_substituted = s.subs({"x": 2, "z": 3})
 
         expected = SpecsResources(
-            gate_types={"Hadamard": 1, "PauliX": 3, "CNOT": 6, "PauliZ": 6},
+            counts={"Hadamard": 1, "PauliX": 3, "CNOT": 6, "PauliZ": 6},
             gate_sizes={1: 10, 2: 6},
             measurements={"expval(PauliZ)": 1},
             num_allocs=9,
-            depth=16,
+            circuit_depth=16,
         )
 
         assert fully_substituted == expected
@@ -305,66 +288,63 @@ class TestSymbolicSpecsResources:
         with pytest.raises(ValueError):
             example_resource.subs({"not a var": 3})
 
-    def test_call(self, example_resource):
-        assert example_resource(x=2, z=3) == example_resource.subs(x=2, z=3)
-
     def test_eq(self):
         s1 = SpecsResources(
-            gate_types={"Hadamard": Expression({("x,"): 1})},
+            counts={"Hadamard": Expression({("x,"): 1})},
             gate_sizes={1: Expression({("x,"): 1})},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
         s2 = SpecsResources(
-            gate_types={"Hadamard": Expression({("x,"): 1})},
+            counts={"Hadamard": Expression({("x,"): 1})},
             gate_sizes={1: Expression({("x,"): 1})},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
         s3 = SpecsResources(
-            gate_types={"Hadamard": Expression({("z,"): 1})},
+            counts={"Hadamard": Expression({("z,"): 1})},
             gate_sizes={1: Expression({("z,"): 1})},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
         assert s1 == s2
         assert s1 != s3
         assert s2 != s3
         assert s1 != SpecsResources(
-            gate_types={"Hadamard": 1},
+            counts={"Hadamard": 1},
             gate_sizes={1: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=1,
-            depth=1,
+            circuit_depth=1,
         )
 
     def test_eq_no_var(self):
         s1 = SpecsResources(
-            gate_types={"Hadamard": Expression(1)},
+            counts={"Hadamard": Expression(1)},
             gate_sizes={1: Expression(1)},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
         s2 = SpecsResources(
-            gate_types={"Hadamard": Expression(1)},
+            counts={"Hadamard": Expression(1)},
             gate_sizes={1: Expression(1)},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
         s3 = SpecsResources(
-            gate_types={"Hadamard": Expression(2)},  # different value here
-            gate_sizes={1: Expression(1)},
+            counts={"Hadamard": Expression(2)},  # different value here
+            gate_sizes={1: Expression(2)},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
         assert s1 == s2
@@ -372,11 +352,11 @@ class TestSymbolicSpecsResources:
         assert s2 != s3
 
         assert s1 == SpecsResources(
-            gate_types={"Hadamard": 1},
+            counts={"Hadamard": 1},
             gate_sizes={1: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=1,
-            depth=1,
+            circuit_depth=1,
         )
 
     def test_eq_invalid(self, example_resource):
@@ -410,11 +390,11 @@ class TestCircuitSpecs:
             shots=Shots(1000),
             level=2,
             resources=SpecsResources(
-                gate_types={"Hadamard": 2, "CNOT": 1},
+                counts={"Hadamard": 2, "CNOT": 1},
                 gate_sizes={1: 2, 2: 1},
                 measurements={"expval(PauliZ)": 1},
                 num_allocs=2,
-                depth=2,
+                circuit_depth=2,
             ),
         )
 
@@ -428,26 +408,26 @@ class TestCircuitSpecs:
             level={1: "l1", 2: "l2"},
             resources={
                 1: SpecsResources(
-                    gate_types={"Hadamard": 4, "CNOT": 2},
+                    counts={"Hadamard": 4, "CNOT": 2},
                     gate_sizes={1: 4, 2: 2},
                     measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     num_allocs=2,
-                    depth=2,
+                    circuit_depth=2,
                 ),
                 2: [
                     SpecsResources(
-                        gate_types={"CNOT": 1},
+                        counts={"CNOT": 1},
                         gate_sizes={2: 1},
                         measurements={"expval(PauliX)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
                     SpecsResources(
-                        gate_types={"CNOT": 1},
+                        counts={"CNOT": 1},
                         gate_sizes={2: 1},
                         measurements={"expval(PauliZ)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
                 ],
             },
@@ -463,29 +443,29 @@ class TestCircuitSpecs:
             level={1: "l1", 2: "l2"},
             resources={
                 1: SpecsResources(
-                    gate_types={
+                    counts={
                         "Hadamard": Expression({("x",): 2, (): 2}),
                         "CNOT": Expression({("x",): 2}),
                     },
                     gate_sizes={1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
                     measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     num_allocs=2,
-                    depth=2,
+                    circuit_depth=2,
                 ),
                 2: [
                     SpecsResources(
-                        gate_types={"CNOT": Expression({("x",): 1})},
+                        counts={"CNOT": Expression({("x",): 1})},
                         gate_sizes={2: Expression({("x",): 1})},
                         measurements={"expval(PauliX)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
                     SpecsResources(
-                        gate_types={"CNOT": Expression({("x",): 1})},
+                        counts={"CNOT": Expression({("x",): 1})},
                         gate_sizes={2: Expression({("x",): 1})},
                         measurements={"expval(PauliZ)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
                 ],
             },
@@ -562,12 +542,13 @@ class TestCircuitSpecs:
             "shots": Shots(1000),
             "level": 2,
             "resources": {
-                "gate_types": {"Hadamard": 2, "CNOT": 1},
+                "gate_counts": {"Hadamard": 2, "CNOT": 1},
                 "gate_sizes": {1: 2, 2: 1},
                 "measurements": {"expval(PauliZ)": 1},
                 "num_allocs": 2,
-                "depth": 2,
+                "circuit_depth": 2,
                 "num_gates": 3,
+                "vars": frozenset(),
             },
         }
 
@@ -582,29 +563,32 @@ class TestCircuitSpecs:
             "level": {1: "l1", 2: "l2"},
             "resources": {
                 1: {
-                    "gate_types": {"Hadamard": 4, "CNOT": 2},
+                    "gate_counts": {"Hadamard": 4, "CNOT": 2},
                     "gate_sizes": {1: 4, 2: 2},
                     "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
-                    "depth": 2,
+                    "circuit_depth": 2,
                     "num_gates": 6,
+                    "vars": frozenset(),
                 },
                 2: [
                     {
-                        "gate_types": {"CNOT": 1},
+                        "gate_counts": {"CNOT": 1},
                         "gate_sizes": {2: 1},
                         "measurements": {"expval(PauliX)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
+                        "circuit_depth": 1,
                         "num_gates": 1,
+                        "vars": frozenset(),
                     },
                     {
-                        "gate_types": {"CNOT": 1},
+                        "gate_counts": {"CNOT": 1},
                         "gate_sizes": {2: 1},
                         "measurements": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
+                        "circuit_depth": 1,
                         "num_gates": 1,
+                        "vars": frozenset(),
                     },
                 ],
             },
@@ -621,35 +605,35 @@ class TestCircuitSpecs:
             "level": {1: "l1", 2: "l2"},
             "resources": {
                 1: {
-                    "gate_types": {
+                    "gate_counts": {
                         "Hadamard": Expression({("x",): 2, (): 2}),
                         "CNOT": Expression({("x",): 2}),
                     },
                     "gate_sizes": {1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
                     "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
-                    "depth": 2,
+                    "circuit_depth": 2,
                     "num_gates": Expression({("x",): 4, (): 2}),
-                    "vars": ["x"],
+                    "vars": frozenset({"x"}),
                 },
                 2: [
                     {
-                        "gate_types": {"CNOT": Expression({("x",): 1})},
+                        "gate_counts": {"CNOT": Expression({("x",): 1})},
                         "gate_sizes": {2: Expression({("x",): 1})},
                         "measurements": {"expval(PauliX)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
+                        "circuit_depth": 1,
                         "num_gates": Expression({("x",): 1}),
-                        "vars": ["x"],
+                        "vars": frozenset({"x"}),
                     },
                     {
-                        "gate_types": {"CNOT": Expression({("x",): 1})},
+                        "gate_counts": {"CNOT": Expression({("x",): 1})},
                         "gate_sizes": {2: Expression({("x",): 1})},
                         "measurements": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
+                        "circuit_depth": 1,
                         "num_gates": Expression({("x",): 1}),
-                        "vars": ["x"],
+                        "vars": frozenset({"x"}),
                     },
                 ],
             },
@@ -758,24 +742,24 @@ class TestIPythonDisplays:
     def example_specs_resource(self) -> SpecsResources:
         return SpecsResources(
             # Pick a number that forces scientific notation
-            gate_types={"Hadamard": 1, "CNOT": 100_001},
+            counts={"Hadamard": 1, "CNOT": 100_001},
             gate_sizes={1: 1, 2: 100_001},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
-            depth=2,
+            circuit_depth=2,
         )
 
     @pytest.fixture
     def example_symbolic_specs_resource(self) -> SpecsResources:
         return SpecsResources(
-            gate_types={
+            counts={
                 "Hadamard": Expression({("a", "a", "b"): 1, ("a", "a"): 1, ("a",): 1}),
                 "CNOT": 1,
             },
             gate_sizes={1: Expression({("a", "a", "b"): 1, ("a", "a"): 1, ("a",): 1}), 2: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
-            depth=2,
+            circuit_depth=2,
         )
 
     def test_specs_resources_ipython_display(self, example_specs_resource):
@@ -1048,7 +1032,7 @@ class TestIPythonDisplays:
     def test_empty_resources_ipython_display(self):
         """Test the IPython display of an empty SpecsResources instance."""
         s = SpecsResources(
-            gate_types={},
+            counts={},
             gate_sizes={},
             measurements={},
             num_allocs=1,
