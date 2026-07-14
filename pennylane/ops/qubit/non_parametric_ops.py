@@ -1205,8 +1205,10 @@ class S(Operator2):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,  # pylint: disable=unsubscriptable-object
-                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,  # pylint: disable=unsubscriptable-object
+                    qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5
+                    + 0.5j,  # pylint: disable=unsubscriptable-object
+                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
+                    - 0.5j,  # pylint: disable=unsubscriptable-object
                 }
             )
         return self._pauli_rep
@@ -1222,7 +1224,9 @@ class S(Operator2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(
+        wires: WiresLike = None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1242,7 +1246,9 @@ class S(Operator2):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def compute_eigvals(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_eigvals(
+        wires: WiresLike = None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
