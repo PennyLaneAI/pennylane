@@ -20,12 +20,13 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal, override, Sequence
+from typing import Literal, override
 
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qp
+from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,
@@ -42,16 +43,16 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import TensorLike, Wire
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
+    Controlled2,
     ControlledOp,
     _is_empty_or_all_true,
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
 )
-from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
@@ -68,8 +69,6 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
-from pennylane.ops.op_math.controlled2 import Controlled2
-from pennylane.core import Operator
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
@@ -184,7 +183,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type="borrowed",
     ):
-
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
@@ -204,7 +202,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: str | None = "borrowed",
     ):
-
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
@@ -1201,17 +1198,6 @@ class CNOT(Controlled2):
 
     name = "CNOT"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
     def __init__(self, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
@@ -1219,9 +1205,8 @@ class CNOT(Controlled2):
         super().__init__(base, wires[:1])
 
     @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
-        self,
-        wires: WiresLike
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ, unused-argument
+        self, wires: WiresLike
     ):
         super().__abstract_init__(
             base=qp.X(Wire[1]),
@@ -1240,7 +1225,8 @@ class CNOT(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, unused-argument
+    def compute_matrix(wires: WiresLike = None):  
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1396,7 +1382,9 @@ class Toffoli(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
+    def compute_matrix(
+        wires: WiresLike = None,
+    ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1531,7 +1519,7 @@ def _toffoli_elbow(wires: WiresLike, **__):
 add_decomps(Toffoli, _toffoli_elbow)
 
 
-class MultiControlledX(ControlledOp):
+class MultiControlledX(Controlled2):
     r"""Apply a :class:`~.PauliX` gate controlled on an arbitrary computational basis state.
 
     **Details:**
@@ -1541,11 +1529,11 @@ class MultiControlledX(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
+        wires (WiresLike): control wire(s) followed by a single target wire (the last entry of ``wires``) where
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as :code:`int(bool(x))`.
-        work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
+        work_wires (WiresLike): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
         work_wire_type (str): whether the work wires are ``"zeroed"`` or ``"borrowed"``. ``"zeroed"`` indicates that
             the work wires are in the state :math:`|0\rangle`, while ``"borrowed"`` indicates that the
@@ -1579,49 +1567,13 @@ class MultiControlledX(ControlledOp):
 
     """
 
-    is_self_inverse = True
-    """bool: Whether or not the operator is self-inverse."""
-
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
-    }
-
     name = "MultiControlledX"
-
-    def _flatten(self):
-        return (), (self.wires, tuple(self.control_values), self.work_wires, self.work_wire_type)
-
-    @classmethod
-    def _unflatten(cls, _, metadata):
-        return cls(
-            wires=metadata[0],
-            control_values=metadata[1],
-            work_wires=metadata[2],
-            work_wire_type=metadata[3],
-        )
-
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
-
-    @classmethod
-    def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed"
-    ):
-        return cls._primitive.bind(
-            *wires,
-            n_wires=len(wires),
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
 
     @staticmethod
     def _validate_control_values(control_values):
@@ -1635,6 +1587,14 @@ class MultiControlledX(ControlledOp):
                 or (hasattr(control_values, "dtype") and control_values.dtype.kind in ("i", "b"))
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
+
+    dynamic_argnames = ("control_values",)
+
+    wire_argnames = ("work_wires", "wires")
+
+    static_argnames = ("work_wire_type",)
+
+    arg_specs = {"control_values": Bool[-1], "work_wires": Wire[-1]}
 
     def __init__(
         self,
@@ -1660,34 +1620,29 @@ class MultiControlledX(ControlledOp):
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.X, wires=wires)
         super().__init__(
-            base,
+            base=qp.X(wires),
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
 
-    def __repr__(self):
-        return (
-            f"MultiControlledX(wires={self.wires.tolist()}, control_values={self.control_values})"
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        wires,
+        control_values: None | bool | list[bool] | int | list[int] = None,
+        work_wires: WiresLike = (),
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
+        super().__abstract_init__(
+            base=qp.X(Wire[1]),
+            control_wires=Wire[wires.num_wires - 1],
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
-
-    @property
-    def wires(self):
-        return self.control_wires + self.target_wires
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
 
     def adjoint(self):
         return MultiControlledX(
@@ -1697,9 +1652,14 @@ class MultiControlledX(ControlledOp):
             work_wire_type=self.work_wire_type,
         )
 
-    # pylint: disable=unused-argument, arguments-differ
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(control_wires: WiresLike, control_values=None, **kwargs):
+    def compute_matrix(
+        wires: WiresLike,
+        control_values: None | bool | list[bool] | int | list[int] = None,
+        work_wires: WiresLike = (),
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1729,7 +1689,7 @@ class MultiControlledX(ControlledOp):
          [0. 0. 0. 1.]]
 
         """
-
+        control_wires = wires[:-1]
         control_values = _check_and_convert_control_values(control_values, control_wires)
         padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
@@ -1740,110 +1700,55 @@ class MultiControlledX(ControlledOp):
         wire_order = wire_order or self.wires
         return qp.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
-    # pylint: disable=unused-argument, arguments-differ
-    @staticmethod
-    def compute_decomposition(
-        wires: WiresLike = None,
-        work_wires: WiresLike = None,
-        control_values=None,
-        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-        **kwargs,
-    ):
-        r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.MultiControlledX.decomposition`.
-
-        Args:
-            wires (Iterable[Any] or Wires): wires that the operation acts on
-            work_wires (Wires): optional work wires used to decompose
-                the operation into a series of Toffoli gates.
-            control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
-                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-            work_wire_type (str): whether the work wires are zeroed or borrowed.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        .. code-block:: python
-
-            decomp = qp.MultiControlledX.compute_decomposition(wires=[0,1,2,3], control_values=[1, 1, 1], work_wires=qp.wires.Wires("aux"))
-
-        >>> print(decomp)
-        [Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux']), Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux'])]
-
-        """
-        wires = Wires(() if wires is None else wires)
-
-        if len(wires) < 2:
-            raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
-
-        target_wire = wires[-1]
-        control_wires = wires[:-1]
-
-        if control_values is None:
-            control_values = [True] * len(control_wires)
-
-        work_wires = work_wires or []
-
-        flips1 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
-
-        if work_wire_type not in {"zeroed", "borrowed"}:
-            raise ValueError(
-                f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
-            )
-
-        decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
-
-        flips2 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
-
-        return flips1 + decomp + flips2
-
-    def decomposition(self):
-        return self.compute_decomposition(
-            self.wires, self.work_wires, self.control_values, self.work_wire_type
-        )
-
-
-def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
-    if num_control_wires == 1:
-        return {qp.CNOT: 1, qp.X: num_zero_control_values}
-    return {qp.Toffoli: 1, qp.X: num_zero_control_values * 2}
+def _mcx_to_cnot_or_toffoli_resource(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
+    # Assume worst case when control_values are all zero
+    # which requires additional PauliX gates to flip the control state
+    if len(wires) - 1 == 1:
+        return {qp.CNOT: 1, qp.X: 1}
+    return {qp.Toffoli: 1, qp.X: 2}
 
 
 @register_condition(lambda num_control_wires, **_: num_control_wires < 3)
-@register_resources(_mcx_to_cnot_or_toffoli_resource)
-def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
-    if len(wires) == 2 and not control_values[0]:
+@register_resources(_mcx_to_cnot_or_toffoli_resource, exact=False)
+def _mcx_to_cnot_or_toffoli(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
+    # Case 1: Decompose to single CNOT
+    if len(wires) == 2:
         qp.CNOT(wires=wires)
-        qp.X(wires[1])
-    elif len(wires) == 2:
-        qp.CNOT(wires=wires)
+        qp.cond(control_values[0], qp.X)(wires[1])
+    # Case 2: Decompose to Toffoli
     elif len(wires) == 3:
-        zero_control_wires = [
-            w for w, val in zip(control_wires, control_values, strict=True) if not val
-        ]
-        for w in zero_control_wires:
-            qp.PauliX(w)
+        control_wires = wires[:-1]
+
+        @qp.for_loop(0, len(control_values))
+        def _x_flips(i):
+            qp.cond(math.logical_not(control_values[i]), qp.X)(control_wires[i])
+
+        _x_flips()
         qp.Toffoli(wires=wires)
-        for w in zero_control_wires:
-            qp.PauliX(w)
+        _x_flips()
 
 
 def _2cx_elbow_explicit_resources(**__):
     return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(qp.Elbow): 1}
 
 
-def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
-    return num_work_wires >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
+def _2cx_elbow_explicit_condition(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
+    num_control_wires = len(wires) - 1
+    return len(work_wires) >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
 
 
 @register_condition(_2cx_elbow_explicit_condition)
 @register_resources(_2cx_elbow_explicit_resources)
-def _2cx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
+def _2cx_elbow_explicit(
+    wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
     elbow_wires = [wires[0], wires[1], work_wires[0]]
     qp.Elbow(elbow_wires, control_values)
     qp.CNOT([work_wires[0], wires[2]])

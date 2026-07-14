@@ -412,7 +412,6 @@ class IntegerComparator(Operation):
     np.complex128(1+0j)
     """
 
-    is_self_inverse: bool = True
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
