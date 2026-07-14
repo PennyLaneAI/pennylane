@@ -13,7 +13,6 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
-from collections.abc import Sequence
 from textwrap import dedent
 
 from typing_extensions import override
@@ -170,26 +169,15 @@ class Adjoint2(SymbolicOp2):
 
 
 @list_decomps.register
-def _list_adjoint_decomps(
-    op: Adjoint2,
-    fixed_decomps: dict[str, DecompositionRule] | None = None,
-    alt_decomps: dict[str, Sequence[DecompositionRule]] | None = None,
-) -> DecompCollection:
-    """Populates the decomposition rules for an adjoint operator."""
-
+def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
     abs_op = abstractify(op)
-
     if isinstance(abs_op.base, Adjoint2):
         return DecompCollection([cancel_adjoint])
-
-    # Custom decomposition rules registered specifically for this adjoint operator.
-    custom_rules = list_decomps.dispatch(object)(abs_op, fixed_decomps, alt_decomps)
-
-    # Applying adjoint to the decomposition rules of the base.
+    custom_rules = list_decomps.dispatch(object)(abs_op)
     wrapped_rules = DecompCollection(
         [
             _make_adjoint_decomp(rule)
-            for rule in list_decomps(abs_op.base, fixed_decomps, alt_decomps)
+            for rule in list_decomps(abs_op.base)
             # It only makes sense to wrap a decomposition rule with adjoint if the decomposition
             # does not dynamically allocate wires and does not contain mid-circuit measurements.
             if rule.get_work_wire_spec(**abs_op.base.arguments).total == 0
