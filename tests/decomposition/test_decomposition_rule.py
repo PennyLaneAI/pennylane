@@ -365,7 +365,7 @@ class TestDecompositionRule:
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_keys"):
+        with pytest.raises(TypeError, match="Missing keyword arguments for resource_rep"):
             custom_decomp.compute_resources()
 
         def custom_decomp_2(*_, **__):
