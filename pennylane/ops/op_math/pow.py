@@ -22,8 +22,7 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core import Operator2
-from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
