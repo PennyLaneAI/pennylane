@@ -150,12 +150,19 @@ def test_fabricate_qjit_mlir_lowering():
     pytest.importorskip("catalyst")
     from catalyst import qjit
 
-    @qjit(pipelines=_FABRICATE_PIPELINE, target="mlir", capture=True)
-    @qp.qnode(qp.device("null.qubit", wires=2))
-    def circuit():
-        magic = fabricate("magic")
-        qp.pauli_measure("ZZ", wires=[0, magic])
-        return qp.expval(qp.Z(0))
+    try:
+
+        @qjit(pipelines=_FABRICATE_PIPELINE, target="mlir", capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            magic = fabricate("magic")
+            qp.pauli_measure("ZZ", wires=[0, magic])
+            return qp.expval(qp.Z(0))
+
+    except NotImplementedError as exc:
+        if "fabricate" in str(exc):
+            pytest.skip(f"Installed Catalyst lacks fabricate MLIR lowering: {exc}")
+        raise
 
     mlir = circuit.mlir_opt
     assert "pbc.fabricate" in mlir and "magic" in mlir

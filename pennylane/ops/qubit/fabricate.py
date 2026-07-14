@@ -136,19 +136,15 @@ def fabricate(init_state: str):
     ``fabricate`` requires program capture. With Catalyst, enable capture via
     ``@qjit(capture=True)`` and inspect the lowered MLIR:
 
-    .. code-block:: python
-
-        import pennylane as qp
-        from catalyst import qjit
-
-        @qjit(capture=True, target="mlir")
-        @qp.qnode(qp.device("null.qubit", wires=2))
-        def circuit():
-            magic = qp.fabricate("magic")
-            qp.pauli_measure("ZZ", wires=[0, magic])
-            return qp.expval(qp.Z(0))
-
-        print(circuit.mlir)
+    >>> import pennylane as qp  # doctest: +SKIP
+    >>> from catalyst import qjit  # doctest: +SKIP
+    >>> @qjit(capture=True, target="mlir")  # doctest: +SKIP
+    ... @qp.qnode(qp.device("null.qubit", wires=2))  # doctest: +SKIP
+    ... def circuit():  # doctest: +SKIP
+    ...     magic = qp.fabricate("magic")  # doctest: +SKIP
+    ...     qp.pauli_measure("ZZ", wires=[0, magic])  # doctest: +SKIP
+    ...     return qp.expval(qp.Z(0))  # doctest: +SKIP
+    >>> print(circuit.mlir)  # doctest: +SKIP
     """
     if init_state not in _VALID_INIT_STATES:
         raise ValueError(
