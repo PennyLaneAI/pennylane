@@ -572,13 +572,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
 
 @list_decomps.register
-def _list_controlled_decomps(
-    op: ControlledOp2,
-    fixed_decomps: dict[str, DecompositionRule] | None = None,
-    alt_decomps: dict[str, Sequence[DecompositionRule]] | None = None,
-) -> DecompCollection:
-    """Populates the decomposition rules for a controlled operator."""
-
+def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     op = abstractify(op)
 
     # Special case for flipping the order of control and adjoint. We prefer to have adjoint
@@ -588,7 +582,7 @@ def _list_controlled_decomps(
         return DecompCollection([flip_control_adjoint])
 
     # Get custom rules registered for this controlled operator.
-    custom_rules = list_decomps.dispatch(object)(op, fixed_decomps, alt_decomps)
+    custom_rules = list_decomps.dispatch(object)(op)
 
     # Get general fallback rules.
     general_rules = DecompCollection([])
@@ -601,7 +595,7 @@ def _list_controlled_decomps(
     wrapped_rules = DecompCollection(
         [
             _make_controlled_decomp(rule)
-            for rule in list_decomps(op.base, fixed_decomps, alt_decomps)
+            for rule in list_decomps(op.base)
             if not _decomp_contains_mcm(rule, op.base.arguments)
         ]
     )
