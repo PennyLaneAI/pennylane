@@ -21,7 +21,7 @@ import re
 import tempfile
 import time
 import warnings
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +29,7 @@ import pennylane as qp
 
 from ._utils import make_level_name_unique
 from .expression import Expression
-from .resource import SpecsResources, num_to_letters
+from .resource import PBCSpecsResources, SpecsResources, num_to_letters
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
@@ -39,6 +39,17 @@ def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, s
     if var not in display_names:
         display_names[var] = num_to_letters(len(display_names))
     return display_names[var]
+
+
+def _update_resource_dict(
+    result_dict: dict[str, Any], call_count: int | Expression, fn_resources: dict[str, Any]
+) -> None:
+    for label, value in fn_resources.items():
+        result_dict[label] += call_count * value
+
+
+# Internal namedtuple for storing PBC depth information within a single object
+PBCDepth = namedtuple("PBCDepth", ["any_commuting_depth", "qubit_disjoint_depth"])
 
 
 def _mlir_resources_to_specs_resources(
@@ -70,6 +81,10 @@ def _mlir_resources_to_specs_resources(
             names in the output. (modified in-place by this function)
     """
 
+    # pylint: disable=too-many-branches
+    # This method would not benefit from being broken up further, the parsing logic just requires
+    # several branches
+
     if focus in fn_resources:
         return
 
@@ -85,6 +100,13 @@ def _mlir_resources_to_specs_resources(
     gate_counts = defaultdict(int)
     gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
+
+    pbc_depth = None
+    if depths := resources.get("depth"):  # TODO: This field is being renamed in Catalyst soon
+        pbc_depth = PBCDepth(
+            any_commuting_depth=depths["any_commuting_depth"],
+            qubit_disjoint_depth=depths["qubit_disjoint_depth"],
+        )
 
     if resources.get("auto_qubit_management", False):
         warnings.warn(
@@ -126,22 +148,40 @@ def _mlir_resources_to_specs_resources(
             continue
 
         num_allocs += call_count * called_fn_resources.num_allocs
-        for gate, gate_count in called_fn_resources.gate_counts.items():
-            gate_counts[gate] += call_count * gate_count
-        for size, size_count in called_fn_resources.gate_sizes.items():
-            gate_sizes[size] += call_count * size_count
-        for meas, meas_count in called_fn_resources.measurements.items():
-            measurements[meas] += call_count * meas_count
+        _update_resource_dict(gate_counts, call_count, called_fn_resources.gate_counts)
+        _update_resource_dict(gate_sizes, call_count, called_fn_resources.gate_sizes)
+        _update_resource_dict(measurements, call_count, called_fn_resources.measurements)
+        if isinstance(called_fn_resources, PBCSpecsResources):
+            if pbc_depth is None:
+                pbc_depth = PBCDepth(
+                    any_commuting_depth=call_count * called_fn_resources.any_commuting_depth,
+                    qubit_disjoint_depth=call_count * called_fn_resources.qubit_disjoint_depth,
+                )
+            else:
+                pbc_depth = PBCDepth(
+                    any_commuting_depth=pbc_depth.any_commuting_depth
+                    + call_count * called_fn_resources.any_commuting_depth,
+                    qubit_disjoint_depth=pbc_depth.qubit_disjoint_depth
+                    + call_count * called_fn_resources.qubit_disjoint_depth,
+                )
 
     # Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
-    fn_resources[focus] = SpecsResources(
-        counts={k: gate_counts[k] for k in sorted(gate_counts.keys())},
-        gate_sizes={k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
-        measurements={k: measurements[k] for k in sorted(measurements.keys())},
-        num_allocs=num_allocs,
-        circuit_depth=None,  # Can't get depth from MLIR pass results
-    )
+
+    kwargs = {
+        "counts": {k: gate_counts[k] for k in sorted(gate_counts.keys())},
+        "gate_sizes": {k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
+        "measurements": {k: measurements[k] for k in sorted(measurements.keys())},
+        "num_allocs": num_allocs,
+        "circuit_depth": None,  # Can't get depth from MLIR pass results
+    }
+
+    if pbc_depth is not None:
+        kwargs["any_commuting_depth"] = pbc_depth.any_commuting_depth
+        kwargs["qubit_disjoint_depth"] = pbc_depth.qubit_disjoint_depth
+        fn_resources[focus] = PBCSpecsResources(**kwargs)
+    else:
+        fn_resources[focus] = SpecsResources(**kwargs)
 
 
 def _get_resources_from_analysis_pass(

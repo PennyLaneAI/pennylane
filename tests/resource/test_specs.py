@@ -493,7 +493,7 @@ Batched tape a:
     - PauliX: 2
     Measurements:
     - expval(Prod(num_wires=2, num_terms=2)): 1
-    Depth: 5
+    Circuit Depth: 5
 
 Batched tape b:
     Wire allocations: 3
@@ -505,7 +505,7 @@ Batched tape b:
     - PauliX: 2
     Measurements:
     - expval(Prod(num_wires=2, num_terms=2)): 1
-    Depth: 5
+    Circuit Depth: 5
 
 Batched tape c:
     Wire allocations: 3
@@ -517,7 +517,7 @@ Batched tape c:
     - PauliX: 2
     Measurements:
     - expval(Prod(num_wires=2, num_terms=2)): 1
-    Depth: 5"""
+    Circuit Depth: 5"""
 
     @pytest.mark.parametrize(
         "device,num_wires",

@@ -27,6 +27,7 @@ from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
+    PBCSpecsResources,
     SpecsResources,
     _count_to_str,
     num_to_letters,
@@ -141,7 +142,7 @@ class TestSpecsResources:
         expected += "- CNOT: 1\n"
         expected += "Measurements:\n"
         expected += "- expval(PauliZ): 1\n"
-        expected += "Depth: 2"
+        expected += "Circuit Depth: 2"
 
         expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
 
@@ -159,7 +160,7 @@ class TestSpecsResources:
         expected += "- No gates.\n"
         expected += "Measurements:\n"
         expected += "- No measurements.\n"
-        expected += "Depth: Not computed"
+        expected += "Circuit Depth: Not computed"
 
         expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
 
@@ -183,6 +184,38 @@ class TestSpecsResources:
         }
 
         assert s.to_dict() == expected
+
+
+class TestPBCSpecsResources:
+    @pytest.fixture
+    def example_pbc_specs_resource(self):
+        """Generate an example SpecsResources instance."""
+        return PBCSpecsResources(
+            counts={"Hadamard": 2, "CNOT": 1},
+            gate_sizes={1: 2, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=2,
+            qubit_disjoint_depth=3,
+        )
+
+    def test_str(self, example_pbc_specs_resource):
+        """Test the string representation of a SpecsResources instance."""
+
+        s = example_pbc_specs_resource
+
+        expected = textwrap.dedent("""\
+            Wire allocations: 2
+            Total gates: 3
+            Gate counts:
+            - Hadamard: 2
+            - CNOT: 1
+            Measurements:
+            - expval(PauliZ): 1
+            Any Commuting Depth: 2
+            Qubit Disjoint Depth: 3""")
+
+        assert str(s) == expected
 
 
 class TestSymbolicSpecsResources:
@@ -375,7 +408,7 @@ class TestSymbolicSpecsResources:
         expected += "- PauliZ: 2*z\n"
         expected += "Measurements:\n"
         expected += "- expval(PauliZ): 1\n"
-        expected += "Depth: x*z + 2*z + x + 2"
+        expected += "Circuit Depth: x*z + 2*z + x + 2"
 
         assert str(s) == expected
 
@@ -762,6 +795,17 @@ class TestIPythonDisplays:
             circuit_depth=2,
         )
 
+    @pytest.fixture
+    def example_pbc_specs_resource(self) -> PBCSpecsResources:
+        return PBCSpecsResources(
+            counts={"Hadamard": 1, "CNOT": 100_001},
+            gate_sizes={1: 1, 2: 100_001},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=2,
+            qubit_disjoint_depth=3,
+        )
+
     def test_specs_resources_ipython_display(self, example_specs_resource):
         """Test the IPython display of a SpecsResources instance."""
         expected = textwrap.dedent("""\
@@ -795,6 +839,26 @@ class TestIPythonDisplays:
             | **Depth** | 2 |
         """)
         actual = example_symbolic_specs_resource._repr_markdown_()
+
+        assert actual.strip() == expected.strip()
+
+    def test_specs_resources_ipython_display(self, example_pbc_specs_resource):
+        """Test the IPython display of a SpecsResources instance."""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depths** | |
+            | Any Commuting Depth | 2 |
+            | Qubit Disjoint Depth | 3 |
+        """)
+        actual = example_pbc_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
 

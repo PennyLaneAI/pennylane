@@ -253,6 +253,8 @@ class Resources:
 
 @dataclass(frozen=True, slots=True)
 class SpecsResources(Resources):
+    # TODO: Docstrings
+
     gate_sizes: dict[int, int | Expression] = field(repr=False)
     measurements: dict[str, int | Expression] = field(metadata={"display_name": "Measurements"})
 
@@ -304,7 +306,7 @@ class SpecsResources(Resources):
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
-        Pretty string representation of the SpecsResources object.
+        Pretty string representation of this :class:`SpecsResources` object.
 
         Args:
             preindent (int): Number of spaces to prepend to each line.
@@ -335,9 +337,14 @@ class SpecsResources(Resources):
             for meas, count in self.measurements.items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        lines.append(
-            f"{prefix}Depth: {_count_to_str(self.depth) if self.depth is not None else 'Not computed'}"
-        )
+        if type(self) == SpecsResources:
+            # Do not include circuit depth in the output for derived classes
+            depth_str = (
+                _count_to_str(self.circuit_depth)
+                if self.circuit_depth is not None
+                else "Not computed"
+            )
+            lines.append(f"{prefix}Circuit Depth: {depth_str}")
 
         return "\n".join(lines)
 
@@ -368,12 +375,16 @@ class SpecsResources(Resources):
         else:
             for meas, count in self.measurements.items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
-        depth_str = (
-            _count_to_str(self.depth, markdown_safe=True)
-            if self.depth is not None
-            else "Not computed"
-        )
-        lines.append(f"| **Depth** | {depth_str} |")
+
+        if type(self) == SpecsResources:
+            # Do not include circuit depth in the output for derived classes
+            depth_str = (
+                _count_to_str(self.depth, markdown_safe=True)
+                if self.depth is not None
+                else "Not computed"
+            )
+            lines.append(f"| **Depth** | {depth_str} |")
+
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, Any]:
@@ -386,6 +397,68 @@ class SpecsResources(Resources):
         del d["counts"]
 
         return d
+
+
+@dataclass(frozen=True, slots=True)
+class PBCSpecsResources(SpecsResources):
+    """
+    Class for storing specifications of a qnode with additional PBC (Pauli-Based Computing) information.
+
+    .. seealso::
+
+        :class:`SpecsResources` for the base class and its fields.
+
+    Args:
+        any_commuting_depth (int | Expression | None): The any commuting depth of the circuit.
+        qubit_disjoint_depth (int | Expression | None): The qubit disjoint depth of the circuit.
+    """
+
+    any_commuting_depth: int | Expression = field(
+        default=None, metadata={"display_name": "Any Commuting Depth"}
+    )
+    qubit_disjoint_depth: int | Expression = field(
+        default=None, metadata={"display_name": "Qubit Disjoint Depth"}
+    )
+
+    def to_pretty_str(self, preindent: int = 0) -> str:
+        """
+        Pretty string representation of this :class:`PBCSpecsResources` object.
+
+        Args:
+            preindent (int): Number of spaces to prepend to each line.
+
+        Returns:
+            str: A pretty representation of this object.
+        """
+        s = super().to_pretty_str(preindent=preindent)
+
+        s += (
+            "\n"
+            f"{' ' * preindent}Any Commuting Depth: {_count_to_str(self.any_commuting_depth)}\n"
+            f"{' ' * preindent}Qubit Disjoint Depth: {_count_to_str(self.qubit_disjoint_depth)}"
+        )
+
+        return s
+
+    def _repr_markdown_(self) -> str:
+        """
+        Return a Markdown table representation of the :class:`PBCSpecsResources` for Jupyter notebook display.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
+
+        s = super()._repr_markdown_()
+
+        s += (
+            "\n"
+            "| **Depths** | |\n"
+            f"| Any Commuting Depth | {_count_to_str(self.any_commuting_depth, markdown_safe=True)} |\n"
+            f"| Qubit Disjoint Depth | {_count_to_str(self.qubit_disjoint_depth, markdown_safe=True)} |"
+        )
+
+        return s
 
 
 @dataclass(frozen=True)
