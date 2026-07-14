@@ -60,7 +60,7 @@ class MultiWireOp(Operation):
         return {"num_wires": len(self.wires)}
 
 
-class AnotherOp(Operation):  #
+class AnotherOp(Operation):
     """A custom operation."""
 
     resource_keys = set()
