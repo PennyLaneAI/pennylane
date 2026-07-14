@@ -125,7 +125,7 @@ class TestInitialization:
         op = s_prod(0.1, qp.PauliX(0))
 
         with pytest.raises(AttributeError):
-            op.data = (0.2,)
+            setattr(op, "data", (0.2,))
 
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):

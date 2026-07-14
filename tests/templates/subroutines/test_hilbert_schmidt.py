@@ -308,13 +308,14 @@ class TestHilbertSchmidt:
             qp.assert_equal(op1, op2)
 
     def test_data(self):
-        """Test that the data property gets and sets the correct values"""
+        """Test that the data property is read-only."""
         op = qp.HilbertSchmidt(
             [qp.RX(1, wires=0), qp.RX(2, wires=1)], [qp.RY(3, wires=2), qp.RZ(4, wires=3)]
         )
         assert op.data == (1, 2, 3, 4)
-        op.data = [4, 5, 6, 7]
-        assert op.data == (4, 5, 6, 7)
+
+        with pytest.raises(AttributeError):
+            setattr(op, "data", [4, 5, 6, 7])
 
     def test_copy(self):
         """Test that a HilbertSchmidt operator can be copied."""

@@ -104,7 +104,7 @@ class TestProperties:
         assert op.data == (x,)
 
         with pytest.raises(AttributeError):
-            op.data = (np.array(2.345),)
+            setattr(op, "data", (np.array(2.345),))
 
     def test_parameters(self):
         """Test parameter property is a list of the base's trainable parameters."""
@@ -233,7 +233,7 @@ class TestScalarSymbolicOp:
         assert op.data == (2.2, 1.1)
 
         with pytest.raises(AttributeError):
-            op.data = (3.3, 4.4)  # pylint:disable=attribute-defined-outside-init
+            setattr(op, "data", (3.3, 4.4))
 
     def test_hash(self):
         """Test that a hash correctly identifies ScalarSymbolicOps."""

@@ -240,7 +240,7 @@ class TestProperties:
         assert op.data == (x,)
 
         with pytest.raises(AttributeError):
-            op.data = (np.array(2.3456),)
+            setattr(op, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
