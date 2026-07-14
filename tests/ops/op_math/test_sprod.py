@@ -120,37 +120,12 @@ class TestInitialization:
         sprod_op = s_prod(9.87, qp.Rot(1.23, 4.0, 5.67, wires=1))
         assert sprod_op.data == (9.87, 1.23, 4.0, 5.67)
 
-    def test_data_setter(self):
-        """Test the setter method for data"""
-        scalar, angles = (9.87, (1.23, 4.0, 5.67))
-        old_data = (9.87, 1.23, 4.0, 5.67)
-
-        sprod_op = s_prod(scalar, qp.Rot(*angles, wires=1))
-        assert sprod_op.data == old_data
-
-        new_data = (1.23, 0.0, -1.0, -2.0)
-        sprod_op.data = new_data
-        assert sprod_op.data == new_data
-        assert sprod_op.scalar == new_data[0]
-        assert sprod_op.base.data == new_data[1:]
-
-    def test_data_setter_shallow(self):
-        """Test the setter method for data with a non-parametric base op."""
+    def test_data_is_read_only(self):
+        """Test that data cannot be reassigned on a symbolic operator."""
         op = s_prod(0.1, qp.PauliX(0))
-        op.data = (0.2,)
-        assert op.data == (0.2,) == (op.scalar,)
 
-    def test_data_setter_deep(self):
-        """Test the setter method for data with a deep base operator."""
-        op = s_prod(0.1, qp.sum(qp.PauliX(0), qp.prod(qp.PauliY(0), qp.RX(0.2, 1))))
-        assert op.data == (0.1, 0.2)
-
-        new_data = (0.3, 0.4)
-        op.data = new_data
-        assert op.data == new_data
-        assert op.scalar == 0.3
-        assert op.base[1].data == (0.4,)
-        assert op.base[1][1].data == (0.4,)
+        with pytest.raises(AttributeError):
+            op.data = (0.2,)
 
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):
