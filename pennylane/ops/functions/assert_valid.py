@@ -709,10 +709,6 @@ def assert_valid(
     """
 
     if isinstance(op, qp.core.Operator2):
-        # Temporary, as we will be integrating Operator2 with program capture soon
-        skip_capture = True
-        # Temporary, as we will be integrating Operator2 with graph decomps soon
-        skip_new_decomp = True
         # Temporary, as we will integrate with differentiation soon
         skip_differentiation = True
 
