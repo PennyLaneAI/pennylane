@@ -409,7 +409,6 @@ class PlxprInterpreter:
         return outvals
 
     def __call__(self, f: Callable) -> Callable:
-
         flat_f = FlatFn(f)
 
         @wraps(f)

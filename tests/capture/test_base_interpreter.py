@@ -33,6 +33,10 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     qnode_prim,
     while_loop_prim,
 )
+from tests.core.operator.operator2_utils import (  # pylint: disable=wrong-import-position
+    DynOp,
+    NonParametricOp,
+)
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -112,6 +116,34 @@ def test_primitive_registrations():
 
     qp.assert_equal(q.queue[0], qp.Z(0))  # turned into a Z
     qp.assert_equal(q.queue[1], qp.Y(5))
+
+
+def test_default_operator2_handling():
+    """Test that the PlxprInterpreter itself can handle operators and leaves them unchanged."""
+
+    @PlxprInterpreter()
+    def f(x):
+        qp.adjoint(DynOp(x, 0))
+        NonParametricOp(1)
+        return NonParametricOp(0)
+
+    with qp.queuing.AnnotatedQueue() as q:
+        out = f(0.5)
+
+    qp.assert_equal(out, NonParametricOp(0))
+    qp.assert_equal(q.queue[0], qp.adjoint(DynOp(0.5, 0)))
+    qp.assert_equal(q.queue[1], NonParametricOp(1))
+    qp.assert_equal(q.queue[2], NonParametricOp(0))
+
+    jaxpr = jax.make_jaxpr(f)(1.2)
+
+    assert jaxpr.eqns[0].primitive == operator_p
+    assert jaxpr.eqns[0].params["adjoint"] is True
+    assert jaxpr.eqns[0].params["op_cls"] is DynOp
+    assert jaxpr.eqns[1].primitive == operator_p
+    assert jaxpr.eqns[1].params["op_cls"] is NonParametricOp
+    assert jaxpr.eqns[2].primitive == operator_p
+    assert jaxpr.eqns[2].params["op_cls"] is NonParametricOp
 
 
 def test_default_operator_handling():
