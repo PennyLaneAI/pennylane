@@ -2388,32 +2388,6 @@ class TestLegacyCompatibilityViews:
         assert op.grad_recipe is None
         assert op.grad_method is None
 
-    def test_default_control_wires(self):
-        """Test that ``control_wires`` defaults to an empty Wires object."""
-        op = NoParamOp(wires=0)
-
-        assert op.control_wires == Wires([])
-
-    def test_single_qubit_rot_angles(self):
-        """Test the legacy single-qubit rotation angle method."""
-
-        class XLikeOp(Operator2):
-            def __init__(self, wires):
-                super().__init__(wires=wires)
-
-            @staticmethod
-            def compute_matrix(wires=None):  # pylint: disable=unused-argument
-                return np.array([[0, 1], [1, 0]])
-
-        op = XLikeOp(wires=0)
-
-        with pytest.warns(
-            qp.exceptions.PennyLaneDeprecationWarning, match="single_qubit_rot_angles method"
-        ):
-            angles = op.single_qubit_rot_angles()
-
-        assert angles == qp.single_qubit_zyz_angles(op)[:-1]
-
     def test_no_param_op_legacy_views(self):
         """Test legacy views for an operator with no dynamic parameters."""
         op = NoParamOp(wires=0)

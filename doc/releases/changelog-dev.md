@@ -806,8 +806,7 @@
   - Integration with the graph-based decomposition system.
   - Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
   - Integration with :func:`pennylane.adjoint` and :func:`pennylane.ctrl`.
-  - Additional legacy ``Operator`` compatibility is available via ``control_wires``,
-    ``grad_recipe``, ``grad_method``, and ``single_qubit_rot_angles``.
+  - Additional legacy ``Operator`` compatibility is available via ``grad_recipe`` and ``grad_method``.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
