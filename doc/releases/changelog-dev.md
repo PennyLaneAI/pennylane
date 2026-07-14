@@ -646,6 +646,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Operators cannot set their data anymore.
+  [(#9836)](https://github.com/PennyLaneAI/pennylane/pull/9836)
+
 * Support for compiling PennyLane workflows with CUDA Quantum through :func:`~.qjit` has been
   removed following the removal of the CUDA Quantum integration from Catalyst.
   [(Catalyst #2984)](https://github.com/PennyLaneAI/catalyst/pull/2984)

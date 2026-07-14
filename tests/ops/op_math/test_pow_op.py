@@ -247,7 +247,7 @@ class TestProperties:
 
         # update base data updates pow data
         x_new2 = np.array(3.456)
-        base.data = (x_new2,)
+        base._data = (x_new2,)
         assert op.data == (x_new2,)
 
     def test_has_matrix_true(self, power_method):

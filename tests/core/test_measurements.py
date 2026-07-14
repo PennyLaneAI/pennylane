@@ -305,7 +305,7 @@ class TestProperties:
         assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
 
         # changing the observable data should be reflected
-        obs.data = [np.diag([5, 6, 7, 8])]
+        obs._data = tuple([np.diag([5, 6, 7, 8])])
         assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
 
     def test_measurement_value_eigvals(self):

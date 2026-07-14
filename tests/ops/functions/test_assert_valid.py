@@ -330,7 +330,7 @@ def test_bad_bind_new_parameters():
 
         def __init__(self, x, wires):
             super().__init__(x, wires)
-            self.data = (1.0,)  # different x will not change data attribute
+            self._data = (1.0,)  # different x will not change data attribute
 
     with pytest.raises(
         AssertionError, match=r"bind_new_parameters must be able to update the operator"

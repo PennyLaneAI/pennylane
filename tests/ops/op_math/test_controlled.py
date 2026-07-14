@@ -282,7 +282,7 @@ class TestControlledProperties:
         assert base.data == (x_new,)
 
         x_new2 = (pnp.array(3.456),)
-        base.data = x_new2
+        base._data = x_new2
         assert op.data == (x_new2,)
         assert op.parameters == [x_new2]
 

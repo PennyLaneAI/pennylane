@@ -45,7 +45,7 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
     for i, g in enumerate(gates):
         g = copy.copy(g)
         new_params = (params[i], *g.data[1:])
-        g.data = new_params
+        g._data = tuple(new_params)
         new_operations.append(g)
 
     new_tape = tape.copy(operations=tape.operations + new_operations)

@@ -110,7 +110,7 @@ class TestProperties:
 
         # update base data updates symbolic data
         x_new2 = np.array(3.45)
-        base.data = (x_new2,)
+        base._data = (x_new2,)
         assert op.data == (x_new2,)
 
     def test_parameters(self):
@@ -246,7 +246,7 @@ class TestScalarSymbolicOp:
         assert op.base.data == (4.4,)
 
         # check setting through base
-        op.base.data = (5.5,)
+        op.base._data = (5.5,)
         assert op.data == (3.3, 5.5)
         assert op.scalar == 3.3
         assert op.base.data == (5.5,)
