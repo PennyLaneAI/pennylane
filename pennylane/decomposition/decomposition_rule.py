@@ -603,6 +603,9 @@ class DecompCollection:
     def __len__(self) -> int:
         return len(self._decomps)
 
+    def __eq__(self, other) -> bool:
+        return self._decomps == other._decomps if isinstance(other, DecompCollection) else False
+
     def copy(self) -> DecompCollection:
         """Return a copy of the DecompCollection."""
         return DecompCollection(self._decomps)
@@ -810,13 +813,17 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    current_decomps = {k: v.copy() for k, v in _decompositions_private.items()}
+    current_decomps = {k: v.copy() for k, v in _decompositions_var.get().items()}
     _new_decomps = defaultdict(DecompCollection, current_decomps)
     token = _decompositions_var.set(_new_decomps)
     try:
         yield
     finally:
         _decompositions_var.reset(token)
+
+
+def _fix_decomp(op, rule):
+    _decompositions_var.get()[to_name(op)] = DecompCollection([rule])
 
 
 class _DecompInfo:  # pylint: disable=too-few-public-methods

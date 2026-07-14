@@ -43,7 +43,10 @@ from .decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _decomp_contains_mcm,
+    _fix_decomp,
+    add_decomps,
     list_decomps,
+    local_decomps,
     null_decomp,
 )
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
@@ -288,7 +291,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._in_progress = []
         self._num_ctrl_wires_in_progress = defaultdict(list)
 
-        self._construct_graph(operations)
+        with local_decomps():
+
+            for op, decomps in self._alt_decomps.items():
+                add_decomps(op, *decomps)
+
+            for op, decomp in self._fixed_decomps.items():
+                _fix_decomp(op, decomp)
+
+            self._construct_graph(operations)
 
     def _construct_graph(self, operations: Iterable[Operator | AbstractOperatorLike]):
         """Constructs the decomposition graph."""
@@ -483,20 +494,18 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return False
         return _num_ctrl_wires(op) >= ctrl_wires_in_progress[-1]
 
-    def _get_decompositions(self, op: AbstractOperatorLike) -> list[DecompositionRule]:
+    def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        op_name = to_name(op)
-
-        if op_name in self._fixed_decomps:
-            return [self._fixed_decomps[op_name]]
-
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op)
+        decomps = list_decomps(op)
 
         # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
         # are integrated into list_decomps so that the graph would not be responsible
         # for populating these symbolic decomposition rules.
         if isinstance(op, Operator2):
+            return decomps
+
+        if to_name(op) in self._fixed_decomps:
             return decomps
 
         if (
