@@ -656,11 +656,13 @@
   original unchanged:
 
   ```python
-  # Before, will break now
-  op.data = (new_theta,)  # Expected failure: AttributeError: property 'data' of 'op' object has no setter
+  op = qp.RX(0.1, wires=0)
 
-  # After
-  op = qp.ops.functions.bind_new_parameters(op, (new_theta,))
+  # Before (no longer supported):
+  # op.data = (0.2,)  # AttributeError: property 'data' of 'RX' object has no setter
+
+  # After:
+  op_new = qp.ops.functions.bind_new_parameters(op, (0.2,))
   ```
 
   [(#9836)](https://github.com/PennyLaneAI/pennylane/pull/9836)
