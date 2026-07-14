@@ -447,7 +447,7 @@ decompose_mcx_many_workers_explicit = flip_zero_control_legacy(
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires >= 4)
+@register_condition(lambda wires, **_: (len(wires) - 1) >= 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
@@ -470,7 +470,7 @@ decompose_mcx_many_zeroed_workers = flip_zero_control_legacy(
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires >= 4)
+@register_condition(lambda wires, **_: (len(wires) - 1) >= 4)
 @register_resources(
     lambda num_control_wires=None, **_: _mcx_many_workers_resource(
         num_control_wires=num_control_wires,
@@ -492,7 +492,9 @@ decompose_mcx_many_borrowed_workers = flip_zero_control_legacy(
 )
 
 
-def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
+def _mcx_two_workers_condition(wires, work_wires, **__):
+    num_control_wires = len(wires) - 1
+    num_work_wires = len(work_wires)
     return num_control_wires > 2 and (
         num_work_wires >= 2 or (num_work_wires == 1 and num_control_wires < 6)
     )
@@ -581,7 +583,7 @@ decompose_mcx_two_workers_explicit = flip_zero_control_legacy(
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires >= 6)
+@register_condition(lambda wires, **_: (len(wires) - 1) >= 6)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
     work_wires={"zeroed": 2},
@@ -598,7 +600,7 @@ decompose_mcx_two_zeroed_workers = flip_zero_control_legacy(
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires >= 6)
+@register_condition(lambda wires, **_: (len(wires) - 1) >= 6)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
     work_wires={"borrowed": 2},
@@ -614,7 +616,9 @@ decompose_mcx_two_borrowed_workers = flip_zero_control_legacy(
 )
 
 
-def _mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
+def _mcx_one_worker_condition(wires, work_wires, **__):
+    num_control_wires = len(wires) - 1
+    num_work_wires = len(work_wires)
     return num_control_wires > 2 and num_work_wires == 1
 
 
@@ -682,7 +686,7 @@ decompose_mcx_one_worker_explicit = flip_zero_control_legacy(
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda wires, **_: (len(wires) - 1) > 2)
 @register_resources(
     lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "zeroed"),
     work_wires={"zeroed": 1},
@@ -699,7 +703,7 @@ decompose_mcx_one_zeroed_worker = flip_zero_control_legacy(
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda wires, **_: (len(wires) - 1) > 2)
 @register_resources(
     lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "borrowed"),
     work_wires={"borrowed": 1},
@@ -736,7 +740,7 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
     }
 
 
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda wires, **_: (len(wires) - 1) > 2)
 @register_resources(_decompose_mcx_no_worker_resource)
 def _decompose_mcx_with_no_worker(wires, **_):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""

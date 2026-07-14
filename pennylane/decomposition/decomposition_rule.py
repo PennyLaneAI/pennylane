@@ -361,7 +361,7 @@ def register_resources(
                   qp.CRot: 1
               }
 
-          @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+          @qp.register_condition(lambda wires, **_: (len(wires) - 1) > 1)
           @qp.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
           def _controlled_rot_decomp(*params, wires, **_):
               with allocate(1, state="zero", restored=True) as work_wires:
