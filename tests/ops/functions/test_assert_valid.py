@@ -501,7 +501,7 @@ class SingleRZ(Operator2):
     def generator(self):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
-
+@pytest.mark.jax
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
     the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.
@@ -609,7 +609,6 @@ class TestOperator2AssertValid:
         ):
             assert_valid(BadSparse(0.5, wires=[0, 1]), skip_pickle=True)
 
-    @pytest.mark.jax
     def test_check_eigendecomposition(self):
         """``_check_eigendecomposition`` fails if the eigenvalues and diagonalizing gates cannot
         reproduce the operator."""
