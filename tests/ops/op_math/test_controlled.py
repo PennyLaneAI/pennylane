@@ -267,7 +267,7 @@ class TestControlledProperties:
         }
 
     def test_data(self):
-        """Test that the base data can be get and set through Controlled class."""
+        """Test that Controlled data is read-only."""
 
         x = pnp.array(1.234)
 
@@ -276,15 +276,8 @@ class TestControlledProperties:
 
         assert op.data == (x,)
 
-        x_new = (pnp.array(2.3454),)
-        op.data = x_new
-        assert op.data == (x_new,)
-        assert base.data == (x_new,)
-
-        x_new2 = (pnp.array(3.456),)
-        base._data = x_new2
-        assert op.data == (x_new2,)
-        assert op.parameters == [x_new2]
+        with pytest.raises(AttributeError):
+            setattr(op, "data", (pnp.array(2.3454),))
 
     @pytest.mark.parametrize(
         "val, arr", ((4, [1, 0, 0]), (6, [1, 1, 0]), (1, [0, 0, 1]), (5, [1, 0, 1]))
@@ -474,7 +467,9 @@ class TestControlledMiscMethods:
         assert copied_op.control_values == op.control_values
         assert copied_op.data == (param1,)
 
-        copied_op.data = (6.54,)
+        copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+        assert copied_op.data == (6.54,)
         assert op.data == (param1,)
 
     def test_label(self):

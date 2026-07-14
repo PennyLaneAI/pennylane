@@ -462,7 +462,7 @@ def test_data_is_tuple():
 
         def __init__(self, x, wires):
             super().__init__(x, wires)
-            self.data = [x]
+            self._data = [x]
 
     with pytest.raises(AssertionError, match=r"op.data must be a tuple"):
         assert_valid(BadData(2.0, wires=0))

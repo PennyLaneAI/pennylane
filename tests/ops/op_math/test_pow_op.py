@@ -231,7 +231,7 @@ class TestProperties:
     """Test Pow properties."""
 
     def test_data(self, power_method):
-        """Test base data can be get and set through Pow class."""
+        """Test base data can be get and stay read-only."""
         x = np.array(1.234)
 
         base = qp.RX(x, wires="a")

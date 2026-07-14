@@ -437,7 +437,7 @@ class TestParameterShiftLogic:
             transformed_obs.parameters[0]`` the condition ``len(A.nonzero()[0])
             == 1 and A.ndim == 2 and A[0, 0] != 0`` is ``True``."""
             iden = qp.Identity(0)
-            iden._data = (np.array([[1, 0], [0, 0]]),)
+            iden._data = (np.array([[1, 0], [0, 0]]),)  # pylint: disable=protected-access
             return iden
 
         monkeypatch.setattr(
