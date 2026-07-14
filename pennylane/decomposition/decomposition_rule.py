@@ -22,19 +22,45 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import singledispatch
+from functools import partial, singledispatch
 from textwrap import dedent
 from typing import overload
+
+import numpy as np
 
 import pennylane as qp
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.pytrees import flatten
+from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
 from .utils import to_name
+
+
+def _resources_fallback(op_type, rule, *args, **kwargs):
+    dummy_op = op_type(*args, **kwargs)
+    leaves, metadata = flatten(dummy_op)
+    new_leaves = []
+    wire_idx = 0
+    for l in leaves:
+        if isinstance(l, AbstractWires):
+            new_leaves.append(list(range(wire_idx, l.num_wires + wire_idx)))
+            wire_idx += l.num_wires
+        elif isinstance(l, AbstractArray):
+            new_leaves.append(np.empty(l.shape, dtype=l.dtype))
+        else:
+            new_leaves.append(l)
+
+    dummy_op2 = unflatten(new_leaves, metadata)
+    with queuing.AnnotatedQueue() as q:
+        rule(**dummy_op2.arguments)
+
+    resources = defaultdict(int)
+    for op in q.queue:
+        resources[abstractify(op)] += 1
+    return resources
 
 
 @dataclass(frozen=True)
@@ -712,12 +738,21 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     .. seealso:: :func:`~pennylane.transforms.decompose`
 
     """
-    if not all(isinstance(d, DecompositionRule) for d in decomps):
-        raise TypeError(
-            "A decomposition rule must be a qfunc with a resource estimate "
-            "registered using qp.register_resources"
-        )
-    _decompositions_var.get()[to_name(op_type)].extend(decomps)
+
+    processed_rules = list(decomps)
+    if issubclass(op_type, Operator2):
+        for i, rule in enumerate(processed_rules):
+            if not isinstance(rule, DecompositionRule):
+                processed_rules[i] = DecompositionRule(
+                    rule, partial(_resources_fallback, op_type, rule)
+                )
+    else:
+        if not all(isinstance(d, DecompositionRule) for d in decomps):
+            raise TypeError(
+                "A decomposition rule must be a qfunc with a resource estimate "
+                "registered using qp.register_resources"
+            )
+    _decompositions_var.get()[to_name(op_type)].extend(processed_rules)
 
 
 @singledispatch
