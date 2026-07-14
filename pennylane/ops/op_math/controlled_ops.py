@@ -1711,7 +1711,7 @@ def _mcx_to_cnot_or_toffoli_resource(
     return {qp.Toffoli: 1, qp.X: 2}
 
 
-@register_condition(lambda num_control_wires, **_: num_control_wires < 3)
+@register_condition(lambda wires, **_: (len(wires) - 1) < 3)
 @register_resources(_mcx_to_cnot_or_toffoli_resource, exact=False)
 def _mcx_to_cnot_or_toffoli(
     wires, control_values, work_wires, work_wire_type
