@@ -500,8 +500,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # are integrated into list_decomps so that the graph would not be responsible
         # for populating these symbolic decomposition rules.
         if isinstance(op, Operator2):
-            # Use Operator2 object for list_decomps to dispatch correctly
-            return self._alt_decomps.get(op_name, []) + list_decomps(op)
+            return decomps
 
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
