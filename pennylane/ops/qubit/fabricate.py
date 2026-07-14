@@ -133,36 +133,28 @@ def fabricate(init_state: str):
 
     **Example:**
 
-    ``fabricate`` requires program capture. With Catalyst, enable capture via
-    ``@qjit(capture=True)`` and inspect the lowered MLIR:
+    ``fabricate`` requires program capture. The following example captures the circuit
+    and draws the resulting tape:
 
     .. code-block:: python
 
         import pennylane as qp
-        from catalyst import qjit
+        from jax import make_jaxpr
 
-        @qjit(
-            pipelines=[
-                (
-                    "pipe",
-                    [
-                        "canonicalize",
-                        "verify-no-quantum-use-after-free",
-                        "convert-to-value-semantics",
-                        "canonicalize",
-                    ],
-                )
-            ],
-            target="mlir",
-            capture=True,
-        )
+        qp.capture.enable()
+
         @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit():
             magic = qp.fabricate("magic")
             qp.pauli_measure("ZZ", wires=[0, magic])
             return qp.expval(qp.Z(0))
 
-        print(circuit.mlir_opt)
+        jaxpr = make_jaxpr(circuit)().jaxpr
+        tape = qp.tape.plxpr_to_tape(jaxpr, ())
+        print(qp.drawer.tape_text(tape))
+
+    To compile with Catalyst and inspect lowered MLIR, use
+    ``@qjit(capture=True, target="mlir")``.
     """
     if init_state not in _VALID_INIT_STATES:
         raise ValueError(

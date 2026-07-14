@@ -20,7 +20,6 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
-from pennylane.compiler import compiler
 from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
 from pennylane.wires import DynamicWire, Wires
@@ -180,15 +179,6 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         if not isinstance(wires, Sequence):
             wires = (wires,)
         return deallocate_prim.bind(*wires)
-
-    if active_jit := compiler.active_compiler():
-        if not isinstance(wires, Sequence):
-            wires = (wires,)
-        if any(is_abstract(w) for w in wires):
-            available_eps = compiler.AvailableCompilers.names_entrypoints
-            ops_loader = available_eps[active_jit]["ops"].load()
-            ops_loader.deallocate(*wires)
-            return None
 
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:

@@ -74,7 +74,6 @@ class TestFabricate:
 
 @pytest.mark.jax
 @pytest.mark.capture
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestFabricateCapture:
     """Tests for fabricate under program capture."""
 
@@ -146,7 +145,6 @@ class TestFabricateCapture:
 
 @pytest.mark.external
 @pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_fabricate_qjit_mlir_lowering():
     """Test that fabricate lowers to pbc.fabricate under qjit(capture=True)."""
     pytest.importorskip("catalyst")
