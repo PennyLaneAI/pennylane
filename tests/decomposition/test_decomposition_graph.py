@@ -30,9 +30,14 @@ from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Float, Wire
-from tests.core.operator.operator2_utils import DynOp, OneWireDynOp, ParametrizedHybridOp
+from tests.core.operator.operator2_utils import (
+    DynOp,
+    NonParametricOp,
+    OneWireDynOp,
+    ParametrizedHybridOp,
+)
 
-# pylint: disable=protected-access,no-name-in-module,too-few-public-methods,useless-parent-delegation
+# pylint: disable=protected-access,no-name-in-module,too-few-public-methods,useless-parent-delegation,too-many-public-methods
 
 
 class CustomOp(Operation):  # pylint: disable=too-few-public-methods
@@ -699,6 +704,29 @@ class TestDecompositionGraph:
 
         _ = DecompositionGraph(
             [qp.ctrl(CustomOp(0), control=[1])],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
+        )
+
+    def test_circular_decomposition_paths_for_operator2(self, _):
+        """Tests that the graph can handle circular decomposition pathways."""
+
+        @qp.register_resources({DynOp(Float, Wire[2]): 1})
+        def _custom_rule(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.ctrl(OneWireDynOp, Wire[1]): 1})
+        def _another_rule(_):
+            raise NotImplementedError
+
+        _ = DecompositionGraph(
+            [NonParametricOp([0, 1])],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
+        )
+
+        _ = DecompositionGraph(
+            [qp.ctrl(NonParametricOp([0, 1]), control=[2])],
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
             alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
         )

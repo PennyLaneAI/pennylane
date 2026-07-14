@@ -385,17 +385,19 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def _push_in_progress(self, op):
         self._in_progress.append(op)
-        # TODO: symbolic decomposition rules for Operator2 are handled in a follow-up [sc-123156]
-        if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
-            base_rep = _get_base_rep_if_applicable(op)
-            num_ctrl_wires = op.params["num_control_wires"]
+        base_rep = _get_base_rep_if_applicable(op)
+        if base_rep is not None:
+            num_ctrl_wires = (
+                len(op.control_wires)
+                if isinstance(op, Operator2)
+                else op.params["num_control_wires"]
+            )
             self._num_ctrl_wires_in_progress[base_rep].append(num_ctrl_wires)
 
     def _pop_in_progress(self, op):
         self._in_progress.pop()
-        # TODO: symbolic decomposition rules for Operator2 are handled in a follow-up [sc-123156]
-        if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
-            base_rep = _get_base_rep_if_applicable(op)
+        base_rep = _get_base_rep_if_applicable(op)
+        if base_rep is not None:
             self._num_ctrl_wires_in_progress[base_rep].pop()
 
     def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
@@ -472,19 +474,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return d_node
 
     def _base_in_progress(self, op):
-        # TODO: symbolic decomposition rules for Operator2 are handled in a follow-up [sc-123156]
-        if isinstance(op, Operator2):
-            return False
         base = _get_base_rep_if_applicable(op)
         if base is None:
             return False
         if base in self._in_progress:
             return True
-        return (
-            op.op_type is qp.ops.Controlled
-            and (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base])
-            and op.params["num_control_wires"] > ctrl_wires_in_progress[-1]
-        )
+        if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
+            return False
+        return _num_ctrl_wires(op) >= ctrl_wires_in_progress[-1]
 
     def _get_decompositions(self, op: AbstractOperatorLike) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -652,11 +649,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         )
 
 
-def _get_base_rep_if_applicable(op: CompressedResourceOp) -> CompressedResourceOp | None:
-    if op.op_type in (qp.ops.Adjoint, qp.ops.Controlled):
+def _get_base_rep_if_applicable(op: AbstractOperatorLike) -> AbstractOperatorLike | None:
+    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params)
+    if isinstance(op, Operator2) and isinstance(op, qp.ops.ControlledOp2):
+        return abstractify(op.base)
     return None
+
+
+def _num_ctrl_wires(op: AbstractOperatorLike) -> int:
+    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
+        return op.params["num_control_wires"]
+    if isinstance(op, qp.ops.ControlledOp2):
+        return len(op.control_wires)
+    return 0
 
 
 def _validate_rule(rule):
