@@ -50,6 +50,7 @@ from pennylane.ops import (
     MidMeasure,
     PauliMeasure,
 )
+from pennylane.ops.qubit.fabricate import Fabricate
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QROM, SelectPauliRot, TemporaryAND
@@ -166,6 +167,22 @@ def _add_obj(
 @_add_obj.register(Allocate)
 def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     label = "|0>├" if obj.state.value == "zero" else "├"
+    for w in obj.wires:
+        layer_str[config.wire_map[w]] += label
+    return layer_str
+
+
+_FABRICATE_LABELS = {
+    "magic": "|m>├",
+    "magic_conj": "|mc>├",
+    "plus_i": "|+i>├",
+    "minus_i": "|-i>├",
+}
+
+
+@_add_obj.register(Fabricate)
+def _add_fabricate(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    label = _FABRICATE_LABELS.get(obj.init_state, "├")
     for w in obj.wires:
         layer_str[config.wire_map[w]] += label
     return layer_str

@@ -203,7 +203,7 @@ def _fabricate_primitive(self, *_, init_state=""):
     num_dynamic_wires = len(self.state["dynamic_wire_map"])
     int_wire = np.iinfo(np.int32).max - num_dynamic_wires
     self.state["dynamic_wire_map"][int_wire] = wire
-    self.state["ops"].append(Fabricate(init_state))
+    self.state["ops"].append(Fabricate(init_state, wires=[int_wire]))
     return [int_wire]
 
 

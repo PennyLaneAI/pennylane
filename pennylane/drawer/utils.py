@@ -23,6 +23,7 @@ import numpy as np
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
+from pennylane.ops.qubit.fabricate import Fabricate
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 
@@ -78,7 +79,7 @@ def dynamic_wire_connections(layers: list[list], wire_map: dict) -> tuple[dict, 
     num_encountered = 0
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if isinstance(op, Allocate):
+            if isinstance(op, (Allocate, Fabricate)):
                 for w in op.wires:
                     dynamic_wire_map[w] = num_encountered
                     num_encountered += 1

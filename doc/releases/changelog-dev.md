@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added :func:`~.fabricate` and :class:`~.Fabricate` to produce auxiliary qubits in logical factory
+  states (``plus_i``, ``minus_i``, ``magic``, or ``magic_conj``) for Pauli-based computation
+  workflows compiled with Catalyst.
+  [(#9828)](https://github.com/PennyLaneAI/pennylane/pull/9828)
+
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
@@ -423,10 +428,6 @@
   while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
-
-* Added :func:`~.fabricate` and :class:`~.Fabricate` to produce auxiliary qubits in logical factory
-  states (``plus_i``, ``minus_i``, ``magic``, or ``magic_conj``) for Pauli-based computation
-  workflows compiled with Catalyst.
 
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.

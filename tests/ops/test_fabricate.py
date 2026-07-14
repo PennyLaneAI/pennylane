@@ -16,10 +16,10 @@
 import pytest
 
 import pennylane as qp
-from pennylane.capture.primitives import fabricate_prim
 from pennylane.core import queuing
+from pennylane.drawer import tape_text
+from pennylane.ops.mid_measure import PauliMeasure
 from pennylane.ops.qubit.fabricate import Fabricate, fabricate
-from pennylane.wires import AbstractQubit
 
 
 class TestFabricate:
@@ -54,7 +54,10 @@ class TestFabricate:
     @pytest.mark.capture
     def test_fabricate_capture(self):
         """Tests that fabricate is captured as fabricate_prim."""
-        import jax
+        from pennylane.capture.primitives import fabricate_prim
+        from pennylane.wires import AbstractQubit
+
+        jax = pytest.importorskip("jax")
 
         def circuit():
             return fabricate("magic_conj")
@@ -75,7 +78,7 @@ class TestFabricate:
     @pytest.mark.capture
     def test_fabricate_plxpr_conversion(self):
         """Tests that captured fabricate is converted to a Fabricate op on the tape."""
-        import jax
+        jax = pytest.importorskip("jax")
 
         def circuit():
             fabricate("magic")
@@ -85,6 +88,40 @@ class TestFabricate:
         assert len(tape.operations) == 1
         assert isinstance(tape.operations[0], Fabricate)
         assert tape.operations[0].init_state == "magic"
+        assert len(tape.operations[0].wires) == 1
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    def test_fabricate_downstream_pauli_measure(self):
+        """Tests that a fabricated wire can be used by downstream operations."""
+        jax = pytest.importorskip("jax")
+
+        def circuit():
+            magic = fabricate("magic")
+            qp.pauli_measure("ZZ", wires=[0, magic])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert len(tape.operations) == 2
+        assert isinstance(tape.operations[0], Fabricate)
+        assert isinstance(tape.operations[1], PauliMeasure)
+        assert tape.operations[1].wires[1] == tape.operations[0].wires[0]
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    def test_fabricate_draw(self):
+        """Tests that tapes containing fabricated wires can be drawn."""
+        jax = pytest.importorskip("jax")
+
+        def circuit():
+            magic = fabricate("magic")
+            qp.pauli_measure("ZZ", wires=[0, magic])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        drawing = tape_text(tape)
+        assert "|m>├" in drawing
+        assert "↗" in drawing
 
     def test_fabricate_queuing(self):
         """Tests that Fabricate can be queued on a tape."""

@@ -22,6 +22,14 @@ from pennylane.compiler import compiler
 from pennylane.core.operator import Operator
 from pennylane.wires import Wires
 
+has_jax = True
+try:
+    # pylint: disable=ungrouped-imports
+    from pennylane.capture import QpPrimitive
+    from pennylane.wires import AbstractQubit
+except ImportError:
+    has_jax = False
+
 _VALID_INIT_STATES = frozenset({"plus_i", "minus_i", "magic", "magic_conj"})
 
 
@@ -35,6 +43,7 @@ class Fabricate(Operator):
     Args:
         init_state (str): The logical state to fabricate. Must be one of
             ``"plus_i"``, ``"minus_i"``, ``"magic"``, or ``"magic_conj"``.
+        wires (WiresLike): The dynamically allocated wire produced by this operation.
 
     .. note::
 
@@ -43,18 +52,16 @@ class Fabricate(Operator):
         and compilation with Catalyst.
 
     .. seealso::
-        :func:`~.fabricate`, :func:`catalyst.passes.to_ppr`, :func:`catalyst.passes.ppr_to_ppm`
+        :func:`~.fabricate`, :func:`catalyst.passes.ppm_compilation`
     """
 
-    num_wires = 0
-
-    def __init__(self, init_state: str):
+    def __init__(self, init_state: str, wires=Wires([])):
         if init_state not in _VALID_INIT_STATES:
             raise ValueError(
                 f'The init_state "{init_state}" is not allowed. '
                 f"Allowed values are {sorted(_VALID_INIT_STATES)}."
             )
-        super().__init__(wires=Wires([]))
+        super().__init__(wires=wires)
         self.hyperparameters["init_state"] = init_state
 
     @property
@@ -75,17 +82,16 @@ class Fabricate(Operator):
 
     @classmethod
     def _unflatten(cls, data, metadata):
+        wires = metadata[0]
         hyperparameters_dict = dict(metadata[1])
-        return cls(hyperparameters_dict["init_state"])
+        return cls(hyperparameters_dict["init_state"], wires=wires)
 
 
 @lru_cache
 def _create_fabricate_primitive():
     """Create a primitive corresponding to a fabricate operation."""
-
-    # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QpPrimitive
-    from pennylane.wires import AbstractQubit
+    if not has_jax:
+        return None
 
     fabricate_prim = QpPrimitive("fabricate")
     fabricate_prim.multiple_results = True
@@ -126,13 +132,23 @@ def fabricate(init_state: str):
 
     **Example:**
 
+    ``fabricate`` requires program capture. The following example builds a jaxpr,
+    converts it to a tape, and draws the resulting circuit:
+
     .. code-block:: python
 
-        @qp.qnode(qp.device("null.qubit", wires=2))
+        import pennylane as qp
+        import jax
+
+        qp.capture.enable()
+
         def circuit():
             magic = qp.fabricate("magic")
             qp.pauli_measure("ZZ", wires=[0, magic])
-            return qp.expval(qp.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        print(qp.drawer.tape_text(tape))
     """
     if init_state not in _VALID_INIT_STATES:
         raise ValueError(

@@ -28,6 +28,7 @@ from pennylane.ops import (
     MidMeasure,
     PauliMeasure,
 )
+from pennylane.ops.qubit.fabricate import Fabricate
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 
@@ -273,7 +274,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
 
     # loop over operations
     for op in operations:
-        if _dynamic_wires and isinstance(op, Allocate):
+        if _dynamic_wires and isinstance(op, (Allocate, Fabricate)):
             data.waiting_dynamic_ops.append(op)
             data.waiting_dynamic_wires.extend(op.wires)
 
