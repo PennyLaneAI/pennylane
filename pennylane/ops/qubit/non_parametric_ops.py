@@ -788,7 +788,12 @@ def _controlled_y_resource(base, control_wires, control_values, work_wires, work
     return {
         qp.S: 1,
         _adjoint_abstract(qp.S): 1,
-        _ctrl_abstract(qp.X, control_wires, work_wires, work_wire_type): 1,
+        _ctrl_abstract(
+            qp.X,
+            Wire[len(control_wires)],
+            Wire[len(work_wires)],
+            work_wire_type,
+        ): 1,
     }
 
 

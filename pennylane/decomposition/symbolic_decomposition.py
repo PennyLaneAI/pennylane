@@ -23,7 +23,6 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocation, math
 from pennylane.core.operator import abstractify
-from pennylane.core.queuing import apply
 from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
