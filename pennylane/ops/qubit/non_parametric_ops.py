@@ -1187,7 +1187,7 @@ class S(Operator2):
         super().__init__(wires=wires)
 
     @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -1204,8 +1204,8 @@ class S(Operator2):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
-                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
+                    qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,  # pylint: disable=unsubscriptable-object
+                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,  # pylint: disable=unsubscriptable-object
                 }
             )
         return self._pauli_rep
@@ -1214,14 +1214,14 @@ class S(Operator2):
         """String representation."""
         if isinstance(self.wires, AbstractWires):
             return "S"
-        wire = self.wires[0]
+        wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"S('{wire}')"
         return f"S({wire})"
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1241,7 +1241,7 @@ class S(Operator2):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def compute_eigvals(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_eigvals(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1278,7 +1278,7 @@ class S(Operator2):
         )
 
 
-def _s_phaseshift_resources(wires: WiresLike = None):
+def _s_phaseshift_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
     return {qp.PhaseShift: 1}
 
 

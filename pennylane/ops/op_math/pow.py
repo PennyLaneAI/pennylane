@@ -200,12 +200,11 @@ class Pow(ScalarSymbolicOp):
                 "base_params": abstractify(self.base).arguments,
                 "z": self.z,
             }
-        else:
-            return {
-                "base_class": type(self.base),
-                "base_params": self.base.resource_params,
-                "z": self.z,
-            }
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "z": self.z,
+        }
 
     @property
     def z(self):
