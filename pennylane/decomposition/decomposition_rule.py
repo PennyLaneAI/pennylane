@@ -28,18 +28,12 @@ from typing import overload
 
 import pennylane as qp
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .resources import (
-    AbstractOperatorLike,
-    CompressedResourceOp,
-    Resources,
-    auto_wrap,
-    resource_rep,
-)
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
 from .utils import to_name
 
 
@@ -463,7 +457,16 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
-            op = auto_wrap(op)
+            if not (
+                isinstance(op, (CompressedResourceOp, Operator2))
+                or (isinstance(op, type) and issubclass(op, Operator))
+            ):
+                raise TypeError(
+                    "The keys of the dictionary returned by the resource function must be a "
+                    "subclass of Operator or a CompressedResourceOp constructed with "
+                    "qp.resource_rep, or an Operator2 constructed with abstract inputs."
+                )
+            op = abstractify(op)
             _verify_is_abstract_and_fixed(op)
             if count > 0:
                 gate_counter.update({op: count})
@@ -797,9 +800,7 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    op_name = to_name(op)
-    _decompositions = _decompositions_var.get()
-    return op_name in _decompositions and len(_decompositions[op_name]) > 0
+    return len(list_decomps(op)) > 0
 
 
 @contextmanager
@@ -1085,7 +1086,7 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
             continue
         if isinstance(_op, qp.allocation.Deallocate):
             continue
-        op_rep = resource_rep(_op.__class__, **_op.resource_params)
+        op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
 
     return dict(actual_gate_counts), dict(allocations)
@@ -1144,6 +1145,6 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
 
 def _decomp_contains_mcm(rule, params):
     resources = rule.compute_resources(**params).gate_counts
-    mcm = resource_rep(qp.ops.MidMeasure)
-    ppm = resource_rep(qp.ops.PauliMeasure)
+    mcm = abstractify(qp.ops.MidMeasure)
+    ppm = abstractify(qp.ops.PauliMeasure)
     return mcm in resources or ppm in resources

@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests for the Phox simulator utility functions.
-"""
+"""Regression tests for the TCDQ gate and observable helpers."""
 
-from pennylane.labs.phox.utils import (
+from pennylane.labs.tcdq.utils import (
     create_lattice_gates,
     create_local_gates,
     create_random_gates,
