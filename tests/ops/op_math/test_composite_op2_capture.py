@@ -24,7 +24,7 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
-from tests.core.operator.operator2_utils import NonParametricOp
+from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 
 def test_public_dot_binding():
@@ -100,11 +100,11 @@ def test_change_op_basis(defined_outside):
 
     outside_op = NonParametricOp(0) if defined_outside else None
 
-    def f():
+    def f(x):
         op = outside_op if defined_outside else NonParametricOp(0)
-        qp.change_op_basis(op, NonParametricOp(1))
+        qp.change_op_basis(op, DynOp(x, 1))
 
-    cjaxpr = jax.make_jaxpr(f)()
+    cjaxpr = jax.make_jaxpr(f)(1.2)
 
     eqns = cjaxpr.eqns
 
@@ -115,7 +115,7 @@ def test_change_op_basis(defined_outside):
     assert eqns[0].params["adjoint"] is False
 
     assert eqns[1].primitive.name == "operator"
-    assert eqns[1].params["op_cls"] is NonParametricOp
+    assert eqns[1].params["op_cls"] is DynOp
     assert eqns[1].params["adjoint"] is False
 
     assert eqns[2].primitive.name == "operator"
