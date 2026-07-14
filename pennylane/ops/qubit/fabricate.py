@@ -55,12 +55,13 @@ class Fabricate(Operator):
         :func:`~.fabricate`, :func:`catalyst.passes.ppm_compilation`
     """
 
-    def __init__(self, init_state: str, wires=Wires([])):
+    def __init__(self, init_state: str, wires=None):
         if init_state not in _VALID_INIT_STATES:
             raise ValueError(
                 f'The init_state "{init_state}" is not allowed. '
                 f"Allowed values are {sorted(_VALID_INIT_STATES)}."
             )
+        wires = Wires([]) if wires is None else wires
         super().__init__(wires=wires)
         self.hyperparameters["init_state"] = init_state
 
