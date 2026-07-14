@@ -33,7 +33,6 @@ from pennylane.capture.autograph import run_autograph
 from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,
-    operator_p,
     qnode_prim,
     transform_prim,
     while_loop_prim,
@@ -132,8 +131,7 @@ def test_simple_qnode():
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
     assert len(qfunc_jaxpr.eqns) == 3
     assert qfunc_jaxpr.eqns[0].primitive == qp.RX._primitive
-    assert qfunc_jaxpr.eqns[1].primitive == operator_p
-    assert qfunc_jaxpr.eqns[1].params["op_cls"] is qp.Z
+    assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
     assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     assert len(eqn0.outvars) == 1
@@ -173,8 +171,7 @@ def test_multiple_measurements():
 
     assert qfunc_jaxpr.eqns[0].primitive == qp.measurements.SampleMP._wires_primitive
     assert qfunc_jaxpr.eqns[1].primitive == qp.measurements.ProbabilityMP._wires_primitive
-    assert qfunc_jaxpr.eqns[2].primitive == operator_p
-    assert qfunc_jaxpr.eqns[2].params["op_cls"] is qp.Z
+    assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
     assert qfunc_jaxpr.eqns[3].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(

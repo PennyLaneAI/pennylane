@@ -1055,6 +1055,16 @@ class TestControlledMethod:
         out = qp.Hadamard(0)._controlled("a")
         qp.assert_equal(out, qp.CH(("a", 0)))
 
+    def test_PauliY(self):
+        """Test the PauliY _controlled method."""
+        out = qp.PauliY(0)._controlled("a")
+        qp.assert_equal(out, qp.CY(("a", 0)))
+
+    def test_PauliZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qp.PauliZ(0)._controlled("a")
+        qp.assert_equal(out, qp.CZ(("a", 0)))
+
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
         out = qp.CNOT((0, 1))._controlled("a")
@@ -1207,6 +1217,7 @@ def test_label_method(op, label):
 control_data = [
     (qp.Identity(0), Wires([])),
     (qp.Hadamard(0), Wires([])),
+    (qp.PauliY(0), Wires([])),
     (qp.S(wires=0), Wires([])),
     (qp.T(wires=0), Wires([])),
     (qp.SX(wires=0), Wires([])),

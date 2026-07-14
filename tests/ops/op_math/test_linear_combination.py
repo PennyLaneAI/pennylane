@@ -1960,7 +1960,7 @@ def test_create_instance_while_tracing():
 
     def f(a, b):
         op1 = qp.X(0)
-        op2 = qp.Y(0)
+        op2 = qp.Y._primitive.impl(0, n_wires=1)
         op = qp.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qp.ops.LinearCombination)
 

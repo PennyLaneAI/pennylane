@@ -334,8 +334,7 @@ class TestTemplates:
 
         assert jaxpr.eqns[0].primitive == operator_p
         assert jaxpr.eqns[0].params["op_cls"] is qp.X
-        assert jaxpr.eqns[1].primitive == operator_p
-        assert jaxpr.eqns[1].params["op_cls"] is qp.Z
+        assert jaxpr.eqns[1].primitive == qp.Z._primitive
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
@@ -526,8 +525,7 @@ class TestAbstractDunders:
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == operator_p
         assert jaxpr.eqns[0].params["op_cls"] is qp.X
-        assert jaxpr.eqns[1].primitive == operator_p
-        assert jaxpr.eqns[1].params["op_cls"] is qp.Y
+        assert jaxpr.eqns[1].primitive == qp.Y._primitive
 
         eqn = jaxpr.eqns[2]
 
@@ -550,8 +548,7 @@ class TestAbstractDunders:
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == operator_p
         assert jaxpr.eqns[0].params["op_cls"] is qp.X
-        assert jaxpr.eqns[1].primitive == operator_p
-        assert jaxpr.eqns[1].params["op_cls"] is qp.Y
+        assert jaxpr.eqns[1].primitive == qp.Y._primitive
 
         eqn = jaxpr.eqns[2]
 
@@ -572,8 +569,7 @@ class TestAbstractDunders:
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
 
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is qp.Y
+        assert jaxpr.eqns[1].primitive == qp.Y._primitive
 
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[1].invars[0].val == 2

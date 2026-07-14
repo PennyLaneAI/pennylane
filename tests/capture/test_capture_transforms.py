@@ -276,8 +276,7 @@ class TestCaptureTransforms:
         assert loop_body_jaxpr.eqns[1].primitive == operator_p
         assert loop_body_jaxpr.eqns[1].params["op_cls"] is qp.X
 
-        assert qfunc_jaxpr.eqns[1].primitive == operator_p
-        assert qfunc_jaxpr.eqns[1].params["op_cls"] is qp.Z
+        assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")

@@ -261,8 +261,7 @@ class TestGrad:
         # Skipping a few equations related to indexing and preprocessing
         assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
         assert qfunc_jaxpr.eqns[6].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[7].primitive == operator_p
-        assert qfunc_jaxpr.eqns[7].params["op_cls"] is qp.Z
+        assert qfunc_jaxpr.eqns[7].primitive == qp.Z._primitive
         assert qfunc_jaxpr.eqns[8].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 1
@@ -567,8 +566,7 @@ class TestJacobian:
         # Skipping a few equations related to indexing
         assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
         assert qfunc_jaxpr.eqns[5].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == operator_p
-        assert qfunc_jaxpr.eqns[6].params["op_cls"] is qp.Z
+        assert qfunc_jaxpr.eqns[6].primitive == qp.Z._primitive
         assert qfunc_jaxpr.eqns[7].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 2

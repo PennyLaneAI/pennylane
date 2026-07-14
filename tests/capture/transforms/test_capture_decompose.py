@@ -181,10 +181,8 @@ class TestDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-4].primitive == operator_p
         assert jaxpr.eqns[-4].params["op_cls"] is qp.X
-        assert jaxpr.eqns[-3].primitive == operator_p
-        assert jaxpr.eqns[-3].params["op_cls"] is qp.Y
-        assert jaxpr.eqns[-2].primitive == operator_p
-        assert jaxpr.eqns[-2].params["op_cls"] is qp.Z
+        assert jaxpr.eqns[-3].primitive == qp.PauliY._primitive
+        assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
         transformed_f = interpreter(f)
@@ -200,10 +198,8 @@ class TestDecomposeInterpreter:
 
         assert transformed_jaxpr.eqns[-4].primitive == operator_p
         assert transformed_jaxpr.eqns[-4].params["op_cls"] is qp.X
-        assert transformed_jaxpr.eqns[-3].primitive == operator_p
-        assert transformed_jaxpr.eqns[-3].params["op_cls"] is qp.Y
-        assert transformed_jaxpr.eqns[-2].primitive == operator_p
-        assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.Z
+        assert transformed_jaxpr.eqns[-3].primitive == qp.PauliY._primitive
+        assert transformed_jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -219,8 +215,7 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-2].primitive == operator_p
-        assert jaxpr.eqns[-2].params["op_cls"] is qp.Z
+        assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.SProd._primitive
 
         transformed_f = interpreter(f)
@@ -234,8 +229,7 @@ class TestDecomposeInterpreter:
         else:
             assert len(recwarn) == 0
 
-        assert transformed_jaxpr.eqns[-2].primitive == operator_p
-        assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.Z
+        assert transformed_jaxpr.eqns[-2].primitive == qp.ops.PauliZ._primitive
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.SProd._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -253,19 +247,15 @@ class TestDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-4].primitive == operator_p
         assert jaxpr.eqns[-4].params["op_cls"] is qp.X
-        assert jaxpr.eqns[-3].primitive == operator_p
-        assert jaxpr.eqns[-3].params["op_cls"] is qp.Y
-        assert jaxpr.eqns[-2].primitive == operator_p
-        assert jaxpr.eqns[-2].params["op_cls"] is qp.Z
+        assert jaxpr.eqns[-3].primitive == qp.PauliY._primitive
+        assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Prod._primitive
 
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
-            assert transformed_jaxpr.eqns[-3].primitive == operator_p
-            assert transformed_jaxpr.eqns[-3].params["op_cls"] is qp.Z
-            assert transformed_jaxpr.eqns[-2].primitive == operator_p
-            assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.Y
+            assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
+            assert transformed_jaxpr.eqns[-2].primitive == qp.PauliY._primitive
             assert transformed_jaxpr.eqns[-1].primitive == operator_p
             assert transformed_jaxpr.eqns[-1].params["op_cls"] is qp.X
         else:
@@ -385,26 +375,24 @@ class TestDecomposeInterpreter:
         expected_primitives = [
             qp.RX._primitive,
             qp.GlobalPhase._primitive,
-            operator_p,
+            qp.Z._primitive,
             qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
         ), f"Expected: {expected_primitives}, got: {[eqn.primitive for eqn in branch.eqns]}"
-        assert branch.eqns[2].params["op_cls"] is qp.Z
 
         # Elif branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][1]
         expected_primitives = [
             qp.RY._primitive,
             qp.GlobalPhase._primitive,
-            operator_p,
+            qp.Y._primitive,
             qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
         )
-        assert branch.eqns[2].params["op_cls"] is qp.Y
 
         # Else branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
@@ -481,8 +469,7 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[0].primitive == qp.RZ._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qp.RZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == operator_p
-        assert qfunc_jaxpr.eqns[3].params["op_cls"] is qp.Z
+        assert qfunc_jaxpr.eqns[3].primitive == qp.PauliZ._primitive
         assert qfunc_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.parametrize("grad_fn", [qp.grad, qp.jacobian])
@@ -508,8 +495,7 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[0].primitive == qp.RZ._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qp.RZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == operator_p
-        assert qfunc_jaxpr.eqns[3].params["op_cls"] is qp.Z
+        assert qfunc_jaxpr.eqns[3].primitive == qp.PauliZ._primitive
         assert qfunc_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
 
 
@@ -647,6 +633,5 @@ def test_decompose_plxpr_to_plxpr():
     assert transformed_jaxpr.eqns[0].primitive == qp.RZ._primitive
     assert transformed_jaxpr.eqns[1].primitive == qp.RY._primitive
     assert transformed_jaxpr.eqns[2].primitive == qp.RZ._primitive
-    assert transformed_jaxpr.eqns[3].primitive == operator_p
-    assert transformed_jaxpr.eqns[3].params["op_cls"] is qp.Z
+    assert transformed_jaxpr.eqns[3].primitive == qp.PauliZ._primitive
     assert transformed_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive

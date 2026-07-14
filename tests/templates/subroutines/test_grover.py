@@ -348,7 +348,7 @@ class TestDynamicDecomposition:
             eqn
             for eqn in jaxpr_eqns
             if eqn.primitive
-            in (operator_p, qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
+            in (qp.PauliZ._primitive, qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
         ]
         assert len(remaining_ops) == 4
 

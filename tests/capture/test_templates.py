@@ -424,8 +424,7 @@ class TestModifiedTemplates:
         # due to flattening and unflattening H
         assert jaxpr.eqns[0].primitive == operator_p
         assert jaxpr.eqns[0].params["op_cls"] is qp.X
-        assert jaxpr.eqns[1].primitive == operator_p
-        assert jaxpr.eqns[1].params["op_cls"] is qp.Z
+        assert jaxpr.eqns[1].primitive == qp.Z._primitive
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
