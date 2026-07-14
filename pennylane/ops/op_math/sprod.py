@@ -23,6 +23,7 @@ from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
+from pennylane.typing import TensorLike
 
 from .composite import handle_recursion_error
 from .symbolicop import ScalarSymbolicOp
@@ -130,7 +131,7 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, _pauli_rep=None):
+    def __init__(self, scalar: TensorLike, base: Operator, _pauli_rep=None):
         super().__init__(base=base, scalar=scalar)
 
         if _pauli_rep:

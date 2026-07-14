@@ -28,6 +28,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -311,13 +313,13 @@ def _out_square_with_adder_resources(
     resources = defaultdict(int)
     if output_wires_zeroed:
         # Copying of first bit is a CNOT, all other bits require a TemporaryAND
-        resources[resource_rep(CNOT)] += 1
-        resources[resource_rep(TemporaryAND)] = min(n, m) - 1
+        resources[CNOT] += 1
+        resources[TemporaryAND] = min(n, m) - 1
 
     # Controlled adders, includes the one for copying if output_wires_zeroed=False
     for i in range(output_wires_zeroed, min(n, m)):
         num_out = min(m - i, n + 1) if output_wires_zeroed else m - i
-        resources[resource_rep(CNOT)] += 2
+        resources[CNOT] += 2
         add_params = {"num_x_wires": n, "num_y_wires": num_out, "num_work_wires": num_out - 1}
         ctrl_params = {
             "num_control_wires": 1,
@@ -403,10 +405,7 @@ def _out_square_with_caddsub_resources(
     m = num_output_wires + 1
     resources = defaultdict(int)
 
-    cnot_rep = resource_rep(CNOT)
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = resource_rep(X)
+    cnot_on_0_rep = _ctrl_abstract(X, Wire[1], num_zero_control_values=1)
 
     # Controlled add-subtract loop
     loop_size = min(m, n)
@@ -421,7 +420,7 @@ def _out_square_with_caddsub_resources(
         resources[c_flips] += 2 * loop_size
 
     # Caching of bit in x onto c_wire, to control on it.
-    resources[cnot_rep] += 2 * loop_size
+    resources[CNOT] += 2 * loop_size
     # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
     resources[cnot_on_0_rep] += 2 * loop_size
     # Bit flip on LSB work wire, controlled on |0>: one per ctrl-add-subtract that has work wires
@@ -445,7 +444,7 @@ def _out_square_with_caddsub_resources(
         ] = 1
 
     # Add (2^n-1-x) + 1
-    resources[x_rep] += 6 + 2 * n
+    resources[X] += 6 + 2 * n
     adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=m)
     for key, value in adder_resources.items():
         resources[key] += value

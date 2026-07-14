@@ -562,10 +562,6 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
-    if num_work_wires < max(n_subspace - 1, 1):
-        resources[qp.resource_rep(qp.allocation.Allocate)] += 1
-        resources[qp.resource_rep(qp.allocation.Deallocate)] += 1
-
     num_work_wires = max(num_work_wires, n_subspace - 1, 1)
     resources[qp.resource_rep(qp.MultiplexerStatePreparation, num_wires=n_subspace)] += 1
 
@@ -595,8 +591,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
-    swap_rep = qp.resource_rep(qp.SWAP)
-    resources[swap_rep] += num_wires
+    resources[qp.SWAP] += num_wires
 
     num_toffolis = int(num_wires / 10) + 1
     toffoli_params = {"num_control_wires": 2, "num_work_wires": 1, "work_wire_type": "zeroed"}
@@ -667,8 +662,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
 
 
+# pylint: disable=unused-argument
 def _pui_state_prep_provided_work_wires_condition(num_entries, num_wires, num_work_wires):
-    # pylint: disable=unused-argument
     if num_entries == 1:
         return True
     return num_work_wires >= max(math.ceil_log2(num_entries) - 1, 1)
