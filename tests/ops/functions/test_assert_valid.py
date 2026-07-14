@@ -609,6 +609,7 @@ class TestOperator2AssertValid:
         ):
             assert_valid(BadSparse(0.5, wires=[0, 1]), skip_pickle=True)
 
+    @pytest.mark.jax
     def test_check_eigendecomposition(self):
         """``_check_eigendecomposition`` fails if the eigenvalues and diagonalizing gates cannot
         reproduce the operator."""

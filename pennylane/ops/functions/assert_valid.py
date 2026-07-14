@@ -146,15 +146,17 @@ def _check_decomposition(op, skip_wire_mapping):
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     """Checks involving the new system of decompositions."""
     op_type = type(op)
-    if op_type.resource_params is qp.operation.Operator.resource_params:
-        assert not qp.decomposition.has_decomp(
-            op_type
-        ), "resource_params must be defined for operators with decompositions"
-        return
 
-    assert set(op.resource_params.keys()) == set(
-        op_type.resource_keys
-    ), "resource_params must have the same keys as specified by resource_keys"
+    if not isinstance(op, Operator2):
+        if op_type.resource_params is qp.operation.Operator.resource_params:
+            assert not qp.decomposition.has_decomp(
+                op_type
+            ), "resource_params must be defined for operators with decompositions"
+            return
+
+        assert set(op.resource_params.keys()) == set(
+            op_type.resource_keys
+        ), "resource_params must have the same keys as specified by resource_keys"
 
     for rule in qp.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
