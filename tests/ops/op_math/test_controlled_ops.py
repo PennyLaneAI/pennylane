@@ -866,10 +866,16 @@ def test_abstract_controlled_ops(op_type, wires):
     [
         (qp.X(Wire[1]), Wire[1], [1], qp.CNOT(Wire[2])),
         (qp.CNOT(Wire[2]), Wire[1], [1], qp.Toffoli(Wire[3])),
-    ],
+    ]
 )
 def test_custom_controlled_ops_dispatch(base, control_wires, control_values, expected):
     """Tests that we can use the custom dispatch logic with abstract controlled ops."""
-    mapped_op = custom_ctrl_dispatch(base, control_wires, control_values, None, "borrowed")
+    mapped_op = custom_ctrl_dispatch(
+        base,
+        control_wires,
+        control_values,
+        None,
+        "borrowed"
+    )
 
     assert mapped_op == expected

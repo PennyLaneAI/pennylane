@@ -1200,17 +1200,6 @@ class CNOT(Controlled2):
 
     name = "CNOT"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
     def __init__(self, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
@@ -1218,7 +1207,7 @@ class CNOT(Controlled2):
         super().__init__(base, wires[:1])
 
     @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ, unused-argument
         self, wires: WiresLike
     ):
         super().__abstract_init__(
