@@ -24,10 +24,8 @@ from typing_extensions import override
 
 import pennylane as qp
 from pennylane import allocation, math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.core.operator.operator2 import (  # tach-ignore
-    Operator2,
-    abstractify,
     operator_p,
     pop_op_eqns,
 )

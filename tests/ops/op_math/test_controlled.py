@@ -1097,7 +1097,11 @@ class TestDecomposition:
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
                     qp.CH(wires=[2, 0]),
+<<<<<<< feat/port-T-to-op2
                     qp.ctrl(qp.S(wires=1), 2),
+=======
+                    ctrl(qp.S(wires=1), control=2),
+>>>>>>> feature/s_port_to_op2
                     qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
