@@ -157,7 +157,6 @@ def test_fabricate_qjit_mlir_lowering():
     def circuit():
         magic = fabricate("magic")
         qp.pauli_measure("ZZ", wires=[0, magic])
-        qp.deallocate(magic)
         return qp.expval(qp.Z(0))
 
     mlir = circuit.mlir_opt

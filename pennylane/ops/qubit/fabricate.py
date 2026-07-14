@@ -160,7 +160,6 @@ def fabricate(init_state: str):
         def circuit():
             magic = qp.fabricate("magic")
             qp.pauli_measure("ZZ", wires=[0, magic])
-            qp.deallocate(magic)
             return qp.expval(qp.Z(0))
 
         print(circuit.mlir_opt)
