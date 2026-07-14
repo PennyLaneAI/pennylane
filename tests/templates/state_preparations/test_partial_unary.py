@@ -22,12 +22,12 @@ import pennylane as qp
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
-from pennylane.templates.state_preparations.partial_unary import PartialUnaryStatePreparation
+from pennylane.templates.state_preparations.partial_unary import (
+    PartialUnaryStatePreparation,
+    PUIsometryFinder,
+)
 
-
-def _is_binary(x: np.ndarray) -> bool:
-    """Return whether all entries of a numpy array are binary."""
-    return set(x.flat).issubset({0, 1})
+# pylint: disable=protected-access
 
 
 def random_distinct_integers(high, size, rng):
@@ -35,9 +35,215 @@ def random_distinct_integers(high, size, rng):
         return rng.choice(high, size=size, replace=False)
 
     samples = set()
-    while len(samples) < size:
-        samples.add(int(rng.integers(high)))
+    if high < 2**64:
+        while len(samples) < size:
+            samples.add(int(rng.integers(high)))
+    else:
+        # This works but it sacrifices uniformity of the distribution and only work for powers of 2
+        assert high.bit_count() == 1
+        split = 2 ** (high.bit_length() // 2)
+        smaller_0 = random_distinct_integers(split, size=size, rng=rng).astype(object)
+        smaller_1 = random_distinct_integers(high // split, size=size, rng=rng).astype(object)
+        return smaller_0 + smaller_1 * split
+
     return np.array(list(samples), dtype=int)
+
+
+class TestPUIsometryFinder:
+    """Tests for the isometry finding algorithm in PUIsometryFinder."""
+
+    def test_error_for_duplicate_basis_states(self):
+        """Test that an error is raised if there are duplicate basis states."""
+        match = "must be unique, got 3 basis states but just 2 distinct"
+        with pytest.raises(ValueError, match=match):
+            PUIsometryFinder([125012, 9251, 9251], 100)
+
+    def test_error_for_too_few_states(self):
+        """Test that an error is raised if there are less than two basis states."""
+        match = "At least two basis states are required"
+        with pytest.raises(ValueError, match=match):
+            PUIsometryFinder([125012], 100)
+
+    def test_error_for_too_few_qubits(self):
+        """Test that an error is raised if there are zero or less qubits."""
+        match = "n_qubits must be a positive integer"
+        with pytest.raises(ValueError, match=match):
+            PUIsometryFinder([125012, 2, 9, 9251], 0)
+        with pytest.raises(ValueError, match=match):
+            PUIsometryFinder([125012, 2, 9, 9251], -20)
+        with pytest.raises(ValueError, match=match):
+            PUIsometryFinder([125012, 2, 9, 9251], 20.0)
+
+    @pytest.mark.parametrize(
+        "num_entries, n, expected",
+        [
+            (2, 2, [2, 1, 1, 1, 2, np.uint64, np.uint64]),
+            (2, 8, [8, 1, 7, 4, 2, np.uint64, np.uint64]),
+            (2, 65, [65, 1, 64, 64, 2, object, int]),
+            (3, 3, [3, 2, 1, 1, 3, np.uint64, np.uint64]),
+            (4, 8, [8, 2, 6, 4, 4, np.uint64, np.uint64]),
+            (15, 5, [5, 4, 1, 1, 15, np.uint64, np.uint64]),
+            (23, 29, [29, 5, 24, 16, 23, np.uint64, np.uint64]),
+            (7, 65, [65, 3, 62, 32, 7, object, int]),
+            (112563, 100, [100, 17, 83, 64, 112563, object, int]),
+        ],
+    )
+    def test_sizes(self, num_entries, n, expected, seed):
+        """Test that the qubit count, subspace register size, remainder register size,
+        target/max batch size, tableau size and data types are all initialized correctly."""
+        rng = np.random.default_rng(seed)
+        states = random_distinct_integers(2**n, num_entries, rng)
+        iso_finder = PUIsometryFinder(states, n)
+        specs = [
+            getattr(iso_finder, attr)
+            for attr in ["n", "n_subspace", "n_r", "m", "_packed_dtype", "_word"]
+        ]
+        specs.insert(-2, len(iso_finder.tableau))
+        assert specs == expected
+
+    @pytest.mark.parametrize("num_entries, n", [(2, 1), (3, 2), (4, 2), (7, 3), (4097, 13)])
+    def test_sizes_many_states(self, num_entries, n, seed):
+        """Test that the qubit count, subspace register size, remainder register size,
+        target/max batch size, tableau size and data types are all initialized correctly."""
+        rng = np.random.default_rng(seed)
+        states = np.arange(2**n)
+        rng.shuffle(states)
+        states = states[:num_entries]
+        iso_finder = PUIsometryFinder(states, n)
+        specs = [
+            getattr(iso_finder, attr)
+            for attr in ["n", "n_subspace", "n_r", "m", "_packed_dtype", "_word"]
+        ]
+        specs.insert(-2, len(iso_finder.tableau))
+        assert specs == [n, n, 0, 0, num_entries, np.uint64, np.uint64]
+
+    def _validate_circuit_structure(self, circuit, iso_finder, num_entries):
+        """Validate that the structure of a circuit returned by ``find_isometry`` is correct."""
+        n_subspace, n, m = iso_finder.n_subspace, iso_finder.n, iso_finder.m
+        batch_size = 0
+        seen_fanouts = 0
+        for _type, *data in circuit["structure"]:
+
+            if _type == 0:
+                assert len(data) == 4
+                assert all(isinstance(d, int) for d in data)
+                assert data[2:] == [0, 0]  # Dummy values
+                k_start, k = data[:2]
+                assert 0 <= k_start < k <= num_entries
+                assert k - k_start == batch_size
+                batch_size = 0
+
+            elif _type == 1:
+                assert len(data) == 4
+                assert all(isinstance(d, int) for d in data)
+                assert data[1] == seen_fanouts
+                seen_fanouts += 1
+                assert data[2:] == [0, 0]  # Dummy values
+                assert n_subspace <= data[0] < n
+                batch_size += 1
+                assert batch_size <= m
+
+            elif _type == 2:
+                assert len(data) == 4
+                assert all(isinstance(d, int) for d in data)
+                assert all(n_subspace <= d < n for d in data[:2])
+                assert data[2:] == [0, 0]  # Dummy values
+
+            elif _type == 3:
+                assert len(data) == 4
+                assert all(isinstance(d, int) for d in data)
+                assert all(n_subspace <= d < n for d in data[:3])
+                assert 0 <= data[3] <= 1
+
+            else:
+                raise AssertionError(
+                    "Expected the first entry in each circuit structure object to be an integer"
+                    f"between 0 and 3 (incl.), but got {_type}"
+                )
+
+        assert np.shape(circuit["fanout_bits"]) == (seen_fanouts, n - 1)
+
+    def _validate_circuit_ops(self, circuit, iso_finder, basis_states):
+        """Validate that the a circuit returned by ``find_isometry`` implements the right
+        isometry."""
+        n_subspace = iso_finder.n_subspace
+
+        # Load the final states
+        final_states = list(map(int, iso_finder.tableau))
+        states = np.array(
+            [[(val >> s) & iso_finder._one for s in iso_finder._shifts] for val in final_states]
+        ).astype(np.int8)
+        # Transform the final states back
+        for _type, *data in reversed(circuit["structure"]):
+            if _type == 0:
+                k_start, k = data[:2]
+                batch = k - k_start
+                control_bits = qp.math.int_to_binary(np.arange(k_start, k), n_subspace)
+                # Broadcasted version of `apply_multi_controlled_x`.
+                # A row is flipped iff all control bits match control_values
+                match = np.all(states[None, :, :n_subspace] == control_bits[:, None, :], axis=2)
+                states[:, np.arange(n_subspace, batch + n_subspace)] ^= match.astype(np.int8).T
+            elif _type == 1:
+                control, bit_pointer = data[:2]
+                bits = circuit["fanout_bits"][bit_pointer]
+                ctrl_bits = states[:, control]  # rows where the control is active
+                # Bit indices that need to be flipped. Need to take into account that ``bits`` does
+                # not contain the control bit itself.
+                target_bits = np.concatenate(
+                    [np.where(bits[:control])[0], np.where(bits[control:])[0] + (control + 1)]
+                )
+                states[:, target_bits] ^= ctrl_bits[:, None]
+            elif _type == 2:
+                w0, w1 = data[:2]
+                states[:, [w0, w1]] = states[:, [w1, w0]]
+
+            elif _type == 3:
+                *wires, second_ctrl_val = data
+                control, target = np.array(wires[:2]), wires[2]
+                # A row is flipped iff all control bits match control_values
+                match = np.all(states[:, control] == np.array([1, second_ctrl_val]), axis=1)
+                states[:, target] ^= match.astype(np.int8)
+
+        # Compute target state bit tableau
+        target_states = np.array(
+            [
+                [(int(val) >> s) & iso_finder._one for s in iso_finder._shifts]
+                for val in basis_states
+            ]
+        ).astype(np.int8)
+        assert np.allclose(target_states, states)
+
+    @pytest.mark.parametrize(
+        "num_entries, n",
+        [(2, 2), (2, 8), (2, 65), (3, 3), (4, 8), (15, 5), (23, 29), (7, 65), (1563, 100)],
+    )
+    def test_find_isometry(self, num_entries, n, seed):
+        """Test the main method ``find_isometry``."""
+        rng = np.random.default_rng(seed)
+        states = random_distinct_integers(2**n, num_entries, rng)
+        iso_finder = PUIsometryFinder(states, n)
+        circuit, bijection = iso_finder.find_isometry()
+
+        # Validate the internal tableau state:
+        # All remainder qubits are zeroed everywhere
+        assert np.all((iso_finder.tableau & iso_finder.rem_mask) == iso_finder._zero)
+        # The cached version of this also is correct
+        assert np.all(iso_finder._in_subspace)
+        assert iso_finder._n_not_subspace == 0
+        # The subspace qubits are enumerating the num_entries integers specified in the bijection
+        assert np.allclose(
+            (iso_finder.tableau >> iso_finder._nr_shift)[np.array(list(bijection.keys()))],
+            np.array(list(bijection.values())),
+        )
+
+        # Validate circuit structure:
+        self._validate_circuit_structure(circuit, iso_finder, num_entries)
+        self._validate_circuit_ops(circuit, iso_finder, states)
+
+
+def _is_binary(x: np.ndarray) -> bool:
+    """Return whether all entries of a numpy array are binary."""
+    return set(x.flat).issubset({0, 1})
 
 
 def _random_regular_matrix(n, random_ops, seed: int):
