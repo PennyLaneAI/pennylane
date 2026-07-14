@@ -36,8 +36,8 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
         return base_decomposition.is_applicable(**base_params)
 
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
+
         # pylint: disable=import-outside-toplevel
-        # Lazy import: pennylane.decomposition loads before pennylane.ops
         from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
         base_resources = base_decomposition.compute_resources(**base_params)
@@ -224,8 +224,8 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(
         base_params, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
     ):
+
         # pylint: disable=import-outside-toplevel
-        # Lazy import: pennylane.decomposition loads before pennylane.ops
         from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
         base_resources = base_decomposition.compute_resources(**base_params)

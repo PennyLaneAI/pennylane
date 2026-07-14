@@ -537,12 +537,6 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     if enabled():
         return _capture_apply(op)
 
-    if enabled():
-        # Capture is active but the op has no _bind_primitive (e.g. minimal
-        # legacy Operator subclass).  Reconstruct via the constructor so the
-        # new instance auto-binds its primitive.
-        return pytrees.unflatten(*pytrees.flatten(op))
-
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
