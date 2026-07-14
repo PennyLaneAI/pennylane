@@ -20,6 +20,7 @@ from pennylane import math
 from pennylane import numpy as pnp
 from pennylane._grad import grad
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.ops.functions import bind_new_parameters
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import construct_tape
@@ -43,10 +44,8 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
     new_operations = []
 
     for i, g in enumerate(gates):
-        g = copy.copy(g)
         new_params = (params[i], *g.data[1:])
-        g._data = tuple(new_params)
-        new_operations.append(g)
+        new_operations.append(bind_new_parameters(g, new_params))
 
     new_tape = tape.copy(operations=tape.operations + new_operations)
 

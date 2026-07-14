@@ -410,8 +410,7 @@ class Select(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        data = tuple(d for op in ops for d in op.data)
-        super().__init__(*data, wires=all_wires)
+        super().__init__(*self.data, wires=all_wires)
 
     def map_wires(self, wire_map: dict) -> "Select":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
@@ -428,6 +427,11 @@ class Select(Operation):
                 work_wires=copy.copy(self.work_wires),
                 partial=self.partial,
             )
+
+    @property
+    def data(self):
+        """Flattened trainable parameters of the selected operators."""
+        return tuple(d for op in self.ops for d in op.data)
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.

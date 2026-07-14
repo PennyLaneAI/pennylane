@@ -107,7 +107,7 @@ class PrepSelPrep(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*lcu.data, wires=all_wires)
+        super().__init__(*self.data, wires=all_wires)
 
     def _flatten(self):
         return (self.lcu,), (self.control,)
@@ -163,6 +163,11 @@ class PrepSelPrep(Operation):
         """Copy this op"""
         with QueuingManager.stop_recording():
             return type(self)(copy.copy(self.lcu), copy.copy(self.control))
+
+    @property
+    def data(self):
+        """Create data property"""
+        return self.lcu.data
 
     @property
     def lcu(self):
