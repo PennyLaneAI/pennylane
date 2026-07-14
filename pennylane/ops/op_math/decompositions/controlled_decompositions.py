@@ -364,7 +364,9 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
         ops.PauliX(w)
 
 
-def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
+def _mcx_many_workers_condition(wires, work_wires, **__):
+    num_control_wires = len(wires) - 1
+    num_work_wires = len(work_wires)
     return num_control_wires > 2 and num_work_wires >= num_control_wires - 2
 
 
