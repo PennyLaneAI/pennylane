@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import DecompositionGraph, pow_resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.utils import to_name
@@ -202,6 +202,22 @@ class TestDecompositionGraph:
         # 6 edges from ops to decompositions and 2 from decompositions to ops,
         # and 3 from the dummy starting node to the target gate set.
         assert len(graph2._graph.edges()) == 11
+
+    def test_decomposition_graph_adjoint_of_operator2(self, _):
+        """Tests that the graph can solve the adjoint of an Operator2"""
+
+        @qp.register_resources({qp.RX: 2, qp.CNOT: 2})
+        def _rule(phi, wires):
+            raise NotImplementedError
+
+        op = qp.adjoint(DynOp(0.5, wires=0))
+        assert isinstance(op, Operator2)  # it's an Adjoint2
+
+        graph = DecompositionGraph(
+            operations=[op], gate_set={qp.RX, qp.CNOT}, alt_decomps={DynOp: [_rule]}
+        )
+        sol = graph.solve()
+        assert sol.is_solved_for(op)
 
     def test_operator2_integration(self, _):
         """Tests constructing and solving a graph from an Operator2."""
