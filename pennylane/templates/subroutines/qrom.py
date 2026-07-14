@@ -25,11 +25,7 @@ import pennylane.math as pl_math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.math import ceil_log2
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike
@@ -515,9 +511,9 @@ def _qrom_decomposition_resources(
                 (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
             )
             if num_swaps > 1:
-                swap_resources[resource_rep(qp_ops.CSWAP)] += num_swaps
+                swap_resources[qp_ops.CSWAP] += num_swaps
             else:
-                swap_resources[resource_rep(qp_ops.CSWAP)] += 1
+                swap_resources[qp_ops.CSWAP] += 1
 
     if not clean or depth == 1:
         resources = swap_resources
