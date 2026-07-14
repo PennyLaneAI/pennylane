@@ -889,6 +889,8 @@
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
+  - Capture and graph decomp checks are run in assert_valid.
+    [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
