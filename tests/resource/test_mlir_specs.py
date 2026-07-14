@@ -15,7 +15,7 @@
 
 import pytest
 
-from pennylane.resource import SpecsResources, SymbolicSpecsResources
+from pennylane.resource import SpecsResources
 from pennylane.resource.expression import Expression
 from pennylane.resource.mlir_specs import (
     _generate_display_name_for_symbolic_var,
@@ -153,7 +153,7 @@ class TestAnalysisPassConversion:
         var = _generate_display_name_for_symbolic_var("a", {})
 
         assert actual == [
-            SymbolicSpecsResources(
+            SpecsResources(
                 gate_types={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
                 gate_sizes={1: Expression({(var,): 2, (): 9})},
                 measurements={"expval(PauliZ)": 1},
@@ -209,7 +209,7 @@ class TestAnalysisPassConversion:
         actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
 
         assert actual == [
-            SymbolicSpecsResources(
+            SpecsResources(
                 gate_types={
                     "Hadamard": 3,
                     "PPM-w3": 1,
@@ -297,7 +297,7 @@ class TestAnalysisPassConversion:
         var_name = next(iter(display_names.values()))
 
         a = fn_resources["for_loop_2"]
-        b = SymbolicSpecsResources(
+        b = SpecsResources(
             gate_types={"PauliZ": 3, "Hadamard": 1, "PauliX": Expression({(var_name,): 1})},
             gate_sizes={1: Expression({(var_name,): 1, (): 4})},
             measurements={},

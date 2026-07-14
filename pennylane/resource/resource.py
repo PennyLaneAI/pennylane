@@ -79,115 +79,217 @@ def num_to_letters(num: int) -> str:
     return num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
 
 
-# TODO: Would be better to have SpecsResources inherit from Resources directly, but there are too
-# many extra fields that are unwanted. Would be worth refactoring in the future.
-@dataclass(frozen=True)
-class SpecsResources:
-    """
-    Class for storing resource information for a quantum circuit. Contains attributes which store
-    key resources such as gate counts, number of wire allocations, measurements, and circuit depth.
+@dataclass(frozen=True, slots=True)
+class Resources:
+    counts: dict  # Intentionally vague name, aliased to gate_counts in most places
+    extra: dict = field(repr=False)  # Used to store extra fields for any derived type
 
-    Note that this class is intended to be immutable. Modifying the attributes after creation may
-    lead to unexpected behavior.
-
-    Args:
-        gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
-        gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
-        measurements (dict[str, int]): A dictionary mapping measurements to their counts.
-        num_allocs (int): The number of unique wire allocations. For circuits that do not use
-          dynamic wires, this should be equal to the number of device wires.
-        depth (int | None): The depth of the circuit, or None if not computed.
-
-    Properties:
-        num_gates (int): The total number of gates in the circuit (computed from `gate_types`).
-
-    .. details::
-
-        Methods have been provided to allow pretty-printing, as well as
-        indexing into it as a dictionary. See examples below.
-
-        **Example**
-
-        >>> from pennylane.resource import SpecsResources
-        >>> res = SpecsResources(
-        ...     gate_types={'Hadamard': 1, 'CNOT': 1},
-        ...     gate_sizes={1: 1, 2: 1},
-        ...     measurements={'expval(PauliZ)': 1},
-        ...     num_allocs=2,
-        ...     depth=2
-        ... )
-
-        >>> print(res.num_gates)
-        2
-
-        >>> print(res["num_gates"])
-        2
-
-        >>> print(res)
-        Wire allocations: 2
-        Total gates: 2
-        Gate counts:
-        - Hadamard: 1
-        - CNOT: 1
-        Measurements:
-        - expval(PauliZ): 1
-        Depth: 2
-    """
-
-    gate_types: dict[str, int]
-    gate_sizes: dict[int, int]
-    measurements: dict[str, int]
-    num_allocs: int
-    depth: int | None = None
+    _vars: frozenset[str] = field(init=False, repr=False)
 
     def __post_init__(self):
-        if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
-            raise ValueError(
-                "Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates."
+        all_vars = set()
+
+        # Iterate over all fields of the dataclass to find any Expression instances and
+        # collect their variables
+        for field in fields(self):
+            if field.name == "_vars":
+                continue
+            value = getattr(self, field.name)
+            if isinstance(value, Expression):
+                all_vars |= value.vars
+            elif isinstance(value, dict):
+                for v in value.values():
+                    if isinstance(v, Expression):
+                        all_vars |= v.vars
+
+        object.__setattr__(self, "_vars", frozenset(all_vars))
+
+    def to_pretty_str(self, preindent: int = 0) -> str:
+        """Convert a :class:`Resources` object into a human-readable string representation.
+
+        Automatically iterates over all fields of the dataclass and formats them into a string,
+        including any nested dictionaries.
+
+        .. note::
+
+            This method does not have to be implemented by derived classes, but may be overridden
+            if a different formatting is desired.
+
+        Args:
+            preindent (int, optional): The number of spaces to insert before each line. Defaults to 0.
+
+        Returns:
+            str: A human-readable string representation of this object.
+        """
+        prefix = " " * preindent
+        lines = []
+
+        if self.vars:
+            lines.append(
+                f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars)) if self.vars else 'None'}"
             )
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the SpecsResources to a dictionary."""
+        for field in fields(self):
+            if field.repr is False:
+                # Skip fields that are not meant to be included in the representation
+                continue
 
-        # Need to explicitly include properties
-        d = asdict(self)
-        d["num_gates"] = self.num_gates
+            field_name = field.metadata.get("display_name", field.name)
+            if isinstance(getattr(self, field.name), dict):
+                lines.append(f"{prefix}{field_name}:")
+                dict_items = getattr(self, field.name)
+                for k, v in dict_items.items():
+                    # TODO: Figure out how best to handle nested dicts
+                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    lines.append(f"{prefix}- {k}: {value_str}")
+                if len(dict_items) == 0:
+                    lines.append(f"{prefix}- None present.")
+            else:
+                value = getattr(self, field.name)
+                value_str = (
+                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                )
+                lines.append(f"{prefix}{field_name}: {value_str}")
 
-        return d
+        return "\n".join(lines)
+
+    def __str__(self):
+        """Convert this object to its string representation by calling :meth:`to_pretty_str`.
+
+        Automatically iterates over all fields of the dataclass and formats them into a string,
+        including any nested dictionaries.
+
+        Returns:
+            str: A human-readable string representation of this object.
+        """
+        return self.to_pretty_str()
+
+    def _repr_markdown_(self) -> str:
+        """
+        Return a Markdown table representation of this object for Jupyter notebook display.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
+        lines = []
+        lines.append("| **Metric** | **Value** |")
+        lines.append("| :--- | ---: |")
+
+        field_name = field.metadata.get("display_name", field.name)
+        if isinstance(getattr(self, field.name), dict):
+            lines.append(f"| **{field_name}** | |")
+            dict_items = getattr(self, field.name)
+            for k, v in dict_items.items():
+                # TODO: Figure out how best to handle nested dicts
+                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                lines.append(f"| {k} | {value_str} |")
+            if len(dict_items) == 0:
+                lines.append(f"| *None present*| |")
+        else:
+            value = getattr(self, field.name)
+            value_str = _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+            lines.append(f"| **{field_name}** | {value_str} |")
+
+        return "\n".join(lines)
 
     def __getitem__(self, key):
         if key in (field.name for field in fields(self)):
             return getattr(self, key)
 
-        match key:
-            # Fields that used to be included in specs output prior to PL version 0.44
-            case "shots":
-                raise KeyError(
-                    "shots is no longer included within specs's resources, check the top-level object instead."
-                )
-            case "num_wires":
-                raise KeyError(
-                    "num_wires has been renamed to num_allocs to more accurate describe what it measures."
-                )
-            case "num_gates":
-                # As a property, this needs to be handled differently to the true fields
-                return self.num_gates
-            case "gate_counts":
-                return self.gate_counts
-
         raise KeyError(
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
         )
 
-    @property
-    def num_gates(self) -> int:
-        """Total number of gates in the circuit."""
-        return sum(self.gate_types.values())
+    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> "Resources":
+        """
+        Substitute symbolic variables in the object with concrete integer values.
+
+        Automatically iterates over all fields of the dataclass and applies substitutions to any
+        Expression instances, so derived classes do not have to explicitly implement this method
+        unless they want to customize the behavior.
+        """
+        if substitutions is None:
+            substitutions = {}
+        substitutions.update(kwargs)
+
+        subs_vars = set(substitutions.keys())
+        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
+            raise ValueError(
+                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {self.vars}."
+            )
+
+        new_values = {}
+        for field in fields(self):
+            if field.init is False:
+                continue
+            value = getattr(self, field.name)
+            if isinstance(value, Expression):
+                new_values[field.name] = value.subs(substitutions)
+            elif isinstance(value, dict):
+                new_values[field.name] = {
+                    k: v.subs(substitutions) if isinstance(v, Expression) else v
+                    for k, v in value.items()
+                }
+            else:
+                new_values[field.name] = value
+
+        return type(self)(**new_values)
 
     @property
-    def gate_counts(self) -> dict[str, int]:
-        """Alias for ``gate_types``"""
-        return self.gate_types
+    def is_symbolic(self) -> bool:
+        return bool(self._vars)
+
+    @property
+    def vars(self) -> frozenset[str]:
+        return self._vars
+
+
+@dataclass(frozen=True, slots=True)
+class SpecsResources(Resources):
+    gate_sizes: dict[int, int | Expression] = field(repr=False)
+    measurements: dict[str, int | Expression] = field(metadata={"display_name": "Measurements"})
+
+    # Automatically generated
+    num_gates: int | Expression = field(init=False, metadata={"display_name": "Total Gates"})
+
+    num_allocs: int | Expression = field(metadata={"display_name": "Total Wires"})
+    circuit_depth: int | Expression | None = field(
+        default=None, metadata={"display_name": "Circuit Depth"}
+    )
+
+    def __post_init__(self):
+        total_gate_counts = sum(self.gate_counts.values())
+        total_gate_sizes = sum(self.gate_sizes.values())
+        if total_gate_counts != total_gate_sizes:
+            raise ValueError(
+                f"Inconsistent gate counts: `gate_counts` describes {total_gate_counts} gates but "
+                f"`gate_sizes` describes {total_gate_sizes} gates."
+            )
+        object.__setattr__(self, "num_gates", total_gate_counts)
+
+    def __getitem__(self, key):
+        # Need to match
+        match key:
+            # Properties need to be handled manually unlike true fields
+            case "num_wires":
+                return self.num_wires
+            case "depth":
+                return self.depth
+
+        return super().__getitem__(key)
+
+    @property
+    def gate_counts(self):
+        return self.counts
+
+    @property
+    def depth(self):
+        return self.circuit_depth
+
+    @property
+    def num_wires(self):
+        return self.num_allocs
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
@@ -206,10 +308,10 @@ class SpecsResources:
         lines.append(f"{prefix}Total gates: {_count_to_str(self.num_gates)}")
 
         lines.append(f"{prefix}Gate counts:")
-        if not self.gate_types:
+        if not self.gate_counts:
             lines.append(prefix + "- No gates.")
         else:
-            for gate, count in self.gate_types.items():
+            for gate, count in self.gate_counts.items():
                 lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
 
         lines.append(f"{prefix}Measurements:")
@@ -224,10 +326,6 @@ class SpecsResources:
         )
 
         return "\n".join(lines)
-
-    # Leave repr and str methods separate for simple and pretty printing
-    def __str__(self) -> str:
-        return self.to_pretty_str()
 
     def _repr_markdown_(self) -> str:
         """
@@ -263,151 +361,6 @@ class SpecsResources:
         )
         lines.append(f"| **Depth** | {depth_str} |")
         return "\n".join(lines)
-
-
-@dataclass(frozen=True)
-class SymbolicSpecsResources(SpecsResources):
-    """
-    Class for storing symbolic resource information for a quantum circuit. Contains attributes
-    which store expressions representing the resources, allowing for symbolic manipulation and
-    substitution of variables.
-
-    .. warning::
-
-        This class is intended to be immutable. Modifying the attributes after creation may
-        lead to unexpected behavior.
-
-    .. note::
-
-        Some of the attributes from the parent class, :class:`SpecsResources`, are overridden
-        here to be of type :class:`Expression` instead of `int`.
-    """
-
-    # gate_types: dict[str, Expression]
-    # gate_sizes: dict[int, Expression]
-    # measurements: dict[str, Expression]
-    # num_allocs: Expression
-    # depth: Expression | None = None
-    vars: set[str] = field(init=False)
-
-    def __post_init__(self):
-        # Make sure that all fields use expressions, (converting ints to constant expressions where necessary)
-        if self.depth is not None and isinstance(self.depth, int):
-            object.__setattr__(
-                self,
-                "depth",
-                Expression(self.depth),
-            )
-        if isinstance(self.num_allocs, int):
-            object.__setattr__(
-                self,
-                "num_allocs",
-                Expression(self.num_allocs),
-            )
-
-        convert_int_vals_to_expression(self.gate_types)
-        convert_int_vals_to_expression(self.gate_sizes)
-        convert_int_vals_to_expression(self.measurements)
-
-        vars = set()
-
-        # Need to disable this since the type checker still thinks that many of these members are
-        # `int` and therefore do not contain a `var` member
-        # pylint: disable=no-member
-
-        # Need to take a union over all variables across the different expressions to
-        # ensure the top-level objects has the full set of variables
-        if self.depth is not None:
-            vars |= self.depth.vars
-        vars |= self.num_allocs.vars
-
-        # Union over all expressions
-        for expr in self.gate_types.values():
-            vars |= expr.vars
-        for expr in self.gate_sizes.values():
-            vars |= expr.vars
-        for expr in self.measurements.values():
-            vars |= expr.vars
-
-        object.__setattr__(self, "vars", vars)
-
-    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> SpecsResources:
-        """
-        Substitute variables in the symbolic resources with concrete integer values.
-        If all variables are substituted, this will return a :class:`SpecsResources` object with
-        integer values instead of another :class:`SymbolicSpecsResources` object.
-        """
-        if substitutions is None:
-            substitutions = {}
-        substitutions.update(kwargs)
-
-        subs_vars = set(substitutions.keys())
-        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
-            raise ValueError(
-                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {self.vars}."
-            )
-
-        # Need to disable this since the type checker still thinks that many of these members are
-        # `int` and therefore do not contain a `var` member
-        # pylint: disable=no-member
-
-        num_allocs = self.num_allocs.subs(substitutions)
-        depth = self.depth.subs(substitutions) if self.depth is not None else None
-
-        gate_types = {k: v.subs(substitutions) for k, v in self.gate_types.items()}
-        gate_sizes = {k: v.subs(substitutions) for k, v in self.gate_sizes.items()}
-        measurements = {k: v.subs(substitutions) for k, v in self.measurements.items()}
-
-        if len(self.vars - subs_vars) == 0:
-            # There are no variables remaining, so this can be resolved down to a `SpecsResources`
-            return SpecsResources(
-                gate_types={k: int(v) for k, v in gate_types.items()},
-                gate_sizes={k: int(v) for k, v in gate_sizes.items()},
-                measurements={k: int(v) for k, v in measurements.items()},
-                num_allocs=int(num_allocs),
-                depth=int(depth) if depth is not None else None,
-            )
-
-        return SymbolicSpecsResources(
-            gate_types=gate_types,
-            gate_sizes=gate_sizes,
-            measurements=measurements,
-            num_allocs=num_allocs,
-            depth=depth,
-        )
-
-    def __eq__(self, other):
-        if not isinstance(other, (SpecsResources, SymbolicSpecsResources)):
-            return NotImplemented
-        if not isinstance(other, SymbolicSpecsResources):
-            if self.vars:
-                return False
-            return self.subs() == other
-
-        return (
-            self.vars == other.vars
-            and self.num_allocs == other.num_allocs
-            and self.depth == other.depth
-            and self.gate_types == other.gate_types
-            and self.gate_sizes == other.gate_sizes
-            and self.measurements == other.measurements
-        )
-
-    def __call__(self, **kwargs):
-        return self.subs(kwargs)
-
-    def to_pretty_str(self, preindent: int = 0) -> str:
-        prefix = " " * preindent
-        return (
-            f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars)) if self.vars else 'None'}\n"
-            + super().to_pretty_str(preindent)
-        )
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the SymbolicSpecsResources to a dictionary, including the variables."""
-        d = super().to_dict()
-        d["vars"] = sorted(self.vars)
-        return d
 
 
 @dataclass(frozen=True)

@@ -666,10 +666,8 @@ def specs(
         This can occur when the resources depend on values that are not known at
         compile time, such as the number of iterations in a loop.
         In these cases, the resource information will be returned as a
-        :class:`~.resource.SymbolicSpecsResources` including symbolic expressions,
-        rather than a
-        :class:`~.resource.SpecsResources` with concrete values.
-
+        :class:`~.resource.SpecsResources` including symbolic expressions,
+        rather than one with concrete values.
         For example, consider the following circuit which contains a ``for`` loop with a
         non-static range:
 
@@ -711,7 +709,7 @@ def specs(
         Depth: Not computed
 
         You can estimate the concrete resource values using the ``.subs`` method of the
-        returned :class:`~.resource.SymbolicSpecsResources` object, and providing keyword arguments
+        returned :class:`~.resource.SpecsResources` object, and providing keyword arguments
         which describe the mapping from each symbolic variable to an integer value:
 
         >>> res = specs_result.resources

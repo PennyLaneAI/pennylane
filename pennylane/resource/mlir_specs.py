@@ -29,7 +29,7 @@ import pennylane as qp
 
 from ._utils import make_level_name_unique
 from .expression import Expression
-from .resource import SpecsResources, SymbolicSpecsResources, num_to_letters
+from .resource import SpecsResources, num_to_letters
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
@@ -44,7 +44,7 @@ def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, s
 def _mlir_resources_to_specs_resources(
     all_data: dict[str, Any],
     focus: str,
-    fn_resources: dict[str, SymbolicSpecsResources | None],
+    fn_resources: dict[str, SpecsResources | None],
     display_names: dict[str, str],
 ) -> None:
     """
@@ -52,11 +52,11 @@ def _mlir_resources_to_specs_resources(
 
     Recursively resolves the resources for a given function call, combining subroutine resources
     with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from
-    function name to the corresponding :class:`~pennylane.resource.SymbolicSpecsResources` object.
+    function name to the corresponding :class:`~pennylane.resource.SpecsResources` object.
 
     .. note::
 
-        All resources are stored within :class:`~pennylane.resource.SymbolicSpecsResources` objects
+        All resources are stored within :class:`~pennylane.resource.SpecsResources` objects
         as symbolic expressions, even if all values are concrete and knowable at compile time.
         It is the responsibility of the caller to upcast these to concrete valued
         :class:`~pennylane.resource.SpecsResources` objects if desired.
@@ -64,8 +64,8 @@ def _mlir_resources_to_specs_resources(
     Args:
         all_data (dict[str, Any]): the full data output from the MLIR resource analysis
         focus (str): the name of the function to resolve resources for in this call
-        fn_resources (dict[str, SymbolicSpecsResources | None]): the mapping from function name to
-            resolved `SymbolicSpecsResources` objects. (modified in-place by this function)
+        fn_resources (dict[str, SpecsResources | None]): the mapping from function name to
+            resolved `SpecsResources` objects. (modified in-place by this function)
         display_names (dict[str, str]): a mapping from symbolic variable names to their display
             names in the output. (modified in-place by this function)
     """
@@ -133,9 +133,9 @@ def _mlir_resources_to_specs_resources(
         for meas, meas_count in called_fn_resources.measurements.items():
             measurements[meas] += call_count * meas_count
 
-    # Sorting these dicts by key ensures that the resulting SymbolicSpecsResources objects have a deterministic order,
+    # Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
-    fn_resources[focus] = SymbolicSpecsResources(
+    fn_resources[focus] = SpecsResources(
         gate_types={k: gate_types[k] for k in sorted(gate_types.keys())},
         gate_sizes={k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
         measurements={k: measurements[k] for k in sorted(measurements.keys())},

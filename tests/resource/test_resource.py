@@ -28,7 +28,6 @@ from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
     SpecsResources,
-    SymbolicSpecsResources,
     _count_to_str,
     num_to_letters,
     resources_from_tape,
@@ -205,9 +204,9 @@ class TestSpecsResources:
 
 class TestSymbolicSpecsResources:
     @pytest.fixture
-    def example_resource(self) -> SymbolicSpecsResources:
+    def example_resource(self) -> SpecsResources:
         """
-        Generate an example SymbolicSpecsResources instance.
+        Generate an example SpecsResources instance.
         The resources roughly correspond to the following circuit:
 
         .. code-block:: python
@@ -223,7 +222,7 @@ class TestSymbolicSpecsResources:
                     qp.PauliZ(j)
                 return expval(qp.PauliZ(0))
         """
-        return SymbolicSpecsResources(
+        return SpecsResources(
             gate_types={
                 "Hadamard": Expression({(): 1}),
                 "PauliX": Expression({("x"): 1, (): 1}),
@@ -238,56 +237,23 @@ class TestSymbolicSpecsResources:
         )
 
     @pytest.fixture
-    def example_resource_concrete(self) -> SymbolicSpecsResources:
+    def example_resource_concrete(self) -> SpecsResources:
         """
-        Generate an example SymbolicSpecsResources instance for a non-dynamic circuit.
+        Generate an example SpecsResources instance for a non-dynamic circuit.
 
         Specifically, returns the resources for a simple Bell state circuit with a measurement.
         """
-        return SymbolicSpecsResources(
+        return SpecsResources(
             gate_types={"Hadamard": 1, "CNOT": 1},
             gate_sizes={1: 1, 2: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=1,
             depth=1,
         )
-
-    def test_init_converts_to_expression(self):
-        """Test that SymbolicSpecsResources can be instantiated with ints and correctly converts them."""
-        s = SymbolicSpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={"expval(PauliZ)": 1},
-            num_allocs=1,
-            depth=1,
-        )
-
-        assert isinstance(s.gate_types, dict)
-        assert all(isinstance(v, Expression) for v in s.gate_types.values())
-        assert isinstance(s.gate_sizes, dict)
-        assert all(isinstance(v, Expression) for v in s.gate_sizes.values())
-        assert isinstance(s.measurements, dict)
-        assert all(isinstance(v, Expression) for v in s.measurements.values())
-        assert isinstance(s.num_allocs, Expression)
-        assert isinstance(s.depth, Expression)
 
     def test_blank_subs(self, example_resource):
         s = example_resource
         assert s.subs() == s
-
-    def test_blank_subs_concrete(self, example_resource_concrete):
-        s = example_resource_concrete
-
-        concretized = s.subs()
-        assert isinstance(concretized, SpecsResources)
-        assert not isinstance(concretized, SymbolicSpecsResources)
-        assert concretized == SpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={"expval(PauliZ)": 1},
-            num_allocs=1,
-            depth=1,
-        )
 
     def test_partial_subs(self, example_resource):
         s = example_resource
@@ -295,7 +261,7 @@ class TestSymbolicSpecsResources:
         # Substitute x=2, leaving z symbolic
         partially_substituted = s.subs({"x": 2})
 
-        expected = SymbolicSpecsResources(
+        expected = SpecsResources(
             gate_types={
                 "Hadamard": Expression({(): 1}),
                 "PauliX": Expression({(): 3}),
@@ -328,7 +294,6 @@ class TestSymbolicSpecsResources:
         )
 
         assert fully_substituted == expected
-        assert not isinstance(fully_substituted, SymbolicSpecsResources)
 
     def test_subs_kwargs(self, example_resource):
         assert example_resource.subs(x=2, z=3) == example_resource.subs({"x": 2, "z": 3})
@@ -344,21 +309,21 @@ class TestSymbolicSpecsResources:
         assert example_resource(x=2, z=3) == example_resource.subs(x=2, z=3)
 
     def test_eq(self):
-        s1 = SymbolicSpecsResources(
+        s1 = SpecsResources(
             gate_types={"Hadamard": Expression({("x,"): 1})},
             gate_sizes={1: Expression({("x,"): 1})},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
             depth=Expression(1),
         )
-        s2 = SymbolicSpecsResources(
+        s2 = SpecsResources(
             gate_types={"Hadamard": Expression({("x,"): 1})},
             gate_sizes={1: Expression({("x,"): 1})},
             measurements={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
             depth=Expression(1),
         )
-        s3 = SymbolicSpecsResources(
+        s3 = SpecsResources(
             gate_types={"Hadamard": Expression({("z,"): 1})},
             gate_sizes={1: Expression({("z,"): 1})},
             measurements={"expval(PauliZ)": Expression(1)},
@@ -378,7 +343,7 @@ class TestSymbolicSpecsResources:
         )
 
     def test_eq_no_var(self):
-        s1 = SymbolicSpecsResources(
+        s1 = SpecsResources(
             gate_types={"Hadamard": Expression(1)},
             gate_sizes={1: Expression(1)},
             measurements={"expval(PauliZ)": Expression(1)},
@@ -386,7 +351,7 @@ class TestSymbolicSpecsResources:
             depth=Expression(1),
         )
 
-        s2 = SymbolicSpecsResources(
+        s2 = SpecsResources(
             gate_types={"Hadamard": Expression(1)},
             gate_sizes={1: Expression(1)},
             measurements={"expval(PauliZ)": Expression(1)},
@@ -394,7 +359,7 @@ class TestSymbolicSpecsResources:
             depth=Expression(1),
         )
 
-        s3 = SymbolicSpecsResources(
+        s3 = SpecsResources(
             gate_types={"Hadamard": Expression(2)},  # different value here
             gate_sizes={1: Expression(1)},
             measurements={"expval(PauliZ)": Expression(1)},
@@ -497,7 +462,7 @@ class TestCircuitSpecs:
             shots=Shots(1000),
             level={1: "l1", 2: "l2"},
             resources={
-                1: SymbolicSpecsResources(
+                1: SpecsResources(
                     gate_types={
                         "Hadamard": Expression({("x",): 2, (): 2}),
                         "CNOT": Expression({("x",): 2}),
@@ -508,14 +473,14 @@ class TestCircuitSpecs:
                     depth=2,
                 ),
                 2: [
-                    SymbolicSpecsResources(
+                    SpecsResources(
                         gate_types={"CNOT": Expression({("x",): 1})},
                         gate_sizes={2: Expression({("x",): 1})},
                         measurements={"expval(PauliX)": 1},
                         num_allocs=2,
                         depth=1,
                     ),
-                    SymbolicSpecsResources(
+                    SpecsResources(
                         gate_types={"CNOT": Expression({("x",): 1})},
                         gate_sizes={2: Expression({("x",): 1})},
                         measurements={"expval(PauliZ)": 1},
@@ -801,8 +766,8 @@ class TestIPythonDisplays:
         )
 
     @pytest.fixture
-    def example_symbolic_specs_resource(self) -> SymbolicSpecsResources:
-        return SymbolicSpecsResources(
+    def example_symbolic_specs_resource(self) -> SpecsResources:
+        return SpecsResources(
             gate_types={
                 "Hadamard": Expression({("a", "a", "b"): 1, ("a", "a"): 1, ("a",): 1}),
                 "CNOT": 1,
@@ -832,7 +797,7 @@ class TestIPythonDisplays:
         assert actual.strip() == expected.strip()
 
     def test_symbolic_specs_resources_ipython_display(self, example_symbolic_specs_resource):
-        """Test the IPython display of a SymbolicSpecsResources instance."""
+        """Test the IPython display of a SpecsResources instance with symbolic data."""
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
