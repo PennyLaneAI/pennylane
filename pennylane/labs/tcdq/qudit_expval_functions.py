@@ -347,6 +347,10 @@ def _accumulate_phase_diffs(
     weight_data: list[WeightGroupData],
     n_obs: int,
     n_samples: int,
+    vmapped_phase_func: Callable | None,
+    phase_fn_params: ArrayLike | None,
+    samples: ArrayLike,
+    l_vecs: ArrayLike,
 ) -> jnp.ndarray:
     """Assemble the accumulated phase-difference matrix from all weight groups."""
     accumulated = jnp.zeros((n_obs, n_samples))
@@ -355,6 +359,10 @@ def _accumulate_phase_diffs(
         accumulated = accumulated + (theta_w @ group.samples_matrices[0])[jnp.newaxis, :]
         for B_sigma, C_sigma in zip(group.samples_matrices, group.obs_matrices):
             accumulated = accumulated - (C_sigma.T * theta_w) @ B_sigma
+
+    if vmapped_phase_func is not None:
+        accumulated += vmapped_phase_func(phase_fn_params, samples, l_vecs)
+
     return accumulated
 
 
@@ -489,24 +497,23 @@ def build_qudit_expval_func(
     """
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
-    d = config.d
-    n = config.n_qudits
-
+    d, n = config.d, config.n_qudits
     default_samples = _compute_qudit_samples(config.key, config.n_samples, n, d)
 
     vmapped_phase_func = None
     if config.phase_fn is not None:
 
         def compute_phase_diff(p_params, sample, l_vec):
-            return config.phase_fn(p_params, sample) - config.phase_fn(p_params, (sample - l_vec) % d)
+            return config.phase_fn(p_params, sample) - config.phase_fn(
+                p_params, (sample - l_vec) % d
+            )
 
         vmapped_phase_func = jax.vmap(
             jax.vmap(compute_phase_diff, in_axes=(None, 0, None)),
             in_axes=(None, None, 0),
         )
 
-    gen_np = np.array(generators)
-    pm_np = np.array(param_map)
+    gen_np, pm_np = np.array(generators), np.array(param_map)
     gate_weights = np.sum(gen_np != 0, axis=1)
 
     if config.observables is not None:
@@ -604,10 +611,9 @@ def build_qudit_expval_func(
             obs_pm = _obs_phase_matrix(samples, m_f, l_f, d)
             w_data = _build_all_weight_groups(gen_np, pm_np, gate_weights, samples, l_vecs, d)
 
-        accumulated_phase_diffs = _accumulate_phase_diffs(gates_params, w_data, n_obs, _n)
-
-        if vmapped_phase_func is not None:
-            accumulated_phase_diffs = accumulated_phase_diffs + vmapped_phase_func(phase_fn_params, samples, l_vecs)
+        accumulated_phase_diffs = _accumulate_phase_diffs(
+            gates_params, w_data, n_obs, _n, vmapped_phase_func, phase_fn_params, samples, l_vecs
+        )
 
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps

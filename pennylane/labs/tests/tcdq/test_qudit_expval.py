@@ -1252,6 +1252,7 @@ def test_qudit_expval_batched_init_state_matches_brute_force(
         mc_vals[0], ref, atol=tol
     ), f"Mismatch: batched={mc_vals[0]}, matrix={ref}, tol={tol:.2e}"
 
+
 class TestQuditExpvalWithPhaseLayer:
     """Test batched MC with a custom phase layer against brute-force reference."""
 
@@ -1266,9 +1267,7 @@ class TestQuditExpvalWithPhaseLayer:
     def _build_phase_diag(phase_fn, phase_params, d, n):
         """Evaluate phase_fn at every z in Z_d^n to build the diagonal vector."""
         all_states = list(itertools.product(range(d), repeat=n))
-        return np.array([
-            float(phase_fn(phase_params, jnp.array(z))) for z in all_states
-        ])
+        return np.array([float(phase_fn(phase_params, jnp.array(z))) for z in all_states])
 
     def test_phase_layer_default_state(self):
         """Phase layer with default |0> input, d=3, nonzero l, nontrivial params."""
@@ -1300,7 +1299,13 @@ class TestQuditExpvalWithPhaseLayer:
 
         for i, (l, m) in enumerate(zip(l_vecs, m_vecs)):
             ref = qudit_expectation_brute_force(
-                n, d, generators, thetas, l, m, phase_diag=phase_diag,
+                n,
+                d,
+                generators,
+                thetas,
+                l,
+                m,
+                phase_diag=phase_diag,
             )
             tol = max(3.5 * float(mc_err_re[i]), 3.5 * float(mc_err_im[i]), 1e-5)
             assert np.isclose(mc_vals[i], ref, atol=tol), (
@@ -1317,9 +1322,7 @@ class TestQuditExpvalWithPhaseLayer:
         m_vecs = np.array([[0, 0], [0, 0]])
         phase_params = jnp.array([0.2, 1.5, -0.3])
         state_elems = np.array([[0, 0], [1, 2], [2, 1]])
-        state_amps = np.array(
-            [1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3)], dtype=complex
-        )
+        state_amps = np.array([1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3)], dtype=complex)
         n_samples = 80000
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
@@ -1347,7 +1350,12 @@ class TestQuditExpvalWithPhaseLayer:
 
         for i, (l, m) in enumerate(zip(l_vecs, m_vecs)):
             ref = qudit_expectation_brute_force(
-                n, d, generators, thetas, l, m,
+                n,
+                d,
+                generators,
+                thetas,
+                l,
+                m,
                 init_state_elems=state_elems,
                 init_state_amps=state_amps,
                 phase_diag=phase_diag,
