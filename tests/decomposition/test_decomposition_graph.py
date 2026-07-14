@@ -714,20 +714,20 @@ class TestDecompositionGraph:
         def _custom_rule(_):
             raise NotImplementedError
 
-        @qp.register_resources({qp.ctrl(OneWireDynOp, Wire[1]): 1})
+        @qp.register_resources({qp.ctrl(OneWireDynOp(Float, Wire[1]), Wire[1]): 1})
         def _another_rule(_):
             raise NotImplementedError
 
         _ = DecompositionGraph(
             [NonParametricOp([0, 1])],
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
-            alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
+            alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
         )
 
         _ = DecompositionGraph(
             [qp.ctrl(NonParametricOp([0, 1]), control=[2])],
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
-            alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
+            alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
         )
 
 
