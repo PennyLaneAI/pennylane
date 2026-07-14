@@ -297,7 +297,7 @@ def _adder_arithmetic_resources(num_x_wires, mod, **__) -> dict:
         counts[rep] += 4 * count
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
-    counts[resource_rep(CNOT)] += 2
+    counts[CNOT] += 2
     counts[PauliX] += 2
     return dict(counts)
 

@@ -21,7 +21,7 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -134,7 +134,7 @@ class HilbertSchmidt(Operation):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -397,7 +397,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -432,10 +432,7 @@ def _hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range * 2,
-            CNOT: min(num_first_range, num_second_range) * 2,
-        }
+        {Hadamard: num_first_range * 2, CNOT: min(num_first_range, num_second_range) * 2}
     )
 
     for op_rep in u_reps:
@@ -456,10 +453,7 @@ def _local_hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range + 1,
-            CNOT: min(num_first_range, num_second_range) + 1,
-        }
+        {Hadamard: num_first_range + 1, CNOT: min(num_first_range, num_second_range) + 1}
     )
 
     for op_rep in u_reps:

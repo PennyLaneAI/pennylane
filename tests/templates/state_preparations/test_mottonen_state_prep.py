@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
@@ -340,10 +341,10 @@ class TestDecomposition:
 
         assert resource_obj.num_gates == 1 + 2 * n + 2 * (n - 1)
         assert resource_obj.gate_counts == {
-            qp.resource_rep(qp.GlobalPhase): 1,
-            qp.resource_rep(qp.RY): n,
-            qp.resource_rep(qp.RZ): n,
-            qp.CNOT: 2 * (n - 1),
+            abstractify(qp.GlobalPhase): 1,
+            abstractify(qp.RY): n,
+            abstractify(qp.RZ): n,
+            abstractify(qp.CNOT): 2 * (n - 1),
         }
 
         with qp.queuing.AnnotatedQueue() as q:

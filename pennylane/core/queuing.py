@@ -533,17 +533,9 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         active queuing context.
 
     """
-    if hasattr(op, "_bind_primitive") and enabled():
-        op._bind_primitive()  # pylint: disable=protected-access
-        if op.tracer is not None:
-            return op
-        raise RuntimeError("Trying to use apply in a non-tracing context.")
 
     if enabled():
-        # Capture is active but the op has no _bind_primitive (e.g. minimal
-        # legacy Operator subclass).  Reconstruct via the constructor so the
-        # new instance auto-binds its primitive.
-        return pytrees.unflatten(*pytrees.flatten(op))
+        return _capture_apply(op)
 
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
@@ -562,6 +554,21 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         context.append(op)
 
     return op
+
+
+def _capture_apply(op):
+    """Applies an op in a capture context."""
+
+    if hasattr(op, "_bind_primitive"):
+        op._bind_primitive()  # pylint: disable=protected-access
+        if op.tracer is None:
+            raise RuntimeError("Trying to use apply in a non-tracing context.")
+        return op
+
+    # Capture is active but the op has no _bind_primitive (e.g. minimal
+    # legacy Operator subclass).  Reconstruct via the constructor so the
+    # new instance auto-binds its primitive.
+    return pytrees.unflatten(*pytrees.flatten(op))
 
 
 __all__ = ["QueuingManager", "AnnotatedQueue", "apply"]

@@ -369,18 +369,14 @@ class ParticleConservingU1(Operation):
 
 
 def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
-    # number of pairs of even-indexed of wires
-    num_nm_wires = num_wires - 1
-
-    resources = {
+    num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
+    return {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(CZ): 3 * num_nm_wires * n_layers,
-        resource_rep(CRot): 3 * num_nm_wires * n_layers,
-        resource_rep(PhaseShift): 6 * num_nm_wires * n_layers,
+        CZ: 3 * num_nm_wires * n_layers,
+        CRot: 3 * num_nm_wires * n_layers,
+        PhaseShift: 6 * num_nm_wires * n_layers,
         CNOT: 4 * num_nm_wires * n_layers,
     }
-
-    return resources
 
 
 def _decompose_ua_qfunc(phi: float, wires: WiresLike):
