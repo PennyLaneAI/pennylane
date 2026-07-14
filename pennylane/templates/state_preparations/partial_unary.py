@@ -28,19 +28,143 @@ _U64 = np.uint64
 
 # pylint: disable-next=too-many-instance-attributes
 class PUIsometryFinder:
-    r"""Bit-packed classical algorithm that finds the isometry circuit and bijection for
-    :class:`~.PartialUnaryStatePreparation`.
-
-    This is a drop-in replacement for :class:`~.PUIsometryFinder` with identical inputs,
-    outputs and semantics, but a substantially faster implementation. Rows of the bit tableau
-    are packed into integer words: a native ``uint64`` array for ``n <= 63`` (the fast common
-    case), transparently switching to a ``dtype=object`` array of Python big integers for
-    ``n >= 64``. See the module docstring and :class:`~.PUIsometryFinder` for details.
+    r"""Classical algorithm that finds the isometry circuit and bijection for
+    :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
+    given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to the first consecutive
+    computational basis states :math:`\{|j\rangle\}_{0\leq j < |L|}`. The state preparation
+    circuit will then prepare the amplitude :math:`c_\ell` on the computational basis state that
+    :math:`|\ell\rangle` was mapped to, and then runs the isometry backwards to distribute the
+    amplitudes to the states :math:`\{|\ell\rangle\}`.
 
     Args:
         basis_states (list[int]): Computational basis state indices :math:`L` that we want to map
             to the first :math:`|L|` consecutive basis states.
         n_qubits (int): Number of qubits on which the state needs to be prepared.
+
+    .. details::
+        :title: Theoretical background
+        :href: theory
+
+        The core idea for this isometry mapping stems from
+        `Malvetti et al. (2021) <https://quantum-journal.org/papers/q-2021-03-15-412/>`__.
+        To prepare the mapping, we split the overall wires (excluding dedicated work wires) into
+        a *subspace register* of size :math:`n_{\text{subspace}}=\lceil \log_2(|L|)\rceil` and the
+        *remainder register* of size :math:`n_r =n-n_{\text{subspace}}`. The goal then is
+        to map all states :math:`|\ell\rangle = |\ell_s\rangle \otimes |\ell_r\rangle` to some
+        unique subspace state :math:`|f(\ell)\rangle = |f(\ell)\rangle \otimes |0\rangle`,
+        where :math:`f` is a bijection.
+        The algorithm works because it successively maps the states to the desired subspace, and
+        does so exclusively with operations that leave the subspace itself untouched, so that all
+        states that have been handled remain static when handling the next ones.
+        Throughout, we will switch between integers and their bit string representation as needed,
+        for example in the split of :math:`\ell` into its first :math:`n_{\text{subspace}}` bits
+        :math:`\ell_s` and the remaining substring :math:`\ell_r`.
+        Finally, we also define a *batch size* :math:`m = 2^{\lfloor \log_2(n_r)\rfloor}`.
+
+        **Algorithm description**
+
+        The algorithm now proceeds iteratively in batches. We will denote some actions in bold,
+        which are both carried out on the bit strings of all the states to be encoded, and
+        recorded in the circuit representation for the isometry.
+        The former is stored in a packed bit tableau, representing each row in a single
+        ``np.uint64`` (for :math:`n\leq 63` qubits) or a large Python integer (for :math:`n>63`).
+
+        0. Initialize an empty batch :math:`\mathcal{B}=\{\}` of integer pairs, a global
+           bijection :math:`f` of integers, and a global counter :math:`k=0`.
+
+        1. If :math:`j:=|\mathcal{B}| < m-1`, go to step 2, otherwise to step 4.
+
+        2. Search for the next :math:`\ell'\in L\setminus\mathcal{B}` that has the :math:`j`\ th
+           remainder bit set to one. There are three stages to this, where the latter two are
+           only used if the previous ones did not succeed.
+
+           - Search for the desired :math:`\ell'` in :math:`L\setminus \mathcal{B}`.
+             If none is found move to the next stage, else continue with step 3.
+
+           - **Swap** remainder qubit :math:`j` with a higher-index remainder qubit that is
+             set to one in at least one bitstring. If none is found and :math:`j>0`, move to
+             the next stage. If none is found and :math:`j=0`, move to step 4. If a possible swap
+             move was found, continue with step 3, knowing that we now found a desired :math:`\ell'`.
+
+           - Find a bitstring that has a one in one of the first :math:`j` (note we asserted
+             :math:`j>0` above) remainder qubits
+             (at least one such bitstring must exist) and identify a bit in which this bit string
+             differs from the :math:`j`\ th bitstring in :math:`\mathcal{B}` (there is at least
+             one such qubit because the bitstrings are unique).
+             **Controlled** on the found remainder qubit and the differing qubit, **flip** the
+             :math:`j`\ th remainder qubit. We then have
+             our desired :math:`\ell'` with a one on that qubit, and continue with step 3.
+
+           If the above stages did not find an :math:`\ell'` and
+           :math:`\mathcal{B}=\{\}`, we know that all remaining bit strings lie in the subspace
+           register exclusively, and go to step 5.
+
+        3. **Controlled** on qubit :math:`j`, **flip** all other remainder qubits of the
+           found :math:`\ell` and set the subspace qubits to the bit string of :math:`k`.
+           Append :math:`(\ell, k)` to :math:`\mathcal{B}`, set :math:`f(\ell)=k`,
+           and increment :math:`k`. Go to step 1.
+
+        4. Else, **flip** the :math:`i`\ th remainder qubit **controlled** on the bitstring
+           :math:`k_i` of the :math:`i`\ th integer pair in :math:`\mathcal{B}`.
+           Note that this can be done in a batched
+           manner, using `unary iteration <https://pennylane.ai/compilation/unary-iteration>`__.
+           Reset the batch to :math:`\mathcal{B}=\{\}` (but not the counter :math:`k`) and
+           go to step 1.
+
+        5. For all bitstrings :math:`\ell_0` that do not have any bit in the remainder register
+           set to one, set :math:`f(\ell_0)=\ell_0`, i.e. register :math:`f` to be the identity
+           mapping on those states. Note that this step happens (most likely) after the bit strings
+           have been manipulated repeatedly by the previous steps.
+
+        We now have the complete bijection :math:`f` and the recording of the isometry operations
+        required to map :math:`L` to the consecutive integers :math:`0\leq j<|L|`. The former
+        is used to prepare the dense state :math:`|\phi_0\rangle=\sum_{\ell\in L} c_{\ell}|f(\ell)\rangle`
+        on the subspace register. The latter can be executed in reverse to map the states to the
+        desired :math:`|\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle`.
+
+        **Why does this work?**
+
+        We will not go into too much detail about the correctness but want to leave some comments.
+        The elegant core idea of the isometry finding is that any operations we perform controlled
+        on at least one remainder qubit cannot modify the bitstrings that we already mapped to the
+        subspace. This allows us to successively treat the bitstrings, bringing them into the
+        subspace without undoing previous work. The bit strings that have not been mapped, however,
+        are being modified, and for this, it is crucial to keep track of all modifications we make.
+        This class does this with its ``tableau`` attribute, which is updated for each operation
+        that we perform during the mapping.
+        (side note: the same logic applies for the swapping step; for already mapped bit strings
+        we just swap two zeroed remainder qubits).
+
+        The second neat part of this algorithm is the batched zeroing of remainder qubits via
+        unary iteration. Due to the consecutive integers to which the states of the batch are
+        mapped, unary iteration can be used out of the box, lowering the non-Clifford cost of
+        the isometry circuit.
+        As we already keep track of bit strings, we can reduce the cost further by using
+        `partial Select circuits <https://pennylane.ai/compilation/partial-select>`__
+        for this step.        Those modify the remainder qubits not
+        only for the specific control states in the subspace register, but also for addition
+        control states. Tracking this change in the tableau, we can take these additional
+        modifications into account as a simple side effect of the unary iteration steps.
+
+        Note that unfortunately, in our documentation and learning resources the word
+        "partial" is used for this flavour of Select/unary iteration with side effects, whereas
+        `Rupprecht and Wölk <https://arxiv.org/abs/2601.09388>`__ use the word to point to the
+        sliced range the used unary iteration circuits.
+
+        **Space-time tradeoff**
+
+        The isometry finder can naturally make use of a space-time tradeoff; to understand this,
+        note that the batches passed to the partial unary iterators are limited by the maximal size
+        :math:`m` inferred from the number of remainder qubits. As the subspace register size is
+        exclusively determined by :math:`|L|`, adding work wires (or more system wires) directly
+        adds them to the remainder register, thus increasing :math:`m`.
+
+        Overall, the isometry circuit needs to iterate over the entire range :math:`[0,|L|)`,
+        but the smaller the (maximal) batch size, the more iterators are needed, each of which
+        comes with some overhead for the control structure that selects the subspace on which
+        it acts. Increasing the batch size therefore allows for fewer iterators, for which
+        we thus pay less overhead.
+
     """
 
     def __init__(self, basis_states: list, n_qubits: int):
@@ -53,8 +177,7 @@ class PUIsometryFinder:
         # n <= 63 qubits; for wider registers a single 64-bit word cannot hold a row, so we fall
         # back to Python big integers stored in a ``dtype=object`` array. ``_word`` converts a
         # Python int to the packing scalar type.
-        self._multiword = self.n > 63
-        if self._multiword:
+        if self.n > 63:
             self._packed_dtype = object
             self._word = int
         else:
@@ -111,19 +234,19 @@ class PUIsometryFinder:
         int) as an ``int8`` array. Uses ``math.int_to_binary`` on the single-word path; that
         function overflows for values wider than 63 bits, so the multi-word path uses an explicit
         big-int extraction instead."""
-        if self._multiword:
-            return np.fromiter(
-                ((diff_val >> (self.n - 1 - c)) & 1 for c in range(self.n)),
-                dtype=np.int8,
-                count=self.n,
-            )
-        return math.int_to_binary(diff_val, self.n).astype(np.int8)
+        if self.n <= 63:
+            # Single-word scenario
+            return math.int_to_binary(diff_val, self.n).astype(np.int8)
+
+        # Multi-word scenario
+        _shifts = ((self.n - 1 - c) for c in range(self.n))
+        return np.fromiter(((diff_val >> s) & 1 for s in _shifts), dtype=np.int8, count=self.n)
 
     def apply_multi_controlled_x(self, controls, control_values, target: int):
         """Apply multi-controlled X to the tableau."""
         # Create control mask and the control pattern we want to match, from ``controls`` and
         # ``control_values``. This is fast enough because we only ever use this function to realize
-        # bit flips from Toffoli gates.
+        # bit flips from Toffoli gates, so len(control)=len(control_values)=2
         ctrl_mask = self._zero
         ctrl_pattern = self._zero
         for c, v in zip(controls, control_values, strict=True):
