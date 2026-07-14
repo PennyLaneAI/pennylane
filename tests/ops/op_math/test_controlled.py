@@ -1097,7 +1097,7 @@ class TestDecomposition:
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
                     qp.CH(wires=[2, 0]),
-                    ControlledOp2(qp.S(wires=1), control_wires=2),
+                    ctrl(qp.S(wires=1), control=2),
                     qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
