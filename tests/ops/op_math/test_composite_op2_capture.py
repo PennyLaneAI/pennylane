@@ -24,6 +24,7 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
+from pennylane.ops.op_math.change_op_basis import ChangeOpBasis
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 
@@ -95,20 +96,21 @@ def test_public_sum_binding():
 
 
 @pytest.mark.parametrize("defined_outside", (True, False))
-def test_change_op_basis(defined_outside):
+@pytest.mark.parametrize("creation_method", (qp.change_op_basis, ChangeOpBasis))
+def test_change_op_basis(defined_outside, creation_method):
     """Tests that change_op_basis captures correctly."""
 
     outside_op = NonParametricOp(0) if defined_outside else None
 
     def f(x):
         op = outside_op if defined_outside else NonParametricOp(0)
-        qp.change_op_basis(op, DynOp(x, 1))
+        creation_method(op, DynOp(x, 1))
 
     cjaxpr = jax.make_jaxpr(f)(1.2)
 
     eqns = cjaxpr.eqns
 
-    assert len(eqns) == 3  # Op1 + Op2 + Adjoint(Op1)
+    assert len(eqns) == 4 if creation_method is ChangeOpBasis else 3  # Op1 + Op2 + Adjoint(Op1)
 
     assert eqns[0].primitive.name == "operator"
     assert eqns[0].params["op_cls"] is NonParametricOp
