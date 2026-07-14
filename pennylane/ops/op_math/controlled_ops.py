@@ -20,7 +20,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal, override, Sequence
+from typing import Literal, Sequence, override
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -28,6 +28,7 @@ from scipy.linalg import block_diag
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
+from pennylane.core import Operator
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -43,6 +44,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -69,8 +71,6 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
-from pennylane.ops.op_math.controlled2 import Controlled2
-from pennylane.core import Operator
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
@@ -1219,8 +1219,7 @@ class CNOT(Controlled2):
 
     @override
     def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
-        self,
-        wires: WiresLike
+        self, wires: WiresLike
     ):
         super().__abstract_init__(
             base=qp.X(Wire[1]),
@@ -1240,7 +1239,7 @@ class CNOT(Controlled2):
     @staticmethod
     @lru_cache
     # pylint: disable=arguments-differ, unused-argument
-    def compute_matrix(wires: WiresLike = None):  
+    def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1274,7 +1273,7 @@ def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-def _cnot_cz_h_resources(wires: WiresLike=None):
+def _cnot_cz_h_resources(wires: WiresLike = None):
     return {qp.H: 2, qp.CZ: 1}
 
 
@@ -1285,7 +1284,7 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qp.H(wires[1])
 
 
-def _cnot_to_ppr_resource(wires: WiresLike=None):
+def _cnot_to_ppr_resource(wires: WiresLike = None):
     return {
         resource_rep(qp.PauliRot, pauli_word="X"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -1396,7 +1395,7 @@ class Toffoli(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1460,7 +1459,7 @@ def _check_and_convert_control_values(control_values, control_wires):
     return control_values
 
 
-def _toffoli_resources(wires: WiresLike=None):
+def _toffoli_resources(wires: WiresLike = None):
     return {
         qp.Hadamard: 2,
         qp.CNOT: 6,
@@ -1488,7 +1487,7 @@ def _toffoli(wires: WiresLike, **__):
     CNOT(wires=[wires[0], wires[1]])
 
 
-def _toffoli_to_ppr_resource(wires: WiresLike=None):
+def _toffoli_to_ppr_resource(wires: WiresLike = None):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZX"): 2,
