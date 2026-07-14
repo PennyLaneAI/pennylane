@@ -18,25 +18,23 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=arguments-differ
 import copy
 
-from pennylane import math, ops
-from pennylane.core.operator import Operator
+from pennylane import ops
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
-from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
 from .qft import QFT
 
 
-class QuantumPhaseEstimation(ErrorOperation):
+class QuantumPhaseEstimation(Operation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -173,10 +171,7 @@ class QuantumPhaseEstimation(ErrorOperation):
     @property
     def resource_params(self) -> dict:
         return {
-            "base_resource_rep": resource_rep(
-                type(self.hyperparameters["unitary"]),
-                **self.hyperparameters["unitary"].resource_params,
-            ),
+            "base_resource_rep": abstractify(self.hyperparameters["unitary"]),
             "num_estimation_wires": len(self.estimation_wires),
         }
 
@@ -227,35 +222,6 @@ class QuantumPhaseEstimation(ErrorOperation):
     def estimation_wires(self):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
-
-    def error(self):
-        """The QPE error computed from the spectral norm error of the input unitary operator.
-
-        **Example**
-
-        >>> class CustomOP(qp.resource.ErrorOperation):
-        ...    def error(self):
-        ...       return qp.resource.SpectralNormError(0.005)
-        >>> Op = CustomOP(wires=[0])
-        >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
-        >>> QPE.error()
-        SpectralNormError(0.075)
-
-        """
-        base_unitary = self._hyperparameters["unitary"]
-        if not isinstance(base_unitary, ErrorOperation):
-            return SpectralNormError(0.0)
-
-        unitary_error = base_unitary.error().error
-
-        sequence_error = math.array(
-            [unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)],
-            like=math.get_interface(unitary_error),
-        )
-
-        additive_error = math.sum(sequence_error)
-
-        return SpectralNormError(additive_error)
 
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):

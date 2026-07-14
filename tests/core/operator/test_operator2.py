@@ -20,11 +20,11 @@ import copy
 
 import numpy as np
 import pytest
-from operator2_utils import DynOp, FullOp
+from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, StatePrepBase2
+from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
 from pennylane.core.queuing import AnnotatedQueue, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -40,7 +40,7 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires
 
 
@@ -1076,6 +1076,13 @@ class TestHash:
         assert op1 == op2
         assert hash(op1) == hash(op2)
 
+    def test_abstract_op_hash_contract(self):
+        """Tests that an abstract op and abstractified op have the same hash."""
+        op1 = DynOp(Float, Wire[2])
+        op2 = abstractify(DynOp(0.5, [0, 1]))
+        assert op1 == op2
+        assert hash(op1) == hash(op2)
+
     def test_close_floats_same_hash(self):
         """Test that float values that round to the same 10 decimal places hash equally."""
         op1 = DynOp(0.5, wires=0)
@@ -1110,14 +1117,6 @@ class TestHash:
 
     def test_hybrid_with_wires_leaf_equal_hash(self):
         """Test that hybrid arguments with ``Wires`` leaves hash equally for the same values."""
-
-        class HybridWireOp(Operator2):
-            wire_argnames = ("pytree_wires",)
-            hybrid_argnames = ("pytree_wires",)
-
-            def __init__(self, pytree_wires):
-                super().__init__([Wires(w) for w in pytree_wires])
-
         op1 = HybridWireOp([[0, 1], [2]])
         op2 = HybridWireOp([[0, 1], [2]])
         assert hash(op1) == hash(op2)
@@ -2434,18 +2433,8 @@ class TestLegacyCompatibilityViews:
 
     def test_compilable_args_in_hyperparameters(self):
         """Test that compilable args appear in the legacy hyperparameter view."""
-
-        class CompOp(Operator2):
-            dynamic_argnames = ("phi",)
-            compilable_argnames = ("order",)
-
-            def __init__(self, phi, order, wires):
-                super().__init__(phi, order, wires=wires)
-
-        op = CompOp(0.5, order=3, wires=0)
-
-        assert op.hyperparameters == {"order": 3}
-        assert op.data == (0.5,)
+        op = CompilableOp(n=3, wires=0)
+        assert op.hyperparameters == {"n": 3}
 
     def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
         """Test that non-``wires`` wire argument names are excluded."""

@@ -17,27 +17,34 @@
 # pylint: disable=too-few-public-methods,protected-access
 
 from collections import defaultdict
+from functools import singledispatch
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import Resources
-from pennylane.decomposition.decomposition_rule import auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_involutory,
     pow_rotation,
-    self_adjoint,
+    self_adjoint_legacy,
 )
+from pennylane.decomposition.utils import to_name
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
 
 decompositions = defaultdict(list)
 
 
+@singledispatch
+def list_test_decomps(op):
+    return decompositions[to_name(op)]
+
+
 def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
     if weighted_cost is None:
         weighted_cost = sum(count for count in gate_count.values())
-    gate_count = {auto_wrap(op): count for op, count in gate_count.items() if count >= 0}
+    gate_count = {abstractify(op): count for op, count in gate_count.items() if count >= 0}
     return Resources(gate_count, weighted_cost=weighted_cost)
 
 
@@ -157,10 +164,10 @@ decompositions["CRot"] = [_crot]
 decompositions["C(PauliX)"] = [_controlled_x_decomp]
 decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
 decompositions["C(Hadamard)"] = [_controlled_hadamard]
-decompositions["Adjoint(Hadamard)"] = [self_adjoint]
+decompositions["Adjoint(Hadamard)"] = [self_adjoint_legacy]
 decompositions["Pow(Hadamard)"] = [pow_involutory]
 decompositions["Adjoint(RX)"] = [adjoint_rotation]
 decompositions["Pow(RX)"] = [pow_rotation]
-decompositions["Adjoint(CNOT)"] = [self_adjoint]
+decompositions["Adjoint(CNOT)"] = [self_adjoint_legacy]
 decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]
 decompositions["Adjoint(ControlledPhaseShift)"] = [adjoint_rotation]
