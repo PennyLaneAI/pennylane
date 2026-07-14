@@ -43,9 +43,11 @@ from pennylane.templates.subroutines import (
     FermionicDoubleExcitation,
     PrepSelPrep,
     QDrift,
+    QSVT,
     Select,
     TrotterProduct,
 )
+from pennylane.templates.subroutines.hilbert_schmidt import HilbertSchmidt
 from pennylane.typing import TensorLike
 
 
@@ -237,6 +239,32 @@ def bind_new_parameters_select(op: Select, params: Sequence[TensorLike]):
         params = params[operand_num_params:]
 
     return op.__class__(new_ops, control=op.control, work_wires=op.work_wires, partial=op.partial)
+
+
+def _bind_nested_operators(operators, params: Sequence[TensorLike]):
+    """Bind a flat parameter sequence to a sequence of operators."""
+    new_operators = []
+    for operator in operators:
+        num_params = operator.num_params
+        new_operators.append(bind_new_parameters(operator, params[:num_params]))
+        params = params[num_params:]
+    return new_operators
+
+
+@bind_new_parameters.register
+def bind_new_parameters_hilbert_schmidt(op: HilbertSchmidt, params: Sequence[TensorLike]):
+    num_v_params = sum(operator.num_params for operator in op.hyperparameters["V"])
+    new_v = _bind_nested_operators(op.hyperparameters["V"], params[:num_v_params])
+    new_u = _bind_nested_operators(op.hyperparameters["U"], params[num_v_params:])
+    return op.__class__(new_v, new_u)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_qsvt(op: QSVT, params: Sequence[TensorLike]):
+    ua = op.hyperparameters["UA"]
+    new_ua = bind_new_parameters(ua, params[: ua.num_params])
+    new_projectors = _bind_nested_operators(op.hyperparameters["projectors"], params[ua.num_params :])
+    return QSVT(new_ua, new_projectors)
 
 
 @bind_new_parameters.register
