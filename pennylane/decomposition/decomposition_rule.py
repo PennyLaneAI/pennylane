@@ -603,6 +603,9 @@ class DecompCollection:
     def __len__(self) -> int:
         return len(self._decomps)
 
+    def __eq__(self, other) -> bool:
+        return self._decomps == other._decomps if isinstance(other, DecompCollection) else False
+
     def copy(self) -> DecompCollection:
         """Return a copy of the DecompCollection."""
         return DecompCollection(self._decomps)
@@ -721,7 +724,11 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
 
 
 @singledispatch
-def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
+def list_decomps(
+    op: type[Operator] | Operator | str,
+    fixed_decomps: dict[str, DecompositionRule] | None = None,
+    alt_decomps: dict[str, Sequence[DecompositionRule]] | None = None,
+) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -732,9 +739,10 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
         decomposition rules for an operator.
 
     Args:
-        op (type or Operator or str): the operator or operator type to retrieve decomposition
-            rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
-            ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to retrieve decomposition rules for.
+            For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        fixed_decomps (dict, optional): A dictionary mapping operator names to fixed decompositions.
+        alt_decomps (dict, optional): A dictionary mapping operator names to alternative decompositions.
 
     Returns:
         DecompCollection: a collection of decomposition rules registered for the given operator.
@@ -778,7 +786,14 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    return _decompositions_var.get()[to_name(op)].copy()
+    fixed_decomps = fixed_decomps or {}
+    alt_decomps = alt_decomps or {}
+    if (op_name := to_name(op)) in fixed_decomps:
+        return DecompCollection([fixed_decomps[op_name]])
+    rules = _decompositions_var.get()[to_name(op)].copy()
+    if op_name in alt_decomps:
+        rules.extend(alt_decomps[op_name])
+    return rules
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -792,9 +807,8 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         decomposition rules for an operator.
 
     Args:
-        op (type or Operator or str): the operator or operator type to check for
-            decomposition rules. For symbolic operators, use strings like ``"Adjoint(RY)"``,
-            ``"Pow(H)"``, ``"C(RX)"``, etc.
+        op (type or Operator or str): the operator or operator type to check for decomposition rules.
+            For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.

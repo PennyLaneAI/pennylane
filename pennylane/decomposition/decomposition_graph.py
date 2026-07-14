@@ -486,20 +486,18 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             and op.params["num_control_wires"] > ctrl_wires_in_progress[-1]
         )
 
-    def _get_decompositions(self, op: AbstractOperatorLike) -> list[DecompositionRule]:
+    def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        op_name = to_name(op)
-
-        if op_name in self._fixed_decomps:
-            return [self._fixed_decomps[op_name]]
-
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op)
+        decomps = list_decomps(op, self._fixed_decomps, self._alt_decomps)
 
         # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
         # are integrated into list_decomps so that the graph would not be responsible
         # for populating these symbolic decomposition rules.
         if isinstance(op, Operator2):
+            return decomps
+
+        if to_name(op) in self._fixed_decomps:
             return decomps
 
         if (
