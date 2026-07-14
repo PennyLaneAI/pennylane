@@ -21,16 +21,15 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
 from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import DecompositionGraph, pow_resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
-from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp, ParametrizedHybridOp
+from tests.decomposition.conftest import decompositions, list_test_decomps, to_resources
 
 # pylint: disable=protected-access,no-name-in-module,too-few-public-methods,useless-parent-delegation
 
@@ -68,7 +67,7 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
 @pytest.mark.unit
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
-    side_effect=lambda x: decompositions[to_name(x)],
+    side_effect=list_test_decomps,
 )
 # pylint: disable=too-many-public-methods
 class TestDecompositionGraph:
@@ -724,7 +723,7 @@ class TestDecompositionGraph:
 @pytest.mark.unit
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
-    side_effect=lambda x: decompositions[x],
+    side_effect=list_test_decomps,
 )
 class TestControlledDecompositions:
     """Tests that the decomposition graph can handle controlled decompositions."""
@@ -876,7 +875,7 @@ class TestControlledDecompositions:
 
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
-    side_effect=lambda x: decompositions[x],
+    side_effect=list_test_decomps,
 )
 class TestSymbolicDecompositions:
     """Tests decompositions of symbolic ops."""
