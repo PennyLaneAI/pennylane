@@ -497,6 +497,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if isinstance(op, Operator2):
             return decomps
 
+        if to_name(op) in self._fixed_decomps:
+            return decomps
+
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
             and self_adjoint_legacy not in decomps
