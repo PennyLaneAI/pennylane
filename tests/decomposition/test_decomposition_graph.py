@@ -70,6 +70,7 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
     "pennylane.decomposition.decomposition_graph.list_decomps",
     side_effect=lambda x: decompositions[to_name(x)],
 )
+# pylint: disable=too-many-public-methods
 class TestDecompositionGraph:
     """Unit tests for the decomposition graph."""
 
