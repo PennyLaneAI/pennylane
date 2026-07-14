@@ -22,17 +22,13 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -353,7 +349,7 @@ class Select(Operation):
 
     @property
     def resource_params(self):
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in self.ops)
+        op_reps = tuple(abstractify(op) for op in self.ops)
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
@@ -547,11 +543,10 @@ class Select(Operation):
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
-    return controlled_resource_rep(
-        base_class=target_rep.op_type,
-        base_params=target_rep.params,
-        num_control_wires=num_control_wires,
-        num_work_wires=num_work_wires,
+    return _ctrl_abstract(
+        target_rep,
+        Wire[num_control_wires],
+        Wire[num_work_wires],
         num_zero_control_values=num_control_wires - sum(ctrl_state),
     )
 
@@ -726,12 +721,11 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
     if c == 1:
         for i, target_rep in enumerate(op_reps):
             resources[
-                controlled_resource_rep(
-                    base_class=target_rep.op_type,
-                    base_params=target_rep.params,
-                    num_control_wires=1,
+                _ctrl_abstract(
+                    target_rep,
+                    Wire[1],
+                    Wire[num_work_wires],
                     num_zero_control_values=(1 - i),
-                    num_work_wires=num_work_wires,
                 )
             ] += 1
         return dict(resources)
@@ -752,22 +746,14 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
     # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
     num_elbows = c + K - 2 - (K - 1).bit_count() - int(K > 2 ** (c - 1))
 
-    resources[resource_rep(TemporaryAND)] += num_elbows
-    resources[adjoint_resource_rep(TemporaryAND)] += num_elbows
+    resources[TemporaryAND] += num_elbows
+    resources[_adjoint_abstract(TemporaryAND)] += num_elbows
     more_than_a_quarter = int(K > 2 ** (c - 2))
     more_than_a_half = int(K > 2 ** (c - 1))
-    resources[resource_rep(CNOT)] += K - 1 + more_than_a_half - more_than_a_quarter
-    resources[
-        controlled_resource_rep(
-            base_class=X, base_params={}, num_control_wires=1, num_zero_control_values=1
-        )
-    ] += more_than_a_quarter
+    resources[CNOT] += K - 1 + more_than_a_half - more_than_a_quarter
+    resources[_ctrl_abstract(X, Wire[1], num_zero_control_values=1)] += more_than_a_quarter
     for op_rep in op_reps:
-        resources[
-            controlled_resource_rep(
-                op_rep.op_type, op_rep.params, num_control_wires=1, num_work_wires=num_work_wires
-            )
-        ] += 1
+        resources[_ctrl_abstract(op_rep, Wire[1], Wire[num_work_wires])] += 1
 
     return dict(resources)
 
@@ -786,11 +772,10 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
 
     if num_ops == 2:
         return {
-            controlled_resource_rep(
-                op_rep.op_type,
-                op_rep.params,
-                num_control_wires=1,
-                num_work_wires=num_work_wires,
+            _ctrl_abstract(
+                op_rep,
+                Wire[1],
+                Wire[num_work_wires],
                 num_zero_control_values=1 - i,
             ): 1
             for i, op_rep in enumerate(op_reps)
@@ -798,19 +783,19 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     if num_ops / 2 ** math.ceil_log2(num_ops) > 3 / 4:
         counts.update(
             {
-                resource_rep(TemporaryAND): num_ops - 3,
-                adjoint_resource_rep(TemporaryAND): num_ops - 3,
+                TemporaryAND: num_ops - 3,
+                _adjoint_abstract(TemporaryAND): num_ops - 3,
                 CNOT: num_ops - 1,
-                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
             }
         )
     else:
         counts.update(
             {
-                resource_rep(TemporaryAND): num_ops - 2,
-                adjoint_resource_rep(TemporaryAND): num_ops - 2,
+                TemporaryAND: num_ops - 2,
+                _adjoint_abstract(TemporaryAND): num_ops - 2,
                 CNOT: num_ops - 3,
-                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
             }
         )
 
@@ -818,11 +803,7 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     unary_control_wires = max(math.ceil_log2(num_ops) - 1, 0)
     num_work_wires = num_work_wires - unary_control_wires
     for op in op_reps:
-        counts[
-            controlled_resource_rep(
-                op.op_type, op.params, num_control_wires=1, num_work_wires=num_work_wires
-            )
-        ] += 1
+        counts[_ctrl_abstract(op, Wire[1], Wire[num_work_wires])] += 1
 
     return dict(counts)
 
@@ -1080,7 +1061,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
             resources[_multi_controlled_rep(op_reps[0], 1, [1], num_work_wires - 1)] += 1
             resources[
                 _multi_controlled_rep(
-                    resource_rep(X), num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                    X, num_control_wires, [0] * num_control_wires, num_work_wires - 1
                 )
             ] += 2
         else:
@@ -1088,11 +1069,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
             ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
             for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps, strict=True):
                 resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-                resources[
-                    _multi_controlled_rep(
-                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
-                    )
-                ] += 2
+                resources[_multi_controlled_rep(X, len(ctrl_), ctrl_state, num_work_wires - 1)] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
@@ -1100,9 +1077,8 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
         for state, rep in zip(state_iterator, op_reps, strict=False):
 
             resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-            resources[
-                _multi_controlled_rep(resource_rep(X), num_control_wires, state, num_work_wires - 1)
-            ] += 2
+            resources[_multi_controlled_rep(X, num_control_wires, state, num_work_wires - 1)] += 2
+
     return dict(resources)
 
 

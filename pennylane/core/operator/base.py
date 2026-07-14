@@ -22,7 +22,7 @@ import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from importlib.util import find_spec
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
 from warnings import warn
 
 import numpy as np
@@ -31,6 +31,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import capture
 from pennylane._class_property import classproperty
+from pennylane.capture import ABCCaptureMeta
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -49,6 +50,11 @@ from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
+
+from .utils import abstractify
+
+if TYPE_CHECKING:
+    from pennylane.decomposition.resources import CompressedResourceOp
 
 has_jax = find_spec("jax") is not None
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
@@ -184,7 +190,7 @@ def _process_data(op):
 
 
 # pylint: disable=abstract-method
-class _GiveOperatorMeta(capture.ABCCaptureMeta):
+class _GiveOperatorMeta(ABCCaptureMeta):
     """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
 
     def __new__(mcs, name, bases, attrs):
@@ -250,7 +256,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
-class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -1629,6 +1635,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         hyperparameters_dict = dict(metadata[1])
         return cls(*data, wires=metadata[0], **hyperparameters_dict)
+
+
+@abstractify.register(ABCCaptureMeta)
+def _abstractify_operator1_subclass(op_type: type[Operator]) -> "CompressedResourceOp":
+    return qp.resource_rep(op_type)
+
+
+@abstractify.register(Operator)
+def _abstractify_operator1(op: Operator) -> "CompressedResourceOp":
+    return qp.resource_rep(type(op), **op.resource_params)
 
 
 # =============================================================================

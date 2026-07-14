@@ -22,7 +22,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operator
-from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources
 from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.wires import WiresLike
 
@@ -160,7 +160,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = defaultdict(int)
 
     two_qubit_gates = num_wires * math.log2(num_wires) // 2
-    resources[resource_rep(TwoWireFFT)] = two_qubit_gates
+    resources[TwoWireFFT] = two_qubit_gates
 
     def _count_one_recursive(wires, resources):
         if wires > 2:
@@ -173,9 +173,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = _count_one_recursive(num_wires, resources)
 
     if num_wires > 2:
-        resources[resource_rep(FermionicSWAP)] = (
-            num_wires * (num_wires - math.log2(num_wires) - 1) / 2
-        )
+        resources[FermionicSWAP] = num_wires * (num_wires - math.log2(num_wires) - 1) / 2
 
     return resources
 
