@@ -141,7 +141,7 @@ class PUIsometryFinder:
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - batch_size
         # Pad data with zeros to allow for array casting later
-        self.circuit.append((0, k_start, k, 0, 0, 0))
+        self.circuit.append((0, k_start, k, 0, 0))
 
         # Update tableau for PUI effect
         # For batch element j, rows whose subspace value equals k_start + j get remainder
@@ -165,7 +165,7 @@ class PUIsometryFinder:
         """
         target_int = 2 ** np.arange(len(bits) - 2, -1, -1) @ np.delete(bits, control)
         # Pad data with zeros to allow for array casting later
-        self.circuit.append((1, control, target_int, 0, 0, 0))
+        self.circuit.append((1, control, target_int, 0, 0))
 
         # Packed flip mask: all set bits of ``bits`` except the control bit.
         flip_mask = self._zero
@@ -179,16 +179,16 @@ class PUIsometryFinder:
         ctrl_bit = (self.tableau >> self._shifts[control]) & self._one
         self.tableau ^= ctrl_bit * flip_mask
 
-    def toffoli(self, controls, control_values, target):
+    def toffoli(self, controls, second_ctrl_val, target):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
         # Flatten the data to allow for array casting later
-        self.circuit.append((3, *controls, target, *control_values))
-        self.apply_multi_controlled_x(controls, control_values, target)
+        self.circuit.append((3, *controls, target, second_ctrl_val))
+        self.apply_multi_controlled_x(controls, [1, second_ctrl_val], target)
 
     def swap(self, w0, w1):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
         # Pad data with zeros to allow for array casting later
-        self.circuit.append((2, w0, w1, 0, 0, 0))
+        self.circuit.append((2, w0, w1, 0, 0))
         # positions for the two qubits
         p0 = self._shifts[w0]
         p1 = self._shifts[w1]
@@ -280,8 +280,8 @@ class PUIsometryFinder:
         diff_qubit = self.n - xor_val.bit_length()
 
         controls = [self.n_subspace + active_remainder_bit, diff_qubit]
-        control_values = [1, int((int(self.tableau[idx]) >> (self.n - 1 - diff_qubit)) & 1)]
-        self.toffoli(controls, control_values, actual_qubit)
+        second_ctrl_val = int((int(self.tableau[idx]) >> (self.n - 1 - diff_qubit)) & 1)
+        self.toffoli(controls, second_ctrl_val, actual_qubit)
         return idx
 
     def _map_full_state(self, found_state, k, target_qubit):
@@ -666,10 +666,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         - 2: SWAP of two remainder qubits (realized via a simple ``SWAP``)
         - 3: Toffoli (realized via ``MultiControlledX`` in order to use work wires for elbow decomp)
 
-        Note that the entries in ``circuit`` have been padded with zeros to all have length 6,
+        Note that the entries in ``circuit`` have been padded with zeros to all have length 5,
         in order to enable casting to an ``ndarray``. Each branch of the conditional reads out only
         the number of entries it needs, and discards the padded zeros.
-
         """
         # pylint: disable=cell-var-from-loop
 
@@ -741,9 +740,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             elbow-based decomposition.
             """
             _wires = [wires[idx] for idx in data[1:4]]
-            qp.BasisState(data[4:], _wires[:2])
+            qp.BasisState(data[4:], _wires[1:2])
             qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
-            qp.BasisState(data[4:], _wires[:2])
+            qp.BasisState(data[4:], _wires[1:2])
 
         branches()
 
