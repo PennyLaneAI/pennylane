@@ -307,7 +307,7 @@ class PUIsometryFinder:
 
     def swap(self, w0, w1):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
-        self.circuit.append(("SWAP", w0, w1))
+        self.circuit.append(("SWAP", [w0, w1]))
         # positions for the two qubits
         p0 = self._shifts[w0]
         p1 = self._shifts[w1]
@@ -775,8 +775,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             qp.BasisState(k_start, subspace_wires)
             continue
         if _type == "Fanout":
-            control, bits = data
-            qp.ctrl(qp.BasisState(bits, wires[:control] + wires[control + 1 :]), wires[control])
+            control, target_int = data
+            target_wires = wires[:control] + wires[control + 1 :]
+            qp.ctrl(qp.BasisState(target_int, target_wires), wires[control])
             continue
 
         ids = data[0]
@@ -784,7 +785,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         if _type == "SWAP":
             qp.SWAP(_wires)
         elif _type == "Toffoli":
-            qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
+            qp.MultiControlledX(_wires, [1, data[1]], work_wires[0], work_wire_type="zeroed")
         else:
             raise NotImplementedError  # pragma: no cover
 
