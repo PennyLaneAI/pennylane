@@ -22,17 +22,13 @@ import pytest
 
 import pennylane as qp
 from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
-from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    DecompositionGraph,
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    pow_resource_rep,
-    resource_rep,
-)
+from pennylane.core.operator import Operation, abstractify
+from pennylane.decomposition import DecompositionGraph, pow_resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp, ParametrizedHybridOp
 
@@ -159,14 +155,14 @@ class TestDecompositionGraph:
             qp.RY(np.pi / 2, wires=wires)
 
         graph = DecompositionGraph(operations=[qp.Hadamard(0)], gate_set={"RX", "RY", "RZ"})
-        assert graph._get_decompositions(resource_rep(qp.H)) == decompositions["Hadamard"]
+        assert graph._get_decompositions(abstractify(qp.H)) == decompositions["Hadamard"]
 
         graph = DecompositionGraph(
             operations=[qp.Hadamard(0)],
             gate_set={"RX", "RY", "RZ"},
             fixed_decomps={qp.Hadamard: custom_hadamard},
         )
-        assert graph._get_decompositions(resource_rep(qp.H)) == [custom_hadamard]
+        assert graph._get_decompositions(abstractify(qp.H)) == [custom_hadamard]
 
         alt_dec = [custom_hadamard, custom_hadamard_2]
         graph = DecompositionGraph(
@@ -175,7 +171,7 @@ class TestDecompositionGraph:
             alt_decomps={qp.Hadamard: alt_dec},
         )
         exp_dec = alt_dec + decompositions["Hadamard"]
-        assert graph._get_decompositions(resource_rep(qp.H)) == exp_dec
+        assert graph._get_decompositions(abstractify(qp.H)) == exp_dec
 
         graph = DecompositionGraph(
             operations=[qp.Hadamard(0)],
@@ -183,7 +179,7 @@ class TestDecompositionGraph:
             alt_decomps={qp.Hadamard: alt_dec},
             fixed_decomps={qp.Hadamard: custom_hadamard},
         )
-        assert graph._get_decompositions(resource_rep(qp.H)) == [custom_hadamard]
+        assert graph._get_decompositions(abstractify(qp.H)) == [custom_hadamard]
 
     def test_graph_construction(self, _):
         """Tests constructing a graph from a single Hadamard."""
@@ -297,8 +293,8 @@ class TestDecompositionGraph:
             {
                 qp.RX: 1,
                 qp.X: 1,
-                adjoint_resource_rep(qp.RY): 1,
-                controlled_resource_rep(qp.T, {}, num_control_wires=2): 1,
+                _adjoint_abstract(qp.RY): 1,
+                _ctrl_abstract(qp.T, Wire[2]): 1,
                 pow_resource_rep(qp.Z, {}, z=2): 1,
             }
         )
@@ -691,7 +687,7 @@ class TestDecompositionGraph:
         def _custom_rule(_):
             raise NotImplementedError
 
-        @qp.register_resources({controlled_resource_rep(CustomOp, {}, num_control_wires=1): 1})
+        @qp.register_resources({_ctrl_abstract(CustomOp, Wire[1]): 1})
         def _another_rule(_):
             raise NotImplementedError
 
@@ -781,18 +777,7 @@ class TestControlledDecompositions:
             def resource_params(self):
                 return {}
 
-        @qp.register_resources(
-            {
-                qp.Z: 1,
-                qp.decomposition.controlled_resource_rep(
-                    CustomOp,
-                    {},
-                    num_control_wires=1,
-                    num_zero_control_values=0,
-                    num_work_wires=0,
-                ): 1,
-            }
-        )
+        @qp.register_resources({qp.Z: 1, _ctrl_abstract(CustomOp, Wire[1]): 1})
         def custom_controlled_decomp(wires):
             qp.Z(wires=wires[0])
             qp.ctrl(CustomOp(wires=wires[1]), control=wires[0])
@@ -852,7 +837,7 @@ class TestControlledDecompositions:
             qp.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {controlled_resource_rep(qp.X, {}, num_control_wires=3): 2, qp.CRot: 1}
+            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1}
         )
 
     def test_base_decomp_contains_mcms(self, _):
