@@ -17,8 +17,8 @@ Contains the ``AngleEmbedding`` template.
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.operator import Operation, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RX, RY, RZ
 from pennylane.wires import WiresLike
 
@@ -154,7 +154,7 @@ class AngleEmbedding(Operation):
 
 
 def _angle_embedding_resources(rotation: Operation, num_wires: int) -> dict:
-    return {resource_rep(rotation): num_wires}
+    return {abstractify(rotation): num_wires}
 
 
 @register_resources(_angle_embedding_resources)

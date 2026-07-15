@@ -37,7 +37,7 @@ with QuantumTape() as tape_circuit:
     qp.expval(qp.PauliZ(wires=0))
 
 
-def qfunc_circuit(a: qp.typing.TensorLike):
+def qfunc_circuit(a: TensorLike):
     """Qfunc circuit/"""
     qp.Hadamard(wires=0)
     qp.CNOT(wires=[0, 1])
