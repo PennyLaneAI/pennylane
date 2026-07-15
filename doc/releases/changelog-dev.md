@@ -651,6 +651,23 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The :attr:`~.Operator.data` property is now read-only. Assigning trainable parameters via
+  ``op.data = new_data`` is no longer supported. To create an operator with updated parameters,
+  use :func:`~.ops.functions.bind_new_parameters`, which returns a new operator and leaves the
+  original unchanged:
+
+  ```python
+  op = qp.RX(0.1, wires=0)
+
+  # Before (no longer supported):
+  # op.data = (0.2,)  # AttributeError: property 'data' of 'RX' object has no setter
+
+  # After:
+  op_new = qp.ops.functions.bind_new_parameters(op, (0.2,))
+  ```
+
+  [(#9836)](https://github.com/PennyLaneAI/pennylane/pull/9836)
+
 * Support for compiling PennyLane workflows with CUDA Quantum through :func:`~.qjit` has been
   removed following the removal of the CUDA Quantum integration from Catalyst.
   [(Catalyst #2984)](https://github.com/PennyLaneAI/catalyst/pull/2984)
