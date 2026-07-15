@@ -868,6 +868,8 @@
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
     [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
+  - Compatibility with the `drawer` module.
+    [(#9849)](https://github.com/PennyLaneAI/pennylane/pull/9849)
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
     [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
     [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
@@ -895,6 +897,7 @@
     [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
     [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
+    [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -909,6 +912,8 @@
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
+  - Capture, graph decomp and differentiation checks are run in :func:`~.assert_valid`.
+    [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.

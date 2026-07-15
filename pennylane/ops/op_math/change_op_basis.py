@@ -24,6 +24,7 @@ from functools import reduce
 from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -34,6 +35,7 @@ from pennylane.exceptions import (
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import Wire
 
 from .composite import CompositeOp, handle_recursion_error
@@ -188,6 +190,13 @@ def change_op_basis(
     """
 
     if capture.enabled():
+        # NOTE: Need to pop any eagerly constructed operators present in the traced function
+        # out of the jaxpr. This ensures that the order is kept consistent if any operators
+        # were built outside of the traced function. '_apply_op_or_func' will bind the primitives
+        # and insert them in the correct order.
+        for _op in (compute_op, target_op):
+            if isinstance(_op, Operator2) and _op.tracer is not None:
+                pop_op_eqns((_op,))
         _apply_op_or_func(compute_op)
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
@@ -244,6 +253,23 @@ class ChangeOpBasis(CompositeOp):
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
+
+        leaves, structure = flatten(
+            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, Operator)
+        )
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        compute_op, target_op, uncompute_op = unflatten(new_leaves, structure)
+
         return cls._primitive.bind(compute_op, target_op, uncompute_op)
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
