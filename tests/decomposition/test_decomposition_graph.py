@@ -361,6 +361,10 @@ class TestDecompGraphConstruction:
         def _another_rule(_):
             raise NotImplementedError
 
+        # Note how NonParametricOp decomposes to DynOp, which then decomposes back to a
+        # controlled NonParametricOp. We want to test that the graph construction does
+        # not enter infinite recursion.
+
         _ = DecompositionGraph(
             [NonParametricOp([0, 1])],
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
