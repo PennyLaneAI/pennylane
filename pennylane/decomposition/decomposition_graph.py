@@ -284,13 +284,19 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._min_work_wires = 0
         self._start = self._graph.add_node(None)
 
-        # The purpose of the following two "in_progress" variables is to keep track of which operators we're still exploring
-        # decomposition paths for during **graph construction**. If we loop back to an
-        # op that we're still exploring (e.g., if we find ourselves exploring decomposition
-        # rules for C(RX) during exploration of RX itself), we stop.
+        # The purpose of the following two "in_progress" variables is to keep track of which
+        # operators we're still exploring decomposition paths for during **graph construction**.
+        # If we loop back to an op that we're still exploring (e.g., if we find ourselves
+        # exploring decomposition rules for C(RX) during exploration of RX itself), we stop.
         self._in_progress = []
         self._num_ctrl_wires_in_progress = defaultdict(list)
 
+        # Update the global decomposition library using alt_decomps and fixed_decomps in a local
+        # context manager (which restores it to the original state upon exit), so that list_decomps
+        # will always return the modified collection of decomposition rules. This is important
+        # because when list_decomps is called on symbolic operators, it recursively calls itself
+        # on the base of the symbolic operator to retrieve the base decomposition rules. When this
+        # happens, we need alt_decomps and fixed_decomps to still be respected.
         with local_decomps():
 
             for op, decomps in self._alt_decomps.items():

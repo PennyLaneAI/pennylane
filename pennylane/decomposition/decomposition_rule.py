@@ -603,9 +603,6 @@ class DecompCollection:
     def __len__(self) -> int:
         return len(self._decomps)
 
-    def __eq__(self, other) -> bool:
-        return self._decomps == other._decomps if isinstance(other, DecompCollection) else False
-
     def copy(self) -> DecompCollection:
         """Return a copy of the DecompCollection."""
         return DecompCollection(self._decomps)
