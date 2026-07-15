@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires:
+    def wires(self) -> Wires | None:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -953,6 +953,18 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        if len(self.arguments) == 1:
+            key, value = next(iter(self.arguments.items()))
+            if key in self.wire_argnames and key not in self.hybrid_argnames:
+                # Format single wires directly without list brackets or keyword labels
+                wires_list = value.tolist() if isinstance(value, Wires) else value
+                res = (
+                    wires_list[0]
+                    if isinstance(wires_list, list) and len(wires_list) == 1
+                    else wires_list
+                )
+                return f"{self.name}({repr(res)})"
+
         inputs = []
 
         for key, value in self.arguments.items():
