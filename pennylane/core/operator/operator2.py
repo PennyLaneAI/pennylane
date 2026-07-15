@@ -961,8 +961,6 @@ class Operator2(metaclass=OperatorMeta):
                 wires_list = arg_value.tolist() if isinstance(arg_value, Wires) else arg_value
                 if isinstance(wires_list, list) and len(wires_list) == 1:
                     return f"{self.name}({wires_list[0]!r})"
-                if isinstance(wires_list, AbstractWires) and wires_list.num_wires == 1:
-                    return f"{self.name}({wires_list!r})"
 
         inputs = []
 
