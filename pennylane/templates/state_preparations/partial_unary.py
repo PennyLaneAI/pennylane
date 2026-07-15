@@ -178,7 +178,7 @@ class PUIsometryFinder:
                 f"just {num_dist} distinct basis states."
             )
         if num_entries < 2:  # No need for this algorithm
-            raise ValueError("At least two basis states are required. Got {num_entries}.")
+            raise ValueError(f"At least two basis states are required. Got {num_entries}.")
         # Choose the packing representation. ``uint64`` is the fast native path for
         # n <= 63 qubits; for wider registers a single 64-bit word cannot hold a row, so we fall
         # back to Python big integers stored in a ``dtype=object`` array. ``_word`` converts a
@@ -234,10 +234,6 @@ class PUIsometryFinder:
         """Return the word mask with a single set bit at tableau column ``col``."""
         return self._col_masks[col]
 
-    def _get_col(self, col: int) -> np.ndarray:
-        """Return the (0/1) values of tableau column ``col`` across all rows."""
-        return (self.tableau >> self._shifts[col]) & self._one
-
     def _diff_bits(self, diff_val: int) -> np.ndarray:
         """Return the length-``n`` MSB-first binary representation of ``diff_val`` (a Python
         int) as an ``int8`` array. Uses ``math.int_to_binary`` on the single-word path; that
@@ -250,23 +246,6 @@ class PUIsometryFinder:
         # Multi-word scenario
         _shifts = ((self.n - 1 - c) for c in range(self.n))
         return np.fromiter(((diff_val >> s) & 1 for s in _shifts), dtype=np.int8, count=self.n)
-
-    def apply_multi_controlled_x(self, controls, control_values, target: int):
-        """Apply multi-controlled X to the tableau."""
-        # Create control mask and the control pattern we want to match, from ``controls`` and
-        # ``control_values``. This is fast enough because we only ever use this function to realize
-        # bit flips from Toffoli gates, so len(control)=len(control_values)=2
-        ctrl_mask = self._zero
-        ctrl_pattern = self._zero
-        for c, v in zip(controls, control_values, strict=True):
-            bit = self._col_bit(c)
-            ctrl_mask |= bit
-            if v:
-                ctrl_pattern |= bit
-        match = (self.tableau & ctrl_mask) == ctrl_pattern
-        # Where the control pattern matches, we flip the target bit by XORing with the bitstring
-        # having only the target bit set to one.
-        self.tableau[match] ^= self._col_bit(target)
 
     def pui(self, k: int, batch_size: int, circuit: list):
         """Add a Partial unary iterator circuit (in form of ``Select``) to the circuit ops and
@@ -313,7 +292,23 @@ class PUIsometryFinder:
     def toffoli(self, controls: list, second_ctrl_val: int, target: int, circuit: list):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
         circuit.append(("Toffoli", controls + [target], second_ctrl_val))
-        self.apply_multi_controlled_x(controls, [1, second_ctrl_val], target)
+
+        # Apply multi-controlled X to the tableau.
+        # Create control mask and the control pattern we want to match, from ``controls`` and
+        # ``control_values``. This is fast enough because we only ever use this function to realize
+        # bit flips from Toffoli gates, so len(control)=len(control_values)=2
+        ctrl_mask = self._zero
+        ctrl_pattern = self._zero
+        for c, v in zip(controls, (1, second_ctrl_val), strict=True):
+            bit = self._col_bit(c)
+            ctrl_mask |= bit
+            if v:
+                ctrl_pattern |= bit
+        match = (self.tableau & ctrl_mask) == ctrl_pattern
+        # Where the control pattern matches, we flip the target bit by XORing with the bitstring
+        # having only the target bit set to one.
+        self.tableau[match] ^= self._col_bit(target)
+
         return circuit
 
     def swap(self, w0: int, w1: int, circuit: list):
