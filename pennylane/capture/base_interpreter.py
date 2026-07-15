@@ -309,8 +309,6 @@ class PlxprInterpreter:
         new_op = jax.tree_util.tree_unflatten(struct, data)
         if isinstance(new_op, Operator2):
             new_op._bind_primitive()  # pylint: disable=protected-access
-            if new_op.tracer is None and qp.QueuingManager.recording():
-                qp.QueuingManager.append(new_op)
         return new_op
 
     def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
