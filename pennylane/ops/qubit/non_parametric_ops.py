@@ -1213,15 +1213,6 @@ class S(Operator2):
             )
         return self._pauli_rep
 
-    def __repr__(self) -> str:
-        """String representation."""
-        if isinstance(self.wires, AbstractWires):
-            return "S"
-        wire = self.wires[0]  # pylint: disable=unsubscriptable-object
-        if isinstance(wire, str):
-            return f"S('{wire}')"
-        return f"S({wire})"
-
     @staticmethod
     @lru_cache
     # pylint: disable=arguments-differ,unused-argument
