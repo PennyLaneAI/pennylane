@@ -890,7 +890,7 @@
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
-  - Capture, graph decomp and differentiation checks are run in assert_valid.
+  - Capture, graph decomp and differentiation checks are run in :func:`~.assert_valid`.
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
 
 * Adds a new `pennylane/core` module.
