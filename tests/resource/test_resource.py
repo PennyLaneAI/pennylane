@@ -181,6 +181,7 @@ class TestSpecsResources:
             "circuit_depth": 2,
             "num_gates": 3,
             "vars": frozenset(),
+            "extra": {},
         }
 
         assert s.to_dict() == expected
@@ -582,6 +583,7 @@ class TestCircuitSpecs:
                 "circuit_depth": 2,
                 "num_gates": 3,
                 "vars": frozenset(),
+                "extra": {},
             },
         }
 
@@ -603,6 +605,7 @@ class TestCircuitSpecs:
                     "circuit_depth": 2,
                     "num_gates": 6,
                     "vars": frozenset(),
+                    "extra": {},
                 },
                 2: [
                     {
@@ -613,6 +616,7 @@ class TestCircuitSpecs:
                         "circuit_depth": 1,
                         "num_gates": 1,
                         "vars": frozenset(),
+                        "extra": {},
                     },
                     {
                         "gate_counts": {"CNOT": 1},
@@ -622,6 +626,7 @@ class TestCircuitSpecs:
                         "circuit_depth": 1,
                         "num_gates": 1,
                         "vars": frozenset(),
+                        "extra": {},
                     },
                 ],
             },
@@ -648,6 +653,7 @@ class TestCircuitSpecs:
                     "circuit_depth": 2,
                     "num_gates": Expression({("x",): 4, (): 2}),
                     "vars": frozenset({"x"}),
+                    "extra": {},
                 },
                 2: [
                     {
@@ -658,6 +664,7 @@ class TestCircuitSpecs:
                         "circuit_depth": 1,
                         "num_gates": Expression({("x",): 1}),
                         "vars": frozenset({"x"}),
+                        "extra": {},
                     },
                     {
                         "gate_counts": {"CNOT": Expression({("x",): 1})},
@@ -667,6 +674,7 @@ class TestCircuitSpecs:
                         "circuit_depth": 1,
                         "num_gates": Expression({("x",): 1}),
                         "vars": frozenset({"x"}),
+                        "extra": {},
                     },
                 ],
             },

@@ -79,10 +79,37 @@ def num_to_letters(num: int) -> str:
     return num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Resources:
+    """
+    Base class for storing resource information.
+
+    .. warning::
+
+        This class is intended to be immutable. Modifying the attributes after creation may lead to
+        unexpected behavior.
+
+    Args:
+        counts (dict[str, int]): A dictionary mapping resources to their counts.
+        extra (dict[int, int]): A dictionary for storing any extra fields that need to be tracked.
+        vars (frozenset[str]): The set of all symbolic variables present in the resource counts.
+
+    .. details::
+
+        :title: Symbolic Resource Information
+
+        Attributes in this class can be of type :class:`Expression`, allowing for symbolic
+        manipulation and substitution of variables. When variables of type :class:`Expression` are
+        present, the :attr:`vars` attribute will contain the set of all symbolic variables used in
+        the resource counts. This includes fields introduced in derived classes. Similarly, the
+        :meth:`subs` method can be used to substitute symbolic variables with concrete integer
+        values.
+    """
+
     counts: dict  # Intentionally vague name, aliased to gate_counts in most places
-    # extra: dict = field(repr=False)  # Used to store extra fields for any derived type
+    extra: dict = field(
+        repr=False, default_factory=dict
+    )  # Used to store extra fields for any derived type
 
     vars: frozenset[str] = field(
         init=False,
@@ -251,9 +278,69 @@ class Resources:
         return bool(self.vars)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class SpecsResources(Resources):
-    # TODO: Docstrings
+    """
+    Class for storing resource information for a quantum circuit. Contains attributes which store
+    key resources such as gate counts, number of wire allocations, measurements, and circuit depth.
+
+    Note that this class is intended to be immutable. Modifying the attributes after creation may
+    lead to unexpected behavior.
+
+    Args:
+        counts (dict[str, int]): A dictionary mapping gate names to their counts.
+        gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
+        measurements (dict[str, int]): A dictionary mapping measurements to their counts.
+        num_allocs (int): The number of unique wire allocations. For circuits that do not use
+          dynamic wires, this should be equal to the number of device wires.
+        depth (int | None): The depth of the circuit, or None if not computed.
+
+    Properties:
+        gate_counts (dict[str, int]): A dictionary mapping gate names to their counts (alias for ``counts``).
+        num_gates (int): The total number of gates in the circuit (computed from ``counts``).
+        depth (int | None): The depth of the circuit, or None if not computed (alias for ``circuit_depth``).
+
+    .. seealso::
+
+        :class:`Resources` for the base class and its fields.
+
+    .. warning::
+
+        This class is intended to be immutable. Modifying the attributes after creation may
+        lead to unexpected behavior.
+
+    .. details::
+
+        Methods have been provided to allow pretty-printing, as well as
+        indexing into the object as a dictionary. See examples below.
+
+        **Example**
+
+        >>> from pennylane.resource import SpecsResources
+        >>> res = SpecsResources(
+        ...     counts={'Hadamard': 1, 'CNOT': 1},
+        ...     gate_sizes={1: 1, 2: 1},
+        ...     measurements={'expval(PauliZ)': 1},
+        ...     num_allocs=2,
+        ...     circuit_depth=2
+        ... )
+
+        >>> print(res.num_gates)
+        2
+
+        >>> print(res["num_gates"])
+        2
+
+        >>> print(res)
+        Wire allocations: 2
+        Total gates: 2
+        Gate counts:
+        - Hadamard: 1
+        - CNOT: 1
+        Measurements:
+        - expval(PauliZ): 1
+        Circuit Depth: 2
+    """
 
     gate_sizes: dict[int, int | Expression] = field(repr=False)
     measurements: dict[str, int | Expression] = field(metadata={"display_name": "Measurements"})
@@ -399,26 +486,34 @@ class SpecsResources(Resources):
         return d
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class PBCSpecsResources(SpecsResources):
     """
-    Class for storing specifications of a qnode with additional PBC (Pauli-Based Computing) information.
+    Class for storing resource information for a quantum circuit with additional
+    PBC (Pauli-Based Computing) information.
 
     .. seealso::
 
         :class:`SpecsResources` for the base class and its fields.
+
+    .. warning::
+
+        This class is intended to be immutable. Modifying the attributes after creation may
+        lead to unexpected behavior.
 
     Args:
         any_commuting_depth (int | Expression | None): The any commuting depth of the circuit.
         qubit_disjoint_depth (int | Expression | None): The qubit disjoint depth of the circuit.
     """
 
-    any_commuting_depth: int | Expression = field(
+    any_commuting_depth: int | Expression | None = field(
         default=None, metadata={"display_name": "Any Commuting Depth"}
     )
-    qubit_disjoint_depth: int | Expression = field(
+    qubit_disjoint_depth: int | Expression | None = field(
         default=None, metadata={"display_name": "Qubit Disjoint Depth"}
     )
+
+    # TODO: Handle None values for these depths
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
@@ -492,11 +587,11 @@ class CircuitSpecs:
         ...     shots=Shots(1000),
         ...     level="device",
         ...     resources=SpecsResources(
-        ...         gate_counts={"RX": 2, "CNOT": 1},
+        ...         counts={"RX": 2, "CNOT": 1},
         ...         gate_sizes={1: 2, 2: 1},
         ...         measurements={"expval(PauliZ)": 1},
         ...         num_allocs=2,
-        ...         depth=3,
+        ...         circuit_depth=3,
         ...     ),
         ... )
 
@@ -519,7 +614,7 @@ class CircuitSpecs:
         - CNOT: 1
         Measurements:
         - expval(PauliZ): 1
-        Depth: 3
+        Circuit Depth: 3
     """
 
     device_name: str | None = None

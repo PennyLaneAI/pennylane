@@ -323,7 +323,7 @@ def specs(
     - TrotterProduct: 2
     Measurements:
     - probs(all wires): 1
-    Depth: 4
+    Circuit Depth: 4
 
     The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
     access to the data fields. For example:
@@ -367,7 +367,7 @@ def specs(
         - PauliX: 2
         Measurements:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 6
+        Circuit Depth: 6
 
         We can analyze the effects of, for example, applying the first two transforms
         (:func:`~pennylane.transforms.cancel_inverses` and :func:`~pennylane.transforms.undo_swaps`) by setting
@@ -381,7 +381,7 @@ def specs(
         - RX: 2
         Measurements:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 3
+        Circuit Depth: 3
 
         We can then check the resources after applying all user transforms with ``level="user"`` (which, in this particular example,
         would be equivalent to ``level=3``). The two rotations merge and cancel out, leaving us with only ``RandomLayers``:
@@ -393,7 +393,7 @@ def specs(
         - RandomLayers: 1
         Measurements:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 1
+        Circuit Depth: 1
 
         After the user transforms, additional transforms for device compatibility and gradient support may be applied. To see the
         resources after all transforms are applied, we can use ``level="device"``. In this case, ``RandomLayers`` is not
@@ -407,7 +407,7 @@ def specs(
         - RX: 1
         Measurements:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 1
+        Circuit Depth: 1
 
         If a QNode with a tape-splitting transform is supplied to the function, the output will provide
         resource information separately for each tape:
@@ -437,7 +437,7 @@ def specs(
             - RandomLayers: 1
             Measurements:
             - expval(Prod(num_wires=2, num_terms=2)): 1
-            Depth: 1
+            Circuit Depth: 1
         <BLANKLINE>
         Batched tape b:
             Wire allocations: 3
@@ -446,14 +446,14 @@ def specs(
             - RandomLayers: 1
             Measurements:
             - expval(Prod(num_wires=2, num_terms=2)): 1
-            Depth: 1
+            Circuit Depth: 1
 
         In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
         :class:`~.resource.SpecsResources` for each resulting tape:
 
         >>> qp.specs(circuit, level="user")().resources
-        [SpecsResources(counts={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, depth=1),
-         SpecsResources(counts={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, depth=1)]
+        [SpecsResources(counts={'RandomLayers': 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_gates=1, num_allocs=2, circuit_depth=1),
+         SpecsResources(counts={'RandomLayers': 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_gates=1, num_allocs=3, circuit_depth=1)]
 
     .. details::
         :title: Runtime Specs with Catalyst
@@ -496,7 +496,7 @@ def specs(
         - RX: 1
         Measurements:
         - probs(all wires): 1
-        Depth: 2
+        Circuit Depth: 2
 
         .. note::
 
@@ -600,7 +600,7 @@ def specs(
         - RX: 1
         Measurements:
         - probs(all wires): 1
-        Depth: Not computed
+        Circuit Depth: Not computed
 
         A shortcut to access the resources after all user-specified transforms and passes have been
         applied is to use the ``"user"`` level. For example, the following will also return the
@@ -614,7 +614,7 @@ def specs(
         - RX: 1
         Measurements:
         - probs(all wires): 1
-        Depth: Not computed
+        Circuit Depth: Not computed
 
         .. warning::
             Certain transforms, like the ``split_non_commuting`` transform, can result in splitting a single execution
@@ -706,7 +706,7 @@ def specs(
         - PauliZ: b
         Measurements:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Circuit Depth: Not computed
 
         You can estimate the concrete resource values using the ``.subs`` method of the
         returned :class:`~.resource.SpecsResources` object, and providing keyword arguments
@@ -722,7 +722,7 @@ def specs(
         - PauliZ: 3
         Measurements:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Circuit Depth: Not computed
 
         These substitutions may also be provided as a dictionary, which can be helpful in
         programmatic contexts:
@@ -736,7 +736,7 @@ def specs(
         - PauliZ: 3
         Measurements:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Circuit Depth: Not computed
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed

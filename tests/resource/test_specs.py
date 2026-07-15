@@ -456,6 +456,7 @@ class TestSpecsTransform:
                     "circuit_depth": 5,
                     "num_gates": 5,
                     "vars": frozenset(),
+                    "extra": {},
                 },
                 {
                     "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
@@ -465,6 +466,7 @@ class TestSpecsTransform:
                     "circuit_depth": 5,
                     "num_gates": 5,
                     "vars": frozenset(),
+                    "extra": {},
                 },
                 {
                     "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
@@ -474,6 +476,7 @@ class TestSpecsTransform:
                     "circuit_depth": 5,
                     "num_gates": 5,
                     "vars": frozenset(),
+                    "extra": {},
                 },
             ],
         }
