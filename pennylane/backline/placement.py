@@ -34,6 +34,10 @@ class Endpoint:
             ``True`` (local).
         attrs (dict | None): Optional backend-specific hints (e.g. a cross-compilation target
             triple). Defaults to ``None``.
+        decoder (str | object | None): The decoder this endpoint runs (coprocessors only). A
+            ``str`` names a decoder implementation (selector); an object is a builder the
+            compiler consumes. Meaningful only for endpoints placed in
+            :attr:`Backline.coprocessors`. Defaults to ``None``.
     """
 
     host: str
@@ -41,6 +45,7 @@ class Endpoint:
     name: str | None = None
     local: bool = True
     attrs: dict | None = None
+    decoder: str | object | None = None
 
 
 @dataclass(frozen=True)

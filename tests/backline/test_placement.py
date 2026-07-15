@@ -58,6 +58,19 @@ class TestEndpoint:
         with pytest.raises(dataclasses.FrozenInstanceError):
             ep.host = "other.ip"
 
+    def test_decoder_defaults_to_none(self):
+        ep = qp.Endpoint("gpu.hostname", role="gpu-decoder")
+        assert ep.decoder is None
+
+    def test_decoder_accepts_selector_string(self):
+        ep = qp.Endpoint("gpu.hostname", role="gpu-decoder", decoder="steane")
+        assert ep.decoder == "steane"
+
+    def test_decoder_accepts_builder_object(self):
+        builder = object()  # stands in for a Gluon builder
+        ep = qp.Endpoint("gpu.hostname", role="gpu-decoder", decoder=builder)
+        assert ep.decoder is builder
+
 
 class TestBackline:
     """The backline placement: a controller, optional coprocessors, and a transport."""
