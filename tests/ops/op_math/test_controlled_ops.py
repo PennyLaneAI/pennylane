@@ -865,6 +865,7 @@ class TestCYOperator2:
         assert op.control_values == [True]
         assert qp.math.allclose(qp.CY.compute_matrix(wires=[0, 1]), op.matrix())
         assert qp.CY.compute_decomposition is Operator2.compute_decomposition
+        assert op.decomposition() == [qp.CRY(np.pi, wires=[0, 1]), qp.S(0)]
 
     def test_queue_only_final_gate(self):
         """Constructing the internal ``PauliY`` base must not queue it separately.
