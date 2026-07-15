@@ -955,13 +955,14 @@ class Operator2(metaclass=OperatorMeta):
     def __repr__(self) -> str:
         if len(self.arguments) == 1:
             arg_name, arg_value = next(iter(self.arguments.items()))
-            # NOTE: Only process non-pytree wire arguments
+            # NOTE: Only strip for SINGLE wires, multi-wire ops
+            # with retain legacy Name(wires=[...]) format
             if arg_name in self.wire_argnames and arg_name not in self.hybrid_argnames:
                 wires_list = arg_value.tolist() if isinstance(arg_value, Wires) else arg_value
                 if isinstance(wires_list, list) and len(wires_list) == 1:
-                    # NOTE: Only strip for SINGLE wires, multi-wire ops
-                    # with retain legacy Name(wires=[...]) format
-                    return f"{self.name}({repr(wires_list[0])})"
+                    return f"{self.name}({wires_list[0]!r})"
+                if isinstance(wires_list, AbstractWires) and wires_list.num_wires == 1:
+                    return f"{self.name}({wires_list!r})"
 
         inputs = []
 
