@@ -146,15 +146,17 @@ def _check_decomposition(op, skip_wire_mapping):
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     """Checks involving the new system of decompositions."""
     op_type = type(op)
-    if op_type.resource_params is qp.operation.Operator.resource_params:
-        assert not qp.decomposition.has_decomp(
-            op_type
-        ), "resource_params must be defined for operators with decompositions"
-        return
 
-    assert set(op.resource_params.keys()) == set(
-        op_type.resource_keys
-    ), "resource_params must have the same keys as specified by resource_keys"
+    if not isinstance(op, Operator2):
+        if op_type.resource_params is qp.operation.Operator.resource_params:
+            assert not qp.decomposition.has_decomp(
+                op_type
+            ), "resource_params must be defined for operators with decompositions"
+            return
+
+        assert set(op.resource_params.keys()) == set(
+            op_type.resource_keys
+        ), "resource_params must have the same keys as specified by resource_keys"
 
     for rule in qp.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
@@ -471,7 +473,11 @@ def _check_capture(op):
         data, struct = jax.tree_util.tree_flatten(op)
 
         def test_fn(*args):
-            return jax.tree_util.tree_unflatten(struct, args)
+            op = jax.tree_util.tree_unflatten(struct, args)
+            if isinstance(op, Operator2):
+                op._bind_primitive()
+                return op.tracer
+            return op
 
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
@@ -709,13 +715,6 @@ def assert_valid(
     """
 
     if isinstance(op, qp.core.Operator2):
-        # Temporary, as we will be integrating Operator2 with program capture soon
-        skip_capture = True
-        # Temporary, as we will be integrating Operator2 with graph decomps soon
-        skip_new_decomp = True
-        # Temporary, as we will integrate with differentiation soon
-        skip_differentiation = True
-
         _assert_valid_operator2(
             op,
             skip_deepcopy,
