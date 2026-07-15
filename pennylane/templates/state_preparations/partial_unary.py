@@ -717,7 +717,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     resources[qp.resource_rep(qp.MultiplexerStatePreparation, num_wires=n_subspace)] += 1
 
     R = num_wires - n_subspace
-    main_pui_batch_size = 1 << max(int(math.floor(math.log2(max(R, 1)))), n_subspace)
+    main_pui_batch_size = min(1 << int(math.floor(math.log2(max(R, 1)))), num_entries)
 
     qrom_reps = {
         p: qp.resource_rep(
@@ -887,9 +887,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             elbow-based decomposition.
             """
             _wires = [wires[idx] for idx in data[:3]]
-            qp.BasisState([1 - data[3:][0]], _wires[1:2])
+            qp.BasisState([1 - data[3]], _wires[1:2])
             qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
-            qp.BasisState([1 - data[3:][0]], _wires[1:2])
+            qp.BasisState([1 - data[3]], _wires[1:2])
 
         @branches.otherwise
         def _else():
