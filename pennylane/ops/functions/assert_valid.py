@@ -474,8 +474,10 @@ def _check_capture(op):
 
         def test_fn(*args):
             op = jax.tree_util.tree_unflatten(struct, args)
-            op._bind_primitive()
-            return op.tracer
+            if isinstance(op, Operator2):
+                op._bind_primitive()
+                return op.tracer
+            return op
 
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
