@@ -53,10 +53,9 @@ def _cacheable_get_resources(rule):
             else:
                 new_leaves.append(l)
 
-        dummy_op2 = unflatten(leaves, metadata)
+        dummy_op2 = unflatten(new_leaves, metadata)
         with queuing.AnnotatedQueue() as q:
             rule(**dummy_op2.arguments)
-
         resources = defaultdict(int)
         for op in q.queue:
             resources[abstractify(op)] += 1
@@ -690,7 +689,7 @@ _decompositions_private = defaultdict(DecompCollection)
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule | Callable) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -709,9 +708,11 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     Args:
         op_type (type or str): the operator type for which new decomposition rules are specified.
             For symbolic operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
-        decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
+        decomps (DecompositionRule| Callable): new decomposition rules to add to the given ``op_type``.
             A decomposition is a quantum function registered with a resource estimate using
-            ``qp.register_resources``.
+            ``qp.register_resources``. If ``op_type`` is an :class:`~.Operator` subclass, the decomps
+            can be a raw function without an associated resources, as the resources are calculated
+            using dummy inputs with the proper shape and dtype.
 
     .. seealso:: :func:`~pennylane.register_resources` and :class:`~pennylane.list_decomps`
 
@@ -743,6 +744,25 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     scope of this program, and they will be taken into account for all circuit decompositions
     for the duration of the session. To add alternative decompositions for a particular circuit
     as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
+
+    If the ``op_type`` is an :class:`~.Operator2` instance, a raw function can be provided instead.
+
+    .. code-block:: python
+
+        class A(qp.core.Operator2):
+
+            dynamic_argnames = ("x",)
+
+            def __init__(self, x, wires):
+                super().__init__(x, wires=wires)
+
+        def A_decomps0(x, wires):
+            qp.RX(x, wires)
+
+        qp.add_decomps(A, A_decomps0)
+
+    Here, the resources are calculated by evaluating the decomposition with dummy values (``np.empty``) values
+    with the same shape and dtype.
 
     Custom decomposition rules can also be specified for symbolic operators. In this case, the
     operator type can be specified as a string. For example,
