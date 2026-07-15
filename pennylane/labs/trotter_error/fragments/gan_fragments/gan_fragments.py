@@ -167,6 +167,9 @@ class FuncSymbol:
             case FuncType.IDENTITY:
                 return 1
 
+            case _:
+                raise ValueError(f"Got unknown function type {self.f_type}.")
+
 
 class GanMonomial:
     """An ordered product of nuclear functions (:class:`FuncSymbol` factors).
@@ -175,19 +178,12 @@ class GanMonomial:
     freedom, e.g. :math:`Q(0)\\,P(1)^2`. It supports a canonical normal ordering
     (:meth:`normal_order`) so that equivalent products compare and hash equally.
 
-    The hash is computed once at construction; when monomials are produced by
-    multiplication a precomputed hash may be supplied to avoid recomputation.
-
     Args:
         funcs (Sequence[FuncSymbol]): the ordered function factors.
-        _hash (int): an optional precomputed hash. If ``0`` (the default), the
-            hash is computed from ``funcs``.
     """
 
-    def __init__(self, funcs: Sequence[FuncSymbol], _hash: int = 0):
-
+    def __init__(self, funcs: Sequence[FuncSymbol]):
         self.funcs = funcs
-        self._hash = hash(tuple(self.funcs)) if _hash == 0 else _hash
 
     def normal_order(self) -> GanMonomial:
         """Return the monomial in its canonical normal ordering.
@@ -218,14 +214,14 @@ class GanMonomial:
         Returns:
             GanMonomial: the product monomial (not yet normal-ordered).
         """
-        return GanMonomial(self.funcs + other.funcs, hash((self, other)))
+        return GanMonomial(self.funcs + other.funcs)
 
     def __eq__(self, other: GanMonomial):
         """Whether two monomials have identical ordered factors."""
         return self.funcs == other.funcs
 
     def __hash__(self):
-        return self._hash
+        return hash(tuple(self.funcs))
 
     def __repr__(self):
         return str(self.funcs)

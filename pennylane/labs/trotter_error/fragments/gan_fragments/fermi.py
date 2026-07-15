@@ -285,7 +285,10 @@ class FermiWord:
         """
 
         if isinstance(other, FermiWord):
-            return FermiSentence({self: 1, other: 1})
+            sentence = defaultdict(float)
+            sentence[self] += 1
+            sentence[other] += 1
+            return FermiSentence(sentence)
 
         if isinstance(other, float):
             identity = FermiWord([])
