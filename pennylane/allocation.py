@@ -222,7 +222,7 @@ def allocate(
         state (Literal["any", "zero", "magic", "magic_conj"]):
             Specifies the initial state of the allocated wires. ``"zero"`` and ``"any"`` request
             wires in the all-zeros state or an arbitrary state, respectively. ``"magic"`` and
-            ``"magic_conj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or :math:`|m̄\rangle = T^\\dagger H|0\rangle`. The default value is ``state="zero"``.
+            ``"magic_conj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or :math:`|\bar{m}\rangle = T^\\dagger H|0\rangle`. The default value is ``state="zero"``.
 
         restored (bool):
             Whether or not the dynamically allocated wires are returned to the same state they
