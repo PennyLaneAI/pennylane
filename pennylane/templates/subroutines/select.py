@@ -15,13 +15,13 @@
 Contains the Select template.
 """
 
-import copy
 from collections import Counter, defaultdict
 from itertools import product
 
 import numpy as np
 
 from pennylane import math
+from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
@@ -420,32 +420,13 @@ class Select(Operation):
 
     def __copy__(self):
         """Copy this op"""
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-
-        new_data = copy.copy(self.data)
-
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
-
-        copied_op.data = new_data
-
-        return copied_op
+        with QueuingManager.stop_recording():
+            return qp_ops.functions.bind_new_parameters(self, self.data)
 
     @property
     def data(self):
-        """Create data property"""
+        """Flattened trainable parameters of the selected operators."""
         return tuple(d for op in self.ops for d in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        for op in self.ops:
-            op_num_params = op.num_params
-            if op_num_params > 0:
-                op.data = new_data[:op_num_params]
-                new_data = new_data[op_num_params:]
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
