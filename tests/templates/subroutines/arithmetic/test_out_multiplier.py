@@ -227,7 +227,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in y_wires should be included in output_wires.",
+                "None of the wires in output_wires should be included in y_wires.",
             ),
             (
                 [0, 1, 7],
@@ -235,7 +235,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in x_wires should be included in output_wires.",
+                "None of the wires in output_wires should be included in x_wires.",
             ),
             (
                 [0, 1, 2],
@@ -377,6 +377,9 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8], 4, [9], [0]),
             ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
             ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+            ([0], [3, 6, 4], [5, 8], 4, [9], [0]),
+            ([0], [3, 6, 4], [5, 8], 4, [9, 10], [0, 1]),
+            ([0], [3, 6, 4], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),

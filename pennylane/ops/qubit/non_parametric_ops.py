@@ -32,8 +32,6 @@ from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
@@ -42,9 +40,13 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     make_pow_decomp_with_period,
     pow_involutory,
-    self_adjoint,
+    self_adjoint_legacy,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -219,6 +221,13 @@ class Hadamard(Operation):
         return super().pow(z % 2)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_h(base: Hadamard, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CH(control + base.wires)
+    return NotImplemented
+
+
 H = Hadamard
 r"""H(wires)
 The Hadamard operator
@@ -261,7 +270,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
-add_decomps("Adjoint(Hadamard)", self_adjoint)
+add_decomps("Adjoint(Hadamard)", self_adjoint_legacy)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
@@ -271,13 +280,11 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
     return {
         qp.H: 2,
         qp.RY: 2,
-        controlled_resource_rep(
+        _ctrl_abstract(
             qp.X,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
         ): 1,
     }
 
@@ -489,6 +496,18 @@ class PauliX(Operation):
         return qp.CNOT(wires=Wires(wire) + self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_x(base: PauliX, control, control_values, work_wires, work_wire_type):
+    wires = control + base.wires
+    if not _is_empty_or_all_true(control_values):
+        return qp.MultiControlledX(wires, control_values, work_wires, work_wire_type)
+    if len(control) == 1:
+        return qp.CNOT(wires)
+    if len(control) == 2 and not work_wires:
+        return qp.Toffoli(wires)
+    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
 X = PauliX
 r"""The Pauli X operator
 
@@ -530,7 +549,7 @@ def _pow_x_to_rx(wires, z, **_):
 
 
 add_decomps(PauliX, _paulix_to_rx)
-add_decomps("Adjoint(PauliX)", self_adjoint)
+add_decomps("Adjoint(PauliX)", self_adjoint_legacy)
 add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
 
 
@@ -774,6 +793,13 @@ class PauliY(Operation):
         return qp.CY(wires=Wires(wire) + self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_y(base: PauliY, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CY(control + base.wires)
+    return NotImplemented
+
+
 Y = PauliY
 r"""The Pauli Y operator
 
@@ -809,7 +835,7 @@ def _pow_y(wires, z, **_):
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
-add_decomps("Adjoint(PauliY)", self_adjoint)
+add_decomps("Adjoint(PauliY)", self_adjoint_legacy)
 add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
@@ -818,14 +844,12 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
         return {qp.CY: 1}
     return {
         qp.S: 1,
-        adjoint_resource_rep(qp.S): 1,
-        controlled_resource_rep(
+        _adjoint_abstract(qp.S): 1,
+        _ctrl_abstract(
             qp.X,
-            {},
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
         ): 1,
     }
 
@@ -1039,6 +1063,17 @@ class PauliZ(Operation):
         return qp.CZ(wires=wire + self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
+    if not _is_empty_or_all_true(control_values):
+        return NotImplemented
+    if len(control) == 1:
+        return qp.CZ(control + base.wires)
+    if len(control) == 2:
+        return qp.CCZ(control + base.wires)
+    return NotImplemented
+
+
 Z = PauliZ
 r"""The Pauli Z operator
 
@@ -1084,7 +1119,7 @@ def _pow_z(wires, z, **_):
 
 
 add_decomps(PauliZ, _pauliz_to_ps)
-add_decomps("Adjoint(PauliZ)", self_adjoint)
+add_decomps("Adjoint(PauliZ)", self_adjoint_legacy)
 add_decomps("Pow(PauliZ)", pow_involutory, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
@@ -1761,6 +1796,13 @@ class SWAP(Operation):
         return qp.CSWAP(wires=wire + self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_swap(base: SWAP, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CSWAP(control + base.wires)
+    return NotImplemented
+
+
 def _swap_to_cnot_resources():
     return {qp.CNOT: 3}
 
@@ -1790,7 +1832,7 @@ def _swap_to_ppr(wires, **_):
 
 
 add_decomps(SWAP, _swap_to_cnot, _swap_to_ppr)
-add_decomps("Adjoint(SWAP)", self_adjoint)
+add_decomps("Adjoint(SWAP)", self_adjoint_legacy)
 add_decomps("Pow(SWAP)", pow_involutory)
 
 
@@ -1991,7 +2033,7 @@ def _ecr_decomp(wires, **__):
 
 
 add_decomps(ECR, _ecr_decomp)
-add_decomps("Adjoint(ECR)", self_adjoint)
+add_decomps("Adjoint(ECR)", self_adjoint_legacy)
 add_decomps("Pow(ECR)", pow_involutory)
 
 

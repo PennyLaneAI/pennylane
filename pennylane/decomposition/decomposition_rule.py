@@ -22,14 +22,18 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from functools import singledispatch
 from textwrap import dedent
 from typing import overload
 
 import pennylane as qp
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
-from .resources import Resources, auto_wrap, resource_rep
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
 from .utils import to_name
 
 
@@ -453,8 +457,19 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
+            if not (
+                isinstance(op, (CompressedResourceOp, Operator2))
+                or (isinstance(op, type) and issubclass(op, Operator))
+            ):
+                raise TypeError(
+                    "The keys of the dictionary returned by the resource function must be a "
+                    "subclass of Operator or a CompressedResourceOp constructed with "
+                    "qp.resource_rep, or an Operator2 constructed with abstract inputs."
+                )
+            op = abstractify(op)
+            _verify_is_abstract_and_fixed(op)
             if count > 0:
-                gate_counter.update({auto_wrap(op): count})
+                gate_counter.update({op: count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
@@ -705,6 +720,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
+@singledispatch
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
@@ -784,9 +800,7 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    op_name = to_name(op)
-    _decompositions = _decompositions_var.get()
-    return op_name in _decompositions and len(_decompositions[op_name]) > 0
+    return len(list_decomps(op)) > 0
 
 
 @contextmanager
@@ -1072,7 +1086,7 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
             continue
         if isinstance(_op, qp.allocation.Deallocate):
             continue
-        op_rep = resource_rep(_op.__class__, **_op.resource_params)
+        op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
 
     return dict(actual_gate_counts), dict(allocations)
@@ -1104,3 +1118,33 @@ def null_decomp(*_, **__):
 
     """
     return
+
+
+def _is_abstract_and_fixed(val):
+    """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
+    # We don't actually need to check whether val is abstract, since the Resources class
+    # already abstractifies everything. We only need to make sure that it's fixed.
+    if isinstance(val, (AbstractArray, AbstractWires)):
+        return val.shape_fixed
+    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
+    return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
+
+
+def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
+    """Checks if an operator is fully abstract and contains only abstract data of fixed shapes."""
+    if isinstance(op, CompressedResourceOp):
+        return
+    target_argnames = op.dynamic_argnames + op.wire_argnames + op.hybrid_argnames
+    target_args = [val for name, val in op.arguments.items() if name in target_argnames]
+    if any(not _is_abstract_and_fixed(val) for val in target_args):
+        raise TypeError(
+            "The resources of a decomposition rule cannot contain operators with "
+            f"abstract data of undetermined dimensions, got {op}."
+        )
+
+
+def _decomp_contains_mcm(rule, params):
+    resources = rule.compute_resources(**params).gate_counts
+    mcm = abstractify(qp.ops.MidMeasure)
+    ppm = abstractify(qp.ops.PauliMeasure)
+    return mcm in resources or ppm in resources

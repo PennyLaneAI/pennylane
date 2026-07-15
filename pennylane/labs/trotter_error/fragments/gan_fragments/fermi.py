@@ -417,9 +417,7 @@ class FermiSentence:
             other (FermiWord | FermiSentence): the right operand.
 
         Returns:
-            dict[FermiWord, float]: the product as a word-to-coefficient
-            mapping.
-
+            FermiSentence: the product as a linear combination of words.
         Raises:
             TypeError: if ``other`` is neither a ``FermiWord`` nor a
                 ``FermiSentence``.

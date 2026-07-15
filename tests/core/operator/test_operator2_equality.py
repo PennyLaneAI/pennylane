@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 from operator2_utils import (
-    CompOp,
+    CompilableOp,
     DynOp,
     FullOp,
     HybridOp,
@@ -183,15 +183,15 @@ class TestCompilableArgs:
 
     def test_equal_same_compilable(self):
         """Test that operators with the same compilable argument are equal."""
-        op1 = CompOp(3, wires=0)
-        op2 = CompOp(3, wires=0)
+        op1 = CompilableOp(3, wires=0)
+        op2 = CompilableOp(3, wires=0)
         assert qp.equal(op1, op2) is True
         qp.assert_equal(op1, op2)
 
     def test_different_compilable_not_equal(self):
         """Test that operators with different compilable arguments are unequal."""
-        op1 = CompOp(3, wires=0)
-        op2 = CompOp(4, wires=0)
+        op1 = CompilableOp(3, wires=0)
+        op2 = CompilableOp(4, wires=0)
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="different values for 'n'"):
             qp.assert_equal(op1, op2)

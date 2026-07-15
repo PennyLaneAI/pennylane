@@ -92,10 +92,9 @@ except (ImportError, NameError) as e:  # pragma: no cover
 import pennylane as qp
 from pennylane import math
 from pennylane.capture import FlatFn, QpPrimitive
-from pennylane.core.shots import Shots
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
-from pennylane.typing import TensorLike
+from pennylane.typing import Result, TensorLike
 
 from .construct_execution_config import construct_execution_config
 
@@ -182,79 +181,11 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=unused-arguments
 @debug_logger
 @qnode_prim.def_impl
-def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
-
-    warn(
-        "Executing PennyLane programs with capture enabled should be done inside ``qp.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
-        UserWarning,
-    )
-
-    execution_config = device.setup_execution_config(execution_config)
-
-    if shots_len == 0:
-        shots = None
-        non_shots_args = args
-    else:
-        shots, non_shots_args = args[:shots_len], args[shots_len:]
-
-    consts = non_shots_args[:n_consts]
-    non_const_args = non_shots_args[n_consts:]
-
-    device_program = device.preprocess_transforms(execution_config)
-    if batch_dims is not None:
-        temp_all_args = []
-        for a, d in zip(args, batch_dims, strict=True):
-            if d is not None:
-                slices = [slice(None)] * math.ndim(a)
-                slices[d] = 0
-                temp_all_args.append(a[tuple(slices)])
-            else:
-                temp_all_args.append(a)
-        temp_consts = temp_all_args[shots_len : (n_consts + shots_len)]
-        temp_args = temp_all_args[(n_consts + shots_len) :]
-    else:
-        temp_consts = consts
-        temp_args = non_const_args
-
-    # Expand user transforms applied to the qfunc
-    if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
-        transformed_func = qp.capture.expand_plxpr_transforms(
-            partial(qp.capture.eval_jaxpr, qfunc_jaxpr, temp_consts)
-        )
-
-        qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_args)
-        temp_consts = qfunc_jaxpr.consts
-        qfunc_jaxpr = qfunc_jaxpr.jaxpr
-
-    # Expand user transforms applied to the qnode
-    qfunc_jaxpr = qnode.compile_pipeline(qfunc_jaxpr, temp_consts, *temp_args)
-    temp_consts = qfunc_jaxpr.consts
-    qfunc_jaxpr = qfunc_jaxpr.jaxpr
-
-    # Apply device preprocessing transforms
-    graph_enabled = qp.decomposition.enabled_graph()
-    try:
-        qp.decomposition.disable_graph()
-        qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
-    finally:
-        if graph_enabled:
-            qp.decomposition.enable_graph()
-    consts = qfunc_jaxpr.consts
-    qfunc_jaxpr = qfunc_jaxpr.jaxpr
-
-    partial_eval = partial(
-        device.eval_jaxpr,
-        qfunc_jaxpr,
-        consts,
-        execution_config=execution_config,
-        shots=Shots(shots),
-    )
-    if batch_dims is None:
-        return partial_eval(*non_const_args)
-    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
+def _(*args, **kwargs):
+    raise NotImplementedError
 
 
 def custom_staging_rule(
@@ -433,7 +364,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     return qfunc_jaxpr, flat_fn.out_tree
 
 
-def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
+def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> Result:
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
     Args:
@@ -444,7 +375,7 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
         kwargs (Any): Any keyword arguments accepted by the quantum function
 
     Returns:
-        qp.typing.Result: the result of a qnode execution
+        Result: the result of a qnode execution
 
     **Example:**
 
