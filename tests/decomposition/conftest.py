@@ -17,7 +17,6 @@
 # pylint: disable=too-few-public-methods,protected-access
 
 from collections import defaultdict
-from functools import singledispatch
 from contextvars import ContextVar
 
 import pennylane as qp
@@ -30,17 +29,11 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint_legacy,
 )
-from pennylane.decomposition.utils import to_name
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)
-
-
-@singledispatch
-def list_test_decomps(op):
-    return decompositions[to_name(op)]
 
 
 def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:
