@@ -30,6 +30,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    get_fixed_decomp,
     list_decomps,
     register_condition,
     register_resources,
@@ -573,7 +574,13 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
 @list_decomps.register
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
+    """Get all the decomposition rules applicable to this operator."""
+
     op = abstractify(op)
+
+    # fixed_decomps should override everything
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
 
     # Special case for flipping the order of control and adjoint. We prefer to have adjoint
     # wrapping a controlled operator instead of the other way around because there is more
