@@ -645,7 +645,7 @@
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
 * Trotter error module now supports GAN Hamiltonian workflows.
-  [(#9742)][https://github.com/PennyLaneAI/pennylane/pull/9742]
+  [(#9742)](https://github.com/PennyLaneAI/pennylane/pull/9742)
 
 <h3>Breaking changes 💔</h3>
 
