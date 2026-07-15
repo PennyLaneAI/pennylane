@@ -37,7 +37,11 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
+)
+from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control as flip_zero_control_legacy,
+)
+from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     pow_rotation,
     self_adjoint_legacy,
@@ -523,6 +527,7 @@ class CY(Controlled2):
                 [0, 0, 1j, 0],
             ]
         )
+
 
 def _cy_to_cry_s_resources(wires: AbstractWires):  # pylint: disable=unused-argument
     return {qp.CRY: 1, qp.S: 1}

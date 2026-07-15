@@ -38,6 +38,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control as flip_zero_control_legacy,
+)
+from pennylane.decomposition.symbolic_decomposition import (
     make_pow_decomp_with_period,
     pow_involutory,
     self_adjoint_legacy,
@@ -767,6 +769,7 @@ class PauliY(Operator2):
     def pow(self, z: float | int) -> list[qp.operation.Operator]:
         return super().pow(z % 2)
 
+
 @custom_ctrl_dispatch.register
 def _ctrl_y(base: PauliY, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
@@ -813,7 +816,9 @@ add_decomps("Adjoint(PauliY)", self_adjoint_legacy)
 add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
-def _controlled_y_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_y_resource(  # pylint: disable=unused-argument
+    base, control_wires, control_values, work_wires, work_wire_type
+):
     if len(control_wires) == 1:
         return {qp.CY: 1}
     return {
@@ -829,7 +834,9 @@ def _controlled_y_resource(base, control_wires, control_values, work_wires, work
 
 
 @register_resources(_controlled_y_resource)
-def _controlled_y_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_y_decomp(  # pylint: disable=unused-argument
+    base, control_wires, control_values, work_wires, work_wire_type
+):
     wires = control_wires + base.wires
 
     if len(control_wires) == 1:
