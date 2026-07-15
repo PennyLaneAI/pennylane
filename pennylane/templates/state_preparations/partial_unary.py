@@ -633,10 +633,10 @@ class PartialUnaryStatePreparation(Operation):
 
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Wire allocations: 26
-    Total gates: 6,040
+    Total gates: 6,046
     Gate counts:
     - MultiplexerStatePreparation: 1
-    - BasisState: 2,414
+    - BasisState: 2,420
     - QROM: 1,207
     - C(BasisState): 2,414
     - MultiControlledX: 3
@@ -652,10 +652,10 @@ class PartialUnaryStatePreparation(Operation):
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Wire allocations: 48
-    Total gates: 3,056
+    Total gates: 3,068
     Gate counts:
     - MultiplexerStatePreparation: 1
-    - BasisState: 320
+    - BasisState: 332
     - QROM: 160
     - C(BasisState): 2,553
     - MultiControlledX: 6
