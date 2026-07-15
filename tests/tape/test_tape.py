@@ -528,10 +528,10 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=2,
-            gate_types={},
+            counts={},
             gate_sizes={},
             measurements={"probs(all wires)": 1},
-            depth=0,
+            circuit_depth=0,
         )
         assert tape.specs["resources"] == expected_resources
 
@@ -543,10 +543,10 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=3,
-            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
+            counts={"RX": 2, "Rot": 1, "CNOT": 1},
             gate_sizes={1: 3, 2: 1},
             measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
-            depth=3,
+            circuit_depth=3,
         )
         assert specs["resources"] == expected_resources
 
@@ -558,10 +558,10 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=3,
-            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
+            counts={"RX": 2, "Rot": 1, "CNOT": 1},
             gate_sizes={1: 3, 2: 1},
             measurements={},
-            depth=3,
+            circuit_depth=3,
         )
         assert specs1["resources"] == expected_resources
 
@@ -575,10 +575,10 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=5,
-            gate_types={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
+            counts={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
             gate_sizes={1: 4, 2: 2},
             measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
-            depth=4,
+            circuit_depth=4,
         )
         assert specs2["resources"] == expected_resources
 

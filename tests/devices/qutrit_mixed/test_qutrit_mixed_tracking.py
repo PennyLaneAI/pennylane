@@ -49,10 +49,10 @@ class TestTracking:
             dev.execute(qs)
 
         res = SpecsResources(
-            gate_types={},
+            counts={},
             gate_sizes={},
             measurements={"expval(GellMann)": 1},
-            depth=0,
+            circuit_depth=0,
             num_allocs=1,
         )
 
@@ -91,11 +91,11 @@ class TestTracking:
         )
 
         expected_resources = SpecsResources(
-            gate_types={"THadamard": 3, "TAdd": 2, "TRZ": 1},
+            counts={"THadamard": 3, "TAdd": 2, "TRZ": 1},
             gate_sizes={1: 4, 2: 2},
             measurements={"expval(GellMann)": 2},
             num_allocs=3,
-            depth=3,
+            circuit_depth=3,
         )
 
         dev = qp.device("default.qutrit.mixed")

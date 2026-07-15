@@ -989,10 +989,10 @@ def test_specs():
     gate_types = {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1}
     expected_resources = qp.resource.SpecsResources(
         num_allocs=2,
-        gate_types=gate_types,
+        counts=gate_types,
         gate_sizes=gate_sizes,
         measurements={"expval(PauliZ)": 2},
-        depth=3,
+        circuit_depth=3,
     )
     assert info["resources"] == expected_resources
 

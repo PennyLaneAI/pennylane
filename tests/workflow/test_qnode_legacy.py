@@ -222,10 +222,10 @@ class TestValidation:
             "resources": [
                 SpecsResources(
                     num_allocs=1,
-                    gate_types={"RX": 1},
+                    counts={"RX": 1},
                     gate_sizes={1: 1},
                     measurements={"expval(PauliZ)": 1},
-                    depth=1,
+                    circuit_depth=1,
                 )
             ],
         }
