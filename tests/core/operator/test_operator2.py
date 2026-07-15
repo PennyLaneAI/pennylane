@@ -20,12 +20,12 @@ import copy
 
 import numpy as np
 import pytest
-from operator2_utils import DynOp, FullOp
+from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, StatePrepBase2
-from pennylane.core.queuing import AnnotatedQueue
+from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
+from pennylane.core.queuing import AnnotatedQueue, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -40,7 +40,7 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires
 
 
@@ -65,20 +65,30 @@ class TestInitSubclass:
         assert Op.wire_argnames == ("wires",)
         assert Op.compilable_argnames == ()
 
-    def test_static_and_compilable_both_set_error(self):
-        """Test that declaring both ``static_argnames`` and ``compilable_argnames``
-        is not allowed."""
+    @pytest.mark.parametrize(
+        "other_argnames",
+        [
+            {"hybrid_argnames": ("y", "z")},
+            {"static_argnames": ("y", "z")},
+            {"hybrid_argnames": ("y",), "static_argnames": ("z",)},
+        ],
+    )
+    def test_static_hybrid_and_compilable_both_set_error(self, other_argnames):
+        """Test that declaring both ``static_argnames``/``hybrid_argnames`` and
+        ``compilable_argnames`` is not allowed."""
+
+        def __init__(self, x, y, z, wires):
+            Operator2.__init__(self, x, y, z, wires=wires)
+
+        attrs = {"__init__": __init__, "compilable_argnames": ("x",), **other_argnames}
 
         with pytest.raises(
-            TypeError, match="only contain 'static_argnames' or 'compilable_argnames'"
+            TypeError,
+            match="contain 'static_argnames' and 'hybrid_argnames', or 'compilable_argnames'",
         ):
-            # pylint: disable=unused-variable
-            class Op(Operator2):
-                static_argnames = ("a",)
-                compilable_argnames = ("b",)
-
-                def __init__(self, a, b, wires):
-                    super().__init__(a, b, wires=wires)
+            # This creates a class while allowing us to parametrize the attributes
+            # that we want to test.
+            type("Op", (Operator2,), attrs)
 
     @pytest.mark.parametrize(
         "first, second",
@@ -119,9 +129,7 @@ class TestInitSubclass:
 
         assert Op.hybrid_argnames == ("wires",)
 
-    @pytest.mark.parametrize(
-        "other_group", ["dynamic_argnames", "static_argnames", "compilable_argnames"]
-    )
+    @pytest.mark.parametrize("other_group", ["dynamic_argnames", "static_argnames"])
     def test_hybrid_overlap_with_non_wire_error(self, other_group):
         """Test that ``hybrid_argnames`` may not overlap with dynamic, static,
         or compilable argnames."""
@@ -478,6 +486,7 @@ class TestOperatorInit:
 
         op = Op(0.5, wires=0)
         assert op.arguments["method"] == "auto"
+        assert op.is_abstract is False
 
     def test_wires_collected_from_wire_argnames(self):
         """Test that the ``_wires`` attribute combines the contents of ``wire_argnames``."""
@@ -712,7 +721,10 @@ class TestInitExpectedArgtypesValidation:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with pytest.raises(ValueError, match=r"Expected 'phi' to have shape \(2,\)"):
+        with pytest.raises(
+            ValueError,
+            match=r"Parameter 'phi' does not match the operator's expected 'arg_specs' shape. Expected \(2,\) but received \(1,\)",
+        ):
             Op(np.array([0.5]), wires=0)
 
     def test_dynamic_arg_wrong_dtype_error(self):
@@ -729,7 +741,8 @@ class TestInitExpectedArgtypesValidation:
                 super().__init__(phi, wires=wires)
 
         with pytest.raises(
-            ValueError, match=r"Expected 'phi' to have shape \(\) and dtype 'int64'"
+            ValueError,
+            match=r"Parameter 'phi' does not match the operator's expected 'arg_specs' dtype. Expected int64 but received float64",
         ):
             Op(0.5, wires=0)
 
@@ -882,10 +895,12 @@ class TestBroadcasting:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+        expected_msg = r"Parameter 'phi' does not match the operator's expected 'arg_specs' shape. Expected \(2,\) \(non-broadcasting dimensions\) but received \(4, 3\)."
+        with pytest.raises(ValueError, match=expected_msg):
             _ = Op(np.ones((4, 3)), wires=0)
 
-        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+        expected_msg = r"Parameter 'phi' does not match the operator's expected 'arg_specs' shape. Expected \(2,\) \(non-broadcasting dimensions\) but received \(4, 1, 2\)."
+        with pytest.raises(ValueError, match=expected_msg):
             _ = Op(np.ones((4, 1, 2)), wires=0)
 
     def test_broadcasted_array_wrong_dtype_error(self):
@@ -902,7 +917,8 @@ class TestBroadcasting:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+        expected_msg = "Parameter 'phi' does not match the operator's expected 'arg_specs' dtype. Expected int64 but received float64"
+        with pytest.raises(ValueError, match=expected_msg):
             _ = Op(np.array([0.5, 0.6]), wires=0)
 
     def test_broadcasted_inferred_ndim_from_arg_specs(self):
@@ -1060,6 +1076,13 @@ class TestHash:
         assert op1 == op2
         assert hash(op1) == hash(op2)
 
+    def test_abstract_op_hash_contract(self):
+        """Tests that an abstract op and abstractified op have the same hash."""
+        op1 = DynOp(Float, Wire[2])
+        op2 = abstractify(DynOp(0.5, [0, 1]))
+        assert op1 == op2
+        assert hash(op1) == hash(op2)
+
     def test_close_floats_same_hash(self):
         """Test that float values that round to the same 10 decimal places hash equally."""
         op1 = DynOp(0.5, wires=0)
@@ -1094,14 +1117,6 @@ class TestHash:
 
     def test_hybrid_with_wires_leaf_equal_hash(self):
         """Test that hybrid arguments with ``Wires`` leaves hash equally for the same values."""
-
-        class HybridWireOp(Operator2):
-            wire_argnames = ("pytree_wires",)
-            hybrid_argnames = ("pytree_wires",)
-
-            def __init__(self, pytree_wires):
-                super().__init__([Wires(w) for w in pytree_wires])
-
         op1 = HybridWireOp([[0, 1], [2]])
         op2 = HybridWireOp([[0, 1], [2]])
         assert hash(op1) == hash(op2)
@@ -1245,7 +1260,7 @@ class TestDynamicProperties:
         assert op.hybrid == []
 
     def test_explicit_class_attribute_not_overridden(self):
-        """Test that attributes present in the class are not overriden by dynamic properties."""
+        """Test that attributes present in the class are not overridden by dynamic properties."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
@@ -2411,18 +2426,8 @@ class TestLegacyCompatibilityViews:
 
     def test_compilable_args_in_hyperparameters(self):
         """Test that compilable args appear in the legacy hyperparameter view."""
-
-        class CompOp(Operator2):
-            dynamic_argnames = ("phi",)
-            compilable_argnames = ("order",)
-
-            def __init__(self, phi, order, wires):
-                super().__init__(phi, order, wires=wires)
-
-        op = CompOp(0.5, order=3, wires=0)
-
-        assert op.hyperparameters == {"order": 3}
-        assert op.data == (0.5,)
+        op = CompilableOp(n=3, wires=0)
+        assert op.hyperparameters == {"n": 3}
 
     def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
         """Test that non-``wires`` wire argument names are excluded."""
@@ -2440,3 +2445,23 @@ class TestLegacyCompatibilityViews:
         assert "phi" not in op.hyperparameters
         assert "wires" not in op.hyperparameters
         assert "aux_wires" not in op.hyperparameters
+
+
+class TestApply:
+    @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
+    def test_apply(self, op2):
+        """Tests that Operator2 can queue like Operator1 using ``qp.apply``."""
+
+        with AnnotatedQueue() as q:
+            apply(op2)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] == op2
+
+    def test_raises_outside_queueing_context(self):
+        """Tests that outside a queuing context and without capture enabled, apply() raises when given an Operator2."""
+
+        with pytest.raises(
+            RuntimeError, match="No queuing context available to append operation to"
+        ):
+            apply(DynOp(1.0, wires=0))

@@ -194,6 +194,8 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
+from pennylane import pytrees
+from pennylane.capture import enabled  # tach-ignore
 from pennylane.exceptions import QueuingError
 
 
@@ -451,6 +453,8 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
             applied to the currently active queuing context.
     Returns:
         .Operator or .MeasurementProcess: the input operator is returned for convenience
+    Raises:
+        RuntimeError: if we try to use apply in a non-queuing/non-tracing context.
 
     **Example**
 
@@ -529,6 +533,10 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         active queuing context.
 
     """
+
+    if enabled():
+        return _capture_apply(op)
+
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
@@ -546,6 +554,21 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         context.append(op)
 
     return op
+
+
+def _capture_apply(op):
+    """Applies an op in a capture context."""
+
+    if hasattr(op, "_bind_primitive"):
+        op._bind_primitive()  # pylint: disable=protected-access
+        if op.tracer is None:
+            raise RuntimeError("Trying to use apply in a non-tracing context.")
+        return op
+
+    # Capture is active but the op has no _bind_primitive (e.g. minimal
+    # legacy Operator subclass).  Reconstruct via the constructor so the
+    # new instance auto-binds its primitive.
+    return pytrees.unflatten(*pytrees.flatten(op))
 
 
 __all__ = ["QueuingManager", "AnnotatedQueue", "apply"]

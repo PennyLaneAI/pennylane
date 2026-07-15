@@ -82,7 +82,7 @@ Docker images are found on the [PennyLane Docker Hub page](https://hub.docker.co
 
 ## Getting started
 
-Get up and running quickly with PennyLane by following our [interactive tutorials](https://pennylane.ai/codebook/pennylane-fundamentals) and [quickstart guide](https://docs.pennylane.ai/en/stable/introduction/pennylane.html), designed to introduce key features and help you start building quantum circuits right away.
+Get up and running quickly with PennyLane by following our [interactive tutorials](https://pennylane.ai/codebook/pennylane-fundamentals) and [quickstart guide](https://pennylane.ai/features), designed to introduce key features and help you start building quantum circuits right away.
 
 Whether you're exploring quantum machine learning, quantum computing, or quantum chemistry, PennyLane offers a wide range of tools and resources to support your research.
 

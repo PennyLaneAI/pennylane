@@ -148,19 +148,20 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 @CollectOpsandMeas.register_primitive(cond_prim)
 def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
-    conditions = all_args[:n_branches]
+    conditions = all_args[: n_branches - 1]
     args = all_args[slice(*args_slice)]
 
-    # Find predicates that use mid-circuit measurements. We don't check the last
-    # condition as that is always `True`.
-    mcm_conditions = tuple(pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue))
+    # Find predicates that use mid-circuit measurements
+    mcm_conditions = tuple(pred for pred in conditions if isinstance(pred, MeasurementValue))
     if mcm_conditions:
-        if len(mcm_conditions) != len(conditions) - 1:
+        if len(mcm_conditions) != len(conditions):
             raise ValueError(
                 "Cannot use qp.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
         conditions = get_mcm_predicates(mcm_conditions)
+    else:
+        conditions = (*conditions, True)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = all_args[slice(*const_slice)]
