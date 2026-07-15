@@ -42,6 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.decomposition.symbolic_decomposition import (
     make_pow_decomp_with_period,
     pow_involutory,
+    self_adjoint,
     self_adjoint_legacy,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -812,7 +813,7 @@ def _pow_y(wires, z, **_):
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
-add_decomps("Adjoint(PauliY)", self_adjoint_legacy)
+add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
