@@ -402,19 +402,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def _push_in_progress(self, op):
         self._in_progress.append(op)
-        base_rep = _get_base_rep_if_applicable(op)
-        if base_rep is not None:
-            num_ctrl_wires = (
-                len(op.control_wires)
-                if isinstance(op, Operator2)
-                else op.params["num_control_wires"]
-            )
-            self._num_ctrl_wires_in_progress[base_rep].append(num_ctrl_wires)
+        if unwrapped := _get_base_and_n_ctrls(op):
+            base_rep, num_control_wires = unwrapped
+            self._num_ctrl_wires_in_progress[base_rep].append(num_control_wires)
 
     def _pop_in_progress(self, op):
         self._in_progress.pop()
-        base_rep = _get_base_rep_if_applicable(op)
-        if base_rep is not None:
+        if unwrapped := _get_base_and_n_ctrls(op):
+            base_rep, _ = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].pop()
 
     def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
@@ -491,9 +486,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return d_node
 
     def _base_in_progress(self, op):
-        base = _get_base_rep_if_applicable(op)
-        if base is None:
+        unwrapped = _get_base_and_n_ctrls(op)
+        if unwrapped is None:
             return False
+        base, _ = unwrapped
         if base in self._in_progress:
             return True
         if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
@@ -666,12 +662,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         )
 
 
-def _get_base_rep_if_applicable(op: AbstractOperatorLike) -> AbstractOperatorLike | None:
+def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLike, int] | None:
     if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
-        return resource_rep(base_class, **base_params)
+        return resource_rep(base_class, **base_params), op.params["num_control_wires"]
     if isinstance(op, Operator2) and isinstance(op, qp.ops.ControlledOp2):
-        return abstractify(op.base)
+        return abstractify(op.base), len(op.control_wires)
     return None
 
 
