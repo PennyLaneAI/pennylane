@@ -1925,7 +1925,7 @@ class TestCtrl:
             ),
             control=["a"],
         )
-        expected = Controlled(
+        expected = ControlledOp2(
             expected_base,
             control_wires=["a", "b"] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,
