@@ -443,8 +443,6 @@ class PUIsometryFinder:
 
         k = 0
         while True:
-            print(k, self.tableau, self.circuit, self.fanout_bits)
-            print(bijection)
             b = len(batch)
 
             # Number of remaining rows (not in subspace and not in batch). ``_n_not_subspace``
@@ -834,8 +832,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
             for case_b in range(2, iso_finder.m + 1):
                 # Register an additional branch to ``qrom_branches`` for each possible batch size.
+                # Passing a default argument makes sure that we don't use an outdated closure
+                # variable `case_b` at when calling the function.
                 @qrom_branches.else_if(b == case_b)
-                def _():
+                def _(case_b=case_b):
                     target_wires = nonsubspace_wires[:case_b]
                     qp.QROM(np.eye(case_b), subspace_wires, target_wires, _work_wires)
 
@@ -866,8 +866,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
                 iso_finder.n_subspace + 1, iso_finder.n_subspace + iso_finder.m
             ):
                 # Register an additional branch to ``fanout_branches`` for each possible control
+                # Passing a default argument makes sure that we don't use an outdated closure
+                # variable `case_control` at when calling the function.
                 @fanout_branches.else_if(control == case_control)
-                def _():
+                def _(case_control=case_control):
                     target_wires = list(wires[:case_control]) + list(wires[case_control + 1 :])
                     qp.ctrl(qp.BasisState(bits, target_wires), control=wires[case_control])
 
