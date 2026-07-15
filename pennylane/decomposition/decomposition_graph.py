@@ -494,9 +494,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
 
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op)
 
-        # TODO: symbolic decomposition rules for Operator2 are handled in a follow-up [sc-123156]
+        # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
+        # are integrated into list_decomps so that the graph would not be responsible
+        # for populating these symbolic decomposition rules.
         if isinstance(op, Operator2):
             return decomps
 
