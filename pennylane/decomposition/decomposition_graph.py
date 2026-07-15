@@ -489,12 +489,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         unwrapped = _get_base_and_n_ctrls(op)
         if unwrapped is None:
             return False
-        base, _ = unwrapped
+        base, num_control_wires = unwrapped
         if base in self._in_progress:
             return True
         if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
             return False
-        return _num_ctrl_wires(op) >= ctrl_wires_in_progress[-1]
+        return num_control_wires > ctrl_wires_in_progress[-1]
 
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -669,14 +669,6 @@ def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLik
     if isinstance(op, Operator2) and isinstance(op, qp.ops.ControlledOp2):
         return abstractify(op.base), len(op.control_wires)
     return None
-
-
-def _num_ctrl_wires(op: AbstractOperatorLike) -> int:
-    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
-        return op.params["num_control_wires"]
-    if isinstance(op, qp.ops.ControlledOp2):
-        return len(op.control_wires)
-    return 0
 
 
 def _validate_rule(rule):
