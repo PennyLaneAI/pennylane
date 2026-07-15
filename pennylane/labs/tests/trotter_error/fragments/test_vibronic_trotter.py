@@ -67,11 +67,11 @@ def test_frag_schemes_equal(states, modes):
     betas = np.random.random(size=(states, states, modes, modes))
     taylor_coeffs = [lambdas, alphas, betas]
 
-    frags_og = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="og")
+    frags_og = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="blocks")
     ham_og = sum(frags_og, RealspaceMatrix.zero(states, modes))
     mat_og = ham_og.matrix(2)
 
-    frags_mode = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="mode")
+    frags_mode = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="modes")
     ham_mode = sum(frags_mode, RealspaceMatrix.zero(states, modes))
     mat_mode = ham_mode.matrix(2)
 
@@ -97,7 +97,7 @@ def test_mode_based_fragments_1_state():
 
     taylor_coeffs = [lambdas.copy(), alphas.copy(), betas.copy()]
 
-    frags = vibronic_fragments(blocks, modes, omegas, taylor_coeffs, scheme="mode")
+    frags = vibronic_fragments(blocks, modes, omegas, taylor_coeffs, scheme="modes")
 
     # Q^2 term
     exp0 = RealspaceMatrix.zero(blocks, modes)
@@ -148,7 +148,7 @@ def test_mode_based_fragments_2_states():
 
     taylor_coeffs = [lambdas.copy(), alphas.copy(), betas.copy()]
 
-    frags = vibronic_fragments(states, modes, omegas, taylor_coeffs, scheme="mode")
+    frags = vibronic_fragments(states, modes, omegas, taylor_coeffs, scheme="modes")
 
     # Q^2 per mode (harmonic on electronic diagonal) — coupling ~ I, merges with diagonal Q
     q2_frags = []

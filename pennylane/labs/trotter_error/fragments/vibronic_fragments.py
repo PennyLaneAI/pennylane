@@ -35,16 +35,16 @@ def vibronic_fragments(
     modes: int,
     freqs: ArrayLike,
     taylor_coeffs: Sequence[ArrayLike],
-    scheme: str = "og",
+    scheme: str = "blocks",
 ) -> list[RealspaceMatrix]:
     """Returns a list of fragments summing to a vibronic Hamiltonian. Two different fragmentation schemes
     are available.
 
-    1. The ``electronic`` scheme is taken from Section III of `arXiv:2412.13669 <https://arxiv.org/abs/2411.13669>`_ and
+    1. The ``blocks`` scheme is taken from Section III of `arXiv:2412.13669 <https://arxiv.org/abs/2411.13669>`_ and
     groups the fragments by their electronic-block structure such that all potential terms sharing the same
     electronic coupling pattern are grouped together into a single fragment.
 
-    2. The ``mode`` scheme constructs fragments based on the vibrational modes and operator types, then
+    2. The ``modes`` scheme constructs fragments based on the vibrational modes and operator types, then
     merges the fragments that commute electronically.
 
     Both fragmentation schemes additionally return a fragment containing the kinetic term.
@@ -56,7 +56,7 @@ def vibronic_fragments(
         taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the
             Taylor expansion. The ith entry in the sequence corresponds to the ith degree Taylor coefficients
             and has shape (states, states) + (modes)*i.
-        scheme (str): the fragmentation scheme to use. Valid options are ``electronic`` and ``mode``, defaults to ``electronic``.
+        scheme (str): the fragmentation scheme to use. Valid options are ``blocks`` and ``modes``, defaults to ``blocks``.
 
     Returns:
         list[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of the vibronic Hamiltonian.
@@ -80,13 +80,13 @@ def vibronic_fragments(
     _validate_input(states, modes, freqs, taylor_coeffs)
 
     match scheme:
-        case "og":
+        case "blocks":
             return _og_frags(states, modes, freqs, taylor_coeffs)
-        case "mode":
+        case "modes":
             return _mode_frags(states, modes, freqs, taylor_coeffs)
         case _:
             raise ValueError(
-                f"Fragmentation scheme must be either 'og' or 'mode', got {scheme} instead."
+                f"Fragmentation scheme must be either 'blocks' or 'modes', got {scheme} instead."
             )
 
 
@@ -197,7 +197,7 @@ def _mode_quadratic(states, modes, index, freqs, betas) -> tuple[RealspaceMatrix
         if i == j and m1 == m2:
             h += freqs[m1] / 2
 
-        if np.isclose(h, 1e-10):
+        if np.isclose(h, 0, atol=1e-10):
             continue
 
         coeffs = np.zeros((modes, modes))
