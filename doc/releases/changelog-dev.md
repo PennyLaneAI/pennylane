@@ -772,7 +772,7 @@
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
-* The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+* The ``Opechration.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
 
@@ -890,7 +890,7 @@
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
-  - Capture and graph decomp checks are run in assert_valid.
+  - Capture, graph decomp and differentiation checks are run in assert_valid.
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
 
 * Adds a new `pennylane/core` module.
