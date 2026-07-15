@@ -32,7 +32,7 @@ from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 def _check_eqn(eqn, expected_op):
     assert eqn.primitive == operator_p
-    assert eqn.params['op_cls'] == expected_op
+    assert eqn.params["op_cls"] == expected_op
 
 
 class TestAdjointQfunc:
