@@ -501,6 +501,7 @@ class SingleRZ(Operator2):
     def generator(self):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
+
 @pytest.mark.jax
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
