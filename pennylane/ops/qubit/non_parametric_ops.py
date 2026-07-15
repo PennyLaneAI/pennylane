@@ -844,6 +844,7 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, work_wire_type
     if num_control_wires == 1:
         return {qp.CY: 1}
     return {
+        qp.S: 1,
         _adjoint_abstract(qp.S): 1,
         _ctrl_abstract(
             qp.X,
