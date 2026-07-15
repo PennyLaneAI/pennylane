@@ -18,7 +18,8 @@ Contains the StronglyEntanglingLayers template.
 # pylint: disable=too-many-arguments
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, Rot
 from pennylane.ops.op_math import cond
@@ -297,7 +298,13 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
                     act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
                 else:
                     act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
-                imprimitive(wires=act_on)
+                if capture.enabled() and issubclass(imprimitive, Operator2):
+                    # Operator2 instances remain concrete while tracing and would otherwise be
+                    # queued once as a tracing placeholder in addition to each loop iteration.
+                    with QueuingManager.stop_recording():
+                        imprimitive(wires=act_on)
+                else:
+                    imprimitive(wires=act_on)
 
             imprimitive_loop()  # pylint: disable=no-value-for-parameter
 
