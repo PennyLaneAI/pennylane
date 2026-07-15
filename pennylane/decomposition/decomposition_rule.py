@@ -852,10 +852,6 @@ def get_fixed_decomp(op: type[Operator] | Operator | str) -> DecompositionRule |
     return _fixed_decomps_var.get().get(to_name(op), None)
 
 
-def _fix_decomp(op, rule):
-    _decompositions_var.get()[to_name(op)] = DecompCollection([rule])
-
-
 class _DecompInfo:  # pylint: disable=too-few-public-methods
     """A data structure that stores a decomposition rule and an operator for inspectability."""
 
