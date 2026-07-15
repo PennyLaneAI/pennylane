@@ -214,10 +214,6 @@ class Pow(ScalarSymbolicOp):
         """The trainable parameters"""
         return self.base.data
 
-    @data.setter
-    def data(self, new_data):
-        self.base.data = new_data
-
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
         base_label = self.base.label(decimals, base_label, cache=cache)
