@@ -955,8 +955,8 @@ class Operator2(metaclass=OperatorMeta):
     def __repr__(self) -> str:
         if len(self.arguments) == 1:
             arg_name, arg_value = next(iter(self.arguments.items()))
-            # NOTE: Only strip for SINGLE wires, multi-wire ops
-            # with retain legacy Name(wires=[...]) format
+            # NOTE: Only strip for SINGLE concrete wires
+            # multi-wire or abstract wire ops will retain legacy Name(wires=[...]) format
             if arg_name in self.wire_argnames and arg_name not in self.hybrid_argnames:
                 wires_list = arg_value.tolist() if isinstance(arg_value, Wires) else arg_value
                 if isinstance(wires_list, list) and len(wires_list) == 1:
