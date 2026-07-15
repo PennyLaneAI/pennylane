@@ -25,10 +25,7 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import allocation, math
 from pennylane.core.operator import Operator, abstractify
-from pennylane.core.operator.operator2 import (  # tach-ignore
-    operator_p,
-    pop_op_eqns,
-)
+from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
