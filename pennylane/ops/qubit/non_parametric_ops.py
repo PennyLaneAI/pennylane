@@ -1287,7 +1287,7 @@ def _s_phaseshift_resources(wires: WiresLike = None):  # pylint: disable=unused-
 
 
 @register_resources(_s_phaseshift_resources)
-def _s_phaseshift(wires: WiresLike, **__):
+def _s_phaseshift(wires: WiresLike | None = None):
     qp.PhaseShift(np.pi / 2, wires=wires)
 
 
