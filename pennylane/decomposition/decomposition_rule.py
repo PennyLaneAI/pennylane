@@ -22,19 +22,62 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import singledispatch
+from functools import lru_cache, singledispatch
 from textwrap import dedent
+from types import MappingProxyType
 from typing import overload
+
+import numpy as np
 
 import pennylane as qp
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.pytrees import flatten
+from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
 from .utils import to_name
+
+
+def _cacheable_get_resources(rule):
+    def _get_resources(leaves, metadata):
+        new_leaves = []
+        wire_idx = 0
+        for l in leaves:
+            if isinstance(l, AbstractWires):
+                new_leaves.append(list(range(wire_idx, l.num_wires + wire_idx)))
+                wire_idx += l.num_wires
+            elif isinstance(l, AbstractArray):
+                new_leaves.append(np.empty(l.shape, dtype=l.dtype))
+            else:
+                new_leaves.append(l)
+
+        dummy_op2 = unflatten(new_leaves, metadata)
+        with queuing.AnnotatedQueue() as q:
+            rule(**dummy_op2.arguments)
+        resources = defaultdict(int)
+        for op in q.queue:
+            resources[abstractify(op)] += 1
+        return MappingProxyType(resources)
+
+    return _get_resources
+
+
+def _create_resources_fallback(op_type, rule):
+
+    # dont think we particularily need to make this very big.
+    cached_get_resources = lru_cache(20)(_cacheable_get_resources(rule))
+
+    def rule_fallback(*args, **kwargs):
+        dummy_op = op_type(*args, **kwargs)
+        leaves, metadata = flatten(dummy_op)
+
+        if all(isinstance(l, (AbstractArray, AbstractWires)) for l in leaves):
+            return cached_get_resources(tuple(leaves), metadata)
+        return _cacheable_get_resources(rule)(leaves, metadata)
+
+    return rule_fallback
 
 
 @dataclass(frozen=True)
@@ -454,7 +497,9 @@ class DecompositionRule:
         if self._compute_resources is None:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
         raw_gate_counts = self._compute_resources(*args, **kwargs)
-        assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
+        assert isinstance(
+            raw_gate_counts, (dict, MappingProxyType)
+        ), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if not (
@@ -644,7 +689,7 @@ _decompositions_private = defaultdict(DecompCollection)
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule | Callable) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -663,9 +708,11 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     Args:
         op_type (type or str): the operator type for which new decomposition rules are specified.
             For symbolic operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
-        decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
+        decomps (DecompositionRule| Callable): new decomposition rules to add to the given ``op_type``.
             A decomposition is a quantum function registered with a resource estimate using
-            ``qp.register_resources``.
+            ``qp.register_resources``. If ``op_type`` is an :class:`~.Operator` subclass, the decomps
+            can be a raw function without an associated resources, as the resources are calculated
+            using dummy inputs with the proper shape and dtype.
 
     .. seealso:: :func:`~pennylane.register_resources` and :class:`~pennylane.list_decomps`
 
@@ -698,6 +745,30 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     for the duration of the session. To add alternative decompositions for a particular circuit
     as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
 
+    If the ``op_type`` is an :class:`~.Operator2` instance, a raw function can be provided instead.
+
+    .. code-block:: python
+
+        class A(qp.core.Operator2):
+
+            dynamic_argnames = ("x",)
+
+            def __init__(self, x, wires):
+                super().__init__(x, wires=wires)
+
+        def A_decomps0(x, wires):
+            qp.RX(x, wires)
+
+        qp.add_decomps(A, A_decomps0)
+
+    Here, the resources are calculated by evaluating the decomposition with dummy (``np.empty``) values
+    with the same shape and dtype. This will break down if the produced operators depend on any dynamic values,
+    in which case the resources will need to be manually specified. Even though the resources are cached when
+    called with abstract values, manually specifying the resources will be cheaper.
+
+    >>> qp.list_decomps(A)[0].compute_resources(qp.typing.Float, qp.typing.Wire)
+    <num_gates=1, gate_counts={RX: 1}, weighted_cost=1>
+
     Custom decomposition rules can also be specified for symbolic operators. In this case, the
     operator type can be specified as a string. For example,
 
@@ -712,12 +783,21 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     .. seealso:: :func:`~pennylane.transforms.decompose`
 
     """
-    if not all(isinstance(d, DecompositionRule) for d in decomps):
-        raise TypeError(
-            "A decomposition rule must be a qfunc with a resource estimate "
-            "registered using qp.register_resources"
-        )
-    _decompositions_var.get()[to_name(op_type)].extend(decomps)
+
+    processed_rules = list(decomps)
+    if isinstance(op_type, type) and issubclass(op_type, Operator2):
+        for i, rule in enumerate(processed_rules):
+            if not isinstance(rule, DecompositionRule):
+                processed_rules[i] = DecompositionRule(
+                    rule, _create_resources_fallback(op_type, rule)
+                )
+    else:
+        if not all(isinstance(d, DecompositionRule) for d in decomps):
+            raise TypeError(
+                "A decomposition rule must be a qfunc with a resource estimate "
+                "registered using qp.register_resources"
+            )
+    _decompositions_var.get()[to_name(op_type)].extend(processed_rules)
 
 
 @singledispatch
