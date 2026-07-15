@@ -25,6 +25,7 @@ from pennylane.ops.functions import assert_valid
 from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
+    _pui_state_prep_core,
 )
 
 # pylint: disable=protected-access
@@ -77,14 +78,16 @@ class TestPUIsometryFinder:
     @pytest.mark.parametrize(
         "num_entries, n, expected",
         [
+            # num_entries, n, [n, n_subspace, n_r, m, len(tableau), _packed_dtype, _word]
             (2, 2, [2, 1, 1, 1, 2, np.uint64, np.uint64]),
-            (2, 8, [8, 1, 7, 4, 2, np.uint64, np.uint64]),
-            (2, 65, [65, 1, 64, 64, 2, object, int]),
+            (2, 8, [8, 1, 7, 2, 2, np.uint64, np.uint64]),
+            (2, 65, [65, 1, 64, 2, 2, object, int]),
+            (100, 71, [71, 7, 64, 64, 100, object, int]),
             (3, 3, [3, 2, 1, 1, 3, np.uint64, np.uint64]),
             (4, 8, [8, 2, 6, 4, 4, np.uint64, np.uint64]),
             (15, 5, [5, 4, 1, 1, 15, np.uint64, np.uint64]),
             (23, 29, [29, 5, 24, 16, 23, np.uint64, np.uint64]),
-            (7, 65, [65, 3, 62, 32, 7, object, int]),
+            (7, 65, [65, 3, 62, 7, 7, object, int]),
             (112563, 100, [100, 17, 83, 64, 112563, object, int]),
         ],
     )
@@ -117,12 +120,12 @@ class TestPUIsometryFinder:
         specs.insert(-2, len(iso_finder.tableau))
         assert specs == [n, n, 0, 0, num_entries, np.uint64, np.uint64]
 
-    def _validate_circuit_structure(self, circuit, iso_finder, num_entries):
+    def _validate_circuit_structure(self, circuit, fanout_bits, iso_finder, num_entries):
         """Validate that the structure of a circuit returned by ``find_isometry`` is correct."""
         n_subspace, n, m = iso_finder.n_subspace, iso_finder.n, iso_finder.m
         batch_size = 0
         seen_fanouts = 0
-        for _type, *data in circuit["structure"]:
+        for _type, *data in circuit:
 
             if _type == 0:
                 assert len(data) == 4
@@ -161,9 +164,9 @@ class TestPUIsometryFinder:
                     f"between 0 and 3 (incl.), but got {_type}"
                 )
 
-        assert np.shape(circuit["fanout_bits"]) == (seen_fanouts, n - 1)
+        assert np.shape(fanout_bits) == (seen_fanouts, n - 1)
 
-    def _validate_circuit_ops(self, circuit, iso_finder, basis_states):
+    def _validate_circuit_ops(self, circuit, fanout_bits, iso_finder, basis_states):
         """Validate that the a circuit returned by ``find_isometry`` implements the right
         isometry."""
         n_subspace = iso_finder.n_subspace
@@ -174,7 +177,7 @@ class TestPUIsometryFinder:
             [[(val >> s) & iso_finder._one for s in iso_finder._shifts] for val in final_states]
         ).astype(np.int8)
         # Transform the final states back
-        for _type, *data in reversed(circuit["structure"]):
+        for _type, *data in reversed(circuit):
             if _type == 0:
                 k_start, k = data[:2]
                 batch = k - k_start
@@ -185,7 +188,7 @@ class TestPUIsometryFinder:
                 states[:, np.arange(n_subspace, batch + n_subspace)] ^= match.astype(np.int8).T
             elif _type == 1:
                 control, bit_pointer = data[:2]
-                bits = circuit["fanout_bits"][bit_pointer]
+                bits = fanout_bits[bit_pointer]
                 ctrl_bits = states[:, control]  # rows where the control is active
                 # Bit indices that need to be flipped. Need to take into account that ``bits`` does
                 # not contain the control bit itself.
@@ -222,7 +225,7 @@ class TestPUIsometryFinder:
         rng = np.random.default_rng(seed)
         states = random_distinct_integers(2**n, num_entries, rng)
         iso_finder = PUIsometryFinder(states, n)
-        circuit, bijection = iso_finder.find_isometry()
+        circuit, fanout_bits, bijection = iso_finder.find_isometry()
 
         # Validate the internal tableau state:
         # All remainder qubits are zeroed everywhere
@@ -237,8 +240,8 @@ class TestPUIsometryFinder:
         )
 
         # Validate circuit structure:
-        self._validate_circuit_structure(circuit, iso_finder, num_entries)
-        self._validate_circuit_ops(circuit, iso_finder, states)
+        self._validate_circuit_structure(circuit, fanout_bits, iso_finder, num_entries)
+        self._validate_circuit_ops(circuit, fanout_bits, iso_finder, states)
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -309,7 +312,6 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
         return qp.state()
 
     out_state = func()
-
     # We infer the total and aux wire counts from the state shape, because small-scale
     # edge cases often have fewer work wires than the general case.
     num_all_used_wires = ceil_log2(out_state.shape[0])
@@ -434,20 +436,16 @@ class TestPartialUnaryStatePreparation:
         def mocked_find_isometry(self):
             """Mocked version of find_isometry that does nothing but creating an invalid circuit."""
             # Invalid _type: 4
-            circuit = {
-                "structure": [(4, 0, 1, 2, 3)],
-                "fanout_bits": np.zeros((0, self.n - 1), dtype=np.int8),
-            }
-            return circuit, {i: int(val) for i, val in enumerate(self.tableau)}
+            circuit = [(4, 0, 1, 2, 3)]
+            fanout_bits = np.zeros((0, self.n - 1), dtype=np.int8)
+            return circuit, fanout_bits, {i: i for i, val in enumerate(self.tableau)}
 
-        match = "Expected _type ids between 0 and 3 (incl), got 4"
+        match = r"Expected _type ids between 0 and 3 \(incl\), got 4"
 
         with monkeypatch.context() as m:
             m.setattr(PUIsometryFinder, "find_isometry", mocked_find_isometry)
-            iso_finder = PUIsometryFinder([1, 4, 925, 1250], 11)
-            print(iso_finder.find_isometry)
             with pytest.raises(ValueError, match=match):
-                iso_finder.find_isometry()
+                _pui_state_prep_core(np.ones(3) / np.sqrt(3), [0, 1, 2], [0, 5, 2], [3, 4])
 
     def test_input_validation(self):
         """Test that validation errors are raise for invalid inputs."""

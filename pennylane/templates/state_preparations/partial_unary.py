@@ -198,6 +198,8 @@ class PUIsometryFinder:
         # ``int(x)`` normalizes both numpy-int and Python-int inputs (the latter occur when the
         # indices exceed int64 for n >= 64 and are already stored in an object array).
         self.tableau = np.array([int(x) for x in basis_states], dtype=self._packed_dtype)
+        self.circuit = []  # Forward circuit realizing the isometry _to_ densified basis sates
+        self.fanout_bits = []  # Bit strings to use for Fanout operations in the circuit
 
         # m is the maximal batch size for the partial unary iteration batches.
         # It is the largest power of 2 less than or equal to n_r, the remainder register size, but
@@ -249,12 +251,12 @@ class PUIsometryFinder:
         _shifts = ((self.n - 1 - c) for c in range(self.n))
         return np.fromiter(((diff_val >> s) & 1 for s in _shifts), dtype=np.int8, count=self.n)
 
-    def pui(self, k: int, batch_size: int, circuit: dict[str, list]):
+    def pui(self, k: int, batch_size: int):
         """Add a Partial unary iterator circuit (in form of ``Select``) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - batch_size
         # Pad with zeros to allow for array casting later
-        circuit["structure"].append((0, k_start, k, 0, 0))
+        self.circuit.append((0, k_start, k, 0, 0))
 
         # Update tableau for PUI effect
         # For batch element j, rows whose subspace value equals k_start + j get remainder
@@ -268,9 +270,8 @@ class PUIsometryFinder:
         # Update subspace status after PUI.
         self._in_subspace = (self.tableau & self.rem_mask) == self._zero
         self._n_not_subspace = int(np.count_nonzero(~self._in_subspace))
-        return circuit
 
-    def fanout(self, control: int, bits: np.ndarray, circuit: dict[str, list]):
+    def fanout(self, control: int, bits: np.ndarray):
         """Add a Fanout operation to the circuit ops and apply corresponding CNOTs to the tableau.
 
         ``bits`` is a length-``n`` binary array (the diff vector marking the bits to be flipped).
@@ -278,8 +279,8 @@ class PUIsometryFinder:
         column (per row), while the ``control`` column is left unchanged.
         """
         # Pad with zeros to allow for array casting later
-        circuit["structure"].append((1, control, len(circuit["fanout_bits"]), 0, 0))
-        circuit["fanout_bits"].append(np.delete(bits, control))
+        self.circuit.append((1, control, len(self.fanout_bits), 0, 0))
+        self.fanout_bits.append(np.delete(bits, control))
 
         # Packed flip mask: all set bits of ``bits`` except the control bit.
         flip_mask = self._zero
@@ -292,11 +293,10 @@ class PUIsometryFinder:
         # write, which causes overhead for large registers.
         ctrl_bit = (self.tableau >> self._shifts[control]) & self._one
         self.tableau ^= ctrl_bit * flip_mask
-        return circuit
 
-    def toffoli(self, controls: list, second_ctrl_val: int, target: int, circuit: dict[str, list]):
+    def toffoli(self, controls: list, second_ctrl_val: int, target: int):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
-        circuit["structure"].append((3, *controls, target, second_ctrl_val))
+        self.circuit.append((3, *controls, target, second_ctrl_val))
 
         # Apply multi-controlled X to the tableau.
         # Create control mask and the control pattern we want to match, from ``controls`` and
@@ -314,12 +314,10 @@ class PUIsometryFinder:
         # having only the target bit set to one.
         self.tableau[match] ^= self._col_bit(target)
 
-        return circuit
-
-    def swap(self, w0: int, w1: int, circuit: dict[str, list]):
+    def swap(self, w0: int, w1: int):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
         # Pad with zeros to allow for array casting later
-        circuit["structure"].append((2, w0, w1, 0, 0))
+        self.circuit.append((2, w0, w1, 0, 0))
         # positions for the two qubits
         p0 = self._shifts[w0]
         p1 = self._shifts[w1]
@@ -328,9 +326,8 @@ class PUIsometryFinder:
         b1 = (self.tableau >> p1) & self._one
         diff = b0 ^ b1  # masks rows where the two bits differ
         self.tableau ^= (diff << p0) | (diff << p1)  # Flip differing bits on correct positions
-        return circuit
 
-    def _next_state_with_target_set(self, target_qubit):
+    def _next_state_with_target_set(self, target_qubit: int) -> int | None:
         """Stage 1 of step 2.
         Find the next state in the tableau that has the remainder qubit with
         index ``target_qubit`` set to one."""
@@ -350,7 +347,7 @@ class PUIsometryFinder:
         # We got first=0 but because there was no hit, not because row 0 had the target qubit set.
         return None
 
-    def _try_swap(self, remaining, target_qubit, circuit):
+    def _try_swap(self, remaining: np.ndarray, target_qubit: int) -> int | None:
         """Stage 2 of step 2:
         find a remainder qubit (of higher index than ``target_qubit``)
         that is set on at least one remaining bit string, and swap it with ``target_qubit``."""
@@ -361,13 +358,13 @@ class PUIsometryFinder:
         # Create a mask for higher-index remainder qubits.
         lower_mask = self._col_bit(actual_qubit) - self._one
         if lower_mask == self._zero:
-            return None, circuit
+            return None
 
         rem = np.asarray(remaining)
         masked = self.tableau[rem] & lower_mask
         rows_with_qubit_set = np.nonzero(masked)[0]
         if len(rows_with_qubit_set) == 0:
-            return None, circuit
+            return None
 
         # First remaining row (smallest position) that has such a bit set.
         r_pos = int(rows_with_qubit_set[0])
@@ -375,10 +372,10 @@ class PUIsometryFinder:
         # First matching column == highest set bit within the region.
         # column c has weight 2**(n-1-c); highest set bit -> smallest column index.
         swap_from = self.n - row_val.bit_length()
-        circuit = self.swap(actual_qubit, swap_from, circuit)
-        return int(rem[r_pos]), circuit
+        self.swap(actual_qubit, swap_from)
+        return int(rem[r_pos])
 
-    def _try_toffoli(self, remaining, target_qubit, batch, circuit):
+    def _try_toffoli(self, remaining: np.ndarray, target_qubit: int, batch: list) -> int:
         """Stage 3 of step 2.
         Find a bitstring that has one of the remainder qubits set to one that are already
         used in ``batch`` but differs on a different qubit. Then apply the Toffoli trick
@@ -413,10 +410,10 @@ class PUIsometryFinder:
 
         controls = [self.n_subspace + active_remainder_bit, diff_qubit]
         second_ctrl_val = int((int(self.tableau[idx]) >> (self.n - 1 - diff_qubit)) & 1)
-        circuit = self.toffoli(controls, second_ctrl_val, actual_qubit, circuit)
-        return idx, circuit
+        self.toffoli(controls, second_ctrl_val, actual_qubit)
+        return idx
 
-    def _map_full_state(self, found_state, k, target_qubit, circuit):
+    def _map_full_state(self, found_state: int, k: int, target_qubit: int):
         """Execute step 3 of the algorithm, zeroing all remainder qubits controlled on
         ``target_qubit`` (except for ``target_qubit`` itself) and setting the subspace qubits
         to the integer ``k``."""
@@ -428,21 +425,26 @@ class PUIsometryFinder:
         # Reconstruct the length-n diff bit array for faithful circuit record.
         diff_bits = self._diff_bits(diff_val)
         actual_qubit = self.n_subspace + target_qubit
-        return self.fanout(actual_qubit, diff_bits, circuit)
+        self.fanout(actual_qubit, diff_bits)
 
     def find_isometry(self):
         """Main method to find the isometry. See main docstring for a detailed description."""
         # Forward circuit realizing the isometry _to_ densified basis states. Separates out the
         # bit strings used for fanout operations.
-        circuit = {"structure": [], "fanout_bits": []}
         if self.m == 0:
-            return circuit, {i: int(val) for i, val in enumerate(self.tableau)}
+            return (
+                self.circuit,
+                self.fanout_bits,
+                {i: int(val) for i, val in enumerate(self.tableau)},
+            )
 
         bijection = {}  # Bijection f between desired states and densified basis states
         batch = []
 
         k = 0
         while True:
+            print(k, self.tableau, self.circuit, self.fanout_bits)
+            print(bijection)
             b = len(batch)
 
             # Number of remaining rows (not in subspace and not in batch). ``_n_not_subspace``
@@ -456,7 +458,7 @@ class PUIsometryFinder:
                 # Step 4
                 # Need to flush because the batch is full, or because there are no remaining
                 # bit strings to map but the batch still has some entries.
-                circuit = self.pui(k, b, circuit)
+                self.pui(k, b)
                 batch = []
                 continue
 
@@ -481,7 +483,7 @@ class PUIsometryFinder:
                     mask[batch] = False
                 remaining = np.nonzero(mask)[0]
 
-                found_state, circuit = self._try_swap(remaining, target_qubit, circuit)
+                found_state = self._try_swap(remaining, target_qubit)
 
                 if found_state is None:
                     # If we still have to map at least one bit string, the batch is currently empty,
@@ -493,14 +495,12 @@ class PUIsometryFinder:
                         "This scenario should never happen because it would lead to "
                         "infinite recursion."
                     )
-                    found_state, circuit = self._try_toffoli(
-                        remaining, target_qubit, batch, circuit
-                    )
+                    found_state = self._try_toffoli(remaining, target_qubit, batch)
 
             # Step 3
             #  - Transform found_state: zero out other non-subspace bits using CX
             #    Then transform subspace to |k>
-            circuit = self._map_full_state(found_state, k, target_qubit, circuit)
+            self._map_full_state(found_state, k, target_qubit)
 
             #  - Append the found state to the batch and register it in the state bijection
             batch.append(found_state)
@@ -514,7 +514,7 @@ class PUIsometryFinder:
             # so we exactly set all other states that we did not take care of yet with this.
             bijection.setdefault(i, int(val))
 
-        return circuit, bijection
+        return self.circuit, self.fanout_bits, bijection
 
 
 class PartialUnaryStatePreparation(Operation):
@@ -775,7 +775,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
     iso_finder = PUIsometryFinder(np.array(indices), len(wires))
-    circuit, bijection = iso_finder.find_isometry()
+    circuit, fanout_bits, bijection = iso_finder.find_isometry()
 
     subspace_wires = Wires(wires[:n_subspace])
     nonsubspace_wires = Wires(wires[n_subspace:])
@@ -786,10 +786,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     dense_state[ids] = coefficients
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
-    if not circuit["structure"]:
+    if not circuit:
         return
 
-    fanout_bits, circuit = circuit["fanout_bits"], circuit["structure"]
     if qp.compiler.active():
         fanout_bits = qp.math.array(fanout_bits, like="jax")
         circuit = qp.math.array(circuit, like="jax")
@@ -857,11 +856,15 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             control, fanout_bit_pointer = data[:2]
             bits = fanout_bits[fanout_bit_pointer]
 
-            @qp.cond(control == 0)
+            @qp.cond(control == iso_finder.n_subspace)
             def fanout_branches():
-                qp.ctrl(qp.BasisState(bits, wires[1:]), wires[0])
+                case_control = iso_finder.n_subspace
+                target_wires = list(wires[:case_control]) + list(wires[case_control + 1 :])
+                qp.ctrl(qp.BasisState(bits, target_wires), control=wires[case_control])
 
-            for case_control in range(1, iso_finder.m):
+            for case_control in range(
+                iso_finder.n_subspace + 1, iso_finder.n_subspace + iso_finder.m
+            ):
                 # Register an additional branch to ``fanout_branches`` for each possible control
                 @fanout_branches.else_if(control == case_control)
                 def _():
@@ -884,9 +887,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             elbow-based decomposition.
             """
             _wires = [wires[idx] for idx in data[:3]]
-            qp.BasisState(1 - data[3:], _wires[1:2])
+            qp.BasisState([1 - data[3:][0]], _wires[1:2])
             qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
-            qp.BasisState(1 - data[3:], _wires[1:2])
+            qp.BasisState([1 - data[3:][0]], _wires[1:2])
 
         @branches.otherwise
         def _else():
