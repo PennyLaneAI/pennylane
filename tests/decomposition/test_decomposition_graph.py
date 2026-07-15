@@ -114,7 +114,9 @@ class TestDecompGraphConstruction:
         h_rep = abstractify(qp.H)
 
         graph = DecompositionGraph(operations=[qp.Hadamard(0)], gate_set={"RX", "RY", "RZ"})
-        assert graph._get_decompositions(h_rep) == decompositions.get()["Hadamard"]
+        assert (
+            graph._get_decompositions(h_rep)._decomps == decompositions.get()["Hadamard"]._decomps
+        )
 
         graph = DecompositionGraph(
             operations=[qp.Hadamard(0)],
@@ -123,7 +125,10 @@ class TestDecompGraphConstruction:
         )
         with qp.decomposition.local_decomps():
             _fix_decomp(qp.Hadamard, custom_hadamard)
-            assert graph._get_decompositions(h_rep) == DecompCollection([custom_hadamard])
+            assert (
+                graph._get_decompositions(h_rep)._decomps
+                == DecompCollection([custom_hadamard])._decomps
+            )
 
         alt_dec = DecompCollection([custom_hadamard, custom_hadamard_2])
         graph = DecompositionGraph(
@@ -134,7 +139,7 @@ class TestDecompGraphConstruction:
         exp_dec = alt_dec + decompositions.get()["Hadamard"]
         with qp.decomposition.local_decomps():
             qp.add_decomps(qp.Hadamard, custom_hadamard, custom_hadamard_2)
-            assert graph._get_decompositions(h_rep) == exp_dec
+            assert graph._get_decompositions(h_rep)._decomps == exp_dec._decomps
 
         graph = DecompositionGraph(
             operations=[qp.Hadamard(0)],
@@ -145,7 +150,10 @@ class TestDecompGraphConstruction:
         with qp.decomposition.local_decomps():
             qp.add_decomps(qp.Hadamard, *alt_dec)
             _fix_decomp(qp.Hadamard, custom_hadamard)
-            assert graph._get_decompositions(h_rep) == DecompCollection([custom_hadamard])
+            assert (
+                graph._get_decompositions(h_rep)._decomps
+                == DecompCollection([custom_hadamard])._decomps
+            )
 
     def test_get_decomps_symbolic2(self):
         """Tests that get_decomps works properly for symbolicop2."""
