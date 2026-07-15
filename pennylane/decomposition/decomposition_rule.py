@@ -642,6 +642,11 @@ _decompositions_private = defaultdict(DecompCollection)
 
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
+_fixed_decomps_private = {}
+"""dict[str, DecompositionRule]: A dictionary mapping operators a unique decomposition rule."""
+
+_fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
+
 
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
@@ -777,6 +782,8 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
     return _decompositions_var.get()[to_name(op)].copy()
 
 
@@ -809,13 +816,39 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    current_decomps = {k: v.copy() for k, v in _decompositions_private.items()}
+
+    # Handle the global decomposition library.
+    current_decomps = {k: v.copy() for k, v in _decompositions_var.get().items()}
     _new_decomps = defaultdict(DecompCollection, current_decomps)
-    token = _decompositions_var.set(_new_decomps)
+    token_all_decomps = _decompositions_var.set(_new_decomps)
+
+    # Handle the registry of fixed decomposition rules.
+    _new_fixed_decomps = _fixed_decomps_var.get().copy()
+    token_fixed_decomps = _fixed_decomps_var.set(_new_fixed_decomps)
+
     try:
         yield
     finally:
-        _decompositions_var.reset(token)
+        _decompositions_var.reset(token_all_decomps)
+        _fixed_decomps_var.reset(token_fixed_decomps)
+
+
+def _fix_decomp(op: type[Operator] | Operator | str, rule: DecompositionRule):
+    """Fix a unique decomposition rule for an operator.
+
+    This is a developer-facing function meant to be used within a local decomps context.
+
+    """
+    _fixed_decomps_var.get()[to_name(op)] = rule
+
+
+def get_fixed_decomp(op: type[Operator] | Operator | str) -> DecompositionRule | None:
+    """Get the decomposition rule fixed to an operator if there is one.
+
+    This is a developer-facing function meant to be used within a local decomps context.
+
+    """
+    return _fixed_decomps_var.get().get(to_name(op), None)
 
 
 class _DecompInfo:  # pylint: disable=too-few-public-methods
