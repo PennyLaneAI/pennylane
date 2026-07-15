@@ -1091,8 +1091,9 @@ class DefaultClifford(Device):
     def _sample_expval_shadow(self, meas, stim_circuit, shots, seed):
         """Measures expectation value of a Pauli observable using
         classical shadows from the state of simulator device."""
-        # pylint: disable=import-outside-toplevel
-        from pennylane.shadows import ClassicalShadow
+        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
+            ClassicalShadow,
+        )
 
         bits, recipes = self._sample_classical_shadow(meas, stim_circuit, shots, seed)
         # TODO: Benchmark scaling for larger number of circuits for this existing functionality

@@ -31,7 +31,7 @@ from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import resource_rep
-from pennylane.decomposition.symbolic_decomposition import flip_zero_control_legacy
+from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow import Pow
@@ -569,8 +569,8 @@ def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, 
 
 qp.add_decomps(
     "C(Prod)",
-    flip_zero_control_legacy(_controlled_product_with_work_wires),
-    flip_zero_control_legacy(_controlled_product_with_one_work_wire),
+    flip_zero_control(_controlled_product_with_work_wires),
+    flip_zero_control(_controlled_product_with_one_work_wire),
 )
 
 

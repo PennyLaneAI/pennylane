@@ -24,7 +24,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import jacobian_prim, operator_p, qnode_prim
+from pennylane.capture.primitives import jacobian_prim, qnode_prim
 
 jnp = jax.numpy
 
@@ -62,6 +62,7 @@ class TestGradJacobian:
 
     @pytest.mark.parametrize("argnums", (1, 2, (0, 1)))
     def test_error_on_big_argnum(self, grad_fn, argnums):
+
         with pytest.raises(ValueError, match="Differentiating with respect to argnums"):
             grad_fn(lambda x, y, z: y * x**2 + z, argnums=argnums)(jnp.array(0.5), y=2.0, z=2.0)
 

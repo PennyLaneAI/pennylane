@@ -35,7 +35,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     ctrl_single_work_wire,
     flip_control_adjoint,
     flip_pow_adjoint,
-    flip_zero_control_legacy,
+    flip_zero_control,
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
@@ -889,7 +889,7 @@ class TestControlledDecomposition:
             qp.H(wires[1])
             qp.CNOT(wires[0:2])
 
-        rule = flip_zero_control_legacy(_custom_controlled_rule)
+        rule = flip_zero_control(_custom_controlled_rule)
         assert rule.name == "flip_zero_ctrl_values(_custom_controlled_rule)"
 
         assert str(rule) == dedent("""

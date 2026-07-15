@@ -277,7 +277,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     return _impl
 
 
-def flip_zero_control_legacy(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
+def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):
@@ -389,7 +389,7 @@ def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
 
 
-ctrl_single_work_wire = flip_zero_control_legacy(_ctrl_single_work_wire)
+ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
 
 
 def _to_controlled_qu_condition(base_class, **__):
