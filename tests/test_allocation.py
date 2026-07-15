@@ -136,6 +136,70 @@ def test_error_bad_state():
         allocate(2, state="no")
 
 
+def test_magic_state_enum_values():
+    """Test that magic state enum values are defined."""
+    assert AllocateState.MAGIC == "magic"
+    assert AllocateState.MAGIC_CONJ == "magic_conj"
+
+
+def test_allocate_magic_state():
+    """Test that allocate accepts magic state kwargs."""
+    with qp.queuing.AnnotatedQueue() as q:
+        allocate(1, state="magic")
+        allocate(1, state="magic_conj")
+
+    assert q.queue[0].state == AllocateState.MAGIC
+    assert q.queue[1].state == AllocateState.MAGIC_CONJ
+
+
+def test_error_magic_state_restored():
+    """Test that restored=True is rejected for magic state allocations."""
+    with pytest.raises(ValueError, match="restored=True is not supported for magic state"):
+        allocate(1, state="magic", restored=True)
+
+    with pytest.raises(ValueError, match="restored=True is not supported for magic state"):
+        allocate(1, state="magic_conj", restored=True)
+
+
+@pytest.mark.jax
+@pytest.mark.capture
+def test_capture_magic_state():
+    """Test that magic state allocations are captured in jaxpr."""
+    import jax
+
+    def f():
+        with allocate(1, state="magic") as wires:
+            qp.H(wires)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert jaxpr.eqns[0].params["state"] == AllocateState.MAGIC
+
+
+@pytest.mark.jax
+@pytest.mark.capture
+def test_capture_magic_conj_state():
+    """Test that magic_conj state allocations are captured in jaxpr."""
+    import jax
+
+    def f():
+        [w] = allocate(1, state="magic_conj")
+        qp.H(w)
+        deallocate(w)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert jaxpr.eqns[0].params["state"] == AllocateState.MAGIC_CONJ
+
+
+def test_resolve_dynamic_wires_magic_state_error():
+    """Test that resolve_dynamic_wires raises for magic state allocations."""
+    from pennylane.transforms import resolve_dynamic_wires
+
+    tape = qp.tape.QuantumScript([Allocate.from_num_wires(1, state=AllocateState.MAGIC)])
+
+    with pytest.raises(qp.exceptions.AllocationError, match="Magic state allocation"):
+        resolve_dynamic_wires(tape)
+
+
 def test_allocate_function():
     """Test that allocate returns dynamic wires and queues an Allocate op."""
     with qp.queuing.AnnotatedQueue() as q:
