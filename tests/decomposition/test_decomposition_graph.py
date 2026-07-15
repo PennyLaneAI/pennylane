@@ -141,19 +141,33 @@ class TestDecompGraphConstruction:
             qp.add_decomps(qp.Hadamard, custom_hadamard, custom_hadamard_2)
             assert graph._get_decompositions(h_rep)._decomps == exp_dec._decomps
 
+    def test_both_fixed_and_alt_decomps(self):
+        """Tests that fixed_decomps overrides alt_decomps."""
+
+        @qp.register_resources({qp.PhaseShift: 2, qp.RX: 1})
+        def custom_hadamard(wires):
+            qp.PhaseShift(np.pi / 2, wires=wires)
+            qp.RX(np.pi / 2, wires=wires)
+            qp.PhaseShift(np.pi / 2, wires=wires)
+
+        @qp.register_resources({qp.PhaseShift: 1, qp.RY: 1})
+        def custom_hadamard_2(wires):
+            qp.PhaseShift(np.pi / 2, wires=wires)
+            qp.RY(np.pi / 2, wires=wires)
+
+        alt_dec = DecompCollection([custom_hadamard, custom_hadamard_2])
+
         graph = DecompositionGraph(
             operations=[qp.Hadamard(0)],
-            gate_set={"RX", "RY", "RZ"},
+            gate_set={"RX", "RY", "RZ", "GlobalPhase"},
             alt_decomps={qp.Hadamard: alt_dec},
             fixed_decomps={qp.Hadamard: custom_hadamard},
         )
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(qp.Hadamard, *alt_dec)
-            _fix_decomp(qp.Hadamard, custom_hadamard)
-            assert (
-                graph._get_decompositions(h_rep)._decomps
-                == DecompCollection([custom_hadamard])._decomps
-            )
+        op_node = list(graph._op_to_op_nodes[abstractify(qp.H)])[0]
+        op_node_idx = graph._all_op_indices[op_node]
+        decomp_nodes = graph._graph.predecessors(op_node_idx)
+        assert len(decomp_nodes) == 1
+        assert decomp_nodes[0].rule is custom_hadamard
 
     def test_get_decomps_symbolic2(self):
         """Tests that get_decomps works properly for symbolicop2."""
