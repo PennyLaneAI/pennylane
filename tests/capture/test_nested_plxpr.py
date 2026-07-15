@@ -30,6 +30,11 @@ from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
+def _check_eqn(eqn, expected_op):
+    assert eqn.primitive == operator_p
+    assert eqn.params['op_cls'] == expected_op
+
+
 class TestAdjointQfunc:
     """Tests for the adjoint transform."""
 
@@ -44,8 +49,7 @@ class TestAdjointQfunc:
 
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
-        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].params["op_cls"] == qp.S
+        _check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_adjoint_qfunc(self):
         """Test that the adjoint qfunc transform can be captured."""
@@ -309,8 +313,7 @@ class TestCtrlQfunc:
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         assert jaxpr.eqns[0].invars[1].val == 1
-        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].params["op_cls"] is qp.S
+        _check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_operator_type_input(self):
         """Test that an operator type can be the callable."""
