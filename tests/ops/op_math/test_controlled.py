@@ -1899,7 +1899,7 @@ class TestCtrl:
         assert q.queue[0] is op
         expected = ctrl(
             qp.S(wires=[0]),
-            control_wires=[3, 2, 1],
+            control=[3, 2, 1],
             control_values=[1, 0, 1],
         )
         assert op == expected
