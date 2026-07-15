@@ -138,6 +138,7 @@ def test_default_operator2_handling():
     assert jaxpr.eqns[1].primitive == operator_p
     assert jaxpr.eqns[1].params["adjoint"] is True
     assert jaxpr.eqns[1].params["op_cls"] is DynOp
+    assert jaxpr.eqns[1].invars[0] == jaxpr.jaxpr.invars[0]
     assert jaxpr.eqns[2].primitive == operator_p
     assert jaxpr.eqns[2].params["op_cls"] is NonParametricOp
     assert jaxpr.eqns[3].primitive == operator_p
