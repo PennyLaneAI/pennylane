@@ -27,7 +27,6 @@ from packaging.version import Version
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator2
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -306,12 +305,7 @@ class PlxprInterpreter:
 
         """
         data, struct = jax.tree_util.tree_flatten(op)
-        new_op = jax.tree_util.tree_unflatten(struct, data)
-        if isinstance(new_op, Operator2):
-            new_op._bind_primitive()  # pylint: disable=protected-access
-            if new_op.tracer is None and qp.QueuingManager.recording():
-                qp.QueuingManager.append(new_op)
-        return new_op
+        return jax.tree_util.tree_unflatten(struct, data)
 
     def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
