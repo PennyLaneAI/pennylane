@@ -27,6 +27,7 @@ from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
+from ..core import Operator2
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -159,6 +160,8 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
+            if issubclass(base_class, Operator2):
+                return {abstractify(base_class(**base_params)): 1}
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
