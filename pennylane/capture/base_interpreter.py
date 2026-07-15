@@ -308,6 +308,8 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(op)
         new_op = jax.tree_util.tree_unflatten(struct, data)
         if isinstance(new_op, Operator2):
+            # Operator2 pytree reconstruction occurs with capture paused, so explicitly
+            # bind the reconstructed operation into the surrounding trace.
             new_op._bind_primitive()  # pylint: disable=protected-access
         return new_op
 
