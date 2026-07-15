@@ -24,6 +24,7 @@ from typing import Literal
 
 import numpy as np
 from scipy.linalg import block_diag
+from typing_extensions import override
 
 import pennylane as qp
 from pennylane.allocation import allocate
@@ -36,13 +37,13 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    flip_zero_control,
+    flip_zero_control as flip_zero_control_legacy,
     pow_involutory,
     pow_rotation,
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -51,6 +52,7 @@ from .controlled import (
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
 )
+from .controlled2 import Controlled2
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
@@ -285,9 +287,9 @@ def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_w
 
 add_decomps(
     ControlledQubitUnitary,
-    flip_zero_control(ctrl_decomp_bisect_rule),
-    flip_zero_control(single_ctrl_decomp_zyz_rule),
-    flip_zero_control(multi_control_decomp_zyz_rule),
+    flip_zero_control_legacy(ctrl_decomp_bisect_rule),
+    flip_zero_control_legacy(single_ctrl_decomp_zyz_rule),
+    flip_zero_control_legacy(multi_control_decomp_zyz_rule),
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
@@ -434,7 +436,7 @@ add_decomps("Adjoint(CH)", self_adjoint_legacy)
 add_decomps("Pow(CH)", pow_involutory)
 
 
-class CY(ControlledOp):
+class CY(Controlled2):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -456,6 +458,9 @@ class CY(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    wire_argnames = ("wires",)
+    arg_specs = {"wires": Wire[2]}
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -469,36 +474,28 @@ class CY(ControlledOp):
 
     name = "CY"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
-    def __init__(self, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
+    def __init__(self, wires: WiresLike):
+        wires = Wires(wires)
+        # Avoid recording the base as a separate operator during program capture.
         base = type.__call__(qp.Y, wires=wires[1:])
         super().__init__(base, wires[:1])
 
-    def __repr__(self):
-        return f"CY(wires={self.wires.tolist()})"
+    @override
+    def __abstract_init__(self, wires: WiresLike):
+        del wires
+        super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    def __repr__(self):
+        if isinstance(self.wires, AbstractWires):
+            return "CY"
+        return f"CY(wires={self.wires.tolist()})"
 
     def adjoint(self):
         return CY(self.wires)
 
     @staticmethod
-    @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -527,32 +524,7 @@ class CY(ControlledOp):
             ]
         )
 
-    @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
-
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CY.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
-
-        """
-        return [qp.CRY(np.pi, wires=wires), qp.S(wires=wires[0])]
-
-
-def _cy_to_cry_s_resources():
+def _cy_to_cry_s_resources(wires: AbstractWires):  # pylint: disable=unused-argument
     return {qp.CRY: 1, qp.S: 1}
 
 
@@ -562,7 +534,7 @@ def _cy(wires: WiresLike, **__):
     qp.S(wires=wires[0])
 
 
-def _cy_to_ppr_resource():
+def _cy_to_ppr_resource(wires: AbstractWires):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="Y"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -1926,7 +1898,7 @@ def _2cx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
     qp.adjoint(qp.Elbow)(elbow_wires, control_values)
 
 
-decompose_mcx_two_controls_elbows = flip_zero_control(_2cx_elbow_explicit)
+decompose_mcx_two_controls_elbows = flip_zero_control_legacy(_2cx_elbow_explicit)
 
 add_decomps(
     MultiControlledX,
