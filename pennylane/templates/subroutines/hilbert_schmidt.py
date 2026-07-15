@@ -176,16 +176,6 @@ class HilbertSchmidt(Operation):
         r"""Flattened list of operator data in this HilbertSchmidt operation."""
         return tuple(datum for op in self._operators for datum in op.data)
 
-    @data.setter
-    def data(self, new_data):
-        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
-        # assign the HilbertSchmidt data to an empty tuple (since no positional arguments are provided).
-        if new_data:
-            for op in self._operators:
-                if op.num_params > 0:
-                    op.data = new_data[: op.num_params]
-                    new_data = new_data[op.num_params :]
-
     def __copy__(self):
         # Override Operator.__copy__() to avoid setting the "data" property before the new instance
         # is assigned hyper-parameters since HilbertSchmidt data is derived from the hyper-parameters.
