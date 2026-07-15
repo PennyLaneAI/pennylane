@@ -317,7 +317,7 @@ def specs(
     <BLANKLINE>
     Wire allocations: 2
     Total gates: 4
-    Gate counts:
+    Quantum operations:
     - RX: 1
     - CNOT: 1
     - TrotterProduct: 2
@@ -328,7 +328,7 @@ def specs(
     The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
     access to the data fields. For example:
 
-    >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
+    >>> qp.specs(circuit)(x, add_ry=False).resources.quantum_operations
     {'RX': 1, 'CNOT': 1, 'TrotterProduct': 2}
 
     .. details::
@@ -360,7 +360,7 @@ def specs(
         >>> print(qp.specs(circuit, level=0)(0.1).resources)
         Wire allocations: 2
         Total gates: 6
-        Gate counts:
+        Quantum operations:
         - RandomLayers: 1
         - RX: 2
         - SWAP: 1
@@ -376,7 +376,7 @@ def specs(
         >>> print(qp.specs(circuit, level=2)(0.1).resources)
         Wire allocations: 2
         Total gates: 3
-        Gate counts:
+        Quantum operations:
         - RandomLayers: 1
         - RX: 2
         Measurements:
@@ -389,7 +389,7 @@ def specs(
         >>> print(qp.specs(circuit, level="user")(0.1).resources)
         Wire allocations: 2
         Total gates: 1
-        Gate counts:
+        Quantum operations:
         - RandomLayers: 1
         Measurements:
         - expval(Sum(num_wires=2, num_terms=2)): 1
@@ -402,7 +402,7 @@ def specs(
         >>> print(qp.specs(circuit, level="device")(0.1).resources)
         Wire allocations: 2
         Total gates: 2
-        Gate counts:
+        Quantum operations:
         - RY: 1
         - RX: 1
         Measurements:
@@ -433,7 +433,7 @@ def specs(
         Batched tape a:
             Wire allocations: 2
             Total gates: 1
-            Gate counts:
+            Quantum operations:
             - RandomLayers: 1
             Measurements:
             - expval(Prod(num_wires=2, num_terms=2)): 1
@@ -442,7 +442,7 @@ def specs(
         Batched tape b:
             Wire allocations: 3
             Total gates: 1
-            Gate counts:
+            Quantum operations:
             - RandomLayers: 1
             Measurements:
             - expval(Prod(num_wires=2, num_terms=2)): 1
@@ -491,7 +491,7 @@ def specs(
         <BLANKLINE>
         Wire allocations: 3
         Total gates: 2
-        Gate counts:
+        Quantum operations:
         - CNOT: 1
         - RX: 1
         Measurements:
@@ -581,7 +581,7 @@ def specs(
         ---------------------------------
         Wire allocations   |  3 |  3 |  3
         Total gates        |  5 |  3 |  2
-        Gate counts:       |
+        Quantum operations:       |
         - CNOT             |  1 |  1 |  1
         - PauliX           |  2 |  0 |  0
         - RX               |  2 |  2 |  1
@@ -595,7 +595,7 @@ def specs(
         >>> print(all_specs.resources['merge-rotations'])
         Wire allocations: 3
         Total gates: 2
-        Gate counts:
+        Quantum operations:
         - CNOT: 1
         - RX: 1
         Measurements:
@@ -609,7 +609,7 @@ def specs(
         >>> print(qp.specs(circuit, level="user")(1.23).resources)
         Wire allocations: 3
         Total gates: 2
-        Gate counts:
+        Quantum operations:
         - CNOT: 1
         - RX: 1
         Measurements:
@@ -648,7 +648,7 @@ def specs(
         -----------------------------------------------------------------
         Wire allocations |    1 |    1 |    1 |    3 |    3 |    3 |    3
         Total gates      |    2 |    2 |    2 |    2 |    2 |    0 |    0
-        Gate counts:     |
+        Quantum operations:     |
         - PauliX         |    2 |    2 |    2 |    2 |    2 |    0 |    0
         Measurements:    |
         - expval(PauliZ) |    1 |    1 |    0 |    1 |    0 |    1 |    0
@@ -700,7 +700,7 @@ def specs(
         Symbolic Variables: a, b
         Wire allocations: 1
         Total gates: b + a + 2
-        Gate counts:
+        Quantum operations:
         - Hadamard: 1
         - PauliX: a + 1
         - PauliZ: b
@@ -716,7 +716,7 @@ def specs(
         >>> print(res.subs(a=5, b=3))
         Wire allocations: 1
         Total gates: 10
-        Gate counts:
+        Quantum operations:
         - Hadamard: 1
         - PauliX: 6
         - PauliZ: 3
@@ -730,7 +730,7 @@ def specs(
         >>> print(res.subs({"a": 5, "b": 3}))
         Wire allocations: 1
         Total gates: 10
-        Gate counts:
+        Quantum operations:
         - Hadamard: 1
         - PauliX: 6
         - PauliZ: 3

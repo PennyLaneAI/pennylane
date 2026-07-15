@@ -84,9 +84,9 @@ class TestSpecsResources:
 
         with pytest.raises(
             ValueError,
-            match="Inconsistent gate counts: `gate_counts` describes .* gates but `gate_sizes` describes .* gates.",
+            match="Inconsistent counts: `quantum_operations` describes .* gates but `gate_sizes` describes .* gates.",
         ):
-            # Gate counts don't match
+            # Quantum operations don't match
             _ = SpecsResources(
                 counts={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
             )
@@ -115,7 +115,7 @@ class TestSpecsResources:
         s = example_specs_resource
 
         assert s["counts"] == s.counts
-        assert s["gate_counts"] == s.counts
+        assert s["quantum_operations"] == s.counts
         assert s["gate_sizes"] == s.gate_sizes
         assert s["measurements"] == s.measurements
         assert s["num_allocs"] == s.num_allocs
@@ -137,7 +137,7 @@ class TestSpecsResources:
 
         expected = "Wire allocations: 2\n"
         expected += "Total gates: 3\n"
-        expected += "Gate counts:\n"
+        expected += "Quantum operations:\n"
         expected += "- Hadamard: 2\n"
         expected += "- CNOT: 1\n"
         expected += "Measurements:\n"
@@ -156,7 +156,7 @@ class TestSpecsResources:
 
         expected = "Wire allocations: 0\n"
         expected += "Total gates: 0\n"
-        expected += "Gate counts:\n"
+        expected += "Quantum operations:\n"
         expected += "- No gates.\n"
         expected += "Measurements:\n"
         expected += "- No measurements.\n"
@@ -174,7 +174,7 @@ class TestSpecsResources:
         s = example_specs_resource
 
         expected = {
-            "gate_counts": {"Hadamard": 2, "CNOT": 1},
+            "quantum_operations": {"Hadamard": 2, "CNOT": 1},
             "gate_sizes": {1: 2, 2: 1},
             "measurements": {"expval(PauliZ)": 1},
             "num_allocs": 2,
@@ -208,7 +208,7 @@ class TestPBCSpecsResources:
         expected = textwrap.dedent("""\
             Wire allocations: 2
             Total gates: 3
-            Gate counts:
+            Quantum operations:
             - Hadamard: 2
             - CNOT: 1
             Measurements:
@@ -402,7 +402,7 @@ class TestSymbolicSpecsResources:
         expected = "Symbolic Variables: x, z\n"
         expected += "Wire allocations: 2*z + x + 1\n"
         expected += "Total gates: x*z + 2*z + x + 2\n"
-        expected += "Gate counts:\n"
+        expected += "Quantum operations:\n"
         expected += "- Hadamard: 1\n"
         expected += "- PauliX: x + 1\n"
         expected += "- CNOT: x*z\n"
@@ -576,7 +576,7 @@ class TestCircuitSpecs:
             "shots": Shots(1000),
             "level": 2,
             "resources": {
-                "gate_counts": {"Hadamard": 2, "CNOT": 1},
+                "quantum_operations": {"Hadamard": 2, "CNOT": 1},
                 "gate_sizes": {1: 2, 2: 1},
                 "measurements": {"expval(PauliZ)": 1},
                 "num_allocs": 2,
@@ -598,7 +598,7 @@ class TestCircuitSpecs:
             "level": {1: "l1", 2: "l2"},
             "resources": {
                 1: {
-                    "gate_counts": {"Hadamard": 4, "CNOT": 2},
+                    "quantum_operations": {"Hadamard": 4, "CNOT": 2},
                     "gate_sizes": {1: 4, 2: 2},
                     "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
@@ -609,7 +609,7 @@ class TestCircuitSpecs:
                 },
                 2: [
                     {
-                        "gate_counts": {"CNOT": 1},
+                        "quantum_operations": {"CNOT": 1},
                         "gate_sizes": {2: 1},
                         "measurements": {"expval(PauliX)": 1},
                         "num_allocs": 2,
@@ -619,7 +619,7 @@ class TestCircuitSpecs:
                         "extra": {},
                     },
                     {
-                        "gate_counts": {"CNOT": 1},
+                        "quantum_operations": {"CNOT": 1},
                         "gate_sizes": {2: 1},
                         "measurements": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
@@ -643,7 +643,7 @@ class TestCircuitSpecs:
             "level": {1: "l1", 2: "l2"},
             "resources": {
                 1: {
-                    "gate_counts": {
+                    "quantum_operations": {
                         "Hadamard": Expression({("x",): 2, (): 2}),
                         "CNOT": Expression({("x",): 2}),
                     },
@@ -657,7 +657,7 @@ class TestCircuitSpecs:
                 },
                 2: [
                     {
-                        "gate_counts": {"CNOT": Expression({("x",): 1})},
+                        "quantum_operations": {"CNOT": Expression({("x",): 1})},
                         "gate_sizes": {2: Expression({("x",): 1})},
                         "measurements": {"expval(PauliX)": 1},
                         "num_allocs": 2,
@@ -667,7 +667,7 @@ class TestCircuitSpecs:
                         "extra": {},
                     },
                     {
-                        "gate_counts": {"CNOT": Expression({("x",): 1})},
+                        "quantum_operations": {"CNOT": Expression({("x",): 1})},
                         "gate_sizes": {2: Expression({("x",): 1})},
                         "measurements": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
@@ -712,7 +712,7 @@ class TestCircuitSpecs:
         -------------------------------------
         Wire allocations |    2 |    2 |    2
         Total gates      |    6 |    1 |    1
-        Gate counts:     |
+        Quantum operations:     |
         - Hadamard       |    4 |    0 |    0
         - CNOT           |    2 |    1 |    1
         Measurements:    |
@@ -735,7 +735,7 @@ class TestCircuitSpecs:
             ----------------------------------------
             Wire allocations |     2 |     2 |     2
             Total gates      | 4*x+2 |     x |     x
-            Gate counts:     |
+            Quantum operations:     |
             - Hadamard       | 2*x+2 |     0 |     0
             - CNOT           |   2*x |     x |     x
             Measurements:    |
@@ -821,7 +821,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -839,7 +839,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | a\\*a\\*b + a\\*a + a + 1 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | a\\*a\\*b + a\\*a + a |
             | CNOT | 1 |
             | **Measurements:** | |
@@ -857,7 +857,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -896,7 +896,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -935,7 +935,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -975,7 +975,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -988,7 +988,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -1030,7 +1030,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -1045,7 +1045,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 2 |
             | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurements:** | |
@@ -1092,7 +1092,7 @@ class TestIPythonDisplays:
             | :--- | ---: | ---: | ---: |
             | **Wire allocations** | 2 | 2 | 2 |
             | **Total gates** | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
-            | **Gate counts** |  |  |  |
+            | **Quantum operations** |  |  |  |
             | Hadamard | a\\*a\\*b + a\\*a + a | 1 | 1 |
             | CNOT | 1 | 1.000E+5 | 1.000E+5 |
             | **Measurements** |  |  |  |
@@ -1115,7 +1115,7 @@ class TestIPythonDisplays:
             | :--- | ---: |
             | **Wire allocations** | 1 |
             | **Total gates** | 0 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
             | *No gates* | |
             | **Measurements:** | |
             | *No measurements* | |

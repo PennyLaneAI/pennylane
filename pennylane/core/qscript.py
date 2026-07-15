@@ -954,11 +954,11 @@ class QuantumScript:
 
         >>> from pprint import pprint
         >>> pprint(qscript.specs['resources'])
-        SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
+        SpecsResources(counts={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
                        gate_sizes={1: 4, 2: 2},
                        measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
                        num_allocs=2,
-                       depth=4)
+                       circuit_depth=4)
         """
         if self._specs is None:
             # pylint: disable=import-outside-toplevel # tach-ignore

@@ -226,7 +226,7 @@ class TestAnalysisPassConversion:
 
     def test_same_op_name_multiple_widths(self):
         """A single op name at multiple qubit widths must accumulate in counts,
-        not overwrite. Regression for the 'Inconsistent gate counts' ValueError."""
+        not overwrite. Regression for the 'Inconsistent counts' ValueError."""
         actual = _get_resources_from_analysis_pass(
             {
                 "circuit": {

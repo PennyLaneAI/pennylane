@@ -77,11 +77,11 @@ class Tracker:
     >>> import pprint
     >>> pprint.pprint(tracker.latest)
     {'executions': 1,
-     'resources': SpecsResources(gate_types={'RX': 1},
+     'resources': SpecsResources(counts={'RX': 1},
                                  gate_sizes={1: 1},
                                  measurements={'expval(PauliZ)': 1},
                                  num_allocs=1,
-                                 depth=1),
+                                 circuit_depth=1),
      'results': np.float64(0.12),
      'shots': 100,
      'simulations': 1}
@@ -207,11 +207,11 @@ class Tracker:
          'batches': [1],
          'c': ['c'],
          'executions': [1],
-         'resources': [SpecsResources(gate_types={'RX': 1},
+         'resources': [SpecsResources(counts={'RX': 1},
                                       gate_sizes={1: 1},
                                       measurements={'expval(PauliZ)': 1},
                                       num_allocs=1,
-                                      depth=1)],
+                                      circuit_depth=1)],
          'results': [array(0.)],
          'shots': [10],
          'simulations': [1]}

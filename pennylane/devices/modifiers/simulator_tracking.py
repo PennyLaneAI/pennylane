@@ -224,12 +224,12 @@ def simulator_tracking(cls: type) -> type:
     >>> pprint.pprint(dev.tracker.history)
     {'batches': [1],
      'executions': [2],
-     'resources': [SpecsResources(gate_types={'S': 1},
+     'resources': [SpecsResources(counts={'S': 1},
                                   gate_sizes={1: 1},
                                   measurements={'expval(PauliX)': 1,
                                                 'expval(PauliZ)': 1},
                                   num_allocs=1,
-                                  depth=1)],
+                                  circuit_depth=1)],
      'results': [0.0],
      'shots': [100],
      'simulations': [1]}

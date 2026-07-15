@@ -345,7 +345,7 @@ def quantum_monte_carlo(
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),
                      level='device',
-                     resources=SpecsResources(gate_types={'Adjoint(CNOT)': 7812,
+                     resources=SpecsResources(counts={'Adjoint(CNOT)': 7812,
                                                           'Adjoint(QFT)': 1,
                                                           'Adjoint(RY)': 3150,
                                                           'CNOT': 7874,
@@ -360,7 +360,7 @@ def quantum_monte_carlo(
                                                           7: 126},
                                               measurements={'probs(6 wires)': 1},
                                               num_allocs=12,
-                                              depth=21502))
+                                              circuit_depth=21502))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)

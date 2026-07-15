@@ -106,7 +106,7 @@ class Resources:
         values.
     """
 
-    counts: dict  # Intentionally vague name, aliased to gate_counts in most places
+    counts: dict
     extra: dict = field(
         repr=False, default_factory=dict
     )  # Used to store extra fields for any derived type
@@ -296,7 +296,7 @@ class SpecsResources(Resources):
         depth (int | None): The depth of the circuit, or None if not computed.
 
     Properties:
-        gate_counts (dict[str, int]): A dictionary mapping gate names to their counts (alias for ``counts``).
+        quantum_operations (dict[str, int]): A dictionary mapping gate names to their counts (alias for ``counts``).
         num_gates (int): The total number of gates in the circuit (computed from ``counts``).
         depth (int | None): The depth of the circuit, or None if not computed (alias for ``circuit_depth``).
 
@@ -334,7 +334,7 @@ class SpecsResources(Resources):
         >>> print(res)
         Wire allocations: 2
         Total gates: 2
-        Gate counts:
+        Quantum operations:
         - Hadamard: 1
         - CNOT: 1
         Measurements:
@@ -354,14 +354,14 @@ class SpecsResources(Resources):
     )
 
     def __post_init__(self):
-        total_gate_counts = sum(self.gate_counts.values())
+        total_quantum_operations = sum(self.quantum_operations.values())
         total_gate_sizes = sum(self.gate_sizes.values())
-        if total_gate_counts != total_gate_sizes:
+        if total_quantum_operations != total_gate_sizes:
             raise ValueError(
-                f"Inconsistent gate counts: `gate_counts` describes {total_gate_counts} gates but "
+                f"Inconsistent counts: `quantum_operations` describes {total_quantum_operations} gates but "
                 f"`gate_sizes` describes {total_gate_sizes} gates."
             )
-        object.__setattr__(self, "num_gates", total_gate_counts)
+        object.__setattr__(self, "num_gates", total_quantum_operations)
 
         # Fall through to parent post init
         super().__post_init__()
@@ -370,8 +370,8 @@ class SpecsResources(Resources):
         # Need to match
         match key:
             # Properties need to be handled manually unlike true fields
-            case "gate_counts":
-                return self.gate_counts
+            case "quantum_operations":
+                return self.quantum_operations
             case "depth":
                 return self.depth
             case "num_wires":
@@ -380,7 +380,7 @@ class SpecsResources(Resources):
         return super().__getitem__(key)
 
     @property
-    def gate_counts(self):
+    def quantum_operations(self):
         return self.counts
 
     @property
@@ -410,11 +410,11 @@ class SpecsResources(Resources):
         lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
         lines.append(f"{prefix}Total gates: {_count_to_str(self.num_gates)}")
 
-        lines.append(f"{prefix}Gate counts:")
-        if not self.gate_counts:
+        lines.append(f"{prefix}Quantum operations:")
+        if not self.quantum_operations:
             lines.append(prefix + "- No gates.")
         else:
-            for gate, count in self.gate_counts.items():
+            for gate, count in self.quantum_operations.items():
                 lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
 
         lines.append(f"{prefix}Measurements:")
@@ -450,11 +450,11 @@ class SpecsResources(Resources):
             f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
         )
         lines.append(f"| **Total gates** | {_count_to_str(self.num_gates, markdown_safe=True)} |")
-        lines.append("| **Gate counts:** | |")
-        if not self.gate_counts:
+        lines.append("| **Quantum operations:** | |")
+        if not self.quantum_operations:
             lines.append("| *No gates* | |")
         else:
-            for gate, count in self.gate_counts.items():
+            for gate, count in self.quantum_operations.items():
                 lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
         lines.append("| **Measurements:** | |")
         if not self.measurements:
@@ -480,7 +480,7 @@ class SpecsResources(Resources):
         # Need to explicitly include properties
         d = asdict(self)
         d["num_gates"] = self.num_gates
-        d["gate_counts"] = d["counts"]
+        d["quantum_operations"] = d["counts"]
         del d["counts"]
 
         return d
@@ -609,7 +609,7 @@ class CircuitSpecs:
         <BLANKLINE>
         Wire allocations: 2
         Total gates: 3
-        Gate counts:
+        Quantum operations:
         - RX: 2
         - CNOT: 1
         Measurements:
@@ -732,13 +732,13 @@ class CircuitSpecs:
         max_column_size = max(len(level) for level in flat_resources) + 2
 
         # Use dict for these since they are sorted by default unlike a set
-        all_gate_counts = {}
+        all_quantum_operations = {}
         all_meas_types = {}
 
         # This iteration order will present the gates in the order in which they appear
         for res in flat_resources.values():
-            for gate, count in res.gate_counts.items():
-                all_gate_counts[gate] = True
+            for gate, count in res.quantum_operations.items():
+                all_quantum_operations[gate] = True
                 max_metric_length = max(max_metric_length, len(gate) + 2)
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
@@ -755,7 +755,7 @@ class CircuitSpecs:
                 len(_count_to_str(res.num_gates, extra_compact=True)) + 1,
             )
 
-        return max_metric_length, max_column_size, all_gate_counts, all_meas_types
+        return max_metric_length, max_column_size, all_quantum_operations, all_meas_types
 
     def _to_pretty_str_tabular(self) -> str:
         """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
@@ -763,7 +763,7 @@ class CircuitSpecs:
         lines = self._get_specs_header()
 
         flat_resources = self._flattened_resources()
-        max_metric_length, max_column_size, all_gate_counts, all_meas_types = (
+        max_metric_length, max_column_size, all_quantum_operations, all_meas_types = (
             self._get_table_format(flat_resources)
         )
 
@@ -792,13 +792,13 @@ class CircuitSpecs:
             )
         )
 
-        lines.append("Gate counts:".ljust(max_metric_length) + " |")
-        for gate in all_gate_counts:
+        lines.append("Quantum operations:".ljust(max_metric_length) + " |")
+        for gate in all_quantum_operations:
             lines.append(
                 f"- {gate}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.gate_counts.get(gate, 0), extra_compact=True).rjust(
+                    _count_to_str(res.quantum_operations.get(gate, 0), extra_compact=True).rjust(
                         max_column_size
                     )
                     for res in flat_resources.values()
@@ -854,11 +854,11 @@ class CircuitSpecs:
         flat_resources = self._flattened_resources()
         levels = list(flat_resources.keys())
 
-        all_gate_counts: dict[str, None] = {}
+        all_quantum_operations: dict[str, None] = {}
         all_meas_types: dict[str, None] = {}
         for res in flat_resources.values():
-            for gate in res.gate_counts:
-                all_gate_counts[gate] = None
+            for gate in res.quantum_operations:
+                all_quantum_operations[gate] = None
             for meas in res.measurements:
                 all_meas_types[meas] = None
 
@@ -880,13 +880,13 @@ class CircuitSpecs:
                 [_count_to_str(r.num_gates, markdown_safe=True) for r in flat_resources.values()],
             )
         )
-        lines.append(data_row("**Gate counts**", [""] * len(levels)))
-        for gate in all_gate_counts:
+        lines.append(data_row("**Quantum operations**", [""] * len(levels)))
+        for gate in all_quantum_operations:
             lines.append(
                 data_row(
                     gate,
                     [
-                        _count_to_str(r.gate_counts.get(gate, 0), markdown_safe=True)
+                        _count_to_str(r.quantum_operations.get(gate, 0), markdown_safe=True)
                         for r in flat_resources.values()
                     ],
                 )
@@ -1045,7 +1045,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     num_wires = len(tape.wires)
     depth = tape.graph.get_depth() if compute_depth else None
 
-    gate_counts = defaultdict(int)
+    quantum_operations = defaultdict(int)
     measurements = defaultdict(int)
     gate_sizes = defaultdict(int)
     for op in tape.operations:
@@ -1056,14 +1056,14 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
             if n_ctrls > 1:
                 gate_name = f"{n_ctrls}{gate_name}"
 
-        gate_counts[gate_name] += 1
+        quantum_operations[gate_name] += 1
         gate_sizes[len(op.wires)] += 1
 
     for meas in tape.measurements:
         measurements[_mp_to_str(meas, num_wires)] += 1
 
     return SpecsResources(
-        counts=dict(gate_counts),
+        counts=dict(quantum_operations),
         gate_sizes=dict(gate_sizes),
         measurements=dict(measurements),
         num_allocs=num_wires,

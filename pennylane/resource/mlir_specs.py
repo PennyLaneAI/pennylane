@@ -97,7 +97,7 @@ def _mlir_resources_to_specs_resources(
     measurements = defaultdict(
         int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
     )
-    gate_counts = defaultdict(int)
+    quantum_operations = defaultdict(int)
     gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
 
@@ -123,7 +123,7 @@ def _mlir_resources_to_specs_resources(
             # Separate out PPMs and PPRs by weight
             gate_name += f"-w{gate_size}"
 
-        gate_counts[gate_name] += count
+        quantum_operations[gate_name] += count
         gate_sizes[int(gate_size)] += count
 
     # Recurse through all function calls and combine resources with the appropriate multiplicative factors
@@ -148,7 +148,9 @@ def _mlir_resources_to_specs_resources(
             continue
 
         num_allocs += call_count * called_fn_resources.num_allocs
-        _update_resource_dict(gate_counts, call_count, called_fn_resources.gate_counts)
+        _update_resource_dict(
+            quantum_operations, call_count, called_fn_resources.quantum_operations
+        )
         _update_resource_dict(gate_sizes, call_count, called_fn_resources.gate_sizes)
         _update_resource_dict(measurements, call_count, called_fn_resources.measurements)
         if isinstance(called_fn_resources, PBCSpecsResources):
@@ -169,7 +171,7 @@ def _mlir_resources_to_specs_resources(
     # which is helpful for testing and readability
 
     kwargs = {
-        "counts": {k: gate_counts[k] for k in sorted(gate_counts.keys())},
+        "counts": {k: quantum_operations[k] for k in sorted(quantum_operations.keys())},
         "gate_sizes": {k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
         "measurements": {k: measurements[k] for k in sorted(measurements.keys())},
         "num_allocs": num_allocs,

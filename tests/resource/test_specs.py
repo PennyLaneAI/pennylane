@@ -449,7 +449,7 @@ class TestSpecsTransform:
             "level": 2,
             "resources": [
                 {
-                    "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
                     "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 2,
@@ -459,7 +459,7 @@ class TestSpecsTransform:
                     "extra": {},
                 },
                 {
-                    "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
                     "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
@@ -469,7 +469,7 @@ class TestSpecsTransform:
                     "extra": {},
                 },
                 {
-                    "gate_counts": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
+                    "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "gate_sizes": {2: 2, 1: 3},
                     "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
@@ -489,7 +489,7 @@ Level: 2
 Batched tape a:
     Wire allocations: 2
     Total gates: 5
-    Gate counts:
+    Quantum operations:
     - RandomLayers: 1
     - RX: 1
     - SWAP: 1
@@ -501,7 +501,7 @@ Batched tape a:
 Batched tape b:
     Wire allocations: 3
     Total gates: 5
-    Gate counts:
+    Quantum operations:
     - RandomLayers: 1
     - RX: 1
     - SWAP: 1
@@ -513,7 +513,7 @@ Batched tape b:
 Batched tape c:
     Wire allocations: 3
     Total gates: 5
-    Gate counts:
+    Quantum operations:
     - RandomLayers: 1
     - RX: 1
     - SWAP: 1
