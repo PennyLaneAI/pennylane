@@ -357,7 +357,7 @@ class TestDecompGraphConstruction:
         def _custom_rule(_):
             raise NotImplementedError
 
-        @qp.register_resources({qp.ctrl(OneWireDynOp(Float, Wire[1]), Wire[1]): 1})
+        @qp.register_resources({qp.ctrl(NonParametricOp(Wire[2]), Wire[1]): 1})
         def _another_rule(_):
             raise NotImplementedError
 
