@@ -6,6 +6,7 @@
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
+  [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -423,6 +424,10 @@
   while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
+
+* Added a decomposition of :class:`~.QROM` using `qp.pauli_measure` operators. This decomposition reduces
+  the PPM count in the compilation pipeline.
+  [(#9531)](https://github.com/PennyLaneAI/pennylane/pull/9531)
 
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
@@ -884,6 +889,7 @@
     [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
+    [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.

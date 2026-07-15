@@ -427,6 +427,28 @@ class TestPartialUnaryStatePreparation:
             wire_specs = wires, work_wires, num_wires + num_work_wires
             assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
+    def test_decomposition_error_flawed_circuit_object(self, monkeypatch):
+        """Test that the decomposition function raises an error if the circuit structure
+        data contains an invalid entry."""
+
+        def mocked_find_isometry(self):
+            """Mocked version of find_isometry that does nothing but creating an invalid circuit."""
+            # Invalid _type: 4
+            circuit = {
+                "structure": [(4, 0, 1, 2, 3)],
+                "fanout_bits": np.zeros((0, self.n - 1), dtype=np.int8),
+            }
+            return circuit, {i: int(val) for i, val in enumerate(self.tableau)}
+
+        match = "Expected _type ids between 0 and 3 (incl), got 4"
+
+        with monkeypatch.context() as m:
+            m.setattr(PUIsometryFinder, "find_isometry", mocked_find_isometry)
+            iso_finder = PUIsometryFinder([1, 4, 925, 1250], 11)
+            print(iso_finder.find_isometry)
+            with pytest.raises(ValueError, match=match):
+                iso_finder.find_isometry()
+
     def test_input_validation(self):
         """Test that validation errors are raise for invalid inputs."""
         non_unique_indices = (0, 4, 1, 2, 0, 6, 4)
