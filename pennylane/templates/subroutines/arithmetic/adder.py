@@ -257,7 +257,7 @@ def _increment_resources(num_wires, num_control=0):
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[resource_rep(PauliX)] += 1
+            counts[PauliX] += 1
         else:
             counts[
                 resource_rep(
@@ -297,8 +297,8 @@ def _adder_arithmetic_resources(num_x_wires, mod, **__) -> dict:
         counts[rep] += 4 * count
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
-    counts[resource_rep(CNOT)] += 2
-    counts[resource_rep(PauliX)] += 2
+    counts[CNOT] += 2
+    counts[PauliX] += 2
     return dict(counts)
 
 

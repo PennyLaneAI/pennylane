@@ -20,27 +20,11 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.ops import (
-    CNOT,
-    CSWAP,
-    RY,
-    SWAP,
-    Controlled,
-    Hadamard,
-    PauliX,
-    PauliZ,
-    adjoint,
-    cond,
-    ctrl,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates import BasisEmbedding
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -278,19 +262,14 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     Calculates the resources, assuming the worst case where data is all ones.
     """
     n_k = num_controls
-    resources = defaultdict(int)
-    resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
-    resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
-        ((1 << n_k) - 1 - n_k) * 2
-    )
-    resources[
-        controlled_resource_rep(
-            base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
-        )
-    ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
-    resources[resource_rep(Hadamard)] = num_target_wires * 2
-    resources[resource_rep(PauliZ)] = (1 << n_k) * num_target_wires
-    return resources
+    _ctrl_swap = _ctrl_abstract(SWAP, Wire[1], num_zero_control_values=1)
+    return {
+        SWAP: ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2,
+        CSWAP: ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2),
+        _ctrl_swap: ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2),
+        Hadamard: num_target_wires * 2,
+        PauliZ: (1 << n_k) * num_target_wires,
+    }
 
 
 def _mark_routers_via_bus(wire_manager, n_k):
@@ -581,16 +560,9 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
-    resources[resource_rep(PauliX)] += (num_select_wires <= 0) * num_blocks * 2
+    resources[PauliX] += (num_select_wires <= 0) * num_blocks * 2
 
-    resources[
-        controlled_resource_rep(
-            base_class=SWAP,
-            base_params={},
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += (
+    resources[_ctrl_abstract(SWAP, Wire[1], num_zero_control_values=0)] += (
         (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
     ) * num_blocks
 
@@ -603,73 +575,28 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
         * 2
     )
 
-    resources[
-        controlled_resource_rep(
-            base_class=Controlled,
-            base_params={
-                "base_class": SWAP,
-                "base_params": {},
-                "num_control_wires": 1,
-                "num_zero_control_values": 0,
-                "num_work_wires": 0,
-                "work_wire_type": "borrowed",
-            },
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += ccswap_count
+    resources[_ctrl_abstract(SWAP, Wire[2])] += ccswap_count
 
-    resources[
-        controlled_resource_rep(
-            base_class=Controlled,
-            base_params={
-                "base_class": SWAP,
-                "base_params": {},
-                "num_control_wires": 1,
-                "num_zero_control_values": 1,
-                "num_work_wires": 0,
-                "work_wire_type": "borrowed",
-            },
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += ccswap_count
+    resources[_ctrl_abstract(SWAP, Wire[2], num_zero_control_values=1)] += ccswap_count
 
-    resources[
-        controlled_resource_rep(
-            base_class=Hadamard,
-            base_params={},
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += (
-        num_target_wires * num_blocks * 2
-    )
+    resources[_ctrl_abstract(Hadamard, Wire[1])] += num_target_wires * num_blocks * 2
 
     for block_index in range(num_blocks):
         zero_control_values = [
             (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
         ].count(0)
         if zero_control_values == 0:
-            resources[resource_rep(CNOT)] += (num_select_wires > 0) * 2
+            resources[CNOT] += (num_select_wires > 0) * 2
         else:
             resources[
-                controlled_resource_rep(
-                    base_class=PauliX,
-                    base_params={},
-                    num_control_wires=num_select_wires,
-                    num_zero_control_values=zero_control_values,
+                _ctrl_abstract(
+                    PauliX, Wire[num_select_wires], num_zero_control_values=zero_control_values
                 )
             ] += (num_select_wires > 0) * 2
 
-        resources[
-            controlled_resource_rep(
-                base_class=PauliZ,
-                base_params={},
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += (1 << num_tree_control_wires) * num_target_wires
+        resources[_ctrl_abstract(PauliZ, Wire[1])] += (
+            1 << num_tree_control_wires
+        ) * num_target_wires
 
     return resources
 
@@ -1034,16 +961,9 @@ def _select_only_qram_resources(
 
         control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
 
-        resources[resource_rep(PauliX)] += control_values.count(0) * 2
+        resources[PauliX] += control_values.count(0) * 2
 
-        resources[
-            controlled_resource_rep(
-                base_class=PauliX,
-                base_params={},
-                num_control_wires=n_total,
-                num_zero_control_values=0,
-            )
-        ] += num_target_wires
+        resources[_ctrl_abstract(PauliX, Wire[n_total])] += num_target_wires
 
     return resources
 
@@ -1330,14 +1250,9 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     - One controlled RY for each entry.
     """
     return {
-        Hadmard: num_address_wires,
-        resource_rep(PauliX): 2 * num_zero_bits,
-        controlled_resource_rep(
-            base_class=RY,
-            base_params={},
-            num_control_wires=num_address_wires,
-            num_zero_control_values=0,  # flipped to 1 already
-        ): num_entries,
+        Hadamard: num_address_wires,
+        PauliX: 2 * num_zero_bits,
+        _ctrl_abstract(RY, Wire[num_address_wires]): num_entries,
     }
 
 

@@ -24,7 +24,7 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, RY, SWAP, Hadamard, cond
 from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
@@ -206,7 +206,7 @@ class FABLE(Operation):
 
 def _fable_resources(wires, thetas, control_wires, tol):
 
-    resources = Counter({Hadmard: len(wires) // 2 * 2})
+    resources = Counter({Hadamard: len(wires) // 2 * 2})
 
     wires_i = wires[1 : 1 + len(wires) // 2][::-1]
     wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
@@ -218,8 +218,8 @@ def _fable_resources(wires, thetas, control_wires, tol):
 
         if math.abs(2 * theta) > tol:
             for _ in nots:
-                resources[resource_rep(CNOT)] += 1
-            resources[resource_rep(RY)] += 1
+                resources[CNOT] += 1
+            resources[RY] += 1
             nots = {}
 
         if wire_map[control_index] in nots:
@@ -228,9 +228,9 @@ def _fable_resources(wires, thetas, control_wires, tol):
             nots[wire_map[control_index]] = 1
 
     for _ in range(len(nots.keys())):
-        resources[resource_rep(CNOT)] += 1
+        resources[CNOT] += 1
 
-    resources[resource_rep(SWAP)] = min(len(wires_i), len(wires_j))
+    resources[SWAP] = min(len(wires_i), len(wires_j))
 
     return dict(resources)
 

@@ -94,7 +94,7 @@ from pennylane import math
 from pennylane.capture import FlatFn, QpPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
-from pennylane.typing import TensorLike
+from pennylane.typing import Result, TensorLike
 
 from .construct_execution_config import construct_execution_config
 
@@ -364,7 +364,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     return qfunc_jaxpr, flat_fn.out_tree
 
 
-def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
+def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> Result:
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
     Args:
@@ -375,7 +375,7 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
         kwargs (Any): Any keyword arguments accepted by the quantum function
 
     Returns:
-        qp.typing.Result: the result of a qnode execution
+        Result: the result of a qnode execution
 
     **Example:**
 

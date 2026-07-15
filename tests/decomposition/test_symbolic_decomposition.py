@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import queuing
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import (
     Resources,
@@ -42,11 +43,12 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
+    self_adjoint_legacy,
     to_controlled_qubit_unitary,
 )
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
 from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
@@ -169,10 +171,10 @@ class TestAdjointDecompositionRules:
 
         assert rule.compute_resources(**op.resource_params) == Resources(
             {
-                _adjoint(qp.T): 1,
-                adjoint_resource_rep(qp.CNOT): 2,
-                adjoint_resource_rep(qp.RX): 1,
-                _adjoint(qp.H): 1,
+                _adjoint_abstract(qp.T): 1,
+                _adjoint_abstract(qp.CNOT): 2,
+                _adjoint_abstract(qp.RX): 1,
+                _adjoint_abstract(qp.H): 1,
             }
         )
 
@@ -200,9 +202,9 @@ class TestAdjointDecompositionRules:
 
         assert rule.compute_resources(**op.arguments) == to_resources(
             {
-                adjoint_resource_rep(qp.T, {}): 1,
-                adjoint_resource_rep(qp.RX, {}): 1,
-                adjoint_resource_rep(qp.H, {}): 1,
+                _adjoint_abstract(qp.T): 1,
+                _adjoint_abstract(qp.RX): 1,
+                _adjoint_abstract(qp.H): 1,
                 Adjoint2(OneWireDynOp(Float, Wire[1])): 1,
             }
         )
@@ -229,17 +231,27 @@ class TestAdjointDecompositionRules:
             {resource_rep(CustomOp, key=0): 1}
         )
 
-    def test_self_adjoint(self):
+    def test_self_adjoint_legacy(self):
         """Tests the self_adjoint decomposition."""
 
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
         with queuing.AnnotatedQueue() as q:
-            self_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+            self_adjoint_legacy(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [CustomOp(0.5, wires=[0, 1, 2])]
-        assert self_adjoint.compute_resources(**op.resource_params) == Resources(
+        assert self_adjoint_legacy.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
+
+    def test_self_adjoint(self):
+        """Tests the self_adjoint decomposition."""
+
+        op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
+        with queuing.AnnotatedQueue() as q:
+            self_adjoint(**op.arguments)
+
+        assert q.queue == [OneWireDynOp(0.5, wires=[0])]
+        assert self_adjoint.compute_resources(**op.arguments) == to_resources({OneWireDynOp: 1})
 
 
 @pytest.mark.unit
@@ -461,7 +473,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.CNOT): 1,
+                abstractify(qp.CNOT): 1,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,
@@ -483,11 +495,9 @@ class TestControlledDecomposition:
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1,
-                qp.resource_rep(qp.CRX): 1,
-                qp.resource_rep(qp.CRot): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RZ, {}, num_control_wires=2, num_work_wires=1
-                ): 1,
+                abstractify(qp.CRX): 1,
+                abstractify(qp.CRot): 1,
+                _ctrl_abstract(qp.RZ, Wire[2], Wire[1]): 1,
                 qp.decomposition.controlled_resource_rep(
                     qp.MultiRZ,
                     {"num_wires": 6},
@@ -506,8 +516,8 @@ class TestControlledDecomposition:
                     num_control_wires=1,
                     num_work_wires=1,
                 ): 1,
-                qp.resource_rep(qp.CZ): 1,
-                qp.resource_rep(qp.CCZ): 1,
+                abstractify(qp.CZ): 1,
+                abstractify(qp.CCZ): 1,
             }
         )
 
@@ -615,7 +625,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.X): 2,
+                abstractify(qp.X): 2,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,
@@ -644,15 +654,9 @@ class TestControlledDecomposition:
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RX, {}, num_control_wires=2, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Rot, {}, num_control_wires=2, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RZ, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
+                _ctrl_abstract(qp.RX, Wire[2], Wire[1]): 1,
+                _ctrl_abstract(qp.Rot, Wire[2], Wire[1]): 1,
+                _ctrl_abstract(qp.RZ, Wire[3], Wire[1]): 1,
                 qp.decomposition.controlled_resource_rep(
                     qp.MultiRZ,
                     {"num_wires": 6},
@@ -671,10 +675,8 @@ class TestControlledDecomposition:
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qp.resource_rep(qp.CCZ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
+                abstractify(qp.CCZ): 1,
+                _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
             }
         )
 
@@ -738,7 +740,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.X): 4,
+                abstractify(qp.X): 4,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=3,
@@ -767,15 +769,9 @@ class TestControlledDecomposition:
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RX, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Rot, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RZ, {}, num_control_wires=4, num_work_wires=1
-                ): 1,
+                _ctrl_abstract(qp.RX, Wire[3], Wire[1]): 1,
+                _ctrl_abstract(qp.Rot, Wire[3], Wire[1]): 1,
+                _ctrl_abstract(qp.RZ, Wire[4], Wire[1]): 1,
                 qp.decomposition.controlled_resource_rep(
                     qp.MultiRZ,
                     {"num_wires": 6},
@@ -794,12 +790,8 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=4, num_work_wires=1
-                ): 1,
+                _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
+                _ctrl_abstract(qp.Z, Wire[4], Wire[1]): 1,
             }
         )
 
@@ -1018,7 +1010,7 @@ class TestControlledDecomposition:
             {
                 qp.X: 3,
                 ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1]): 1,
-                controlled_resource_rep(qp.X, {}, num_control_wires=3): 2,
+                _ctrl_abstract(qp.X, Wire[3]): 2,
             }
         )
 

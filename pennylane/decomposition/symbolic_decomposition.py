@@ -22,6 +22,8 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core.operator import abstractify
+from pennylane.typing import Wire
 
 from ..typing import Wire
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
@@ -48,9 +50,14 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
         return base_decomposition.is_applicable(**base_params)
 
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
+
+        # pylint: disable=import-outside-toplevel
+        from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
-            _adjoint(decomp_op): count for decomp_op, count in base_resources.gate_counts.items()
+            _adjoint_abstract(decomp_op): count
+            for decomp_op, count in base_resources.gate_counts.items()
         }
 
     base_source = base_decomposition._source
@@ -87,7 +94,7 @@ def _cancel_adjoint_resource(base_class, base_params):  # pylint:disable=unused-
 @register_resources(_cancel_adjoint_resource)
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
-    qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
+    qp.apply(base.base)
 
 
 def _adjoint_rotation_resource(base_class, base_params):
@@ -98,8 +105,7 @@ def _adjoint_rotation_resource(base_class, base_params):
 @register_resources(_adjoint_rotation_resource)
 def adjoint_rotation(phi, wires, base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    _, struct = qp.pytrees.flatten(base)
-    qp.pytrees.unflatten((-phi,), struct)
+    qp.ops.functions.bind_new_parameters(base, (-phi,))
 
 
 def is_integer(x):
@@ -116,7 +122,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
 
     @qp.for_loop(0, z)
     def _loop(i):
-        qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+        qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -135,8 +141,7 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
-    qp.pow(base_op, z * base.z)
+    qp.pow(base.base, z * base.z)
 
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
@@ -154,8 +159,7 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
-    qp.adjoint(qp.pow(base_op, z))
+    qp.adjoint(qp.pow(base.base, z))
 
 
 def make_pow_decomp_with_period(period) -> DecompositionRule:
@@ -177,7 +181,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
-            qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+            qp.apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
             qp.pow(base, z_mod_period)
 
@@ -195,19 +199,31 @@ def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_pow_rotation_resource)
 def pow_rotation(phi, wires, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    _, struct = base._flatten()
-    base._unflatten((phi * z,), struct)
+    qp.ops.functions.bind_new_parameters(base, (phi * z,))
 
 
-def _decompose_to_base_resource(base_class, base_params, **__):
+def _decomp_to_base_legacy_res(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_decompose_to_base_resource)
-def decompose_to_base(*params, wires, base, **__):
+@register_resources(_decomp_to_base_legacy_res)
+def decompose_to_base_legacy(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+    qp.apply(base)
+
+
+self_adjoint_legacy: DecompositionRule = decompose_to_base_legacy
+
+
+def _decompose_to_base_resource(base):
+    return {abstractify(base): 1}
+
+
+@register_resources(_decompose_to_base_resource)
+def decompose_to_base(base):
+    """Decompose a symbolic operator to its base."""
+    qp.apply(base)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
@@ -243,19 +259,20 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(
         base_params, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
     ):
+
+        # pylint: disable=import-outside-toplevel
+        from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
             _ctrl_abstract(
                 base_op_rep,
-                control_wires=Wire[num_control_wires],
-                work_wires=Wire[num_work_wires],
-                work_wire_type=work_wire_type,
             ): count
             for base_op_rep, count in base_resources.gate_counts.items()
         }
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
-        gate_counts[resource_rep(qp.PauliX)] = num_zero_control_values * 2
+        gate_counts[abstractify(qp.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
     # pylint: disable=protected-access,too-many-arguments
@@ -307,7 +324,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[resource_rep(qp.X)] = gate_counts.get(resource_rep(qp.X), 0) + num_x * 2
+        gate_counts[abstractify(qp.X)] = gate_counts.get(abstractify(qp.X), 0) + num_x * 2
         return gate_counts
 
     # pylint: disable=protected-access
@@ -371,10 +388,9 @@ def flip_control_adjoint(
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
     qp.adjoint(
         qp.ctrl(
-            base_op,
+            base.base,
             control=wires[: len(control_wires)],
             control_values=control_values,
             work_wires=work_wires,
@@ -384,8 +400,12 @@ def flip_control_adjoint(
 
 
 def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
     return {
-        controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+        _ctrl_abstract(qp.X, Wire[num_control_wires]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
@@ -395,10 +415,9 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base))
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
-        qp.ctrl(base_op, control=work_wires[0])
+        qp.ctrl(base, control=work_wires[0])
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
 
 
