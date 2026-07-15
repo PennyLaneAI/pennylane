@@ -305,9 +305,14 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
-        if qp.QueuingManager.recording():
+        op_leaves = jax.tree_util.tree_leaves(op)
+        wire_leaves = jax.tree_util.tree_leaves(tuple(op.wires))
+        if qp.QueuingManager.recording() and not any(
+            math.is_abstract(leaf) for leaf in (*op_leaves, *wire_leaves)
+        ):
             # Operator2 reconstruction pauses capture, so pytree unflattening alone would
-            # otherwise drop the operation when an interpreter replays into a queue.
+            # otherwise drop concrete operations when an interpreter replays into a queue.
+            # Abstract operations must instead be rebound below to preserve nested transforms.
             with qp.capture.pause():
                 return qp.apply(op)
 
