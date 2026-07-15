@@ -1300,6 +1300,18 @@ class TestDunderMethods:
         op = Op(wires=0)
         assert repr(op) == "Op(0)"
 
+    def test_repr_without_dynamic_args_different_wire_argname(self):
+        """Test that __repr__ prints without dynamic parameters if there are none."""
+
+        class Op(Operator2):
+            wire_argnames = ("my_wires",)
+
+            def __init__(self, my_wires):
+                super().__init__(my_wires=my_wires)
+
+        op = Op(my_wires=0)
+        assert repr(op) == "Op(0)"
+
     def test_repr_with_hybrid_wires(self):
         """Test that __repr__ prints correctly if there are hybrid wire arguments."""
 
