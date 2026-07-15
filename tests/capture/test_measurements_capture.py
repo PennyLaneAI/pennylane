@@ -510,7 +510,8 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
         assert jaxpr.eqns[0].primitive == qp.X._primitive
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qp.Y._primitive
+        assert jaxpr.eqns[2].primitive == operator_p
+        assert jaxpr.eqns[2].params["op_cls"] is qp.Y
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
         assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[3].outvars[0]
         assert jaxpr.eqns[4].primitive == m_type._obs_primitive
