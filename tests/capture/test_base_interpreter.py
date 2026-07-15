@@ -121,8 +121,11 @@ def test_primitive_registrations():
 def test_default_operator2_handling():
     """Test that the PlxprInterpreter itself can handle operators and leaves them unchanged."""
 
+    outside_op = NonParametricOp(0)
+
     @PlxprInterpreter()
     def f(x):
+        qp.adjoint(outside_op)
         qp.adjoint(DynOp(x, 0))
         NonParametricOp(1)
         return NonParametricOp(0)
@@ -131,11 +134,14 @@ def test_default_operator2_handling():
 
     assert jaxpr.eqns[0].primitive == operator_p
     assert jaxpr.eqns[0].params["adjoint"] is True
-    assert jaxpr.eqns[0].params["op_cls"] is DynOp
+    assert jaxpr.eqns[0].params["op_cls"] is NonParametricOp
     assert jaxpr.eqns[1].primitive == operator_p
-    assert jaxpr.eqns[1].params["op_cls"] is NonParametricOp
+    assert jaxpr.eqns[1].params["adjoint"] is True
+    assert jaxpr.eqns[1].params["op_cls"] is DynOp
     assert jaxpr.eqns[2].primitive == operator_p
     assert jaxpr.eqns[2].params["op_cls"] is NonParametricOp
+    assert jaxpr.eqns[3].primitive == operator_p
+    assert jaxpr.eqns[3].params["op_cls"] is NonParametricOp
 
 
 def test_default_operator_handling():
