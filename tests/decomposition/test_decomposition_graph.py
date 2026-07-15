@@ -169,6 +169,48 @@ class TestDecompGraphConstruction:
         assert len(decomp_nodes) == 1
         assert decomp_nodes[0].rule is custom_hadamard
 
+    def test_fixed_decomps_respected_for_symbolic_ops(self):
+        """Tests that fixed decomps for symbolic ops are respected."""
+
+        @qp.register_resources({qp.X: 1})
+        def _base_decomp(wires):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1})
+        def _custom_adjoint(base):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.CNOT: 1})
+        def _custom_ctrl(base, control_wires, control_values, **_):
+            raise NotImplementedError
+
+        adjoint_op = qp.adjoint(NonParametricOp([0]))
+        ctrl_op = qp.ctrl(NonParametricOp([0]), control=1)
+
+        graph = DecompositionGraph(
+            [adjoint_op, ctrl_op],
+            gate_set={qp.X, qp.CNOT},
+            alt_decomps={NonParametricOp: [_base_decomp]},
+            fixed_decomps={
+                "Adjoint(NonParametricOp)": _custom_adjoint,
+                "C(NonParametricOp)": _custom_ctrl,
+            },
+        )
+
+        # check adjoint
+        adjoint_op_node = list(graph._op_to_op_nodes[abstractify(adjoint_op)])[0]
+        adjoint_op_idx = graph._all_op_indices[adjoint_op_node]
+        decomp_nodes = graph._graph.predecessors(adjoint_op_idx)
+        assert len(decomp_nodes) == 1
+        assert decomp_nodes[0].rule is _custom_adjoint
+
+        # check ctrl
+        ctrl_op_node = list(graph._op_to_op_nodes[abstractify(ctrl_op)])[0]
+        ctrl_op_idx = graph._all_op_indices[ctrl_op_node]
+        decomp_nodes = graph._graph.predecessors(ctrl_op_idx)
+        assert len(decomp_nodes) == 1
+        assert decomp_nodes[0].rule is _custom_ctrl
+
     def test_get_decomps_symbolic2(self):
         """Tests that get_decomps works properly for symbolicop2."""
 
