@@ -1897,7 +1897,7 @@ class TestCtrl:
 
         assert len(q) == 1
         assert q.queue[0] is op
-        expected = ControlledOp2(
+        expected = ctrl(
             qp.S(wires=[0]),
             control_wires=[3, 2, 1],
             control_values=[1, 0, 1],
