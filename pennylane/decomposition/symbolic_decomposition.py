@@ -22,12 +22,12 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
 from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
-from ..core import Operator2
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
