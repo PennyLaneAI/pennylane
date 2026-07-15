@@ -25,20 +25,19 @@ from numbers import Number
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScriptOrBatch
+from pennylane.core.transforms import CompilePipeline
 from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     DensityMatrixMP,
-    MeasurementProcess,
     ProbabilityMP,
-    Shots,
     StateMP,
 )
 from pennylane.ops import MeasurementValue
-from pennylane.tape import QuantumScriptOrBatch
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
@@ -196,10 +195,10 @@ class NullQubit(Device):
 
     >>> print(tracker.history["resources"][0])
     Wire allocations: 100
-    Total gates: 10000
+    Total gates: 10,000
     Gate counts:
-    - Rot: 5000
-    - CNOT: 5000
+    - Rot: 5,000
+    - CNOT: 5,000
     Measurements:
     - expval(PauliZ): 100
     Depth: 502
@@ -212,7 +211,7 @@ class NullQubit(Device):
 
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
-        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``resources``: the :class:`~.resource.SpecsResources` for the executed circuit.
         * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
@@ -461,26 +460,6 @@ class NullQubit(Device):
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
-
-    def eval_jaxpr(
-        self,
-        jaxpr: "jax.extend.core.Jaxpr",
-        consts: list,
-        *args,
-        execution_config=None,
-        shots=Shots(None),
-    ) -> list:
-        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
-            AbstractMeasurement,
-        )
-
-        def zeros_like(var, shots):
-            if isinstance(var.aval, AbstractMeasurement):
-                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
-                return math.zeros(s, dtype=dtype, like="jax")
-            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
-
-        return [zeros_like(var, Shots(shots).total_shots) for var in jaxpr.outvars]
 
 
 def _op_has_decomp(op):

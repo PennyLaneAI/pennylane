@@ -19,8 +19,8 @@ import copy
 from collections import Counter
 
 from pennylane import capture
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP
 from pennylane.wires import Wires
 
@@ -245,7 +245,7 @@ def _permute_resources(wires, permutation):
         if working_order[idx_here] != here:
             idx_there = working_order.index(permutation[idx_here])
 
-            resources[resource_rep(SWAP)] += 1
+            resources[SWAP] += 1
 
             working_order[idx_here], working_order[idx_there] = (
                 working_order[idx_there],

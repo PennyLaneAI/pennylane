@@ -17,9 +17,9 @@ including a decorator for specifying gradient expansions."""
 import warnings
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pytrees import flatten, unflatten
-from pennylane.tape import QuantumScript
 
 SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",

@@ -20,8 +20,8 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import DoubleExcitation, OrbitalRotation, cond
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires
@@ -326,17 +326,12 @@ class GateFabric(Operation):
 
 
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
-    resources = {
+    rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
+    return {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(DoubleExcitation): n_layers * len_wire_pattern,
+        DoubleExcitation: n_layers * len_wire_pattern,
+        OrbitalRotation: rotation_count,
     }
-
-    if include_pi:
-        resources[resource_rep(OrbitalRotation)] = 2 * n_layers * len_wire_pattern
-    else:
-        resources[resource_rep(OrbitalRotation)] = n_layers * len_wire_pattern
-
-    return resources
 
 
 @register_resources(_gate_fabric_resources)

@@ -17,8 +17,8 @@ Contains the hardware-efficient ParticleConservingU2 template.
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
@@ -259,14 +259,12 @@ class ParticleConservingU2(Operation):
 
 
 def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
-    # number of pairs of even-indexed of wires
-    num_nm_wires = num_wires - 1
-
+    num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(RZ): n_layers * num_wires,
-        resource_rep(CNOT): 2 * num_nm_wires * n_layers,
-        resource_rep(CRX): num_nm_wires * n_layers,
+        RZ: n_layers * num_wires,
+        CNOT: 2 * num_nm_wires * n_layers,
+        CRX: num_nm_wires * n_layers,
     }
 
 

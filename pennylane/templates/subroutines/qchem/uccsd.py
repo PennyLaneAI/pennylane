@@ -24,8 +24,8 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -330,11 +330,7 @@ class UCCSD(Operation):
 
 
 def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
-    resources = Counter(
-        {
-            resource_rep(BasisState, num_wires=num_wires): 1,
-        }
-    )
+    resources = Counter({resource_rep(BasisState, num_wires=num_wires): 1})
 
     for _ in range(n_repeats):
         for w1, w2 in num_d_wires:

@@ -19,16 +19,13 @@ import warnings
 
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -114,10 +111,10 @@ class AQFT(Operation):
             The resulting circuit is:
 
             >>> print(qp.draw(circ, level='device')())
-            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤  Probs
-            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤  Probs
-            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤  Probs
-            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤  Probs
+            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤ ╭Probs
+            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤ ├Probs
+            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
+            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
 
         * ``order`` :math:`\geq n-1`
             Using the QFT class is recommended in this case. The AQFT operation here is
@@ -187,7 +184,7 @@ class AQFT(Operation):
             decomp_ops.append(Hadamard(wire))
             counter = 0
 
-            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
+            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :], strict=True):
                 if counter >= order:
                     break
 
@@ -198,7 +195,7 @@ class AQFT(Operation):
         first_half_wires = wires[: n_wires // 2]
         last_half_wires = wires[-(n_wires // 2) :]
 
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires), strict=True):
             swap = SWAP(wires=[wire1, wire2])
             decomp_ops.append(swap)
 
@@ -206,21 +203,12 @@ class AQFT(Operation):
 
 
 def _AQFT_resources(num_wires, order):
-    resources = {}
-
-    resources[resource_rep(Hadamard)] = num_wires
-
-    resources[
-        controlled_resource_rep(
-            PhaseShift,
-            {},
-            num_control_wires=1,
-        )
-    ] = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
-
-    resources[resource_rep(SWAP)] = num_wires // 2
-
-    return dict(resources)
+    num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
+    return {
+        Hadamard: num_wires,
+        _ctrl_abstract(PhaseShift, Wire[1]): num_ctrl_ps,
+        SWAP: num_wires // 2,
+    }
 
 
 @register_resources(_AQFT_resources)
@@ -228,7 +216,7 @@ def _AQFT_decomposition(wires, order):
     n_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
-    if capture.enabled():
+    if compiler.active() or capture.enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 

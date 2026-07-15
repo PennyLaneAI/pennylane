@@ -18,6 +18,7 @@ core parametrized gates.
 """
 
 # pylint: disable=arguments-differ
+
 import functools
 import math as builtin_math
 from itertools import combinations
@@ -28,20 +29,21 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qp
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
     flip_zero_control,
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
+    pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
-from pennylane.operation import Operation
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -180,10 +182,12 @@ class RX(Operation):
 
         return RX(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-        pi_half = qp.math.ones_like(self.data[0]) * (np.pi / 2)
-        return [pi_half, self.data[0], -pi_half]
+
+@custom_ctrl_dispatch.register
+def _ctrl_rx(base: RX, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRX(base.data[0], wires=control + base.wires)
+    return NotImplemented
 
 
 def _rx_to_rot_resources():
@@ -234,8 +238,8 @@ def _rx_to_ppr(phi, wires, **_):
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
-add_decomps("Adjoint(RX)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(RX)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(RX)", adjoint_rotation)
+add_decomps("Pow(RX)", pow_rotation)
 
 
 def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -391,9 +395,12 @@ class RY(Operation):
 
         return RY(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RY(\theta) = RZ(0) RY(\theta) RZ(0)
-        return [0.0, self.data[0], 0.0]
+
+@custom_ctrl_dispatch.register
+def _ctrl_ry(base: RY, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRY(base.data[0], wires=control + base.wires)
+    return NotImplemented
 
 
 def _ry_to_rot_resources():
@@ -417,7 +424,7 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
 
 
 def _ry_to_rx_cliff_resources():
-    return {change_op_basis_resource_rep(adjoint_resource_rep(qp.S), qp.RX, qp.S): 1}
+    return {change_op_basis_resource_rep(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
 
 
 @register_resources(_ry_to_rx_cliff_resources)
@@ -430,12 +437,12 @@ def _ry_to_rz_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={adjoint_resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
             qp.RZ,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
         ): 1
     }
@@ -460,8 +467,8 @@ def _ry_to_ppr(phi, wires, **_):
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
-add_decomps("Adjoint(RY)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(RY)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(RY)", adjoint_rotation)
+add_decomps("Pow(RY)", pow_rotation)
 
 
 def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -655,9 +662,12 @@ class RZ(Operation):
 
         return RZ(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
+
+@custom_ctrl_dispatch.register
+def _ctrl_rz(base: RZ, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRZ(base.data[0], wires=control + base.wires)
+    return NotImplemented
 
 
 def _rz_to_ps_resources():
@@ -704,12 +714,12 @@ def _rz_to_ry_cliff_resources():
         change_op_basis_resource_rep(
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
             qp.RY,
             resource_rep(
                 qp.ops.op_math.Prod,
-                resources={adjoint_resource_rep(qp.S): 1, resource_rep(qp.Hadamard): 1},
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
         ): 1
     }
@@ -734,8 +744,8 @@ def _rz_to_ppr(phi, wires, **_):
 
 
 add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
-add_decomps("Adjoint(RZ)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(RZ)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(RZ)", adjoint_rotation)
+add_decomps("Pow(RZ)", pow_rotation)
 
 
 def _controlled_rz_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -950,9 +960,12 @@ class PhaseShift(Operation):
 
         return PhaseShift(phi, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
+
+@custom_ctrl_dispatch.register
+def _ctrl_ps(base: PhaseShift, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.ControlledPhaseShift(base.data[0], wires=control + base.wires)
+    return NotImplemented
 
 
 def _phaseshift_to_rz_gp_resources():
@@ -970,7 +983,7 @@ def _cphase_to_ppr_resource(num_control_wires, **_):
         resource_rep(qp.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
         for i in range(1, num_control_wires + 2)
     }
-    resources[resource_rep(qp.GlobalPhase)] = 1
+    resources[qp.GlobalPhase] = 1
     return resources
 
 
@@ -985,8 +998,8 @@ def _cphase_to_ppr(theta, wires, **_):
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
-add_decomps("Adjoint(PhaseShift)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(PhaseShift)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
+add_decomps("Pow(PhaseShift)", pow_rotation)
 add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
@@ -1153,9 +1166,6 @@ class Rot(Operation):
     def _controlled(self, wire: WiresLike) -> "qp.CRot":
         return qp.CRot(*self.parameters, wires=wire + self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        return self.data
-
     def simplify(self) -> "Rot":
         """Simplifies into single-rotation gates or a Hadamard if possible.
 
@@ -1179,6 +1189,13 @@ class Rot(Operation):
             return Hadamard(wires=self.wires)
 
         return Rot(p0, p1, p2, wires=self.wires)
+
+
+@custom_ctrl_dispatch.register
+def _ctrl_rot(base: Rot, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRot(*base.data, wires=control + base.wires)
+    return NotImplemented
 
 
 def _rot_to_rz_ry_rz_resources():
@@ -1375,8 +1392,8 @@ def _u1_phaseshift(phi, wires, **__):
 
 
 add_decomps(U1, _u1_phaseshift)
-add_decomps("Adjoint(U1)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(U1)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(U1)", adjoint_rotation)
+add_decomps("Pow(U1)", pow_rotation)
 
 
 class U2(Operation):

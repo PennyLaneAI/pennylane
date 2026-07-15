@@ -17,15 +17,15 @@ Contains the 'label' function for customizing operator labels.
 
 # pylint: disable=unused-argument
 
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal,
     _equal_dispatch,
 )
 from pennylane.ops.op_math import SymbolicOp
-from pennylane.queuing import apply
 
 
 class LabelledOp(SymbolicOp):
@@ -155,8 +155,8 @@ def label(op: Operator, new_label: str) -> LabelledOp:
             return qp.probs()
 
     >>> print(qp.draw(circuit)())
-    0: ──H("my-h")─╭●─┤  Probs
-    1: ────────────╰X─┤  Probs
+    0: ──H("my-h")─╭●─┤ ╭Probs
+    1: ────────────╰X─┤ ╰Probs
 
     """
     return LabelledOp(op, new_label)

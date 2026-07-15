@@ -15,40 +15,63 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
+import copy
+import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math, pytrees, queuing
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.decomposition.resources import adjoint_resource_rep
+from pennylane import capture, math
+from pennylane.core import queuing
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operator
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 from .composite import CompositeOp, handle_recursion_error
 
 
-def _apply_op_or_func(op_or_func):
-    if isinstance(op_or_func, Callable):
-        try:
-            op_or_func()
-        except TypeError as e:
+def _validate_callable(func: Callable) -> None:
+    """Validates that a callable has no unbound mandatory parameters."""
+    sig = inspect.signature(func)
+
+    for param in sig.parameters.values():
+        # The function,
+        #
+        # def f(*args, **kwargs):
+        #     pass
+        #
+        # technically doesn't have any required parameters.
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
+
+        # If param has no default we can early exit
+        if param.default is inspect.Parameter.empty:
             raise TypeError(
-                "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
-            ) from e
+                "change_op_basis requires that Callable inputs have no unbound mandatory parameters. Please use functools.partial to bind them."
+            )
+
+
+def _apply_op_or_func(op_or_func):
+    if callable(op_or_func):
+        _validate_callable(op_or_func)
+        op_or_func()
+    elif isinstance(op_or_func, Operator2):
+        # NOTE: An Operator2 built outside the trace context has no equation
+        # so we need to emit one.
+        if op_or_func.tracer is None:
+            # pylint: disable-next=protected-access
+            op_or_func._bind_primitive()
     elif isinstance(op_or_func, Operator):
-        type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
+        queuing.apply(op_or_func)
     elif math.is_abstract(op_or_func):
         pass
     else:
@@ -58,13 +81,9 @@ def _apply_op_or_func(op_or_func):
 
 
 def _convert_to_prod(op_or_func):
-    if isinstance(op_or_func, Callable):
-        try:
-            return prod(op_or_func)()
-        except TypeError as e:
-            raise TypeError(
-                "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
-            ) from e
+    if callable(op_or_func):
+        _validate_callable(op_or_func)
+        return prod(op_or_func)()
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(
@@ -123,9 +142,9 @@ def change_op_basis(
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤  State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    0: ──H──────╭●────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
 
     A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
     function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
@@ -155,8 +174,8 @@ def change_op_basis(
         circuit3 = qp.decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
-    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤  State
-    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤  State
+    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
+    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤ ╰State
 
     .. warning::
 
@@ -173,6 +192,14 @@ def change_op_basis(
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
             _apply_op_or_func(uncompute_op)
+        elif isinstance(compute_op, Operator2):
+            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
+            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
+            # we can feed a copy of the op to adjoint and detach its tracer as if it was
+            # removed from the jaxpr.
+            dummy = copy.copy(compute_op)
+            dummy.tracer = None
+            _apply_op_or_func(adjoint(dummy))
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:
@@ -242,11 +269,11 @@ class ChangeOpBasis(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = {}
-        resources["compute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
-        resources["target_op"] = resource_rep(type(self[1]), **self[1].resource_params)
-        resources["uncompute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
-        return resources
+        return {
+            "compute_op": abstractify(self[2]),
+            "target_op": abstractify(self[1]),
+            "uncompute_op": abstractify(self[0]),
+        }
 
     grad_method = None
 
@@ -317,16 +344,16 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
     target_op = base_params["target_op"]
-    resources[adjoint_resource_rep(target_op.op_type, target_op.params)] += 1
+    resources[_adjoint_abstract(target_op)] += 1
     return resources
 
 
 # pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
-    adjoint(pytrees.unflatten(*pytrees.flatten(base.operands[1])))
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    queuing.apply(base.operands[2])
+    adjoint(queuing.apply(base.operands[1]))
+    queuing.apply(base.operands[0])
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
@@ -345,13 +372,12 @@ def _controlled_change_op_basis_resources(
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
-        controlled_resource_rep(
-            base_params["target_op"].op_type,
-            base_params["target_op"].params,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+        _ctrl_abstract(
+            base_params["target_op"],
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
+            num_zero_control_values,
         )
     ] += 1
     resources[base_params["uncompute_op"]] += 1
@@ -368,22 +394,22 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
+    queuing.apply(base.operands[2])
     ctrl(
-        pytrees.unflatten(*pytrees.flatten(base.operands[1])),
+        queuing.apply(base.operands[1]),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    queuing.apply(base.operands[0])
 
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
-        pytrees.unflatten(*pytrees.flatten(op))
+        queuing.apply(op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

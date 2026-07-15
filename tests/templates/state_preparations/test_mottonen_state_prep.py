@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
@@ -95,7 +96,7 @@ class TestHelpers:
     @pytest.mark.parametrize(
         "current_qubit, expected",
         [
-            (1, np.array([0, 0, 0, 1.23095942])),
+            (1, np.array([0, 6.2831853, 0, 1.23095942])),
             (2, np.array([2.01370737, 3.14159265])),
             (3, np.array([1.15927948])),
         ],
@@ -103,7 +104,7 @@ class TestHelpers:
     def test_get_alpha_y(self, current_qubit, expected, tol):
         """Test the _get_alpha_y helper function."""
 
-        state = np.array([np.sqrt(0.2), 0, np.sqrt(0.5), 0, 0, 0, np.sqrt(0.2), np.sqrt(0.1)])
+        state = np.array([np.sqrt(0.2), 0, -np.sqrt(0.5), 0, 0, 0, np.sqrt(0.2), np.sqrt(0.1)])
         res = _get_alpha_y(state, 3, current_qubit)
         assert np.allclose(res, expected, atol=tol)
 
@@ -112,7 +113,7 @@ class TestHelpers:
         """Test that _get_alpha_y returns the same results with and without batching."""
 
         rng = np.random.default_rng(seed)
-        state = rng.random((7, 2**5))
+        state = rng.random((7, 2**5)) - 0.5
         state /= np.linalg.norm(state, axis=-1)[:, None]
         res_batched = _get_alpha_y(state, 5, current_qubit)
         res_single = [_get_alpha_y(s, 5, current_qubit) for s in state]
@@ -258,7 +259,16 @@ class TestDecomposition:
             ([1 / 2, 0, 0, 0, 1 / 2, 1 / 2, 1 / 2, 0], 3),
             ([1 / 3, 0, 0, 0, 2 / 3, 2 / 3, 0, 0], 3),
             ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
+            (
+                [
+                    [1 / 2, 0, 0, 0, -1 / 2, 1 / 2, -1 / 2, 0],
+                    [-1 / 2, 0, 0, 0, -1 / 2, 1 / 2, 1 / 2, 0],
+                ],
+                3,
+            ),
+            ([-2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
             ([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]], 3),
+            ([[0, -1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]], 3),
         ],
     )
     def test_RZ_skipped(self, mocker, state_vector, n_wires):
@@ -305,7 +315,7 @@ class TestDecomposition:
 
     def test_decomposition_includes_global_phase(self):
         """Test that the decomposition includes the correct global phase."""
-        state = np.array([-0.5, 0.2, 0.3, 0.9, 0.5, 0.2, 0.3, 0.9])
+        state = np.array([-0.5, 0.2j, 0.3, 0.9j, 0.5, 0.2, 0.3, 0.9])
         state = state / np.linalg.norm(state)
         decomp = qp.MottonenStatePreparation(state, [0, 1, 2]).decomposition()
         gphase = decomp[-1]
@@ -331,10 +341,10 @@ class TestDecomposition:
 
         assert resource_obj.num_gates == 1 + 2 * n + 2 * (n - 1)
         assert resource_obj.gate_counts == {
-            qp.resource_rep(qp.GlobalPhase): 1,
-            qp.resource_rep(qp.RY): n,
-            qp.resource_rep(qp.RZ): n,
-            qp.resource_rep(qp.CNOT): 2 * (n - 1),
+            abstractify(qp.GlobalPhase): 1,
+            abstractify(qp.RY): n,
+            abstractify(qp.RZ): n,
+            abstractify(qp.CNOT): 2 * (n - 1),
         }
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -602,9 +612,11 @@ def test_jacobians_with_and_without_jit_match(seed):
 
 @pytest.mark.jax
 class TestJaxJitSPInputs:
-    """Test that the Mottonen state preparation works with input state-vectors in various forms of abstraction and concretization"""
+    """Test that the Mottonen state preparation works with input state-vectors in various
+    forms of abstraction and concretization"""
 
-    def test_state_external_static_input(self):
+    @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
+    def test_state_external_static_input(self, dtype):
         """
         Test definition of the state-prep operator data external to the JIT context.
         """
@@ -615,7 +627,7 @@ class TestJaxJitSPInputs:
         dev = qp.device("default.qubit", wires=n_qubits)
 
         def sp_func():
-            psi = jax.numpy.zeros(2**n_qubits)
+            psi = jax.numpy.zeros(2**n_qubits, dtype=dtype)
             psi = psi.at[jax.numpy.array(range(1, n_qubits + 1))].set(
                 1 / jax.numpy.sqrt(3), indices_are_sorted=True, unique_indices=True
             )

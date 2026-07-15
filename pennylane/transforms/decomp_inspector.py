@@ -19,19 +19,18 @@ from functools import partial
 
 from typing_extensions import override
 
+from pennylane.core.operator import Operator, abstractify
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
 from pennylane.decomposition.decomposition_rule import _DecompInfo, _DecompInfoCollection
-from pennylane.decomposition.resources import resource_rep
-from pennylane.operation import Operator
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .decompose import _resolve_gate_set
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-few-public-methods
 class _DecompInGraphInfo(_DecompInfo):
     """Information about a decomposition rule in a graph for inspection."""
 
@@ -54,34 +53,74 @@ class _DecompInGraphInfo(_DecompInfo):
 
     def __str__(self) -> str:
         result = super().__str__()
-        if not self.is_applicable:
+        if not self._is_applicable:
             return result
-        if not self.is_reachable:
-            return result + "\n" + self.missing_ops
-        return result + "\n" + self.gate_set_resources
+        if not self._is_reachable:
+            return result + "\n" + self._missing_ops
+        return result
+
+    def _repr_markdown_(self) -> str:
+        result = super()._repr_markdown_()
+        if not self._is_applicable:
+            return result
+        if not self._is_reachable:
+            return result + "\n\n" + self._missing_ops_md
+        return result
 
     @property
-    def is_reachable(self) -> bool:
+    def _is_reachable(self) -> bool:
         """Whether this decomposition rule is reachable from the target gate set."""
         return self._decomp_node_idx in self._solution._visitor.distances
 
     @property
-    def gate_set_resources(self) -> str:
+    @override
+    def _gate_counts_and_allocations(self) -> str:
         """The gate count and weighted cost in terms of the target gate set."""
-        assert self.is_reachable
+        if not self._is_reachable:
+            return super()._gate_counts_and_allocations
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
         gate_counts = gate_set_resource.gate_counts
         weighted_cost = gate_set_resource.weighted_cost
-        return f"Full Expansion Gates: {gate_counts}\nWeighted Cost: {weighted_cost}"
+        return (
+            super()._gate_counts_and_allocations
+            + f"\nFull Expansion Gates: {gate_counts}"
+            + f"\nWeighted Cost: {weighted_cost}"
+        )
 
     @property
-    def missing_ops(self) -> str:
+    @override
+    def _gate_counts_and_allocations_md(self) -> str:
+        """The gate count and weighted cost in terms of the target gate set in Markdown."""
+        if not self._is_reachable:
+            return super()._gate_counts_and_allocations_md
+        gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
+        entries = list(gate_set_resource.gate_counts.items())
+        gate_counts = self._make_table(entries, ("Full Expansion", "Count"))
+        weighted_cost = gate_set_resource.weighted_cost
+        return (
+            super()._gate_counts_and_allocations_md
+            + f"\n\n{gate_counts}"
+            + f"\n| **Weighted Cost** | {weighted_cost} |"
+        )
+
+    @property
+    def _missing_ops(self) -> str:
         """Report on any unsolved ops required for this decomposition rule."""
+        unsolved_ops = self._unsolved_ops()
+        return f"Missing Ops: {unsolved_ops}" if unsolved_ops else ""
+
+    @property
+    def _missing_ops_md(self) -> str:
+        """The unsolved ops required for this decomposition in Markdown."""
+        unsolved_ops = map(str, self._unsolved_ops())
+        rows = "\n".join(f"| {op} |" for op in sorted(unsolved_ops))
+        return f"| Missing Ops |\n| :--- |\n{rows}" if unsolved_ops else ""
+
+    def _unsolved_ops(self):
         all_op_node_indices = self._graph.predecessor_indices(self._decomp_node_idx)
         distances = self._solution._visitor.distances
         unsolved_indices = filter(lambda idx: idx not in distances, all_op_node_indices)
-        unsolved_ops = set(map(lambda idx: self._graph[idx].op, unsolved_indices))
-        return f"Missing Ops: {unsolved_ops}" if unsolved_ops else ""
+        return set(map(lambda idx: self._graph[idx].op, unsolved_indices))
 
     @override
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
@@ -92,6 +131,17 @@ class _DecompInGraphInfo(_DecompInfo):
             f"Estimated First-Level Expansion Gates: {estimated_count}\n"
             f"Actual First-Level Expansion Gates: {actual_count}"
         )
+
+    @override
+    def _get_gate_count_markdown(self, estimated_count, actual_count) -> str:
+        """Get the section of the string that specifies the gate count."""
+        estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        if estimated_count == actual_count:
+            entries = list(estimated_count.items())
+            return self._make_table(entries, ("First-Level Expansion", "Count"))
+        all_gates = set(estimated_count.keys()) | set(actual_count.keys())
+        entries = [(op, estimated_count.get(op, 0), actual_count.get(op, 0)) for op in all_gates]
+        return self._make_table(entries, ("First-Level Expansion", "Estimated", "Actual"))
 
 
 class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=too-few-public-methods
@@ -108,17 +158,31 @@ class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=to
         self._chosen_idx = chosen
         self._override_txt = override_txt
 
+    @override
     def __str__(self) -> str:
         if self._override_txt is not None:
             return self._override_txt
         return super().__str__()
 
     @override
+    def _repr_markdown_(self) -> str:
+        if self._override_txt is not None:
+            return self._override_txt
+        return super()._repr_markdown_()
+
+    @override
     def _title(self, index, rule) -> str:
-        title = f"Decomposition {index} (name: {rule.name})"
+        title = f"Decomposition {index} (name: {rule._name})"
         if index == self._chosen_idx:
             title = "CHOSEN: " + title
         return title
+
+    @override
+    def _title_md(self, index, rule) -> str:
+        title = f"Decomposition {index} (name: {rule._name})"
+        if index == self._chosen_idx:
+            return f"#### **CHOSEN:** {title}"
+        return f"#### {title}"
 
 
 # pylint: disable=protected-access,too-few-public-methods
@@ -184,7 +248,7 @@ class DecompGraphInspector:
                 "first argument, not an operator type."
             )
 
-        op_rep = resource_rep(op.__class__, **op.resource_params)
+        op_rep = abstractify(op)
         if op_rep not in self._decomp_graph._op_to_op_nodes:
             return (
                 "This operator is not found in the decomposition graph! This typically "
@@ -287,12 +351,12 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
     CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
-    <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
-                3: ───────────├●─│──────────────├●─────────────┤
-                4: ───────────├●─│──────────────├●─────────────┤
-                5: ───────────╰●─│──────────────╰●─────────────┤
-                0: ──────────────├MultiRZ(0.50)────────────────┤
-                1: ──────────────╰MultiRZ(0.50)────────────────┤
+    0: ──────────╭MultiRZ(0.50)───────┤
+    1: ──────────├MultiRZ(0.50)───────┤
+    3: ───────╭●─│──────────────╭●────┤
+    4: ───────├●─│──────────────├●────┤
+    5: ───────├●─│──────────────├●────┤
+         |0>├─╰X─╰●─────────────╰X──┤
     First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
     Wire Allocations: {'zero': 1}
     Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
@@ -382,11 +446,11 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> qp.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3]), "one_zeroed_worker")
         Decomposition 0 (name: one_zeroed_worker)
-        <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤
-                    0: ───────────├●─│───●┤─────────────┤
-                    1: ───────────╰●─│───●╯─────────────┤
-                    2: ──────────────├●─────────────────┤
-                    3: ──────────────╰X─────────────────┤
+        0: ───────╭●─────●╮────┤
+        1: ───────├●─────●┤────┤
+        2: ───────│──╭●───│────┤
+        3: ───────│──├X───│────┤
+             |0>├─╰⊕─╰●──⊕╯──┤
         Gate Count: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
         Wire Allocations: {'zero': 1}
 
@@ -412,13 +476,13 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         >>> op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5, 6])
         >>> inspector.inspect_decomps(op, num_work_wires=2)
         CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
-        <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
-                    3: ───────────├●─│──────────────├●─────────────┤
-                    4: ───────────├●─│──────────────├●─────────────┤
-                    5: ───────────├●─│──────────────├●─────────────┤
-                    6: ───────────╰●─│──────────────╰●─────────────┤
-                    0: ──────────────├MultiRZ(0.50)────────────────┤
-                    1: ──────────────╰MultiRZ(0.50)────────────────┤
+        0: ──────────╭MultiRZ(0.50)───────┤
+        1: ──────────├MultiRZ(0.50)───────┤
+        3: ───────╭●─│──────────────╭●────┤
+        4: ───────├●─│──────────────├●────┤
+        5: ───────├●─│──────────────├●────┤
+        6: ───────├●─│──────────────├●────┤
+             |0>├─╰X─╰●─────────────╰X──┤
         First-Level Expansion Gates: {MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {RZ: 94, CNOT: 58, GlobalPhase: 104, RY: 26, RX: 12, MidMeasure: 2}
@@ -459,24 +523,24 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Weighted Cost: 133.0
         <BLANKLINE>
         Decomposition 2 (name: one_zeroed_worker)
-        <DynamicWire>: ──Allocate─╭⊕───────╭●────────⊕╮──Deallocate─┤
-                    2: ───────────├●───────│─────────●┤─────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X──●╯─────────────┤
-                    4: ──────────────├●────│─────├●─────────────────┤
-                    5: ──────────────╰●────│─────╰●─────────────────┤
-                    6: ────────────────────╰X───────────────────────┤
+        2: ───────╭●─────────────────●╮────┤
+        3: ───────├●─╭X──X─╭●──X─╭X──●┤────┤
+        4: ───────│──├●────│─────├●───│────┤
+        5: ───────│──╰●────│─────╰●───│────┤
+        6: ───────│────────├X─────────│────┤
+             |0>├─╰⊕───────╰●────────⊕╯──┤
         First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
-        <DynamicWire>: ──Allocate─╭X───────╭●───────╭X───────╭●──Deallocate────┤
-                    2: ───────────├●───────│────────├●───────│─────────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X─╰●─╭X──X─├●──X──────────╭X─┤
-                    4: ──────────────├●────│─────├●────├●────│──────────────├●─┤
-                    5: ──────────────╰●────│─────╰●────╰●────│──────────────╰●─┤
-                    6: ────────────────────╰X────────────────╰X────────────────┤
+        2: ────╭●────────────────╭●────────────────┤
+        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
+        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
+        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
+        6: ────│────────├X───────│────────├X───────┤
+             ├─╰X───────╰●───────╰X───────╰●──┤
         First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
         Wire Allocations: {'any': 1}
         Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
@@ -495,26 +559,26 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Not applicable (provided operator instance does not meet all conditions for this rule).
         <BLANKLINE>
         CHOSEN: Decomposition 8 (name: many_zeroed_workers)
-        <DynamicWire>: ─╭Allocate────╭⊕─╭●──⊕╮─────╭Deallocate─┤
-        <DynamicWire>: ─╰Allocate─╭⊕─├●─│───●┤──⊕╮─╰Deallocate─┤
-                    5: ───────────├●─│──│────│──●┤─────────────┤
-                    4: ───────────╰●─│──│────│──●╯─────────────┤
-                    3: ──────────────╰●─│───●╯─────────────────┤
-                    2: ─────────────────├●─────────────────────┤
-                    6: ─────────────────╰X─────────────────────┤
+        2: ─────────────╭●────────────┤
+        3: ──────────╭●─│───●╮────────┤
+        4: ───────╭●─│──│────│──●╮────┤
+        5: ───────├●─│──│────│──●┤────┤
+        6: ───────│──│──├X───│───│────┤
+             |0>├─│──├⊕─╰●──⊕┤───│──┤
+             |0>├─╰⊕─╰●─────●╯──⊕╯──┤
         First-Level Expansion Gates: {TemporaryAND: 2, Adjoint(TemporaryAND): 2, Toffoli: 1}
         Wire Allocations: {'zero': 2}
         Full Expansion Gates: {GlobalPhase: 37, RX: 8, MidMeasure: 2, RY: 12, RZ: 29, CNOT: 14}
         Weighted Cost: 65.0
         <BLANKLINE>
         Decomposition 9 (name: many_borrowed_workers)
-        <DynamicWire>: ─╭Allocate─╭●─╭X────╭X─╭●─╭X────╭X─╭Deallocate─┤
-        <DynamicWire>: ─╰Allocate─│──├●─╭X─├●─│──├●─╭X─├●─╰Deallocate─┤
-                    2: ───────────├●─│──│──│──├●─│──│──│──────────────┤
-                    6: ───────────╰X─│──│──│──╰X─│──│──│──────────────┤
-                    3: ──────────────╰●─│──╰●────╰●─│──╰●─────────────┤
-                    5: ─────────────────├●──────────├●────────────────┤
-                    4: ─────────────────╰●──────────╰●────────────────┤
+        2: ────╭●──────────╭●─────────────┤
+        3: ────│──╭●────╭●─│──╭●────╭●────┤
+        4: ────│──│──╭●─│──│──│──╭●─│─────┤
+        5: ────│──│──├●─│──│──│──├●─│─────┤
+        6: ────├X─│──│──│──├X─│──│──│─────┤
+             ├─╰●─├X─│──├X─╰●─├X─│──├X──┤
+             ├────╰●─╰X─╰●────╰●─╰X─╰●──┤
         First-Level Expansion Gates: {Toffoli: 8}
         Wire Allocations: {'any': 2}
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 72, RZ: 72, RY: 16}
@@ -553,24 +617,24 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Weighted Cost: 133.0
         <BLANKLINE>
         CHOSEN: Decomposition 2 (name: one_zeroed_worker)
-        <DynamicWire>: ──Allocate─╭⊕───────╭●────────⊕╮──Deallocate─┤
-                    2: ───────────├●───────│─────────●┤─────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X──●╯─────────────┤
-                    4: ──────────────├●────│─────├●─────────────────┤
-                    5: ──────────────╰●────│─────╰●─────────────────┤
-                    6: ────────────────────╰X───────────────────────┤
+        2: ───────╭●─────────────────●╮────┤
+        3: ───────├●─╭X──X─╭●──X─╭X──●┤────┤
+        4: ───────│──├●────│─────├●───│────┤
+        5: ───────│──╰●────│─────╰●───│────┤
+        6: ───────│────────├X─────────│────┤
+             |0>├─╰⊕───────╰●────────⊕╯──┤
         First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
-        <DynamicWire>: ──Allocate─╭X───────╭●───────╭X───────╭●──Deallocate────┤
-                    2: ───────────├●───────│────────├●───────│─────────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X─╰●─╭X──X─├●──X──────────╭X─┤
-                    4: ──────────────├●────│─────├●────├●────│──────────────├●─┤
-                    5: ──────────────╰●────│─────╰●────╰●────│──────────────╰●─┤
-                    6: ────────────────────╰X────────────────╰X────────────────┤
+        2: ────╭●────────────────╭●────────────────┤
+        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
+        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
+        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
+        6: ────│────────├X───────│────────├X───────┤
+             ├─╰X───────╰●───────╰X───────╰●──┤
         First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
         Wire Allocations: {'any': 1}
         Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}

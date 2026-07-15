@@ -20,12 +20,12 @@ import copy
 from collections import defaultdict
 
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
-from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
 

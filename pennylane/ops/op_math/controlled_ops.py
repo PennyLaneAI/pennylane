@@ -29,25 +29,28 @@ import pennylane as qp
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
     flip_zero_control,
     pow_involutory,
-    pow_involutory_no_reconstructor,
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
-    qjit_compatible_self_adjoint,
-    self_adjoint,
+    pow_rotation,
+    self_adjoint_legacy,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .controlled import ControlledOp
+from .controlled import (
+    ControlledOp,
+    _is_empty_or_all_true,
+    _resolve_ctrl_values,
+    custom_ctrl_dispatch,
+)
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
@@ -427,7 +430,7 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
-add_decomps("Adjoint(CH)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CH)", self_adjoint_legacy)
 add_decomps("Pow(CH)", pow_involutory)
 
 
@@ -577,7 +580,7 @@ def _cy_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CY, _cy, _cy_to_ppr)
-add_decomps("Adjoint(CY)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CY)", self_adjoint_legacy)
 add_decomps("Pow(CY)", pow_involutory)
 
 
@@ -674,6 +677,13 @@ class CZ(ControlledOp):
         return [qp.ControlledPhaseShift(np.pi, wires=wires)]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_cz(base: CZ, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CCZ(control + base.wires)
+    return NotImplemented
+
+
 def _cz_to_cps_resources():
     return {qp.ControlledPhaseShift: 1}
 
@@ -711,7 +721,7 @@ def _cz_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
-add_decomps("Adjoint(CZ)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
@@ -887,7 +897,7 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
-add_decomps("Adjoint(CSWAP)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CSWAP)", self_adjoint_legacy)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
@@ -909,6 +919,8 @@ class CCZ(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
         \end{pmatrix}
 
+    .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
+
     **Details:**
 
     * Number of wires: 3
@@ -916,6 +928,32 @@ class CCZ(ControlledOp):
 
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.X(1)
+            qp.H(2)
+            qp.CCZ([0,1,2])
+            qp.H(2)
+            return qp.sample(wires=[0,1,2])
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●────┤ ╭Sample
+    1: ──X─├●────┤ ├Sample
+    2: ──H─╰Z──H─┤ ╰Sample
+    >>> circuit()
+    array([[1, 1, 1]])
+
     """
 
     @classmethod
@@ -1059,7 +1097,7 @@ class CCZ(ControlledOp):
 def _ccz_resources():
     return {
         qp.CNOT: 6,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(qp.T): 3,
         qp.T: 4,
         qp.Hadamard: 2,
     }
@@ -1096,7 +1134,7 @@ def _ccz_to_toffoli(wires: WiresLike, **__):
 
 
 add_decomps(CCZ, _ccz, _ccz_to_toffoli)
-add_decomps("Adjoint(CCZ)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CCZ)", self_adjoint_legacy)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
@@ -1111,7 +1149,7 @@ class CNOT(ControlledOp):
         0 & 0 & 1 & 0
         \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
+    .. note:: The first wire provided corresponds to the **control wire**. The second wire is the **target wire**.
 
     **Details:**
 
@@ -1120,6 +1158,28 @@ class CNOT(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.CNOT([0,1])
+            return qp.sample(wires=[0,1])
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●─┤ ╭Sample
+    1: ────╰X─┤ ╰Sample
+    >>> circuit()
+    array([[1, 1]])
+
     """
 
     num_wires = 2
@@ -1216,6 +1276,17 @@ class CNOT(ControlledOp):
         return qp.Toffoli(wires=wire + self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
+    wires = control + base.wires
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True], len(control))
+        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+    if len(control) == 1 and not work_wires:
+        return qp.Toffoli(control + base.wires)
+    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
 def _cnot_cz_h_resources():
     return {qp.H: 2, qp.CZ: 1}
 
@@ -1245,7 +1316,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
-add_decomps("Adjoint(CNOT)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
@@ -1267,6 +1338,8 @@ class Toffoli(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
         \end{pmatrix}
 
+    .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
+
     **Details:**
 
     * Number of wires: 3
@@ -1274,6 +1347,30 @@ class Toffoli(ControlledOp):
 
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.X(1)
+            qp.Toffoli([0,1,2])
+            return qp.sample(wires=[0,1,2])
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●─┤ ╭Sample
+    1: ──X─├●─┤ ├Sample
+    2: ────╰X─┤ ╰Sample
+    >>> circuit()
+    array([[1, 1, 1]])
+
     """
 
     num_wires = 3
@@ -1413,6 +1510,15 @@ class Toffoli(ControlledOp):
         ]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_toffoli(base: Toffoli, control, control_values, work_wires, work_wire_type):
+    wires = control + base.wires
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control))
+        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
 def _check_and_convert_control_values(control_values, control_wires):
     if isinstance(control_values, str):
         # Make sure all values are either 0 or 1
@@ -1435,7 +1541,7 @@ def _toffoli_resources():
         qp.Hadamard: 2,
         qp.CNOT: 6,
         qp.T: 4,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(qp.T): 3,
     }
 
 
@@ -1482,12 +1588,12 @@ def _toffoli_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
-add_decomps("Adjoint(Toffoli)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(Toffoli)", self_adjoint_legacy)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 def _toffoli_elbow_resources():
-    return {change_op_basis_resource_rep(resource_rep(qp.Elbow), qp.CNOT): 1}
+    return {change_op_basis_resource_rep(qp.Elbow, qp.CNOT): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
@@ -1602,6 +1708,7 @@ class MultiControlledX(ControlledOp):
                     isinstance(control_values, (list, tuple))
                     and all(isinstance(val, (bool, int)) for val in control_values)
                 )
+                or (hasattr(control_values, "dtype") and control_values.dtype.kind in ("i", "b"))
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
 
@@ -1803,7 +1910,7 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
 
 
 def _2cx_elbow_explicit_resources(**__):
-    return {qp.Elbow: 1, qp.CNOT: 1, adjoint_resource_rep(qp.Elbow): 1}
+    return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(qp.Elbow): 1}
 
 
 def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
@@ -1836,8 +1943,8 @@ add_decomps(
     decompose_mcx_with_no_worker,
     decompose_mcx_two_controls_elbows,
 )
-add_decomps("Adjoint(MultiControlledX)", self_adjoint)
-add_decomps("Pow(MultiControlledX)", pow_involutory_no_reconstructor)
+add_decomps("Adjoint(MultiControlledX)", self_adjoint_legacy)
+add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
 class CRX(ControlledOp):
@@ -2052,8 +2159,8 @@ def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr)
-add_decomps("Adjoint(CRX)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRX)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CRX)", adjoint_rotation)
+add_decomps("Pow(CRX)", pow_rotation)
 
 
 class CRY(ControlledOp):
@@ -2243,8 +2350,8 @@ def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRY, _cry, _cry_to_ppr)
-add_decomps("Adjoint(CRY)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRY)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CRY)", adjoint_rotation)
+add_decomps("Pow(CRY)", pow_rotation)
 
 
 class CRZ(ControlledOp):
@@ -2477,8 +2584,8 @@ def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRZ, _crz, _crz_to_ppr)
-add_decomps("Adjoint(CRZ)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRZ)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CRZ)", adjoint_rotation)
+add_decomps("Pow(CRZ)", pow_rotation)
 
 
 class CRot(ControlledOp):
@@ -2922,7 +3029,7 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
-add_decomps("Adjoint(ControlledPhaseShift)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(ControlledPhaseShift)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
+add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
 
 CPhase = ControlledPhaseShift

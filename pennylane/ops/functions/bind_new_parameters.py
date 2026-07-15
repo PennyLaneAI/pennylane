@@ -21,8 +21,9 @@ import copy
 from collections.abc import Sequence
 from functools import singledispatch
 
-from pennylane import ops
-from pennylane.operation import Operator
+from pennylane import capture, ops, queuing
+from pennylane.core import Operator2
+from pennylane.core.operator import Operator
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
@@ -33,6 +34,7 @@ from pennylane.ops import (
     SProd,
     SymbolicOp,
 )
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     ApproxTimeEvolution,
@@ -67,7 +69,19 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         # operation is doing something different with its call signature.
         new_op = copy.deepcopy(op)
         new_op.data = tuple(params)
+        if queuing.QueuingManager.recording() or capture.enabled():
+            return queuing.apply(new_op)
         return new_op
+
+
+# pylint: disable=too-many-arguments
+@bind_new_parameters.register
+def bind_new_dynamic_arguments(
+    op: Operator2,
+    dynamic_args: Sequence[TensorLike],
+) -> Operator2:
+    kwargs = op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
+    return op.__class__(*dynamic_args, **kwargs)
 
 
 @bind_new_parameters.register
@@ -212,6 +226,11 @@ def bind_new_parameters_adjoint(op: Adjoint, params: Sequence[TensorLike]):
     # signature results in a call to `Adjoint.__new__` which doesn't raise an
     # error but does return an unusable object.
     return Adjoint(bind_new_parameters(op.base, params))
+
+
+@bind_new_parameters.register
+def bind_new_parameters_adjoint(op: Adjoint2, params: Sequence[TensorLike]):
+    return Adjoint2(bind_new_parameters(op.base, params))
 
 
 @bind_new_parameters.register

@@ -18,9 +18,11 @@ Contains the GQSP template.
 import copy
 
 from pennylane import capture, ops
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
-from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane.core.operator import Operation, abstractify
+from pennylane.core.queuing import QueuingManager
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 has_jax = True
@@ -163,7 +165,7 @@ class GQSP(Operation):
         op_list.append(ops.X(control))
         op_list.append(ops.Z(control))
 
-        for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
+        for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:], strict=True):
 
             op_list.append(ops.ctrl(unitary, control=control, control_values=0))
 
@@ -181,20 +183,12 @@ class GQSP(Operation):
 
 
 def _GQSP_resources(unitary, num_iters):
-    resources = {
+    return {
         ops.X: 2 + 2 * (num_iters - 1),
         ops.U3: num_iters,
         ops.Z: num_iters,
-        controlled_resource_rep(
-            base_class=unitary.__class__,
-            base_params=unitary.resource_params,
-            num_control_wires=1,
-            num_zero_control_values=1,
-        ): num_iters
-        - 1,
+        _ctrl_abstract(abstractify(unitary), Wire[1], num_zero_control_values=1): num_iters - 1,
     }
-
-    return resources
 
 
 @register_resources(_GQSP_resources)
@@ -215,7 +209,7 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
     ops.X(control)
     ops.Z(control)
 
-    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
+    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:], strict=True):
 
         ops.ctrl(unitary, control=control, control_values=[0])
 

@@ -19,17 +19,17 @@ Contains the PrepSelPrep template.
 import copy
 
 from pennylane import math
+from pennylane.core.operator import Operation, abstractify
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
-from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires, WiresLike
 
@@ -42,7 +42,9 @@ def _get_new_terms(lcu):
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
     # The following will produce a nested `Prod` object for a `Prod` object in`ops`
-    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
+    new_ops = [
+        prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops, strict=True)
+    ]
 
     return math.abs(coeffs), new_ops
 
@@ -88,7 +90,7 @@ class PrepSelPrep(Operation):
     @property
     def resource_params(self):
         ops = self.lcu.terms()[1]
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        op_reps = tuple(abstractify(op) for op in ops)
         return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None
@@ -221,7 +223,7 @@ class PrepSelPrep(Operation):
 
 def _prepselprep_resources(op_reps, num_control):
     prod_reps = tuple(
-        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
+        resource_rep(Prod, resources={abstractify(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     return {
         change_op_basis_resource_rep(

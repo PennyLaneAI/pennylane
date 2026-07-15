@@ -18,9 +18,9 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import AllocationError
 from pennylane.ops import measure
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .core import transform
@@ -177,8 +177,8 @@ def resolve_dynamic_wires(
                 qp.Y(wires)
 
     >>> print(qp.draw(circuit)())
-    <DynamicWire>: ──Allocate──X──Deallocate─┤
-    <DynamicWire>: ──Allocate──Y──Deallocate─┤
+      |0>├──X──┤
+      |0>├──Y──┤
 
     If we provide two zeroed qubits to the transform, we can see that the two operations have been
     assigned to both wires known to be in the zero state.

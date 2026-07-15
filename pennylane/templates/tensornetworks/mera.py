@@ -23,9 +23,9 @@ from collections.abc import Callable
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager, apply
-from pennylane.tape import make_qscript
+from pennylane.core.operator import Operation
+from pennylane.core.qscript import make_qscript
+from pennylane.core.queuing import QueuingManager, apply
 
 
 def compute_indices(wires, n_block_wires):

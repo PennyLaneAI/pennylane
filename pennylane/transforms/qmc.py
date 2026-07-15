@@ -18,8 +18,8 @@ Contains the quantum_monte_carlo transform.
 from copy import copy
 
 import pennylane as qp
-from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.ops import CZ, Hadamard, MultiControlledX, PauliX, adjoint
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

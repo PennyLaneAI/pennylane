@@ -1,4 +1,4 @@
-name: Documentation Tests
+name: Test Documentation Code Examples
 permissions:
   contents: read
 
@@ -32,16 +32,16 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
-    name: Documentation Tests on Python 3.11
+    name: Test Documentation Code Examples on Python 3.11
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install pip and setuptools
         run: |
@@ -56,9 +56,13 @@ jobs:
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
 
+      - name: Install PyTorch (CPU-only)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
       - name: Install PennyLane (editable)
         run: |
-          pip install --group doctest -e . 
+          pip install --group doctest -e .
 
       - name: Print Dependencies
         run: |
@@ -84,7 +88,6 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/capture
-          --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
@@ -129,7 +132,6 @@ jobs:
           --ignore=doc/introduction/interfaces
           --ignore=doc/introduction/logging.rst
           --ignore=doc/introduction/measurements.rst
-          --ignore=doc/introduction/pennylane.rst
           --ignore=doc/introduction/templates.rst
           --ignore=doc/introduction/unsupported_gradients.rst
           "

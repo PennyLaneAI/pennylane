@@ -22,67 +22,9 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
 
 from .utils import to_name
-
-
-@dataclass(frozen=False)
-class Resources:
-    r"""Stores resource estimates.
-
-    Args:
-        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
-        weighted_cost (float): the cumulative weight of the gates.
-    """
-
-    gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    weighted_cost: float = field(default=None)
-
-    def __post_init__(self):
-        """Verify that all gate counts are non-zero."""
-        assert all(v > 0 for v in self.gate_counts.values())
-        if self.weighted_cost is None:
-            self.weighted_cost = sum(count for _, count in self.gate_counts.items())
-        assert self.weighted_cost >= 0.0
-
-    @cached_property
-    def num_gates(self) -> int:
-        """The total number of gates."""
-        return sum(self.gate_counts.values())
-
-    def __add__(self, other: Resources):
-        return Resources(
-            _combine_dict(self.gate_counts, other.gate_counts),
-            weighted_cost=self.weighted_cost + other.weighted_cost,
-        )
-
-    def __mul__(self, scalar: int):
-        return Resources(
-            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
-        )
-
-    __rmul__ = __mul__
-
-    def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
-
-
-def _combine_dict(dict1: dict, dict2: dict):
-    r"""Combines two dictionaries and adds values of common keys."""
-
-    combined_dict = dict1.copy()
-
-    for k, v in dict2.items():
-        combined_dict[k] = combined_dict.get(k, 0) + v
-
-    return combined_dict
-
-
-def _scale_dict(dict1: dict, scalar: int):
-    r"""Scales the values in a dictionary with a scalar."""
-
-    return {key: scalar * value for key, value in dict1.items()}
 
 
 class CompressedResourceOp:
@@ -166,11 +108,78 @@ class CompressedResourceOp:
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
+AbstractOperatorLike = CompressedResourceOp | Operator2
+
+
+@abstractify.register(CompressedResourceOp)
+def _abstractify_resource_rep(op_rep: CompressedResourceOp):
+    return op_rep
+
+
+@dataclass(frozen=False)
+class Resources:
+    r"""Stores resource estimates.
+
+    Args:
+        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
+        weighted_cost (float): the cumulative weight of the gates.
+    """
+
+    gate_counts: dict[AbstractOperatorLike, int] = field(default_factory=dict)
+    weighted_cost: float = field(default=None)
+
+    def __post_init__(self):
+        """Verify that all gate counts are non-zero."""
+        assert all(v > 0 for v in self.gate_counts.values())
+        if self.weighted_cost is None:
+            self.weighted_cost = sum(count for _, count in self.gate_counts.items())
+        assert self.weighted_cost >= 0.0
+
+    @cached_property
+    def num_gates(self) -> int:
+        """The total number of gates."""
+        return sum(self.gate_counts.values())
+
+    def __add__(self, other: Resources):
+        return Resources(
+            _combine_dict(self.gate_counts, other.gate_counts),
+            weighted_cost=self.weighted_cost + other.weighted_cost,
+        )
+
+    def __mul__(self, scalar: int):
+        return Resources(
+            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
+        )
+
+    __rmul__ = __mul__
+
+    def __repr__(self):
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
+
+
+def _combine_dict(dict1: dict, dict2: dict):
+    r"""Combines two dictionaries and adds values of common keys."""
+
+    combined_dict = dict1.copy()
+
+    for k, v in dict2.items():
+        combined_dict[k] = combined_dict.get(k, 0) + v
+
+    return combined_dict
+
+
+def _scale_dict(dict1: dict, scalar: int):
+    r"""Scales the values in a dictionary with a scalar."""
+
+    return {key: scalar * value for key, value in dict1.items()}
+
+
 def _make_hashable(d):
     if isinstance(d, dict):
         return tuple(
             sorted(
-                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
+                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()),
+                key=lambda x: hash(x[0]),
             )
         )
     if isinstance(d, CompressedResourceOp):
@@ -438,10 +447,13 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    compute_op = auto_wrap(compute_op)
-    target_op = auto_wrap(target_op)
-    uncompute_op = uncompute_op or adjoint_resource_rep(compute_op.op_type, compute_op.params)
-    uncompute_op = auto_wrap(uncompute_op)
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+    compute_op = abstractify(compute_op)
+    target_op = abstractify(target_op)
+    uncompute_op = uncompute_op or _adjoint_abstract(compute_op)
+    uncompute_op = abstractify(uncompute_op)
     return CompressedResourceOp(
         qp.ops.ChangeOpBasis,
         {
@@ -555,9 +567,9 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
 
     if base_class is qp.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qp.CNOT)
+            return abstractify(qp.CNOT)
         if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
-            return resource_rep(qp.Toffoli)
+            return abstractify(qp.Toffoli)
         return resource_rep(
             qp.MultiControlledX,
             num_control_wires=num_control_wires,
@@ -580,24 +592,6 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-
-
-def auto_wrap(op_type):
-    """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
-        return op_type
-    if not issubclass(op_type, Operator):
-        raise TypeError(
-            "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qp.resource_rep"
-        )
-    try:
-        return resource_rep(op_type)
-    except TypeError as e:
-        raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
-            f"representation must be explicitly constructed using qp.resource_rep"
-        ) from e
 
 
 @to_name.register

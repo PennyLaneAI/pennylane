@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,17 +14,14 @@
 """Unit tests for the specs transform"""
 
 # pylint: disable=invalid-sequence-index
+from functools import partial
+
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.measurements import Shots
+from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
-from pennylane.resource.specs import (
-    _get_last_tape_transform_level,
-    _make_level_name_unique,
-    _preprocess_level_input,
-)
 
 devices_list = [
     (qp.device("default.qubit"), None),
@@ -43,106 +40,6 @@ def test_error_with_bad_key(key):
     out = qp.specs(c)()
     with pytest.raises(KeyError):
         _ = out[key]
-
-
-@pytest.mark.parametrize(
-    "level,output,expect_warnings",
-    [
-        (0, [0], False),
-        (slice(3), [0, 1, 2], False),
-        (slice(1, 3), [1, 2], False),
-        (slice(1, 4, 2), [1, 3], False),
-        ([0, 1], [0, 1], False),
-        ([0, 1, 1, 1], [0, 1], True),
-        ((0, 1), [0, 1], False),
-        (range(3, 0, -1), [1, 2, 3], True),
-        ("foo", [2], False),
-        (["foo", "bar"], [2, 3], False),
-        ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
-        ("all", [0, 1, 2, 3, 4, 5, 6], False),
-        ("all-mlir", [4, 5, 6], False),
-        ("user", [6], False),
-    ],
-)
-def test_preprocess_levels(level, output, expect_warnings):
-    """Test that _preprocess_level_input works correctly"""
-    marker_to_level = {
-        "foo": 2,
-        "bar": 3,
-        # Treat MLIR lowering as level 4
-        "baz": 5,
-    }
-
-    if expect_warnings:
-        with pytest.warns(
-            UserWarning,
-            match="The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
-            "order with no duplicate levels.",
-        ):
-            assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
-    else:
-        assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
-
-
-def test_make_level_name_unique():
-    existing_levels = {"foo", "foo-2", "bar"}
-
-    assert _make_level_name_unique("foo", existing_levels) == "foo-3"
-    assert _make_level_name_unique("bar", existing_levels) == "bar-2"
-    assert _make_level_name_unique("baz", existing_levels) == "baz"
-
-
-@pytest.mark.parametrize(
-    "num_tapes, expected",
-    [
-        (  # If there are no tape transforms, the "Before Tape Transforms" level should be skipped
-            0,
-            list(range(5)),
-        ),
-        (2, list(range(6))),
-        (5, list(range(6))),
-    ],
-)
-def test_preprocess_levels_all(num_tapes, expected):
-    # Assume there are always 4 transforms in the pipeline
-    assert _preprocess_level_input("all", {}, 4, num_tapes) == expected
-
-
-def test_preprocess_levels_invalid():
-    with pytest.raises(ValueError, match="out of bounds"):
-        _preprocess_level_input(-10, {}, 5, 0)
-
-    with pytest.raises(ValueError, match="out of bounds"):
-        _preprocess_level_input(10, {}, 5, 0)
-
-    with pytest.raises(ValueError, match="Invalid level"):
-        _preprocess_level_input([1, 2, 3.14], {}, 5, 0)
-
-    with pytest.raises(ValueError, match="Marker name 'foo' not found"):
-        _preprocess_level_input("foo", {}, 5, 0)
-
-
-def test_get_last_tape_transform_level():
-    """Test that _get_last_tape_transform_level works correctly"""
-
-    @qp.transform
-    def dummy_transform(tape):
-        return (tape,), lambda res: res[0]
-
-    # If there are no transforms, the last transform level should be 0
-    assert _get_last_tape_transform_level(qp.CompilePipeline()) == 0
-    # If there are *any* tape transforms, this should return the number of tape transforms
-    # since there is an implied level 0 for "Before Tape Transforms"
-    assert _get_last_tape_transform_level(qp.CompilePipeline(dummy_transform)) == 1
-    assert _get_last_tape_transform_level(qp.CompilePipeline(dummy_transform, dummy_transform)) == 2
-
-    # MLIR passes should not be counted
-    assert (
-        _get_last_tape_transform_level(
-            qp.CompilePipeline(dummy_transform, qp.transform(pass_name="cancel_inverses"))
-        )
-        == 1
-    )
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -254,6 +151,96 @@ class TestSpecsTransform:
         assert info["device_name"] == dev.name
         assert info["level"] == "gradient"
         assert info["shots"] == Shots(None)
+
+    def test_qnode_positional_partial(self):
+        """Test specs for a QNode with a positional argument bound by partial."""
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit(n_layers, x):
+            for _ in range(n_layers):
+                qp.RX(x, wires=0)
+            qp.RY(x, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(circuit, 3))(0.5)["resources"]
+
+        assert resources.gate_types == {"RX": 3, "RY": 1}
+        assert resources.num_gates == 4
+        assert resources.depth == 4
+
+    def test_qnode_keyword_partial(self):
+        """Test specs for a QNode with keyword arguments bound by partial."""
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit(x, n_layers=1, add_ry=True):
+            for _ in range(n_layers):
+                qp.RX(x, wires=0)
+            if add_ry:
+                qp.RY(x, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(circuit, n_layers=3, add_ry=False))(0.5)["resources"]
+
+        assert resources.gate_types == {"RX": 3}
+        assert resources.num_gates == 3
+        assert resources.depth == 3
+
+    def test_nested_qnode_partial(self):
+        """Test specs for a QNode wrapped by nested partials."""
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit(n_layers, x, y):
+            for _ in range(n_layers):
+                qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(partial(circuit, 3), y=0.25))(0.5)["resources"]
+
+        assert resources.gate_types == {"RX": 3, "RY": 1}
+        assert resources.num_gates == 4
+        assert resources.depth == 4
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("level", [0, "device"])
+    def test_qjit_partial(self, level):
+        """Test specs for a partial-wrapped Catalyst jitted QNode."""
+        pytest.importorskip("catalyst")
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            qp.RZ(z, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(circuit, 0.1, z=0.3), level=level)(0.2)["resources"]
+
+        assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert resources.num_gates == 3
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_qjit_partial_all_levels(self):
+        """Test all-level specs for a partial-wrapped Catalyst jitted QNode."""
+        pytest.importorskip("catalyst")
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            qp.RZ(z, wires=0)
+            return qp.expval(qp.Z(0))
+
+        specs = qp.specs(partial(circuit, 0.1, z=0.3), level="all")(0.2)
+
+        assert specs["level"] == {0: "Before MLIR Passes"}
+        resources = specs["resources"]["Before MLIR Passes"]
+        assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert resources.num_gates == 3
 
     @pytest.mark.parametrize("compute_depth", [True, False])
     def test_specs_compute_depth(self, compute_depth):
