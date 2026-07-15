@@ -715,9 +715,6 @@ def assert_valid(
     """
 
     if isinstance(op, qp.core.Operator2):
-        # Temporary, as we will integrate with differentiation soon
-        skip_differentiation = True
-
         _assert_valid_operator2(
             op,
             skip_deepcopy,
