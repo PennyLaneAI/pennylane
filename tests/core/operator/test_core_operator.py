@@ -306,7 +306,9 @@ class TestOperatorConstruction:
 
         op = DummyOp(1.234, wires=0)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match=r"property 'data' of '.*DummyOp' object has no setter"
+        ):
             setattr(op, "data", (5.678,))
 
     def test_wires_by_final_argument(self):

@@ -15,13 +15,13 @@
 Contains the Select template.
 """
 
-import copy
 from collections import Counter, defaultdict
 from itertools import product
 
 import numpy as np
 
 from pennylane import math
+from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
@@ -421,12 +421,7 @@ class Select(Operation):
     def __copy__(self):
         """Copy this op"""
         with QueuingManager.stop_recording():
-            return type(self)(
-                [copy.copy(op) for op in self.ops],
-                copy.copy(self.control),
-                work_wires=copy.copy(self.work_wires),
-                partial=self.partial,
-            )
+            return qp_ops.functions.bind_new_parameters(self, self.data)
 
     @property
     def data(self):

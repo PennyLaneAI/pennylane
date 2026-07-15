@@ -120,7 +120,9 @@ class TestConstruction:
         op = ValidOp(qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0))
         assert op.data == (9.87, 1.23, 4.0, 5.67)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'ValidOp' object has no setter"
+        ):
             setattr(op, "data", (1.23, 0.0, -1.0, -2.0))
 
     def test_ndim_params_raises_error(self):

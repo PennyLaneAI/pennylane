@@ -422,7 +422,7 @@ class TestProperties:
 
     BASE_OP = [qp.RX(1.23, 0), qp.Rot(1.2, 2.3, 3.4, 0), qp.QubitUnitary([[0, 1], [1, 0]], 0)]
 
-    def test_data(self):
+    def test_data_is_read_only(self):
         """Test that Conditional data is read-only."""
         x = np.array(1.234)
         m = qp.measure("a")
@@ -431,7 +431,9 @@ class TestProperties:
 
         assert cond_op.data == (x,)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'Conditional' object has no setter"
+        ):
             setattr(cond_op, "data", (np.array(2.3456),))
 
     @pytest.mark.parametrize("value", (True, False))

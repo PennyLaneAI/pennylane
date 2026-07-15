@@ -157,7 +157,7 @@ class TestInitialization:
 class TestProperties:
     """Test Adjoint properties."""
 
-    def test_data(self):
+    def test_data_is_read_only(self):
         """Test that Adjoint data is read-only."""
         x = np.array(1.234)
 
@@ -166,7 +166,9 @@ class TestProperties:
 
         assert adj.data == (x,)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'AdjointOperation' object has no setter"
+        ):
             setattr(adj, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self):

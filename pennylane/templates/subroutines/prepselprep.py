@@ -16,9 +16,8 @@ Contains the PrepSelPrep template.
 """
 
 # pylint: disable=arguments-differ
-import copy
-
 from pennylane import math
+from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
@@ -162,7 +161,7 @@ class PrepSelPrep(Operation):
     def __copy__(self):
         """Copy this op"""
         with QueuingManager.stop_recording():
-            return type(self)(copy.copy(self.lcu), copy.copy(self.control))
+            return qp_ops.functions.bind_new_parameters(self, self.data)
 
     @property
     def data(self):
