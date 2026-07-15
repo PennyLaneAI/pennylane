@@ -25,7 +25,6 @@ from pennylane.ops.functions import assert_valid
 from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
-    _pui_state_prep_core,
 )
 
 # pylint: disable=protected-access
@@ -311,17 +310,33 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
         rule(coefficients, wires=wires, indices=indices, work_wires=work_wires)
         return qp.state()
 
-    out_state = func()
-    # We infer the total and aux wire counts from the state shape, because small-scale
-    # edge cases often have fewer work wires than the general case.
-    num_all_used_wires = ceil_log2(out_state.shape[0])
-    num_aux_wires = num_all_used_wires - num_wires
-    for _ in range(num_aux_wires):
-        assert np.allclose(out_state[1::2], 0.0)
-        out_state = out_state[::2]
-    # Arrange state vector for the custom randomized target wire ordering
-    out_state = qp.math.expand_vector(out_state, range(num_wires), wires)
-    assert np.allclose([out_state[key] for key in indices], coefficients)
+    # run test once with qjit, once without
+    for _qjit in [False, True]:
+        if _qjit:
+            from catalyst.device.decomposition import catalyst_decompose
+
+            gate_set = {
+                "QROM",
+                "MultiplexerStatePreparation",
+                "ForLoop",
+                "Cond",
+                "CNOT",
+                "PauliX",
+                "MultiControlledX",
+            }
+            func = qp.qjit(catalyst_decompose(func, capabilities=None, target_gates=gate_set))
+
+        out_state = func()
+        # We infer the total and aux wire counts from the state shape, because small-scale
+        # edge cases often have fewer work wires than the general case.
+        num_all_used_wires = ceil_log2(out_state.shape[0])
+        num_aux_wires = num_all_used_wires - num_wires
+        for _ in range(num_aux_wires):
+            assert np.allclose(out_state[1::2], 0.0)
+            out_state = out_state[::2]
+        # Arrange state vector for the custom randomized target wire ordering
+        out_state = qp.math.expand_vector(out_state, range(num_wires), wires)
+        assert np.allclose([out_state[key] for key in indices], coefficients)
 
 
 class TestPartialUnaryStatePreparation:
@@ -356,6 +371,8 @@ class TestPartialUnaryStatePreparation:
         )
         assert_valid(op, skip_differentiation=True)
 
+    @pytest.mark.catalyst
+    @pytest.mark.external
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -404,6 +421,8 @@ class TestPartialUnaryStatePreparation:
             wire_specs = wires, work_wires, num_wires + needed_work_wires
             assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
+    @pytest.mark.catalyst
+    @pytest.mark.external
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires, num_entries, num_work_wires", [(7, 5, 15), (3, 2, 6), (4, 14, 8)]
@@ -428,24 +447,6 @@ class TestPartialUnaryStatePreparation:
 
             wire_specs = wires, work_wires, num_wires + num_work_wires
             assert_pui_correctness(rule, coefficients, indices, wire_specs)
-
-    def test_decomposition_error_flawed_circuit_object(self, monkeypatch):
-        """Test that the decomposition function raises an error if the circuit structure
-        data contains an invalid entry."""
-
-        def mocked_find_isometry(self):
-            """Mocked version of find_isometry that does nothing but creating an invalid circuit."""
-            # Invalid _type: 4
-            circuit = [(4, 0, 1, 2, 3)]
-            fanout_bits = np.zeros((0, self.n - 1), dtype=np.int8)
-            return circuit, fanout_bits, {i: i for i, val in enumerate(self.tableau)}
-
-        match = r"Expected _type ids between 0 and 3 \(incl\), got 4"
-
-        with monkeypatch.context() as m:
-            m.setattr(PUIsometryFinder, "find_isometry", mocked_find_isometry)
-            with pytest.raises(ValueError, match=match):
-                _pui_state_prep_core(np.ones(3) / np.sqrt(3), [0, 1, 2], [0, 5, 2], [3, 4])
 
     def test_input_validation(self):
         """Test that validation errors are raise for invalid inputs."""

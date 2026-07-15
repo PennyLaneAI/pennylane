@@ -787,10 +787,20 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     if not circuit:
         return
 
-    if qp.compiler.active():
+    if qp.compiler.active() or qp.capture.enabled():
         fanout_bits = qp.math.array(fanout_bits, like="jax")
         circuit = qp.math.array(circuit, like="jax")
         wires = qp.math.array(wires, like="jax")
+
+        def del_cwire(control):
+            """Return wires with the wire at position ``control`` deleted (qjit-compatible)"""
+            return qp.math.delete(wires, control, assume_unique_indices=True)
+
+    else:
+
+        def del_cwire(control):
+            """Return wires with the wire at position ``control`` deleted."""
+            return wires[:control] + wires[control + 1 :]
 
     # Step 2: Apply the inverse of the isometry circuit
     @qp.for_loop(len(circuit) - 1, -1, -1)
@@ -854,26 +864,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             coding practice, but it works in a stable manner and is sufficiently efficient.
             """
             control, fanout_bit_pointer = data[:2]
-            bits = fanout_bits[fanout_bit_pointer]
-
-            @qp.cond(control == iso_finder.n_subspace)
-            def fanout_branches():
-                case_control = iso_finder.n_subspace
-                target_wires = list(wires[:case_control]) + list(wires[case_control + 1 :])
-                qp.ctrl(qp.BasisState(bits, target_wires), control=wires[case_control])
-
-            for case_control in range(
-                iso_finder.n_subspace + 1, iso_finder.n_subspace + iso_finder.m
-            ):
-                # Register an additional branch to ``fanout_branches`` for each possible control
-                # Passing a default argument makes sure that we don't use an outdated closure
-                # variable `case_control` at when calling the function.
-                @fanout_branches.else_if(control == case_control)
-                def _(case_control=case_control):
-                    target_wires = list(wires[:case_control]) + list(wires[case_control + 1 :])
-                    qp.ctrl(qp.BasisState(bits, target_wires), control=wires[case_control])
-
-            fanout_branches()
+            target_wires = del_cwire(control)
+            qp.ctrl(qp.BasisState(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
 
         @branches.else_if(_type == 2)
         def swap():
@@ -892,10 +884,6 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             qp.BasisState([1 - data[3]], _wires[1:2])
             qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
             qp.BasisState([1 - data[3]], _wires[1:2])
-
-        @branches.otherwise
-        def _else():
-            raise ValueError(f"Expected _type ids between 0 and 3 (incl), got {_type}")
 
         branches()
 
