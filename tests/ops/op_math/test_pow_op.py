@@ -24,6 +24,7 @@ from pennylane import numpy as np
 from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
+from pennylane.typing import Wire
 
 
 # pylint: disable=too-few-public-methods
@@ -51,6 +52,24 @@ def test_basic_validity():
 
     op = qp.pow(qp.Hermitian(np.eye(2), 0), 2)
     qp.ops.functions.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
+
+
+def test_operator2_resource_params_are_derived_by_pow():
+    """A legacy ``Pow`` wrapper should derive resource data for an ``Operator2`` base.
+
+    ``Operator2`` instances intentionally do not expose the legacy ``resource_params`` API.
+    This test verifies that ``Pow`` bridges that migration boundary by abstractifying the base's
+    constructor arguments instead of requiring ``PauliY`` to restore the removed property.
+    """
+    base = qp.Y(0)
+    op = qp.pow(base, 0.5)
+
+    assert not hasattr(base, "resource_params")
+    assert op.resource_params == {
+        "base_class": qp.Y,
+        "base_params": {"wires": Wire[1]},
+        "z": 0.5,
+    }
 
 
 class TestConstructor:
