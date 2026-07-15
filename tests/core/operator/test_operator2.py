@@ -1290,15 +1290,26 @@ class TestDunderMethods:
         op = DynOp(0.5, wires=[0, 1])
         assert repr(op) == "DynOp(phi=0.5, wires=[0, 1])"
 
-    def test_repr_without_dynamic_args(self):
+    @pytest.mark.parametrize("wires", [0, Wire[1], "a"])
+    def test_repr_without_dynamic_args(self, wires):
         """Test that __repr__ prints without dynamic parameters if there are none."""
 
         class Op(Operator2):
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
-        op = Op(wires=0)
-        assert repr(op) == "Op(0)"
+        op = Op(wires=wires)
+        assert repr(op) == f"Op({repr(wires)})"
+
+    def test_repr_without_dynamic_args_multiwire(self):
+        """Test that __repr__ prints without dynamic parameters if there are none."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = Op(wires=[0, 1, 2])
+        assert repr(op) == "Op(wires=[0, 1, 2])"
 
     def test_repr_without_dynamic_args_different_wire_argname(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""
