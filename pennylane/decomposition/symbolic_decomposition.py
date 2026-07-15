@@ -21,7 +21,7 @@ from textwrap import dedent
 import numpy as np
 
 import pennylane as qp
-from pennylane import allocation, math
+from pennylane import allocation, math, Wire
 from pennylane.core.operator import abstractify
 from pennylane.typing import Wire
 
@@ -228,6 +228,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         # pylint: disable=import-outside-toplevel
         from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
+        base_resources = base_decomposition.compute_resources(**base_params)
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
             _ctrl_abstract(

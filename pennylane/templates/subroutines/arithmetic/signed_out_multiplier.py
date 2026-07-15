@@ -415,8 +415,6 @@ def _zeroed_signed_out_multiplier_resources(
         )
     ] += 2
     resources[CNOT] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
-    # Convert to a builtin dict so downstream lookups of missing gates
-    # don't accidentally insert them with a value of 0
     return dict(resources)
 
 
