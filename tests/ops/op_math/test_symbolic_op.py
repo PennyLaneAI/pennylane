@@ -103,7 +103,9 @@ class TestProperties:
 
         assert op.data == (x,)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'SymbolicOp' object has no setter"
+        ):
             setattr(op, "data", (np.array(2.345),))
 
     def test_parameters(self):
@@ -232,7 +234,9 @@ class TestScalarSymbolicOp:
         assert op.scalar == 2.2
         assert op.data == (2.2, 1.1)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'TempScalar' object has no setter"
+        ):
             setattr(op, "data", (3.3, 4.4))
 
     def test_hash(self):

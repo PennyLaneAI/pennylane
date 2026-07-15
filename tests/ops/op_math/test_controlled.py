@@ -276,7 +276,9 @@ class TestControlledProperties:
 
         assert op.data == (x,)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'ControlledOp' object has no setter"
+        ):
             setattr(op, "data", (pnp.array(2.3454),))
 
     @pytest.mark.parametrize(

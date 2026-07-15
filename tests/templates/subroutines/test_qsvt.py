@@ -194,7 +194,7 @@ class TestQSVTBasics:
         op = qp.QSVT(qp.RX(1, wires=0), [qp.RY(2, wires=0), qp.RZ(3, wires=0)])
         assert op.data == (1, 2, 3)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError, match="property 'data' of 'QSVT' object has no setter"):
             setattr(op, "data", [4, 5, 6])
 
     def test_copy(self):

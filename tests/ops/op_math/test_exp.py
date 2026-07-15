@@ -119,7 +119,7 @@ class TestProperties:
 
         assert op.data == (coeff, phi)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError, match="property 'data' of 'Exp' object has no setter"):
             setattr(op, "data", (np.array(3.456), np.array(0.1234)))
 
     def test_is_verified_hermitian(self):

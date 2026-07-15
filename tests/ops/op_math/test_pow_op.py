@@ -239,7 +239,9 @@ class TestProperties:
 
         assert op.data == (x,)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'PowOperation' object has no setter"
+        ):
             setattr(op, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self, power_method):

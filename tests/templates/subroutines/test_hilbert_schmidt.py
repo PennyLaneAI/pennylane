@@ -314,7 +314,9 @@ class TestHilbertSchmidt:
         )
         assert op.data == (1, 2, 3, 4)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'HilbertSchmidt' object has no setter"
+        ):
             setattr(op, "data", [4, 5, 6, 7])
 
     def test_copy(self):

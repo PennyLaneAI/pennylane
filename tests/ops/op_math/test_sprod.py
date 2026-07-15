@@ -124,7 +124,7 @@ class TestInitialization:
         """Test that data cannot be reassigned on a symbolic operator."""
         op = s_prod(0.1, qp.PauliX(0))
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError, match="property 'data' of 'SProd' object has no setter"):
             setattr(op, "data", (0.2,))
 
     @pytest.mark.parametrize("scalar, op", ops)
