@@ -686,7 +686,7 @@ def assert_valid(
         class MyOp(qp.operation.Operator):
 
             def __init__(self, data, wires):
-                self.data = data
+                self._data = data
                 super().__init__(wires=wires)
 
         op = MyOp(qp.numpy.array(0.5), wires=0)
