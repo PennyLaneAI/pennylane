@@ -761,8 +761,13 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule | Cal
 
         qp.add_decomps(A, A_decomps0)
 
-    Here, the resources are calculated by evaluating the decomposition with dummy values (``np.empty``) values
-    with the same shape and dtype.
+    Here, the resources are calculated by evaluating the decomposition with dummy (``np.empty``) values
+    with the same shape and dtype. This will break down if the produced operators depend on any dynamic values,
+    in which case the resources will need to be manually specified. Even though the resources are cached when
+    called with abstract values, manually specifying the resources will be cheaper.
+
+    >>> qp.list_decomps(A)[0].compute_resources(qp.typing.Float, qp.typing.Wire)
+    <num_gates=1, gate_counts={RX: 1}, weighted_cost=1>
 
     Custom decomposition rules can also be specified for symbolic operators. In this case, the
     operator type can be specified as a string. For example,
