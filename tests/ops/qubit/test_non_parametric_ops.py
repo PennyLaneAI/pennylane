@@ -47,8 +47,10 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.operator.operator2 import Operator2, operator_p
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
+from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -1057,8 +1059,8 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CNOT(("a", 0)))
 
     def test_PauliY(self):
-        """Test the PauliY _controlled method."""
-        out = qp.PauliY(0)._controlled("a")
+        """A single positive control should dispatch ``PauliY`` directly to ``CY``."""
+        out = qp.ctrl(qp.PauliY(0), "a")
         qp.assert_equal(out, qp.CY(("a", 0)))
 
     def test_PauliZ(self):
@@ -1229,7 +1231,6 @@ control_data = [
     (qp.Identity(0), Wires([])),
     (qp.Hadamard(0), Wires([])),
     (qp.PauliX(0), Wires([])),
-    (qp.PauliY(0), Wires([])),
     (qp.S(wires=0), Wires([])),
     (qp.T(wires=0), Wires([])),
     (qp.SX(wires=0), Wires([])),
@@ -1362,3 +1363,47 @@ class TestPauliRep:
         """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
         assert np.allclose(op.matrix(), qp.matrix(op.pauli_rep, wire_order=op.wires))
         assert np.allclose(rep, qp.matrix(op.pauli_rep, wire_order=op.wires))
+
+
+class TestPauliYOperator2:
+    """Regression tests for the ``PauliY`` migration from ``Operation`` to ``Operator2``."""
+
+    def test_concrete_contract(self):
+        """A concrete ``PauliY`` should retain its wire constructor argument and matrix.
+
+        The decomposition assertion verifies that decomposition now comes from registered graph
+        rules rather than the legacy class-level ``compute_decomposition`` implementation.
+        """
+        op = qp.Y("target")
+
+        assert isinstance(op, Operator2)
+        assert op.arguments == {"wires": Wires(["target"])}
+        assert qp.math.allclose(qp.Y.compute_matrix(wires=["target"]), op.matrix())
+        assert qp.Y.compute_decomposition is Operator2.compute_decomposition
+
+    def test_abstract_contract(self):
+        """Abstract construction should preserve a one-wire shape and avoid indexing it.
+
+        Graph decomposition and resource estimation construct this form when the concrete wire
+        label is irrelevant or unavailable.
+        """
+        op = qp.Y(Wire[1])
+
+        assert isinstance(op.wires, AbstractWires)
+        assert op.wires == Wire[1]
+        assert repr(op) == "PauliY"
+
+    @pytest.mark.capture
+    def test_capture_as_single_primitive(self):
+        """Capture should represent ``PauliY`` with one shared ``operator_p`` equation.
+
+        ``Operator2`` classes identify themselves through the equation's ``op_cls`` parameter
+        instead of owning a legacy class-specific ``_primitive``.
+        """
+        jax = pytest.importorskip("jax")
+
+        jaxpr = jax.make_jaxpr(qp.Y)(jax.numpy.array([0]))
+        op_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p]
+
+        assert len(op_eqns) == 1
+        assert op_eqns[0].params["op_cls"] is qp.Y
