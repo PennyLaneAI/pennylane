@@ -99,7 +99,7 @@ class Allocate(Operator):
 
     @property
     def state(self) -> AllocateState:
-        """Whether or not the allocated wires are required to be in the zero state."""
+        """The initial state requested for the allocated wires."""
         return self.hyperparameters["state"]
 
     @property
@@ -211,7 +211,7 @@ def allocate(
     state: Literal["any", "zero", "magic", "magic_conj"] | AllocateState = AllocateState.ZERO,
     restored: bool = False,
 ) -> DynamicRegister:
-    """Dynamically allocates new wires in-line,
+    r"""Dynamically allocates new wires in-line,
     or as a context manager which also safely deallocates the new wires upon exiting the context.
 
     Args:
@@ -222,7 +222,7 @@ def allocate(
         state (Literal["any", "zero", "magic", "magic_conj"]):
             Specifies the initial state of the allocated wires. ``"zero"`` and ``"any"`` request
             wires in the all-zeros state or an arbitrary state, respectively. ``"magic"`` and
-            ``"magic_conj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or :math:`|\bar{m}\rangle = T^\\dagger H|0\rangle`. The default value is ``state="zero"``.
+            ``"magic_conj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or :math:`|\bar{m}\rangle = T^\dagger H|0\rangle`. The default value is ``state="zero"``.
 
         restored (bool):
             Whether or not the dynamically allocated wires are returned to the same state they
