@@ -27,6 +27,7 @@ from packaging.version import Version
 
 import pennylane as qp
 from pennylane import math
+from pennylane.queuing import apply
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -304,8 +305,7 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
-        data, struct = jax.tree_util.tree_flatten(op)
-        return jax.tree_util.tree_unflatten(struct, data)
+        return apply(op)
 
     def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
