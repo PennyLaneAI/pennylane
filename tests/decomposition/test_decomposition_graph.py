@@ -350,6 +350,33 @@ class TestDecompGraphConstruction:
             alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
         )
 
+    def test_circular_decomposition_paths_for_operator2(self):
+        """Tests that the graph can handle circular decomposition pathways."""
+
+        @qp.register_resources({DynOp(Float, Wire[2]): 1})
+        def _custom_rule(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.ctrl(NonParametricOp(Wire[2]), Wire[1]): 1})
+        def _another_rule(_):
+            raise NotImplementedError
+
+        # Note how NonParametricOp decomposes to DynOp, which then decomposes back to a
+        # controlled NonParametricOp. We want to test that the graph construction does
+        # not enter infinite recursion.
+
+        _ = DecompositionGraph(
+            [NonParametricOp([0, 1])],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
+        )
+
+        _ = DecompositionGraph(
+            [qp.ctrl(NonParametricOp([0, 1]), control=[2])],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
+        )
+
 
 @pytest.mark.unit
 @patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)

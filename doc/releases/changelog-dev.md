@@ -913,6 +913,7 @@
     [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
+    [(#9839)](https://github.com/PennyLaneAI/pennylane/pull/9839)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
   - Capture, graph decomp and differentiation checks are run in :func:`~.assert_valid`.
