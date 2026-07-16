@@ -953,6 +953,8 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        # NOTE: Handle special case for single wire non-parameteric
+        # operators like 'repr(qp.X(wires=0)) = X(0)'
         non_wire_args = (
             self.dynamic_argnames
             + self.static_argnames
@@ -963,6 +965,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_arg = self.arguments[self.wire_argnames[0]]
             if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
                 return f"{self.name}({wire_arg.tolist()[0]!r})"
+
         inputs = []
 
         for key, value in self.arguments.items():
