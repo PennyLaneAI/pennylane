@@ -793,7 +793,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Operators are now ported to the new, experimental `~.Operator2` base class.
+* The following legacy operators are now ported to the new `~.Operator2` base class.
   - `~.S` is ported
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
 
@@ -858,6 +858,7 @@
   [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
+  [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -913,6 +914,7 @@
     [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
     [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
+    [(#9839)](https://github.com/PennyLaneAI/pennylane/pull/9839)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
   - Capture, graph decomp and differentiation checks are run in :func:`~.assert_valid`.
