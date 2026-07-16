@@ -938,7 +938,7 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0, 0], wires=work_wires)
-            _mcx_two_workers(mcx.wires, work_wires, work_wire_type)
+            _mcx_two_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, _mcx_two_workers, skip_decomp_matrix_check=True)
@@ -966,7 +966,7 @@ class TestMCXDecomposition:
         mcx = qp.MultiControlledX(wires=control_wires + [target_wire])
 
         with qp.queuing.AnnotatedQueue() as q:
-            _decompose_mcx_with_no_worker(mcx.wires)
+            _decompose_mcx_with_no_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, _decompose_mcx_with_no_worker, skip_decomp_matrix_check=True)
