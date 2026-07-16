@@ -696,7 +696,6 @@ class TestMeasurementQROM:
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 
-    @pytest.mark.xfail(reason="qjit + capture", strict=True)
     @pytest.mark.external
     @pytest.mark.parametrize(
         "L",
