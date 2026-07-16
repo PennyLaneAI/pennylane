@@ -38,9 +38,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
-    flip_zero_control as flip_zero_control_legacy,
-)
-from pennylane.decomposition.symbolic_decomposition import (
+    flip_zero_control,
     make_pow_decomp_with_period,
     pow_involutory,
     self_adjoint,
@@ -49,7 +47,8 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -311,7 +310,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
     qp.RY(np.pi / 4, wires=wires[-1])
 
 
-add_decomps("C(Hadamard)", flip_zero_control_legacy(_controlled_hadamard))
+add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
 class PauliX(Operation):
@@ -853,7 +852,7 @@ def _controlled_y_decomp(  # pylint: disable=unused-argument
     qp.S(wires=wires[-1])
 
 
-add_decomps("C(PauliY)", flip_zero_control(_controlled_y_decomp))
+add_decomps("C(PauliY)", flip_zero_control2(_controlled_y_decomp))
 
 
 class PauliZ(Operation):
@@ -1141,7 +1140,7 @@ def _controlled_z_decomp(*_, wires, control_wires, work_wires, work_wire_type, *
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(PauliZ)", flip_zero_control_legacy(_controlled_z_decomp))
+add_decomps("C(PauliZ)", flip_zero_control(_controlled_z_decomp))
 
 
 class S(Operator2):
@@ -1828,7 +1827,7 @@ def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type
     qp.CNOT(wires=[wires[-2], wires[-1]])
 
 
-add_decomps("C(SWAP)", flip_zero_control_legacy(_controlled_swap_decomp))
+add_decomps("C(SWAP)", flip_zero_control(_controlled_swap_decomp))
 
 
 class ECR(Operation):
