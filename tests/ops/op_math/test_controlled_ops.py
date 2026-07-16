@@ -890,7 +890,7 @@ class TestCYOperator2:
         assert op.wires == Wire[2]
         assert op.base == qp.Y(Wire[1])
         assert op.control_wires == Wire[1]
-        assert repr(op) == "CY"
+        assert repr(op) == "CY(wires=AbstractWires(2))"
 
     @pytest.mark.capture
     def test_capture_as_single_primitive(self):

@@ -486,14 +486,11 @@ class CY(Controlled2):
         super().__init__(base, wires[:1])
 
     @override
+    # pylint: disable=unused-argument
     def __abstract_init__(self, wires: WiresLike):
-        del wires
+        # `wires` is abstract here and carries no information beyond its fixed
+        # size of 2, which always splits into one control and one target wire.
         super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
-
-    def __repr__(self):
-        if isinstance(self.wires, AbstractWires):
-            return "CY"
-        return f"CY(wires={self.wires.tolist()})"
 
     def adjoint(self):
         return CY(self.wires)

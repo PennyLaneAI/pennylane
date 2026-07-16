@@ -591,10 +591,7 @@ class TestControlledResourceRep:
 
         for op_type in custom_ctrl_op_to_base():
             rep = resource_rep(op_type)
-            if issubclass(op_type, qp.core.operator.Operator2):
-                assert rep == abstractify(op_type)
-            else:
-                assert rep == CompressedResourceOp(op_type, {})
+            assert rep == CompressedResourceOp(op_type, {})
 
 
 @pytest.mark.unit
@@ -629,16 +626,13 @@ class TestSymbolicResourceRep:
 
         for op_type in custom_ctrl_op_to_base():
             rep = qp.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
-            if issubclass(op_type, qp.core.operator.Operator2):
-                assert rep == _adjoint_abstract(op_type)
-            else:
-                assert rep == CompressedResourceOp(
-                    qp.ops.Adjoint,
-                    {
-                        "base_class": op_type,
-                        "base_params": {},
-                    },
-                )
+            assert rep == CompressedResourceOp(
+                qp.ops.Adjoint,
+                {
+                    "base_class": op_type,
+                    "base_params": {},
+                },
+            )
 
     def test_pow_resource_rep(self):
         """Tests the pow_resource_rep utility function."""

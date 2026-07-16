@@ -73,7 +73,7 @@ class CompressedResourceOp:
     def name(self) -> str:
         """The name of the operator type."""
         if issubclass(self.op_type, (qp.ops.Adjoint, qp.ops.Pow)):
-            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            base_rep = _base_resource_rep(self.params["base_class"], self.params["base_params"])
             return f"{self.op_type.__name__}({base_rep.name})"
         if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
             base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
@@ -94,10 +94,10 @@ class CompressedResourceOp:
 
     def __repr__(self):
         if issubclass(self.op_type, qp.ops.Adjoint):
-            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            base_rep = _base_resource_rep(self.params["base_class"], self.params["base_params"])
             return f"Adjoint({repr(base_rep)})"
         if issubclass(self.op_type, qp.ops.Pow):
-            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            base_rep = _base_resource_rep(self.params["base_class"], self.params["base_params"])
             return f"Pow({repr(base_rep)}, z={self.params['z']})"
         if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
             params = self.params.copy()
@@ -114,6 +114,21 @@ AbstractOperatorLike = CompressedResourceOp | Operator2
 @abstractify.register(CompressedResourceOp)
 def _abstractify_resource_rep(op_rep: CompressedResourceOp):
     return op_rep
+
+
+def _base_resource_rep(base_class: type[Operator], base_params: dict) -> AbstractOperatorLike:
+    """Resource representation of the base operator of a legacy symbolic wrapper.
+
+    Legacy symbolic wrappers such as ``Pow`` store their base as ``(base_class, base_params)``
+    in their resource params. For a legacy base, ``base_params`` are the base's resource
+    params and the representation is a ``CompressedResourceOp``. For an ``Operator2`` base,
+    ``base_params`` are the base's abstract constructor arguments, and the representation is
+    an abstract operator instance, consistent with how ``Operator2`` operators are
+    represented everywhere else in the decomposition graph.
+    """
+    if issubclass(base_class, Operator2):
+        return base_class(**base_params)
+    return resource_rep(base_class, **base_params)
 
 
 @dataclass(frozen=False)
@@ -308,11 +323,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
-    if isinstance(op_type, type) and issubclass(op_type, Operator2):
-        # Operator2 resource representations are abstract operator instances constructed
-        # from the (abstract) constructor arguments, mirroring Pow.resource_params for
-        # legacy symbolic wrappers of Operator2 bases.
-        return abstractify(op_type(**params)) if params else abstractify(op_type)
     _validate_resource_rep(op_type, params)
     if issubclass(op_type, qp.ops.Adjoint):
         return adjoint_resource_rep(**params)
@@ -432,9 +442,6 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
     """
     base_params = base_params or {}
     base_resource_rep = resource_rep(base_class, **base_params)  # flattens any nested structures
-    if isinstance(base_resource_rep, Operator2):
-        # matches production dispatch, which wraps an Operator2 base in Adjoint2
-        return qp.adjoint(base_resource_rep)
     return CompressedResourceOp(
         qp.ops.Adjoint,
         {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
@@ -481,7 +488,15 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    base_resource_rep = resource_rep(base_class, **base_params)
+    base_resource_rep = _base_resource_rep(base_class, base_params)
+    if isinstance(base_resource_rep, Operator2):
+        # There is no Operator2 version of Pow yet, so the power of an Operator2 base keeps
+        # the legacy compressed representation, with the base's abstract constructor
+        # arguments as base_params. This matches Pow.resource_params for Operator2 bases.
+        return CompressedResourceOp(
+            qp.ops.Pow,
+            {"base_class": base_class, "base_params": base_resource_rep.arguments, "z": z},
+        )
     return CompressedResourceOp(
         qp.ops.Pow,
         {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},
