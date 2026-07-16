@@ -14,6 +14,7 @@
 
 # pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking
 
+import numpy as np
 import pytest
 from operator2_utils import (
     CompilableOp,
@@ -34,7 +35,7 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import AbstractOperator, operator_p
+from pennylane.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
 from pennylane.pytrees import unflatten
 
 # ---------------------- Helpers ----------------------
@@ -154,6 +155,88 @@ class TestCaptureBasics:
         jaxpr = jax.make_jaxpr(lambda: CompilableOp(5, wires=0))()
         eqn = _single_op_eqn(jaxpr)
         assert unflatten(*eqn.params["n"]) == 5
+
+
+class TestCaptureAbstractInputs:
+
+    def test_abstract_single_wire(self):
+        """Test that abstract wires are promoted to integers."""
+
+        def f():
+            DynOp(0.5, qp.typing.Wire)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == symbolic_array_prim
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"shape": (), "dtype": np.int64}
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == ()
+        assert jaxpr.eqns[0].outvars[0].aval.dtype == jax.numpy.int64
+
+        assert jaxpr.eqns[1].invars[1] == jaxpr.eqns[0].outvars[0]
+
+    def test_abstract_multi_wire(self):
+        """Test that multiple abstract wires are promoted to integers."""
+
+        def f():
+            DynOp(0.5, qp.typing.Wire[3])
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[-1].invars[0].val == 0.5
+        for i in [0, 1, 2]:
+            assert jaxpr.eqns[i].primitive == symbolic_array_prim
+            assert len(jaxpr.eqns[i].invars) == 0
+            assert jaxpr.eqns[i].params == {"shape": (), "dtype": np.int64}
+            assert len(jaxpr.eqns[i].outvars) == 1
+            assert jaxpr.eqns[i].outvars[0].aval.shape == ()
+            assert jaxpr.eqns[i].outvars[0].aval.dtype == jax.numpy.int64
+
+            assert jaxpr.eqns[-1].invars[1 + i] == jaxpr.eqns[i].outvars[0]
+
+    @pytest.mark.parametrize(
+        "abstract_type", (qp.typing.Float, qp.typing.Int[3, 4, 5], qp.typing.Bool[4])
+    )
+    def test_abstract_float_parameter(self, abstract_type):
+        """Test that an operator can accept a single abstract float."""
+
+        def f():
+            DynOp(abstract_type, 0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[1].invars[1].val == 0
+
+        assert jaxpr.eqns[0].primitive == symbolic_array_prim
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"shape": abstract_type.shape, "dtype": abstract_type.dtype}
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == abstract_type.shape
+        assert jaxpr.eqns[0].outvars[0].aval.dtype == abstract_type.dtype
+
+        assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
+
+    def test_hybrid_op(self):
+        """Test that we can capture a hybrid op where the inner op has an abstract input."""
+
+        def f():
+            HybridOp(DynOp(qp.typing.Float, 0), 0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 2  # one symbolic_array, one hybrid op
+        assert jaxpr.eqns[0].primitive == symbolic_array_prim
+        assert jaxpr.eqns[1].params["op_cls"] == HybridOp
+
+    def test_hybrid_op_inner_op_defined_outside(self):
+        """Test that we can capture a hybrid op where the inner op has an abstract input."""
+
+        op = DynOp(qp.typing.Float, 0)
+
+        def f():
+            HybridOp(op, 0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 2  # one symbolic_array, one hybrid op
+        assert jaxpr.eqns[0].primitive == symbolic_array_prim
+        assert jaxpr.eqns[1].params["op_cls"] == HybridOp
 
 
 class TestHybridCapture:

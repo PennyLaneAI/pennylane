@@ -78,11 +78,9 @@ class OperatorMeta(ABCMeta):
         arguments: dict = bound.arguments
         target_args = cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
 
-        if any(_contains_abstract_type(arguments[name]) for name in target_args):
+        if not enabled() and any(_contains_abstract_type(arguments[name]) for name in target_args):
             obj = cls.__new__(cls, *bound.args, **bound.kwargs)
             obj.__abstract_init__(*bound.args, **bound.kwargs)
-            if enabled():
-                obj._bind_primitive()
             return obj
 
         # This method is called everytime we want to create an instance of the class.
