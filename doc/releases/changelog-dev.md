@@ -793,7 +793,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Operators are now ported to the new, experimental `~.Operator2` base class.
+* The following legacy operators are now ported to the new `~.Operator2` base class.
   - `~.S` is ported
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
 
