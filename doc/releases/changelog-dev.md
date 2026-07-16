@@ -794,7 +794,10 @@
 <h3>Internal changes ⚙️</h3>
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - `~.S` is ported
+  - Single qubit, non-parameteric operators are ported:
+    - `~.S`
+  - Single qubit, parameteric operators are ported:
+    - `~.RZ`, `~.CRZ`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
