@@ -44,7 +44,7 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.typing import AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
@@ -129,7 +129,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         self,
         base: Operator,
         control_wires: WiresLike,
-        control_values: Sequence[int | bool] | None = None,
+        control_values: int | bool | Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
@@ -178,9 +178,9 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
         self,
         base: Operator,
-        control_wires: WiresLike,
-        control_values: Sequence[int | bool] | None = None,
-        work_wires: WiresLike | None = None,
+        control_wires: WiresLike | AbstractWires,
+        control_values: int | bool | Sequence[int | bool] | AbstractArray | None = None,
+        work_wires: WiresLike | AbstractWires | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
 
