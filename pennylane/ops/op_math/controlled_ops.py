@@ -20,7 +20,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal
+from typing import Literal, override
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -42,7 +42,8 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import TensorLike
+from pennylane.ops.op_math.controlled2 import Controlled2
+from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -182,7 +183,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type="borrowed",
     ):
-
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
@@ -202,7 +202,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: str | None = "borrowed",
     ):
-
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
@@ -2354,7 +2353,7 @@ add_decomps("Adjoint(CRY)", adjoint_rotation)
 add_decomps("Pow(CRY)", pow_rotation)
 
 
-class CRZ(ControlledOp):
+class CRZ(Controlled2):
     r"""The controlled-RZ operator
 
     .. math::
@@ -2397,49 +2396,34 @@ class CRZ(ControlledOp):
 
     """
 
+    wire_sizes = (2,)
     num_wires = 2
     """int: Number of wires that the operation acts on."""
-
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
 
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "wires": Wire[2]}
+
     def __init__(self, phi, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.RZ, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(qp.RZ(phi, wires[1:]), control_wires=wires[:1])
+
+    @override
+    # pylint: disable=unused-argument
+    def __abstract_init__(self, phi, wires: WiresLike):
+        # `wires` is abstract here and carries no information beyond its fixed
+        # size of 2, which always splits into one control and one target wire.
+        super().__abstract_init__(qp.RZ(phi, Wire[1]), Wire[1])
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
-
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, wires):
-        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta, wires=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2482,7 +2466,7 @@ class CRZ(ControlledOp):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(theta, **_):  # pylint: disable=arguments-differ
+    def compute_eigvals(theta, wires=None):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2525,52 +2509,20 @@ class CRZ(ControlledOp):
     def eigvals(self):
         return self.compute_eigvals(*self.parameters)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CRZ.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CRZ.compute_decomposition(1.2, wires=(0,1))
-        [PhaseShift(0.6, wires=[1]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(-0.6, wires=[1]),
-        CNOT(wires=[0, 1])]
-
-        """
-        return [
-            qp.PhaseShift(phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.PhaseShift(-phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-        ]
-
-
-def _crz_resources():
+def _crz_resources(phi, wires):
     return {qp.RZ: 2, qp.CNOT: 2}
 
 
 @register_resources(_crz_resources)
-def _crz(phi: TensorLike, wires: WiresLike, **__):
+def _crz(phi: TensorLike, wires: WiresLike):
     qp.RZ(phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
     qp.RZ(-phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
 
 
-def _crz_to_ppr_resources():
+def _crz_to_ppr_resources(phi, wires):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -2578,7 +2530,7 @@ def _crz_to_ppr_resources():
 
 
 @register_resources(_crz_to_ppr_resources)
-def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+def _crz_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "Z", wires=wires[1])
     qp.PauliRot(-phi / 2, "ZZ", wires=wires)
 
