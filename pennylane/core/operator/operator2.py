@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires:
+    def wires(self) -> Wires | None:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -335,6 +335,11 @@ class Operator2(metaclass=OperatorMeta):
         if self._batch_size is _UNSET_BATCH_SIZE:
             self._check_batching()
         return self._ndim_params
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
 
     @property
     def arithmetic_depth(self) -> int:
@@ -959,6 +964,19 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        # NOTE: Handle special case for single wire non-parameteric
+        # operators like 'repr(qp.X(wires=0)) = X(0)'
+        non_wire_args = (
+            self.dynamic_argnames
+            + self.static_argnames
+            + self.compilable_argnames
+            + self.hybrid_argnames
+        )
+        if not non_wire_args and len(self.wire_argnames) == 1:
+            wire_arg = self.arguments[self.wire_argnames[0]]
+            if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
+
         inputs = []
 
         for key, value in self.arguments.items():

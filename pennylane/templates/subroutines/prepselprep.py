@@ -16,9 +16,8 @@ Contains the PrepSelPrep template.
 """
 
 # pylint: disable=arguments-differ
-import copy
-
 from pennylane import math
+from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
@@ -161,28 +160,13 @@ class PrepSelPrep(Operation):
 
     def __copy__(self):
         """Copy this op"""
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-
-        new_data = copy.copy(self.data)
-
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
-
-        copied_op.data = new_data
-
-        return copied_op
+        with QueuingManager.stop_recording():
+            return qp_ops.functions.bind_new_parameters(self, self.data)
 
     @property
     def data(self):
         """Create data property"""
         return self.lcu.data
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        self.hyperparameters["lcu"].data = new_data
 
     @property
     def lcu(self):

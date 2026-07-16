@@ -24,12 +24,13 @@ from typing_extensions import override
 
 import pennylane as qp
 from pennylane import allocation, math
-from pennylane.core.operator import Operator
-from pennylane.core.operator.operator2 import abstractify, operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    get_fixed_decomp,
     list_decomps,
     register_condition,
     register_resources,
@@ -573,7 +574,13 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
 @list_decomps.register
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
+    """Get all the decomposition rules applicable to this operator."""
+
     op = abstractify(op)
+
+    # fixed_decomps should override everything
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
 
     # Special case for flipping the order of control and adjoint. We prefer to have adjoint
     # wrapping a controlled operator instead of the other way around because there is more
@@ -616,8 +623,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_counts.items()
         }
-        base_x_count = gate_counts.get(abstractify(qp.X), 0)
-        gate_counts[abstractify(qp.X)] = base_x_count + len(control_values)
+        gate_counts[qp.X] = len(control_values)
         return gate_counts
 
     @register_condition(_condition_fn)
@@ -722,8 +728,8 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         ).gate_counts
         # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
         #       gates for no reason. It'll be like this until we have a better solution.
-        base_x_count = gate_counts.get(abstractify(qp.X), 0)
-        gate_counts[abstractify(qp.X)] = base_x_count + len(control_values)
+        base_x_count = gate_counts.get(qp.X, 0)
+        gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
 
     # pylint: disable=protected-access
