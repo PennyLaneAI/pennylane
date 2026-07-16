@@ -737,7 +737,9 @@ add_decomps("Adjoint(RZ)", adjoint_rotation)
 add_decomps("Pow(RZ)", pow_rotation)
 
 
-def _controlled_rz_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rz_resource(
+    base, control_wires, control_values, work_wires, work_wire_type, num_zero_control_values
+):
     if len(control_wires) == 1:
         return {qp.CRZ: 1}
     return {
@@ -745,7 +747,7 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
         resource_rep(
             qp.MultiControlledX,
             num_control_wires=len(control_wires),
-            num_zero_control_values=0,
+            num_zero_control_values=num_zero_control_values,
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         ): 2,
@@ -753,7 +755,9 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 
 
 @register_resources(_controlled_rz_resource)
-def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rz_decomp(
+    base, control_wires, control_values, work_wires, work_wire_type, num_zero_control_values
+):
     wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CRZ(base.phi, wires=wires)
