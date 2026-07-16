@@ -958,17 +958,18 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
-        if len(self.arguments) == 1:
-            key, value = next(iter(self.arguments.items()))
-            if key in self.wire_argnames and key not in self.hybrid_argnames:
-                # Format single wires directly without list brackets or keyword labels
-                wires_list = value.tolist() if isinstance(value, Wires) else value
-                res = (
-                    wires_list[0]
-                    if isinstance(wires_list, list) and len(wires_list) == 1
-                    else wires_list
-                )
-                return f"{self.name}({repr(res)})"
+        # NOTE: Handle special case for single wire non-parameteric
+        # operators like 'repr(qp.X(wires=0)) = X(0)'
+        non_wire_args = (
+            self.dynamic_argnames
+            + self.static_argnames
+            + self.compilable_argnames
+            + self.hybrid_argnames
+        )
+        if not non_wire_args and len(self.wire_argnames) == 1:
+            wire_arg = self.arguments[self.wire_argnames[0]]
+            if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
 
         inputs = []
 
