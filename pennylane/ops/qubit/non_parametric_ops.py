@@ -46,7 +46,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -1346,8 +1346,6 @@ class T(Operator2):
 
     @property
     def pauli_rep(self):
-        if isinstance(self.wires, AbstractWires):
-            return None
         if self._pauli_rep is None:
             # pylint: disable=unsubscriptable-object
             self._pauli_rep = qp.pauli.PauliSentence(
