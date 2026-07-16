@@ -2423,7 +2423,7 @@ class CRZ(Controlled2):
         return CRZ(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta, wires=None):  # pylint: disable=arguments-differ
+    def compute_matrix(phi, wires=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2446,9 +2446,9 @@ class CRZ(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(theta, 1j))
+            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
             if qp.math.ndim(p) == 0:
                 return qp.math.diag([1, 1, p, qp.math.conj(p)])
 
@@ -2456,8 +2456,8 @@ class CRZ(Controlled2):
             diags = stack_last([ones, ones, p, qp.math.conj(p)])
             return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
-        signs = qp.math.array([0, 0, 1, -1], like=theta)
-        arg = -0.5j * theta
+        signs = qp.math.array([0, 0, 1, -1], like=phi)
+        arg = -0.5j * phi
 
         if qp.math.ndim(arg) == 0:
             return qp.math.diag(qp.math.exp(arg * signs))
@@ -2466,7 +2466,7 @@ class CRZ(Controlled2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(theta, wires=None):  # pylint: disable=arguments-differ
+    def compute_eigvals(phi, wires=None):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2482,7 +2482,7 @@ class CRZ(Controlled2):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: eigenvalues
@@ -2493,17 +2493,17 @@ class CRZ(Controlled2):
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(-0.5j * qp.math.cast_like(theta, 1j))
+            phase = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
             ones = qp.math.ones_like(phase)
             return stack_last([ones, ones, phase, qp.math.conj(phase)])
 
-        prefactors = qp.math.array([0, 0, -0.5j, 0.5j], like=theta)
-        if qp.math.ndim(theta) == 0:
-            product = theta * prefactors
+        prefactors = qp.math.array([0, 0, -0.5j, 0.5j], like=phi)
+        if qp.math.ndim(phi) == 0:
+            product = phi * prefactors
         else:
-            product = qp.math.outer(theta, prefactors)
+            product = qp.math.outer(phi, prefactors)
         return qp.math.exp(product)
 
     def eigvals(self):
