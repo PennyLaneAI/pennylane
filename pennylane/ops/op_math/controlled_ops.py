@@ -2176,6 +2176,9 @@ class CRY(Controlled2):
 
     num_wires = 2
     """int: Number of wires that the operation acts on."""
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
+    wire_sizes = (2,)
 
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
