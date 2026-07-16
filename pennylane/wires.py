@@ -134,7 +134,12 @@ class Wires(Sequence):
         # arrays, which are not valid wire labels.
         if math.get_deep_interface(data) == "jax":
             data = tuple(
-                w if isinstance(w, AbstractValue) or math.is_abstract(w) else w.item() for w in data
+                (
+                    w.item()
+                    if isinstance(w, jax.Array) and not math.is_abstract(w) and w.ndim == 0
+                    else w
+                )
+                for w in data
             )
         return cls(data, _override=True)
 
