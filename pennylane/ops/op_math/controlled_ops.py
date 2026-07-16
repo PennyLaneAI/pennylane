@@ -189,7 +189,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type="borrowed",
     ):
-
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
@@ -209,7 +208,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: str | None = "borrowed",
     ):
-
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
@@ -2138,7 +2136,7 @@ add_decomps("Adjoint(CRX)", adjoint_rotation)
 add_decomps("Pow(CRX)", pow_rotation)
 
 
-class CRY(ControlledOp):
+class CRY(Controlled2):
     r"""The controlled-RY operator
 
     .. math::
@@ -2179,46 +2177,27 @@ class CRY(ControlledOp):
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
-
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.RY, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(qp.RY(phi, wires[1:]), control_wires=wires[:1])
+
+    @override
+    # pylint: disable=unused-argument
+    def __abstract_init__(self, phi, wires: WiresLike):
+        # `wires` is abstract here and carries no information beyond its fixed
+        # size of 2, which always splits into one control and one target wire.
+        super().__abstract_init__(qp.RY(phi, Wire[1]), Wire[1])
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
-
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, wires):
-        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta, wires=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2266,52 +2245,20 @@ class CRY(ControlledOp):
 
         return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CRY.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CRY.compute_decomposition(1.2, wires=(0,1))
-        [RY(0.6, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RY(-0.6, wires=[1]),
-        CNOT(wires=[0, 1])]
-
-        """
-        return [
-            qp.RY(phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.RY(-phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-        ]
-
-
-def _cry_resources():
+def _cry_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.CNOT: 2}
 
 
 @register_resources(_cry_resources)
-def _cry(phi: TensorLike, wires: WiresLike, **__):
+def _cry(phi: TensorLike, wires: WiresLike):
     qp.RY(phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
     qp.RY(-phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources():
+def _cry_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="ZY"): 1,
         resource_rep(qp.PauliRot, pauli_word="Y"): 1,
