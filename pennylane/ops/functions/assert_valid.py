@@ -217,12 +217,7 @@ def _assert_counts_match(counts_0, counts_1):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    params = {}
-
-    if isinstance(op, Operator2) and op.parameters:
-        params = op.parameters
-    elif isinstance(op, Operator1):
-        params = op.resource_params
+    params = op.arguments if isinstance(op, Operator2) else op.resource_params
 
     if not rule.is_applicable(**params):
         return
