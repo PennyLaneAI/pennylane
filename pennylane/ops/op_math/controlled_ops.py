@@ -1471,11 +1471,6 @@ def _toffoli_to_ppr(wires: WiresLike, **_):
     qp.GlobalPhase(-np.pi / 8)
 
 
-add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
-add_decomps("Adjoint(Toffoli)", self_adjoint)
-add_decomps("Pow(Toffoli)", pow_involutory)
-
-
 def _toffoli_elbow_resources(**_):
     return {change_op_basis_resource_rep(qp.Elbow, qp.CNOT): 1}
 
@@ -1484,11 +1479,14 @@ def _toffoli_elbow_resources(**_):
 def _toffoli_elbow(wires: WiresLike):
     with allocate(1, qp.allocation.AllocateState.ZERO, restored=True) as work_wires:
         qp.change_op_basis(
-            qp.Elbow([wires[0], wires[1], work_wires[0]]), qp.CNOT([work_wires[0], wires[2]])
+            qp.Elbow([wires[0], wires[1], work_wires[0]]),
+            qp.CNOT([work_wires[0], wires[2]]),
         )
 
 
-add_decomps(Toffoli, _toffoli_elbow)
+add_decomps(Toffoli, _toffoli, _toffoli_to_ppr, _toffoli_elbow)
+add_decomps("Adjoint(Toffoli)", self_adjoint)
+add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 class MultiControlledX(Controlled2):

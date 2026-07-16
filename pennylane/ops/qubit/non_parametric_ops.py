@@ -519,55 +519,6 @@ add_decomps("Adjoint(PauliX)", self_adjoint_legacy)
 add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
 
 
-# pylint: disable=unused-argument
-def _controlled_x_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    if len(control_wires) == 1:
-        return {qp.CNOT: 1, PauliX: 1}
-    if len(control_wires) == 2:
-        return {qp.Toffoli: 1, PauliX: 2}
-    return {
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=len(control_wires),
-            num_zero_control_values=len(control_values),
-            num_work_wires=len(work_wires),
-            work_wire_type=work_wire_type,
-        ): 1,
-    }
-
-
-@register_resources(_controlled_x_resource, exact=False)
-def _controlled_x_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    """The decomposition rule for a controlled PauliX."""
-
-    wires = control_wires + base.wires
-
-    if len(control_wires) == 1:
-        qp.CNOT(wires=wires)
-        qp.cond(math.logical_not(control_values[0]), qp.X)(wires[1])
-        return
-
-    if len(control_wires) > 2 or len(work_wires) > 0:
-        qp.MultiControlledX(
-            wires=wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-        return
-
-    @qp.for_loop(0, len(control_values))
-    def _x_flips(i):
-        qp.cond(math.logical_not(control_values[i]), qp.X)(control_wires[i])
-
-    _x_flips()  # pylint: disable=no-value-for-parameter
-    qp.Toffoli(wires=wires)
-    _x_flips()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps("C(PauliX)", _controlled_x_decomp)
-
-
 class PauliY(Operation):
     r"""
     The Pauli Y operator

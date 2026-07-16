@@ -1009,80 +1009,6 @@ special_par_op_decomps = [
 
 custom_ctrl_op_decomps = special_non_par_op_decomps + special_par_op_decomps
 
-pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, expected)
-    (qp.PauliX, [0], [1], None, [qp.CNOT([1, 0])]),
-    (
-        qp.PauliX,
-        [2],
-        [0, 1],
-        None,
-        [qp.Toffoli(wires=[0, 1, 2])],
-    ),
-    (
-        qp.PauliX,
-        [2],
-        [0, 1],
-        ["aux"],
-        [qp.MultiControlledX(wires=[0, 1, 2], work_wires=Wires("aux"))],
-    ),
-    (
-        qp.CNOT,
-        [1, 2],
-        [0],
-        None,
-        [qp.Toffoli(wires=[0, 1, 2])],
-    ),
-    (
-        qp.CNOT,
-        [1, 2],
-        [0],
-        ["aux"],
-        [qp.MultiControlledX(wires=[0, 1, 2], work_wires=Wires("aux"))],
-    ),
-    (
-        qp.PauliX,
-        [3],
-        [0, 1, 2],
-        None,
-        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[])],
-    ),
-    (
-        qp.PauliX,
-        [3],
-        [0, 1, 2],
-        ["aux"],
-        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux"))],
-    ),
-    (
-        qp.CNOT,
-        [2, 3],
-        [0, 1],
-        None,
-        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[])],
-    ),
-    (
-        qp.CNOT,
-        [2, 3],
-        [0, 1],
-        ["aux"],
-        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux"))],
-    ),
-    (
-        qp.Toffoli,
-        [1, 2, 3],
-        [0],
-        None,
-        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[])],
-    ),
-    (
-        qp.Toffoli,
-        [1, 2, 3],
-        [0],
-        ["aux"],
-        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux"))],
-    ),
-]
-
 
 class TestDecomposition:
     """Test decomposition of Controlled."""
@@ -1221,17 +1147,6 @@ class TestDecomposition:
             expected,
             tol,
         )
-
-    @pytest.mark.parametrize(
-        "base_cls, base_wires, ctrl_wires, work_wires, expected",
-        pauli_x_based_op_decomps,
-    )
-    def test_decomposition_pauli_x(self, base_cls, base_wires, ctrl_wires, work_wires, expected):
-        """Tests decompositions where the base is PauliX"""
-
-        base_op = base_cls(wires=base_wires)
-        ctrl_op = ControlledOp2(base_op, control_wires=ctrl_wires, work_wires=work_wires)
-        assert ctrl_op.decomposition() == expected
 
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
