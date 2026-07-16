@@ -94,12 +94,10 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
         assert op.coeff == -1j * op.data[0]
         assert op.param == op.data[0]
 
-        new_param = np.array(2.345)
-        op.data = (new_param,)
-
-        assert op.data == (new_param,)
-        assert op.coeff == -1j * op.data[0]
-        assert op.data == op.data[0]
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'Evolution' object has no setter"
+        ):
+            setattr(op, "data", (np.array(2.345),))
 
     def test_repr_paulix(self):
         """Test the __repr__ method when the base is a simple observable."""
