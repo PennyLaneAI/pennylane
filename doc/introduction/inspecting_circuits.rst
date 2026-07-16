@@ -31,7 +31,7 @@ Extracting properties of a circuit
 ----------------------------------
 
 The :func:`~pennylane.specs` transform takes a
-QNode and creates a function that returns 
+QNode and creates a function that returns
 details about the QNode, including depth, number of gates, and number of
 gradient executions required.
 
@@ -64,7 +64,7 @@ Level: gradient
 <BLANKLINE>
 Wire allocations: 3
 Total gates: 4
-Gate counts:
+Quantum operations:
 - RX: 1
 - Toffoli: 1
 - CRY: 1
@@ -72,7 +72,7 @@ Gate counts:
 Measurements:
 - expval(PauliZ): 1
 - expval(PauliX): 1
-Depth: 4
+Circuit Depth: 4
 
 
 Circuit drawing
@@ -169,16 +169,16 @@ the number of a snapshot is used as a key in the output dictionary instead.
 Interactive Debugging on Simulators
 -----------------------------------
 
-PennyLane allows for more interactive debugging of quantum circuits in a programmatic 
-fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is 
-currently supported on ``default.qubit`` and ``lightning.qubit`` devices. 
+PennyLane allows for more interactive debugging of quantum circuits in a programmatic
+fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is
+currently supported on ``default.qubit`` and ``lightning.qubit`` devices.
 
 Consider the following python script containing the quantum circuit with breakpoints.
 
 .. code-block:: python3
-    
+
     dev = qp.device("default.qubit", wires=2)
-    
+
     @qp.qnode(dev)
     def circuit(x):
         qp.breakpoint()
@@ -216,8 +216,8 @@ step through the circuit execution:
     > /Users/your/path/to/script.py(9)circuit()
     -> qp.Hadamard(wires=1)
 
-We can extract information by making measurements which do not change the state of 
-the circuit in execution: 
+We can extract information by making measurements which do not change the state of
+the circuit in execution:
 
 .. code-block:: console
 
@@ -233,12 +233,12 @@ the circuit in execution:
     [pldb] list
       8  	    qp.RX(x, wires=0)
       9  	    qp.Hadamard(wires=1)
-     10  	
+     10
      11  	    qp.breakpoint()
-     12  	
+     12
      13  	    qp.CNOT(wires=[0, 1])
      14  ->	    return qp.expval(qp.Z(0))
-     15  	
+     15
      16  	circuit(1.23)
     [EOF]
 
@@ -247,12 +247,12 @@ We can also visualize the circuit and dynamically queue operations directly to t
 .. code-block:: console
 
     [pldb] print(qp.debug_tape().draw())
-    0: ──RX─╭●─┤  
+    0: ──RX─╭●─┤
     1: ──H──╰X─┤
     [pldb] qp.RZ(-4.56, 1)
     RZ(-4.56, wires=[1])
     [pldb] print(qp.debug_tape().draw())
-    0: ──RX─╭●─────┤  
+    0: ──RX─╭●─────┤
     1: ──H──╰X──RZ─┤
 
 See :doc:`/code/qp_debugging` for more information and detailed examples.
@@ -294,7 +294,7 @@ or to check whether two gates causally influence each other.
 
 
     circuit()
-    tape = construct_tape(circuit)() 
+    tape = construct_tape(circuit)()
     ops = tape.operations
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)

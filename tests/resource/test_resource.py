@@ -708,16 +708,16 @@ class TestCircuitSpecs:
         - 1: l1
         - 2: l2
 
-        ↓Metric   Level→ |    1 |  2-a |  2-b
-        -------------------------------------
-        Wire allocations |    2 |    2 |    2
-        Total gates      |    6 |    1 |    1
-        Quantum operations:     |
-        - Hadamard       |    4 |    0 |    0
-        - CNOT           |    2 |    1 |    1
-        Measurements:    |
-        - expval(PauliX) |    1 |    1 |    0
-        - expval(PauliZ) |    1 |    0 |    1""")
+        ↓Metric      Level→ |    1 |  2-a |  2-b
+        ----------------------------------------
+        Wire allocations    |    2 |    2 |    2
+        Total gates         |    6 |    1 |    1
+        Quantum operations: |
+        - Hadamard          |    4 |    0 |    0
+        - CNOT              |    2 |    1 |    1
+        Measurements:       |
+        - expval(PauliX)    |    1 |    1 |    0
+        - expval(PauliZ)    |    1 |    0 |    1""")
 
     def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
         """Test the tabular string representation of a CircuitSpecs instance with symbolic resources."""
@@ -731,16 +731,16 @@ class TestCircuitSpecs:
             - 1: l1
             - 2: l2
 
-            ↓Metric   Level→ |     1 |   2-a |   2-b
-            ----------------------------------------
-            Wire allocations |     2 |     2 |     2
-            Total gates      | 4*x+2 |     x |     x
-            Quantum operations:     |
-            - Hadamard       | 2*x+2 |     0 |     0
-            - CNOT           |   2*x |     x |     x
-            Measurements:    |
-            - expval(PauliX) |     1 |     1 |     0
-            - expval(PauliZ) |     1 |     0 |     1""")
+            ↓Metric      Level→ |     1 |   2-a |   2-b
+            -------------------------------------------
+            Wire allocations    |     2 |     2 |     2
+            Total gates         | 4*x+2 |     x |     x
+            Quantum operations: |
+            - Hadamard          | 2*x+2 |     0 |     0
+            - CNOT              |   2*x |     x |     x
+            Measurements:       |
+            - expval(PauliX)    |     1 |     1 |     0
+            - expval(PauliZ)    |     1 |     0 |     1""")
 
     def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""

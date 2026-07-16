@@ -418,7 +418,7 @@ class SpecsResources(Resources):
 
         lines.append(f"{prefix}Quantum operations:")
         if not self.quantum_operations:
-            lines.append(prefix + "- No gates.")
+            lines.append(prefix + "- No operations.")
         else:
             for gate, count in self.quantum_operations.items():
                 lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
@@ -430,7 +430,9 @@ class SpecsResources(Resources):
             for meas, count in self.measurements.items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        if type(self) == SpecsResources:  # pylint: disable=unidiomatic-typecheck
+        if (
+            self.circuit_depth is None and type(self) == SpecsResources
+        ):  # pylint: disable=unidiomatic-typecheck
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.circuit_depth)
@@ -458,7 +460,7 @@ class SpecsResources(Resources):
         lines.append(f"| **Total gates** | {_count_to_str(self.num_gates, markdown_safe=True)} |")
         lines.append("| **Quantum operations:** | |")
         if not self.quantum_operations:
-            lines.append("| *No gates* | |")
+            lines.append("| *No operations* | |")
         else:
             for gate, count in self.quantum_operations.items():
                 lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
@@ -469,14 +471,16 @@ class SpecsResources(Resources):
             for meas, count in self.measurements.items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
-        if type(self) == SpecsResources:  # pylint: disable=unidiomatic-typecheck
+        if (
+            self.circuit_depth is None and type(self) == SpecsResources
+        ):  # pylint: disable=unidiomatic-typecheck
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.depth, markdown_safe=True)
                 if self.depth is not None
                 else "Not computed"
             )
-            lines.append(f"| **Depth** | {depth_str} |")
+            lines.append(f"| **Circuit Depth** | {depth_str} |")
 
         return "\n".join(lines)
 
@@ -733,8 +737,8 @@ class CircuitSpecs:
     ) -> tuple[int, int, dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
-        # This is the length of the longest metric name (currently "Wire allocations") plus padding
-        max_metric_length = 16
+        # This is the length of the longest metric name (currently "Quantum Allocations") plus padding
+        max_metric_length = 19
         max_column_size = max(len(level) for level in flat_resources) + 2
 
         # Use dict for these since they are sorted by default unlike a set
