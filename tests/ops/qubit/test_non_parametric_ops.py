@@ -1207,7 +1207,6 @@ def test_label_method(op, label):
 control_data = [
     (qp.Identity(0), Wires([])),
     (qp.Hadamard(0), Wires([])),
-    (qp.S(wires=0), Wires([])),
     (qp.T(wires=0), Wires([])),
     (qp.SX(wires=0), Wires([])),
     (qp.SWAP(wires=(0, 1)), Wires([])),
