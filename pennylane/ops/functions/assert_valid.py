@@ -158,11 +158,18 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             op_type.resource_keys
         ), "resource_params must have the same keys as specified by resource_keys"
 
+    # Operator2 rules are validated through the wrapper classes that production dispatch
+    # creates, and generic controlled rules are validated through the generic wrapper
+    # rather than qp.ctrl, which may dispatch to a bespoke controlled operator.
+    is_op2 = isinstance(op, Operator2)
+    adjoint_type = qp.ops.op_math.Adjoint2 if is_op2 else qp.ops.Adjoint
+    controlled_type = qp.ops.op_math.ControlledOp2 if is_op2 else qp.ops.Controlled
+
     for rule in qp.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Adjoint({op_type.__name__})"):
-        adj_op = qp.ops.Adjoint(op)
+        adj_op = adjoint_type(op)
         _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Pow({op_type.__name__})"):
@@ -172,7 +179,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
 
     for rule in qp.list_decomps(f"C({op_type.__name__})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
-            ctrl_op = qp.ops.Controlled(
+            ctrl_op = controlled_type(
                 op,
                 control_wires=[i + len(op.wires) for i in range(n_ctrl_wires)],
                 control_values=[c_value] * n_ctrl_wires,
@@ -217,18 +224,27 @@ def _assert_counts_match(counts_0, counts_1):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    if not rule.is_applicable(**op.resource_params):
+    # Operator2 rules consume the full constructor argument model, while legacy rules
+    # consume the legacy resource/data model. This mirrors production graph decomposition.
+    if isinstance(op, Operator2):
+        rule_params = op.arguments
+        rule_args, rule_kwargs = (), op.arguments
+    else:
+        rule_params = op.resource_params
+        rule_args, rule_kwargs = op.data, {"wires": op.wires, **op.hyperparameters}
+
+    if not rule.is_applicable(**rule_params):
         return
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**op.resource_params)
+    resources = rule.compute_resources(**rule_params)
     gate_counts = resources.gate_counts
 
     with qp.queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*rule_args, **rule_kwargs)
     tape = qp.tape.QuantumScript.from_queue(q)
 
-    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    total_work_wires = rule.get_work_wire_spec(**rule_params).total
     if total_work_wires:
         tape = _resolve_dynamic_wires(tape, total_work_wires)
 
@@ -371,8 +387,10 @@ def _check_eigendecomposition(op):
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
-        decomp_mat = qp.matrix(decomp)
-        original_mat = qp.matrix(op)
+        # the decomposition's wires may be ordered differently than the operator's wires,
+        # so both matrices must be computed in the same wire order
+        decomp_mat = qp.matrix(decomp, wire_order=op.wires)
+        original_mat = qp.matrix(op, wire_order=op.wires)
         failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
         assert qp.math.allclose(decomp_mat, original_mat), failure_comment
 
@@ -447,7 +465,15 @@ def _check_pytree(op):
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
     if isinstance(op, Operator1):
-        for d1, d2 in zip(op.data, leaves, strict=True):
+        # An Operator2 nested inside a legacy operator contributes its wires as dynamic
+        # pytree leaves. Those are structural leaves, not legacy `.data` parameters, so
+        # they are excluded before comparing the parameter leaves against `op.data`.
+        param_leaves = [
+            leaf
+            for leaf in jax.tree_util.tree_leaves(op, is_leaf=lambda x: isinstance(x, Wires))
+            if not isinstance(leaf, Wires)
+        ]
+        for d1, d2 in zip(op.data, param_leaves, strict=True):
             assert qp.math.allclose(
                 d1, d2
             ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"

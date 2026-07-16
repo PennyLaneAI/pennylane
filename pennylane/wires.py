@@ -39,6 +39,20 @@ if jax_available:
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
+def _normalize_pytree_leaf(leaf):
+    """Canonicalize a single wire label produced by pytree reconstruction.
+
+    A concrete scalar ``jax.Array`` (e.g. produced when a ``Wires`` pytree is
+    reconstructed from ``jax.jit`` outputs) is unhashable and cannot serve as a
+    wire label, so it is converted back to the corresponding Python scalar.
+    Every other leaf, in particular tracers and abstract placeholders from
+    capture or Catalyst, is preserved exactly.
+    """
+    if isinstance(leaf, jax.Array) and not isinstance(leaf, jax.core.Tracer) and leaf.ndim == 0:
+        return leaf.item()
+    return leaf
+
+
 def _process(wires):
     """Converts the input to a tuple of wire labels.
 
@@ -128,6 +142,8 @@ class Wires(Sequence):
     @classmethod
     def _unflatten(cls, data, _metadata):
         """De-serialize flattened representation back into the Wires object."""
+        if jax_available and any(isinstance(w, jax.Array) for w in data):
+            data = tuple(_normalize_pytree_leaf(w) for w in data)
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):

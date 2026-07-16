@@ -308,6 +308,11 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
+    if isinstance(op_type, type) and issubclass(op_type, Operator2):
+        # Operator2 resource representations are abstract operator instances constructed
+        # from the (abstract) constructor arguments, mirroring Pow.resource_params for
+        # legacy symbolic wrappers of Operator2 bases.
+        return abstractify(op_type(**params)) if params else abstractify(op_type)
     _validate_resource_rep(op_type, params)
     if issubclass(op_type, qp.ops.Adjoint):
         return adjoint_resource_rep(**params)
@@ -427,6 +432,9 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
     """
     base_params = base_params or {}
     base_resource_rep = resource_rep(base_class, **base_params)  # flattens any nested structures
+    if isinstance(base_resource_rep, Operator2):
+        # matches production dispatch, which wraps an Operator2 base in Adjoint2
+        return qp.adjoint(base_resource_rep)
     return CompressedResourceOp(
         qp.ops.Adjoint,
         {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
@@ -474,10 +482,22 @@ def pow_resource_rep(base_class, base_params, z):
 
     """
     base_resource_rep = resource_rep(base_class, **base_params)
-    return CompressedResourceOp(
-        qp.ops.Pow,
-        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},
-    )
+    if isinstance(base_resource_rep, Operator2):
+        # There is no Operator2 Pow yet, so the power of an Operator2 base keeps the
+        # legacy compressed representation, with the base's constructor arguments as
+        # base_params. This matches Pow.resource_params for Operator2 bases.
+        params = {
+            "base_class": type(base_resource_rep),
+            "base_params": base_resource_rep.arguments,
+            "z": z,
+        }
+    else:
+        params = {
+            "base_class": base_resource_rep.op_type,
+            "base_params": base_resource_rep.params,
+            "z": z,
+        }
+    return CompressedResourceOp(qp.ops.Pow, params)
 
 
 @functools.lru_cache(maxsize=1)

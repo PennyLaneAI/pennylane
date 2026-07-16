@@ -606,3 +606,57 @@ class TestWiresJax:
         wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+    def test_unflatten_concrete_scalar_arrays(self):
+        """Test that concrete scalar JAX array leaves reconstruct as hashable labels."""
+        wires = Wires([0, 1, 2])
+        _, tree = jax.tree_util.tree_flatten(wires)
+        wires2 = jax.tree_util.tree_unflatten(tree, [jax.numpy.array(l) for l in [0, 1, 2]])
+        assert wires2 == wires
+        assert all(isinstance(l, int) for l in wires2)
+        assert len(set(wires2)) == 3  # labels must be hashable
+
+    def test_unflatten_mixed_concrete_and_python_leaves(self):
+        """Test that only concrete scalar JAX array leaves are converted."""
+        wires = Wires([0, "aux", 2])
+        _, tree = jax.tree_util.tree_flatten(wires)
+        wires2 = jax.tree_util.tree_unflatten(tree, [jax.numpy.array(0), "aux", 2])
+        assert wires2 == wires
+        assert [type(l) for l in wires2] == [int, str, int]
+
+    def test_unflatten_preserves_tracers(self):
+        """Test that abstract tracer leaves are preserved without concretization."""
+
+        @jax.jit
+        def f(w):
+            assert all(isinstance(l, jax.core.Tracer) for l in w)
+            return w
+
+        out = f(Wires([0, 1]))
+        assert out == Wires([0, 1])
+        assert all(isinstance(l, int) for l in out)
+
+        # abstract signature reconstruction must not concretize either
+        jax.make_jaxpr(lambda w: w)(Wires([0, 1]))
+
+    def test_unflatten_preserves_non_scalar_arrays(self):
+        """Test that non-scalar array leaves are preserved rather than silently flattened."""
+        wires = Wires([0, 1])
+        _, tree = jax.tree_util.tree_flatten(wires)
+        batched = jax.numpy.array([0, 1])
+        wires2 = jax.tree_util.tree_unflatten(tree, [batched, 5])
+        assert wires2[0] is batched
+        assert wires2[1] == 5
+
+    def test_unflatten_preserves_non_jax_leaves(self):
+        """Test that non-JAX placeholder leaves are preserved without value extraction."""
+
+        class Placeholder:  # no .item(), like capture ArgInfo or Catalyst signature objects
+            pass
+
+        leaf = Placeholder()
+        wires = Wires([0, 1])
+        _, tree = jax.tree_util.tree_flatten(wires)
+        wires2 = jax.tree_util.tree_unflatten(tree, [jax.numpy.array(0), leaf])
+        assert wires2[0] == 0
+        assert wires2[1] is leaf

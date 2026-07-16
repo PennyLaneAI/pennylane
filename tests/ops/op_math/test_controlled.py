@@ -1853,9 +1853,7 @@ class TestCtrl:
                 control_values=ctrl_values + op.control_values,
             )
         elif isinstance(op, Operator2):
-            expected = ControlledOp2(
-                op, control_wires=ctrl_wires, control_values=ctrl_values
-            )
+            expected = ControlledOp2(op, control_wires=ctrl_wires, control_values=ctrl_values)
         else:
             expected = Controlled(op, control_wires=ctrl_wires, control_values=ctrl_values)
 
