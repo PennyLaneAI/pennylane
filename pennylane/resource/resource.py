@@ -16,7 +16,7 @@ Stores classes and logic to aggregate all the resource information from a quantu
 """
 
 # Have to use explicit super calls due to a bug with slots in dataclasses in Python 3.12 and earlier
-# pylint: disable=bad-super-call
+# pylint: disable=super-with-arguments
 
 from __future__ import annotations
 
@@ -384,14 +384,17 @@ class SpecsResources(Resources):
 
     @property
     def quantum_operations(self):
+        """A dictionary mapping quantum operations to their counts (alias for ``counts``)."""
         return self.counts
 
     @property
     def depth(self):
+        """The circuit depth (alias for ``circuit_depth``)."""
         return self.circuit_depth
 
     @property
     def num_wires(self):
+        """The number of wires (alias for ``num_allocs``)."""
         return self.num_allocs
 
     def to_pretty_str(self, preindent: int = 0) -> str:
