@@ -129,7 +129,16 @@ class Wires(Sequence):
     def _unflatten(cls, data, _metadata):
         """De-serialize flattened representation back into the Wires object."""
         if not all(math.get_interface(w) != "jax" or math.is_abstract(w) for w in data):
-            data = tuple(w.item() for w in data)
+            data = tuple(
+                (
+                    w.item()
+                    if isinstance(w, jax.Array)
+                    and not isinstance(w, jax.core.Tracer)
+                    and w.ndim == 0
+                    else w
+                )
+                for w in data
+            )
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
