@@ -79,11 +79,11 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     <BLANKLINE>
     Wire allocations: 1
     Total gates: 2
-    Gate counts:
+    Quantum operations:
     - RX: 2
     Measurements:
     - probs(all wires): 1
-    Depth: 2
+    Circuit Depth: 2
 
     Similarly, we can print the circuit after the ``merge_rotations`` transform has been applied by passing ``level="after-merge-rotations"`` to :func:`~.draw`:
 

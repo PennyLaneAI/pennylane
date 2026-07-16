@@ -161,11 +161,11 @@ def merge_rotations(
         <BLANKLINE>
         Wire allocations: 1
         Total gates: 1
-        Gate counts:
+        Quantum operations:
         - RX: 1
         Measurements:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Circuit Depth: Not computed
 
         Additionally, the ``merge_rotations`` transform supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.

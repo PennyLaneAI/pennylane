@@ -621,7 +621,7 @@ class PartialUnaryStatePreparation(Operation):
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Wire allocations: 26
     Total gates: 6,040
-    Gate counts:
+    Quantum operations:
     - MultiplexerStatePreparation: 1
     - BasisState: 2,414
     - QROM: 1,207
@@ -630,7 +630,7 @@ class PartialUnaryStatePreparation(Operation):
     - SWAP: 1
     Measurements:
     - state(all wires): 1
-    Depth: Not computed
+    Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
     makes the isometry circuit of the state preparation cheaper:
@@ -640,7 +640,7 @@ class PartialUnaryStatePreparation(Operation):
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Wire allocations: 48
     Total gates: 3,056
-    Gate counts:
+    Quantum operations:
     - MultiplexerStatePreparation: 1
     - BasisState: 320
     - QROM: 160
@@ -649,7 +649,7 @@ class PartialUnaryStatePreparation(Operation):
     - SWAP: 16
     Measurements:
     - state(all wires): 1
-    Depth: Not computed
+    Circuit Depth: Not computed
 
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
     number of indices :math:`|L|`, it is the same between the two decompositions.

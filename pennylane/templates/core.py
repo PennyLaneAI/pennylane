@@ -479,11 +479,11 @@ class Subroutine:
     >>> print(qp.specs(c)().resources)
     Wire allocations: 1
     Total gates: 1
-    Gate counts:
+    Quantum operations:
     - MyTemplate: 1
     Measurements:
     - state(all wires): 1
-    Depth: 1
+    Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:

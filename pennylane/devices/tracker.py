@@ -78,8 +78,8 @@ class Tracker:
     >>> pprint.pprint(tracker.latest)
     {'executions': 1,
      'resources': SpecsResources(counts={'RX': 1},
-                                 gate_sizes={1: 1},
                                  measurements={'expval(PauliZ)': 1},
+                                 num_gates=1,
                                  num_allocs=1,
                                  circuit_depth=1),
      'results': np.float64(0.12),
@@ -92,11 +92,11 @@ class Tracker:
     >>> print(tracker.history['resources'][0])
     Wire allocations: 1
     Total gates: 1
-    Gate counts:
+    Quantum operations:
     - RX: 1
     Measurements:
     - expval(PauliZ): 1
-    Depth: 1
+    Circuit Depth: 1
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
     forward pass and one batch of length two for the derivative of ``qp.RX``.
@@ -157,11 +157,11 @@ class Tracker:
         >>> print(resources_lst[0])
         Wire allocations: 1
         Total gates: 1
-        Gate counts:
+        Quantum operations:
         - RX: 1
         Measurements:
         - expval(PauliZ): 1
-        Depth: 1
+        Circuit Depth: 1
     """
 
     def __init__(self, dev=None, callback=None, persistent=False):
@@ -208,8 +208,8 @@ class Tracker:
          'c': ['c'],
          'executions': [1],
          'resources': [SpecsResources(counts={'RX': 1},
-                                      gate_sizes={1: 1},
                                       measurements={'expval(PauliZ)': 1},
+                                      num_gates=1,
                                       num_allocs=1,
                                       circuit_depth=1)],
          'results': [array(0.)],

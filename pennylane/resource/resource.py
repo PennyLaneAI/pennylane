@@ -15,6 +15,9 @@
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
 
+# Have to use explicit super calls due to a bug with slots in dataclasses in Python 3.12 and earlier
+# pylint: disable=bad-super-call
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -123,10 +126,10 @@ class Resources:
 
         # Iterate over all fields of the dataclass to find any Expression instances and
         # collect their variables
-        for field in fields(self):
-            if field.name == "vars":
+        for obj_field in fields(self):
+            if obj_field.name == "vars":
                 continue
-            value = getattr(self, field.name)
+            value = getattr(self, obj_field.name)
             if isinstance(value, Expression):
                 all_vars |= value.vars
             elif isinstance(value, dict):
@@ -159,15 +162,15 @@ class Resources:
         if self.is_symbolic:
             lines.append(f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars))}")
 
-        for field in fields(self):
-            if field.repr is False:
+        for obj_field in fields(self):
+            if obj_field.repr is False:
                 # Skip fields that are not meant to be included in the representation
                 continue
 
-            field_name = field.metadata.get("display_name", field.name)
-            if isinstance(getattr(self, field.name), dict):
+            field_name = obj_field.metadata.get("display_name", obj_field.name)
+            if isinstance(getattr(self, obj_field.name), dict):
                 lines.append(f"{prefix}{field_name}:")
-                dict_items = getattr(self, field.name)
+                dict_items = getattr(self, obj_field.name)
                 for k, v in dict_items.items():
                     # TODO: Figure out how best to handle nested dicts
                     value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
@@ -175,7 +178,7 @@ class Resources:
                 if len(dict_items) == 0:
                     lines.append(f"{prefix}- None present.")
             else:
-                value = getattr(self, field.name)
+                value = getattr(self, obj_field.name)
                 value_str = (
                     _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
                 )
@@ -230,11 +233,11 @@ class Resources:
         return "\n".join(lines)
 
     def __getitem__(self, key):
-        if key in (field.name for field in fields(self)):
+        if key in (obj_field.name for obj_field in fields(self)):
             return getattr(self, key)
 
         raise KeyError(
-            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+            f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
 
     def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> "Resources":
@@ -270,7 +273,7 @@ class Resources:
             else:
                 new_values[obj_field.name] = value
 
-        return type(self)(**new_values)
+        return type(self)(**new_values)  # pylint: disable=missing-kwoa
 
     @property
     def is_symbolic(self) -> bool:
@@ -424,7 +427,7 @@ class SpecsResources(Resources):
             for meas, count in self.measurements.items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        if type(self) == SpecsResources:
+        if type(self) == SpecsResources:  # pylint: disable=unidiomatic-typecheck
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.circuit_depth)
@@ -463,7 +466,7 @@ class SpecsResources(Resources):
             for meas, count in self.measurements.items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
-        if type(self) == SpecsResources:
+        if type(self) == SpecsResources:  # pylint: disable=unidiomatic-typecheck
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.depth, markdown_safe=True)
@@ -646,7 +649,7 @@ class CircuitSpecs:
         return d
 
     def __getitem__(self, key):
-        if key in (field.name for field in fields(self)):
+        if key in (obj_field.name for obj_field in fields(self)):
             return getattr(self, key)
 
         match key:
@@ -667,7 +670,7 @@ class CircuitSpecs:
                     f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information."
                 )
         raise KeyError(
-            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+            f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
 
     def _get_specs_header(self) -> list[str]:

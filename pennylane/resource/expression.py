@@ -17,7 +17,7 @@ Helper classes and functions for symbolic resource expressions.
 
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Union
+from typing import Union
 
 
 def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:

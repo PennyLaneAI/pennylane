@@ -226,13 +226,13 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     >>> print(qp.specs(circuit)()['resources'])
     Wire allocations: 3
     Total gates: 4
-    Gate counts:
+    Quantum operations:
     - Hadamard: 2
     - PauliMeasure: 1
     - Conditional(PauliX): 1
     Measurements:
     - expval(PauliZ): 1
-    Depth: 3
+    Circuit Depth: 3
     """
 
     if capture_enabled():
