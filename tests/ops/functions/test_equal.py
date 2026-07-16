@@ -2989,7 +2989,6 @@ class TestHilbertSchmidt:
     def test_non_equal_data(self, op, other_op):
         """Test that differing data is found."""
         assert qp.equal(op, other_op) is False
-        other_op.data = op.data
 
         v_ops = op.hyperparameters["V"]
         op_params = qp.tape.QuantumScript(v_ops).get_parameters()

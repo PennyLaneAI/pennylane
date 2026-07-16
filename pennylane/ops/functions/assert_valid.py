@@ -26,7 +26,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator, Operator1, Operator2
+from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
@@ -146,15 +146,17 @@ def _check_decomposition(op, skip_wire_mapping):
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     """Checks involving the new system of decompositions."""
     op_type = type(op)
-    if op_type.resource_params is qp.operation.Operator.resource_params:
-        assert not qp.decomposition.has_decomp(
-            op_type
-        ), "resource_params must be defined for operators with decompositions"
-        return
 
-    assert set(op.resource_params.keys()) == set(
-        op_type.resource_keys
-    ), "resource_params must have the same keys as specified by resource_keys"
+    if not isinstance(op, Operator2):
+        if op_type.resource_params is qp.operation.Operator.resource_params:
+            assert not qp.decomposition.has_decomp(
+                op_type
+            ), "resource_params must be defined for operators with decompositions"
+            return
+
+        assert set(op.resource_params.keys()) == set(
+            op_type.resource_keys
+        ), "resource_params must have the same keys as specified by resource_keys"
 
     for rule in qp.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
@@ -215,18 +217,20 @@ def _assert_counts_match(counts_0, counts_1):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    if not rule.is_applicable(**op.resource_params):
+    params = op.arguments if isinstance(op, Operator2) else op.resource_params
+
+    if not rule.is_applicable(**params):
         return
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**op.resource_params)
+    resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
     with qp.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qp.tape.QuantumScript.from_queue(q)
 
-    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
         tape = _resolve_dynamic_wires(tape, total_work_wires)
 
@@ -234,7 +238,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        op_rep = qp.resource_rep(type(_op), **_op.resource_params)
+        op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
@@ -471,7 +475,11 @@ def _check_capture(op):
         data, struct = jax.tree_util.tree_flatten(op)
 
         def test_fn(*args):
-            return jax.tree_util.tree_unflatten(struct, args)
+            op = jax.tree_util.tree_unflatten(struct, args)
+            if isinstance(op, Operator2):
+                op._bind_primitive()
+                return op.tracer
+            return op
 
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
@@ -680,7 +688,7 @@ def assert_valid(
         class MyOp(qp.operation.Operator):
 
             def __init__(self, data, wires):
-                self.data = data
+                self._data = data
                 super().__init__(wires=wires)
 
         op = MyOp(qp.numpy.array(0.5), wires=0)
@@ -709,13 +717,6 @@ def assert_valid(
     """
 
     if isinstance(op, qp.core.Operator2):
-        # Temporary, as we will be integrating Operator2 with program capture soon
-        skip_capture = True
-        # Temporary, as we will be integrating Operator2 with graph decomps soon
-        skip_new_decomp = True
-        # Temporary, as we will integrate with differentiation soon
-        skip_differentiation = True
-
         _assert_valid_operator2(
             op,
             skip_deepcopy,

@@ -24,7 +24,7 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.core import queuing
+from pennylane.core import Operator2, queuing
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     DecompositionGraph,
@@ -355,7 +355,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
-@partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
+@transform
 def decompose(
     tape,
     *,
@@ -870,10 +870,16 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
             op_rule = graph_solution.decomposition(op, num_work_wires)
             with queuing.AnnotatedQueue() as decomposed_ops:
-                op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+                args, kwargs = (
+                    ((), op.arguments)
+                    if isinstance(op, Operator2)
+                    else (op.parameters, {"wires": op.wires} | op.hyperparameters)
+                )
+                op_rule(*args, **kwargs)
             decomp = decomposed_ops.queue
             if num_work_wires is not None:
-                num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
+                kwargs = op.arguments if isinstance(op, Operator2) else op.resource_params
+                num_work_wires -= op_rule.get_work_wire_spec(**kwargs).total
 
         elif enabled_graph() and isinstance(op, GlobalPhase):
             warnings.warn(

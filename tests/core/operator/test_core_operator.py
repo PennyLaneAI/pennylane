@@ -16,7 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 
 import copy
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -121,7 +121,7 @@ class TestOperator1:
         assert isinstance(op, Operator1)
         assert not op.has_matrix  # check it has an Operator thing
 
-    def test_instantiating_Opeartor1_on_its_own(self):
+    def test_instantiating_Operator1_on_its_own(self):
         """Test that an error is raised if someone tries to instantiate Operator1."""
 
         with pytest.raises(ValueError, match="Operator1 cannot be instantiated on its own."):
@@ -296,6 +296,20 @@ class TestOperatorConstruction:
 
         op2 = DummyOp((1, 2, 3), wires=0)
         assert isinstance(op2.data[0], np.ndarray)
+
+    def test_data_is_read_only(self):
+        """Test that operator data is exposed through a read-only property."""
+
+        class DummyOp(qp.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, wires=0)
+
+        with pytest.raises(
+            AttributeError, match=r"property 'data' of '.*DummyOp' object has no setter"
+        ):
+            setattr(op, "data", (5.678,))
 
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
