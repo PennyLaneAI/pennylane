@@ -793,6 +793,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The following legacy operators are now ported to the new `~.Operator2` base class.
+  - `~.S` is ported
+  [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
+
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
   [(#9815)](https://github.com/PennyLaneAI/pennylane/pull/9815)
@@ -854,6 +858,7 @@
   [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
+  [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
