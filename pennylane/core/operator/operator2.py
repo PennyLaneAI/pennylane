@@ -337,6 +337,11 @@ class Operator2(metaclass=OperatorMeta):
         return self._ndim_params
 
     @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
+
+    @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
@@ -389,11 +394,6 @@ class Operator2(metaclass=OperatorMeta):
     # control_wires).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
-
-    @property
-    def num_params(self):
-        """Number of trainable parameters."""
-        return len(self.dynamic_argnames)
 
     @property
     def data(self) -> tuple:
@@ -958,6 +958,18 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        if len(self.arguments) == 1:
+            key, value = next(iter(self.arguments.items()))
+            if key in self.wire_argnames and key not in self.hybrid_argnames:
+                # Format single wires directly without list brackets or keyword labels
+                wires_list = value.tolist() if isinstance(value, Wires) else value
+                res = (
+                    wires_list[0]
+                    if isinstance(wires_list, list) and len(wires_list) == 1
+                    else wires_list
+                )
+                return f"{self.name}({repr(res)})"
+
         inputs = []
 
         for key, value in self.arguments.items():

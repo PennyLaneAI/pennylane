@@ -502,6 +502,7 @@ class SingleRZ(Operator2):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
 
+@pytest.mark.jax
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
     the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.

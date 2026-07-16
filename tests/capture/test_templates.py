@@ -36,6 +36,11 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
 
 
+def _check_op_eqn(eqn, expected_op):
+    assert eqn.primitive == operator_p
+    assert eqn.params["op_cls"] is expected_op
+
+
 def normalize_for_comparison(obj):
     """Normalize objects for comparison by converting tuples to lists recursively.
 
@@ -422,8 +427,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 6
 
         # due to flattening and unflattening H
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is qp.X
+        _check_op_eqn(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.Z._primitive
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive

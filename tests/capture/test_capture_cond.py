@@ -34,9 +34,12 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim, operator_p
-from tests.capture.capture_utils import (
-    extract_all_primitives,
-)
+from tests.capture.capture_utils import extract_all_primitives
+
+
+def _check_op_eqn(eqn, expected_op):
+    assert eqn.primitive == operator_p
+    assert eqn.params["op_cls"] is expected_op
 
 
 @pytest.fixture
@@ -521,8 +524,7 @@ class TestCondReturns:
 
         true_fn = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(true_fn.outvars) == 0
-        assert true_fn.eqns[0].primitive == operator_p
-        assert true_fn.eqns[0].params["op_cls"] is qp.PauliX
+        _check_op_eqn(true_fn.eqns[0], qp.X)
 
         false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
         assert len(false_fn.eqns) == 0
