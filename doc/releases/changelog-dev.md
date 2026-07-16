@@ -165,12 +165,12 @@
   Symbolic Variables: a
   Wire allocations: 1
   Total gates: a + 2
-  Gate counts:
+  Quantum operations:
   - Hadamard: 1
   - PauliX: a + 1
   Measurements:
   - expval(PauliX): 1
-  Depth: Not computed
+  Circuit Depth: Not computed
 
   ```
 
@@ -181,12 +181,12 @@
   >>> print(res.subs(a=5))
   Wire allocations: 1
   Total gates: 7
-  Gate counts:
+  Quantum operations:
   - Hadamard: 1
   - PauliX: 6
   Measurements:
   - expval(PauliX): 1
-  Depth: Not computed
+  Circuit Depth: Not computed
 
   ```
 
@@ -980,7 +980,7 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g., 
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
   from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)

@@ -142,7 +142,7 @@ def test_supports_operator_without_decomp(shots):
     with dev.tracker:
         _ = dev.execute(batch)
 
-    assert dev.tracker.latest["resources"].gate_types["MyOp"] == 1
+    assert dev.tracker.latest.resources.quantum_operations["MyOp"] == 1
 
 
 def test_tracking():

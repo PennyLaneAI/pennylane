@@ -850,7 +850,7 @@ class TestIPythonDisplays:
 
         assert actual.strip() == expected.strip()
 
-    def test_specs_resources_ipython_display(self, example_pbc_specs_resource):
+    def test_pbc_specs_resources_ipython_display(self, example_pbc_specs_resource):
         """Test the IPython display of a SpecsResources instance."""
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |

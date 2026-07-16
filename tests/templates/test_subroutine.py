@@ -648,7 +648,7 @@ class TestTapePLIntegration:
             return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         specs = qp.specs(c, level="top")(0.5, 1.2)
-        assert specs.resources.gate_types["Tester"] == 1
+        assert specs.resources.quantum_operations["Tester"] == 1
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
