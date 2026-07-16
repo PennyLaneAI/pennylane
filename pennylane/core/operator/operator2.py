@@ -953,11 +953,16 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
-        non_wire_args = self.dynamic_argnames + self.static_argnames + self.compilable_argnames + self.hybrid_argnames
+        non_wire_args = (
+            self.dynamic_argnames
+            + self.static_argnames
+            + self.compilable_argnames
+            + self.hybrid_argnames
+        )
         if not non_wire_args and len(self.wire_argnames) == 1:
             wire_arg = self.arguments[self.wire_argnames[0]]
-            if isinstance(wire_arg, Wires):
-                return f"{self.name}({wire_arg.tolist()[0]})"
+            if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
         inputs = []
 
         for key, value in self.arguments.items():
