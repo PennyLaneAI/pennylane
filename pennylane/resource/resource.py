@@ -364,7 +364,7 @@ class SpecsResources(Resources):
         object.__setattr__(self, "num_gates", total_quantum_operations)
 
         # Fall through to parent post init
-        super().__post_init__()
+        super(SpecsResources, self).__post_init__()
 
     def __getitem__(self, key):
         # Need to match
@@ -377,7 +377,7 @@ class SpecsResources(Resources):
             case "num_wires":
                 return self.num_wires
 
-        return super().__getitem__(key)
+        return super(SpecsResources, self).__getitem__(key)
 
     @property
     def quantum_operations(self):
@@ -525,7 +525,7 @@ class PBCSpecsResources(SpecsResources):
         Returns:
             str: A pretty representation of this object.
         """
-        s = super().to_pretty_str(preindent=preindent)
+        s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
 
         s += (
             "\n"
@@ -544,7 +544,7 @@ class PBCSpecsResources(SpecsResources):
             https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         """
 
-        s = super()._repr_markdown_()
+        s = super(PBCSpecsResources, self)._repr_markdown_()
 
         s += (
             "\n"
