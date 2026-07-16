@@ -665,6 +665,16 @@ class PauliY(Operator2):
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
 
+    def __repr__(self) -> str:
+        """String representation."""
+        if not isinstance(self.wires, Wires):
+            return self.name
+
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"Y('{wire}')"
+        return f"Y({wire})"
+
     def label(
         self,
         decimals: int | None = None,
