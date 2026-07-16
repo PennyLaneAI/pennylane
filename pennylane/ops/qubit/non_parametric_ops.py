@@ -665,7 +665,7 @@ class PauliY(Operator2):
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pylint:disable=unsubscriptable-object
         """String representation."""
         if not isinstance(self.wires, Wires):
             return self.name
