@@ -1,5 +1,7 @@
 from typing import Union
 
+from scipy.linalg import fractional_matrix_power
+
 import pennylane as qp
 from pennylane import capture, math
 from pennylane.core import Operator, Operator2
@@ -49,38 +51,17 @@ def pow2(base, z=1, lazy=True) -> Operator:
     Returns:
         Operator
 
-    .. note::
-
-        This operator supports a batched base, a batched coefficient and a combination of both:
-
-        >>> op = qp.pow2(qp.RX([1, 2, 3], wires=0), z=4)
-        >>> qp.matrix(op).shape
-        (3, 2, 2)
-        >>> op = qp.pow2(qp.RX(1, wires=0), z=[1, 2, 3])
-        >>> qp.matrix(op).shape
-        (3, 2, 2)
-        >>> op = qp.pow2(qp.RX([1, 2, 3], wires=0), z=[4, 5, 6])
-        >>> qp.matrix(op).shape
-        (3, 2, 2)
-
-        But it doesn't support batching of operators:
-
-        >>> op = qp.pow2([qp.RX(1, wires=0), qp.RX(2, wires=0)], z=4)
-        Traceback (most recent call last):
-            ...
-        AttributeError: 'list' object has no attribute 'name'
-
     .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
 
     **Example**
 
-    >>> qp.pow2(qp.X(0), 0.5)
+    >>> pow2(qp.X(0), 0.5)
     X(0)**0.5
-    >>> qp.pow2(qp.X(0), 0.5, lazy=False)
+    >>> pow2(qp.X(0), 0.5, lazy=False)
     SX(0)
-    >>> qp.pow2(qp.X(0), 0.1, lazy=False)
+    >>> pow2(qp.X(0), 0.1, lazy=False)
     X(0)**0.1
-    >>> qp.pow2(qp.X(0), 2, lazy=False)
+    >>> pow2(qp.X(0), 2, lazy=False)
     I(0)
 
     Lazy behaviour can also be accessed via ``op ** z``.
@@ -162,7 +143,15 @@ class Pow2(SymbolicOp2):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_sparse_matrix(self) -> bool:
-        return self.base.has_sparse_matrix and isinstance(self.z, int)
+        z = self.static_args["z"]
+        return self.base.has_sparse_matrix and isinstance(z, int)
+
+    @staticmethod
+    def compute_matrix(base, z):
+        mat = qp.matrix(base)
+        if isinstance(z, int):
+            return math.linalg.matrix_power(mat, z)
+        return fractional_matrix_power(mat, z)
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -175,25 +164,28 @@ class Pow2(SymbolicOp2):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
-        if isinstance(self.z, int) and self.z > 0:
+        z = self.static_args["z"]
+
+        if isinstance(z, int) and z > 0:
             return True
         try:
-            self.base.pow(self.z)
+            self.base.pow(z)
         except PowUndefinedError:
             return False
         except Exception as e:
             # some pow methods cant handle a batched z
-            if math.ndim(self.z) != 0:
+            if math.ndim(z) != 0:
                 return False
             raise e
         return True
 
     def decomposition(self):
+        z = self.static_args["z"]
         try:
-            return self.base.pow(self.z)
+            return self.base.pow(z)
         except PowUndefinedError as e:
-            if isinstance(self.z, int) and self.z > 0:
-                return [apply(self.base) for _ in range(self.z)]
+            if isinstance(z, int) and z > 0:
+                return [apply(self.base) for _ in range(z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
@@ -233,8 +225,9 @@ class Pow2(SymbolicOp2):
         return self.base.diagonalizing_gates()
 
     def eigvals(self):
+        z = self.static_args["z"]
         base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+        return [value**z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -253,15 +246,18 @@ class Pow2(SymbolicOp2):
 
         See also :func:`~.generator`
         """
-        return self.z * self.base.generator()
+        z = self.static_args["z"]
+        return z * self.base.generator()
 
     def pow(self, z):
-        return [Pow2(base=self.base, z=self.z * z)]
+        z = self.static_args["z"]
+        return [Pow2(base=self.base, z=z * z)]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
-        return isinstance(self.z, int)
+        z = self.static_args["z"]
+        return isinstance(z, int)
 
     def adjoint(self):
         """Create an operation that is the adjoint of this one.
@@ -284,13 +280,15 @@ class Pow2(SymbolicOp2):
             AdjointUndefinedError: If the exponent ``z`` is not of type ``int``.
 
         """
-        if isinstance(self.z, int):
-            return Pow2(base=adjoint(self.base), z=self.z)
+        z = self.static_args["z"]
+        if isinstance(z, int):
+            return Pow2(base=adjoint(self.base), z=z)
         raise AdjointUndefinedError(
             "The adjoint of Pow operators only is well-defined for integer powers."
         )
 
     def simplify(self) -> Union["Pow", Identity]:
+        z = self.static_args["z"]
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
@@ -298,14 +296,14 @@ class Pow2(SymbolicOp2):
 
         base = self.base if capture.enabled() else self.base.simplify()
         try:
-            ops = base.pow(z=self.z)
+            ops = base.pow(z=z)
             if not ops:
                 return Identity(self.wires)
             if not capture.enabled():
                 ops = [op.simplify() for op in ops]
             return prod(*ops) if len(ops) > 1 else ops[0]
         except PowUndefinedError:
-            return Pow2(base=base, z=self.z)
+            return Pow2(base=base, z=z)
 
 
 def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1):
