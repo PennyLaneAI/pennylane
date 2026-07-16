@@ -524,6 +524,7 @@ class RZ(Operator2):
         wires (WiresLike): the wire the operation acts on
     """
 
+    num_wires = 1
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
