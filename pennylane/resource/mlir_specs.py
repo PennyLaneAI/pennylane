@@ -94,11 +94,10 @@ def _mlir_resources_to_specs_resources(
 
     operations = {k: resources["operations"][k] for k in resources["operations"].keys()}
 
-    measurements = defaultdict(
+    measurement_processes = defaultdict(
         int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
     )
     quantum_operations = defaultdict(int)
-    gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
 
     pbc_depth = None
@@ -124,7 +123,6 @@ def _mlir_resources_to_specs_resources(
             gate_name += f"-w{gate_size}"
 
         quantum_operations[gate_name] += count
-        gate_sizes[int(gate_size)] += count
 
     # Recurse through all function calls and combine resources with the appropriate multiplicative factors
     for called_fn, call_count in itertools.chain(
@@ -151,8 +149,9 @@ def _mlir_resources_to_specs_resources(
         _update_resource_dict(
             quantum_operations, call_count, called_fn_resources.quantum_operations
         )
-        _update_resource_dict(gate_sizes, call_count, called_fn_resources.gate_sizes)
-        _update_resource_dict(measurements, call_count, called_fn_resources.measurements)
+        _update_resource_dict(
+            measurement_processes, call_count, called_fn_resources.measurement_processes
+        )
         if isinstance(called_fn_resources, PBCSpecsResources):
             if pbc_depth is None:
                 pbc_depth = PBCDepth(
@@ -172,8 +171,9 @@ def _mlir_resources_to_specs_resources(
 
     kwargs = {
         "counts": {k: quantum_operations[k] for k in sorted(quantum_operations.keys())},
-        "gate_sizes": {k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
-        "measurements": {k: measurements[k] for k in sorted(measurements.keys())},
+        "measurement_processes": {
+            k: measurement_processes[k] for k in sorted(measurement_processes.keys())
+        },
         "num_allocs": num_allocs,
         "circuit_depth": None,  # Can't get depth from MLIR pass results
     }

@@ -285,22 +285,22 @@ class Resources:
 class SpecsResources(Resources):
     """
     Class for storing resource information for a quantum circuit. Contains attributes which store
-    key resources such as gate counts, number of wire allocations, measurements, and circuit depth.
+    key resources such as gate counts, number of wire allocations, measurement processes, and
+    circuit depth.
 
     Note that this class is intended to be immutable. Modifying the attributes after creation may
     lead to unexpected behavior.
 
     Args:
         counts (dict[str, int]): A dictionary mapping gate names to their counts.
-        gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
-        measurements (dict[str, int]): A dictionary mapping measurements to their counts.
+        measurement_processes (dict[str, int]): A dictionary mapping measurement processes to their counts.
         num_allocs (int): The number of unique wire allocations. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
         depth (int | None): The depth of the circuit, or None if not computed.
 
     Properties:
         quantum_operations (dict[str, int]): A dictionary mapping gate names to their counts (alias for ``counts``).
-        num_gates (int): The total number of gates in the circuit (computed from ``counts``).
+        total_quantum_operations (int): The total number of quantum operations in the circuit (computed from ``counts``).
         depth (int | None): The depth of the circuit, or None if not computed (alias for ``circuit_depth``).
 
     .. seealso::
@@ -322,49 +322,44 @@ class SpecsResources(Resources):
         >>> from pennylane.resource import SpecsResources
         >>> res = SpecsResources(
         ...     counts={'Hadamard': 1, 'CNOT': 1},
-        ...     gate_sizes={1: 1, 2: 1},
-        ...     measurements={'expval(PauliZ)': 1},
+        ...     measurement_processes={'expval(PauliZ)': 1},
         ...     num_allocs=2,
         ...     circuit_depth=2
         ... )
 
-        >>> print(res.num_gates)
+        >>> print(res.total_quantum_operations)
         2
 
-        >>> print(res["num_gates"])
+        >>> print(res["total_quantum_operations"])
         2
 
         >>> print(res)
-        Wire allocations: 2
-        Total gates: 2
         Quantum operations:
+        - Total: 2
         - Hadamard: 1
         - CNOT: 1
-        Measurements:
+        Measurement processes:
         - expval(PauliZ): 1
+        Wire allocations: 2
         Circuit Depth: 2
     """
 
-    gate_sizes: dict[int, int | Expression] = field(repr=False)
-    measurements: dict[str, int | Expression] = field(metadata={"display_name": "Measurements"})
+    measurement_processes: dict[str, int | Expression] = field(
+        metadata={"display_name": "Measurement Processes"}
+    )
 
-    # Automatically generated
-    num_gates: int | Expression = field(init=False, metadata={"display_name": "Total Gates"})
-
-    num_allocs: int | Expression = field(metadata={"display_name": "Total Wires"})
+    num_allocs: int | Expression = field(metadata={"display_name": "Wire allocations"})
     circuit_depth: int | Expression | None = field(
         default=None, metadata={"display_name": "Circuit Depth"}
     )
 
+    # Automatically generated
+    total_quantum_operations: int | Expression = field(
+        init=False, metadata={"display_name": "Total Quantum Operations"}
+    )
+
     def __post_init__(self):
-        total_quantum_operations = sum(self.quantum_operations.values())
-        total_gate_sizes = sum(self.gate_sizes.values())
-        if total_quantum_operations != total_gate_sizes:
-            raise ValueError(
-                f"Inconsistent counts: `quantum_operations` describes {total_quantum_operations} gates but "
-                f"`gate_sizes` describes {total_gate_sizes} gates."
-            )
-        object.__setattr__(self, "num_gates", total_quantum_operations)
+        object.__setattr__(self, "total_quantum_operations", sum(self.quantum_operations.values()))
 
         # Fall through to parent post init
         super(SpecsResources, self).__post_init__()
@@ -413,22 +408,22 @@ class SpecsResources(Resources):
         if self.is_symbolic:
             lines.append(f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars))}")
 
-        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
-        lines.append(f"{prefix}Total gates: {_count_to_str(self.num_gates)}")
-
         lines.append(f"{prefix}Quantum operations:")
         if not self.quantum_operations:
             lines.append(prefix + "- No operations.")
         else:
+            lines.append(f"{prefix}- Total: {_count_to_str(self.total_quantum_operations)}")
             for gate, count in self.quantum_operations.items():
                 lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
 
-        lines.append(f"{prefix}Measurements:")
-        if not self.measurements:
-            lines.append(prefix + "- No measurements.")
+        lines.append(f"{prefix}Measurement processes:")
+        if not self.measurement_processes:
+            lines.append(prefix + "- No measurement processes.")
         else:
-            for meas, count in self.measurements.items():
+            for meas, count in self.measurement_processes.items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
+
+        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
 
         if (
             self.circuit_depth is not None
@@ -455,22 +450,27 @@ class SpecsResources(Resources):
         lines = []
         lines.append("| **Metric** | **Value** |")
         lines.append("| :--- | ---: |")
-        lines.append(
-            f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
-        )
-        lines.append(f"| **Total gates** | {_count_to_str(self.num_gates, markdown_safe=True)} |")
+
         lines.append("| **Quantum operations:** | |")
         if not self.quantum_operations:
             lines.append("| *No operations* | |")
         else:
+            lines.append(
+                f"| **Total** | {_count_to_str(self.total_quantum_operations, markdown_safe=True)} |"
+            )
             for gate, count in self.quantum_operations.items():
                 lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
-        lines.append("| **Measurements:** | |")
-        if not self.measurements:
-            lines.append("| *No measurements* | |")
+
+        lines.append("| **Measurement processes:** | |")
+        if not self.measurement_processes:
+            lines.append("| *No measurement processes* | |")
         else:
-            for meas, count in self.measurements.items():
+            for meas, count in self.measurement_processes.items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
+
+        lines.append(
+            f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
+        )
 
         if (
             self.circuit_depth is not None
@@ -491,7 +491,7 @@ class SpecsResources(Resources):
 
         # Need to explicitly include properties
         d = asdict(self)
-        d["num_gates"] = self.num_gates
+        d["total_quantum_operations"] = self.total_quantum_operations
         d["quantum_operations"] = d["counts"]
         del d["counts"]
 
@@ -560,7 +560,7 @@ class PBCSpecsResources(SpecsResources):
 
         s += (
             "\n"
-            "| **Depths** | |\n"
+            "| **PBC Depths** | |\n"
             f"| Any Commuting Depth | {_count_to_str(self.any_commuting_depth, markdown_safe=True)} |\n"
             f"| Qubit Disjoint Depth | {_count_to_str(self.qubit_disjoint_depth, markdown_safe=True)} |"
         )
@@ -600,8 +600,7 @@ class CircuitSpecs:
         ...     level="device",
         ...     resources=SpecsResources(
         ...         counts={"RX": 2, "CNOT": 1},
-        ...         gate_sizes={1: 2, 2: 1},
-        ...         measurements={"expval(PauliZ)": 1},
+        ...         measurement_processes={"expval(PauliZ)": 1},
         ...         num_allocs=2,
         ...         circuit_depth=3,
         ...     ),
@@ -620,11 +619,11 @@ class CircuitSpecs:
         Level: device
         <BLANKLINE>
         Wire allocations: 2
-        Total gates: 3
         Quantum operations:
         - RX: 2
         - CNOT: 1
-        Measurements:
+        - Total: 3
+        Measurement processes:
         - expval(PauliZ): 1
         Circuit Depth: 3
     """
@@ -661,23 +660,6 @@ class CircuitSpecs:
         if key in (obj_field.name for obj_field in fields(self)):
             return getattr(self, key)
 
-        match key:
-            # Fields that used to be included in specs output prior to PL version 0.44
-            case "num_observables":
-                raise KeyError(
-                    "num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources."
-                )
-            case "interface" | "diff_method" | "errors" | "num_tape_wires":
-                raise KeyError(f"key '{key}' is no longer included in specs.")
-            case (
-                "gradient_fn"
-                | "gradient_options"
-                | "num_gradient_executions"
-                | "num_trainable_params"
-            ):
-                raise KeyError(
-                    f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information."
-                )
         raise KeyError(
             f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
@@ -755,7 +737,7 @@ class CircuitSpecs:
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
                 )
-            for meas, count in res.measurements.items():
+            for meas, count in res.measurement_processes.items():
                 all_meas_types[meas] = True
                 max_metric_length = max(max_metric_length, len(meas) + 2)
                 max_column_size = max(
@@ -764,7 +746,7 @@ class CircuitSpecs:
             max_column_size = max(
                 max_column_size,
                 len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
-                len(_count_to_str(res.num_gates, extra_compact=True)) + 1,
+                len(_count_to_str(res.total_quantum_operations, extra_compact=True)) + 1,
             )
 
         return max_metric_length, max_column_size, all_quantum_operations, all_meas_types
@@ -795,14 +777,6 @@ class CircuitSpecs:
                 for res in flat_resources.values()
             )
         )
-        lines.append(
-            "Total gates".ljust(max_metric_length)
-            + " |"
-            + " |".join(
-                _count_to_str(res.num_gates, extra_compact=True).rjust(max_column_size)
-                for res in flat_resources.values()
-            )
-        )
 
         lines.append("Quantum operations:".ljust(max_metric_length) + " |")
         for gate in all_quantum_operations:
@@ -816,13 +790,24 @@ class CircuitSpecs:
                     for res in flat_resources.values()
                 )
             )
-        lines.append("Measurements:".ljust(max_metric_length) + " |")
+        lines.append(
+            "- Total".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.total_quantum_operations, extra_compact=True).rjust(
+                    max_column_size
+                )
+                for res in flat_resources.values()
+            )
+        )
+
+        lines.append("Measurement processes:".ljust(max_metric_length) + " |")
         for meas in all_meas_types:
             lines.append(
                 f"- {meas}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.measurements.get(meas, 0), extra_compact=True).rjust(
+                    _count_to_str(res.measurement_processes.get(meas, 0), extra_compact=True).rjust(
                         max_column_size
                     )
                     for res in flat_resources.values()
@@ -871,7 +856,7 @@ class CircuitSpecs:
         for res in flat_resources.values():
             for gate in res.quantum_operations:
                 all_quantum_operations[gate] = None
-            for meas in res.measurements:
+            for meas in res.measurement_processes:
                 all_meas_types[meas] = None
 
         def data_row(label, values):
@@ -886,12 +871,6 @@ class CircuitSpecs:
                 [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
             )
         )
-        lines.append(
-            data_row(
-                "**Total gates**",
-                [_count_to_str(r.num_gates, markdown_safe=True) for r in flat_resources.values()],
-            )
-        )
         lines.append(data_row("**Quantum operations**", [""] * len(levels)))
         for gate in all_quantum_operations:
             lines.append(
@@ -903,13 +882,23 @@ class CircuitSpecs:
                     ],
                 )
             )
-        lines.append(data_row("**Measurements**", [""] * len(levels)))
+        lines.append(
+            data_row(
+                "Total",
+                [
+                    _count_to_str(r.total_quantum_operations, markdown_safe=True)
+                    for r in flat_resources.values()
+                ],
+            )
+        )
+
+        lines.append(data_row("**Measurement processes**", [""] * len(levels)))
         for meas in all_meas_types:
             lines.append(
                 data_row(
                     meas,
                     [
-                        _count_to_str(r.measurements.get(meas, 0), markdown_safe=True)
+                        _count_to_str(r.measurement_processes.get(meas, 0), markdown_safe=True)
                         for r in flat_resources.values()
                     ],
                 )
@@ -1058,8 +1047,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     depth = tape.graph.get_depth() if compute_depth else None
 
     quantum_operations = defaultdict(int)
-    measurements = defaultdict(int)
-    gate_sizes = defaultdict(int)
+    measurement_processes = defaultdict(int)
     for op in tape.operations:
         gate_name = op.name
         # pylint: disable=unidiomatic-typecheck
@@ -1069,15 +1057,13 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
                 gate_name = f"{n_ctrls}{gate_name}"
 
         quantum_operations[gate_name] += 1
-        gate_sizes[len(op.wires)] += 1
 
     for meas in tape.measurements:
-        measurements[_mp_to_str(meas, num_wires)] += 1
+        measurement_processes[_mp_to_str(meas, num_wires)] += 1
 
     return SpecsResources(
         counts=dict(quantum_operations),
-        gate_sizes=dict(gate_sizes),
-        measurements=dict(measurements),
+        measurement_processes=dict(measurement_processes),
         num_allocs=num_wires,
         circuit_depth=depth,
     )
