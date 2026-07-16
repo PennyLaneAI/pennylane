@@ -1428,7 +1428,7 @@ def _t_phaseshift(wires=None):
     qp.PhaseShift(np.pi / 4, wires=wires)
 
 
-@register_resources(_t_phaseshift_resources)
+@register_resources(lambda **_: {qp.PhaseShift: 1})
 def _pow_t(wires, z, **_):
     z_mod8 = qp.math.array(z) % 8
     qp.PhaseShift(np.pi * z_mod8 / 4, wires=wires)
