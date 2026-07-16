@@ -1130,7 +1130,7 @@ class TestMCXDecomposition:
                 control_wires, target_wire, work_wires, work_wire_type="zeroed"
             )
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.external
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
