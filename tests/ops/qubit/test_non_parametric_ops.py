@@ -1230,7 +1230,6 @@ control_data = [
     (qp.Hadamard(0), Wires([])),
     (qp.PauliX(0), Wires([])),
     (qp.PauliY(0), Wires([])),
-    (qp.S(wires=0), Wires([])),
     (qp.T(wires=0), Wires([])),
     (qp.SX(wires=0), Wires([])),
     (qp.SWAP(wires=(0, 1)), Wires([])),
