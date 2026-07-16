@@ -54,6 +54,9 @@ from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_sing
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.controlled2 import to_controlled_unitary
+from pennylane.ops.op_math.pow2 import _pow_abstract
+from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
+from pennylane.ops.op_math.pow2 import pow2
 from pennylane.typing import Float, Wire
 
 # pylint: disable=no-name-in-module
@@ -269,6 +272,16 @@ class TestPowDecomposition:
         assert merge_powers.compute_resources(**op.resource_params) == to_resources(
             {pow_resource_rep(qp.H, {}, 6): 1}
         )
+
+    def test_merge_powers2(self):
+        """Test the decomposition rule for nested powers."""
+
+        op = pow2(pow2(qp.S(0), 3), 2)
+        with qp.queuing.AnnotatedQueue() as q:
+            merge_powers2(**op.arguments)
+
+        assert q.queue == [pow2(qp.S(0), 6)]
+        assert merge_powers2.compute_resources(**op.arguments) == to_resources({qp.S(Wire[1]): 6})
 
     def test_repeat_pow_base(self):
         """Tests repeating the same op z number of times."""

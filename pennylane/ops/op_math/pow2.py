@@ -6,9 +6,12 @@ from pennylane.core import Operator, Operator2
 from pennylane.core.operator import abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition.decomposition_rule import (
+    DecompCollection,
     DecompositionRule,
+    get_fixed_decomp,
+    list_decomps,
     register_condition,
-    register_resources, list_decomps, DecompCollection, get_fixed_decomp,
+    register_resources,
 )
 from pennylane.decomposition.resources import (
     AbstractOperatorLike,
@@ -27,8 +30,8 @@ from pennylane.ops import Identity
 from pennylane.ops.op_math import adjoint, prod
 
 from ..functions import bind_new_parameters
-from .adjoint2 import _adjoint_abstract, Adjoint2
 from .adjoint import Adjoint
+from .adjoint2 import Adjoint2, _adjoint_abstract
 from .symbolicop2 import SymbolicOp2
 
 
@@ -130,17 +133,17 @@ class Pow2(SymbolicOp2):
     hybrid_argnames = ("base",)
     static_argnames = ("z",)
 
-    def __init__(self, base: Operator2, z: float):
-        super().__init__(base)
+    def __init__(self, base: Operator, z: float):
+        super().__init__(base, z)
 
-        self.z = z
+        z = self.static_args["z"]
 
-        if isinstance(self.z, int) and self.z > 0:
+        if isinstance(z, int) and z > 0:
             if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
                 self.batch_size is None
             ):
                 pr = base_pauli_rep
-                for _ in range(self.z - 1):
+                for _ in range(z - 1):
                     pr = pr @ base_pauli_rep
                 self._pauli_rep = pr
             else:
@@ -149,11 +152,8 @@ class Pow2(SymbolicOp2):
             self._pauli_rep = None
 
     def __repr__(self):
-        return (
-            f"({self.base})**{self.z}"
-            if self.base.arithmetic_depth > 0
-            else f"{self.base}**{self.z}"
-        )
+        z = self.static_args["z"]
+        return f"({self.base})**{z}" if self.base.arithmetic_depth > 0 else f"{self.base}**{z}"
 
     @property
     def ndim_params(self):
@@ -331,7 +331,7 @@ def repeat_pow_base(wires, base, z):
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(lambda base, z: {abstractify(base.base): z * base.z})
-def merge_powers(wires, base, z):
+def merge_powers(base, z):
     """Decompose nested powers by combining them."""
     pow2(base.base, z * base.z)
 
@@ -347,7 +347,7 @@ def _flip_pow_adjoint_resource(base, z):
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(_flip_pow_adjoint_resource)
-def flip_pow_adjoint(*params, wires, base, z, **__):
+def flip_pow_adjoint(base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     adjoint(pow2(base.base, z))
@@ -371,7 +371,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 
     @register_condition(_condition_fn)
     @register_resources(_resource_fn)
-    def _impl(wires, base, z, **__):  # pylint: disable=unused-argument
+    def _impl(base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
             apply(base)
