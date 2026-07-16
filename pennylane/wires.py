@@ -37,7 +37,6 @@ else:
 if jax_available:
     # pylint: disable=unnecessary-lambda
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
-    from jax.core import AbstractValue
 
 
 def _process(wires):
