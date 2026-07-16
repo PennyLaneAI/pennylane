@@ -396,7 +396,7 @@ def pow_rotation(phi, wires, base, z):
 
 
 @list_decomps.register
-def _list_adjoint_decomps(op: Pow2) -> DecompCollection:
+def _list_pow_decomps(op: Pow2) -> DecompCollection:
 
     abs_op = abstractify(op)
 
