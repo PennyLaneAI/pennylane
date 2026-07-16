@@ -220,7 +220,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     params = {}
 
     if isinstance(op, Operator2) and op.parameters:
-        params = op.parameters
+        params = op.arguments
     elif isinstance(op, Operator1):
         params = op.resource_params
 
