@@ -1493,22 +1493,19 @@ class TestResourcesTracker:
         SpecsResources(
             num_allocs=2,
             counts={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={},
+            measurement_processes={},
             circuit_depth=2,
         ),
         SpecsResources(
             num_allocs=3,
             counts={"PauliZ": 1, "CNOT": 1, "RX": 1},
-            gate_sizes={1: 2, 2: 1},
-            measurements={},
+            measurement_processes={},
             circuit_depth=2,
         ),
         SpecsResources(
             num_allocs=2,
             counts={"Hadamard": 3, "RX": 2, "CNOT": 1},
-            gate_sizes={1: 5, 2: 1},
-            measurements={},
+            measurement_processes={},
             circuit_depth=4,
         ),
     )
@@ -1540,15 +1537,13 @@ class TestResourcesTracker:
         exp_res1 = SpecsResources(
             num_allocs=2,
             counts={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={},
+            measurement_processes={},
             circuit_depth=2,
         )
         exp_res2 = SpecsResources(
             num_allocs=3,
             counts={"PauliZ": 1, "CNOT": 1, "RX": 1},
-            gate_sizes={1: 2, 2: 1},
-            measurements={},
+            measurement_processes={},
             circuit_depth=2,
         )
 
@@ -1579,8 +1574,7 @@ class TestResourcesTracker:
         expected_resources = SpecsResources(
             num_allocs=1,
             counts={"RX": 1},
-            gate_sizes={1: 1},
-            measurements={"expval(PauliZ)": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             circuit_depth=1,
         )
 

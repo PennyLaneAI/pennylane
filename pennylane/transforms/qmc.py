@@ -355,7 +355,7 @@ def quantum_monte_carlo(
                                                       'PauliX': 252,
                                                       'RY': 3175},
                                               measurements={'probs(6 wires)': 1},
-                                              num_gates=22774,
+                                              total_quantum_operations=22774,
                                               num_allocs=12,
                                               circuit_depth=21502))
     """

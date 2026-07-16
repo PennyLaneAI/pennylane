@@ -181,8 +181,7 @@ def test_tracking():
             qp.resource.SpecsResources(
                 num_allocs=2,
                 counts={"Hadamard": 1, "FlipSign": 1},
-                gate_sizes={1: 1, 2: 1},
-                measurements={"expval(PauliZ)": 1},
+                measurement_processes={"expval(PauliZ)": 1},
                 circuit_depth=2,
             )
         ]

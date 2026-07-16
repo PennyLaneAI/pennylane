@@ -155,8 +155,7 @@ class TestAnalysisPassConversion:
         assert actual == [
             SpecsResources(
                 counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
-                gate_sizes={1: Expression({(var,): 2, (): 9})},
-                measurements={"expval(PauliZ)": 1},
+                measurement_processes={"expval(PauliZ)": 1},
                 num_allocs=10,
                 circuit_depth=None,
             ),
@@ -217,8 +216,7 @@ class TestAnalysisPassConversion:
                     "PauliX": Expression({(var,): 2}),
                     "PauliZ": 6,
                 },
-                gate_sizes={1: Expression({(var,): 2, (): 9}), 3: 2},
-                measurements={"expval(PauliZ)": Expression({(var,): 2, (): 1})},
+                measurement_processes={"expval(PauliZ)": Expression({(var,): 2, (): 1})},
                 num_allocs=10,
                 circuit_depth=None,
             ),
@@ -253,8 +251,7 @@ class TestAnalysisPassConversion:
         assert actual == [
             SpecsResources(
                 counts={"Hadamard": 2, "MultiControlledX": 12},
-                gate_sizes={1: 2, 2: 5, 3: 7},
-                measurements={},
+                measurement_processes={},
                 num_allocs=4,
                 circuit_depth=None,
             )
@@ -271,8 +268,7 @@ class TestAnalysisPassConversion:
         )
         assert fn_resources["dyn_for_loop_1"] == SpecsResources(
             counts={"PauliX": 1},
-            gate_sizes={1: 1},
-            measurements={},
+            measurement_processes={},
             num_allocs=0,
             circuit_depth=None,
         )
@@ -287,8 +283,7 @@ class TestAnalysisPassConversion:
 
         assert fn_resources["for_loop_1"] == SpecsResources(
             counts={"PauliZ": 1},
-            gate_sizes={1: 1},
-            measurements={},
+            measurement_processes={},
             num_allocs=0,
             circuit_depth=None,
         )
@@ -299,8 +294,7 @@ class TestAnalysisPassConversion:
         a = fn_resources["for_loop_2"]
         b = SpecsResources(
             counts={"PauliZ": 3, "Hadamard": 1, "PauliX": Expression({(var_name,): 1})},
-            gate_sizes={1: Expression({(var_name,): 1, (): 4})},
-            measurements={},
+            measurement_processes={},
             num_allocs=0,
             circuit_depth=None,
         )
@@ -325,8 +319,7 @@ class TestAnalysisPassConversion:
         assert actual == [
             PBCSpecsResources(
                 counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
-                gate_sizes={1: Expression({(var,): 2, (): 9})},
-                measurements={"expval(PauliZ)": 1},
+                measurement_processes={"expval(PauliZ)": 1},
                 num_allocs=10,
                 any_commuting_depth=22,
                 qubit_disjoint_depth=18,

@@ -530,8 +530,7 @@ def test_tracker():
     assert tracker.history.pop("resources")[0] == qp.resource.SpecsResources(
         num_allocs=2,
         counts={"Hadamard": 1, "CNOT": 1},
-        gate_sizes={1: 1, 2: 1},
-        measurements={"expval(PauliZ)": 1},
+        measurement_processes={"expval(PauliZ)": 1},
         circuit_depth=2,
     )
     assert tracker.history == {

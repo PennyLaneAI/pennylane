@@ -60,22 +60,19 @@ class TestTracking:
                 SpecsResources(
                     num_allocs=1,
                     counts={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
+                    measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
                 ),
                 SpecsResources(
                     num_allocs=1,
                     counts={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
+                    measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
                 ),
                 SpecsResources(
                     num_allocs=1,
                     counts={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
+                    measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
                 ),
             ],
@@ -97,8 +94,7 @@ class TestTracking:
             "resources": SpecsResources(
                 num_allocs=1,
                 counts={},
-                gate_sizes={},
-                measurements={"expval(PauliZ)": 1},
+                measurement_processes={"expval(PauliZ)": 1},
                 circuit_depth=0,
             ),
         }
@@ -134,8 +130,7 @@ class TestTracking:
                 SpecsResources(
                     num_allocs=1,
                     counts={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
+                    measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
                 )
             ]
@@ -159,8 +154,7 @@ class TestTracking:
         expected_resources = SpecsResources(
             num_allocs=3,
             counts={"Hadamard": 3, "CNOT": 2, "RZ": 1},
-            gate_sizes={1: 4, 2: 2},
-            measurements={"expval(PauliZ)": 1, "expval(PauliY)": 1},
+            measurement_processes={"expval(PauliZ)": 1, "expval(PauliY)": 1},
             circuit_depth=3,
         )
 

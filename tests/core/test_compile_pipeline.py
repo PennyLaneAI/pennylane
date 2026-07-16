@@ -1669,7 +1669,7 @@ class TestCompilePipelineCall:
         # (X-X and Y-Y pairs should be cancelled)
         resources = dev.tracker.history["resources"][0]
         assert resources.quantum_operations == {"Hadamard": 1}
-        assert resources.num_gates == 1
+        assert resources.total_quantum_operations == 1
         assert resources.circuit_depth == 1
 
         # Check the numerical output: H|0> gives |+>, expectation of Z is 0

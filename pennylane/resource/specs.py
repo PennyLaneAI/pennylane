@@ -314,14 +314,14 @@ def specs(
     Shots: Shots(total=None)
     Level: gradient
     <BLANKLINE>
-    Wire allocations: 2
-    Total gates: 4
     Quantum operations:
+    - Total: 4
     - RX: 1
     - CNOT: 1
     - TrotterProduct: 2
-    Measurements:
+    Measurement processes:
     - probs(all wires): 1
+    Wire allocations: 2
     Circuit Depth: 4
 
     The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
@@ -357,15 +357,15 @@ def specs(
         First, we can inspect the unmodified QNode by setting ``level=0``. Note that ``level="top"`` is equivalent:
 
         >>> print(qp.specs(circuit, level=0)(0.1).resources)
-        Wire allocations: 2
-        Total gates: 6
         Quantum operations:
+        - Total: 6
         - RandomLayers: 1
         - RX: 2
         - SWAP: 1
         - PauliX: 2
-        Measurements:
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
+        Wire allocations: 2
         Circuit Depth: 6
 
         We can analyze the effects of, for example, applying the first two transforms
@@ -373,25 +373,25 @@ def specs(
         ``level=2``. The result will show that ``SWAP`` and ``PauliX`` are not present in the circuit:
 
         >>> print(qp.specs(circuit, level=2)(0.1).resources)
-        Wire allocations: 2
-        Total gates: 3
         Quantum operations:
+        - Total: 3
         - RandomLayers: 1
         - RX: 2
-        Measurements:
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
+        Wire allocations: 2
         Circuit Depth: 3
 
         We can then check the resources after applying all user transforms with ``level="user"`` (which, in this particular example,
         would be equivalent to ``level=3``). The two rotations merge and cancel out, leaving us with only ``RandomLayers``:
 
         >>> print(qp.specs(circuit, level="user")(0.1).resources)
-        Wire allocations: 2
-        Total gates: 1
         Quantum operations:
+        - Total: 1
         - RandomLayers: 1
-        Measurements:
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
+        Wire allocations: 2
         Circuit Depth: 1
 
         After the user transforms, additional transforms for device compatibility and gradient support may be applied. To see the
@@ -399,13 +399,13 @@ def specs(
         device-compatible and is further decomposed before handing the circuit off to the device:
 
         >>> print(qp.specs(circuit, level="device")(0.1).resources)
-        Wire allocations: 2
-        Total gates: 2
         Quantum operations:
+        - Total: 2
         - RY: 1
         - RX: 1
-        Measurements:
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
+        Wire allocations: 2
         Circuit Depth: 1
 
         If a QNode with a tape-splitting transform is supplied to the function, the output will provide
@@ -430,29 +430,29 @@ def specs(
         Level: user
         <BLANKLINE>
         Batched tape a:
-            Wire allocations: 2
-            Total gates: 1
             Quantum operations:
+            - Total: 1
             - RandomLayers: 1
-            Measurements:
+            Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
+            Wire allocations: 2
             Circuit Depth: 1
         <BLANKLINE>
         Batched tape b:
-            Wire allocations: 3
-            Total gates: 1
             Quantum operations:
+            - Total: 1
             - RandomLayers: 1
-            Measurements:
+            Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
+            Wire allocations: 3
             Circuit Depth: 1
 
         In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
         :class:`~.resource.SpecsResources` for each resulting tape:
 
         >>> qp.specs(circuit, level="user")().resources
-        [SpecsResources(counts={'RandomLayers': 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_gates=1, num_allocs=2, circuit_depth=1),
-         SpecsResources(counts={'RandomLayers': 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_gates=1, num_allocs=3, circuit_depth=1)]
+        [SpecsResources(counts={'RandomLayers': 1}, measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=1),
+         SpecsResources(counts={'RandomLayers': 1}, measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, circuit_depth=1, total_quantum_operations=1)]
 
     .. details::
         :title: Runtime Specs with Catalyst
@@ -488,13 +488,13 @@ def specs(
         Shots: Shots(total=None)
         Level: device
         <BLANKLINE>
-        Wire allocations: 3
-        Total gates: 2
         Quantum operations:
+        - Total: 2
         - CNOT: 1
         - RX: 1
-        Measurements:
+        Measurement processes:
         - probs(all wires): 1
+        Wire allocations: 3
         Circuit Depth: 2
 
         .. note::
@@ -576,29 +576,29 @@ def specs(
         - 1: cancel-inverses
         - 2: merge-rotations
         <BLANKLINE>
-        ↓Metric     Level→ |  0 |  1 |  2
-        ---------------------------------
-        Wire allocations   |  3 |  3 |  3
-        Total gates        |  5 |  3 |  2
-        Quantum operations:       |
-        - CNOT             |  1 |  1 |  1
-        - PauliX           |  2 |  0 |  0
-        - RX               |  2 |  2 |  1
-        Measurements:      |
-        - probs(all wires) |  1 |  1 |  1
+        ↓Metric         Level→ |  0 |  1 |  2
+        -------------------------------------
+        Quantum operations:    |
+        - Total                |  5 |  3 |  2
+        - CNOT                 |  1 |  1 |  1
+        - PauliX               |  2 |  0 |  0
+        - RX                   |  2 |  2 |  1
+        Measurement processes: |
+        - probs(all wires)     |  1 |  1 |  1
+        Wire allocations       |  3 |  3 |  3
 
         When invoked with an iterable of levels, or ``"all"`` as above, the resources at different levels can be
         accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
         the name of a pass or marker. For example:
 
         >>> print(all_specs.resources['merge-rotations'])
-        Wire allocations: 3
-        Total gates: 2
         Quantum operations:
+        - Total: 2
         - CNOT: 1
         - RX: 1
-        Measurements:
+        Measurement processes:
         - probs(all wires): 1
+        Wire allocations: 3
         Circuit Depth: Not computed
 
         A shortcut to access the resources after all user-specified transforms and passes have been
@@ -606,13 +606,13 @@ def specs(
         resources after the ``merge-rotations`` pass:
 
         >>> print(qp.specs(circuit, level="user")(1.23).resources)
-        Wire allocations: 3
-        Total gates: 2
         Quantum operations:
+        - Total: 2
         - CNOT: 1
         - RX: 1
-        Measurements:
+        Measurement processes:
         - probs(all wires): 1
+        Wire allocations: 3
         Circuit Depth: Not computed
 
         .. warning::
@@ -643,15 +643,15 @@ def specs(
         - 2: Before MLIR Passes
         - 3: cancel-inverses
         <BLANKLINE>
-        ↓Metric   Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  3-a |  3-b
-        -----------------------------------------------------------------
-        Wire allocations |    1 |    1 |    1 |    3 |    3 |    3 |    3
-        Total gates      |    2 |    2 |    2 |    2 |    2 |    0 |    0
-        Quantum operations:     |
-        - PauliX         |    2 |    2 |    2 |    2 |    2 |    0 |    0
-        Measurements:    |
-        - expval(PauliZ) |    1 |    1 |    0 |    1 |    0 |    1 |    0
-        - expval(PauliX) |    1 |    0 |    1 |    0 |    1 |    0 |    1
+        ↓Metric         Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  3-a |  3-b
+        -----------------------------------------------------------------------
+        Quantum operations:    |
+        - Total                |    2 |    2 |    2 |    2 |    2 |    0 |    0
+        - PauliX               |    2 |    2 |    2 |    2 |    2 |    0 |    0
+        Measurement processes: |
+        - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0 |    1 |    0
+        - expval(PauliX)       |    1 |    0 |    1 |    0 |    1 |    0 |    1
+        Wire allocations       |    1 |    1 |    1 |    3 |    3 |    3 |    3
 
         Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
@@ -697,14 +697,14 @@ def specs(
         Level: Before MLIR Passes
         <BLANKLINE>
         Symbolic Variables: a, b
-        Wire allocations: 1
-        Total gates: b + a + 2
         Quantum operations:
+        - Total: b + a + 2
         - Hadamard: 1
         - PauliX: a + 1
         - PauliZ: b
-        Measurements:
+        Measurement processes:
         - expval(PauliZ): 1
+        Wire allocations: 1
         Circuit Depth: Not computed
 
         You can estimate the concrete resource values using the ``.subs`` method of the
@@ -713,28 +713,28 @@ def specs(
 
         >>> res = specs_result.resources
         >>> print(res.subs(a=5, b=3))
-        Wire allocations: 1
-        Total gates: 10
         Quantum operations:
+        - Total: 10
         - Hadamard: 1
         - PauliX: 6
         - PauliZ: 3
-        Measurements:
+        Measurement processes:
         - expval(PauliZ): 1
+        Wire allocations: 1
         Circuit Depth: Not computed
 
         These substitutions may also be provided as a dictionary, which can be helpful in
         programmatic contexts:
 
         >>> print(res.subs({"a": 5, "b": 3}))
-        Wire allocations: 1
-        Total gates: 10
         Quantum operations:
+        - Total: 10
         - Hadamard: 1
         - PauliX: 6
         - PauliZ: 3
-        Measurements:
+        Measurement processes:
         - expval(PauliZ): 1
+        Wire allocations: 1
         Circuit Depth: Not computed
     """
     # pylint: disable=import-outside-toplevel

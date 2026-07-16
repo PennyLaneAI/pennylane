@@ -657,8 +657,7 @@ class TestInfomationProperties:
         assert qs.specs["resources"] == qp.resource.SpecsResources(
             num_allocs=0,
             counts={},
-            gate_sizes={},
-            measurements={},
+            measurement_processes={},
             circuit_depth=0,
         )
 
@@ -673,12 +672,10 @@ class TestInfomationProperties:
         assert qs._specs is specs
 
         counts = {"RX": 2, "Rot": 1, "CNOT": 1}
-        gate_sizes = {1: 3, 2: 1}
         expected_resources = qp.resource.SpecsResources(
             num_allocs=3,
             counts=counts,
-            gate_sizes=gate_sizes,
-            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
             circuit_depth=3,
         )
         assert specs["resources"] == expected_resources

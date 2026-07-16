@@ -956,7 +956,7 @@ class QuantumScript:
         >>> pprint(qscript.specs['resources'])
         SpecsResources(counts={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
                        measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                       num_gates=6,
+                       total_quantum_operations=6,
                        num_allocs=2,
                        circuit_depth=4)
         """

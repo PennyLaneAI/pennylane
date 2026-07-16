@@ -297,11 +297,12 @@ class SpecsResources(Resources):
         num_allocs (int): The number of unique wire allocations. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
         depth (int | None): The depth of the circuit, or None if not computed.
+        quantum_operations (dict[str, int]): A dictionary mapping gate names to their counts (alias for ``counts``).
 
     Properties:
-        quantum_operations (dict[str, int]): A dictionary mapping gate names to their counts (alias for ``counts``).
         total_quantum_operations (int): The total number of quantum operations in the circuit (computed from ``counts``).
         depth (int | None): The depth of the circuit, or None if not computed (alias for ``circuit_depth``).
+        num_wires (int): The number of unique wire allocations (alias for ``num_allocs``).
 
     .. seealso::
 
@@ -456,7 +457,7 @@ class SpecsResources(Resources):
             lines.append("| *No operations* | |")
         else:
             lines.append(
-                f"| **Total** | {_count_to_str(self.total_quantum_operations, markdown_safe=True)} |"
+                f"| Total | {_count_to_str(self.total_quantum_operations, markdown_safe=True)} |"
             )
             for gate, count in self.quantum_operations.items():
                 lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
@@ -482,7 +483,7 @@ class SpecsResources(Resources):
                 if self.depth is not None
                 else "Not computed"
             )
-            lines.append(f"| **Circuit Depth** | {depth_str} |")
+            lines.append(f"| **Circuit depth** | {depth_str} |")
 
         return "\n".join(lines)
 
@@ -618,13 +619,13 @@ class CircuitSpecs:
         Shots: Shots(total=1000)
         Level: device
         <BLANKLINE>
-        Wire allocations: 2
         Quantum operations:
+        - Total: 3
         - RX: 2
         - CNOT: 1
-        - Total: 3
         Measurement processes:
         - expval(PauliZ): 1
+        Wire allocations: 2
         Circuit Depth: 3
     """
 
@@ -722,7 +723,7 @@ class CircuitSpecs:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
         # This is the length of the longest metric name (currently "Quantum Allocations") plus padding
-        max_metric_length = 19
+        max_metric_length = 22
         max_column_size = max(len(level) for level in flat_resources) + 2
 
         # Use dict for these since they are sorted by default unlike a set
@@ -769,16 +770,18 @@ class CircuitSpecs:
             + " |".join(level.rjust(max_column_size) for level in flat_resources)
         )
         lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
+
+        lines.append("Quantum operations:".ljust(max_metric_length) + " |")
         lines.append(
-            "Wire allocations".ljust(max_metric_length)
+            "- Total".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_allocs, extra_compact=True).rjust(max_column_size)
+                _count_to_str(res.total_quantum_operations, extra_compact=True).rjust(
+                    max_column_size
+                )
                 for res in flat_resources.values()
             )
         )
-
-        lines.append("Quantum operations:".ljust(max_metric_length) + " |")
         for gate in all_quantum_operations:
             lines.append(
                 f"- {gate}".ljust(max_metric_length)
@@ -790,16 +793,6 @@ class CircuitSpecs:
                     for res in flat_resources.values()
                 )
             )
-        lines.append(
-            "- Total".ljust(max_metric_length)
-            + " |"
-            + " |".join(
-                _count_to_str(res.total_quantum_operations, extra_compact=True).rjust(
-                    max_column_size
-                )
-                for res in flat_resources.values()
-            )
-        )
 
         lines.append("Measurement processes:".ljust(max_metric_length) + " |")
         for meas in all_meas_types:
@@ -813,6 +806,15 @@ class CircuitSpecs:
                     for res in flat_resources.values()
                 )
             )
+
+        lines.append(
+            "Wire allocations".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.num_allocs, extra_compact=True).rjust(max_column_size)
+                for res in flat_resources.values()
+            )
+        )
 
         return "\n".join(lines).rstrip("\n")
 
@@ -865,13 +867,16 @@ class CircuitSpecs:
         lines = []
         lines.append("| ↓Metric / Level→ | " + " | ".join(str(lvl) for lvl in levels) + " |")
         lines.append("| :--- |" + " ---: |" * len(levels))
+        lines.append(data_row("**Quantum operations**", [""] * len(levels)))
         lines.append(
             data_row(
-                "**Wire allocations**",
-                [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
+                "Total",
+                [
+                    _count_to_str(r.total_quantum_operations, markdown_safe=True)
+                    for r in flat_resources.values()
+                ],
             )
         )
-        lines.append(data_row("**Quantum operations**", [""] * len(levels)))
         for gate in all_quantum_operations:
             lines.append(
                 data_row(
@@ -882,15 +887,6 @@ class CircuitSpecs:
                     ],
                 )
             )
-        lines.append(
-            data_row(
-                "Total",
-                [
-                    _count_to_str(r.total_quantum_operations, markdown_safe=True)
-                    for r in flat_resources.values()
-                ],
-            )
-        )
 
         lines.append(data_row("**Measurement processes**", [""] * len(levels)))
         for meas in all_meas_types:
@@ -903,6 +899,14 @@ class CircuitSpecs:
                     ],
                 )
             )
+
+        lines.append(
+            data_row(
+                "**Wire allocations**",
+                [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
+            )
+        )
+
         return "\n".join(lines)
 
     def _repr_markdown_(self, collapsible: bool = True) -> str:

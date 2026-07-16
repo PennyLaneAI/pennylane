@@ -75,7 +75,7 @@ class TestSpecsTransform:
         specs = qp.specs(circ, level=level)(0.1)
 
         assert specs["level"] == level
-        assert specs["resources"].num_gates == expected_gates
+        assert specs["resources"].total_quantum_operations == expected_gates
 
     @pytest.mark.parametrize(
         "level1,level2",
@@ -108,7 +108,7 @@ class TestSpecsTransform:
             pass
 
         expected_resources = SpecsResources(
-            counts={}, gate_sizes={}, measurements={}, num_allocs=0, circuit_depth=0
+            counts={}, measurement_processes={}, num_allocs=0, circuit_depth=0
         )
 
         info = qp.specs(circ)()
@@ -136,13 +136,11 @@ class TestSpecsTransform:
 
         info = qp.specs(circuit)(x, y, add_RY=False)
 
-        gate_sizes = {1: 2, 3: 1, 2: 1}
         counts = {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1}
         expected_resources = SpecsResources(
             num_allocs=3,
             counts=counts,
-            gate_sizes=gate_sizes,
-            measurements={"expval(PauliZ)": 1, "expval(PauliX)": 1},
+            measurement_processes={"expval(PauliZ)": 1, "expval(PauliX)": 1},
             circuit_depth=3,
         )
         assert info["resources"] == expected_resources
@@ -165,7 +163,7 @@ class TestSpecsTransform:
         resources = qp.specs(partial(circuit, 3))(0.5)["resources"]
 
         assert resources.counts == {"RX": 3, "RY": 1}
-        assert resources.num_gates == 4
+        assert resources.total_quantum_operations == 4
         assert resources.depth == 4
 
     def test_qnode_keyword_partial(self):
@@ -182,7 +180,7 @@ class TestSpecsTransform:
         resources = qp.specs(partial(circuit, n_layers=3, add_ry=False))(0.5)["resources"]
 
         assert resources.counts == {"RX": 3}
-        assert resources.num_gates == 3
+        assert resources.total_quantum_operations == 3
         assert resources.depth == 3
 
     def test_nested_qnode_partial(self):
@@ -198,7 +196,7 @@ class TestSpecsTransform:
         resources = qp.specs(partial(partial(circuit, 3), y=0.25))(0.5)["resources"]
 
         assert resources.counts == {"RX": 3, "RY": 1}
-        assert resources.num_gates == 4
+        assert resources.total_quantum_operations == 4
         assert resources.depth == 4
 
     @pytest.mark.external
@@ -219,7 +217,7 @@ class TestSpecsTransform:
         resources = qp.specs(partial(circuit, 0.1, z=0.3), level=level)(0.2)["resources"]
 
         assert resources.counts == {"RX": 1, "RY": 1, "RZ": 1}
-        assert resources.num_gates == 3
+        assert resources.total_quantum_operations == 3
 
     @pytest.mark.external
     @pytest.mark.catalyst
@@ -240,7 +238,7 @@ class TestSpecsTransform:
         assert specs["level"] == {0: "Before MLIR Passes"}
         resources = specs["resources"]["Before MLIR Passes"]
         assert resources.counts == {"RX": 1, "RY": 1, "RZ": 1}
-        assert resources.num_gates == 3
+        assert resources.total_quantum_operations == 3
 
     @pytest.mark.parametrize("compute_depth", [True, False])
     def test_specs_compute_depth(self, compute_depth):
@@ -309,8 +307,7 @@ class TestSpecsTransform:
 
         assert info.resources == SpecsResources(
             counts={},
-            gate_sizes={},
-            measurements={"state(all wires)": 1},
+            measurement_processes={"state(all wires)": 1},
             num_allocs=0,  # Nothing actually used in this circuit
             circuit_depth=0,
         )
@@ -331,8 +328,7 @@ class TestSpecsTransform:
 
         assert info.resources == SpecsResources(
             counts={"MidMeasureMP": 1},
-            gate_sizes={1: 1},
-            measurements={"sample(mcm)": 1},
+            measurement_processes={"sample(mcm)": 1},
             num_allocs=1,
             circuit_depth=1,
         )
@@ -356,8 +352,7 @@ class TestSpecsTransform:
 
         assert info.resources == SpecsResources(
             counts={},
-            gate_sizes={},
-            measurements={
+            measurement_processes={
                 "expval(Hamiltonian(num_wires=3, num_terms=2))": 1,
                 "expval(Hamiltonian(num_wires=2, num_terms=1))": 1,
             },
@@ -396,10 +391,10 @@ class TestSpecsTransform:
             return qp.expval(qp.X(0) + qp.Y(0))
 
         specs = qp.specs(circ)()
-        assert specs["resources"].num_gates == 1
+        assert specs["resources"].total_quantum_operations == 1
 
         specs = qp.specs(circ, level="device")()
-        assert specs["resources"].num_gates == 4
+        assert specs["resources"].total_quantum_operations == 4
 
     def test_splitting_transforms(self):
         """Test that the specs transform works with splitting transforms"""
@@ -450,31 +445,28 @@ class TestSpecsTransform:
             "resources": [
                 {
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
-                    "gate_sizes": {2: 2, 1: 3},
-                    "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
+                    "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 2,
                     "circuit_depth": 5,
-                    "num_gates": 5,
+                    "total_quantum_operations": 5,
                     "vars": frozenset(),
                     "extra": {},
                 },
                 {
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
-                    "gate_sizes": {2: 2, 1: 3},
-                    "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
+                    "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
                     "circuit_depth": 5,
-                    "num_gates": 5,
+                    "total_quantum_operations": 5,
                     "vars": frozenset(),
                     "extra": {},
                 },
                 {
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
-                    "gate_sizes": {2: 2, 1: 3},
-                    "measurements": {"expval(Prod(num_wires=2, num_terms=2))": 1},
+                    "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_allocs": 3,
                     "circuit_depth": 5,
-                    "num_gates": 5,
+                    "total_quantum_operations": 5,
                     "vars": frozenset(),
                     "extra": {},
                 },
@@ -487,39 +479,39 @@ Shots: Shots(total=None)
 Level: 2
 
 Batched tape a:
-    Wire allocations: 2
-    Total gates: 5
     Quantum operations:
+    - Total: 5
     - RandomLayers: 1
     - RX: 1
     - SWAP: 1
     - PauliX: 2
-    Measurements:
+    Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
+    Wire allocations: 2
     Circuit Depth: 5
 
 Batched tape b:
-    Wire allocations: 3
-    Total gates: 5
     Quantum operations:
+    - Total: 5
     - RandomLayers: 1
     - RX: 1
     - SWAP: 1
     - PauliX: 2
-    Measurements:
+    Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
+    Wire allocations: 3
     Circuit Depth: 5
 
 Batched tape c:
-    Wire allocations: 3
-    Total gates: 5
     Quantum operations:
+    - Total: 5
     - RandomLayers: 1
     - RX: 1
     - SWAP: 1
     - PauliX: 2
-    Measurements:
+    Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
+    Wire allocations: 3
     Circuit Depth: 5"""
 
     @pytest.mark.parametrize(
@@ -565,8 +557,7 @@ Batched tape c:
         expected = SpecsResources(
             num_allocs=1,
             counts={"RX": 2},
-            gate_sizes={1: 2},
-            measurements={"state(all wires)": 1},
+            measurement_processes={"state(all wires)": 1},
             circuit_depth=2,
         )
 

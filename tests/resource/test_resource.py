@@ -109,7 +109,7 @@ class TestSpecsResources:
         assert s["num_allocs"] == s.num_allocs
         assert s["depth"] == s.depth
 
-        assert s["num_gates"] == s.num_gates
+        assert s["total_quantum_operations"] == s.total_quantum_operations
 
         # Try nonexistent key
         with pytest.raises(
@@ -124,13 +124,13 @@ class TestSpecsResources:
         s = example_specs_resource
 
         expected = textwrap.dedent("""\
-            Wire allocations: 2
-            Total gates: 3
             Quantum operations:
+            - Total: 3
             - Hadamard: 2
             - CNOT: 1
-            Measurements:
+            Measurement processes:
             - expval(PauliZ): 1
+            Wire allocations: 2
             Circuit Depth: 2""")
 
         assert str(s) == expected
@@ -143,12 +143,11 @@ class TestSpecsResources:
         s = SpecsResources(counts={}, measurement_processes={}, num_allocs=0)
 
         expected = textwrap.dedent("""\
-            Wire allocations: 0
-            Total gates: 0
             Quantum operations:
             - No operations.
-            Measurements:
-            - No measurements.
+            Measurement processes:
+            - No measurement processes.
+            Wire allocations: 0
             Circuit Depth: Not computed""")
 
         expected_indented = textwrap.indent(expected, " " * 4)
@@ -167,7 +166,7 @@ class TestSpecsResources:
             "measurement_processes": {"expval(PauliZ)": 1},
             "num_allocs": 2,
             "circuit_depth": 2,
-            "num_gates": 3,
+            "total_quantum_operations": 3,
             "vars": frozenset(),
             "extra": {},
         }
@@ -193,13 +192,13 @@ class TestPBCSpecsResources:
         s = example_pbc_specs_resource
 
         expected = textwrap.dedent("""\
-            Wire allocations: 2
-            Total gates: 3
             Quantum operations:
+            - Total: 3
             - Hadamard: 2
             - CNOT: 1
-            Measurements:
+            Measurement processes:
             - expval(PauliZ): 1
+            Wire allocations: 2
             Any Commuting Depth: 2
             Qubit Disjoint Depth: 3""")
 
@@ -378,15 +377,15 @@ class TestSymbolicSpecsResources:
         s = example_resource
 
         expected = "Symbolic Variables: x, z\n"
-        expected += "Wire allocations: 2*z + x + 1\n"
-        expected += "Total gates: x*z + 2*z + x + 2\n"
         expected += "Quantum operations:\n"
+        expected += "- Total: x*z + 2*z + x + 2\n"
         expected += "- Hadamard: 1\n"
         expected += "- PauliX: x + 1\n"
         expected += "- CNOT: x*z\n"
         expected += "- PauliZ: 2*z\n"
-        expected += "Measurements:\n"
+        expected += "Measurement processes:\n"
         expected += "- expval(PauliZ): 1\n"
+        expected += "Wire allocations: 2*z + x + 1\n"
         expected += "Circuit Depth: x*z + 2*z + x + 2"
 
         assert str(s) == expected
@@ -497,43 +496,6 @@ class TestCircuitSpecs:
         assert r["level"] == r.level
         assert r["resources"] == r.resources
 
-    def test_getitem_removed_keys(self, example_specs_result):
-        """Test that CircuitSpecs raises more descriptive KeyErrors for removed keys."""
-
-        r = example_specs_result
-
-        with pytest.raises(
-            KeyError,
-            match="num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources.",
-        ):
-            _ = r["num_observables"]
-
-        for key in ("interface", "diff_method", "errors", "num_tape_wires"):
-            with pytest.raises(
-                KeyError,
-                match=f"key '{key}' is no longer included in specs.",
-            ):
-                _ = r[key]
-
-        for key in (
-            "gradient_fn",
-            "gradient_options",
-            "num_gradient_executions",
-            "num_trainable_params",
-        ):
-            with pytest.raises(
-                KeyError,
-                match=f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information.",
-            ):
-                _ = r[key]
-
-        # Check nonexistent key
-        with pytest.raises(
-            KeyError,
-            match="key 'potato' not available. Options are ",
-        ):
-            _ = r["potato"]
-
     def test_to_dict(
         self, example_specs_result, example_specs_result_multi, example_specs_result_multi_symbolic
     ):
@@ -551,7 +513,7 @@ class TestCircuitSpecs:
                 "measurement_processes": {"expval(PauliZ)": 1},
                 "num_allocs": 2,
                 "circuit_depth": 2,
-                "num_gates": 3,
+                "total_quantum_operations": 3,
                 "vars": frozenset(),
                 "extra": {},
             },
@@ -572,7 +534,7 @@ class TestCircuitSpecs:
                     "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
                     "circuit_depth": 2,
-                    "num_gates": 6,
+                    "total_quantum_operations": 6,
                     "vars": frozenset(),
                     "extra": {},
                 },
@@ -582,7 +544,7 @@ class TestCircuitSpecs:
                         "measurement_processes": {"expval(PauliX)": 1},
                         "num_allocs": 2,
                         "circuit_depth": 1,
-                        "num_gates": 1,
+                        "total_quantum_operations": 1,
                         "vars": frozenset(),
                         "extra": {},
                     },
@@ -591,7 +553,7 @@ class TestCircuitSpecs:
                         "measurement_processes": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
                         "circuit_depth": 1,
-                        "num_gates": 1,
+                        "total_quantum_operations": 1,
                         "vars": frozenset(),
                         "extra": {},
                     },
@@ -617,7 +579,7 @@ class TestCircuitSpecs:
                     "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
                     "circuit_depth": 2,
-                    "num_gates": Expression({("x",): 4, (): 2}),
+                    "total_quantum_operations": Expression({("x",): 4, (): 2}),
                     "vars": frozenset({"x"}),
                     "extra": {},
                 },
@@ -627,7 +589,7 @@ class TestCircuitSpecs:
                         "measurement_processes": {"expval(PauliX)": 1},
                         "num_allocs": 2,
                         "circuit_depth": 1,
-                        "num_gates": Expression({("x",): 1}),
+                        "total_quantum_operations": Expression({("x",): 1}),
                         "vars": frozenset({"x"}),
                         "extra": {},
                     },
@@ -636,7 +598,7 @@ class TestCircuitSpecs:
                         "measurement_processes": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
                         "circuit_depth": 1,
-                        "num_gates": Expression({("x",): 1}),
+                        "total_quantum_operations": Expression({("x",): 1}),
                         "vars": frozenset({"x"}),
                         "extra": {},
                     },
@@ -672,16 +634,16 @@ class TestCircuitSpecs:
         - 1: l1
         - 2: l2
 
-        ↓Metric      Level→ |    1 |  2-a |  2-b
-        ----------------------------------------
-        Wire allocations    |    2 |    2 |    2
-        Total gates         |    6 |    1 |    1
-        Quantum operations: |
-        - Hadamard          |    4 |    0 |    0
-        - CNOT              |    2 |    1 |    1
-        Measurements:       |
-        - expval(PauliX)    |    1 |    1 |    0
-        - expval(PauliZ)    |    1 |    0 |    1""")
+        ↓Metric         Level→ |    1 |  2-a |  2-b
+        -------------------------------------------
+        Quantum operations:    |
+        - Total                |    6 |    1 |    1
+        - Hadamard             |    4 |    0 |    0
+        - CNOT                 |    2 |    1 |    1
+        Measurement processes: |
+        - expval(PauliX)       |    1 |    1 |    0
+        - expval(PauliZ)       |    1 |    0 |    1
+        Wire allocations       |    2 |    2 |    2""")
 
     def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
         """Test the tabular string representation of a CircuitSpecs instance with symbolic resources."""
@@ -695,16 +657,16 @@ class TestCircuitSpecs:
             - 1: l1
             - 2: l2
 
-            ↓Metric      Level→ |     1 |   2-a |   2-b
-            -------------------------------------------
-            Wire allocations    |     2 |     2 |     2
-            Total gates         | 4*x+2 |     x |     x
-            Quantum operations: |
-            - Hadamard          | 2*x+2 |     0 |     0
-            - CNOT              |   2*x |     x |     x
-            Measurements:       |
-            - expval(PauliX)    |     1 |     1 |     0
-            - expval(PauliZ)    |     1 |     0 |     1""")
+            ↓Metric         Level→ |     1 |   2-a |   2-b
+            ----------------------------------------------
+            Quantum operations:    |
+            - Total                | 4*x+2 |     x |     x
+            - Hadamard             | 2*x+2 |     0 |     0
+            - CNOT                 |   2*x |     x |     x
+            Measurement processes: |
+            - expval(PauliX)       |     1 |     1 |     0
+            - expval(PauliZ)       |     1 |     0 |     1
+            Wire allocations       |     2 |     2 |     2""")
 
     def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""
@@ -780,14 +742,14 @@ class TestIPythonDisplays:
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
         actual = example_specs_resource._repr_markdown_()
 
@@ -798,14 +760,14 @@ class TestIPythonDisplays:
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | a\\*a\\*b + a\\*a + a + 1 |
             | **Quantum operations:** | |
+            | Total | a\\*a\\*b + a\\*a + a + 1 |
             | Hadamard | a\\*a\\*b + a\\*a + a |
             | CNOT | 1 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
         actual = example_symbolic_specs_resource._repr_markdown_()
 
@@ -816,14 +778,14 @@ class TestIPythonDisplays:
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depths** | |
+            | **Wire allocations** | 2 |
+            | **PBC Depths** | |
             | Any Commuting Depth | 2 |
             | Qubit Disjoint Depth | 3 |
         """)
@@ -855,14 +817,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
 
         assert actual.strip() == expected.strip()
@@ -894,14 +856,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             </details>
         """)
@@ -934,27 +896,27 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             **Batched tape b:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
 
         assert actual.strip() == expected.strip()
@@ -989,14 +951,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             </details>
             <details open>
@@ -1004,14 +966,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
             | **Quantum operations:** | |
+            | Total | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             </details>
 
@@ -1051,13 +1013,13 @@ class TestIPythonDisplays:
 
             | ↓Metric / Level→ | 0 | 1-a | 1-b |
             | :--- | ---: | ---: | ---: |
-            | **Wire allocations** | 2 | 2 | 2 |
-            | **Total gates** | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
             | **Quantum operations** |  |  |  |
+            | Total | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
             | Hadamard | a\\*a\\*b + a\\*a + a | 1 | 1 |
             | CNOT | 1 | 1.000E+5 | 1.000E+5 |
-            | **Measurements** |  |  |  |
+            | **Measurement processes** |  |  |  |
             | expval(PauliZ) | 1 | 1 | 1 |
+            | **Wire allocations** | 2 | 2 | 2 |
         """)
 
         assert actual.strip() == expected.strip()
@@ -1073,13 +1035,12 @@ class TestIPythonDisplays:
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 1 |
-            | **Total gates** | 0 |
             | **Quantum operations:** | |
             | *No operations* | |
-            | **Measurements:** | |
-            | *No measurements* | |
-            | **Depth** | Not computed |
+            | **Measurement processes:** | |
+            | *No measurement processes* | |
+            | **Wire allocations** | 1 |
+            | **Circuit depth** | Not computed |
         """)
 
         assert actual.strip() == expected.strip()
