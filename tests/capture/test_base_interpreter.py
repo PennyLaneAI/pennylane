@@ -15,7 +15,7 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking
+# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking,wrong-import-position
 import pytest
 
 import pennylane as qp
@@ -23,8 +23,8 @@ import pennylane as qp
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture import PlxprInterpreter  # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
+from pennylane.capture import PlxprInterpreter
+from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
@@ -33,12 +33,14 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     qnode_prim,
     while_loop_prim,
 )
-from tests.core.operator.operator2_utils import (  # pylint: disable=wrong-import-position
-    DynOp,
-    NonParametricOp,
-)
+from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
+
+def _check_op_eqn(eqn, expected_op):
+    assert eqn.primitive == operator_p
+    assert eqn.params["op_cls"] is expected_op
 
 
 class SimplifyInterpreter(PlxprInterpreter):
@@ -159,10 +161,8 @@ def test_default_operator_handling():
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
     assert jaxpr.eqns[2].primitive == qp.T._primitive
-    assert jaxpr.eqns[3].primitive == operator_p
-    assert jaxpr.eqns[3].params["op_cls"] is qp.PauliX
-    assert jaxpr.eqns[4].primitive == operator_p
-    assert jaxpr.eqns[4].params["op_cls"] is qp.PauliX
+    _check_op_eqn(jaxpr.eqns[3], qp.X)
+    _check_op_eqn(jaxpr.eqns[4], qp.X)
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
 
 
@@ -209,8 +209,7 @@ def test_measurement_handling():
 
     jaxpr = jax.make_jaxpr(f)(0)
 
-    assert jaxpr.eqns[0].primitive == operator_p
-    assert jaxpr.eqns[0].params["op_cls"] is qp.PauliX
+    _check_op_eqn(jaxpr.eqns[0], qp.X)
     assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
     assert jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
     assert jaxpr.eqns[3].primitive == qp.measurements.ProbabilityMP._wires_primitive
@@ -530,8 +529,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 1
-        assert inner_jaxpr.eqns[0].primitive == operator_p
-        assert inner_jaxpr.eqns[0].params["op_cls"] is qp.PauliX
+        _check_op_eqn(inner_jaxpr.eqns[0], qp.X)
 
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""

@@ -36,6 +36,11 @@ from pennylane.transforms.core import transform
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
+def _check_op_eqn(eqn, expected_op):
+    assert eqn.primitive == operator_p
+    assert eqn.params["op_cls"] is expected_op
+
+
 @transform
 def z_to_hadamard(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
@@ -271,10 +276,8 @@ class TestCaptureTransforms:
         assert loop_jaxpr.eqns[0].primitive == qp.capture.primitives.for_loop_prim
 
         loop_body_jaxpr = loop_jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert loop_body_jaxpr.eqns[0].primitive == operator_p
-        assert loop_body_jaxpr.eqns[0].params["op_cls"] is qp.X
-        assert loop_body_jaxpr.eqns[1].primitive == operator_p
-        assert loop_body_jaxpr.eqns[1].params["op_cls"] is qp.X
+        _check_op_eqn(loop_body_jaxpr.eqns[0], qp.X)
+        _check_op_eqn(loop_body_jaxpr.eqns[1], qp.X)
 
         assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive

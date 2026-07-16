@@ -373,15 +373,6 @@ class PauliX(Operator2):
         """A string label for the operator."""
         return base_label or "X"
 
-    def __repr__(self) -> str:
-        """String representation."""
-        if isinstance(self.wires, AbstractWires):
-            return "PauliX"
-        wire = self.wires[0]  # pylint: disable=unsubscriptable-object
-        if isinstance(wire, str):
-            return f"X('{wire}')"
-        return f"X({wire})"
-
     @staticmethod
     # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
