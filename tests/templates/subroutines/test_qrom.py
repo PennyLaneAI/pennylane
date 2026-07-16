@@ -22,9 +22,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.decomposition import adjoint_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
     _count_tempAND_in_measurement_qrom,
@@ -607,6 +609,23 @@ class TestMeasurementQROM:
         res_base = _qrom_measurement_resources(base_params=base_params)
         assert res_base == res_direct
 
+    @pytest.mark.parametrize("n_extra", [2, 3, 4])
+    def test_resources_and_ladder(self, n_extra):
+        """The AND ladder (n_extra >= 2) adds n_extra - 1 TemporaryAND and their adjoints."""
+        n_active = 2  # ceil_log2(4)
+        res_extra = _qrom_measurement_resources(
+            num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + n_extra
+        )
+        # One extra wire adds no ladder (the wire itself is the selector); use it as baseline.
+        res_one = _qrom_measurement_resources(
+            num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
+        )
+        assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
+        assert (
+            res_extra[resource_rep(TemporaryAND)]
+            == res_one[resource_rep(TemporaryAND)] + (n_extra - 1)
+        )
+
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
         assert (
@@ -858,7 +877,7 @@ class TestMeasurementQROM:
 
         This is the scenario of the original bug: the extra (most-significant) wires load the
         real data only when they are all zero and map every other index to the identity, while
-        leaving the work wires clean. ``n_extra >= 2`` exercises the guard-ladder folding.
+        leaving the work wires clean. ``n_extra >= 2`` exercises the AND-ladder folding.
         """
         rng = np.random.default_rng(seed)
         n_target = 3

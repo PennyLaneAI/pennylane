@@ -740,11 +740,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         num_target_wires = base_params["num_target_wires"]
         num_control_wires = base_params.get("num_control_wires", num_control_wires)
 
-    # Extra control wires are folded into a guard qubit and add one address bit (2x the core)
-    # plus a ladder of ``n_extra - 1`` TemporaryAND gates (and their adjoints).
-    n_extra = (
-        0 if num_control_wires is None else num_control_wires - max(1, ceil_log2(num_bitstrings))
-    )
+    # Extra control wires add one address bit (2x the core) plus, for two or more of them, a
+    # ladder of ``n_extra - 1`` TemporaryAND gates (and their adjoints).
+    n_extra = 0 if num_control_wires is None else num_control_wires - max(1, ceil_log2(num_bitstrings))
     # L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings) * (2 if n_extra > 0 else 1)
@@ -773,7 +771,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         resource_rep(X): L,
         controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
     }
-    if n_extra >= 2:  # guard ladder: n_extra - 1 TemporaryAND opened and later uncomputed
+    if n_extra >= 2:  # n_extra - 1 TemporaryAND opened and later uncomputed
         resources[resource_rep(TemporaryAND)] += n_extra - 1
         resources[adjoint_resource_rep(TemporaryAND)] = n_extra - 1
     return resources
@@ -790,11 +788,9 @@ def _qrom_measurement_condition(
         num_work_wires = base_params["num_work_wires"]
         num_control_wires = base_params.get("num_control_wires", num_control_wires)
 
-    # Extra control wires need one work wire each for the guard ladder, so the requirement is
-    # ``num_control_wires - 1`` (not just ``ceil_log2(L) - 1``).
-    n_input = (
-        num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
-    )
+    # Extra control wires need one work wire each, so the requirement is ``num_control_wires - 1``
+    # (not just ``ceil_log2(L) - 1``).
+    n_input = num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
     if num_bitstrings <= 2 and n_input <= 1:
         return True
     return num_work_wires >= n_input - 1
@@ -829,13 +825,13 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     L = len(data)
     n_input = len(control_wires)
 
-    # Extra control wires beyond ceil_log2(L) are the most-significant address bits and must
-    # gate the whole QROM: the data is loaded only when they are all zero, otherwise the
-    # operation is the identity (matching the non-partial ``Select``). Instead of padding the
-    # data to 2**n_input (exponential in the extra wires), fold them into a single guard qubit
-    # with a ladder of TemporaryAND gates (uncomputed with Adjoint(TemporaryAND)), then recurse
-    # on the remaining address wires. This costs one extra TemporaryAND per extra wire (linear).
-    # The core consumes exactly ceil_log2(L) address wires (0 for L == 1, 1 for L == 2).
+    # Extra control wires beyond ceil_log2(L) are the most-significant address bits: the data
+    # is loaded only when they are all zero, otherwise the operation is the identity (matching
+    # the non-partial ``Select``). Instead of padding the data to 2**n_input (exponential in
+    # the extra wires), fold them into a single control ancilla with a ladder of AND gates
+    # (TemporaryAND, later uncomputed) and recurse on the remaining address wires. This costs
+    # one extra TemporaryAND per extra wire (linear). The core uses exactly ceil_log2(L)
+    # address wires (0 for L == 1, 1 for L == 2).
     n_active = ceil_log2(L)
     n_extra = n_input - n_active
     if n_extra > 0:
@@ -846,16 +842,16 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
             sel = extra_wires[0]
             core_work = work_wires
         else:
-            guard_work, core_work = work_wires[: n_extra - 1], work_wires[n_extra - 1 :]
-            TemporaryAND([extra_wires[0], extra_wires[1], guard_work[0]], control_values=[0, 0])
+            anc_work, core_work = work_wires[: n_extra - 1], work_wires[n_extra - 1 :]
+            TemporaryAND([extra_wires[0], extra_wires[1], anc_work[0]], control_values=[0, 0])
             for i in range(2, n_extra):
                 TemporaryAND(
-                    [guard_work[i - 2], extra_wires[i], guard_work[i - 1]], control_values=[1, 0]
+                    [anc_work[i - 2], extra_wires[i], anc_work[i - 1]], control_values=[1, 0]
                 )
-            sel = guard_work[-1]
+            sel = anc_work[-1]
         # Recurse on [sel, *active_wires]: one half (of 2**n_active rows) holds the data, the
-        # other is the identity (all-zero). ``sel == 0`` selects the data for a single extra
-        # wire; the guard ladder sets ``sel == 1`` when all extra wires are zero.
+        # other is the identity (all-zero). For a single extra wire ``sel == 0`` selects the
+        # data; the AND ladder sets ``sel == 1`` when all extra wires are zero.
         block = np.zeros((2**n_active, len(data[0])), dtype=int)
         block[:L] = data
         identity = np.zeros_like(block)
@@ -866,16 +862,15 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
             target_wires=target_wires,
             work_wires=core_work,
         )
-        if n_extra >= 2:
+        if n_extra >= 2:  # uncompute the AND ladder
             for i in range(n_extra - 1, 1, -1):
                 qp_ops.adjoint(
                     TemporaryAND(
-                        [guard_work[i - 2], extra_wires[i], guard_work[i - 1]],
-                        control_values=[1, 0],
+                        [anc_work[i - 2], extra_wires[i], anc_work[i - 1]], control_values=[1, 0]
                     )
                 )
             qp_ops.adjoint(
-                TemporaryAND([extra_wires[0], extra_wires[1], guard_work[0]], control_values=[0, 0])
+                TemporaryAND([extra_wires[0], extra_wires[1], anc_work[0]], control_values=[0, 0])
             )
         return
 
