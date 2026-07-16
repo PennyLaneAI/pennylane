@@ -482,22 +482,10 @@ def pow_resource_rep(base_class, base_params, z):
 
     """
     base_resource_rep = resource_rep(base_class, **base_params)
-    if isinstance(base_resource_rep, Operator2):
-        # There is no Operator2 Pow yet, so the power of an Operator2 base keeps the
-        # legacy compressed representation, with the base's constructor arguments as
-        # base_params. This matches Pow.resource_params for Operator2 bases.
-        params = {
-            "base_class": type(base_resource_rep),
-            "base_params": base_resource_rep.arguments,
-            "z": z,
-        }
-    else:
-        params = {
-            "base_class": base_resource_rep.op_type,
-            "base_params": base_resource_rep.params,
-            "z": z,
-        }
-    return CompressedResourceOp(qp.ops.Pow, params)
+    return CompressedResourceOp(
+        qp.ops.Pow,
+        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},
+    )
 
 
 @functools.lru_cache(maxsize=1)
