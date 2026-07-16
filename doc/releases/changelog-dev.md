@@ -793,6 +793,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Operators are now ported to the new, experimental `~.Operator2` base class.
+  - `~.S` is ported
+  [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
+
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
   [(#9815)](https://github.com/PennyLaneAI/pennylane/pull/9815)
@@ -896,6 +900,7 @@
     [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
     [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
+    [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -910,6 +915,8 @@
     [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
+  - Capture, graph decomp and differentiation checks are run in :func:`~.assert_valid`.
+    [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
