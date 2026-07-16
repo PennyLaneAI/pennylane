@@ -49,13 +49,11 @@ def _multi_swap(wires1, wires2):
         qp_ops.SWAP(wires=[wire1, wire2])
 
 
-def _new_ops(depth, target_wires, control_wires, swap_wires, data):
+def _new_ops(depth, target_wires, capacity, swap_wires, data):
 
     with QueuingManager.stop_recording():
         ops_new = [BasisEmbedding(bits, wires=target_wires) for bits in data]
-        ops_identity_new = ops_new + [qp_ops.I(target_wires)] * int(
-            2 ** len(control_wires) - len(ops_new)
-        )
+        ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
 
     n_columns = data.shape[0] // depth if data.shape[0] % depth == 0 else data.shape[0] // depth + 1
     new_ops = []
@@ -63,7 +61,7 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
         column_ops = []
         for j in range(depth):
             dic_map = {
-                ops_identity_new[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
+                target_wires[l]: swap_wires[j * len(target_wires) + l]
                 for l in range(len(target_wires))
             }
             column_ops.append(ops_identity_new[i * depth + j].map_wires(dic_map))
@@ -71,20 +69,49 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
     return new_ops
 
 
+def _new_data(depth, target_wires, capacity, swap_wires, data):
+    num_data, num_bits = data.shape
+    # Pad with zeros to fill up to max-capacity bitstrings
+    data = math.concatenate([data, np.zeros((capacity - num_data, num_bits), dtype=data.dtype)])
+    num_data = capacity
+    assert len(data) == num_data  # TMP
+
+    # depth is min(a power of two, num_bits), so it can happen that num_data%depth != 0
+    new_num_data = num_data // depth + int(num_data % depth > 0)
+    new_num_bits = len(swap_wires)
+    assert new_num_bits == len(target_wires) * depth  # TMP
+    new_data = math.zeros((new_num_data, new_num_bits), dtype=data.dtype)
+    # TODO: vectorize
+    for i in range(new_num_data):
+        for j in range(depth):
+            new_data[i, j * num_bits : (j + 1) * num_bits] = data[i * depth + j]
+    return new_data
+
+
 def _select_ops(
     control_wires, depth, target_wires, swap_wires, data, select_work_wires
 ):  # pylint:disable=too-many-arguments
-    n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
+    capacity = 1 << len(control_wires)
+    n_control_select_wires = ceil_log2(capacity / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
     if control_select_wires:
-        Select(
-            _new_ops(depth, target_wires, control_wires, swap_wires, data),
-            control=control_select_wires,
-            work_wires=select_work_wires,
-        )
+        if len(select_work_wires) < n_control_select_wires - 1:
+            Select(
+                _new_ops(depth, target_wires, capacity, swap_wires, data),
+                control=control_select_wires,
+                work_wires=select_work_wires,
+            )
+        else:
+            QROM(
+                _new_data(depth, capacity, swap_wires, data),
+                control_wires=control_select_wires,
+                target_wires=swap_wires,
+                work_wires=select_work_wires,
+            )
+
     else:
-        _new_ops(depth, target_wires, control_wires, swap_wires, data)
+        _new_ops(depth, target_wires, capacity, swap_wires, data)
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
@@ -323,7 +350,7 @@ class QROM(Operation):
 
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
-            depth = int(2 ** np.floor(np.log2(depth)))
+            depth = 1 << math.floor_log2(depth)
             depth = min(depth, data.shape[0])
 
             ops = [BasisEmbedding(bits, wires=target_wires) for bits in data]
@@ -442,19 +469,19 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
 
     # Calculate depth: how many bitstrings we can load in parallel (power of 2)
     depth = n_swap_wires // num_target_wires
-    depth = int(2 ** np.floor(np.log2(min(depth, terms))))
+    depth = 1 << math.floor_log2(min(depth, terms))
 
     # Recalculate actual wires used by SWAP and the remaining for Select
     n_swap_work_wires = num_target_wires * depth - num_target_wires
     n_select_work_wires = num_work_wires - n_swap_work_wires
 
     # Adjust depth if Select doesn't have enough work wires for the required control logic
-    n_select_control_wires = num_control_wires - np.floor(np.log2(depth))
+    n_select_control_wires = num_control_wires - math.floor_log2(depth)
     while n_select_work_wires < n_select_control_wires - 1:
         depth = depth // 2
         n_swap_work_wires = num_target_wires * depth - num_target_wires
         n_select_work_wires = num_work_wires - n_swap_work_wires
-        n_select_control_wires = num_control_wires - np.floor(np.log2(depth))
+        n_select_control_wires = num_control_wires - math.floor_log2(depth)
 
     return n_select_work_wires
 
@@ -476,7 +503,7 @@ def _qrom_decomposition_resources(
 
     # number of operators we store per column (power of 2)
     depth = num_swap_wires // num_target_wires
-    depth = int(2 ** np.floor(np.log2(depth)))
+    depth = 1 << math.floor_log2(depth)
     depth = min(depth, num_bitstrings)
 
     ops = [resource_rep(BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
@@ -485,37 +512,46 @@ def _qrom_decomposition_resources(
     n_columns = (
         num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
     )
-
-    # New ops block
-    new_ops = Counter()
-    for i in range(n_columns):
-        column_ops = Counter()
-        for j in range(depth):
-            column_ops[ops_identity[i * depth + j]] += 1
-        if len(column_ops) == 1 and list(column_ops.values())[0] == 1:
-            new_ops[list(column_ops.keys())[0]] += 1
-        else:
-            new_ops[resource_rep(qp_ops.op_math.Prod, resources=dict(column_ops))] += 1
-
     # Select block
     num_control_select_wires = ceil_log2(2**num_control_wires / depth)
 
-    new_ops_reps = reduce(
-        lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()]
-    )
-
-    if num_control_select_wires > 0:
+    if num_control_select_wires > 0 and num_work_wires_select >= num_control_select_wires - 1:
         select_ops = {
             resource_rep(
-                Select,
+                QROM,
                 num_control_wires=num_control_select_wires,
-                op_reps=tuple(new_ops_reps),
-                partial=False,
+                num_target_wires=num_swap_wires,
                 num_work_wires=num_work_wires_select,
             ): 1
         }
     else:
-        select_ops = new_ops
+        # New ops block
+        new_ops = Counter()
+        for i in range(n_columns):
+            column_ops = Counter()
+            for j in range(depth):
+                column_ops[ops_identity[i * depth + j]] += 1
+            if len(column_ops) == 1 and list(column_ops.values())[0] == 1:
+                new_ops[list(column_ops.keys())[0]] += 1
+            else:
+                new_ops[resource_rep(qp_ops.op_math.Prod, resources=dict(column_ops))] += 1
+
+        new_ops_reps = reduce(
+            lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()]
+        )
+
+        if num_control_select_wires > 0:
+            select_ops = {
+                resource_rep(
+                    Select,
+                    num_control_wires=num_control_select_wires,
+                    op_reps=tuple(new_ops_reps),
+                    partial=False,
+                    num_work_wires=num_work_wires_select,
+                ): 1
+            }
+        else:
+            select_ops = new_ops
 
     # Swap block
     num_control_swap_wires = num_control_wires - num_control_select_wires
@@ -570,12 +606,14 @@ def _qrom_decomposition(
 
     # number of operators we store per column (power of 2)
     depth = len(swap_wires) // len(target_wires)
-    depth = int(2 ** np.floor(np.log2(depth)))
+    depth = 1 << math.floor_log2(depth)
     depth = min(depth, data.shape[0])
 
+    print(f"{depth=}")
     if not clean or depth == 1:
         _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires)
-        _swap_ops(control_wires, depth, swap_wires, target_wires)
+        if not clean:
+            _swap_ops(control_wires, depth, swap_wires, target_wires)
 
     else:
         for _ in range(2):
@@ -849,5 +887,196 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
 
 
-add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition)
+#########     #########      #########     #########  #########     #########      #########
+import jax.numpy as jnp
+from catalyst import cond, for_loop
+
+import pennylane as qp
+
+
+# @register_resources(_qrom_unary_iteration_resources)
+# def _qrom_unary_iteration():
+def _triples(control, work, c):
+    """Interleaved aux register [c0, c1, w0, c2, w1, ...] -> level triples.
+
+    Level i uses wires (aux[2i], aux[2i+1], aux[2i+2]).
+    """
+    aux = [control[0]]
+    for cw, ww in zip(control[1:], work[: c - 1]):
+        aux.append(cw)
+        aux.append(ww)
+    return [aux[2 * i : 2 * i + 3] for i in range(c - 1)]
+
+
+def _popcount(x, nbits=40):
+    pc = jnp.int64(0)
+    for j in range(nbits):
+        pc = pc + ((x >> j) & 1)
+    return pc
+
+
+def rolled_qrom_load(data, control_wires, target_wires, work_wires):
+    """Emit a rolled QROM load with exact unary-iteration resources.
+
+    Assumes ``len(work_wires) >= max(len(control_wires) - 1, 0)``.
+    ``data`` is (K, n_target) of 0/1 with ``K == 2 ** len(control_wires)``.
+    """
+    K = len(data)
+    c = len(control_wires)
+    nt = len(target_wires)
+    data = jnp.asarray(data, dtype=jnp.int64)
+
+    # ---- degenerate cases ----
+    if c == 0:
+        for j in range(nt):
+
+            @cond(data[0, j] == 1)
+            def _():
+                qp.PauliX(target_wires[j])
+
+            _()
+        return
+
+    if c == 1:
+        # Two operators, control-applied directly on the single control wire.
+        ctrl0 = control_wires[0]
+
+        @for_loop(0, K, 1)
+        def loop1(k):
+            # flag is high iff address == k: use active-(1-k_bit) control by
+            # flipping the control wire when bit(k) == 0.
+            flip = 1 - (k & 1)
+
+            @cond(flip == 1)
+            def pre():
+                qp.PauliX(ctrl0)
+
+            pre()
+
+            for j in range(nt):
+
+                @cond(data[k, j] == 1)
+                def load():
+                    qp.CNOT(wires=[ctrl0, target_wires[j]])
+
+                load()
+
+            @cond(flip == 1)
+            def post():
+                qp.PauliX(ctrl0)
+
+            post()
+
+        loop1()
+        return
+
+    # ---- general case: c >= 2 ----
+    work = work_wires[: c - 1]
+    triples = _triples(control_wires, work, c)
+    flag = triples[-1][2]  # top work wire w_{c-2}
+
+    def AND(i, cv):
+        qp.TemporaryAND(wires=triples[i], control_values=cv)
+
+    def dAND(i):
+        qp.adjoint(qp.TemporaryAND(wires=triples[i]))
+
+    def load(k):
+        for j in range(nt):
+
+            @cond(data[k, j] == 1)
+            def _ld():
+                qp.CNOT(wires=[flag, target_wires[j]])
+
+            _ld()
+
+    # ---- initial ladder of left elbows (open at level 0 with (0,0)) ----
+    AND(0, (0, 0))
+    for i in range(1, c - 1):
+        AND(i, (1, 0))
+
+    @for_loop(0, K, 1)
+    def loop(k):
+        # 1. load data[k]
+        load(k)
+
+        # 2. transition k -> k+1 (skip on last address)
+        @cond(k < K - 1)
+        def transition():
+            # a = MSB-first index of least-significant 0 bit of k
+            a = c - _popcount(jnp.bitwise_xor(k, k + 1))
+            top_flipped = k >= (1 << (c - 1))  # first_bit_has_flipped
+
+            # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
+            for i in range(c - 2, 0, -1):
+
+                @cond(i >= a)
+                def _unc():
+                    dAND(i)
+
+                _unc()
+
+            # 2b. merge gate(s) at the boundary
+            c0, c1, c2 = triples[0]
+
+            #  a >= 2 : single CNOT at level a-1  (wires triples[a-1][0], [2])
+            for v in range(2, c):  # candidate values of a
+
+                @cond(a == v)
+                def _mid():
+                    qp.CNOT(wires=[triples[v - 1][0], triples[v - 1][2]])
+
+                _mid()
+
+            #  a == 1, top bit already flipped -> CNOT(c0, c2)
+            @cond(jnp.logical_and(a == 1, top_flipped))
+            def _a1_flipped():
+                qp.CNOT(wires=[c0, c2])
+
+            _a1_flipped()
+
+            #  a == 1, not yet flipped -> active-low ctrl-X(c2 | c0)
+            @cond(jnp.logical_and(a == 1, jnp.logical_not(top_flipped)))
+            def _a1_first():
+                qp.ctrl(qp.X(c2), control=[c0], control_values=[0])
+
+            _a1_first()
+
+            #  a == 0 -> two CNOTs (occurs exactly once, at the midpoint)
+            @cond(a == 0)
+            def _a0():
+                qp.CNOT(wires=[c0, c2])
+                qp.CNOT(wires=[c1, c2])
+
+            _a0()
+
+            # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
+            for i in range(1, c - 1):
+
+                @cond(i >= a)
+                def _rec():
+                    AND(i, (1, 0))
+
+                _rec()
+
+        transition()
+
+    loop()
+
+    # ---- closing ladder of right elbows for address K-1 ----
+    # control values depend on the bits of K-1; for K == 2**c, K-1 is all-ones,
+    # so every closing elbow uses cv=(1,1) except the outermost which uses (1,1)
+    # as well (bits [1,1]). We reproduce PennyLane's closing structure exactly.
+    closing_bits = [(K - 1 >> (c - 1 - b)) & 1 for b in range(c)]
+    # levels c-2 .. 1 close with cv=(1, closing_bits[i+1]); level 0 closes with
+    # cv=(closing_bits[0], closing_bits[1]).
+    for i in range(c - 2, 0, -1):
+        qp.adjoint(qp.TemporaryAND(wires=triples[i], control_values=(1, closing_bits[i + 1])))
+    qp.adjoint(qp.TemporaryAND(wires=triples[0], control_values=(closing_bits[0], closing_bits[1])))
+
+
+#########     #########      #########     #########  #########     #########      #########
+
+
+add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition, _qrom_unary_iteration)
 add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)

@@ -584,3 +584,39 @@ def ceil_log2(n: int) -> int:
     if is_abstract(n):
         return np.ceil(np.log2(n)).astype(int)
     return int(np.ceil(np.log2(n)))
+
+
+def floor_log2(n: int) -> int:
+    """Compute the floor of the base-2 logarithm of an integer, with integer as output data type.
+
+    Args:
+        n (int): Integer to compute the rounded-down base-2 logarithm of.
+
+    Returns:
+        int: Rounded-down base-2 logarithm of ``n``.
+
+    **Example**
+
+    On powers of two, ``floor_log2`` simply acts like ``np.log2`` whose result was converted to
+    an ``int``:
+
+    >>> qp.math.floor_log2(8)
+    3
+
+    On other numbers, the rounding of the logarithm becomes visible:
+
+    >>> qp.math.log2(14)
+    3.807354922057604
+    >>> qp.math.floor_log2(14)
+    3
+
+    Note that we always round down:
+
+    >>> qp.math.round(qp.math.log2(15))
+    4.0
+    >>> qp.math.floor_log2(15)
+    3
+    """
+    if is_abstract(n):
+        return np.floor(np.log2(n)).astype(int)
+    return int(np.floor(np.log2(n)))
