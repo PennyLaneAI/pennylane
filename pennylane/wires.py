@@ -129,6 +129,9 @@ class Wires(Sequence):
     @classmethod
     def _unflatten(cls, data, _metadata):
         """De-serialize flattened representation back into the Wires object."""
+        # This is needed to handle the case where `Wires` are flattened with scalar tracers, but
+        # unflattened after concretization, resulting in scalar tracers being replaced by scalar
+        # arrays, which are not valid wire labels.
         if math.get_deep_interface(data) == "jax":
             data = tuple(
                 w if isinstance(w, AbstractValue) or math.is_abstract(w) else w.item() for w in data
