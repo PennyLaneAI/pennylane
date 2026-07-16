@@ -1744,6 +1744,7 @@ class TestDecomposition:
         for rule in qp.list_decomps("C(Prod)"):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.external
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
@@ -1765,8 +1766,6 @@ class TestDecomposition:
         """
 
         from catalyst.device.decomposition import catalyst_decompose
-
-        qp.decomposition.enable_graph()
 
         gate_set = {
             "X": 1,
