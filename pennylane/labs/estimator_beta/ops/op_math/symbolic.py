@@ -39,7 +39,7 @@ def _generate_name(
     r"""Make a string representing the name of a function from its signature.
 
     Args:
-        qfunc (Calleable): the function to name
+        qfunc (Callable): the function to name
         include_params (Iterable[str] | None): An optional iterable of strings listing the
             parameters to include in the name.
 
@@ -53,15 +53,10 @@ def _generate_name(
     >>> from inspect import signature
     >>> def my_func(arg1, arg2, kwarg1 = "a"):
     ...     return
-    >>>
-    >>> f_name = my_func.__name__
-    >>> f_sig = signature(my_func)
-    >>>
-    >>> _generate_name(f_name, f_sig)
+    >>> _generate_name(my_func)
     'my_func'
     >>> _generate_name(
-    ...     f_name,
-    ...     f_sig,
+    ...     my_func
     ...     include_params = ["arg1", "kwarg1"],
     ...     arg1 = 10,
     ...     arg2 = True,

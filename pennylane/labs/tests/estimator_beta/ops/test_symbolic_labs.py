@@ -92,7 +92,6 @@ class TestMarkSubroutine:
     def test_set_num_wires(self):
         """Test that the decorated function returns a ResourceQfunc instance with set num_wires."""
 
-        @mark_subroutine
         @partial(mark_subroutine, num_wires=11)
         def SubroutineA(num_iter):
             for _ in range(num_iter):
