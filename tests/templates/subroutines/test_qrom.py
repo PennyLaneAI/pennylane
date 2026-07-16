@@ -621,9 +621,8 @@ class TestMeasurementQROM:
             num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
         )
         assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
-        assert (
-            res_extra[resource_rep(TemporaryAND)]
-            == res_one[resource_rep(TemporaryAND)] + (n_extra - 1)
+        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
+            n_extra - 1
         )
 
     def test_condition_without_compiler(self):

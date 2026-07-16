@@ -742,7 +742,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
 
     # Extra control wires add one address bit (2x the core) plus, for two or more of them, a
     # ladder of ``n_extra - 1`` TemporaryAND gates (and their adjoints).
-    n_extra = 0 if num_control_wires is None else num_control_wires - max(1, ceil_log2(num_bitstrings))
+    n_extra = (
+        0 if num_control_wires is None else num_control_wires - max(1, ceil_log2(num_bitstrings))
+    )
     # L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings) * (2 if n_extra > 0 else 1)
@@ -790,7 +792,9 @@ def _qrom_measurement_condition(
 
     # Extra control wires need one work wire each, so the requirement is ``num_control_wires - 1``
     # (not just ``ceil_log2(L) - 1``).
-    n_input = num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
+    n_input = (
+        num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
+    )
     if num_bitstrings <= 2 and n_input <= 1:
         return True
     return num_work_wires >= n_input - 1
