@@ -127,7 +127,7 @@ def _base_resource_rep(base_class: type[Operator], base_params: dict) -> Abstrac
     represented everywhere else in the decomposition graph.
     """
     if issubclass(base_class, Operator2):
-        return base_class(**base_params)
+        return abstractify(base_class(**base_params))
     return resource_rep(base_class, **base_params)
 
 

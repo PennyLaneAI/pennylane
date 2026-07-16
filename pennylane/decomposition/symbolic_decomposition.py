@@ -22,11 +22,17 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
-from pennylane.core.operator import abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
-from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
+from .resources import (
+    _base_resource_rep,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    pow_resource_rep,
+    resource_rep,
+)
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -101,7 +107,9 @@ def is_integer(x):
 
 # pylint: disable=protected-access,unused-argument
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
-@register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
+@register_resources(
+    lambda base_class, base_params, z: {_base_resource_rep(base_class, base_params): z}
+)
 def repeat_pow_base(*params, wires, base, z, **__):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
@@ -132,7 +140,13 @@ def merge_powers(*params, wires, base, z, **__):
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
-    target_class, target_params = base_params["base_class"], base_params["base_params"]
+    if issubclass(base_class, Operator2):
+        # the base is an Adjoint2, whose base_params are its abstract constructor
+        # arguments, so the target is the operator instance under the "base" argument.
+        target = base_params["base"]
+        target_class, target_params = type(target), abstractify(target).arguments
+    else:
+        target_class, target_params = base_params["base_class"], base_params["base_params"]
     return {
         adjoint_resource_rep(
             qp.ops.Pow, {"base_class": target_class, "base_params": target_params, "z": z}
@@ -159,7 +173,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
-            return {resource_rep(base_class, **base_params): 1}
+            return {_base_resource_rep(base_class, base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
     @register_condition(_condition_fn)
@@ -189,7 +203,7 @@ def pow_rotation(phi, wires, base, z, **__):
 
 
 def _decomp_to_base_legacy_res(base_class, base_params, **__):
-    return {resource_rep(base_class, **base_params): 1}
+    return {_base_resource_rep(base_class, base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument

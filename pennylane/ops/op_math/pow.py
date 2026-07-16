@@ -195,6 +195,9 @@ class Pow(ScalarSymbolicOp):
     @property
     def resource_params(self) -> dict:
         if isinstance(self.base, Operator2):
+            # An Operator2 base does not have the legacy resource_params, so until an
+            # Operator2 version of Pow exists, its abstract constructor arguments serve
+            # as the base_params (see _base_resource_rep in the decomposition module).
             return {
                 "base_class": type(self.base),
                 "base_params": abstractify(self.base).arguments,
