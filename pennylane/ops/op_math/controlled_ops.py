@@ -36,7 +36,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    flip_zero_control_legacy,
+    flip_zero_control,
     pow_involutory,
     pow_rotation,
     self_adjoint_legacy,
@@ -285,9 +285,9 @@ def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_w
 
 add_decomps(
     ControlledQubitUnitary,
-    flip_zero_control_legacy(ctrl_decomp_bisect_rule),
-    flip_zero_control_legacy(single_ctrl_decomp_zyz_rule),
-    flip_zero_control_legacy(multi_control_decomp_zyz_rule),
+    flip_zero_control(ctrl_decomp_bisect_rule),
+    flip_zero_control(single_ctrl_decomp_zyz_rule),
+    flip_zero_control(multi_control_decomp_zyz_rule),
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
@@ -1926,7 +1926,7 @@ def _2cx_elbow_explicit(wires: WiresLike, work_wires, control_values, **__):
     qp.adjoint(qp.Elbow)(elbow_wires, control_values)
 
 
-decompose_mcx_two_controls_elbows = flip_zero_control_legacy(_2cx_elbow_explicit)
+decompose_mcx_two_controls_elbows = flip_zero_control(_2cx_elbow_explicit)
 
 add_decomps(
     MultiControlledX,
