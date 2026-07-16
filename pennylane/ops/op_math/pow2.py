@@ -250,8 +250,7 @@ class Pow2(SymbolicOp2):
         return z * self.base.generator()
 
     def pow(self, z):
-        z = self.static_args["z"]
-        return [Pow2(base=self.base, z=z * z)]
+        return [Pow2(base=self.base, z=self.static_args["z"] * z)]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
