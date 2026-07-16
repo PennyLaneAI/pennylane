@@ -794,8 +794,8 @@
 <h3>Internal changes ⚙️</h3>
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - `~.S` is ported
-  - `~.T` is ported
+  - Single qubit, non-parameteric operators are ported:
+    - `~.S`, `~.T`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
 
