@@ -39,6 +39,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_involutory,
     pow_rotation,
+    self_adjoint,
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -1269,7 +1270,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
-add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
+add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
@@ -1470,7 +1471,7 @@ def _toffoli_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
-add_decomps("Adjoint(Toffoli)", self_adjoint_legacy)
+add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
@@ -1690,7 +1691,7 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
     ]
 
 
-add_decomps("Adjoint(MultiControlledX)", self_adjoint_legacy)
+add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
