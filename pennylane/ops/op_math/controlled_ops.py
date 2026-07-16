@@ -1207,9 +1207,6 @@ class CNOT(Controlled2):
     def adjoint(self):
         return CNOT(self.wires)
 
-    def __repr__(self):
-        return f"CNOT(wires={self.wires.tolist()})"
-
     @staticmethod
     @lru_cache
     # pylint: disable=arguments-differ, unused-argument
@@ -1356,9 +1353,6 @@ class Toffoli(Controlled2):
     def __abstract_init__(self, wires: WiresLike):
         super().__abstract_init__(qp.X(Wire[1]), Wire[2])
 
-    def __repr__(self):
-        return f"Toffoli(wires={self.wires.tolist()})"
-
     def adjoint(self):
         return Toffoli(self.wires)
 
@@ -1484,12 +1478,12 @@ add_decomps("Adjoint(Toffoli)", self_adjoint_legacy)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
-def _toffoli_elbow_resources():
+def _toffoli_elbow_resources(**_):
     return {change_op_basis_resource_rep(qp.Elbow, qp.CNOT): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
-def _toffoli_elbow(wires: WiresLike, **__):
+def _toffoli_elbow(wires: WiresLike):
     with allocate(1, qp.allocation.AllocateState.ZERO, restored=True) as work_wires:
         qp.change_op_basis(
             qp.Elbow([wires[0], wires[1], work_wires[0]]), qp.CNOT([work_wires[0], wires[2]])

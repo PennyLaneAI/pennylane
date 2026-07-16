@@ -361,7 +361,7 @@ def register_resources(
                   qp.CRot: 1
               }
 
-          @qp.register_condition(lambda wires, **_: (len(wires) - 1) > 1)
+          @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
           @qp.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
           def _controlled_rot_decomp(*params, wires, **_):
               with allocate(1, state="zero", restored=True) as work_wires:
@@ -416,6 +416,7 @@ class DecompositionRule:
         exact_resources: bool = True,
         name: str = "",
     ):
+
         self._impl = func
 
         try:
@@ -648,7 +649,7 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
-def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
