@@ -27,6 +27,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qp
 from pennylane.allocation import allocate
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -1560,10 +1561,8 @@ class MultiControlledX(Controlled2):
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         wires = Wires(wires)
-
         if len(wires) < 2:
             raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
-
         super().__init__(
             base=qp.X(wires[-1]),
             control_wires=wires[:-1],
@@ -1580,6 +1579,9 @@ class MultiControlledX(Controlled2):
         work_wires: WiresLike | AbstractWires | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
+        if not isinstance(wires, AbstractWires):
+            wires = abstractify(Wires(wires))
+
         if len(wires) < 2:
             raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
 
@@ -1604,38 +1606,86 @@ class MultiControlledX(Controlled2):
         )
 
     @staticmethod
-    def compute_matrix(wires: Wires, control_values: Sequence[bool], **_):
-        control_wires = wires[:-1]
-        padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2
+    @override
+    # pylint: disable=unused-argument
+    def compute_matrix(
+        wires: WiresLike,
+        control_values: int | bool | Sequence[int | bool] | None = None,
+        work_wires: WiresLike | None = None,
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
+        arguments = _setup_inputs_mcx(wires, control_values, work_wires, work_wire_type)
+        control_wires = arguments["wires"][:-1]
+        ctrl_vals = arguments["control_values"]
+        padding_left = sum(2**i * int(v) for i, v in enumerate(reversed(ctrl_vals))) * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
         return block_diag(np.eye(padding_left), qp.X.compute_matrix(), np.eye(padding_right))
 
     @staticmethod
     @override
-    def compute_decomposition(wires, control_values, work_wires, work_wire_type):
+    # pylint: disable=unused-argument
+    def compute_decomposition(
+        wires: WiresLike,
+        control_values: int | bool | Sequence[int | bool] | None = None,
+        work_wires: WiresLike | None = None,
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
         """Chooses the best decomposition rule for MCX."""
 
-        if len(wires) <= 3:
-            return _to_op_list(mcx_to_cnot_or_toffoli)(wires, control_values)
+        arguments = _setup_inputs_mcx(wires, control_values, work_wires, work_wire_type)
 
-        arguments = {
-            "wires": wires,
-            "control_values": control_values,
-            "work_wires": work_wires,
-            "work_wire_type": work_wire_type,
-        }
+        if len(arguments["wires"]) <= 3:
+            return _to_op_list(mcx_to_cnot_or_toffoli)(**arguments)
 
-        n_ctrl_wires = len(wires) - 1
-        if len(work_wires) >= n_ctrl_wires - 2:
+        n_ctrl_wires = len(arguments["wires"]) - 1
+
+        if len(arguments["work_wires"]) >= n_ctrl_wires - 2:
             return _to_op_list(decompose_mcx_many_workers)(**arguments)
 
-        if len(work_wires) >= 2:
+        if len(arguments["work_wires"]) >= 2:
             return _to_op_list(decompose_mcx_two_workers)(**arguments)
 
-        if len(work_wires) == 1:
+        if len(arguments["work_wires"]) == 1:
             return _to_op_list(decompose_mcx_one_worker)(**arguments)
 
         return _to_op_list(decompose_mcx_with_no_worker)(**arguments)
+
+
+def _setup_inputs_mcx(
+    wires: WiresLike,
+    control_values: int | bool | Sequence[int | bool] | None = None,
+    work_wires: WiresLike | None = None,
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+):
+    # Validate and canonicalize wire args
+    wires = Wires(wires)
+    if len(wires) < 2:
+        raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
+    work_wires = Wires([] if work_wires is None else work_wires)
+    if Wires.shared_wires([work_wires, wires]):
+        raise ValueError("work_wires must not overlap with the operator wires.")
+
+    # Validate and canonicalize control values
+    if control_values is None:
+        control_values = [True] * (len(wires) - 1)
+    if isinstance(control_values, (int, bool)):
+        control_values = [bool(control_values)]
+    if len(control_values) != len(wires) - 1:
+        raise ValueError("control_values should be the same length as control_wires")
+    control_values = [bool(v) for v in control_values]
+
+    # Validate work_wire_type
+    accepted = {"zeroed", "borrowed"}
+    if work_wire_type not in accepted:
+        raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
+
+    # Return processed inputs
+    return {
+        "wires": wires,
+        "control_values": control_values,
+        "work_wires": work_wires,
+        "work_wire_type": work_wire_type,
+    }
 
 
 def _to_op_list(rule):
