@@ -133,6 +133,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
+        _ = pop_op_eqns((base,))
+
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
@@ -534,6 +536,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     def _bind_primitive(self):
         """Bind the operator primitive. ``ControlledOp2`` has to override the method of
         the base ``Operator2`` class so that we can "edit" the original primitive."""
+
         if not qp.capture.enabled():
             return
 

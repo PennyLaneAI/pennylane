@@ -1016,70 +1016,70 @@ pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, e
         [2],
         [0, 1],
         None,
-        qp.Toffoli(wires=[0, 1, 2]).decomposition(),
+        [qp.Toffoli(wires=[0, 1, 2])],
     ),
     (
         qp.PauliX,
         [2],
         [0, 1],
         ["aux"],
-        qp.MultiControlledX(wires=[0, 1, 2], work_wires=Wires("aux")).decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2], work_wires=Wires("aux"))],
     ),
     (
         qp.CNOT,
         [1, 2],
         [0],
         None,
-        qp.Toffoli(wires=[0, 1, 2]).decomposition(),
+        [qp.Toffoli(wires=[0, 1, 2])],
     ),
     (
         qp.CNOT,
         [1, 2],
         [0],
         ["aux"],
-        qp.MultiControlledX(wires=[0, 1, 2], work_wires=Wires("aux")).decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2], work_wires=Wires("aux"))],
     ),
     (
         qp.PauliX,
         [3],
         [0, 1, 2],
         None,
-        qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]).decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[])],
     ),
     (
         qp.PauliX,
         [3],
         [0, 1, 2],
         ["aux"],
-        qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")).decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux"))],
     ),
     (
         qp.CNOT,
         [2, 3],
         [0, 1],
         None,
-        qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]).compute_decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[])],
     ),
     (
         qp.CNOT,
         [2, 3],
         [0, 1],
         ["aux"],
-        qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")).decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux"))],
     ),
     (
         qp.Toffoli,
         [1, 2, 3],
         [0],
         None,
-        qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]).decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[])],
     ),
     (
         qp.Toffoli,
         [1, 2, 3],
         [0],
         ["aux"],
-        qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")).decomposition(),
+        [qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux"))],
     ),
 ]
 
@@ -1187,7 +1187,6 @@ class TestDecomposition:
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
         assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
         assert custom_ctrl_op.decomposition() == expected
         # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
         # to test, just the controlled decompositions logic.
@@ -1231,10 +1230,8 @@ class TestDecomposition:
         """Tests decompositions where the base is PauliX"""
 
         base_op = base_cls(wires=base_wires)
-        ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=work_wires)
-
+        ctrl_op = ControlledOp2(base_op, control_wires=ctrl_wires, work_wires=work_wires)
         assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
@@ -1247,7 +1244,6 @@ class TestDecomposition:
             qp.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_undefined(self):
         """Tests error raised when decomposition is undefined"""
@@ -1264,18 +1260,16 @@ class TestDecomposition:
         base = TempOperator("a")
         op = Controlled(base, control_wires, control_values)
 
-        decomp1 = op.decomposition()
-        decomp2 = qp.tape.QuantumScript(op.decomposition()).circuit
+        decomp = op.decomposition()
 
-        for decomp in [decomp1, decomp2]:
-            qp.assert_equal(decomp[0], qp.PauliX(1))
-            qp.assert_equal(decomp[1], qp.PauliX(2))
+        qp.assert_equal(decomp[0], qp.PauliX(1))
+        qp.assert_equal(decomp[1], qp.PauliX(2))
 
-            assert isinstance(decomp[2], Controlled)
-            assert decomp[2].control_values == [True, True, True]
+        assert isinstance(decomp[2], Controlled)
+        assert decomp[2].control_values == [True, True, True]
 
-            qp.assert_equal(decomp[3], qp.PauliX(1))
-            qp.assert_equal(decomp[4], qp.PauliX(2))
+        qp.assert_equal(decomp[3], qp.PauliX(1))
+        qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, _, expected",

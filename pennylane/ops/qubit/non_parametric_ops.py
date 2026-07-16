@@ -544,10 +544,10 @@ def _controlled_x_decomp(base, control_wires, control_values, work_wires, work_w
 
     if len(control_wires) == 1:
         qp.CNOT(wires=wires)
-        qp.cond(control_values[0], qp.X)(wires[1])
+        qp.cond(math.logical_not(control_values[0]), qp.X)(wires[1])
         return
 
-    if len(control_wires) > 2:
+    if len(control_wires) > 2 or len(work_wires) > 0:
         qp.MultiControlledX(
             wires=wires,
             control_values=control_values,

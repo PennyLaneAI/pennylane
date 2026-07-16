@@ -405,7 +405,7 @@ def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     # Case 1: Decompose to single CNOT
     if len(wires) == 2:
         qp.CNOT(wires=wires)
-        qp.cond(control_values[0], qp.X)(wires[1])
+        qp.cond(math.logical_not(control_values[0]), qp.X)(wires[1])
         return
 
     @qp.for_loop(0, len(wires) - 1)
