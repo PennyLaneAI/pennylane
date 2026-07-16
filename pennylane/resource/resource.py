@@ -431,8 +431,9 @@ class SpecsResources(Resources):
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
         if (
-            self.circuit_depth is None and type(self) == SpecsResources
-        ):  # pylint: disable=unidiomatic-typecheck
+            self.circuit_depth is not None
+            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
+        ):
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.circuit_depth)
@@ -472,8 +473,9 @@ class SpecsResources(Resources):
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
         if (
-            self.circuit_depth is None and type(self) == SpecsResources
-        ):  # pylint: disable=unidiomatic-typecheck
+            self.circuit_depth is not None
+            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
+        ):
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.depth, markdown_safe=True)

@@ -135,34 +135,35 @@ class TestSpecsResources:
 
         s = example_specs_resource
 
-        expected = "Wire allocations: 2\n"
-        expected += "Total gates: 3\n"
-        expected += "Quantum operations:\n"
-        expected += "- Hadamard: 2\n"
-        expected += "- CNOT: 1\n"
-        expected += "Measurements:\n"
-        expected += "- expval(PauliZ): 1\n"
-        expected += "Circuit Depth: 2"
-
-        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+        expected = textwrap.dedent("""\
+            Wire allocations: 2
+            Total gates: 3
+            Quantum operations:
+            - Hadamard: 2
+            - CNOT: 1
+            Measurements:
+            - expval(PauliZ): 1
+            Circuit Depth: 2""")
 
         assert str(s) == expected
         assert s.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
         assert s.to_pretty_str(preindent=4) == expected_indented
 
         # Check with no depth, gates, or measurements
 
         s = SpecsResources(counts={}, gate_sizes={}, measurements={}, num_allocs=0)
 
-        expected = "Wire allocations: 0\n"
-        expected += "Total gates: 0\n"
-        expected += "Quantum operations:\n"
-        expected += "- No gates.\n"
-        expected += "Measurements:\n"
-        expected += "- No measurements.\n"
-        expected += "Circuit Depth: Not computed"
+        expected = textwrap.dedent("""\
+            Wire allocations: 0
+            Total gates: 0
+            Quantum operations:
+            - No operations.
+            Measurements:
+            - No measurements.
+            Circuit Depth: Not computed""")
 
-        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+        expected_indented = textwrap.indent(expected, " " * 4)
 
         assert str(s) == expected
         assert s.to_pretty_str() == expected
@@ -1116,7 +1117,7 @@ class TestIPythonDisplays:
             | **Wire allocations** | 1 |
             | **Total gates** | 0 |
             | **Quantum operations:** | |
-            | *No gates* | |
+            | *No operations* | |
             | **Measurements:** | |
             | *No measurements* | |
             | **Depth** | Not computed |

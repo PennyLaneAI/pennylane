@@ -793,6 +793,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The class :class:`pennylane.resource.SpecsResources` has been refactored into a new hierarchy of classes.
+  These classes support greater flexibility and expressiveness for resource classes.
+  [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
+
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - `~.S` is ported
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
