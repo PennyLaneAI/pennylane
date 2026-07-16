@@ -715,19 +715,13 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
 def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
-    def _condition_fn(*args, **kwargs):
-        return rule.is_applicable(*args, **kwargs)
+    def _condition_fn(**arguments):
+        return rule.is_applicable(**arguments)
 
-    def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        gate_counts = rule.compute_resources(
-            base=base,
-            control_wires=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        ).gate_counts
-        # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
-        #       gates for no reason. It'll be like this until we have a better solution.
+    def _resource_fn(**arguments):
+        control_values = arguments.pop("control_values")
+        arguments["control_values"] = None
+        gate_counts = rule.compute_resources(**arguments).gate_counts
         base_x_count = gate_counts.get(qp.X, 0)
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
@@ -740,20 +734,22 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         exact=False,
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
-    def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+    def _impl(**arguments):
+
+        control_values = arguments.pop("control_values")
+        arguments["control_values"] = None
+
+        # The assumption here is that the operator either has "wires" or "control_wires",
+        # which allows us to use this for both general controlled ops or special controlled
+        # ops like MultiControlledX and ControlledQubitUnitary
+        wires = arguments.get("control_wires", arguments["wires"])
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
+            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
 
         _x_flips()
-        rule(
-            base,
-            control_wires=control_wires,
-            control_values=None,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
+        rule(**arguments)
         _x_flips()
 
     base_source = rule._source
