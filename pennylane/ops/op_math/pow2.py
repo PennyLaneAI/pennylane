@@ -1,7 +1,7 @@
 from typing import Union
 
 import pennylane as qp
-from pennylane import capture, math, Adjoint
+from pennylane import capture, math
 from pennylane.core import Operator, Operator2
 from pennylane.core.operator import abstractify
 from pennylane.core.queuing import QueuingManager, apply
@@ -28,6 +28,7 @@ from pennylane.ops.op_math import adjoint, prod
 
 from ..functions import bind_new_parameters
 from .adjoint2 import _adjoint_abstract, Adjoint2
+from .adjoint import Adjoint
 from .symbolicop2 import SymbolicOp2
 
 
