@@ -1327,6 +1327,7 @@ class T(Operator2):
     wire_sizes = (1,)
     num_wires = 1
     num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
 
     arg_specs = {"wires": Wire[1]}
 
