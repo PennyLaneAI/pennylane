@@ -318,7 +318,7 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
 # pylint: disable=protected-access,unused-argument
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
 @register_resources(lambda base, z: {abstractify(base): z})
-def repeat_pow_base(wires, base, z):
+def repeat_pow_base(base, z):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 

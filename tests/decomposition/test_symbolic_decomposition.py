@@ -54,9 +54,9 @@ from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_sing
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.controlled2 import to_controlled_unitary
-from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow2
+from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
 from pennylane.typing import Float, Wire
 
 # pylint: disable=no-name-in-module
@@ -292,6 +292,16 @@ class TestPowDecomposition:
 
         assert q.queue == [qp.H(0), qp.H(0), qp.H(0)]
         assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qp.H: 3})
+
+    def test_repeat_pow_base2(self):
+        """Tests repeating the same op z number of times."""
+
+        op = pow2(qp.S(0), 3)
+        with qp.queuing.AnnotatedQueue() as q:
+            repeat_pow_base2(**op.arguments)
+
+        assert q.queue == [qp.S(0), qp.S(0), qp.S(0)]
+        assert repeat_pow_base2.compute_resources(**op.arguments) == to_resources({qp.S: 3})
 
     @pytest.mark.capture
     def test_repeat_pow_base_capture(self):
