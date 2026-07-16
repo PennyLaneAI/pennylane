@@ -40,7 +40,7 @@ def vibronic_fragments(
     """Returns a list of fragments summing to a vibronic Hamiltonian. Two different fragmentation schemes
     are available.
 
-    1. The ``blocks`` scheme is taken from Section III of `arXiv:2412.13669 <https://arxiv.org/abs/2411.13669>`_ and
+    1. The ``blocks`` scheme is taken from Section III of `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_ and
     groups the fragments by their electronic-block structure such that all potential terms sharing the same
     electronic coupling pattern are grouped together into a single fragment.
 
@@ -168,7 +168,6 @@ def _mode_frags(
         )
 
     _, alphas, betas = taylor_coeffs
-    betas = betas.copy()
 
     quadratic_frags = [
         _mode_quadratic(states, modes, index, freqs, betas)
