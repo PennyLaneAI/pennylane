@@ -25,6 +25,7 @@ from pennylane import numpy as np
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
     _count_tempAND_in_measurement_qrom,
@@ -633,7 +634,30 @@ class TestMeasurementQROM:
             _qrom_measurement_condition(num_bitstrings=8, num_work_wires=0, num_control_wires=3)
             is False
         )
+        # Extra control wires raise the work-wire requirement to num_control_wires - 1.
+        # 4 bitstrings need 2 address wires, but with 5 control wires we need 4 work wires.
+        assert (
+            _qrom_measurement_condition(num_bitstrings=4, num_work_wires=4, num_control_wires=5)
+            is True
+        )
+        assert (
+            _qrom_measurement_condition(num_bitstrings=4, num_work_wires=3, num_control_wires=5)
+            is False
+        )
+
+    def test_resources_extra_control_wires_scale_linearly(self, mocker):
+        """Extra control wires add at most one TemporaryAND each (linear, not exponential)."""
+        counts = []
+        for num_control_wires in (2, 3, 4, 5, 6):
+            res = _qrom_measurement_resources(
+                num_bitstrings=4, num_target_wires=2, num_control_wires=num_control_wires
+            )
+            counts.append(res.get(qp.resource_rep(TemporaryAND), 0))
+        # From the first extra wire onward, each extra wire adds exactly one TemporaryAND.
+        diffs = [b - a for a, b in zip(counts[1:], counts[2:])]
+        assert all(d == 1 for d in diffs)
         # Parameters extracted from ``base_params`` (Adjoint path).
+        mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
         assert (
             _qrom_measurement_condition(
                 base_params={
@@ -646,11 +670,11 @@ class TestMeasurementQROM:
         )
 
     def test_decomposition_single_bitstring(self):
-        """Test the L == 1 branch of the measurement decomposition."""
+        """Test the single-bitstring case with no control wires (true L == 1 branch)."""
         with qp.queuing.AnnotatedQueue() as q:
             _qrom_measurement_decomposition(
                 data=np.array([[1, 0, 1]]),
-                control_wires=[0],
+                control_wires=[],
                 target_wires=[1, 2, 3],
                 work_wires=[],
             )
@@ -659,6 +683,27 @@ class TestMeasurementQROM:
         assert isinstance(ops[0], qp.BasisState)
         assert ops[0].wires == qp.wires.Wires([1, 2, 3])
         assert np.array_equal(ops[0].data[0], np.array([1, 0, 1]))
+
+    def test_decomposition_single_bitstring_with_control(self):
+        """A single bitstring with a control wire must map index 1 to the identity.
+
+        With one control wire the index runs over {0, 1} while only index 0 has data, so
+        index 1 has to leave the target register untouched. The decomposition therefore
+        behaves like the L == 2 branch: a base load plus control-conditioned CNOTs that
+        undo it on the |1> branch, rather than a bare BasisState that ignores the wire.
+        """
+        with qp.queuing.AnnotatedQueue() as q:
+            _qrom_measurement_decomposition(
+                data=np.array([[1, 0, 1]]),
+                control_wires=[0],
+                target_wires=[1, 2, 3],
+                work_wires=[],
+            )
+        ops = q.queue
+        assert isinstance(ops[0], qp.BasisState)
+        assert np.array_equal(ops[0].data[0], np.array([1, 0, 1]))
+        assert all(isinstance(op, qp.CNOT) for op in ops[1:])
+        assert all(op.wires[0] == 0 for op in ops[1:])
 
     def test_decomposition_two_bitstrings(self):
         """Test the L == 2 branch of the measurement decomposition."""
@@ -838,3 +883,54 @@ class TestMeasurementQROM:
             assert np.allclose(
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
+
+    @pytest.mark.external
+    @pytest.mark.parametrize(
+        ("L", "n_extra"),
+        [(4, 1), (4, 2), (4, 3), (5, 1), (5, 2), (3, 1), (8, 1), (8, 2), (2, 1), (2, 2)],
+    )
+    def test_extra_control_wires_correctness(self, L, n_extra, seed):
+        """Extra control wires (more than ceil_log2(L)) must gate the whole QROM.
+
+        This is the scenario of the original bug: with ``n_input = ceil_log2(L) + n_extra``
+        control wires, the extra (most-significant) wires must fire the real data only when
+        they are all zero, and map every other index to the identity, while leaving the work
+        wires clean. The guard-ladder folding is exercised here for ``n_extra >= 2``.
+        """
+        rng = np.random.default_rng(seed)
+        n_target = 3
+        n_active = max(1, math.ceil(math.log2(L)))
+        n_input = n_active + n_extra
+        n_work = n_input - 1
+
+        bitstrings = rng.choice(2, size=(L, n_target))
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        wires = qp.registers(
+            {"control_wires": n_input, "work_wires": n_work, "target_wires": n_target}
+        )
+
+        shots = 10
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
+        def circuit(j):
+            qp.BasisState(j, wires=wires["control_wires"])
+            _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
+            return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+
+        for j in range(2**n_input):
+            target_samples, work_samples = circuit(j)
+
+            # Real data is loaded only when all extra (top) wires are zero, i.e. j < L.
+            expected = bitstrings[j] if j < L else np.zeros(n_target, dtype=int)
+            assert np.all(
+                target_samples == expected
+            ), f"L={L}, n_extra={n_extra}, j={j}: got {target_samples}, expected {expected}"
+            assert np.allclose(
+                work_samples, 0
+            ), f"L={L}, n_extra={n_extra}, j={j}: work wires not clean, got {work_samples}"

@@ -27,6 +27,7 @@ from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
+    adjoint_resource_rep,
     controlled_resource_rep,
     register_condition,
     register_resources,
@@ -724,7 +725,7 @@ def _count_tempAND_in_measurement_qrom(k):
 
 
 def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
-    num_bitstrings=None, num_target_wires=None, base_params=None, **_
+    num_bitstrings=None, num_target_wires=None, num_control_wires=None, base_params=None, **_
 ):
     """Resource estimate for the measurement-based QROM decomposition.
 
@@ -732,24 +733,39 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
       - 2 PauliMeasure (one X-type joint measurement, one Z measurement)
       - 1 CZ (phase correction conditioned on X measurement)
       - conditional X gates on work + targets
+
+    When more control wires than ``ceil_log2(num_bitstrings)`` are supplied, the extra
+    (most-significant) wires are folded into a single guard qubit via a ladder of
+    ``TemporaryAND`` gates (opened and later uncomputed with ``Adjoint(TemporaryAND)``).
+    This adds one ``TemporaryAND`` per extra wire, i.e. it scales linearly in the number of
+    extra control wires -- never exponentially.
     """
     # When called for Adjoint(QROM), extract params from the base parameters
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
         num_target_wires = base_params["num_target_wires"]
+        num_control_wires = base_params.get("num_control_wires", num_control_wires)
 
-    # L = num_bitstrings
+    n_active = max(1, ceil_log2(num_bitstrings))
+    if num_control_wires is None:
+        num_control_wires = n_active
+    n_extra = max(0, num_control_wires - n_active)
+
+    # The active core loads 2**n_active bitstrings, plus one extra address bit (2x) when
+    # there are any extra control wires to guard against.
     # TODO: allowing partial QROM will reduce this term
-    L = 2 ** ceil_log2(num_bitstrings)
+    L = 2**n_active if n_extra == 0 else 2 ** (n_active + 1)
 
     if L <= 1:
         return {resource_rep(BasisState, num_wires=num_target_wires): 1}
 
     if L == 2:
-        return {
+        resources = {
             resource_rep(BasisState, num_wires=num_target_wires): 1,
             resource_rep(CNOT): num_target_wires,
         }
+        _add_guard_ladder_resources(resources, n_extra)
+        return resources
 
     num_ands = _count_tempAND_in_measurement_qrom(L)
     num_measurements = 2 * num_ands  # X-type + Z per uncomputation
@@ -757,7 +773,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
 
     # TemporaryAND counts are exact
     # CNOTs, PauliX gates and BasisState ops are an approximation
-    return {
+    resources = {
         resource_rep(TemporaryAND): num_ands,
         resource_rep(PauliMeasure): num_measurements,
         resource_rep(CZ): num_cz,
@@ -766,6 +782,23 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         resource_rep(X): L,
         controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
     }
+    _add_guard_ladder_resources(resources, n_extra)
+    return resources
+
+
+def _add_guard_ladder_resources(resources, n_extra):
+    """Add the resources for the guard ladder used to fold extra control wires.
+
+    A ladder over ``n_extra >= 2`` extra wires opens ``n_extra - 1`` ``TemporaryAND`` gates
+    and uncomputes them with ``n_extra - 1`` ``Adjoint(TemporaryAND)`` gates.
+    """
+    if n_extra < 2:
+        return
+    num_ladder_ands = n_extra - 1
+    tand = resource_rep(TemporaryAND)
+    resources[tand] = resources.get(tand, 0) + num_ladder_ands
+    adj_tand = adjoint_resource_rep(TemporaryAND)
+    resources[adj_tand] = resources.get(adj_tand, 0) + num_ladder_ands
 
 
 def _qrom_measurement_condition(
@@ -777,9 +810,13 @@ def _qrom_measurement_condition(
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
         num_work_wires = base_params["num_work_wires"]
+        num_control_wires = base_params.get("num_control_wires", num_control_wires)
 
-    n_input = max(1, ceil_log2(num_bitstrings))
-    if num_bitstrings <= 2:
+    # The guard ladder folds any extra control wires at a cost of one work wire each, so the
+    # decomposition needs ``num_control_wires - 1`` work wires. Using ceil_log2(num_bitstrings)
+    # would wrongly accept cases with extra control wires that then fail for lack of work wires.
+    n_input = num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
+    if num_bitstrings <= 2 and n_input <= 1:
         return True
     return num_work_wires >= n_input - 1
 
@@ -796,7 +833,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     Work wires are always left clean (via measurement-based uncomputation).
     Decomposition is based on Fig 18. https://arxiv.org/abs/2211.15465
 
-    Requires: len(work_wires) >= ceil_log2(L) - 1.
+    Requires: len(work_wires) >= len(control_wires) - 1.
     """
     # When called for Adjoint(QROM), extract params from the base operator
     if base is not None:
@@ -812,14 +849,85 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
 
     L = len(data)
     n_input = len(control_wires)
+    control_wires = list(control_wires)
+    work_wires = list(work_wires)
 
-    # TODO: allowing partial qrom will remove this padding
-    # Pad data up to the next power of 2 with all-zero bitstrings
-    next_pow2 = 1 << ceil_log2(L)
-    if L < next_pow2:
-        width = len(data[0])
-        data = np.concatenate([data, np.zeros((next_pow2 - L, width), dtype=int)])
-        L = next_pow2
+    if n_input == 0:
+        BasisState(data[0], target_wires)
+        return
+
+    # The unary iterator only needs ``n_active = ceil_log2(L)`` address wires to index the
+    # data. When more control wires are supplied, the extra ones are the most-significant
+    # bits of the index and must gate the whole QROM: the data is only loaded when they are
+    # all zero, otherwise the operation is the identity (this matches the non-partial
+    # ``Select`` behaviour, see ``_select_decomp_unary_not_partial``).
+    #
+    # Rather than padding the data up to ``2**n_input`` (which is exponential in the number
+    # of extra wires), we fold the extra wires into a single guard qubit using a ladder of
+    # ``TemporaryAND`` gates (opened at the start, uncomputed with ``Adjoint(TemporaryAND)``
+    # at the end). This costs one extra ``TemporaryAND`` per extra wire, i.e. it is linear
+    # in the number of extra control wires.
+    n_active = max(1, ceil_log2(L))
+    n_extra = n_input - n_active
+    active_wires = control_wires[n_extra:]
+    extra_wires = control_wires[:n_extra]
+
+    width = len(data[0])
+    if L < 2**n_active:
+        data = np.concatenate([data, np.zeros((2**n_active - L, width), dtype=int)])
+
+    if n_extra == 0:
+        _measurement_qrom_core(data, active_wires, target_wires, work_wires)
+        return
+
+    # Reduce the extra (most-significant) wires to a single selector ``sel`` such that the
+    # data is loaded iff every extra wire is 0.
+    if n_extra == 1:
+        # A single extra wire is used directly as the top address bit: index 0 (wire == 0)
+        # selects the real data, index 1 (wire == 1) selects the all-zero (identity) block.
+        sel = extra_wires[0]
+        core_work = work_wires
+        zeros = np.zeros((2**n_active, width), dtype=int)
+        data_ext = np.concatenate([data, zeros])  # data in the lower (sel == 0) half
+    else:
+        # Build a NOR ladder: guard_work[-1] == 1 iff all extra wires are 0. This uses
+        # ``n_extra - 1`` TemporaryAND gates and ``n_extra - 1`` work wires.
+        guard_work = work_wires[: n_extra - 1]
+        core_work = work_wires[n_extra - 1 :]
+        TemporaryAND([extra_wires[0], extra_wires[1], guard_work[0]], control_values=[0, 0])
+        for i in range(2, n_extra):
+            TemporaryAND(
+                [guard_work[i - 2], extra_wires[i], guard_work[i - 1]], control_values=[1, 0]
+            )
+        sel = guard_work[-1]
+        zeros = np.zeros((2**n_active, width), dtype=int)
+        data_ext = np.concatenate([zeros, data])  # data in the upper (sel == 1) half
+
+    # Run the core QROM on the enlarged register [sel, *active_wires].
+    _measurement_qrom_core(data_ext, [sel, *active_wires], target_wires, core_work)
+
+    # Uncompute the guard ladder.
+    if n_extra >= 2:
+        for i in range(n_extra - 1, 1, -1):
+            qp_ops.adjoint(
+                TemporaryAND(
+                    [guard_work[i - 2], extra_wires[i], guard_work[i - 1]], control_values=[1, 0]
+                )
+            )
+        qp_ops.adjoint(
+            TemporaryAND([extra_wires[0], extra_wires[1], guard_work[0]], control_values=[0, 0])
+        )
+
+
+def _measurement_qrom_core(data, control_wires, target_wires, work_wires):
+    """Core measurement-based QROM on a full (power-of-two) address register.
+
+    ``data`` must already contain exactly ``2**len(control_wires)`` bitstrings. This is the
+    unary-iterator + measurement-uncomputation body shared by the general decomposition;
+    wrapping logic (padding, guarding extra control wires) is handled by the caller.
+    """
+    n_input = len(control_wires)
+    L = len(data)
 
     if L == 1:
         BasisState(data[0], target_wires)
