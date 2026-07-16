@@ -54,8 +54,12 @@ from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_sing
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.controlled2 import to_controlled_unitary
+from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
+from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow2
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
 from pennylane.typing import Float, Wire
 
@@ -319,6 +323,22 @@ class TestPowDecomposition:
         collector.eval(plxpr.jaxpr, plxpr.consts)
         assert collector.state["ops"] == [qp.H(0), qp.H(0), qp.H(0)]
 
+    @pytest.mark.capture
+    def test_repeat_pow_base_capture2(self):
+        """Tests that the general pow decomposition works with capture."""
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        op = pow2(qp.S(0), 3)
+
+        def circuit():
+            repeat_pow_base2(**op.arguments)
+
+        plxpr = qp.capture.make_plxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        assert collector.state["ops"] == [qp.S(0), qp.S(0), qp.S(0)]
+
     def test_non_integer_pow_not_applicable(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
 
@@ -326,6 +346,14 @@ class TestPowDecomposition:
         assert not repeat_pow_base.is_applicable(**op.resource_params)
         op = qp.pow(qp.H(0), -1)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
+
+    def test_non_integer_pow_not_applicable2(self):
+        """Tests that is_applicable returns False when z isn't a positive integer."""
+
+        op = pow2(qp.S(0), 0.5)
+        assert not repeat_pow_base2.is_applicable(**op.arguments)
+        op = pow2(qp.S(0), -1)
+        assert not repeat_pow_base2.is_applicable(**op.arguments)
 
     def test_flip_pow_adjoint(self):
         """Tests the flip_pow_adjoint decomposition."""
@@ -341,6 +369,23 @@ class TestPowDecomposition:
                 adjoint_resource_rep(
                     qp.ops.Pow,
                     {"base_class": CustomOp, "base_params": {"key": 0}, "z": 2},
+                ): 1
+            }
+        )
+
+    def test_flip_pow_adjoint2(self):
+        """Tests the flip_pow_adjoint decomposition."""
+
+        op = pow2(qp.adjoint(DynOp(0.5, wires=[0, 1, 2])), 2)
+
+        with queuing.AnnotatedQueue() as q:
+            flip_pow_adjoint2(**op.arguments)
+
+        assert q.queue == [qp.adjoint(pow2(DynOp(0.5, wires=[0, 1, 2]), 2))]
+        assert flip_pow_adjoint2.compute_resources(**op.arguments) == Resources(
+            {
+                _adjoint_abstract(
+                    Pow2(DynOp(0.5, wires=[0, 1, 2]), 2),
                 ): 1
             }
         )
@@ -380,6 +425,41 @@ class TestPowDecomposition:
 
         assert not pow_involutory.is_applicable(CustomOp, {}, z=0.5)
 
+    def test_pow_involutory2(self):
+        """Tests the pow_involutory decomposition."""
+
+        op1 = pow2(DynOp(0.5, wires=[0, 1, 2]), 1)
+        op2 = pow2(DynOp(0.5, wires=[0, 1, 2]), 2)
+        op3 = pow2(DynOp(0.6, wires=[0, 1, 2]), 3)
+        op4 = pow2(DynOp(0.6, wires=[0, 1, 2]), 4)
+        op5 = pow2(DynOp(0.7, wires=[0, 1, 2]), 4.5)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            pow_involutory2(**op1.arguments)
+            pow_involutory2(**op2.arguments)
+            pow_involutory2(**op3.arguments)
+            pow_involutory2(**op4.arguments)
+            pow_involutory2(**op5.arguments)
+
+        assert q.queue == [
+            DynOp(0.5, wires=[0, 1, 2]),
+            DynOp(0.6, wires=[0, 1, 2]),
+            pow2(DynOp(0.7, wires=[0, 1, 2]), 0.5),
+        ]
+        assert pow_involutory2.compute_resources(**op1.arguments) == Resources(
+            {DynOp(Float, wires=Wire[3]): 1}
+        )
+        assert pow_involutory2.compute_resources(**op3.arguments) == Resources(
+            {DynOp(Float, wires=Wire[3]): 1}
+        )
+        assert pow_involutory2.compute_resources(**op2.arguments) == Resources()
+        assert pow_involutory2.compute_resources(**op4.arguments) == Resources()
+        assert pow_involutory2.compute_resources(**op5.arguments) == Resources(
+            {_pow_abstract(DynOp(Float, wires=Wire[3]), 0.5): 1}
+        )
+
+        assert not pow_involutory2.is_applicable(DynOp(0.5, wires=[0, 1, 2]), z=0.5)
+
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
 
@@ -390,6 +470,18 @@ class TestPowDecomposition:
         assert q.queue == [CustomOp(0.3 * 2.5, wires=[0, 1, 2])]
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
+        )
+
+    def test_pow_rotations2(self):
+        """Tests the pow_rotations decomposition."""
+
+        op = pow2(DynOp(0.3, wires=[0, 1, 2]), 2.5)
+        with queuing.AnnotatedQueue() as q:
+            pow_rotation2(op.base.phi, op.base.wires, op.base, op.z)
+
+        assert q.queue == [DynOp(0.3 * 2.5, wires=[0, 1, 2])]
+        assert pow_rotation2.compute_resources(**op.arguments) == Resources(
+            {DynOp(Float, wires=Wire[3]): 1}
         )
 
 
