@@ -194,7 +194,7 @@ def _make_hashable(d):
         return tuple(
             sorted(
                 ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()),
-                key=lambda x: hash(x[0]),
+                key=lambda x: repr(x[0]),
             )
         )
     if isinstance(d, CompressedResourceOp):

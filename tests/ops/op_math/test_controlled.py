@@ -1093,7 +1093,7 @@ class TestDecomposition:
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
                     qp.CH(wires=[2, 0]),
-                    Controlled(qp.S(wires=1), control_wires=2),
+                    ctrl(qp.S(wires=1), control=2),
                     qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
@@ -1897,9 +1897,9 @@ class TestCtrl:
 
         assert len(q) == 1
         assert q.queue[0] is op
-        expected = Controlled(
+        expected = ctrl(
             qp.S(wires=[0]),
-            control_wires=[3, 2, 1],
+            control=[3, 2, 1],
             control_values=[1, 0, 1],
         )
         assert op == expected

@@ -22,7 +22,8 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core import Operator2
+from pennylane.core.operator import abstractify
 from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
