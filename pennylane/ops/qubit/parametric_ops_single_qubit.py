@@ -735,8 +735,13 @@ def _rz_to_ppr(phi, wires, **_):
     qp.PauliRot(phi, "Z", wires=wires)
 
 
+@register_resources(lambda base=None: {RZ: 1})
+def _adjoint_rz(base):
+    qp.ops.functions.bind_new_parameters(base, (-base.phi,))
+
+
 add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
-add_decomps("Adjoint(RZ)", adjoint_rotation)
+add_decomps("Adjoint(RZ)", _adjoint_rz)
 add_decomps("Pow(RZ)", pow_rotation)
 
 

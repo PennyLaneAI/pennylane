@@ -2535,8 +2535,13 @@ def _crz_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "ZZ", wires=wires)
 
 
+@register_resources(lambda base=None: {CRZ: 1})
+def _adjoint_crz(base):
+    qp.ops.functions.bind_new_parameters(base, (-base.phi,))
+
+
 add_decomps(CRZ, _crz, _crz_to_ppr)
-add_decomps("Adjoint(CRZ)", adjoint_rotation)
+add_decomps("Adjoint(CRZ)", _adjoint_crz)
 add_decomps("Pow(CRZ)", pow_rotation)
 
 
