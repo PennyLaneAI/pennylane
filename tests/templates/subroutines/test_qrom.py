@@ -242,7 +242,6 @@ class TestQROM:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-
             # Initialize the work wires to a non-zero state
             for ind, wire in enumerate(work_wires):
                 qp.RX(ind, wires=wire)
