@@ -41,6 +41,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint_legacy,
 )
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -718,7 +719,22 @@ def _cz_to_ppr(wires: WiresLike, **_):
     qp.GlobalPhase(np.pi / 4)
 
 
-add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
+def _cz_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3}
+
+
+@qp.register_resources(_cz_ppm_resources, work_wires={"zeroed": 1})
+def _cz_ppm(wires: WiresLike, **__):
+    with qp.allocate(1, state="zero", restored=False) as work_wire:
+        m0 = pauli_measure("ZX", [wires[0], work_wire[0]])
+        m1 = pauli_measure("ZZ", [work_wire[0], wires[1]])
+        m2 = pauli_measure("X", work_wire[0])
+        qp.cond(m1, qp.Z)(wires[0])
+        qp.cond(m0 != m2, qp.Z)(wires[1])
+        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire to |+>
+
+
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr, _cz_ppm)
 add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
@@ -1313,7 +1329,22 @@ def _cnot_to_ppr(wires: WiresLike, **_):
     qp.GlobalPhase(np.pi / 4)
 
 
-add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
+def _cnot_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1}
+
+
+@qp.register_resources(_cnot_ppm_resources, work_wires={"zeroed": 1})
+def _cnot_ppm(wires: WiresLike, **__):
+    with qp.allocate(1, state="zero", restored=False) as work_wire:
+        m0 = pauli_measure("ZX", [wires[0], work_wire[0]])
+        m1 = pauli_measure("ZX", [work_wire[0], wires[1]])
+        m2 = pauli_measure("X", work_wire[0])
+        qp.cond(m1, qp.Z)(wires[0])
+        qp.cond(m0 != m2, qp.X)(wires[1])
+        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire to |+>
+
+
+add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr, _cnot_ppm)
 add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 

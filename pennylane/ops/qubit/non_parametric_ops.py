@@ -271,7 +271,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 def _hadamard_ppm_resources():
-    return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 1}
+    return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2}
 
 
 @qp.register_resources(_hadamard_ppm_resources, work_wires={"zeroed": 1})
@@ -282,6 +282,7 @@ def _hadamard_ppm(wires, **__):
         m0 = pauli_measure("YY", both_wires)
         m1 = pauli_measure("X", work_wire)
         qp.cond(m0 == m1, qp.Y)(wires)
+        qp.cond(m1, qp.Z)(work_wire)  # Reset work wire to |+>
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry, _hadamard_ppm)
