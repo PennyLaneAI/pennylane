@@ -461,8 +461,16 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    # Protect against cases where you have an Operator1 consuming Operator2
-    if isinstance(op, Operator1) and not any(isinstance(sub, Operator2) for sub in data):
+    # Protect against cases where an Operator1 consumes an Operator2 at any depth (e.g.
+    # Evolution(LinearCombination(..., Y(0)))): Operator2 wires are dynamic pytree leaves,
+    # not legacy `.data` parameters, so the comparison below does not apply. `_flatten` only
+    # exposes direct children, so nested Operator2s are detected by stopping the pytree
+    # traversal at Operator2 nodes.
+    contains_op2 = any(
+        isinstance(leaf, Operator2)
+        for leaf in jax.tree_util.tree_leaves(op, is_leaf=lambda x: isinstance(x, Operator2))
+    )
+    if isinstance(op, Operator1) and not contains_op2:
         for d1, d2 in zip(op.data, leaves, strict=True):
             assert qp.math.allclose(
                 d1, d2
