@@ -982,15 +982,21 @@ class Operator2(metaclass=OperatorMeta):
 
         inputs = []
 
-        for key, value in self.arguments.items():
+        remove_dyn_keywords = not (
+            self.static_argnames or self.compilable_argnames or self.hybrid_argnames
+        )
 
+        for key, value in self.arguments.items():
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={value}")
+            if key in self.dynamic_argnames and remove_dyn_keywords:
+                inputs.append(f"{value}")
+            else:
+                inputs.append(f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
