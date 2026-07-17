@@ -330,6 +330,32 @@ class Resources:
             Top-level fields, as well as :class:`Expression` values within (possibly nested)
             dictionaries of arbitrary depth, will be substituted. List items and other non-dict
             containers will not be affected.
+
+        Args:
+            substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
+                If None, an empty dictionary is used. Additional keyword arguments can also be provided.
+
+        .. details::
+
+            **Example**
+
+            >>> from pennylane.resource import SpecsResources, Expression
+            >>> res = SpecsResources(
+            ...     counts={"CNOT": Expression({("x",): 1})},
+            ...     measurement_processes={"expval(PauliX)": 1},
+            ...     num_allocs=2,
+            ...     circuit_depth=1,
+            ... )
+
+            Calling this method will return a new instance of the same type which has the same
+            structure but with the symbolic variables substituted with the provided values.
+            A substitution may either use a dictionary or keyword arguments:
+
+            >>> res.subs({"x": 3})
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
+
+            >>> res.subs(x=3)
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
         """
         if substitutions is None:
             substitutions = {}
