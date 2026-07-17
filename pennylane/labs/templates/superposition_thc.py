@@ -249,7 +249,7 @@ class SuperpositionTHC(Operation):
         return q.queue
 
 
-def _left_equalities(
+def _left_inequalities(
     M, N, mu_wires, nu_wires, work_wires, keep_eq=False
 ):  # pylint:disable=too-many-arguments
     r"""Apply the inequality tests that flag a valid THC index pair.
@@ -278,7 +278,7 @@ def _left_equalities(
         keep_eq (bool): If ``False`` (the default, used in the forward passes and the
             first adjoint), ``work_wires[3]`` is computed via the zero-controlled
             ``MultiControlledX``. If ``True`` (used only in the final
-            ``adjoint(_left_equalities)``), that gate is skipped so the prepared
+            ``adjoint(_left_inequalities)``), that gate is skipped so the prepared
             ``work_wires[3]`` flag is left in place as an output.
     """
     n = len(mu_wires)
@@ -357,12 +357,12 @@ def _superposition_thc_resources(num_mu_wires, M, N):
         _controlled_rep(X, 3): 1,
         _controlled_rep(Z, 3): 1,
         _controlled_rep(Z, 2 * n): 1,
-        # left_equalities applied twice in the forward direction
+        # _left_inequalities applied twice in the forward direction
         lcc_le: 2,
         lcc_gt: 2,
         lqc: 2,
         basis: 2,
-        # left_equalities applied twice as an adjoint.
+        # _left_inequalities applied twice as an adjoint.
         adjoint_resource_rep(LeftClassicalComparator, lcc_le.params): 2,
         adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params): 2,
         adjoint_resource_rep(LeftQuantumComparator, lqc.params): 2,
@@ -402,14 +402,14 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 3. Flag the valid index pairs, then mark the "success" subspace with a phase.
-    _left_equalities(M, N, mu_wires, nu_wires, work_wires)
+    _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
     Controlled(Z(work_wires[5]), control_wires=work_wires[0:3], work_wires=extra_work)
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
 
     # 4. Uncompute the flags and the amplitude-marking rotation.
-    adjoint(_left_equalities)(M, N, mu_wires, nu_wires, work_wires)
+    adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires)
     RY(-angle, wires=work_wires[0])
 
     # 5. Reflection about the equal-superposition state (the amplification step).
@@ -428,7 +428,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # 6. Recompute the flags onto the output ancilla register (work_wires[5], work_wires[6]).
-    _left_equalities(M, N, mu_wires, nu_wires, work_wires)
+    _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
     Controlled(
@@ -439,7 +439,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    adjoint(lambda: _left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
 
 
 add_decomps(SuperpositionTHC, _superposition_thc)
