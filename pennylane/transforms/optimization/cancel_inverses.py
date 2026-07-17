@@ -223,7 +223,7 @@ def cancel_inverses(
         <BLANKLINE>
         Quantum operations:
         - Total: 1
-        - RX: 1
+          - RX: 1
         Measurement processes:
         - expval(PauliZ): 1
         Wire allocations: 1

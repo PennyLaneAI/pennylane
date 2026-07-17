@@ -165,8 +165,8 @@
   Symbolic Variables: a
   Quantum operations:
   - Total: a + 2
-  - Hadamard: 1
-  - PauliX: a + 1
+    - Hadamard: 1
+    - PauliX: a + 1
   Measurement processes:
   - expval(PauliX): 1
   Wire allocations: 1
@@ -181,8 +181,8 @@
   >>> print(res.subs(a=5))
   Quantum operations:
   - Total: 7
-  - Hadamard: 1
-  - PauliX: 6
+    - Hadamard: 1
+    - PauliX: 6
   Measurement processes:
   - expval(PauliX): 1
   Wire allocations: 1

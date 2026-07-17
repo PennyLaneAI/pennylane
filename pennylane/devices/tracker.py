@@ -92,7 +92,7 @@ class Tracker:
     >>> print(tracker.history['resources'][0])
     Quantum operations:
     - Total: 1
-    - RX: 1
+      - RX: 1
     Measurement processes:
     - expval(PauliZ): 1
     Wire allocations: 1
@@ -157,7 +157,7 @@ class Tracker:
         >>> print(resources_lst[0])
         Quantum operations:
         - Total: 1
-        - RX: 1
+          - RX: 1
         Measurement processes:
         - expval(PauliZ): 1
         Wire allocations: 1

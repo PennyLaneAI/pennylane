@@ -481,10 +481,10 @@ Level: 2
 Batched tape a:
     Quantum operations:
     - Total: 5
-    - RandomLayers: 1
-    - RX: 1
-    - SWAP: 1
-    - PauliX: 2
+      - RandomLayers: 1
+      - RX: 1
+      - SWAP: 1
+      - PauliX: 2
     Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
     Wire allocations: 2
@@ -493,10 +493,10 @@ Batched tape a:
 Batched tape b:
     Quantum operations:
     - Total: 5
-    - RandomLayers: 1
-    - RX: 1
-    - SWAP: 1
-    - PauliX: 2
+      - RandomLayers: 1
+      - RX: 1
+      - SWAP: 1
+      - PauliX: 2
     Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
     Wire allocations: 3
@@ -505,10 +505,10 @@ Batched tape b:
 Batched tape c:
     Quantum operations:
     - Total: 5
-    - RandomLayers: 1
-    - RX: 1
-    - SWAP: 1
-    - PauliX: 2
+      - RandomLayers: 1
+      - RX: 1
+      - SWAP: 1
+      - PauliX: 2
     Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
     Wire allocations: 3

@@ -621,12 +621,12 @@ class PartialUnaryStatePreparation(Operation):
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Quantum operations:
     - Total: 6,040
-    - MultiplexerStatePreparation: 1
-    - BasisState: 2,414
-    - QROM: 1,207
-    - C(BasisState): 2,414
-    - MultiControlledX: 3
-    - SWAP: 1
+      - MultiplexerStatePreparation: 1
+      - BasisState: 2,414
+      - QROM: 1,207
+      - C(BasisState): 2,414
+      - MultiControlledX: 3
+      - SWAP: 1
     Measurement processes:
     - state(all wires): 1
     Wire allocations: 26
@@ -640,12 +640,12 @@ class PartialUnaryStatePreparation(Operation):
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Quantum operations:
     - Total: 3,056
-    - MultiplexerStatePreparation: 1
-    - BasisState: 320
-    - QROM: 160
-    - C(BasisState): 2,553
-    - MultiControlledX: 6
-    - SWAP: 16
+      - MultiplexerStatePreparation: 1
+      - BasisState: 320
+      - QROM: 160
+      - C(BasisState): 2,553
+      - MultiControlledX: 6
+      - SWAP: 16
     Measurement processes:
     - state(all wires): 1
     Wire allocations: 48

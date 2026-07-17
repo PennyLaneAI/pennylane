@@ -196,8 +196,8 @@ class NullQubit(Device):
     >>> print(tracker.history["resources"][0])
     Quantum operations:
     - Total: 10,000
-    - Rot: 5,000
-    - CNOT: 5,000
+      - Rot: 5,000
+      - CNOT: 5,000
     Measurement processes:
     - expval(PauliZ): 100
     Wire allocations: 100

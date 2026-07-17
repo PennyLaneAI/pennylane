@@ -226,9 +226,9 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     >>> print(qp.specs(circuit)()['resources'])
     Quantum operations:
     - Total: 4
-    - Hadamard: 2
-    - PauliMeasure: 1
-    - Conditional(PauliX): 1
+      - Hadamard: 2
+      - PauliMeasure: 1
+      - Conditional(PauliX): 1
     Measurement processes:
     - expval(PauliZ): 1
     Wire allocations: 3

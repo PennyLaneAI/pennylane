@@ -337,8 +337,8 @@ class SpecsResources(Resources):
         >>> print(res)
         Quantum operations:
         - Total: 2
-        - Hadamard: 1
-        - CNOT: 1
+          - Hadamard: 1
+          - CNOT: 1
         Measurement processes:
         - expval(PauliZ): 1
         Wire allocations: 2
@@ -415,7 +415,7 @@ class SpecsResources(Resources):
         else:
             lines.append(f"{prefix}- Total: {_count_to_str(self.total_quantum_operations)}")
             for gate, count in self.quantum_operations.items():
-                lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
+                lines.append(f"{prefix}  - {gate}: {_count_to_str(count)}")
 
         lines.append(f"{prefix}Measurement processes:")
         if not self.measurement_processes:
@@ -457,7 +457,7 @@ class SpecsResources(Resources):
             lines.append("| *No operations* | |")
         else:
             lines.append(
-                f"| Total | {_count_to_str(self.total_quantum_operations, markdown_safe=True)} |"
+                f"| *Total* | {_count_to_str(self.total_quantum_operations, markdown_safe=True)} |"
             )
             for gate, count in self.quantum_operations.items():
                 lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
@@ -621,8 +621,8 @@ class CircuitSpecs:
         <BLANKLINE>
         Quantum operations:
         - Total: 3
-        - RX: 2
-        - CNOT: 1
+          - RX: 2
+          - CNOT: 1
         Measurement processes:
         - expval(PauliZ): 1
         Wire allocations: 2
@@ -734,7 +734,8 @@ class CircuitSpecs:
         for res in flat_resources.values():
             for gate, count in res.quantum_operations.items():
                 all_quantum_operations[gate] = True
-                max_metric_length = max(max_metric_length, len(gate) + 2)
+                # Gate rows are indented by 2 extra spaces (e.g. "  - {gate}")
+                max_metric_length = max(max_metric_length, len(gate) + 4)
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
                 )
@@ -784,7 +785,7 @@ class CircuitSpecs:
         )
         for gate in all_quantum_operations:
             lines.append(
-                f"- {gate}".ljust(max_metric_length)
+                f"  - {gate}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
                     _count_to_str(res.quantum_operations.get(gate, 0), extra_compact=True).rjust(
@@ -911,7 +912,7 @@ class CircuitSpecs:
         lines.append(data_row("**Quantum operations**", [""] * len(levels)))
         lines.append(
             data_row(
-                "Total",
+                "*Total*",
                 [
                     _count_to_str(r.total_quantum_operations, markdown_safe=True)
                     for r in flat_resources.values()

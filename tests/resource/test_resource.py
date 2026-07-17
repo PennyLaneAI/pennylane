@@ -128,8 +128,8 @@ class TestSpecsResources:
         expected = textwrap.dedent("""\
             Quantum operations:
             - Total: 3
-            - Hadamard: 2
-            - CNOT: 1
+              - Hadamard: 2
+              - CNOT: 1
             Measurement processes:
             - expval(PauliZ): 1
             Wire allocations: 2
@@ -196,8 +196,8 @@ class TestPBCSpecsResources:
         expected = textwrap.dedent("""\
             Quantum operations:
             - Total: 3
-            - Hadamard: 1
-            - CNOT: 2
+              - Hadamard: 1
+              - CNOT: 2
             Measurement processes:
             - expval(PauliZ): 1
             Wire allocations: 2
@@ -214,7 +214,7 @@ class TestPBCSpecsResources:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 3 |
+            | *Total* | 3 |
             | Hadamard | 1 |
             | CNOT | 2 |
             | **Measurement processes:** | |
@@ -249,8 +249,8 @@ class TestPBCSpecsResources:
             ---------------------------
             Quantum operations:    |
             - Total                |  3
-            - Hadamard             |  1
-            - CNOT                 |  2
+              - Hadamard           |  1
+              - CNOT               |  2
             Measurement processes: |
             - expval(PauliZ)       |  1
             Wire allocations       |  2
@@ -290,7 +290,7 @@ class TestPBCSpecsResources:
             | ↓Metric / Level→ | 1 |
             | :--- | ---: |
             | **Quantum operations** |  |
-            | Total | 3 |
+            | *Total* | 3 |
             | Hadamard | 1 |
             | CNOT | 2 |
             | **Measurement processes** |  |
@@ -352,7 +352,7 @@ class TestPBCSpecsResources:
             ----------------------------
             Quantum operations:    |
             - Total                | 2*x
-            - Hadamard             | 2*x
+              - Hadamard           | 2*x
             Measurement processes: |
             - expval(PauliZ)       |   1
             Wire allocations       |   2
@@ -399,7 +399,7 @@ class TestPBCSpecsResources:
             --------------------------------
             Quantum operations:    |
             - Total                |  2 |  2
-            - Hadamard             |  2 |  2
+              - Hadamard           |  2 |  2
             Measurement processes: |
             - expval(PauliZ)       |  1 |  1
             Wire allocations       |  2 |  2
@@ -640,10 +640,10 @@ class TestSymbolicSpecsResources:
         expected = "Symbolic Variables: x, z\n"
         expected += "Quantum operations:\n"
         expected += "- Total: x*z + 2*z + x + 2\n"
-        expected += "- Hadamard: 1\n"
-        expected += "- PauliX: x + 1\n"
-        expected += "- CNOT: x*z\n"
-        expected += "- PauliZ: 2*z\n"
+        expected += "  - Hadamard: 1\n"
+        expected += "  - PauliX: x + 1\n"
+        expected += "  - CNOT: x*z\n"
+        expected += "  - PauliZ: 2*z\n"
         expected += "Measurement processes:\n"
         expected += "- expval(PauliZ): 1\n"
         expected += "Wire allocations: 2*z + x + 1\n"
@@ -899,8 +899,8 @@ class TestCircuitSpecs:
         -------------------------------------------
         Quantum operations:    |
         - Total                |    6 |    1 |    1
-        - Hadamard             |    4 |    0 |    0
-        - CNOT                 |    2 |    1 |    1
+          - Hadamard           |    4 |    0 |    0
+          - CNOT               |    2 |    1 |    1
         Measurement processes: |
         - expval(PauliX)       |    1 |    1 |    0
         - expval(PauliZ)       |    1 |    0 |    1
@@ -924,8 +924,8 @@ class TestCircuitSpecs:
             ----------------------------------------------
             Quantum operations:    |
             - Total                | 4*x+2 |     x |     x
-            - Hadamard             | 2*x+2 |     0 |     0
-            - CNOT                 |   2*x |     x |     x
+              - Hadamard           | 2*x+2 |     0 |     0
+              - CNOT               |   2*x |     x |     x
             Measurement processes: |
             - expval(PauliX)       |     1 |     1 |     0
             - expval(PauliZ)       |     1 |     0 |     1
@@ -1008,7 +1008,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1026,7 +1026,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | a\\*a\\*b + a\\*a + a + 1 |
+            | *Total* | a\\*a\\*b + a\\*a + a + 1 |
             | Hadamard | a\\*a\\*b + a\\*a + a |
             | CNOT | 1 |
             | **Measurement processes:** | |
@@ -1044,7 +1044,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1083,7 +1083,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1122,7 +1122,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1162,7 +1162,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1175,7 +1175,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1217,7 +1217,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1232,7 +1232,7 @@ class TestIPythonDisplays:
             | **Metric** | **Value** |
             | :--- | ---: |
             | **Quantum operations:** | |
-            | Total | 1.000E+5 |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
@@ -1286,7 +1286,7 @@ class TestIPythonDisplays:
             | ↓Metric / Level→ | 0 | 1-a | 1-b |
             | :--- | ---: | ---: | ---: |
             | **Quantum operations** |  |  |  |
-            | Total | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
+            | *Total* | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
             | Hadamard | a\\*a\\*b + a\\*a + a | 1 | 1 |
             | CNOT | 1 | 1.000E+5 | 1.000E+5 |
             | **Measurement processes** |  |  |  |

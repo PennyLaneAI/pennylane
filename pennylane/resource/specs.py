@@ -316,9 +316,9 @@ def specs(
     <BLANKLINE>
     Quantum operations:
     - Total: 4
-    - RX: 1
-    - CNOT: 1
-    - TrotterProduct: 2
+      - RX: 1
+      - CNOT: 1
+      - TrotterProduct: 2
     Measurement processes:
     - probs(all wires): 1
     Wire allocations: 2
@@ -359,10 +359,10 @@ def specs(
         >>> print(qp.specs(circuit, level=0)(0.1).resources)
         Quantum operations:
         - Total: 6
-        - RandomLayers: 1
-        - RX: 2
-        - SWAP: 1
-        - PauliX: 2
+          - RandomLayers: 1
+          - RX: 2
+          - SWAP: 1
+          - PauliX: 2
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Wire allocations: 2
@@ -375,8 +375,8 @@ def specs(
         >>> print(qp.specs(circuit, level=2)(0.1).resources)
         Quantum operations:
         - Total: 3
-        - RandomLayers: 1
-        - RX: 2
+          - RandomLayers: 1
+          - RX: 2
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Wire allocations: 2
@@ -388,7 +388,7 @@ def specs(
         >>> print(qp.specs(circuit, level="user")(0.1).resources)
         Quantum operations:
         - Total: 1
-        - RandomLayers: 1
+          - RandomLayers: 1
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Wire allocations: 2
@@ -401,8 +401,8 @@ def specs(
         >>> print(qp.specs(circuit, level="device")(0.1).resources)
         Quantum operations:
         - Total: 2
-        - RY: 1
-        - RX: 1
+          - RY: 1
+          - RX: 1
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Wire allocations: 2
@@ -432,7 +432,7 @@ def specs(
         Batched tape a:
             Quantum operations:
             - Total: 1
-            - RandomLayers: 1
+              - RandomLayers: 1
             Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
             Wire allocations: 2
@@ -441,7 +441,7 @@ def specs(
         Batched tape b:
             Quantum operations:
             - Total: 1
-            - RandomLayers: 1
+              - RandomLayers: 1
             Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
             Wire allocations: 3
@@ -490,8 +490,8 @@ def specs(
         <BLANKLINE>
         Quantum operations:
         - Total: 2
-        - CNOT: 1
-        - RX: 1
+          - CNOT: 1
+          - RX: 1
         Measurement processes:
         - probs(all wires): 1
         Wire allocations: 3
@@ -580,9 +580,9 @@ def specs(
         -------------------------------------
         Quantum operations:    |
         - Total                |  5 |  3 |  2
-        - CNOT                 |  1 |  1 |  1
-        - PauliX               |  2 |  0 |  0
-        - RX                   |  2 |  2 |  1
+          - CNOT               |  1 |  1 |  1
+          - PauliX             |  2 |  0 |  0
+          - RX                 |  2 |  2 |  1
         Measurement processes: |
         - probs(all wires)     |  1 |  1 |  1
         Wire allocations       |  3 |  3 |  3
@@ -594,8 +594,8 @@ def specs(
         >>> print(all_specs.resources['merge-rotations'])
         Quantum operations:
         - Total: 2
-        - CNOT: 1
-        - RX: 1
+          - CNOT: 1
+          - RX: 1
         Measurement processes:
         - probs(all wires): 1
         Wire allocations: 3
@@ -608,8 +608,8 @@ def specs(
         >>> print(qp.specs(circuit, level="user")(1.23).resources)
         Quantum operations:
         - Total: 2
-        - CNOT: 1
-        - RX: 1
+          - CNOT: 1
+          - RX: 1
         Measurement processes:
         - probs(all wires): 1
         Wire allocations: 3
@@ -647,7 +647,7 @@ def specs(
         -----------------------------------------------------------------------
         Quantum operations:    |
         - Total                |    2 |    2 |    2 |    2 |    2 |    0 |    0
-        - PauliX               |    2 |    2 |    2 |    2 |    2 |    0 |    0
+          - PauliX             |    2 |    2 |    2 |    2 |    2 |    0 |    0
         Measurement processes: |
         - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0 |    1 |    0
         - expval(PauliX)       |    1 |    0 |    1 |    0 |    1 |    0 |    1
@@ -699,9 +699,9 @@ def specs(
         Symbolic Variables: a, b
         Quantum operations:
         - Total: b + a + 2
-        - Hadamard: 1
-        - PauliX: a + 1
-        - PauliZ: b
+          - Hadamard: 1
+          - PauliX: a + 1
+          - PauliZ: b
         Measurement processes:
         - expval(PauliZ): 1
         Wire allocations: 1
@@ -715,9 +715,9 @@ def specs(
         >>> print(res.subs(a=5, b=3))
         Quantum operations:
         - Total: 10
-        - Hadamard: 1
-        - PauliX: 6
-        - PauliZ: 3
+          - Hadamard: 1
+          - PauliX: 6
+          - PauliZ: 3
         Measurement processes:
         - expval(PauliZ): 1
         Wire allocations: 1
@@ -729,9 +729,9 @@ def specs(
         >>> print(res.subs({"a": 5, "b": 3}))
         Quantum operations:
         - Total: 10
-        - Hadamard: 1
-        - PauliX: 6
-        - PauliZ: 3
+          - Hadamard: 1
+          - PauliX: 6
+          - PauliZ: 3
         Measurement processes:
         - expval(PauliZ): 1
         Wire allocations: 1

@@ -79,7 +79,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     <BLANKLINE>
     Quantum operations:
     - Total: 2
-    - RX: 2
+      - RX: 2
     Measurement processes:
     - probs(all wires): 1
     Wire allocations: 1

@@ -479,7 +479,7 @@ class Subroutine:
     >>> print(qp.specs(c)().resources)
     Quantum operations:
     - Total: 1
-    - MyTemplate: 1
+      - MyTemplate: 1
     Measurement processes:
     - state(all wires): 1
     Wire allocations: 1

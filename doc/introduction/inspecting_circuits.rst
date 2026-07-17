@@ -64,10 +64,10 @@ Level: gradient
 <BLANKLINE>
 Quantum operations:
 - Total: 4
-- RX: 1
-- Toffoli: 1
-- CRY: 1
-- Rot: 1
+  - RX: 1
+  - Toffoli: 1
+  - CRY: 1
+  - Rot: 1
 Measurement processes:
 - expval(PauliZ): 1
 - expval(PauliX): 1
