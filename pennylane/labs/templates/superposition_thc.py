@@ -61,7 +61,7 @@ class SuperpositionTHC(Operation):
         prepared flags: `work_wires[0]`, `work_wires[3]`, and `work_wires[6]`.
 
         - `work_wires[0]`: Assures that the amplitude amplification process has been performed correctly.
-        - `work_wires[3]`: Evaluates to true if the system is in the state |\eta = M>.
+        - `work_wires[3]`: Evaluates to true if the system is in the state :math:`|\eta = M>`.
         - `work_wires[6]`: Evaluates to true if the superposition has been prepared correctly.
 
     Args:
@@ -120,7 +120,7 @@ class SuperpositionTHC(Operation):
         [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2), (1, 3), (1, 4), (2, 2), (2, 3), (2, 4), (3, 3), (3, 4), (4, 4)]
         >>> len(valid) == N // 2 + M * (M + 1) // 2
         True
-        >>> float(probs[0, 0, 1])
+        >>> round(float(probs[0, 0, 1]), 4)
         0.015625
     """
 
@@ -164,8 +164,8 @@ class SuperpositionTHC(Operation):
         if overlap:
             raise ValueError(f"mu_wires and nu_wires must be disjoint, but share: {list(overlap)}.")
 
-        if N / 2 > M + 1:
-            raise ValueError("M must be greater than or equal to N/2 - 1.")
+        if N // 2 > M + 1:
+            raise ValueError("M must be greater than or equal to N//2 - 1.")
 
         # The index registers must be able to hold the one-body sentinel value
         # ``M`` (the column flagged by ``nu = M``), so ``M <= 2 ** n - 1``.
@@ -416,7 +416,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     for wire in Wires.all_wires([mu_wires, nu_wires]):
         Hadamard(wire)
 
-    # The Fig 3. has a typo and these X gates have to be added
+    # Fig. 3 has a typo; these X gates must be added.
     for wire in mu_wires + nu_wires + [work_wires[0]]:
         X(wires=wire)
     GlobalPhase(np.pi)

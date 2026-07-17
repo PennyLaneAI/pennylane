@@ -177,7 +177,7 @@ class TestLeftClassicalComparator:
     @pytest.mark.parametrize("n", [2, 3, 4])
     def test_max_bound_all_inputs(self, comparator, n):
         """Test for the largest allowed bound ``L = 2 ** n - 1``."""
-        
+
         x_wires = list(range(n))
         target_wire = n
         work_wires = list(range(n + 1, n + 1 + max(1, n - 1)))
