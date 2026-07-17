@@ -959,54 +959,24 @@ def _qrom_unary_iteration(
         # 2. transition address k -> k+1
         # a = MSB-first index of least-significant 0 bit of k
         a = c - _popcount(math.bitwise_xor(k, k + 1))
-        top_flipped = k >= (1 << (c - 1))  # first_bit_has_flipped
+        top_not_flipped = k < (1 << (c - 1))  # first_bit_has_flipped
 
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
         for i in range(c - 2, 0, -1):
-            cond(i >= a, qp_ops.adjoint(TemporaryAND))(wires=triples[i])
+            qp_ops.adjoint(cond(i >= a, TemporaryAND))(wires=triples[i])
 
         # 2b. merge gate(s) at the boundary
         c0, c1, c2 = triples[0]
 
-        #  a >= 2 : single CNOT at level a-1  (wires triples[a-1][0], [2])
-        for v in range(2, c):  # candidate values of a
+        cond(math.logical_and(a==1, top_not_flipped), X)(triples[0][0])
+        cond(a>0, CNOT)(triples[a-1][::2])
+        cond(math.logical_and(a==1, top_not_flipped), X)(triples[0][0])
 
-            @cond(a == v)
-            def _mid():
-                CNOT(wires=[triples[v - 1][0], triples[v - 1][2]])
-
-            _mid()
-
-        #  a == 1, top bit already flipped -> CNOT(c0, c2)
-        @cond(math.logical_and(a == 1, top_flipped))
-        def _a1_flipped():
-            CNOT(wires=[c0, c2])
-
-        _a1_flipped()
-
-        #  a == 1, not yet flipped -> active-low ctrl-X(c2 | c0)
-        @cond(math.logical_and(a == 1, math.logical_not(top_flipped)))
-        def _a1_first():
-            qp_ops.ctrl(X(c2), control=[c0], control_values=[0])
-
-        _a1_first()
-
-        #  a == 0 -> two CNOTs (occurs exactly once, at the midpoint)
-        @cond(a == 0)
-        def _a0():
-            CNOT(wires=[c0, c2])
-            CNOT(wires=[c1, c2])
-
-        _a0()
-
+        cond(a==0, CNOT)(triples[0][::2])
+        cond(a==0, CNOT)(triples[0][1:])
         # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
         for i in range(1, c - 1):
-
-            @cond(i >= a)
-            def _rec():
-                TemporaryAND(triples[i], (1, 0))
-
-            _rec()
+            cond(i >= a, TemporaryAND)(triples[i], (1, 0))
 
     loop()
     # Load last bit string
