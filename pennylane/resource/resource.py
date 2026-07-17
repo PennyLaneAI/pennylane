@@ -85,40 +85,45 @@ def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
     return flattened
 
 
-def _collect_dict_vars(data: dict) -> Generator[str, None, None]:
-    """Recursively collect the symbolic variables of every :class:`Expression` in a nested dict.
+def _collect_vars(obj: Any) -> Generator[str, None, None]:
+    """Collect the symbolic variables of every :class:`Expression` within an arbitrary pytree.
 
-    Only nested ``dict`` values are recursed into; all other value types are inspected for being
-    :class:`Expression` instances.
+    Uses :func:`~pennylane.pytrees.flatten` to traverse any registered container type (``dict``,
+    ``list``, ``tuple``, ...) to arbitrary depth, yielding the variables of every :class:`Expression`
+    leaf. Non-``Expression`` leaves are ignored.
 
     Args:
-        data (dict): The (possibly nested) dictionary to search.
+        obj (Any): The (possibly nested) object to search.
 
-    Returns:
-        Generator[str, None, None]: The union of all symbolic variables found across every :class:`Expression` value.
+    Yields:
+        str: Each symbolic variable found across every :class:`Expression` leaf.
     """
-    for value in data.values():
-        if isinstance(value, Expression):
-            yield from value.vars
-        elif isinstance(value, dict):
-            yield from _collect_dict_vars(value)
+    leaves, _ = flatten(obj)
+    for leaf_val in leaves:
+        if isinstance(leaf_val, Expression):
+            yield from leaf_val.vars
 
 
-def _subs_dict(data: dict, substitutions: dict) -> dict:
-    """Recursively substitute symbolic variables within every :class:`Expression` in a nested dict.
+def _subs_pytree(obj: Any, substitutions: dict) -> Any:
+    """Substitute symbolic variables within every :class:`Expression` leaf of an arbitrary pytree.
 
-    Only nested ``dict`` values are recursed into; all other value types are left untouched (unless
-    they are :class:`Expression` instances, which are substituted).
+    Uses :func:`~pennylane.pytrees.flatten`/:func:`~pennylane.pytrees.unflatten` to traverse any
+    registered container type (``dict``, ``list``, ``tuple``, ...) to arbitrary depth, substituting
+    into every :class:`Expression` leaf while preserving the original structure. Non-``Expression``
+    leaves are left untouched.
 
     Args:
-        data (dict): The (possibly nested) dictionary to substitute into.
+        obj (Any): The (possibly nested) object to substitute into.
         substitutions (dict): A mapping from variable names to their concrete integer values.
 
     Returns:
-        dict: A new dictionary of the same nested structure with substitutions applied.
+        Any: A new object of the same structure with substitutions applied.
     """
-    leaves, struct = flatten(data)
-    new_leaves = (l.subs(substitutions) if isinstance(l, Expression) else l for l in leaves)
+    leaves, struct = flatten(obj)
+    new_leaves = (
+        leaf_val.subs(substitutions) if isinstance(leaf_val, Expression) else leaf_val
+        for leaf_val in leaves
+    )
     return unflatten(new_leaves, struct)
 
 
@@ -185,17 +190,13 @@ class Resources:
     def __post_init__(self):
         all_vars = set()
 
-        # Iterate over all fields of the dataclass to find any Expression instances and
-        # collect their variables
+        # Iterate over all fields of the dataclass to find any Expression instances and collect
+        # their variables. Each field value is treated as a pytree, so Expressions nested to any
+        # depth within dicts/lists/tuples are found automatically.
         for obj_field in fields(self):
             if obj_field.name == "vars":
                 continue
-            value = getattr(self, obj_field.name)
-            if isinstance(value, Expression):
-                all_vars |= value.vars
-            elif isinstance(value, dict):
-                # Recurse into (possibly nested) dictionaries to collect all Expression variables
-                all_vars |= set(_collect_dict_vars(value))
+            all_vars.update(_collect_vars(getattr(self, obj_field.name)))
 
         object.__setattr__(self, "vars", frozenset(all_vars))
 
@@ -322,9 +323,9 @@ class Resources:
 
         .. note::
 
-            Top-level fields, as well as :class:`Expression` values within (possibly nested)
-            dictionaries of arbitrary depth, will be substituted. List items and other non-dict
-            containers will not be affected.
+            Every :class:`Expression` leaf is substituted, including those nested to arbitrary
+            depth within registered pytree containers (``dict``, ``list``, ``tuple``, ...). The
+            original container structure is preserved.
 
         Args:
             substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
@@ -366,14 +367,9 @@ class Resources:
         for obj_field in fields(self):
             if obj_field.init is False:
                 continue
-            value = getattr(self, obj_field.name)
-            if isinstance(value, Expression):
-                new_values[obj_field.name] = value.subs(substitutions)
-            elif isinstance(value, dict):
-                # Recurse into (possibly nested) dictionaries of arbitrary depth
-                new_values[obj_field.name] = _subs_dict(value, substitutions)
-            else:
-                new_values[obj_field.name] = value
+            # Each field value is treated as a pytree, so Expressions nested to any depth within
+            # dicts/lists/tuples are substituted automatically while preserving the structure.
+            new_values[obj_field.name] = _subs_pytree(getattr(self, obj_field.name), substitutions)
 
         return type(self)(**new_values)  # pylint: disable=missing-kwoa
 

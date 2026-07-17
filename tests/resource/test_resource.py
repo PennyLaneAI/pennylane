@@ -32,10 +32,10 @@ from pennylane.resource.resource import (
     PBCSpecsResources,
     Resources,
     SpecsResources,
-    _collect_dict_vars,
+    _collect_vars,
     _count_to_str,
     _flatten_dict,
-    _subs_dict,
+    _subs_pytree,
     num_to_letters,
     resources_from_tape,
 )
@@ -428,37 +428,64 @@ class TestNestedDictHelpers:
         assert flat == {"a": expr, "b.c": "str"}
         assert flat["a"] is expr
 
-    def test_collect_dict_vars_flat(self):
+    def test_collect_vars_flat(self):
         """Variables should be collected from top-level Expression values."""
         data = {"a": Expression({("x",): 1}), "b": 2}
-        assert set(_collect_dict_vars(data)) == {"x"}
+        assert set(_collect_vars(data)) == {"x"}
 
-    def test_collect_dict_vars_nested(self):
+    def test_collect_vars_nested(self):
         """Variables should be collected from Expressions at arbitrary depth."""
         data = {
             "a": Expression({("x",): 1}),
             "b": {"c": Expression({("y",): 1}), "d": {"e": Expression({("z",): 1})}},
         }
-        assert set(_collect_dict_vars(data)) == {"x", "y", "z"}
+        assert set(_collect_vars(data)) == {"x", "y", "z"}
 
-    def test_collect_dict_vars_none(self):
+    def test_collect_vars_none(self):
         """A dictionary without Expressions should yield an empty set."""
-        assert set(_collect_dict_vars({"a": 1, "b": {"c": 2}})) == set()
+        assert set(_collect_vars({"a": 1, "b": {"c": 2}})) == set()
 
-    def test_subs_dict_flat(self):
+    def test_collect_vars_scalar_expression(self):
+        """A bare Expression (not in a container) should have its variables collected."""
+        assert set(_collect_vars(Expression({("x",): 1}))) == {"x"}
+
+    def test_collect_vars_through_lists_and_tuples(self):
+        """Using pytrees, variables should also be found inside lists and tuples."""
+        data = {
+            "a": [Expression({("x",): 1}), 2],
+            "b": (3, {"c": Expression({("y",): 1})}),
+        }
+        assert set(_collect_vars(data)) == {"x", "y"}
+
+    def test_subs_pytree_flat(self):
         """Substitution should apply to top-level Expression values."""
         data = {"a": Expression({("x",): 2}), "b": 3}
-        assert _subs_dict(data, {"x": 5}) == {"a": 10, "b": 3}
+        assert _subs_pytree(data, {"x": 5}) == {"a": 10, "b": 3}
 
-    def test_subs_dict_nested(self):
+    def test_subs_pytree_nested(self):
         """Substitution should recurse into nested dictionaries and preserve structure."""
         data = {"a": Expression({("x",): 1}), "b": {"c": Expression({("x",): 2})}}
-        assert _subs_dict(data, {"x": 3}) == {"a": 3, "b": {"c": 6}}
+        assert _subs_pytree(data, {"x": 3}) == {"a": 3, "b": {"c": 6}}
 
-    def test_subs_dict_preserves_non_expression(self):
+    def test_subs_pytree_preserves_non_expression(self):
         """Non-Expression values should be left untouched by substitution."""
         data = {"a": 1, "b": {"c": "unchanged"}}
-        assert _subs_dict(data, {"x": 3}) == {"a": 1, "b": {"c": "unchanged"}}
+        assert _subs_pytree(data, {"x": 3}) == {"a": 1, "b": {"c": "unchanged"}}
+
+    def test_subs_pytree_scalar_expression(self):
+        """A bare Expression (not in a container) should be substituted."""
+        assert _subs_pytree(Expression({("x",): 2}), {"x": 4}) == 8
+
+    def test_subs_pytree_through_lists_and_tuples(self):
+        """Using pytrees, substitution should also reach into lists and tuples, preserving type."""
+        data = {
+            "a": [Expression({("x",): 1}), 2],
+            "b": (3, {"c": Expression({("x",): 2})}),
+        }
+        result = _subs_pytree(data, {"x": 5})
+        assert result == {"a": [5, 2], "b": (3, {"c": 10})}
+        assert isinstance(result["a"], list)
+        assert isinstance(result["b"], tuple)
 
 
 class TestNestedDictResources:
