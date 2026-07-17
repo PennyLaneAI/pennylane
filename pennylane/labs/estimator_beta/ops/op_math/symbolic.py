@@ -56,7 +56,7 @@ def _generate_name(
     >>> _generate_name(my_func)
     'my_func'
     >>> _generate_name(
-    ...     my_func
+    ...     my_func,
     ...     include_params = ["arg1", "kwarg1"],
     ...     arg1 = 10,
     ...     arg2 = True,
@@ -151,7 +151,7 @@ def mark_subroutine(
        'QROM': 1,
        'CNOT': 1
 
-    The name that is used to track the counts of the function can be further configured using the
+    The name that is used to track the counts of the function, this can be further configured using the
     ``include_params`` keyword argument.
 
     .. code-block:: python
@@ -298,7 +298,7 @@ class ResourceQfunc(ResourceOperator):
         ops_wires = Wires.all_wires([op.wires for op in decomp if op.wires is not None])
         num_unique_wires_required = max(op.num_wires for op in self.cmpr_ops)
 
-        if num_wires_:  # The total number of wires to expect is set by the user.
+        if num_wires_ is not None:  # The total number of wires to expect is set by the user.
             self.num_wires = num_wires_
             self.wires = ops_wires if len(ops_wires) == self.num_wires else None
 
