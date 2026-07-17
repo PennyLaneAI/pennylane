@@ -299,9 +299,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
-            if isinstance(base, Operator2):
-                return {abstractify(base): 1}
-            return {resource_rep(type(base), **base.resource_params): 1}
+            return {abstractify(base): 1}
         return {_pow_abstract(base, z_mod_period): 1}
 
     @register_condition(_condition_fn)
