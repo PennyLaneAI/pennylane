@@ -27,6 +27,7 @@ from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -259,15 +260,7 @@ def _increment_resources(num_wires, num_control=0):
         if num_controls == 0:
             counts[PauliX] += 1
         else:
-            counts[
-                resource_rep(
-                    MultiControlledX,
-                    num_control_wires=num_controls,
-                    num_zero_control_values=0,
-                    num_work_wires=i,
-                    work_wire_type="borrowed",
-                )
-            ] += 1
+            counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
     return counts
 
 

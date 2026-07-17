@@ -32,7 +32,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint_legacy
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.typing import FlatPytree, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -637,23 +637,17 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
 
     first_significant = binary_str.find("1")
     gate_counts[
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=first_significant + 1,
-            num_work_wires=num_work_wires + num_wires - 2 - first_significant,
-            num_zero_control_values=0,
-            work_wire_type="borrowed",
+        qp.MultiControlledX(
+            Wire[first_significant + 2],
+            work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
         )
     ] = 1
 
     while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
         gate_counts[
-            resource_rep(
-                qp.MultiControlledX,
-                num_control_wires=first_significant + 1,
-                num_work_wires=num_work_wires + num_wires - 2 - first_significant,
-                num_zero_control_values=0,
-                work_wire_type="borrowed",
+            qp.MultiControlledX(
+                Wire[first_significant + 1],
+                work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
             )
         ] = 1
 
@@ -771,50 +765,26 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
     first_zero = binary_str.find("0")
 
     if first_zero == -1:
-        return {
-            resource_rep(
-                qp.MultiControlledX,
-                num_control_wires=num_controls,
-                num_work_wires=num_work_wires,
-                num_zero_control_values=0,
-                work_wire_type="borrowed",
-            ): 1
-        }
+        return {qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires]): 1}
 
     gate_set = Counter()
 
     gate_set[
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=first_zero + 1,
-            num_work_wires=num_work_wires + num_wires - 2 - first_zero,
-            num_zero_control_values=0,
-            work_wire_type="borrowed",
+        qp.MultiControlledX(
+            Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
         )
     ] = 1
     gate_set[qp.X] = 2
 
     while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
         gate_set[
-            resource_rep(
-                qp.MultiControlledX,
-                num_control_wires=first_zero + 1,
-                num_work_wires=num_work_wires + num_wires - 2 - first_zero,
-                num_zero_control_values=0,
-                work_wire_type="borrowed",
+            qp.MultiControlledX(
+                Wire[first_zero + 2], work_wires=[num_work_wires + num_wires - 2 - first_zero]
             )
         ] = 1
         gate_set[qp.X] += 2
 
-    gate_set[
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_controls,
-            num_work_wires=num_work_wires,
-            num_zero_control_values=0,
-            work_wire_type="borrowed",
-        )
-    ] += 1
+    gate_set[qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires])] += 1
 
     return dict(gate_set)
 
