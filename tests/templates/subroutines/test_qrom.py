@@ -611,18 +611,24 @@ class TestMeasurementQROM:
 
     @pytest.mark.parametrize("n_extra", [2, 3, 4])
     def test_resources_and_ladder(self, n_extra):
-        """The AND ladder (n_extra >= 2) adds n_extra - 1 TemporaryAND and their adjoints."""
+        """The flag ladder (n_extra >= 2) adds n_extra TemporaryAND and n_extra - 1 adjoints.
+
+        The core table is not doubled, so the extra cost is only the AND ladder folding the
+        extra wires into the flag: n_extra opened, n_extra - 1 later uncomputed.
+        """
         n_active = 2  # ceil_log2(4)
         res_extra = _qrom_measurement_resources(
             num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + n_extra
         )
-        # One extra wire adds no ladder (the wire itself is the selector); use it as baseline.
+        # A single extra wire builds the flag with X gates (no ANDs from folding), so its
+        # TemporaryAND count is exactly the gated inner-iterator core; use it as the baseline.
         res_one = _qrom_measurement_resources(
             num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
         )
         assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
-        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
-            n_extra - 1
+        assert (
+            res_extra[resource_rep(TemporaryAND)]
+            == res_one[resource_rep(TemporaryAND)] + n_extra
         )
 
     def test_condition_without_compiler(self):
