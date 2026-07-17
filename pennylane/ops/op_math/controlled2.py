@@ -511,17 +511,9 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         return f"C({self.base.name})"
 
     def __repr__(self):
-        ctrl_wires = (
-            self.control_wires.tolist()
-            if isinstance(self.control_wires, Wires)
-            else self.control_wires
-        )
-        work_wires = (
-            self.work_wires.tolist() if isinstance(self.work_wires, Wires) else self.work_wires
-        )
-        params = [f"control_wires={ctrl_wires}"]
+        params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
-            params.append(f"work_wires={work_wires}")
+            params.append(f"work_wires={self.work_wires}")
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"
