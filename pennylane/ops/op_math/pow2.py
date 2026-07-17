@@ -5,7 +5,7 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import capture, math
-from pennylane.core import Operator, Operator2
+from pennylane.core import Operator
 from pennylane.core.operator import abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
@@ -20,7 +20,6 @@ from pennylane.decomposition.resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
     pow_resource_rep,
-    resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import (
@@ -98,7 +97,7 @@ class Pow2(SymbolicOp2):
         return self.base.has_sparse_matrix and isinstance(self.z, int)
 
     @staticmethod
-    def compute_matrix(base, z):
+    def compute_matrix(base, z):  # pylint: disable=arguments-differ
         mat = qp.matrix(base)
         if isinstance(z, int):
             return math.linalg.matrix_power(mat, z)
