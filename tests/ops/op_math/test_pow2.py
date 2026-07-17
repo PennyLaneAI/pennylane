@@ -31,7 +31,7 @@ from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.pow2 import Pow2, pow2
 from pennylane.templates.subroutines import ControlledSequence
 from tests.core.operator.operator2_utils import DynOp
-from .test_adjoint2 import RX2, SX2
+from tests.ops.op_math.test_adjoint2 import RX2, SX2
 
 # pylint: disable=unused-argument,arguments-differ,useless-parent-delegation,too-few-public-methods
 

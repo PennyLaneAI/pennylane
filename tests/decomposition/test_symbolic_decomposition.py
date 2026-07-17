@@ -21,7 +21,12 @@ import pytest
 import pennylane as qp
 from pennylane.core import queuing
 from pennylane.core.operator import abstractify
-from pennylane.decomposition.decomposition_rule import register_condition, register_resources
+from pennylane.decomposition.decomposition_rule import (
+    _fix_decomp,
+    list_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -460,6 +465,22 @@ class TestPowDecomposition:
 
         assert not pow_involutory2.is_applicable(DynOp(0.5, wires=[0, 1, 2]), z=0.5)
 
+    def test_pow_involutory2_legacy_base(self):
+        """Tests pow_involutory2 with a legacy (non-Operator2) base."""
+
+        base = CustomOp(0.5, wires=[0, 1, 2])
+
+        # z % period == 1 with a legacy base applies the base op directly
+        with qp.queuing.AnnotatedQueue() as q:
+            pow_involutory2(base=base, z=3)
+
+        assert q.queue == [base]
+
+        # and its resources use a resource_rep of the legacy base type
+        assert pow_involutory2.compute_resources(base=base, z=3) == Resources(
+            {resource_rep(CustomOp, key=0): 1}
+        )
+
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
 
@@ -483,6 +504,50 @@ class TestPowDecomposition:
         assert pow_rotation2.compute_resources(**op.arguments) == Resources(
             {DynOp(Float, wires=Wire[3]): 1}
         )
+
+    def test_list_pow_decomps2(self):
+        """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
+
+        # a fixed decomposition rule overrides everything else
+        op = pow2(DynOp(0.5, wires=0), 2)
+        with qp.decomposition.local_decomps():
+            _fix_decomp(op, repeat_pow_base2)
+            assert list(list_decomps(op)) == [repeat_pow_base2]
+
+        # nested powers list only the merge_powers rule
+        nested = pow2(pow2(qp.S(0), 3), 2)
+        assert list(list_decomps(nested)) == [merge_powers2]
+
+        # a power of an adjoint lists only the flip_pow_adjoint rule
+        pow_adjoint = pow2(qp.adjoint(DynOp(0.5, wires=0)), 2)
+        assert list(list_decomps(pow_adjoint)) == [flip_pow_adjoint2]
+
+        # an integer power appends repeat_pow_base to the custom rules
+        integer_pow = pow2(DynOp(0.5, wires=0), 3)
+        assert repeat_pow_base2 in list_decomps(integer_pow)
+
+        # a non-integer power does not append repeat_pow_base
+        fractional_pow = pow2(DynOp(0.5, wires=0), 0.5)
+        assert repeat_pow_base2 not in list_decomps(fractional_pow)
+
+    def test_pow_abstract2(self):
+        """Tests _pow_abstract for both the resource-rep and operator branches."""
+
+        # a resource representation abstractifies to a CompressedResourceOp and yields
+        # a pow_resource_rep
+        assert _pow_abstract(resource_rep(qp.H), 2) == pow_resource_rep(qp.H, {}, 2)
+
+        # a legacy operator type is also abstractified into a CompressedResourceOp
+        assert _pow_abstract(qp.H, 3) == pow_resource_rep(qp.H, {}, 3)
+
+        # the default exponent is 1
+        assert _pow_abstract(resource_rep(qp.H)) == pow_resource_rep(qp.H, {}, 1)
+
+        # an (abstract) Operator2 yields a Pow2
+        abstract_base = DynOp(Float, wires=Wire[3])
+        op = _pow_abstract(abstract_base, 2)
+        assert isinstance(op, Pow2)
+        qp.assert_equal(op, pow2(abstract_base, 2))
 
 
 class CustomMultiQubitOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
