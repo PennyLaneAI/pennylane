@@ -450,9 +450,18 @@ def specs(
         In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
         :class:`~.resource.SpecsResources` for each resulting tape:
 
-        >>> qp.specs(circuit, level="user")().resources
-        [SpecsResources(counts={'RandomLayers': 1}, measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=1),
-         SpecsResources(counts={'RandomLayers': 1}, measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, circuit_depth=1, total_quantum_operations=1)]
+        >>> from pprint import pprint
+        >>> pprint(qp.specs(circuit, level="user")().resources)
+        [SpecsResources(counts={'RandomLayers': 1},
+                        measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                        num_allocs=2,
+                        circuit_depth=1,
+                        total_quantum_operations=1),
+         SpecsResources(counts={'RandomLayers': 1},
+                        measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                        num_allocs=3,
+                        circuit_depth=1,
+                        total_quantum_operations=1)]
 
     .. details::
         :title: Runtime Specs with Catalyst

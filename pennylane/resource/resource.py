@@ -15,7 +15,6 @@
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
 
-# Have to use explicit super calls due to a bug with slots in dataclasses in Python 3.12 and earlier
 # pylint: disable=super-with-arguments
 
 from __future__ import annotations
@@ -103,16 +102,14 @@ class Resources:
 
         Attributes in this class can be of type :class:`Expression`, allowing for symbolic
         manipulation and substitution of variables. When variables of type :class:`Expression` are
-        present, the :attr:`vars` attribute will contain the set of all symbolic variables used in
-        the resource counts. This includes fields introduced in derived classes. Similarly, the
-        :meth:`subs` method can be used to substitute symbolic variables with concrete integer
-        values.
+        present as top-level fields or dictionary values, the :attr:`vars` attribute will contain
+        the set of all symbolic variables used in the resource counts. This includes fields
+        introduced in derived classes. Similarly, the :meth:`subs` method can be used to substitute
+        symbolic variables with concrete integer values.
     """
 
     counts: dict
-    extra: dict = field(
-        repr=False, default_factory=dict
-    )  # Used to store extra fields for any derived type
+    extra: dict = field(repr=False, default_factory=dict)
 
     vars: frozenset[str] = field(
         init=False,
@@ -258,6 +255,11 @@ class Resources:
         Automatically iterates over all fields of the dataclass and applies substitutions to any
         Expression instances, so derived classes do not have to explicitly implement this method
         unless they want to customize the behavior.
+
+        .. note::
+
+            Only top-level fields or dictionary values that are of the :class:`Expression` type will
+            be substituted. Nested objects, list items, or other types will not be affected.
         """
         if substitutions is None:
             substitutions = {}
@@ -373,8 +375,9 @@ class SpecsResources(Resources):
     def __post_init__(self):
         object.__setattr__(self, "total_quantum_operations", sum(self.quantum_operations.values()))
 
-        # Fall through to parent post init
-        super(SpecsResources, self).__post_init__()
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier
+        super(SpecsResources, self).__post_init__()  # Fall through to parent post init
 
     def __getitem__(self, key):
         # Need to match
@@ -387,6 +390,8 @@ class SpecsResources(Resources):
             case "num_wires":
                 return self.num_wires
 
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier
         return super(SpecsResources, self).__getitem__(key)
 
     @property
@@ -537,8 +542,6 @@ class PBCSpecsResources(SpecsResources):
         default=None, metadata={"display_name": "Qubit disjoint depth"}
     )
 
-    # TODO: Handle None values for these depths
-
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
         Pretty string representation of this :class:`PBCSpecsResources` object.
@@ -549,6 +552,8 @@ class PBCSpecsResources(SpecsResources):
         Returns:
             str: A pretty representation of this object.
         """
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier
         s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
 
         s += (
@@ -568,6 +573,8 @@ class PBCSpecsResources(SpecsResources):
             https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         """
 
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier
         s = super(PBCSpecsResources, self)._repr_markdown_()
 
         s += (

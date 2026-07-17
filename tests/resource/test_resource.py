@@ -17,7 +17,7 @@ Test base Resource class and its associated methods
 
 import dataclasses
 
-# pylint: disable=unnecessary-dunder-call,protected-access
+# pylint: disable=unnecessary-dunder-call,protected-access,disallowed-name
 import textwrap
 from dataclasses import FrozenInstanceError
 
