@@ -477,12 +477,12 @@ class Subroutine:
     >>> print(qp.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
     >>> print(qp.specs(c)().resources)
-    Wire allocations: 1
-    Total gates: 1
     Quantum operations:
+    - Total: 1
     - MyTemplate: 1
-    Measurements:
+    Measurement processes:
     - state(all wires): 1
+    Wire allocations: 1
     Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the

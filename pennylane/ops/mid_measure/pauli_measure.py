@@ -224,14 +224,14 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
     >>> print(qp.specs(circuit)()['resources'])
-    Wire allocations: 3
-    Total gates: 4
     Quantum operations:
+    - Total: 4
     - Hadamard: 2
     - PauliMeasure: 1
     - Conditional(PauliX): 1
-    Measurements:
+    Measurement processes:
     - expval(PauliZ): 1
+    Wire allocations: 3
     Circuit Depth: 3
     """
 

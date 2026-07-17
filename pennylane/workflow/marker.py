@@ -77,12 +77,12 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     Shots: Shots(total=None)
     Level: after-cancel-inverses
     <BLANKLINE>
-    Wire allocations: 1
-    Total gates: 2
     Quantum operations:
+    - Total: 2
     - RX: 2
-    Measurements:
+    Measurement processes:
     - probs(all wires): 1
+    Wire allocations: 1
     Circuit Depth: 2
 
     Similarly, we can print the circuit after the ``merge_rotations`` transform has been applied by passing ``level="after-merge-rotations"`` to :func:`~.draw`:

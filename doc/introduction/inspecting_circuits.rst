@@ -62,16 +62,16 @@ Device wires: 4
 Shots: Shots(total=None)
 Level: gradient
 <BLANKLINE>
-Wire allocations: 3
-Total gates: 4
 Quantum operations:
+- Total: 4
 - RX: 1
 - Toffoli: 1
 - CRY: 1
 - Rot: 1
-Measurements:
+Measurement processes:
 - expval(PauliZ): 1
 - expval(PauliX): 1
+Wire allocations: 3
 Circuit Depth: 4
 
 

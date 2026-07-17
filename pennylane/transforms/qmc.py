@@ -354,10 +354,10 @@ def quantum_monte_carlo(
                                                       'MultiControlledX': 126,
                                                       'PauliX': 252,
                                                       'RY': 3175},
-                                              measurements={'probs(6 wires)': 1},
-                                              total_quantum_operations=22774,
+                                              measurement_processes={'probs(6 wires)': 1},
                                               num_allocs=12,
-                                              circuit_depth=21502))
+                                              circuit_depth=21502,
+                                              total_quantum_operations=22774))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)

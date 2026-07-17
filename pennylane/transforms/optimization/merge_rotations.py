@@ -159,12 +159,12 @@ def merge_rotations(
         Shots: Shots(total=None)
         Level: merge-rotations
         <BLANKLINE>
-        Wire allocations: 1
-        Total gates: 1
         Quantum operations:
+        - Total: 1
         - RX: 1
-        Measurements:
+        Measurement processes:
         - expval(PauliZ): 1
+        Wire allocations: 1
         Circuit Depth: Not computed
 
         Additionally, the ``merge_rotations`` transform supports

@@ -679,7 +679,8 @@ to handle a single circuit. See the documentation for each modifier for more det
     counts={'S': 1},
     measurement_processes={'expval(PauliX)': 1},
     num_allocs=1,
-    circuit_depth=1)]
+    circuit_depth=1,
+    total_quantum_operations=1)]
 }
 
 
