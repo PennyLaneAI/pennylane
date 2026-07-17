@@ -801,8 +801,9 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Single qubit, non-parameteric operators are ported:
-    - `~.S`, `~.T`
+    - `~.S`, `~.T`, `~.SX`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
+  [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
