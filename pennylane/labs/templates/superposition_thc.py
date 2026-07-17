@@ -121,7 +121,7 @@ class SuperpositionTHC(Operation):
         >>> len(valid) == N // 2 + M * (M + 1) // 2
         True
         >>> round(float(probs[0, 0, 1]), 4)
-        0.015625
+        0.0625
     """
 
     grad_method = None
@@ -396,7 +396,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     frac_valid = d / n_total_vals**2
     limit = 0.5 / math.sqrt(frac_valid)
     cos_val = math.where(limit < 1.0, limit, 1.0)
-    angle = 2 * math.arccos(cos_val)
+    angle = 2 * math.arcsin(cos_val)
 
     RY(angle, wires=work_wires[0])
     X(wires=work_wires[5])
@@ -417,7 +417,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # Fig. 3 has a typo; these X gates must be added.
-    for wire in mu_wires + nu_wires + [work_wires[0]]:
+    for wire in Wires.all_wires(mu_wires + nu_wires + [work_wires[0]]):
         X(wires=wire)
     GlobalPhase(np.pi)
     Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
