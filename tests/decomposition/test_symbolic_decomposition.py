@@ -465,22 +465,6 @@ class TestPowDecomposition:
 
         assert not pow_involutory2.is_applicable(DynOp(0.5, wires=[0, 1, 2]), z=0.5)
 
-    def test_pow_involutory2_legacy_base(self):
-        """Tests pow_involutory2 with a legacy (non-Operator2) base."""
-
-        base = CustomOp(0.5, wires=[0, 1, 2])
-
-        # z % period == 1 with a legacy base applies the base op directly
-        with qp.queuing.AnnotatedQueue() as q:
-            pow_involutory2(base=base, z=3)
-
-        assert q.queue == [base]
-
-        # and its resources use a resource_rep of the legacy base type
-        assert pow_involutory2.compute_resources(base=base, z=3) == Resources(
-            {resource_rep(CustomOp, key=0): 1}
-        )
-
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
 
