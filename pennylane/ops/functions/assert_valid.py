@@ -158,18 +158,15 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             op_type.resource_keys
         ), "resource_params must have the same keys as specified by resource_keys"
 
-    # Operator2 rules are validated through the wrapper classes that production dispatch
-    # creates, and generic controlled rules are validated through the generic wrapper
-    # rather than qp.ctrl, which may dispatch to a bespoke controlled operator.
-    is_op2 = isinstance(op, Operator2)
-    adjoint_type = qp.ops.op_math.Adjoint2 if is_op2 else qp.ops.Adjoint
-    controlled_type = qp.ops.op_math.ControlledOp2 if is_op2 else qp.ops.Controlled
+    controlled_type = (
+        qp.ops.op_math.ControlledOp2 if isinstance(op, Operator2) else qp.ops.Controlled
+    )
 
     for rule in qp.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Adjoint({op_type.__name__})"):
-        adj_op = adjoint_type(op)
+        adj_op = qp.adjoint(op)
         _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Pow({op_type.__name__})"):

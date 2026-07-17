@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
-from pennylane.core.operator import abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
@@ -140,7 +140,13 @@ def merge_powers(*params, wires, base, z, **__):
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
-    target_class, target_params = base_params["base_class"], base_params["base_params"]
+    if issubclass(base_class, Operator2):
+        # the base is an Adjoint2, whose base_params are its abstract constructor
+        # arguments, so the target is the operator instance under the "base" argument.
+        target = base_params["base"]
+        target_class, target_params = type(target), abstractify(target).arguments
+    else:
+        target_class, target_params = base_params["base_class"], base_params["base_params"]
     return {
         adjoint_resource_rep(
             qp.ops.Pow, {"base_class": target_class, "base_params": target_params, "z": z}
