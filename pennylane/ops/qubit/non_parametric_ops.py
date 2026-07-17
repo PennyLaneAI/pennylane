@@ -364,9 +364,7 @@ class PauliX(Operator2):
         super().__init__(wires=wires)
 
     def __repr__(self) -> str:
-        if isinstance(self.wires, Wires):
-            return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
-        return f"X(wires={self.wires})"
+        return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
 
     def label(
         self,
@@ -1045,11 +1043,9 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, work_wire_typ
         return {qp.CCZ: 1}
     return {
         qp.H: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 1,
     }
@@ -1351,7 +1347,7 @@ add_decomps(T, _t_phaseshift)
 add_decomps("Pow(T)", make_pow_decomp_with_period(8), _pow_t)
 
 
-class SX(Operation):
+class SX(Operator2):
     r"""SX(wires)
     The single-qubit Square-Root X operator.
 
@@ -1369,12 +1365,18 @@ class SX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
+
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
+
     @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -1385,30 +1387,23 @@ class SX(Operation):
     resource_keys = set()
 
     @property
-    def resource_params(self) -> dict:
-        return {}
-
-    @property
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
+                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
+                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
                 }
             )
         return self._pauli_rep
 
-    def __repr__(self) -> str:
-        """String representation."""
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"SX('{wire}')"
-        return f"SX({wire})"
+    _matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    @lru_cache
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1425,10 +1420,11 @@ class SX(Operation):
         [[0.5+0.5j 0.5-0.5j]
          [0.5-0.5j 0.5+0.5j]]
         """
-        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+        return SX._matrix
 
     @staticmethod
-    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_eigvals(wires: WiresLike = None) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1453,37 +1449,6 @@ class SX(Operation):
         """
         return np.array([1, 1j])
 
-    @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.SX.decomposition`.
-
-        Args:
-            wires (Any, Wires): Single wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.SX.compute_decomposition(0))
-        [RZ(1.5707963267948966, wires=[0]),
-        RY(1.5707963267948966, wires=[0]),
-        RZ(-1.5707963267948966, wires=[0]),
-        GlobalPhase(-0.7853981633974483, wires=[0])]
-
-        """
-        return [
-            qp.RZ(np.pi / 2, wires=wires),
-            qp.RY(np.pi / 2, wires=wires),
-            qp.RZ(-np.pi / 2, wires=wires),
-            qp.GlobalPhase(-np.pi / 4, wires=wires),
-        ]
-
     def pow(self, z: int | float) -> list[qp.operation.Operator]:
         z_mod4 = z % 4
         if z_mod4 == 2:
@@ -1491,12 +1456,12 @@ class SX(Operation):
         return super().pow(z_mod4)
 
 
-def _sx_to_rx_resources():
+def _sx_to_rx_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
     return {qp.RX: 1, qp.GlobalPhase: 1}
 
 
 @register_resources(_sx_to_rx_resources)
-def _sx_to_rx(wires: WiresLike, **__):
+def _sx_to_rx(wires: WiresLike | None = None):
     qp.RX(np.pi / 2, wires=wires)
     qp.GlobalPhase(-np.pi / 4, wires=wires)
 
@@ -1702,11 +1667,9 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_
         return {qp.CSWAP: 1}
     return {
         qp.CNOT: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires + 1,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 2],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 1,
     }

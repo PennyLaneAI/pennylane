@@ -30,7 +30,6 @@ from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import resource_rep
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -531,13 +530,7 @@ def _ctrl_prod_resources_with_one_work_wire(
     **_,
 ):
     factor_reps = base_params["resources"]  # {rep: count} from Prod
-    multicx_rep = resource_rep(
-        qp.MultiControlledX,
-        num_control_wires=num_control_wires,
-        num_work_wires=0,
-        num_zero_control_values=0,
-        work_wire_type="borrowed",
-    )
+    multicx_rep = qp.MultiControlledX(Wire[num_control_wires + 1])
 
     resources = Counter()
     resources[multicx_rep] += 2

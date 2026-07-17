@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
@@ -591,7 +592,7 @@ class TestMeasurementQROM:
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
         assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
-        assert res_two[qp.resource_rep(qp.CNOT)] == 3
+        assert res_two[abstractify(qp.CNOT)] == 3
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""

@@ -351,13 +351,12 @@ def register_resources(
 
           import pennylane as qp
           from pennylane.allocation import allocate
-          from pennylane.decomposition import controlled_resource_rep
 
           qp.decomposition.enable_graph()
 
           def _ops_fn(num_control_wires, **_):
               return {
-                  controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+                  qp.ctrl(qp.X(Wire[1]), control=Wire[num_control_wires]): 2,
                   qp.CRot: 1
               }
 
@@ -927,9 +926,11 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        estimated_str = _gate_count_dict_to_str(estimated_count)
         if estimated_count == actual_count:
-            return f"Gate Count: {estimated_count}"
-        return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
+            return f"Gate Count: {estimated_str}"
+        actual_str = _gate_count_dict_to_str(actual_count)
+        return f"Estimated Gate Count: {estimated_str}\nActual Gate Count: {actual_str}"
 
     def _get_gate_count_markdown(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
@@ -1181,3 +1182,8 @@ def _decomp_contains_mcm(rule, params):
     mcm = abstractify(qp.ops.MidMeasure)
     ppm = abstractify(qp.ops.PauliMeasure)
     return mcm in resources or ppm in resources
+
+
+def _gate_count_dict_to_str(gate_counts):
+    inner = ", ".join(f"{op}: {count}" for op, count in gate_counts.items())
+    return f"{{{inner}}}"

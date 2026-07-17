@@ -812,9 +812,9 @@ class Controlled(SymbolicOp):
     # Methods ##########################################
 
     def __repr__(self):
-        params = [f"control_wires={self.control_wires.tolist()}"]
+        params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
-            params.append(f"work_wires={self.work_wires.tolist()}")
+            params.append(f"work_wires={self.work_wires}")
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"
