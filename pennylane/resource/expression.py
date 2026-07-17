@@ -38,7 +38,7 @@ class Expression:
     .. warning::
 
         This class is intended to be immutable. Do not modify the internal state of an expression
-        after it is created, as this may lead to incorrect behavior.
+        after it is created, as this may lead to incorrect behaviour.
     """
 
     __slots__ = ("_hashval", "_data", "_vars")

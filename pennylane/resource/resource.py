@@ -161,7 +161,7 @@ class Resources:
     .. warning::
 
         This class is intended to be immutable. Modifying the attributes after creation may lead to
-        unexpected behavior.
+        unexpected behaviour.
 
     Args:
         counts (dict[str, int]): A dictionary mapping resources to their counts.
@@ -169,7 +169,6 @@ class Resources:
         vars (frozenset[str]): The set of all symbolic variables present in the resource counts.
 
     .. details::
-
         :title: Symbolic Resource Information
 
         Attributes in this class can be of type :class:`Expression`, allowing for symbolic
@@ -327,7 +326,7 @@ class Resources:
 
         Automatically iterates over all fields of the dataclass and applies substitutions to any
         Expression instances, so derived classes do not have to explicitly implement this method
-        unless they want to customize the behavior.
+        unless they want to customize the behaviour.
 
         .. note::
 
@@ -340,9 +339,9 @@ class Resources:
         substitutions.update(kwargs)
 
         subs_vars = set(substitutions.keys())
-        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
+        if extra_vars := (subs_vars - self.vars):
             raise ValueError(
-                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {self.vars}."
+                f"Substitutions contain variables {extra_vars} which are not in the expression's variables {self.vars}."
             )
 
         new_values = {}
@@ -374,20 +373,14 @@ class SpecsResources(Resources):
     circuit depth.
 
     Note that this class is intended to be immutable. Modifying the attributes after creation may
-    lead to unexpected behavior.
+    lead to unexpected behaviour.
 
     Args:
         counts (dict[str, int]): A dictionary mapping gate names to their counts.
         measurement_processes (dict[str, int]): A dictionary mapping measurement processes to their counts.
         num_allocs (int): The number of unique wire allocations. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
-        depth (int | None): The depth of the circuit, or None if not computed.
-        quantum_operations (dict[str, int]): A dictionary mapping gate names to their counts (alias for ``counts``).
-
-    Properties:
-        total_quantum_operations (int): The total number of quantum operations in the circuit (computed from ``counts``).
-        depth (int | None): The depth of the circuit, or None if not computed (alias for ``circuit_depth``).
-        num_wires (int): The number of unique wire allocations (alias for ``num_allocs``).
+        circuit_depth (int | None): The depth of the circuit, or None if not computed. Defaults to ``None``.
 
     .. seealso::
 
@@ -396,7 +389,7 @@ class SpecsResources(Resources):
     .. warning::
 
         This class is intended to be immutable. Modifying the attributes after creation may
-        lead to unexpected behavior.
+        lead to unexpected behaviour.
 
     .. details::
 
@@ -588,6 +581,7 @@ class SpecsResources(Resources):
         # Need to explicitly include properties
         d = asdict(self)
         d["total_quantum_operations"] = self.total_quantum_operations
+        d["num_wires"] = self.num_wires
         d["quantum_operations"] = d["counts"]
         del d["counts"]
 
@@ -598,7 +592,7 @@ class SpecsResources(Resources):
 class PBCSpecsResources(SpecsResources):
     """
     Class for storing resource information for a quantum circuit with additional
-    PBC (Pauli-Based Computing) information.
+    PBC (Pauli-Based Computation) information.
 
     .. seealso::
 
@@ -607,7 +601,7 @@ class PBCSpecsResources(SpecsResources):
     .. warning::
 
         This class is intended to be immutable. Modifying the attributes after creation may
-        lead to unexpected behavior.
+        lead to unexpected behaviour.
 
     Args:
         any_commuting_depth (int | Expression | None): The any commuting depth of the circuit.
