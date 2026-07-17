@@ -32,7 +32,10 @@ from pennylane.resource.resource import (
     PBCSpecsResources,
     Resources,
     SpecsResources,
+    _collect_dict_vars,
     _count_to_str,
+    _flatten_dict,
+    _subs_dict,
     num_to_letters,
     resources_from_tape,
 )
@@ -239,6 +242,314 @@ class TestBaseResourcesExtension:
         assert new_r.counts == {"Hadamard": 3, "CNOT": 1}
         assert new_r.foo == 6
         assert new_r.vars == set()
+
+
+class TestNestedDictHelpers:
+    """Test the recursion helpers used to display and substitute nested dictionaries."""
+
+    def test_flatten_dict_flat(self):
+        """A flat dictionary should be returned essentially unchanged."""
+        assert _flatten_dict({"a": 1, "b": 2}) == {"a": 1, "b": 2}
+
+    def test_flatten_dict_nested(self):
+        """Nested dictionaries should be collapsed into dotted keys."""
+        assert _flatten_dict({"a": 1, "b": {"c": 2, "d": {"e": 3}}}) == {
+            "a": 1,
+            "b.c": 2,
+            "b.d.e": 3,
+        }
+
+    def test_flatten_dict_arbitrary_depth(self):
+        """Flattening should recurse to arbitrary depth."""
+        data = {"a": {"b": {"c": {"d": {"e": 5}}}}}
+        assert _flatten_dict(data) == {"a.b.c.d.e": 5}
+
+    def test_flatten_dict_custom_separator(self):
+        """A custom separator should be respected."""
+        assert _flatten_dict({"a": {"b": 1}}, sep="/") == {"a/b": 1}
+
+    def test_flatten_dict_empty_nested(self):
+        """Empty nested dictionaries contribute no keys."""
+        assert _flatten_dict({"a": 1, "empty": {}}) == {"a": 1}
+
+    def test_flatten_dict_preserves_non_dict_values(self):
+        """Non-dict values (including Expressions) should be preserved as-is."""
+        expr = Expression({("x",): 1})
+        flat = _flatten_dict({"a": expr, "b": {"c": "str"}})
+        assert flat == {"a": expr, "b.c": "str"}
+        assert flat["a"] is expr
+
+    def test_collect_dict_vars_flat(self):
+        """Variables should be collected from top-level Expression values."""
+        data = {"a": Expression({("x",): 1}), "b": 2}
+        assert _collect_dict_vars(data) == {"x"}
+
+    def test_collect_dict_vars_nested(self):
+        """Variables should be collected from Expressions at arbitrary depth."""
+        data = {
+            "a": Expression({("x",): 1}),
+            "b": {"c": Expression({("y",): 1}), "d": {"e": Expression({("z",): 1})}},
+        }
+        assert _collect_dict_vars(data) == {"x", "y", "z"}
+
+    def test_collect_dict_vars_none(self):
+        """A dictionary without Expressions should yield an empty set."""
+        assert _collect_dict_vars({"a": 1, "b": {"c": 2}}) == set()
+
+    def test_subs_dict_flat(self):
+        """Substitution should apply to top-level Expression values."""
+        data = {"a": Expression({("x",): 2}), "b": 3}
+        assert _subs_dict(data, {"x": 5}) == {"a": 10, "b": 3}
+
+    def test_subs_dict_nested(self):
+        """Substitution should recurse into nested dictionaries and preserve structure."""
+        data = {"a": Expression({("x",): 1}), "b": {"c": Expression({("x",): 2})}}
+        assert _subs_dict(data, {"x": 3}) == {"a": 3, "b": {"c": 6}}
+
+    def test_subs_dict_preserves_non_expression(self):
+        """Non-Expression values should be left untouched by substitution."""
+        data = {"a": 1, "b": {"c": "unchanged"}}
+        assert _subs_dict(data, {"x": 3}) == {"a": 1, "b": {"c": "unchanged"}}
+
+
+class TestNestedDictResources:
+    """Test that the base Resources class displays and substitutes nested dictionaries."""
+
+    @pytest.fixture
+    def example_nested_resources(self):
+        return Resources(
+            counts={"Hadamard": 2, "Controlled": {"CNOT": 1, "CY": 3}},
+            extra={"n": 10, "meta": {"depth": {"a": 4}}},
+        )
+
+    @pytest.fixture
+    def example_nested_resources_symbolic(self):
+        return Resources(
+            counts={
+                "Hadamard": Expression({("x",): 1}),
+                "Controlled": {"CNOT": Expression({("y",): 2}), "CY": 3},
+            },
+        )
+
+    def test_str_nested(self, example_nested_resources):
+        """Nested dictionaries should be flattened into dotted keys in the pretty string."""
+        r = example_nested_resources
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - Controlled.CNOT: 1
+            - Controlled.CY: 3
+            Extra fields:
+            - n: 10
+            - meta.depth.a: 4
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+
+    def test_markdown_nested(self, example_nested_resources):
+        """Nested dictionaries should be flattened into dotted keys in the markdown table."""
+        r = example_nested_resources
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | Controlled.CNOT | 1 |
+            | Controlled.CY | 3 |
+            | **Extra Fields** | |
+            | n | 10 |
+            | meta.depth.a | 4 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_vars_collected_from_nested(self, example_nested_resources_symbolic):
+        """Symbolic variables should be collected from Expressions at any depth."""
+        r = example_nested_resources_symbolic
+        assert r.vars == {"x", "y"}
+        assert r.is_symbolic
+
+    def test_subs_nested(self, example_nested_resources_symbolic):
+        """Substitution should reach Expressions inside nested dictionaries."""
+        r = example_nested_resources_symbolic
+        new_r = r.subs({"x": 5, "y": 2})
+
+        # The nested structure is preserved, but Expressions are resolved to concrete values
+        assert new_r.counts == {"Hadamard": 5, "Controlled": {"CNOT": 4, "CY": 3}}
+        assert new_r.vars == set()
+
+    def test_subs_partial_nested(self):
+        """Partial substitution should leave other nested variables symbolic."""
+        r = Resources(
+            counts={"grouped": {"a": Expression({("x",): 1}), "b": Expression({("y",): 1})}},
+        )
+        new_r = r.subs({"x": 3})
+        assert new_r.counts["grouped"]["a"] == 3
+        assert new_r.counts["grouped"]["b"] == Expression({("y",): 1})
+        assert new_r.vars == {"y"}
+
+    def test_deeply_nested_vars_and_subs(self):
+        """Variables buried several levels deep should be collected and substituted."""
+        r = Resources(counts={"a": {"b": {"c": Expression({("z",): 2})}}})
+        assert r.vars == {"z"}
+
+        new_r = r.subs({"z": 4})
+        assert new_r.counts == {"a": {"b": {"c": 8}}}
+
+    def test_invalid_subs_nested(self):
+        """Substituting a variable absent from a nested dict should still raise."""
+        r = Resources(counts={"grouped": {"a": Expression({("x",): 1})}})
+        with pytest.raises(
+            ValueError,
+            match="Substitutions contain variables {'w'} which are not in the expression's variables",
+        ):
+            r.subs({"w": 1})
+
+
+class TestNestedDictSpecsResources:
+    """Test that SpecsResources displays and totals nested operation/measurement dictionaries."""
+
+    @pytest.fixture
+    def example_nested_specs(self):
+        return SpecsResources(
+            counts={"Hadamard": 1, "Controlled": {"CNOT": 2, "CY": 3}},
+            measurement_processes={"grouped": {"expval(PauliZ)": 1}},
+            num_allocs=2,
+            circuit_depth=2,
+        )
+
+    def test_total_counts_nested_leaves(self, example_nested_specs):
+        """The total should sum the leaf values of nested operation dictionaries."""
+        assert example_nested_specs.total_quantum_operations == 6
+
+    def test_str_nested(self, example_nested_specs):
+        """Nested operations and measurements should be flattened in the pretty string."""
+        s = example_nested_specs
+
+        expected = textwrap.dedent("""\
+            Quantum operations:
+            - Total: 6
+              - Hadamard: 1
+              - Controlled.CNOT: 2
+              - Controlled.CY: 3
+            Measurement processes:
+            - grouped.expval(PauliZ): 1
+            Wire allocations: 2
+            Circuit Depth: 2""")
+
+        assert str(s) == expected
+
+    def test_markdown_nested(self, example_nested_specs):
+        """Nested operations and measurements should be flattened in the markdown table."""
+        s = example_nested_specs
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Quantum operations:** | |
+            | *Total* | 6 |
+            | Hadamard | 1 |
+            | Controlled.CNOT | 2 |
+            | Controlled.CY | 3 |
+            | **Measurement processes:** | |
+            | grouped.expval(PauliZ) | 1 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |""")
+
+        assert s._repr_markdown_() == expected
+
+    def test_symbolic_nested_subs(self):
+        """Substitution should reach Expressions nested inside quantum operations."""
+        s = SpecsResources(
+            counts={"Hadamard": 1, "grouped": {"CNOT": Expression({("n",): 1})}},
+            measurement_processes={},
+            num_allocs=Expression({("n",): 1}),
+            circuit_depth=None,
+        )
+        assert s.vars == {"n"}
+
+        subbed = s.subs({"n": 3})
+        assert subbed.counts == {"Hadamard": 1, "grouped": {"CNOT": 3}}
+        assert subbed.num_allocs == 3
+        assert subbed.total_quantum_operations == 4
+        assert subbed.vars == set()
+
+
+class TestNestedDictCircuitSpecs:
+    """Test that CircuitSpecs tabular displays flatten nested operation dictionaries."""
+
+    @pytest.fixture
+    def example_nested_circuit_specs(self):
+        return CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SpecsResources(
+                    counts={"Hadamard": 4, "Controlled": {"CNOT": 2, "CY": 1}},
+                    measurement_processes={"expval(PauliX)": 1},
+                    num_allocs=2,
+                    circuit_depth=2,
+                ),
+                2: SpecsResources(
+                    counts={"Controlled": {"CNOT": 1}},
+                    measurement_processes={"grouped": {"expval(PauliZ)": 1}},
+                    num_allocs=2,
+                    circuit_depth=1,
+                ),
+            },
+        )
+
+    def test_tabular_str_nested(self, example_nested_circuit_specs):
+        """Nested operations/measurements should appear as dotted rows in the tabular string."""
+        r = example_nested_circuit_specs
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+            - 2: l2
+
+            ↓Metric           Level→ |  1 |  2
+            ----------------------------------
+            Quantum operations:      |
+            - Total                  |  7 |  1
+              - Hadamard             |  4 |  0
+              - Controlled.CNOT      |  2 |  1
+              - Controlled.CY        |  1 |  0
+            Measurement processes:   |
+            - expval(PauliX)         |  1 |  0
+            - grouped.expval(PauliZ) |  0 |  1
+            Wire allocations         |  2 |  2
+            Circuit depth            |  2 |  1""")
+
+        assert str(r) == expected
+
+    def test_tabular_markdown_nested(self, example_nested_circuit_specs):
+        """Nested operations/measurements should appear as dotted rows in the markdown table."""
+        r = example_nested_circuit_specs
+
+        expected = textwrap.dedent("""\
+            | ↓Metric / Level→ | 1 | 2 |
+            | :--- | ---: | ---: |
+            | **Quantum operations** |  |  |
+            | *Total* | 7 | 1 |
+            | Hadamard | 4 | 0 |
+            | Controlled.CNOT | 2 | 1 |
+            | Controlled.CY | 1 | 0 |
+            | **Measurement processes** |  |  |
+            | expval(PauliX) | 1 | 0 |
+            | grouped.expval(PauliZ) | 0 | 1 |
+            | **Wire allocations** | 2 | 2 |
+            | **Circuit depth** | 2 | 1 |""")
+
+        assert r._to_markdown_tabular() == expected
 
 
 class TestSpecsResources:

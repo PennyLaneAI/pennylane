@@ -57,6 +57,80 @@ def _count_to_str(
     return f"{count:,}" if count < 100_000 else f"{Decimal(count):.3E}"
 
 
+def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
+    """Recursively flatten a (possibly nested) dictionary into a single-level dictionary.
+
+    Nested dictionaries are collapsed into dotted keys of arbitrary depth. Only nested
+    ``dict`` values are recursed into; all other value types are left untouched.
+
+    Args:
+        data (dict): The dictionary to flatten.
+        prefix (str): The key prefix to prepend to each key (used internally for recursion).
+        sep (str): The separator to use when joining nested keys.
+
+    Returns:
+        dict: A flattened dictionary mapping dotted keys to their (non-dict) values.
+
+    **Example**
+
+    >>> _flatten_dict({"a": 1, "b": {"c": 2, "d": {"e": 3}}})
+    {'a': 1, 'b.c': 2, 'b.d.e': 3}
+    """
+    flattened = {}
+    for key, value in data.items():
+        full_key = f"{prefix}{sep}{key}" if prefix else str(key)
+        if isinstance(value, dict):
+            flattened.update(_flatten_dict(value, prefix=full_key, sep=sep))
+        else:
+            flattened[full_key] = value
+    return flattened
+
+
+def _collect_dict_vars(data: dict) -> set:
+    """Recursively collect the symbolic variables of every :class:`Expression` in a nested dict.
+
+    Only nested ``dict`` values are recursed into; all other value types are inspected for being
+    :class:`Expression` instances.
+
+    Args:
+        data (dict): The (possibly nested) dictionary to search.
+
+    Returns:
+        set: The union of all symbolic variables found across every :class:`Expression` value.
+    """
+    all_vars = set()
+    for value in data.values():
+        if isinstance(value, Expression):
+            all_vars |= value.vars
+        elif isinstance(value, dict):
+            all_vars |= _collect_dict_vars(value)
+    return all_vars
+
+
+def _subs_dict(data: dict, substitutions: dict) -> dict:
+    """Recursively substitute symbolic variables within every :class:`Expression` in a nested dict.
+
+    Only nested ``dict`` values are recursed into; all other value types are left untouched (unless
+    they are :class:`Expression` instances, which are substituted).
+
+    Args:
+        data (dict): The (possibly nested) dictionary to substitute into.
+        substitutions (dict): A mapping from variable names to their concrete integer values.
+
+    Returns:
+        dict: A new dictionary of the same nested structure with substitutions applied.
+    """
+    new_data = {}
+    for key, value in data.items():
+        if isinstance(value, Expression):
+            new_data[key] = value.subs(substitutions)
+        elif isinstance(value, dict):
+            new_data[key] = _subs_dict(value, substitutions)
+        else:
+            new_data[key] = value
+    return new_data
+
+
 @lru_cache
 def num_to_letters(num: int) -> str:
     """Helper for assigning labels to numbered data, such as batches for circuit resources.
@@ -102,10 +176,11 @@ class Resources:
 
         Attributes in this class can be of type :class:`Expression`, allowing for symbolic
         manipulation and substitution of variables. When variables of type :class:`Expression` are
-        present as top-level fields or dictionary values, the :attr:`vars` attribute will contain
-        the set of all symbolic variables used in the resource counts. This includes fields
-        introduced in derived classes. Similarly, the :meth:`subs` method can be used to substitute
-        symbolic variables with concrete integer values.
+        present as top-level fields or as values within (possibly nested) dictionaries of arbitrary
+        depth, the :attr:`vars` attribute will contain the set of all symbolic variables used in the
+        resource counts. This includes fields introduced in derived classes. Similarly, the
+        :meth:`subs` method can be used to substitute symbolic variables with concrete integer
+        values.
     """
 
     counts: dict
@@ -130,9 +205,8 @@ class Resources:
             if isinstance(value, Expression):
                 all_vars |= value.vars
             elif isinstance(value, dict):
-                for v in value.values():
-                    if isinstance(v, Expression):
-                        all_vars |= v.vars
+                # Recurse into (possibly nested) dictionaries to collect all Expression variables
+                all_vars |= _collect_dict_vars(value)
 
         object.__setattr__(self, "vars", frozenset(all_vars))
 
@@ -167,9 +241,9 @@ class Resources:
             field_name = obj_field.metadata.get("display_name", obj_field.name)
             if isinstance(getattr(self, obj_field.name), dict):
                 lines.append(f"{prefix}{field_name}:")
-                dict_items = getattr(self, obj_field.name)
+                # Flatten nested dictionaries into dotted keys of arbitrary depth
+                dict_items = _flatten_dict(getattr(self, obj_field.name))
                 for k, v in dict_items.items():
-                    # TODO: Figure out how best to handle nested dicts
                     value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
                     lines.append(f"{prefix}- {k}: {value_str}")
                 if len(dict_items) == 0:
@@ -183,7 +257,7 @@ class Resources:
 
         if self.extra is not None:
             lines.append(f"{prefix}Extra fields:")
-            for k, v in self.extra.items():
+            for k, v in _flatten_dict(self.extra).items():
                 value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
                 lines.append(f"{prefix}- {k}: {value_str}")
 
@@ -219,9 +293,9 @@ class Resources:
             field_name = obj_field.metadata.get("display_name", obj_field.name)
             if isinstance(getattr(self, obj_field.name), dict):
                 lines.append(f"| **{field_name}** | |")
-                dict_items = getattr(self, obj_field.name)
+                # Flatten nested dictionaries into dotted keys of arbitrary depth
+                dict_items = _flatten_dict(getattr(self, obj_field.name))
                 for k, v in dict_items.items():
-                    # TODO: Figure out how best to handle nested dicts
                     value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
                     lines.append(f"| {k} | {value_str} |")
                 if len(dict_items) == 0:
@@ -234,7 +308,7 @@ class Resources:
                 lines.append(f"| **{field_name}** | {value_str} |")
         if self.extra is not None:
             lines.append("| **Extra Fields** | |")
-            for k, v in self.extra.items():
+            for k, v in _flatten_dict(self.extra).items():
                 value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
                 lines.append(f"| {k} | {value_str} |")
 
@@ -258,8 +332,9 @@ class Resources:
 
         .. note::
 
-            Only top-level fields or dictionary values that are of the :class:`Expression` type will
-            be substituted. Nested objects, list items, or other types will not be affected.
+            Top-level fields, as well as :class:`Expression` values within (possibly nested)
+            dictionaries of arbitrary depth, will be substituted. List items and other non-dict
+            containers will not be affected.
         """
         if substitutions is None:
             substitutions = {}
@@ -279,10 +354,8 @@ class Resources:
             if isinstance(value, Expression):
                 new_values[obj_field.name] = value.subs(substitutions)
             elif isinstance(value, dict):
-                new_values[obj_field.name] = {
-                    k: v.subs(substitutions) if isinstance(v, Expression) else v
-                    for k, v in value.items()
-                }
+                # Recurse into (possibly nested) dictionaries of arbitrary depth
+                new_values[obj_field.name] = _subs_dict(value, substitutions)
             else:
                 new_values[obj_field.name] = value
 
@@ -373,7 +446,12 @@ class SpecsResources(Resources):
     )
 
     def __post_init__(self):
-        object.__setattr__(self, "total_quantum_operations", sum(self.quantum_operations.values()))
+        # Sum over flattened leaf values so nested operation dicts are counted correctly
+        object.__setattr__(
+            self,
+            "total_quantum_operations",
+            sum(_flatten_dict(self.quantum_operations).values()),
+        )
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier
@@ -430,14 +508,14 @@ class SpecsResources(Resources):
             lines.append(prefix + "- No operations.")
         else:
             lines.append(f"{prefix}- Total: {_count_to_str(self.total_quantum_operations)}")
-            for gate, count in self.quantum_operations.items():
+            for gate, count in _flatten_dict(self.quantum_operations).items():
                 lines.append(f"{prefix}  - {gate}: {_count_to_str(count)}")
 
         lines.append(f"{prefix}Measurement processes:")
         if not self.measurement_processes:
             lines.append(prefix + "- No measurement processes.")
         else:
-            for meas, count in self.measurement_processes.items():
+            for meas, count in _flatten_dict(self.measurement_processes).items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
         lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
@@ -475,14 +553,14 @@ class SpecsResources(Resources):
             lines.append(
                 f"| *Total* | {_count_to_str(self.total_quantum_operations, markdown_safe=True)} |"
             )
-            for gate, count in self.quantum_operations.items():
+            for gate, count in _flatten_dict(self.quantum_operations).items():
                 lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
 
         lines.append("| **Measurement processes:** | |")
         if not self.measurement_processes:
             lines.append("| *No measurement processes* | |")
         else:
-            for meas, count in self.measurement_processes.items():
+            for meas, count in _flatten_dict(self.measurement_processes).items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
         lines.append(
@@ -750,14 +828,15 @@ class CircuitSpecs:
 
         # This iteration order will present the gates in the order in which they appear
         for res in flat_resources.values():
-            for gate, count in res.quantum_operations.items():
+            # Flatten nested operation/measurement dicts into dotted keys of arbitrary depth
+            for gate, count in _flatten_dict(res.quantum_operations).items():
                 all_quantum_operations[gate] = True
                 # Gate rows are indented by 2 extra spaces (e.g. "  - {gate}")
                 max_metric_length = max(max_metric_length, len(gate) + 4)
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
                 )
-            for meas, count in res.measurement_processes.items():
+            for meas, count in _flatten_dict(res.measurement_processes).items():
                 all_meas_types[meas] = True
                 max_metric_length = max(max_metric_length, len(meas) + 2)
                 max_column_size = max(
@@ -806,9 +885,9 @@ class CircuitSpecs:
                 f"  - {gate}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.quantum_operations.get(gate, 0), extra_compact=True).rjust(
-                        max_column_size
-                    )
+                    _count_to_str(
+                        _flatten_dict(res.quantum_operations).get(gate, 0), extra_compact=True
+                    ).rjust(max_column_size)
                     for res in flat_resources.values()
                 )
             )
@@ -819,9 +898,9 @@ class CircuitSpecs:
                 f"- {meas}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.measurement_processes.get(meas, 0), extra_compact=True).rjust(
-                        max_column_size
-                    )
+                    _count_to_str(
+                        _flatten_dict(res.measurement_processes).get(meas, 0), extra_compact=True
+                    ).rjust(max_column_size)
                     for res in flat_resources.values()
                 )
             )
@@ -916,9 +995,10 @@ class CircuitSpecs:
         all_quantum_operations: dict[str, None] = {}
         all_meas_types: dict[str, None] = {}
         for res in flat_resources.values():
-            for gate in res.quantum_operations:
+            # Flatten nested operation/measurement dicts into dotted keys of arbitrary depth
+            for gate in _flatten_dict(res.quantum_operations):
                 all_quantum_operations[gate] = None
-            for meas in res.measurement_processes:
+            for meas in _flatten_dict(res.measurement_processes):
                 all_meas_types[meas] = None
 
         def data_row(label, values):
@@ -942,7 +1022,9 @@ class CircuitSpecs:
                 data_row(
                     gate,
                     [
-                        _count_to_str(r.quantum_operations.get(gate, 0), markdown_safe=True)
+                        _count_to_str(
+                            _flatten_dict(r.quantum_operations).get(gate, 0), markdown_safe=True
+                        )
                         for r in flat_resources.values()
                     ],
                 )
@@ -954,7 +1036,9 @@ class CircuitSpecs:
                 data_row(
                     meas,
                     [
-                        _count_to_str(r.measurement_processes.get(meas, 0), markdown_safe=True)
+                        _count_to_str(
+                            _flatten_dict(r.measurement_processes).get(meas, 0), markdown_safe=True
+                        )
                         for r in flat_resources.values()
                     ],
                 )
