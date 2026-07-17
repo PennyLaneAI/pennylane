@@ -837,6 +837,17 @@ class TestPBCSpecsResources:
             qubit_disjoint_depth=6,
         )
 
+    def test_pbc_depths_required(self):
+        with pytest.raises(
+            TypeError,
+            match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",
+        ):
+            PBCSpecsResources(
+                counts={"Hadamard": 1, "CNOT": 2},
+                measurement_processes={"expval(PauliZ)": 1},
+                num_allocs=2,
+            )
+
     def test_str_pbc_depth(self, example_resource):
         """Test the string representation of a SpecsResources instance with PBC depth."""
         s = example_resource

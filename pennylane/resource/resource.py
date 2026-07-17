@@ -22,12 +22,13 @@ from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
 from functools import lru_cache
 from string import ascii_lowercase
-from typing import Any
+from typing import Any, Generator
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.ops.op_math import Controlled, ControlledOp
+from pennylane.pytrees import flatten, unflatten
 
 from .expression import Expression
 
@@ -84,7 +85,7 @@ def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
     return flattened
 
 
-def _collect_dict_vars(data: dict) -> set:
+def _collect_dict_vars(data: dict) -> Generator[str, None, None]:
     """Recursively collect the symbolic variables of every :class:`Expression` in a nested dict.
 
     Only nested ``dict`` values are recursed into; all other value types are inspected for being
@@ -94,7 +95,7 @@ def _collect_dict_vars(data: dict) -> set:
         data (dict): The (possibly nested) dictionary to search.
 
     Returns:
-        set: The union of all symbolic variables found across every :class:`Expression` value.
+        Generator[str, None, None]: The union of all symbolic variables found across every :class:`Expression` value.
     """
     for value in data.values():
         if isinstance(value, Expression):
@@ -116,15 +117,9 @@ def _subs_dict(data: dict, substitutions: dict) -> dict:
     Returns:
         dict: A new dictionary of the same nested structure with substitutions applied.
     """
-    new_data = {}
-    for key, value in data.items():
-        if isinstance(value, Expression):
-            new_data[key] = value.subs(substitutions)
-        elif isinstance(value, dict):
-            new_data[key] = _subs_dict(value, substitutions)
-        else:
-            new_data[key] = value
-    return new_data
+    leaves, struct = flatten(data)
+    new_leaves = (l.subs(substitutions) if isinstance(l, Expression) else l for l in leaves)
+    return unflatten(new_leaves, struct)
 
 
 @lru_cache
@@ -631,11 +626,9 @@ class PBCSpecsResources(SpecsResources):
         qubit_disjoint_depth (int | Expression | None): The qubit disjoint depth of the circuit.
     """
 
-    any_commuting_depth: int | Expression | None = field(
-        default=None, metadata={"display_name": "Any commuting depth"}
-    )
-    qubit_disjoint_depth: int | Expression | None = field(
-        default=None, metadata={"display_name": "Qubit disjoint depth"}
+    any_commuting_depth: int | Expression = field(metadata={"display_name": "Any commuting depth"})
+    qubit_disjoint_depth: int | Expression = field(
+        metadata={"display_name": "Qubit disjoint depth"}
     )
 
     def to_pretty_str(self, preindent: int = 0) -> str:
