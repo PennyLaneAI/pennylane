@@ -71,25 +71,13 @@ def _generate_name(
     if include_params is None:
         return func_name
 
+    bound_args = func_sig.bind(*args, **kwargs)
+    bound_args.apply_defaults()
+    arguments = bound_args.arguments
+
     param_strs = []
     for param_name in include_params:
-
-        param_kind = str(func_sig.parameters[param_name].kind)
-        param_index = list(func_sig.parameters.keys()).index(param_name)
-        if param_kind in ("KEYWORD_ONLY", "POSITIONAL_OR_KEYWORD"):
-            default_val = (
-                args[param_index]
-                if param_index < len(args)
-                else func_sig.parameters[param_name].default
-            )
-            param_value = kwargs.get(param_name, default_val)
-
-        elif param_kind == "VAR_POSITIONAL":
-            param_value = args[param_index:]
-
-        else:  # param_kind == "VAR_KEYWORD"
-            param_value = {k: v for k, v in kwargs.items() if k not in func_sig.parameters}
-
+        param_value = arguments[param_name]
         param_str = param_name + "=" + str(param_value)
         param_strs.append(param_str)
 
