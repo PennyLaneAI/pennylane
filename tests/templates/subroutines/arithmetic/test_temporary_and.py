@@ -57,10 +57,10 @@ class TestTemporaryAND:
 
     def test_repr(self):
         """Test the repr of TemporaryAND."""
-        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=Wires([0, 'a', 2]))"
+        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
         assert (
             repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
-            == "TemporaryAND(wires=Wires([0, 'a', 2]), control_values=(0, 1))"
+            == "TemporaryAND(wires=[0, 'a', 2], control_values=(0, 1))"
         )
 
     def test_alias(self):
