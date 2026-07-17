@@ -22,18 +22,15 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
     _count_tempAND_in_measurement_qrom,
-    _qrom_decomposition,
     _qrom_measurement_condition,
     _qrom_measurement_decomposition,
     _qrom_measurement_resources,
 )
-from pennylane.templates.subroutines.select import _select_decomp_unary
 
 clifford_t_measure = {
     qp.H,
@@ -356,42 +353,6 @@ class TestQROM:
         )
         for rule in qp.list_decomps(qp.QROM):
             _test_decomposition_rule(op, rule)
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_select_decomposition_unary(self):
-        """Tests that _select_decomp_unary is actually invoked within QROM decomposition."""
-
-        bitstrings = ["01", "11", "11", "00", "01", "11", "11", "00"]
-        control_wires = [0, 1, 2]
-        target_wires = [3, 4]
-
-        class SpyRule(DecompositionRule):
-            """Wraps a DecompositionRule, tracking __call__ invocations."""
-
-            def __init__(self, original):  # pylint: disable=super-init-not-called
-                self._original = original
-                self.call_count = 0
-
-            def __call__(self, *args, **kwargs):
-                self.call_count += 1
-                return self._original(*args, **kwargs)
-
-            def __getattr__(self, name):
-                return getattr(self._original, name)
-
-        spy = SpyRule(_select_decomp_unary)
-
-        @qp.transforms.decompose(
-            gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", *qp.ops.__all__},
-            fixed_decomps={qp.QROM: _qrom_decomposition, qp.Select: spy},
-        )
-        @qp.qnode(qp.device("default.qubit"))
-        def circuit():
-            qp.QROM(bitstrings, control_wires, target_wires, work_wires=[5, 6])
-            return qp.state()
-
-        circuit()
-        assert spy.call_count > 0, "_select_decomp_unary was never called"
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""

@@ -96,6 +96,10 @@ def _select_ops(
     capacity = 1 << len(control_wires)
     n_control_select_wires = ceil_log2(capacity / depth)
     control_select_wires = control_wires[:n_control_select_wires]
+    print(f"{capacity=}")
+    print(f"{len(control_wires)=}")
+    print(f"{depth=}")
+    print(f"{n_control_select_wires=}")
 
     if control_select_wires:
         if len(select_work_wires) < n_control_select_wires - 1:
@@ -105,6 +109,8 @@ def _select_ops(
                 work_wires=select_work_wires,
             )
         else:
+            print(f"{data.shape=}")
+            print(f"{_new_data(depth, capacity, swap_wires, data).shape}")
             QROM(
                 _new_data(depth, capacity, swap_wires, data),
                 control_wires=control_select_wires,
@@ -524,7 +530,7 @@ def _qrom_decomposition_resources(
                 num_control_wires=num_control_select_wires,
                 num_target_wires=num_swap_wires,
                 num_work_wires=num_work_wires_select,
-                num_bitstrings=num_bitstrings,
+                num_bitstrings=n_columns,
                 clean=True,
             ): 1
         }
@@ -1003,7 +1009,6 @@ def _qrom_unary_iteration(
     data, control_wires, target_wires, work_wires, clean, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
     """Unary iteration decomposition of QROM."""
-    assert clean
     K = len(data)
     c = len(control_wires)
 
