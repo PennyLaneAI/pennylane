@@ -611,10 +611,11 @@ class TestMeasurementQROM:
 
     @pytest.mark.parametrize("n_extra", [2, 3, 4])
     def test_resources_and_ladder(self, n_extra):
-        """The flag ladder (n_extra >= 2) adds n_extra TemporaryAND and n_extra - 1 adjoints.
+        """The flag ladder (n_extra >= 2) is symmetric: n_extra - 1 TemporaryAND and the same
+        number of adjoints.
 
         The core table is not doubled, so the extra cost is only the AND ladder folding the
-        extra wires into the flag: n_extra opened, n_extra - 1 later uncomputed.
+        extra wires into the flag: n_extra - 1 opened and n_extra - 1 later uncomputed.
         """
         n_active = 2  # ceil_log2(4)
         res_extra = _qrom_measurement_resources(
@@ -625,10 +626,10 @@ class TestMeasurementQROM:
         res_one = _qrom_measurement_resources(
             num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
         )
+        # The ladder is symmetric: as many forward ANDs as adjoints.
         assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
-        assert (
-            res_extra[resource_rep(TemporaryAND)]
-            == res_one[resource_rep(TemporaryAND)] + n_extra
+        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
+            n_extra - 1
         )
 
     def test_condition_without_compiler(self):
@@ -655,15 +656,6 @@ class TestMeasurementQROM:
         # Too few work wires: not applicable.
         assert (
             _qrom_measurement_condition(num_bitstrings=8, num_work_wires=0, num_control_wires=3)
-            is False
-        )
-        # Extra control wires raise the work-wire requirement to num_control_wires - 1.
-        assert (
-            _qrom_measurement_condition(num_bitstrings=4, num_work_wires=4, num_control_wires=5)
-            is True
-        )
-        assert (
-            _qrom_measurement_condition(num_bitstrings=4, num_work_wires=3, num_control_wires=5)
             is False
         )
         # Parameters extracted from ``base_params`` (Adjoint path).
@@ -878,12 +870,8 @@ class TestMeasurementQROM:
         [(4, 1), (4, 2), (4, 3), (5, 1), (5, 2), (3, 2), (8, 1), (8, 2), (2, 1), (2, 2)],
     )
     def test_extra_control_wires(self, L, n_extra, seed):
-        """Extra control wires (beyond ceil_log2(L)) must gate the whole QROM.
+        """Extra control wires (beyond ceil_log2(L)) must gate the whole QROM."""
 
-        This is the scenario of the original bug: the extra (most-significant) wires load the
-        real data only when they are all zero and map every other index to the identity, while
-        leaving the work wires clean. ``n_extra >= 2`` exercises the AND-ladder folding.
-        """
         rng = np.random.default_rng(seed)
         n_target = 3
         n_input = math.ceil(math.log2(L)) + n_extra

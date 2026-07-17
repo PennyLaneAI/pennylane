@@ -740,10 +740,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         num_target_wires = base_params["num_target_wires"]
         num_control_wires = base_params.get("num_control_wires", num_control_wires)
 
-    # Extra control wires do NOT grow the core table: they are folded into a single flag qubit
-    # that gates the load. The flag costs one AND per extra wire (``n_extra - 1`` of them
-    # uncomputed by adjoints), or two X gates when there is a single extra wire.
-    n_extra = 0 if num_control_wires is None else num_control_wires - max(1, ceil_log2(num_bitstrings))
+    n_extra = (
+        0 if num_control_wires is None else num_control_wires - max(1, ceil_log2(num_bitstrings))
+    )
     # L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings)
@@ -781,9 +780,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
 def _add_flag_resources(resources, n_extra, num_target_wires):
     """Add the resources for the flag that gates the load on extra control wires.
 
-    A single extra wire uses two X gates; two or more use a ladder of ``n_extra`` AND gates
-    (``n_extra - 1`` of them later uncomputed by adjoints). In both cases the base load is
-    gated, adding up to ``num_target_wires`` controlled-X gates.
+    A single extra wire uses two X gates; two or more use a ladder of ``n_extra - 1`` AND gates,
+    all later uncomputed by the same number of adjoints. In both cases the base load is gated,
+    adding up to ``num_target_wires`` controlled-X gates.
     """
     if n_extra < 1:
         return
@@ -791,7 +790,7 @@ def _add_flag_resources(resources, n_extra, num_target_wires):
     if n_extra == 1:
         resources[resource_rep(X)] = resources.get(resource_rep(X), 0) + 2
         return
-    resources[resource_rep(TemporaryAND)] += n_extra
+    resources[resource_rep(TemporaryAND)] += n_extra - 1
     resources[adjoint_resource_rep(TemporaryAND)] = n_extra - 1
 
 
@@ -806,9 +805,9 @@ def _qrom_measurement_condition(
         num_work_wires = base_params["num_work_wires"]
         num_control_wires = base_params.get("num_control_wires", num_control_wires)
 
-    # Extra control wires need one work wire each, so the requirement is ``num_control_wires - 1``
-    # (not just ``ceil_log2(L) - 1``).
-    n_input = num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
+    n_input = (
+        num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
+    )
     if num_bitstrings <= 2 and n_input <= 1:
         return True
     return num_work_wires >= n_input - 1
@@ -847,9 +846,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     # is loaded only when they are all zero, otherwise the operation is the identity (matching
     # the non-partial ``Select``). We build a flag qubit that is 1 iff every extra wire is 0
     # and gate the whole load on it, reusing the unary iterator ``_measurement_qrom_inner``
-    # over the real 2**n_active table -- without padding the data to 2**n_input (exponential
-    # in the extra wires) or duplicating it (which would double the core cost). The flag costs
-    # one AND per extra wire (linear); the core is unchanged in size.
+    # over the real 2**n_active table.
     n_active = ceil_log2(L)
     n_extra = n_input - n_active
     if n_extra > 0:
