@@ -68,8 +68,6 @@ class Pow2(SymbolicOp2):
     def __init__(self, base: Operator, z: float):
         super().__init__(base, z)
 
-        z = self.static_args["z"]
-
         if isinstance(z, int) and z > 0:
             if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
                 self.batch_size is None
@@ -84,8 +82,11 @@ class Pow2(SymbolicOp2):
             self._pauli_rep = None
 
     def __repr__(self):
-        z = self.static_args["z"]
-        return f"({self.base})**{z}" if self.base.arithmetic_depth > 0 else f"{self.base}**{z}"
+        return (
+            f"({self.base})**{self.z}"
+            if self.base.arithmetic_depth > 0
+            else f"{self.base}**{self.z}"
+        )
 
     @property
     def ndim_params(self):
@@ -94,8 +95,7 @@ class Pow2(SymbolicOp2):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_sparse_matrix(self) -> bool:
-        z = self.static_args["z"]
-        return self.base.has_sparse_matrix and isinstance(z, int)
+        return self.base.has_sparse_matrix and isinstance(self.z, int)
 
     @staticmethod
     def compute_matrix(base, z):
@@ -115,28 +115,26 @@ class Pow2(SymbolicOp2):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
-        z = self.static_args["z"]
 
-        if isinstance(z, int) and z > 0:
+        if isinstance(self.z, int) and self.z > 0:
             return True
         try:
-            self.base.pow(z)
+            self.base.pow(self.z)
         except PowUndefinedError:
             return False
         except Exception as e:
             # some pow methods cant handle a batched z
-            if math.ndim(z) != 0:
+            if math.ndim(self.z) != 0:
                 return False
             raise e
         return True
 
     def decomposition(self):
-        z = self.static_args["z"]
         try:
-            return self.base.pow(z)
+            return self.base.pow(self.z)
         except PowUndefinedError as e:
-            if isinstance(z, int) and z > 0:
-                return [apply(self.base) for _ in range(z)]
+            if isinstance(self.z, int) and self.z > 0:
+                return [apply(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
@@ -176,9 +174,8 @@ class Pow2(SymbolicOp2):
         return self.base.diagonalizing_gates()
 
     def eigvals(self):
-        z = self.static_args["z"]
         base_eigvals = self.base.eigvals()
-        return [value**z for value in base_eigvals]
+        return [value**self.z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -197,17 +194,15 @@ class Pow2(SymbolicOp2):
 
         See also :func:`~.generator`
         """
-        z = self.static_args["z"]
-        return z * self.base.generator()
+        return self.z * self.base.generator()
 
     def pow(self, z):
-        return [Pow2(base=self.base, z=self.static_args["z"] * z)]
+        return [Pow2(base=self.base, z=self.z * z)]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
-        z = self.static_args["z"]
-        return isinstance(z, int)
+        return isinstance(self.z, int)
 
     def adjoint(self):
         """Create an operation that is the adjoint of this one.
@@ -230,15 +225,13 @@ class Pow2(SymbolicOp2):
             AdjointUndefinedError: If the exponent ``z`` is not of type ``int``.
 
         """
-        z = self.static_args["z"]
-        if isinstance(z, int):
-            return Pow2(base=adjoint(self.base), z=z)
+        if isinstance(self.z, int):
+            return Pow2(base=adjoint(self.base), z=self.z)
         raise AdjointUndefinedError(
             "The adjoint of Pow operators only is well-defined for integer powers."
         )
 
     def simplify(self) -> Union["Pow", Identity]:
-        z = self.static_args["z"]
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
@@ -246,14 +239,14 @@ class Pow2(SymbolicOp2):
 
         base = self.base if capture.enabled() else self.base.simplify()
         try:
-            ops = base.pow(z=z)
+            ops = base.pow(z=self.z)
             if not ops:
                 return Identity(self.wires)
             if not capture.enabled():
                 ops = [op.simplify() for op in ops]
             return reduce(lambda nxt, acc: nxt @ acc, ops) if len(ops) > 1 else ops[0]
         except PowUndefinedError:
-            return Pow2(base=base, z=z)
+            return Pow2(base=base, z=self.z)
 
 
 def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1):

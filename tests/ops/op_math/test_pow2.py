@@ -19,7 +19,6 @@ import pytest
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
-from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.core.operator import Operator2
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -28,6 +27,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
 from pennylane.ops.op_math.pow2 import Pow2
 from tests.core.operator.operator2_utils import DynOp
