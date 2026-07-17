@@ -287,12 +287,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
-  This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
-  The :class:`~.resource.Resources` class serves as the new base class,
-  and the :class:`~.resource.SpecsResources` and :class:`~.resource.PBCSpecsResources` inherit from it.
-  [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
-
 * Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
@@ -798,6 +792,12 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
+  This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
+  The :class:`~.resource.Resources` class serves as the new base class,
+  and the :class:`~.resource.SpecsResources` and :class:`~.resource.PBCSpecsResources` inherit from it.
+  [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Single qubit, non-parameteric operators are ported:
