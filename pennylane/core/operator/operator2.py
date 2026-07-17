@@ -989,6 +989,7 @@ class Operator2(metaclass=OperatorMeta):
         )
 
         for key, value in self.arguments.items():
+
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
