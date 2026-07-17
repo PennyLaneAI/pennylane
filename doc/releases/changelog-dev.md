@@ -800,6 +800,7 @@
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   - Single qubit, parameteric operators are ported:
     - `~.RZ`, `~.CRZ`
+  [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
