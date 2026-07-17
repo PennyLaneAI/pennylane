@@ -76,9 +76,9 @@ class CountsMP(SampleMeasurement):
         if self.obs:
             return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"
         if self._eigvals is not None:
-            return f"CountsMP(eigvals={self._eigvals}, wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+            return f"CountsMP(eigvals={self._eigvals}, wires={self.wires}, all_outcomes={self.all_outcomes})"
 
-        return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+        return f"CountsMP(wires={self.wires}, all_outcomes={self.all_outcomes})"
 
     @classmethod
     def _abstract_eval(
