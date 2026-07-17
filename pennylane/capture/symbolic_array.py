@@ -79,9 +79,9 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
     Even though we do not have actual values for ``x`` and ``y``, we can still see
     the effect of the ``merge_rotations`` pass on the resources.
 
-    >>> qp.specs(c, level=0)().resources.quantum_operations # doctest: +SKIP
+    >>> qp.specs(c, level=0)().resources.quantum_operations
     {'RX': 2}
-    >>> qp.specs(c, level=1)().resources.quantum_operations # doctest: +SKIP
+    >>> qp.specs(c, level=1)().resources.quantum_operations
     {'RX': 1}
 
     Trying to execute or calculate specs at ``level="device"`` will result in errors.

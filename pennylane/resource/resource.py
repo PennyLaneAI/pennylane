@@ -15,8 +15,6 @@
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
 
-# pylint: disable=super-with-arguments
-
 from __future__ import annotations
 
 from collections import defaultdict
@@ -455,7 +453,8 @@ class SpecsResources(Resources):
         )
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
-        # dataclasses in Python 3.12 and earlier
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
         super(SpecsResources, self).__post_init__()  # Fall through to parent post init
 
     def __getitem__(self, key):
@@ -470,7 +469,8 @@ class SpecsResources(Resources):
                 return self.num_wires
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
-        # dataclasses in Python 3.12 and earlier
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
         return super(SpecsResources, self).__getitem__(key)
 
     @property
@@ -632,7 +632,8 @@ class PBCSpecsResources(SpecsResources):
             str: A pretty representation of this object.
         """
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
-        # dataclasses in Python 3.12 and earlier
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
         s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
 
         s += (
@@ -653,7 +654,8 @@ class PBCSpecsResources(SpecsResources):
         """
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
-        # dataclasses in Python 3.12 and earlier
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
         s = super(PBCSpecsResources, self)._repr_markdown_()
 
         s += (

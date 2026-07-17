@@ -755,6 +755,7 @@ class TestSpecsResources:
         assert s["quantum_operations"] == s.quantum_operations
         assert s["measurement_processes"] == s.measurement_processes
         assert s["num_allocs"] == s.num_allocs
+        assert s["num_wires"] == s.num_wires
         assert s["depth"] == s.depth
 
         assert s["total_quantum_operations"] == s.total_quantum_operations
