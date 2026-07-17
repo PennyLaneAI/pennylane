@@ -182,22 +182,22 @@ def test_has_decomposition():
 
 
 def test_diagonalizing_gates():
-    """Tests the diagonalizing_gates method and has_diagonalizing_gates property."""
+    """Tests the compute_diagonalizing_gates method and has_diagonalizing_gates property."""
 
     op = pow(SX2(0), z=2)
     assert op.has_diagonalizing_gates
-    assert op.diagonalizing_gates() == [qp.H(0)]
+    assert op.compute_diagonalizing_gates(SX2(0), z=2) == [qp.H(0)]
 
     # base without diagonalizing gates
     assert not pow(RX2(0.5, wires=0), z=2).has_diagonalizing_gates
 
 
 def test_eigvals():
-    """Tests the eigvals method."""
+    """Tests the compute_eigvals method."""
 
     # SX2 has eigenvalues [1, 1j], which squared are [1, -1]
     op = pow(SX2(0), z=2)
-    assert qp.math.allclose(op.eigvals(), [1, -1])
+    assert qp.math.allclose(op.compute_eigvals(SX2(0), z=2), [1, -1])
 
 
 def test_generator():

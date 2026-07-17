@@ -133,7 +133,8 @@ class Pow2(SymbolicOp2):
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(base, z):  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -156,14 +157,19 @@ class Pow2(SymbolicOp2):
 
         .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
 
+        Args:
+            base (~.Operation): the operator to be raised to a power
+            z (int): the exponent
+
         Returns:
             list[.Operator] or None: a list of operators
         """
-        return self.base.diagonalizing_gates()
+        return base.diagonalizing_gates()
 
-    def eigvals(self):
-        base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+    @staticmethod
+    def compute_eigvals(base, z):
+        base_eigvals = base.eigvals()
+        return [value**z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
