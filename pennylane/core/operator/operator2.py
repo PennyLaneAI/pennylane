@@ -215,6 +215,9 @@ class Operator2(metaclass=OperatorMeta):
 
         self.tracer = None
 
+        if self.grad_recipe is None:
+            self.grad_recipe = [None] * self.num_params
+
     def __abstract_init__(self, *args, **kwargs):
         """Constructor for canonicalization of abstract inputs."""
         bound_args = self._sig.bind(*args, **kwargs)
