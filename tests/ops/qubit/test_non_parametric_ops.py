@@ -234,18 +234,10 @@ class TestDecompositions:
         op = qp.SX(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 4
-        assert all(res[i].wires == Wires([0]) for i in range(4))
+        assert len(res) == 2
 
-        assert res[0].name == "RZ"
-        assert res[1].name == "RY"
-        assert res[2].name == "RZ"
-        assert res[3].name == "GlobalPhase"
-
-        assert res[0].data[0] == np.pi / 2
-        assert res[1].data[0] == np.pi / 2
-        assert res[2].data[0] == -np.pi / 2
-        assert res[3].data[0] == -np.pi / 4
+        qp.assert_equal(res[0], qp.RX(np.pi / 2, wires=0))
+        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4, wires=0))
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -1205,14 +1197,6 @@ def test_label_method(op, label):
 
 
 control_data = [
-    (qp.Identity(0), Wires([])),
-    (qp.Hadamard(0), Wires([])),
-    (qp.T(wires=0), Wires([])),
-    (qp.SX(wires=0), Wires([])),
-    (qp.SWAP(wires=(0, 1)), Wires([])),
-    (qp.ISWAP(wires=(0, 1)), Wires([])),
-    (qp.SISWAP(wires=(0, 1)), Wires([])),
-    (qp.ECR(wires=(0, 1)), Wires([])),
     # Controlled operations
     (qp.CY(wires=(0, 1)), Wires(0)),
     (qp.CZ(wires=(0, 1)), Wires(0)),

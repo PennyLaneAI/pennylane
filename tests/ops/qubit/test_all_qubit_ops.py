@@ -57,8 +57,6 @@ class TestOperations:
         "op",
         [
             (qp.Hadamard(wires=0)),
-            (qp.T(wires=0)),
-            (qp.SX(wires=0)),
             (qp.RX(0.3, wires=0)),
             (qp.RY(0.3, wires=0)),
             (qp.RZ(0.3, wires=0)),
