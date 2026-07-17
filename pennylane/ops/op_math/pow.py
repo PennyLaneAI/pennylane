@@ -32,6 +32,7 @@ from pennylane.exceptions import (
 )
 from pennylane.ops.identity import Identity
 
+from .pow2 import Pow2
 from .symbolicop import ScalarSymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
@@ -89,11 +90,11 @@ def pow(base, z=1, lazy=True) -> Operator:
 
     """
     if lazy:
-        return Pow(base, z)
+        return Pow2(base, z) if isinstance(base, Operator2) else Pow(base, z)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z)
+        return Pow2(base, z) if isinstance(base, Operator2) else Pow(base, z)
 
     num_ops = len(pow_ops)
     if num_ops == 0:

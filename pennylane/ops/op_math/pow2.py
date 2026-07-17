@@ -1,3 +1,4 @@
+from functools import reduce
 from typing import Union
 
 from scipy.linalg import fractional_matrix_power
@@ -6,7 +7,7 @@ import pennylane as qp
 from pennylane import capture, math
 from pennylane.core import Operator, Operator2
 from pennylane.core.operator import abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -28,62 +29,12 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops import Identity
-from pennylane.ops.op_math import adjoint, prod
+from pennylane.ops.identity import Identity
+from pennylane.ops.op_math import adjoint
 
-from ..functions import bind_new_parameters
 from .adjoint import Adjoint
 from .adjoint2 import Adjoint2, _adjoint_abstract
 from .symbolicop2 import SymbolicOp2
-
-
-def pow2(base, z=1, lazy=True) -> Operator:
-    """Raise an Operator to a power.
-
-    Args:
-        base (~.operation.Operator): the operator to be raised to a power
-        z (float): the exponent (default value is 1)
-
-    Keyword Args:
-        lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow2`` class
-            and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
-
-    Returns:
-        Operator
-
-    .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
-
-    **Example**
-
-    >>> pow2(qp.X(0), 0.5)
-    X(0)**0.5
-    >>> pow2(qp.X(0), 0.5, lazy=False)
-    SX(0)
-    >>> pow2(qp.X(0), 0.1, lazy=False)
-    X(0)**0.1
-    >>> pow2(qp.X(0), 2, lazy=False)
-    I(0)
-
-    Lazy behaviour can also be accessed via ``op ** z``.
-
-    """
-    if lazy:
-        return Pow2(base, z)
-    try:
-        pow_ops = base.pow(z)
-    except PowUndefinedError:
-        return Pow2(base, z)
-
-    num_ops = len(pow_ops)
-    if num_ops == 0:
-        pow_op = qp.Identity(base.wires)
-    elif num_ops == 1:
-        pow_op = pow_ops[0]
-    else:
-        pow_op = qp.prod(*pow_ops)
-    QueuingManager.remove(base)
-
-    return pow_op
 
 
 class Pow2(SymbolicOp2):
@@ -300,7 +251,7 @@ class Pow2(SymbolicOp2):
                 return Identity(self.wires)
             if not capture.enabled():
                 ops = [op.simplify() for op in ops]
-            return prod(*ops) if len(ops) > 1 else ops[0]
+            return reduce(lambda nxt, acc: nxt @ acc, ops) if len(ops) > 1 else ops[0]
         except PowUndefinedError:
             return Pow2(base=base, z=z)
 
@@ -309,7 +260,7 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return pow_resource_rep(op.op_type, op.params, z)
-    return pow2(op, z)
+    return qp.pow(op, z)
 
 
 # pylint: disable=protected-access,unused-argument
@@ -330,7 +281,7 @@ def repeat_pow_base(base, z):
 @register_resources(lambda base, z: {abstractify(base.base): z * base.z})
 def merge_powers(base, z):
     """Decompose nested powers by combining them."""
-    pow2(base.base, z * base.z)
+    qp.pow(base.base, z * base.z)
 
 
 def _flip_pow_adjoint_resource(base, z):
@@ -347,7 +298,7 @@ def _flip_pow_adjoint_resource(base, z):
 def flip_pow_adjoint(base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    adjoint(pow2(base.base, z))
+    adjoint(qp.pow(base.base, z))
 
 
 def make_pow_decomp_with_period(period) -> DecompositionRule:
@@ -373,7 +324,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 1:
             apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
-            pow2(base, z_mod_period)
+            qp.pow(base, z_mod_period)
 
     return _impl
 
@@ -389,7 +340,7 @@ def _pow_rotation_resource(base, z):  # pylint: disable=unused-argument
 @register_resources(_pow_rotation_resource)
 def pow_rotation(phi, wires, base, z):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    bind_new_parameters(base, (phi * z,))
+    qp.ops.functions.bind_new_parameters(base, (phi * z,))
 
 
 @list_decomps.register

@@ -59,10 +59,10 @@ from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_sing
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.controlled2 import to_controlled_unitary
+from pennylane.ops.op_math.pow import pow
 from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
-from pennylane.ops.op_math.pow2 import pow2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
@@ -285,11 +285,11 @@ class TestPowDecomposition:
     def test_merge_powers2(self):
         """Test the decomposition rule for nested powers."""
 
-        op = pow2(pow2(qp.S(0), 3), 2)
+        op = pow(pow(qp.S(0), 3), 2)
         with qp.queuing.AnnotatedQueue() as q:
             merge_powers2(**op.arguments)
 
-        assert q.queue == [pow2(qp.S(0), 6)]
+        assert q.queue == [pow(qp.S(0), 6)]
         assert merge_powers2.compute_resources(**op.arguments) == to_resources({qp.S(Wire[1]): 6})
 
     def test_repeat_pow_base(self):
@@ -305,7 +305,7 @@ class TestPowDecomposition:
     def test_repeat_pow_base2(self):
         """Tests repeating the same op z number of times."""
 
-        op = pow2(qp.S(0), 3)
+        op = pow(qp.S(0), 3)
         with qp.queuing.AnnotatedQueue() as q:
             repeat_pow_base2(**op.arguments)
 
@@ -334,7 +334,7 @@ class TestPowDecomposition:
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-        op = pow2(qp.S(0), 3)
+        op = pow(qp.S(0), 3)
 
         def circuit():
             repeat_pow_base2(**op.arguments)
@@ -355,9 +355,9 @@ class TestPowDecomposition:
     def test_non_integer_pow_not_applicable2(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
 
-        op = pow2(qp.S(0), 0.5)
+        op = pow(qp.S(0), 0.5)
         assert not repeat_pow_base2.is_applicable(**op.arguments)
-        op = pow2(qp.S(0), -1)
+        op = pow(qp.S(0), -1)
         assert not repeat_pow_base2.is_applicable(**op.arguments)
 
     def test_flip_pow_adjoint(self):
@@ -381,12 +381,12 @@ class TestPowDecomposition:
     def test_flip_pow_adjoint2(self):
         """Tests the flip_pow_adjoint decomposition."""
 
-        op = pow2(qp.adjoint(DynOp(0.5, wires=[0, 1, 2])), 2)
+        op = pow(qp.adjoint(DynOp(0.5, wires=[0, 1, 2])), 2)
 
         with queuing.AnnotatedQueue() as q:
             flip_pow_adjoint2(**op.arguments)
 
-        assert q.queue == [qp.adjoint(pow2(DynOp(0.5, wires=[0, 1, 2]), 2))]
+        assert q.queue == [qp.adjoint(pow(DynOp(0.5, wires=[0, 1, 2]), 2))]
         assert flip_pow_adjoint2.compute_resources(**op.arguments) == Resources(
             {
                 _adjoint_abstract(
@@ -433,11 +433,11 @@ class TestPowDecomposition:
     def test_pow_involutory2(self):
         """Tests the pow_involutory decomposition."""
 
-        op1 = pow2(DynOp(0.5, wires=[0, 1, 2]), 1)
-        op2 = pow2(DynOp(0.5, wires=[0, 1, 2]), 2)
-        op3 = pow2(DynOp(0.6, wires=[0, 1, 2]), 3)
-        op4 = pow2(DynOp(0.6, wires=[0, 1, 2]), 4)
-        op5 = pow2(DynOp(0.7, wires=[0, 1, 2]), 4.5)
+        op1 = pow(DynOp(0.5, wires=[0, 1, 2]), 1)
+        op2 = pow(DynOp(0.5, wires=[0, 1, 2]), 2)
+        op3 = pow(DynOp(0.6, wires=[0, 1, 2]), 3)
+        op4 = pow(DynOp(0.6, wires=[0, 1, 2]), 4)
+        op5 = pow(DynOp(0.7, wires=[0, 1, 2]), 4.5)
 
         with qp.queuing.AnnotatedQueue() as q:
             pow_involutory2(**op1.arguments)
@@ -449,7 +449,7 @@ class TestPowDecomposition:
         assert q.queue == [
             DynOp(0.5, wires=[0, 1, 2]),
             DynOp(0.6, wires=[0, 1, 2]),
-            pow2(DynOp(0.7, wires=[0, 1, 2]), 0.5),
+            pow(DynOp(0.7, wires=[0, 1, 2]), 0.5),
         ]
         assert pow_involutory2.compute_resources(**op1.arguments) == Resources(
             {DynOp(Float, wires=Wire[3]): 1}
@@ -496,7 +496,7 @@ class TestPowDecomposition:
     def test_pow_rotations2(self):
         """Tests the pow_rotations decomposition."""
 
-        op = pow2(DynOp(0.3, wires=[0, 1, 2]), 2.5)
+        op = pow(DynOp(0.3, wires=[0, 1, 2]), 2.5)
         with queuing.AnnotatedQueue() as q:
             pow_rotation2(op.base.phi, op.base.wires, op.base, op.z)
 
@@ -509,25 +509,25 @@ class TestPowDecomposition:
         """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
 
         # a fixed decomposition rule overrides everything else
-        op = pow2(DynOp(0.5, wires=0), 2)
+        op = pow(DynOp(0.5, wires=0), 2)
         with qp.decomposition.local_decomps():
             _fix_decomp(op, repeat_pow_base2)
             assert list(list_decomps(op)) == [repeat_pow_base2]
 
         # nested powers list only the merge_powers rule
-        nested = pow2(pow2(qp.S(0), 3), 2)
+        nested = pow(pow(qp.S(0), 3), 2)
         assert list(list_decomps(nested)) == [merge_powers2]
 
         # a power of an adjoint lists only the flip_pow_adjoint rule
-        pow_adjoint = pow2(qp.adjoint(DynOp(0.5, wires=0)), 2)
+        pow_adjoint = pow(qp.adjoint(DynOp(0.5, wires=0)), 2)
         assert list(list_decomps(pow_adjoint)) == [flip_pow_adjoint2]
 
         # an integer power appends repeat_pow_base to the custom rules
-        integer_pow = pow2(DynOp(0.5, wires=0), 3)
+        integer_pow = pow(DynOp(0.5, wires=0), 3)
         assert repeat_pow_base2 in list_decomps(integer_pow)
 
         # a non-integer power does not append repeat_pow_base
-        fractional_pow = pow2(DynOp(0.5, wires=0), 0.5)
+        fractional_pow = pow(DynOp(0.5, wires=0), 0.5)
         assert repeat_pow_base2 not in list_decomps(fractional_pow)
 
     def test_pow_abstract2(self):
@@ -547,7 +547,7 @@ class TestPowDecomposition:
         abstract_base = DynOp(Float, wires=Wire[3])
         op = _pow_abstract(abstract_base, 2)
         assert isinstance(op, Pow2)
-        qp.assert_equal(op, pow2(abstract_base, 2))
+        qp.assert_equal(op, pow(abstract_base, 2))
 
 
 class CustomMultiQubitOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
