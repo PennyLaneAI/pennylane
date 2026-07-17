@@ -395,6 +395,12 @@ class Operator2(metaclass=OperatorMeta):
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
+    grad_recipe = None
+    """Legacy Operator compatibility default for parameter-shift recipes."""
+
+    grad_method = None
+    """Legacy Operator compatibility default for gradient method metadata."""
+
     @property
     def data(self) -> tuple:
         """Legacy Operator compatibility view of dynamic numerical arguments."""

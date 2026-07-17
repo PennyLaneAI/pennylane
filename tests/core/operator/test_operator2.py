@@ -2438,6 +2438,13 @@ class NoParamOp(Operator2):
 class TestLegacyCompatibilityViews:
     """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
 
+    def test_default_gradient_metadata(self):
+        """Test the default legacy gradient metadata."""
+        op = NoParamOp(wires=0)
+
+        assert op.grad_recipe is None
+        assert op.grad_method is None
+
     def test_no_param_op_legacy_views(self):
         """Test legacy views for an operator with no dynamic parameters."""
         op = NoParamOp(wires=0)
