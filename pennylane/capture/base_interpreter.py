@@ -27,6 +27,7 @@ from packaging.version import Version
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator2
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -46,8 +47,11 @@ from .primitives import (
 FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
+
 .. code-block::
+
     MyInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
+
 """
 
 
@@ -302,7 +306,12 @@ class PlxprInterpreter:
 
         """
         data, struct = jax.tree_util.tree_flatten(op)
-        return jax.tree_util.tree_unflatten(struct, data)
+        new_op = jax.tree_util.tree_unflatten(struct, data)
+        if isinstance(new_op, Operator2):
+            # Operator2 pytree reconstruction occurs with capture paused, so explicitly
+            # bind the reconstructed operation into the surrounding trace.
+            new_op._bind_primitive()  # pylint: disable=protected-access
+        return new_op
 
     def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
@@ -400,7 +409,6 @@ class PlxprInterpreter:
         return outvals
 
     def __call__(self, f: Callable) -> Callable:
-
         flat_f = FlatFn(f)
 
         @wraps(f)
@@ -539,7 +547,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     new_jaxprs = []
     new_consts = []
     new_consts_slices = []
-    end_const_ind = len(jaxpr_branches)
+    end_const_ind = len(jaxpr_branches) - 1
 
     for const_slice, jaxpr in zip(consts_slices, jaxpr_branches, strict=True):
         consts = invals[const_slice]
@@ -551,7 +559,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
     new_args_slice = slice(end_const_ind, None)
     return cond_prim.bind(
-        *invals[: len(jaxpr_branches)],
+        *invals[: len(jaxpr_branches) - 1],
         *new_consts,
         *args,
         jaxpr_branches=new_jaxprs,
@@ -758,7 +766,7 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     consts_slices = [slice(*s) for s in consts_slices]
 
     n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
+    conditions = (*invals[: n_branches - 1], True)
     args = invals[args_slice]
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):

@@ -26,7 +26,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator, Operator1, Operator2
+from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
@@ -47,63 +47,36 @@ def _assert_error_raised(func, error, failure_comment):
     return inner_func
 
 
+def _resolve_dynamic_wires(ops, num_zeroed):
+    """Apply the transform resolve_dynamic_wires to a list of operations or tape."""
+    if unwrap := not isinstance(ops, qp.tape.QuantumScript):
+        ops = qp.tape.QuantumScript(ops)
+    zeroed = range(len(ops.wires), len(ops.wires) + num_zeroed)
+    [ops], _ = qp.transforms.resolve_dynamic_wires([ops], zeroed=zeroed)
+    if unwrap:
+        ops = ops.operations
+    return ops
+
+
+def _assert_equal_ops(ops0, ops1, error_msg: str):
+    for op0, op1 in zip(ops0, ops1, strict=True):
+        if isinstance(op0, qp.ops.MidMeasure):
+            assert isinstance(op1, qp.ops.MidMeasure), error_msg
+            assert op0.wires == op1.wires, error_msg
+            assert op0.reset == op1.reset, error_msg
+            assert op0.postselect == op1.postselect, error_msg
+        else:
+            assert isinstance(op0, qp.operation.Operator), "decomposition must contain operators"
+            try:
+                assert_equal(op0, op1)
+            except AssertionError as e:
+                raise AssertionError(error_msg) from e
+
+
 # pylint: disable=too-many-branches
 def _check_decomposition(op, skip_wire_mapping):
     """Checks involving the decomposition."""
-    if op.has_decomposition:
-        decomp = op.decomposition()
-        try:
-            args, kwargs = _get_signature(op)
-            compute_decomp = type(op).compute_decomposition(*args, **kwargs)
-        except (qp.exceptions.DecompositionUndefinedError, TypeError):
-            # sometimes decomposition is defined but not compute_decomposition
-            # Also  sometimes compute_decomposition can have a different signature
-            compute_decomp = decomp
-        with qp.queuing.AnnotatedQueue() as queued_decomp:
-            op.decomposition()
-        processed_queue = qp.tape.QuantumTape.from_queue(queued_decomp)
-
-        assert isinstance(decomp, list), "decomposition must be a list"
-        assert isinstance(compute_decomp, list), "decomposition must be a list"
-        assert op not in decomp, "an operator should not be included in its own decomposition"
-        compute_decomp_msg = "decomposition must match compute_decomposition"
-        queue_msg = "decomposition must match queued operations"
-        assert len(decomp) == len(compute_decomp), compute_decomp_msg
-        assert len(decomp) == len(processed_queue), queue_msg
-
-        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue, strict=True):
-            if isinstance(o1, qp.ops.MidMeasure):
-                for other_op, msg in [(o2, compute_decomp_msg), (o3, queue_msg)]:
-                    assert isinstance(other_op, qp.ops.MidMeasure), msg
-                    assert o1.wires == other_op.wires, msg
-                    assert o1.reset == other_op.reset, msg
-                    assert o1.postselect == other_op.postselect, msg
-            else:
-                assert isinstance(o1, qp.operation.Operator), "decomposition must contain operators"
-                for other_op, msg in [(o2, compute_decomp_msg), (o3, queue_msg)]:
-                    try:
-                        assert_equal(o1, other_op)
-                    except AssertionError as e:
-                        raise AssertionError(msg) from e
-
-        if skip_wire_mapping:
-            return
-        # Check that mapping wires transitions to the decomposition
-        wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
-        mapped_op = op.map_wires(wire_map)
-        # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
-        # base, so may return a different class of operator. We only compare decomps of `op` and
-        # `mapped_op` if `mapped_op` **has** a decomposition.
-        # see MultiControlledX([0, 1]) and CNOT([0, 1]) as an example
-        if mapped_op.has_decomposition:
-            mapped_decomp = mapped_op.decomposition()
-            orig_decomp = op.decomposition()
-            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp, strict=True):
-                assert (
-                    mapped_op.wires
-                    == qp.map_wires(orig_op, wire_map).wires  # pylint: disable=no-member
-                ), "Operators in decomposition of wire-mapped operator must have mapped wires."
-    else:
+    if not op.has_decomposition:
         failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
         _assert_error_raised(
             op.decomposition,
@@ -117,20 +90,73 @@ def _check_decomposition(op, skip_wire_mapping):
             qp.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )(*args, **kwargs)
+        return
+
+    with qp.queuing.AnnotatedQueue() as queued_decomp:
+        decomp = op.decomposition()
+    processed_queue = qp.tape.QuantumScript.from_queue(queued_decomp)
+
+    try:
+        args, kwargs = _get_signature(op)
+        compute_decomp = type(op).compute_decomposition(*args, **kwargs)
+    except (qp.exceptions.DecompositionUndefinedError, TypeError):
+        # sometimes decomposition is defined but not compute_decomposition
+        # Also  sometimes compute_decomposition can have a different signature
+        compute_decomp = decomp
+
+    assert isinstance(decomp, list), "decomposition must be a list"
+    assert isinstance(compute_decomp, list), "decomposition must be a list"
+
+    allocations = [op for op in decomp if isinstance(op, qp.allocation.Allocate)]
+    if allocations:
+        total_work_wires = sum(len(op.wires) for op in allocations)
+        decomp = _resolve_dynamic_wires(decomp, total_work_wires)
+        compute_decomp = _resolve_dynamic_wires(compute_decomp, total_work_wires)
+        processed_queue = _resolve_dynamic_wires(processed_queue, total_work_wires)
+
+    assert op not in decomp, "an operator should not be included in its own decomposition"
+    compute_decomp_msg = "decomposition must match compute_decomposition"
+    queue_msg = "decomposition must match queued operations"
+    assert len(decomp) == len(compute_decomp), compute_decomp_msg
+    assert len(decomp) == len(processed_queue), queue_msg
+
+    _assert_equal_ops(decomp, compute_decomp, compute_decomp_msg)
+    _assert_equal_ops(decomp, processed_queue, queue_msg)
+
+    if skip_wire_mapping:
+        return
+    # Check that mapping wires transitions to the decomposition
+    wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
+    mapped_op = op.map_wires(wire_map)
+    # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
+    # base, so may return a different class of operator. We only compare decomps of `op` and
+    # `mapped_op` if `mapped_op` **has** a decomposition.
+    # see MultiControlledX([0, 1]) and CNOT([0, 1]) as an example
+    if mapped_op.has_decomposition:
+        mapped_decomp = mapped_op.decomposition()
+        if allocations:
+            mapped_decomp = _resolve_dynamic_wires(mapped_decomp, total_work_wires)
+        for mapped_op, orig_op in zip(mapped_decomp, decomp, strict=True):
+            assert (
+                mapped_op.wires
+                == qp.map_wires(orig_op, wire_map).wires  # pylint: disable=no-member
+            ), "Operators in decomposition of wire-mapped operator must have mapped wires."
 
 
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     """Checks involving the new system of decompositions."""
     op_type = type(op)
-    if op_type.resource_params is qp.operation.Operator.resource_params:
-        assert not qp.decomposition.has_decomp(
-            op_type
-        ), "resource_params must be defined for operators with decompositions"
-        return
 
-    assert set(op.resource_params.keys()) == set(
-        op_type.resource_keys
-    ), "resource_params must have the same keys as specified by resource_keys"
+    if not isinstance(op, Operator2):
+        if op_type.resource_params is qp.operation.Operator.resource_params:
+            assert not qp.decomposition.has_decomp(
+                op_type
+            ), "resource_params must be defined for operators with decompositions"
+            return
+
+        assert set(op.resource_params.keys()) == set(
+            op_type.resource_keys
+        ), "resource_params must have the same keys as specified by resource_keys"
 
     for rule in qp.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
@@ -191,28 +217,28 @@ def _assert_counts_match(counts_0, counts_1):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    if not rule.is_applicable(**op.resource_params):
+    params = op.arguments if isinstance(op, Operator2) else op.resource_params
+
+    if not rule.is_applicable(**params):
         return
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**op.resource_params)
+    resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
     with qp.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qp.tape.QuantumScript.from_queue(q)
 
-    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
-        [tape], _ = qp.transforms.resolve_dynamic_wires(
-            [tape], zeroed=range(len(tape.wires), len(tape.wires) + total_work_wires)
-        )
+        tape = _resolve_dynamic_wires(tape, total_work_wires)
 
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        op_rep = qp.resource_rep(type(_op), **_op.resource_params)
+        op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
@@ -422,7 +448,8 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    if isinstance(op, Operator1):
+    # Protect against cases where you have an Operator1 consuming Operator2
+    if isinstance(op, Operator1) and not any(isinstance(sub, Operator2) for sub in data):
         for d1, d2 in zip(op.data, leaves, strict=True):
             assert qp.math.allclose(
                 d1, d2
@@ -449,7 +476,11 @@ def _check_capture(op):
         data, struct = jax.tree_util.tree_flatten(op)
 
         def test_fn(*args):
-            return jax.tree_util.tree_unflatten(struct, args)
+            op = jax.tree_util.tree_unflatten(struct, args)
+            if isinstance(op, Operator2):
+                op._bind_primitive()
+                return op.tracer
+            return op
 
         jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
@@ -658,7 +689,7 @@ def assert_valid(
         class MyOp(qp.operation.Operator):
 
             def __init__(self, data, wires):
-                self.data = data
+                self._data = data
                 super().__init__(wires=wires)
 
         op = MyOp(qp.numpy.array(0.5), wires=0)
@@ -687,13 +718,6 @@ def assert_valid(
     """
 
     if isinstance(op, qp.core.Operator2):
-        # Temporary, as we will be integrating Operator2 with program capture soon
-        skip_capture = True
-        # Temporary, as we will be integrating Operator2 with graph decomps soon
-        skip_new_decomp = True
-        # Temporary, as we will integrate with differentiation soon
-        skip_differentiation = True
-
         _assert_valid_operator2(
             op,
             skip_deepcopy,

@@ -28,6 +28,8 @@ from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.transforms.decompose import _resolve_gate_set
+from pennylane.typing import Float, Wire
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
 
@@ -680,20 +682,52 @@ class TestDecomposeGraphEnabled:
         for actual, exp in zip(result.operations, expected.operations, strict=True):
             qp.assert_equal(actual, exp)
 
+    def test_operator2_integration(self):
+        """Tests that circuits containing Operator2 instances can be decomposed."""
 
-@pytest.mark.capture
-@pytest.mark.system
-def test_decompose_qnode():
-    """Tests that the decompose transform works with a QNode."""
+        @qp.register_resources({qp.H: 2, qp.CNOT: 1, DynOp(Float, Wire[2]): 2})
+        def _custom_decomp(theta, wires):
+            qp.H(wires[0])
+            qp.H(wires[1])
+            DynOp(theta / 2, wires[:2])
+            qp.CNOT(wires[:2])
+            DynOp(theta / 2, wires[:2])
 
-    @qp.transforms.decompose(gate_set={"CZ", "Hadamard"})
-    @qp.qnode(qp.device("default.qubit", wires=2))
-    def circuit():
-        qp.CNOT(wires=[0, 1])
-        return qp.expval(qp.PauliZ(0))
+        @qp.register_resources({qp.CNOT: 1, OneWireDynOp: 2})
+        def _dynop_decomp(phi, wires):
+            OneWireDynOp(phi / 2, wires[0])
+            qp.CNOT(wires)
+            OneWireDynOp(phi / 2, wires[1])
 
-    res = circuit()
-    assert qp.math.allclose(res, 1.0)
+        with qp.queuing.AnnotatedQueue() as q:
+            CustomOp(0.6, [0, 1])
+            DynOp(0.5, [0, 1])
+
+        tape = qp.tape.QuantumScript.from_queue(q)
+
+        expected = [
+            qp.H(0),
+            qp.H(1),
+            OneWireDynOp(0.15, 0),
+            qp.CNOT([0, 1]),
+            OneWireDynOp(0.15, 1),
+            qp.CNOT([0, 1]),
+            OneWireDynOp(0.15, 0),
+            qp.CNOT([0, 1]),
+            OneWireDynOp(0.15, 1),
+            OneWireDynOp(0.25, 0),
+            qp.CNOT([0, 1]),
+            OneWireDynOp(0.25, 1),
+        ]
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(CustomOp, _custom_decomp)
+            qp.add_decomps(DynOp, _dynop_decomp)
+
+            [result], _ = qp.decompose([tape], gate_set={qp.CNOT, qp.H, OneWireDynOp})
+
+        assert result.operations == expected
 
 
 @pytest.mark.unit

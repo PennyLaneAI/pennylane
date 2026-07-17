@@ -28,6 +28,7 @@ import pennylane as qp
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import (
     DecompositionWarning,
@@ -35,7 +36,6 @@ from pennylane.exceptions import (
     PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _make_execution_config
 from pennylane.workflow.set_shots import set_shots

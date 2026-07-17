@@ -35,24 +35,33 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
-from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
-from .resources import CompressedResourceOp, Resources, resource_rep
+from .decomposition_rule import (
+    DecompositionRule,
+    WorkWireSpec,
+    _decomp_contains_mcm,
+    _fix_decomp,
+    add_decomps,
+    list_decomps,
+    local_decomps,
+    null_decomp,
+)
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
     ctrl_single_work_wire,
-    decompose_to_base,
+    decompose_to_base_legacy,
     flip_control_adjoint,
     flip_pow_adjoint,
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
     repeat_pow_base,
-    self_adjoint,
+    self_adjoint_legacy,
     to_controlled_qubit_unitary,
 )
 from .utils import to_name
@@ -60,12 +69,18 @@ from .utils import to_name
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
+def _get_kwargs(op: AbstractOperatorLike):
+    if isinstance(op, Operator2):
+        return op.arguments
+    return op.params
+
+
 @dataclass(frozen=True)
 class _OperatorNode:
     """A node that represents an operator type."""
 
-    op: CompressedResourceOp
-    """The resource rep of the operator."""
+    op: AbstractOperatorLike
+    """The abstract operator."""
 
     num_work_wire_not_available: int
     """The number of work wires NOT available to the decomposition of this operator
@@ -131,7 +146,7 @@ class _DecompositionNode:  # pylint: disable=too-many-instance-attributes
     def __post_init__(self):
         self.min_work_wires = self.min_work_wires or self.work_wire_spec.total
 
-    def count(self, op: CompressedResourceOp):
+    def count(self, op: AbstractOperatorLike):
         """Find the number of occurrences of an operator in the decomposition."""
         return self.decomp_resource.gate_counts.get(op, 0)
 
@@ -227,7 +242,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        operations: Iterable[Operator | CompressedResourceOp],
+        operations: Iterable[Operator | AbstractOperatorLike],
         gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
@@ -250,11 +265,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._all_op_indices: dict[_OperatorNode, int] = {}
 
         # Keeps track of all operators that depend on work wires.
-        self._work_wire_dependent_ops: set[CompressedResourceOp] = set()
+        self._work_wire_dependent_ops: set[AbstractOperatorLike] = set()
 
         # Maps operators to operator nodes. There might be multiple operator nodes mapped to
         # the same operator, but each with a different work wire budget.
-        self._op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]] = defaultdict(set)
+        self._op_to_op_nodes: dict[AbstractOperatorLike, set[_OperatorNode]] = defaultdict(set)
 
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
@@ -269,27 +284,41 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._min_work_wires = 0
         self._start = self._graph.add_node(None)
 
-        # The purpose of the following two "in_progress" variables is to keep track of which operators we're still exploring
-        # decomposition paths for during **graph construction**. If we loop back to an
-        # op that we're still exploring (e.g., if we find ourselves exploring decomposition
-        # rules for C(RX) during exploration of RX itself), we stop.
+        # The purpose of the following two "in_progress" variables is to keep track of which
+        # operators we're still exploring decomposition paths for during **graph construction**.
+        # If we loop back to an op that we're still exploring (e.g., if we find ourselves
+        # exploring decomposition rules for C(RX) during exploration of RX itself), we stop.
         self._in_progress = []
         self._num_ctrl_wires_in_progress = defaultdict(list)
 
-        self._construct_graph(operations)
+        # Update the global decomposition library using alt_decomps and fixed_decomps in a local
+        # context manager (which restores it to the original state upon exit), so that list_decomps
+        # will always return the modified collection of decomposition rules. This is important
+        # because when list_decomps is called on symbolic operators, it recursively calls itself
+        # on the base of the symbolic operator to retrieve the base decomposition rules. When this
+        # happens, we need alt_decomps and fixed_decomps to still be respected.
+        with local_decomps():
 
-    def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
+            for op, decomps in self._alt_decomps.items():
+                add_decomps(op, *decomps)
+
+            for op, decomp in self._fixed_decomps.items():
+                _fix_decomp(op, decomp)
+
+            self._construct_graph(operations)
+
+    def _construct_graph(self, operations: Iterable[Operator | AbstractOperatorLike]):
         """Constructs the decomposition graph."""
         for op in operations:
             if isinstance(op, qp.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Operator):
-                op = resource_rep(type(op), **op.resource_params)
+                op = abstractify(op)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
             self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
 
-    def _add_op_node(self, op: CompressedResourceOp, num_used_work_wires: int) -> int:
+    def _add_op_node(self, op: AbstractOperatorLike, num_used_work_wires: int) -> int:
         """Recursively adds an operation node to the graph.
 
         An operator node is uniquely defined by its operator type and resource parameters, which
@@ -305,7 +334,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # instead of creating a new one. Now when we see an operator with a different work
         # wire budget from the one already in the graph, whether we need to create a new
         # node for this operator is determined by whether this operator's decomposition is
-        # work-wire dependent. We have overriden __hash__ and __eq__ of the node class so
+        # work-wire dependent. We have overridden __hash__ and __eq__ of the node class so
         # that when we have a work-wire-independent operator with a different work wire
         # budget from the existing one in the graph, the difference is ignored.
         known_work_wire_dependent = op in self._work_wire_dependent_ops
@@ -373,15 +402,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def _push_in_progress(self, op):
         self._in_progress.append(op)
-        if op.op_type is qp.ops.Controlled:
-            base_rep = _get_base_rep_if_applicable(op)
-            num_ctrl_wires = op.params["num_control_wires"]
-            self._num_ctrl_wires_in_progress[base_rep].append(num_ctrl_wires)
+        if unwrapped := _get_base_and_n_ctrls(op):
+            base_rep, num_control_wires = unwrapped
+            self._num_ctrl_wires_in_progress[base_rep].append(num_control_wires)
 
     def _pop_in_progress(self, op):
         self._in_progress.pop()
-        if op.op_type is qp.ops.Controlled:
-            base_rep = _get_base_rep_if_applicable(op)
+        if unwrapped := _get_base_and_n_ctrls(op):
+            base_rep, _ = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].pop()
 
     def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
@@ -403,7 +431,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # If the decomposition rule is not applicable to the given operator node, we do not
         # try to explore it, but we still add it to the graph because later we may need to
         # inspect the graph to check which decomposition rules were considered but excluded.
-        if not rule.is_applicable(**op_node.op.params):
+        if not rule.is_applicable(**_get_kwargs(op_node.op)):
             d_node = _DecompositionNode(
                 rule,
                 Resources({}),
@@ -415,8 +443,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(d_node_idx, op_idx, 0)
             return d_node
 
-        decomp_resource = rule.compute_resources(**op_node.op.params)
-        work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
+        kwargs = _get_kwargs(op_node.op)
+        decomp_resource = rule.compute_resources(**kwargs)
+        work_wire_spec = rule.get_work_wire_spec(**kwargs)
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)
@@ -457,30 +486,33 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return d_node
 
     def _base_in_progress(self, op):
-        base = _get_base_rep_if_applicable(op)
-        if base is None:
+        unwrapped = _get_base_and_n_ctrls(op)
+        if unwrapped is None:
             return False
+        base, num_control_wires = unwrapped
         if base in self._in_progress:
             return True
-        return (
-            op.op_type is qp.ops.Controlled
-            and (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base])
-            and op.params["num_control_wires"] > ctrl_wires_in_progress[-1]
-        )
+        if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
+            return False
+        return num_control_wires > ctrl_wires_in_progress[-1]
 
-    def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+    def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        op_name = to_name(op)
+        decomps = list_decomps(op)
 
-        if op_name in self._fixed_decomps:
-            return [self._fixed_decomps[op_name]]
+        # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
+        # are integrated into list_decomps so that the graph would not be responsible
+        # for populating these symbolic decomposition rules.
+        if isinstance(op, Operator2):
+            return decomps
 
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+        if to_name(op) in self._fixed_decomps:
+            return decomps
 
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
-            and self_adjoint not in decomps
+            and self_adjoint_legacy not in decomps
             and adjoint_rotation not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
@@ -528,7 +560,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [decompose_to_base]
+            return [decompose_to_base_legacy]
 
         # Special case: power of a power
         if issubclass(op.params["base_class"], qp.ops.Pow):
@@ -630,10 +662,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         )
 
 
-def _get_base_rep_if_applicable(op: CompressedResourceOp) -> CompressedResourceOp | None:
-    if op.op_type in (qp.ops.Adjoint, qp.ops.Controlled):
+def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLike, int] | None:
+    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
-        return resource_rep(base_class, **base_params)
+        return resource_rep(base_class, **base_params), op.params["num_control_wires"]
+    if isinstance(op, Operator2) and isinstance(op, qp.ops.ControlledOp2):
+        return abstractify(op.base), len(op.control_wires)
     return None
 
 
@@ -646,13 +680,6 @@ def _validate_rule(rule):
             "decorated with @qp.register_resources to be used as a decomposition rule."
         )
     return rule
-
-
-def _decomp_contains_mcm(rule, params):
-    resources = rule.compute_resources(**params).gate_counts
-    mcm = resource_rep(qp.ops.MidMeasure)
-    ppm = resource_rep(qp.ops.PauliMeasure)
-    return mcm in resources or ppm in resources
 
 
 class DecompGraphSolution:
@@ -691,7 +718,7 @@ class DecompGraphSolution:
         self,
         visitor: DecompositionSearchVisitor,
         all_op_indices: dict[_OperatorNode, int],
-        op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
+        op_to_op_nodes: dict[AbstractOperatorLike, set[_OperatorNode]],
         num_work_wires: int | None,
     ) -> None:
         self._visitor = visitor
@@ -705,7 +732,7 @@ class DecompGraphSolution:
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
-        op_rep = resource_rep(type(op), **op.resource_params)
+        op_rep = abstractify(op)
         if op_rep not in self._op_to_op_nodes:
             return []
 

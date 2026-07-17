@@ -15,6 +15,8 @@
 Tests for the QROM template.
 """
 
+import math
+
 import numpy
 import pytest
 
@@ -22,8 +24,29 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.qrom import _calculate_n_select_work_wires, _qrom_decomposition
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.qrom import (
+    _calculate_n_select_work_wires,
+    _count_tempAND_in_measurement_qrom,
+    _qrom_decomposition,
+    _qrom_measurement_condition,
+    _qrom_measurement_decomposition,
+    _qrom_measurement_resources,
+)
 from pennylane.templates.subroutines.select import _select_decomp_unary
+
+clifford_t_measure = {
+    qp.H,
+    qp.T,
+    qp.S,
+    qp.X,
+    qp.Y,
+    qp.Z,
+    qp.CNOT,
+    qp.CZ,
+    qp.Hadamard,
+    PauliMeasure,
+}
 
 has_jax = True
 try:
@@ -219,7 +242,6 @@ class TestQROM:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-
             # Initialize the work wires to a non-zero state
             for ind, wire in enumerate(work_wires):
                 qp.RX(ind, wires=wire)
@@ -532,3 +554,286 @@ def test_calculate_n_select_work_wires(terms, n_ctrl, n_target, n_work, expected
     )
 
     assert result == expected
+
+
+class TestMeasurementQROM:
+    """Test the correctness of the measurement-based QROM decomposition."""
+
+    @pytest.mark.parametrize(
+        ("L", "expected_ands"),
+        [
+            (1, 0),
+            (2, 0),
+            (3, 1),
+            (4, 1),
+            (5, 3),
+            (6, 4),
+            (7, 4),
+            (8, 5),
+            (9, 7),
+            (10, 8),
+            (11, 9),
+            (12, 10),
+            (13, 10),
+            (14, 11),
+            (15, 12),
+            (16, 13),
+        ],
+    )
+    def test_count_TemporaryAnd(self, L, expected_ands):
+        """Test that TemporaryAND count matches expected values."""
+        assert _count_tempAND_in_measurement_qrom(L) == expected_ands
+
+    def test_resources_small_cases(self):
+        """Test resource estimates for the L <= 1 and L == 2 edge cases."""
+        res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
+        assert res_one[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+
+        res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
+        assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+        assert res_two[qp.resource_rep(qp.CNOT)] == 3
+
+    def test_resources_general_case(self):
+        """Test that the general resource estimate contains the expected gate types."""
+        res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
+        assert res[qp.resource_rep(PauliMeasure)] > 0
+        assert res[qp.resource_rep(qp.CZ)] > 0
+
+    def test_resources_from_base_params(self):
+        """Test that resources are extracted from ``base_params`` (Adjoint path)."""
+        base_params = {"num_bitstrings": 8, "num_target_wires": 3}
+        res_direct = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
+        res_base = _qrom_measurement_resources(base_params=base_params)
+        assert res_base == res_direct
+
+    def test_condition_without_compiler(self):
+        """Test that the measurement decomposition is disabled without an active compiler."""
+        assert (
+            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
+            is False
+        )
+
+    def test_condition_with_compiler(self, mocker):
+        """Test the condition logic when a compiler is active."""
+        mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
+
+        # Small tables (<= 2 bitstrings) are always applicable.
+        assert (
+            _qrom_measurement_condition(num_bitstrings=2, num_work_wires=0, num_control_wires=1)
+            is True
+        )
+        # Enough work wires: applicable.
+        assert (
+            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
+            is True
+        )
+        # Too few work wires: not applicable.
+        assert (
+            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=0, num_control_wires=3)
+            is False
+        )
+        # Parameters extracted from ``base_params`` (Adjoint path).
+        assert (
+            _qrom_measurement_condition(
+                base_params={
+                    "num_bitstrings": 8,
+                    "num_work_wires": 2,
+                    "num_control_wires": 3,
+                }
+            )
+            is True
+        )
+
+    def test_decomposition_single_bitstring(self):
+        """Test the L == 1 branch of the measurement decomposition."""
+        with qp.queuing.AnnotatedQueue() as q:
+            _qrom_measurement_decomposition(
+                data=np.array([[1, 0, 1]]),
+                control_wires=[0],
+                target_wires=[1, 2, 3],
+                work_wires=[],
+            )
+        ops = q.queue
+        assert len(ops) == 1
+        assert isinstance(ops[0], qp.BasisState)
+        assert ops[0].wires == qp.wires.Wires([1, 2, 3])
+        assert np.array_equal(ops[0].data[0], np.array([1, 0, 1]))
+
+    def test_decomposition_two_bitstrings(self):
+        """Test the L == 2 branch of the measurement decomposition."""
+        with qp.queuing.AnnotatedQueue() as q:
+            _qrom_measurement_decomposition(
+                data=np.array([[1, 0, 1], [0, 0, 1]]),
+                control_wires=[0],
+                target_wires=[1, 2, 3],
+                work_wires=[],
+            )
+        ops = q.queue
+        assert isinstance(ops[0], qp.BasisState)
+        # Only the differing bit (index 0) produces a controlled load.
+        assert all(isinstance(op, qp.CNOT) for op in ops[1:])
+        assert len(ops[1:]) == 1
+
+    def test_decomposition_from_base_operator(self):
+        """Test that the decomposition extracts arguments from ``base`` (Adjoint path)."""
+        op = qp.QROM(
+            [[1], [0], [0], [1]],
+            control_wires=[0, 1],
+            target_wires=[2],
+            work_wires=[3],
+        )
+        with qp.queuing.AnnotatedQueue() as q_base:
+            _qrom_measurement_decomposition(base=op)
+        with qp.queuing.AnnotatedQueue() as q_direct:
+            _qrom_measurement_decomposition(
+                data=op.data[0],
+                control_wires=op.control_wires,
+                target_wires=op.target_wires,
+                work_wires=op.work_wires,
+            )
+        assert len(q_base.queue) == len(q_direct.queue)
+        for op_base, op_direct in zip(q_base.queue, q_direct.queue):
+            assert type(op_base) is type(op_direct)
+            assert op_base.wires == op_direct.wires
+
+    @pytest.mark.external
+    @pytest.mark.parametrize(
+        "L",
+        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16],
+    )
+    def test_correctness(self, L, seed):
+        """Test correctness of measurement-based QROM for various sizes."""
+        rng = np.random.default_rng(seed)
+        n_target = 3
+        n_input = math.ceil(math.log2(L))
+        n_work = n_input - 1
+
+        bitstrings = rng.choice(2, size=(L, n_target))
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        wires = qp.registers(
+            {"control_wires": n_input, "work_wires": n_work, "target_wires": n_target}
+        )
+
+        shots = 10
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
+        def circuit(j):
+            qp.BasisState(j, wires=wires["control_wires"])
+            _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
+            return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+
+        for j in range(L):
+            target_samples, work_samples = circuit(j)
+
+            assert target_samples.shape == (shots, n_target)
+            assert np.all(
+                target_samples == bitstrings[j]
+            ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
+            assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
+
+    @pytest.mark.external
+    @pytest.mark.parametrize(
+        "L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+    )
+    def test_no_phases_error(self, L):
+        """Test that QROM introduces no relative phases on the control register."""
+        rng = np.random.default_rng(42 + L)
+        n_target = 3
+
+        n_input = max(1, math.ceil(math.log2(L)))
+        n_work = max(1, n_input - 1)
+
+        bitstrings = rng.integers(0, 2, size=(L, n_target)).tolist()
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        control_wires = list(range(n_input))
+        work_wires = list(range(n_input, n_input + n_work))
+        target_wires = list(range(n_input + n_work, total_wires))
+
+        x_state = rng.random(L) + 1j * rng.random(L)
+        x_state /= np.linalg.norm(x_state)
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.qnode(dev)
+        def circuit():
+            qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
+
+            # Put target wires in |+> state, so that QROM should act like the identity overall.
+            for wire in target_wires:
+                qp.Hadamard(wire)
+
+            _qrom_measurement_decomposition(
+                data=bitstrings,
+                control_wires=control_wires,
+                target_wires=target_wires,
+                work_wires=work_wires,
+                clean=True,
+            )
+
+            qp.adjoint(qp.StatePrep(x_state, wires=control_wires, pad_with=0.0))
+            return qp.probs(wires=control_wires), qp.probs(wires=work_wires)
+
+        assert np.isclose(circuit()[0][0], 1.0)
+        assert np.isclose(circuit()[1][0], 1.0)
+
+    @pytest.mark.external
+    @pytest.mark.parametrize(
+        "L",
+        [3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15],
+    )
+    def test_out_of_range_maps_to_identity(self, L, seed):
+        """Non-partial QROM: indices j in [L, 2**c) must map to the identity.
+
+        For a non-power-of-two number of bitstrings, the unary iterator fires no
+        operator on the out-of-range control states. Those states must therefore
+        leave the target register untouched (it stays in |0>) and the work wires
+        clean. This is exactly the property that distinguishes the non-partial
+        decomposition from the partial one.
+        """
+        rng = np.random.default_rng(seed)
+        n_target = 3
+        n_input = math.ceil(math.log2(L))
+        n_work = max(1, n_input - 1)
+
+        # Sanity: there must actually be out-of-range states to test.
+        assert L < 2**n_input, f"L={L} is a power of two; no out-of-range states"
+
+        bitstrings = rng.choice(2, size=(L, n_target))
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        wires = qp.registers(
+            {"control_wires": n_input, "work_wires": n_work, "target_wires": n_target}
+        )
+
+        shots = 10
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
+        def circuit(j):
+            qp.BasisState(j, wires=wires["control_wires"])
+            _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
+            return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+
+        for j in range(L, 2**n_input):
+            target_samples, work_samples = circuit(j)
+
+            assert target_samples.shape == (shots, n_target)
+            assert np.allclose(
+                target_samples, 0
+            ), f"L={L}, out-of-range j={j}: target not identity, got {target_samples}"
+            assert np.allclose(
+                work_samples, 0
+            ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"

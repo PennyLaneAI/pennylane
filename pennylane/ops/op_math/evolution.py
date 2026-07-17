@@ -19,7 +19,8 @@ from copy import copy
 from warnings import warn
 
 import pennylane as qp
-from pennylane import math, queuing
+from pennylane import math
+from pennylane.core import queuing
 from pennylane.exceptions import GeneratorUndefinedError
 
 from .exp import Exp
@@ -90,10 +91,6 @@ class Evolution(Exp):
     @property
     def data(self):
         return self._data
-
-    @data.setter
-    def data(self, new_data):
-        self._data = new_data
 
     @property
     def param(self):

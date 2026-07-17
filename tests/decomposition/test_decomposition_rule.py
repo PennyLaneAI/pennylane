@@ -16,10 +16,11 @@
 
 from textwrap import dedent
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -29,9 +30,16 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
+from pennylane.ops.mid_measure import MidMeasure
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.typing import Float, Int, Wire
+from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
+
+# pylint: disable=too-few-public-methods,useless-parent-delegation
 
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(Operator):
     pass
 
 
@@ -230,7 +238,234 @@ class TestDecompositionRule:
         with pytest.raises(NotImplementedError, match="No resource estimation found"):
             multi_rz_decomposition.compute_resources(num_wires=3)
 
-    def test_decomposition_dictionary(self):
+    def test_custom_symbolic_decomposition(self):
+        """Tests that custom decomposition rules for symbolic operators can be registered."""
+
+        @register_resources({qp.RX: 1, qp.RZ: 1})
+        def my_adjoint_custom_op(theta, wires, **__):
+            qp.RX(theta, wires=wires[0])
+            qp.RZ(theta, wires=wires[1])
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
+            assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
+            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+            assert qp.decomposition.has_decomp(qp.adjoint(NonParametricOp(wires=[0, 1])))
+            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+
+    def test_auto_wrap_in_resource_op(self):
+        """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
+
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+            resource_keys = set()
+
+        @register_resources({DummyOp: 1})
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        assert custom_decomp.compute_resources() == Resources(
+            gate_counts={CompressedResourceOp(DummyOp): 1}
+        )
+
+        def custom_decomp_2(*_, **__):
+            raise NotImplementedError
+
+        custom_decomp_2 = register_resources({CompressedResourceOp(DummyOp): 1}, custom_decomp_2)
+
+        assert custom_decomp_2.compute_resources() == Resources(
+            gate_counts={CompressedResourceOp(DummyOp): 1}
+        )
+
+    @pytest.mark.parametrize(
+        "my_arg_specs",
+        (
+            pytest.param(
+                {"angles": Float[-1], "eps": Float, "wires": Wire[1]},
+                id="full_signature_with_dynamic_axis",
+            ),
+            pytest.param({"angles": Float[3]}, id="partial_signature"),
+            pytest.param(None, id="no_signature"),
+        ),
+    )
+    def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
+        """Tests that if an operator type without a fixed_sig is used, an error is raised."""
+
+        class MissingFixedSigOp(Operator2):
+
+            dynamic_argnames = ("angles", "eps")
+
+            arg_specs = my_arg_specs
+
+            def __init__(self, angles, eps, wires):
+                super().__init__(angles, eps, wires)
+
+        @register_resources({MissingFixedSigOp: 1})
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="'MissingFixedSigOp' must set 'arg_specs'"):
+            _ = custom_decomp.compute_resources()
+
+    @pytest.mark.parametrize(
+        "abstract_sig, concrete_sig",
+        [
+            (
+                {
+                    "phi": Float,
+                    "matrix": Float[2, 2],
+                    "wires": Wire[1],
+                },
+                {"phi": 1.5, "matrix": np.ones((2, 2), dtype=float), "wires": 5},
+            ),
+            (
+                {
+                    "phi": Int,
+                    "matrix": Int[2, 2],
+                    "wires": Wire[1],
+                },
+                {"phi": 5, "matrix": np.ones((2, 2), dtype=int), "wires": 5},
+            ),
+        ],
+    )
+    def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
+        """Tests that abstract operators can be used as keys."""
+
+        class FixedSigOp(Operator2):
+
+            dynamic_argnames = ("phi", "matrix")
+
+            arg_specs = abstract_sig
+
+            def __init__(self, phi, matrix, wires):
+                super().__init__(phi, matrix, wires)
+
+        @register_resources(
+            {
+                # all three represent the same abstract operator
+                FixedSigOp: 1,
+                FixedSigOp(**abstract_sig): 2,
+                FixedSigOp(**concrete_sig): 3,
+            }
+        )
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        # Gets grouped together
+        exp_dict = {FixedSigOp(**abstract_sig): 6}  # 1 + 2 + 3
+        assert custom_decomp.compute_resources().gate_counts == exp_dict
+
+    def test_auto_wrap_fails(self):
+        """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
+
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+            resource_keys = {"foo"}
+
+        @register_resources({DummyOp: 1})
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="Missing keyword arguments for resource_rep"):
+            custom_decomp.compute_resources()
+
+        def custom_decomp_2(*_, **__):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="must be a subclass of Operator"):
+            custom_decomp_2 = register_resources({int: 1}, custom_decomp_2)
+            custom_decomp_2.compute_resources()
+
+    def test_register_work_wires(self):
+        """Tests that a decomposition can register work wire requirements"""
+
+        @register_resources(
+            {qp.CNOT: 3}, work_wires={"zeroed": 1, "garbage": 2, "borrowed": 3, "burnable": 4}
+        )
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        assert custom_decomp.get_work_wire_spec() == WorkWireSpec(1, 3, 4, 2)
+
+        @register_resources(
+            lambda num_wires: {qp.CNOT: num_wires},
+            work_wires=lambda num_wires: {
+                "zeroed": num_wires // 2,
+                "borrowed": num_wires - num_wires // 2,
+            },
+        )
+        @register_condition(lambda num_wires: num_wires > 2)
+        def custom_decomp_2(*_, **__):
+            raise NotImplementedError
+
+        assert custom_decomp_2.get_work_wire_spec(num_wires=5) == WorkWireSpec(zeroed=2, borrowed=3)
+
+    @pytest.mark.parametrize("exact_resources", [False, True])
+    def test_set_resources(self, exact_resources):
+        """Test that a DecompositionRule object can be assigned new resources."""
+
+        def multi_rz_decomposition(theta, wires, **__):
+            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+                qp.CNOT(wires=(w0, w1))
+            qp.RZ(theta, wires=wires[0])
+            for w0, w1 in zip(wires[1:], wires[:-1]):
+                qp.CNOT(wires=(w0, w1))
+
+        def _multi_rz_resources_old(num_wires):
+            return {
+                qp.RZ: 500,
+                qp.CNOT: 2 * (num_wires - 1),
+            }
+
+        def _multi_rz_resources_new(num_wires):
+            return {
+                qp.RZ: 1,
+                qp.CNOT: 2 * (num_wires - 1),
+            }
+
+        multi_rz_decomposition = register_resources(
+            _multi_rz_resources_old, multi_rz_decomposition, exact=exact_resources
+        )
+
+        assert isinstance(multi_rz_decomposition, DecompositionRule)
+        assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
+            gate_counts={CompressedResourceOp(qp.RZ): 500, CompressedResourceOp(qp.CNOT): 4},
+        )
+        assert multi_rz_decomposition.exact_resources is exact_resources
+
+        # Overwrite resources
+        multi_rz_decomposition.set_resources(
+            _multi_rz_resources_new, exact_resources=not exact_resources
+        )
+
+        assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
+            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+        )
+        assert multi_rz_decomposition.exact_resources is not exact_resources
+
+    @pytest.mark.parametrize(
+        "rep",
+        [
+            ParametrizedHybridOp(Float[-1], Wire[3], DynOp(Float[3], Wire[3])),  # data not fixed
+            ParametrizedHybridOp(Float[3], Wire[-1], DynOp(Float[1], Wire[1])),  # wire is not fixed
+            ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[...], Wire[3])),  # hybrid not fixed
+            ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[2], Wire[-1])),  # hybrid not fixed
+        ],
+    )
+    def test_verify_operator2_is_abstract_and_fixed(self, rep):
+        """Tests that the resource function can only contain abstract and fixed Operator2."""
+
+        @qp.register_resources({rep: 1})
+        def rule():
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
+            rule.compute_resources()
+
+
+class TestDecompDictionary:
+    """Tests the behaviour of adding and getting decomposition rules."""
+
+    def test_add_and_list_decomps(self):
         """Tests that decomposition rules can be registered for an operator."""
 
         class SomeOtherOp(Operator):  # pylint: disable=too-few-public-methods
@@ -332,7 +567,6 @@ class TestDecompositionRule:
             qp.RY(theta, wires=wires[0])
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(CustomOp, custom_decomp)
             qp.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
             qp.add_decomps(qp.CRX, custom_decomp)
@@ -351,131 +585,109 @@ class TestDecompositionRule:
         assert not qp.decomposition.has_decomp(CustomOp)
         assert custom_decomp not in qp.list_decomps(qp.CRX)
 
-    def test_custom_symbolic_decomposition(self):
-        """Tests that custom decomposition rules for symbolic operators can be registered."""
+    def test_list_decomps_adjoint2(self):
+        """Tests that list_decomps populate the adjoint decomposition rules."""
 
-        @register_resources({qp.RX: 1, qp.RZ: 1})
-        def my_adjoint_custom_op(theta, wires, **__):
-            qp.RX(theta, wires=wires[0])
-            qp.RZ(theta, wires=wires[1])
-
-        qp.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
-        assert qp.decomposition.has_decomp("Adjoint(CustomOp)")
-        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
-        assert qp.decomposition.has_decomp(qp.adjoint(CustomOp(wires=[0, 1])))
-        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
-
-    def test_auto_wrap_in_resource_op(self):
-        """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
-
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-        @register_resources({DummyOp: 1})
-        def custom_decomp(*_, **__):
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def _adjoint_rule(theta, wires):
             raise NotImplementedError
 
-        assert custom_decomp.compute_resources() == Resources(
-            gate_counts={CompressedResourceOp(DummyOp): 1}
-        )
-
-        def custom_decomp_2(*_, **__):
+        @register_resources({qp.RX: 2, qp.CZ: 1})
+        def custom_rule(theta, wires):
             raise NotImplementedError
 
-        custom_decomp_2 = register_resources({CompressedResourceOp(DummyOp): 1}, custom_decomp_2)
-
-        assert custom_decomp_2.compute_resources() == Resources(
-            gate_counts={CompressedResourceOp(DummyOp): 1}
-        )
-
-    def test_auto_wrap_fails(self):
-        """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
-
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
-
-            resource_keys = {"foo"}
-
-        @register_resources({DummyOp: 1})
-        def custom_decomp(*_, **__):
+        @register_resources({qp.RY: 2, qp.CNOT: 1})
+        def custom_rule2(theta, wires):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_keys"):
-            custom_decomp.compute_resources()
+        with qp.decomposition.local_decomps():
 
-        def custom_decomp_2(*_, **__):
+            qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
+            qp.add_decomps(DynOp, custom_rule)
+            qp.add_decomps(DynOp, custom_rule2)
+
+            rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
+            assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
+
+        op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
+        assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
+
+    def test_list_decomps_controlled2(self):
+        """Tests that list_decomps populate the adjoint decomposition rules."""
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def _controlled_rule(base, control_wires, control_values, **_):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="must be a subclass of Operator"):
-            custom_decomp_2 = register_resources({int: 1}, custom_decomp_2)
-            custom_decomp_2.compute_resources()
-
-    def test_register_work_wires(self):
-        """Tests that a decomposition can register work wire requirements"""
-
-        @register_resources(
-            {qp.CNOT: 3}, work_wires={"zeroed": 1, "garbage": 2, "borrowed": 3, "burnable": 4}
-        )
-        def custom_decomp(*_, **__):
+        @register_resources({qp.RX: 2, qp.CZ: 1})
+        def custom_rule(theta, wires):
             raise NotImplementedError
 
-        assert custom_decomp.get_work_wire_spec() == WorkWireSpec(1, 3, 4, 2)
-
-        @register_resources(
-            lambda num_wires: {qp.CNOT: num_wires},
-            work_wires=lambda num_wires: {
-                "zeroed": num_wires // 2,
-                "borrowed": num_wires - num_wires // 2,
-            },
-        )
-        @register_condition(lambda num_wires: num_wires > 2)
-        def custom_decomp_2(*_, **__):
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1})
+        def custom_rule2(theta, wires):
             raise NotImplementedError
 
-        assert custom_decomp_2.get_work_wire_spec(num_wires=5) == WorkWireSpec(zeroed=2, borrowed=3)
+        with qp.decomposition.local_decomps():
 
-    @pytest.mark.parametrize("exact_resources", [False, True])
-    def test_set_resources(self, exact_resources):
-        """Test that a DecompositionRule object can be assigned new resources."""
+            qp.add_decomps("Controlled(DynOp)", _controlled_rule)
+            qp.add_decomps(DynOp, custom_rule)
+            qp.add_decomps(DynOp, custom_rule2)
 
-        def multi_rz_decomposition(theta, wires, **__):
-            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                qp.CNOT(wires=(w0, w1))
-            qp.RZ(theta, wires=wires[0])
-            for w0, w1 in zip(wires[1:], wires[:-1]):
-                qp.CNOT(wires=(w0, w1))
+            op = qp.ctrl(qp.adjoint(DynOp(Float, Wire[1])), control=Wire[1])
+            rule_names = {rule.name for rule in qp.list_decomps(op)}
+            assert rule_names == {"flip_control_adjoint"}
 
-        def _multi_rz_resources_old(num_wires):
-            return {
-                qp.RZ: 500,
-                qp.CNOT: 2 * (num_wires - 1),
+            op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
+            rule_names = {rule.name for rule in qp.list_decomps(op)}
+            assert rule_names == {
+                "_controlled_rule",
+                "controlled(custom_rule)",
+                "controlled(custom_rule2)",
             }
 
-        def _multi_rz_resources_new(num_wires):
-            return {
-                qp.RZ: 1,
-                qp.CNOT: 2 * (num_wires - 1),
+            class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
+                has_matrix = True
+                name = "DynOp"
+
+            op = qp.ctrl(AnotherOp(Float, Wire[1]), control=Wire[4])
+            rule_names = {rule.name for rule in qp.list_decomps(op)}
+            assert rule_names == {
+                "_controlled_rule",
+                "controlled(custom_rule)",
+                "controlled(custom_rule2)",
+                "ctrl_single_work_wire",
+                "to_controlled_unitary",
             }
 
-        multi_rz_decomposition = register_resources(
-            _multi_rz_resources_old, multi_rz_decomposition, exact=exact_resources
-        )
+    def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
+        """Tests that rules containing MCMs and wire allocations can't be adjointed."""
 
-        assert isinstance(multi_rz_decomposition, DecompositionRule)
-        assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 500, CompressedResourceOp(qp.CNOT): 4},
-        )
-        assert multi_rz_decomposition.exact_resources is exact_resources
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        def custom_rule(theta, wires):
+            raise NotImplementedError
 
-        # Overwrite resources
-        multi_rz_decomposition.set_resources(
-            _multi_rz_resources_new, exact_resources=not exact_resources
-        )
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1})
+        def custom_rule2(theta, wires, **__):
+            raise NotImplementedError
 
-        assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
-        )
-        assert multi_rz_decomposition.exact_resources is not exact_resources
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(DynOp, custom_rule)
+            qp.add_decomps(DynOp, custom_rule2)
+
+            assert list(qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))) == []
+
+    def test_mcm_rules_skipped_for_controlled2(self):
+        """Tests that rules containing MCMs are skipped for controlled."""
+
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        def custom_rule(theta, wires):
+            raise NotImplementedError
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(DynOp, custom_rule)
+            op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[2])
+            assert list(qp.list_decomps(op)) == []
 
 
 class TestDecompCollection:
@@ -610,7 +822,6 @@ class TestInspectDecomps:
 
         @register_resources(lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1})
         def general_decomp(theta, wires, **_):
-
             @qp.for_loop(len(wires) - 1)
             def _loop(i):
                 qp.CZ(wires=[wires[i], wires[i + 1]])
@@ -638,7 +849,6 @@ class TestInspectDecomps:
             name="with-aux",
         )
         def another_decomp(theta, wires, **_):
-
             @qp.for_loop(len(wires) - 2)
             def _loop(i):
                 qp.Toffoli(wires=[wires[i], wires[i + 1], wires[i + 2]])

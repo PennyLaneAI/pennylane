@@ -538,7 +538,6 @@ def test_tracker():
         "batches": [1, 1],
         "simulations": [1, 1],
         "executions": [1, 1],
-        "errors": [{}, {}],
     }
 
 

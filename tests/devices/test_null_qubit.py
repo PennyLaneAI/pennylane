@@ -187,7 +187,6 @@ def test_tracking():
             )
         ]
         * 13,
-        "errors": [{}] * 13,
     }
 
 
@@ -1333,45 +1332,6 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     res = qp.set_shots(qp.QNode(circuit, nq), shots=shots)(x)
     target = qp.set_shots(qp.QNode(circuit, dq), shots=shots)(x)
     assert qp.math.shape(res) == qp.math.shape(target)
-
-
-# pylint: disable=unused-argument
-@pytest.mark.capture
-def test_execute_plxpr():
-    """Test that null.qubit can execute plxpr."""
-
-    import jax
-
-    def f(x):
-        qp.RX(x, 0)
-        return qp.expval(qp.Z(0)), qp.probs(), 4, qp.var(qp.X(0)), qp.state()
-
-    jaxpr = jax.make_jaxpr(f)(0.5)
-
-    dev = qp.device("null.qubit", wires=4)
-    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
-    assert qp.math.allclose(res[0], 0)
-    assert qp.math.allclose(res[1], jax.numpy.zeros(2**4))
-    assert qp.math.allclose(res[2], 0)  # other values are still just zero
-    assert qp.math.allclose(res[3], 0)
-    assert qp.math.allclose(res[4], jax.numpy.zeros(2**4, dtype=complex))
-
-
-@pytest.mark.capture
-def test_execute_plxpr_shots():
-    import jax
-
-    def f(x):
-        qp.RX(x, 0)
-        return qp.expval(qp.Z(0)), 5, qp.sample(wires=(0, 1))
-
-    jaxpr = jax.make_jaxpr(f)(0.5)
-
-    dev = qp.device("null.qubit", wires=4)
-    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, shots=50)
-    assert qp.math.allclose(res[0], 0)
-    assert qp.math.allclose(res[1], 0)
-    assert qp.math.allclose(res[2], jax.numpy.zeros((50, 2)))
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

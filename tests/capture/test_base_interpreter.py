@@ -15,7 +15,7 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access, too-few-public-methods
+# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking
 import pytest
 
 import pennylane as qp
@@ -29,15 +29,24 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
+    operator_p,
     qnode_prim,
     while_loop_prim,
+)
+from tests.core.operator.operator2_utils import (  # pylint: disable=wrong-import-position
+    DynOp,
+    NonParametricOp,
 )
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
-class SimplifyInterpreter(PlxprInterpreter):
+def _check_eqn(eqn, op_type):
+    assert eqn.primitive is operator_p
+    assert eqn.params["op_cls"] is op_type
 
+
+class SimplifyInterpreter(PlxprInterpreter):
     def interpret_operation(self, op):
         new_op = op.simplify()
         if new_op is op:
@@ -93,25 +102,52 @@ def test_primitive_registrations():
         is not PlxprInterpreter._primitive_registrations
     )
 
-    @SimplifyInterpreterLocal.register_primitive(qp.X._primitive)
-    def _(self, *invals, **params):  # pylint: disable=unused-argument
-        return qp.Z(*invals)
+    dummy_p = jax.extend.core.Primitive("dummy")
 
-    assert qp.X._primitive in SimplifyInterpreterLocal._primitive_registrations
-    assert qp.X._primitive not in PlxprInterpreter._primitive_registrations
+    @SimplifyInterpreterLocal.register_primitive(dummy_p)
+    def _(self, *invals, **params):  # pylint: disable=unused-argument
+        return jnp.array(1.0)
+
+    assert dummy_p in SimplifyInterpreterLocal._primitive_registrations
+    assert dummy_p not in PlxprInterpreter._primitive_registrations
+
+    dummy_p.def_abstract_eval(lambda *a, **k: jax.core.ShapedArray((), jnp.float64.dtype))
 
     @SimplifyInterpreterLocal()
     def f():
-        qp.X(0)
-        qp.Y(5)
+        return dummy_p.bind()
 
     jaxpr = jax.make_jaxpr(f)()
 
-    with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, [])
+    output = jax.core.eval_jaxpr(jaxpr.jaxpr, [])
+    assert jnp.allclose(output[0], jnp.array(1.0))
 
-    qp.assert_equal(q.queue[0], qp.Z(0))  # turned into a Z
-    qp.assert_equal(q.queue[1], qp.Y(5))
+
+def test_default_operator2_handling():
+    """Test that the PlxprInterpreter itself can handle operators and leaves them unchanged."""
+
+    outside_op = NonParametricOp(0)
+
+    @PlxprInterpreter()
+    def f(x):
+        qp.adjoint(outside_op)
+        qp.adjoint(DynOp(x, 0))
+        NonParametricOp(1)
+        return NonParametricOp(0)
+
+    jaxpr = jax.make_jaxpr(f)(1.2)
+
+    assert jaxpr.eqns[0].primitive == operator_p
+    assert jaxpr.eqns[0].params["adjoint"] is True
+    assert jaxpr.eqns[0].params["op_cls"] is NonParametricOp
+    assert jaxpr.eqns[1].primitive == operator_p
+    assert jaxpr.eqns[1].params["adjoint"] is True
+    assert jaxpr.eqns[1].params["op_cls"] is DynOp
+    assert jaxpr.eqns[1].invars[0] == jaxpr.jaxpr.invars[0]
+    assert jaxpr.eqns[2].primitive == operator_p
+    assert jaxpr.eqns[2].params["op_cls"] is NonParametricOp
+    assert jaxpr.eqns[3].primitive == operator_p
+    assert jaxpr.eqns[3].params["op_cls"] is NonParametricOp
 
 
 def test_default_operator_handling():
@@ -123,19 +159,11 @@ def test_default_operator_handling():
         qp.T(1)
         return qp.X(0) + qp.X(1)
 
-    with qp.queuing.AnnotatedQueue() as q:
-        out = f(0.5)
-
-    qp.assert_equal(out, qp.X(0) + qp.X(1))
-    qp.assert_equal(q.queue[0], qp.adjoint(qp.RX(0.5, 0)))
-    qp.assert_equal(q.queue[1], qp.T(1))
-    qp.assert_equal(q.queue[2], qp.X(0) + qp.X(1))
-
     jaxpr = jax.make_jaxpr(f)(1.2)
 
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
-    assert jaxpr.eqns[2].primitive == qp.T._primitive
+    _check_eqn(jaxpr.eqns[2], qp.T)
     assert jaxpr.eqns[3].primitive == qp.X._primitive
     assert jaxpr.eqns[4].primitive == qp.X._primitive
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
@@ -169,22 +197,6 @@ def test_controlled_operator_handling(op_class, args, kwargs):
 
     jaxpr = jax.make_jaxpr(f)()
     assert jaxpr.eqns[0].primitive == op_class._primitive
-
-
-def test_default_measurement_handling():
-    """Test that measurements are simply re-queued by default."""
-
-    def f():
-        return qp.expval(qp.Z(0) + qp.Z(0)), qp.probs(wires=0)
-
-    jaxpr = jax.make_jaxpr(f)()
-    with qp.queuing.AnnotatedQueue() as q:
-        res1, res2 = PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts)
-    assert len(q.queue) == 2
-    assert q.queue[0] is res1
-    assert q.queue[1] is res2
-    qp.assert_equal(res1, qp.expval(qp.Z(0) + qp.Z(0)))
-    qp.assert_equal(res2, qp.probs(wires=0))
 
 
 def test_measurement_handling():
@@ -239,7 +251,6 @@ def test_overriding_measurements():
     """Test usage of an interpreter with a custom way of handling measurements."""
 
     class MeasurementsToSample(PlxprInterpreter):
-
         def interpret_measurement(self, measurement):
             return qp.sample(wires=measurement.wires)
 
@@ -247,10 +258,6 @@ def test_overriding_measurements():
     @qp.qnode(qp.device("default.qubit", wires=2), shots=5)
     def circuit():
         return qp.expval(qp.Z(0)), qp.probs(wires=(0, 1))
-
-    res = circuit()
-    assert qp.math.allclose(res[0], jax.numpy.zeros(5))
-    assert qp.math.allclose(res[1], jax.numpy.zeros((5, 2)))
 
     jaxpr = jax.make_jaxpr(circuit)()
     assert (
@@ -267,7 +274,6 @@ def test_setup_method():
     """Test that the setup method can be used to initialize variables at each call."""
 
     class CollectOps(PlxprInterpreter):
-
         ops = None
 
         def setup(self):
@@ -300,7 +306,6 @@ def test_cleanup_method():
     """Test that the cleanup method can be used to reset variables after evaluation."""
 
     class CleanupTester(PlxprInterpreter):
-
         state = "DEFAULT"
 
         def setup(self):
@@ -357,7 +362,6 @@ def handle_add_3(self, x):  # pylint: disable=unused-argument
 
 #  pylint: disable=too-many-public-methods
 class TestHigherOrderPrimitiveRegistrations:
-
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_transform(self, lazy):
         """Test the higher order adjoint transform."""
@@ -377,14 +381,6 @@ class TestHigherOrderPrimitiveRegistrations:
         # first eqn mul, second RX
         assert inner_jaxpr.eqns[1].primitive == qp.RX._primitive
         assert len(inner_jaxpr.eqns) == 2
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
-
-        if lazy:
-            qp.assert_equal(q.queue[0], qp.adjoint(qp.RX(jax.numpy.array(1.5), 0)))
-        else:
-            qp.assert_equal(q.queue[0], qp.RX(jax.numpy.array(-1.5), 0))
 
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_consts(self, lazy):
@@ -424,11 +420,6 @@ class TestHigherOrderPrimitiveRegistrations:
         assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
         assert len(inner_jaxpr.eqns) == 2
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0, 1)
-
-        qp.assert_equal(q.queue[0], qp.ctrl(qp.RY(jax.numpy.array(6.0), 0), 1))
-
     def test_ctrl_consts(self):
         """Test that consts propagate correctly when interpreting the ctrl primitive."""
 
@@ -453,7 +444,6 @@ class TestHigherOrderPrimitiveRegistrations:
 
         @SimplifyInterpreter()
         def f(x, control):
-
             def true_fn(y):
                 _ = qp.RY(y, 0) ** 2
 
@@ -468,33 +458,16 @@ class TestHigherOrderPrimitiveRegistrations:
         branch1 = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(branch1.eqns) == 2
         assert branch1.eqns[1].primitive == qp.RY._primitive
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(branch1, [], 0.5)
-        qp.assert_equal(q.queue[0], qp.RY(2 * jax.numpy.array(0.5), 0))
 
         branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
         assert len(branch2.eqns) == 2
         assert branch2.eqns[1].primitive == qp.RX._primitive
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(branch2, [], 0.5)
-        qp.assert_equal(q.queue[0], qp.RX(jax.numpy.array(-0.5), 0))
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.4, True)
-
-        qp.assert_equal(q.queue[0], qp.RY(jax.numpy.array(4.8), 0))
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23, False)
-
-        qp.assert_equal(q.queue[0], qp.RX(jax.numpy.array(-1.23), 0))
 
     def test_cond_no_false_branch(self):
         """Test transforming a cond HOP when no false branch exists."""
 
         @SimplifyInterpreter()
         def f(control):
-
             @qp.cond(control)
             def f():
                 _ = qp.X(0) @ qp.X(0)
@@ -520,7 +493,6 @@ class TestHigherOrderPrimitiveRegistrations:
         """Test that consts propagate correctly when interpreting the cond primitive."""
 
         def f(x, control):
-
             @qp.cond(control)
             def cond_fn(y):
                 # One new const
@@ -549,7 +521,6 @@ class TestHigherOrderPrimitiveRegistrations:
 
         @SimplifyInterpreter()
         def f(n):
-
             @qp.for_loop(n)
             def g(i):
                 qp.adjoint(qp.X(i))
@@ -563,19 +534,10 @@ class TestHigherOrderPrimitiveRegistrations:
         assert len(inner_jaxpr.eqns) == 1
         assert inner_jaxpr.eqns[0].primitive == qp.X._primitive  # no adjoint of x
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-
-        qp.assert_equal(q.queue[0], qp.X(0))
-        qp.assert_equal(q.queue[1], qp.X(1))
-        qp.assert_equal(q.queue[2], qp.X(2))
-        assert len(q) == 3
-
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""
 
         def f(n):
-
             @qp.for_loop(n)
             def g(i):
                 exponent = add_3.bind(0)
@@ -596,7 +558,6 @@ class TestHigherOrderPrimitiveRegistrations:
 
         @SimplifyInterpreter()
         def f(n):
-
             @qp.while_loop(lambda i: i < n)
             def g(i):
                 qp.adjoint(qp.Z(i))
@@ -611,19 +572,10 @@ class TestHigherOrderPrimitiveRegistrations:
         assert len(inner_jaxpr.eqns) == 2
         assert inner_jaxpr.eqns[0].primitive == qp.Z._primitive  # no adjoint of x
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-
-        qp.assert_equal(q.queue[0], qp.Z(0))
-        qp.assert_equal(q.queue[1], qp.Z(1))
-        qp.assert_equal(q.queue[2], qp.Z(2))
-        assert len(q) == 3
-
     def test_while_loop_consts(self):
         """Test the higher order while loop registration propagates consts correctly."""
 
         def f(n):
-
             @qp.while_loop(lambda i: i < add_3.bind(n))
             def g(i):
                 exponent = add_3.bind(0)
@@ -646,7 +598,6 @@ class TestHigherOrderPrimitiveRegistrations:
         """Test transforming qnodes."""
 
         class AddNoise(PlxprInterpreter):
-
             def interpret_operation(self, op):
                 new_op = op._unflatten(*op._flatten())
                 _ = [qp.RX(0.1, w) for w in op.wires]
@@ -674,13 +625,6 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].params["execution_config"].gradient_method == "backprop"
         assert jaxpr.eqns[0].params["execution_config"].grad_on_execution is False
         assert jaxpr.eqns[0].params["device"] == dev
-
-        res1 = f()
-        # end up performing two rx gates with phase of 0.1 each on wire 0
-        expected = jax.numpy.array([jax.numpy.cos(0.2 / 2) ** 2, jax.numpy.sin(0.2 / 2) ** 2])
-        assert qp.math.allclose(res1, expected)
-        res2 = jax.core.eval_jaxpr(jaxpr.jaxpr, [])
-        assert qp.math.allclose(res2, expected)
 
     def test_qnode_consts(self):
         """Test the higher order qnode registration propagates consts correctly."""

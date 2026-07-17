@@ -23,6 +23,7 @@ from pennylane.core.measurements import (
     SampleMeasurement,
     StateMeasurement,
 )
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.shots import Shots
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
@@ -41,7 +42,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -303,10 +303,6 @@ class TestProperties:
         m = qp.expval(op=obs)
 
         assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
-
-        # changing the observable data should be reflected
-        obs.data = [np.diag([5, 6, 7, 8])]
-        assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
 
     def test_measurement_value_eigvals(self):
         """Test that eigenvalues of the measurement process

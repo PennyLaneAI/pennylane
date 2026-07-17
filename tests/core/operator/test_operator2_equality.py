@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 from operator2_utils import (
-    CompOp,
+    CompilableOp,
     DynOp,
     FullOp,
     HybridOp,
@@ -29,6 +29,8 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operator2
+from pennylane.typing import AbstractArray, AbstractWires
 
 # ---------------------- Tests ----------------------
 
@@ -181,15 +183,15 @@ class TestCompilableArgs:
 
     def test_equal_same_compilable(self):
         """Test that operators with the same compilable argument are equal."""
-        op1 = CompOp(3, wires=0)
-        op2 = CompOp(3, wires=0)
+        op1 = CompilableOp(3, wires=0)
+        op2 = CompilableOp(3, wires=0)
         assert qp.equal(op1, op2) is True
         qp.assert_equal(op1, op2)
 
     def test_different_compilable_not_equal(self):
         """Test that operators with different compilable arguments are unequal."""
-        op1 = CompOp(3, wires=0)
-        op2 = CompOp(4, wires=0)
+        op1 = CompilableOp(3, wires=0)
+        op2 = CompilableOp(4, wires=0)
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="different values for 'n'"):
             qp.assert_equal(op1, op2)
@@ -421,6 +423,75 @@ class TestEqualFullOperator:
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match=match):
             qp.assert_equal(op1, op2)
+
+
+class TestAbstractOperatorEquality:
+    """Tests the equality of abstract operators."""
+
+    @pytest.mark.parametrize(
+        "wires1, wires2, are_equal",
+        [
+            (AbstractWires(1), AbstractWires(1), True),
+            (AbstractWires(1), AbstractWires(2), False),
+            (AbstractWires(-1), AbstractWires(2), False),
+        ],
+    )
+    def test_abstract_wires(self, wires1, wires2, are_equal):
+        """Test that operators with abstract wires are detected correctly."""
+
+        # pylint: disable=useless-parent-delegation
+        class SimpleOp(Operator2):
+            def __init__(self, wires) -> None:
+                super().__init__(wires)
+
+        op1 = SimpleOp(wires1)
+        op2 = SimpleOp(wires2)
+
+        assert qp.equal(op1, op2) is are_equal
+
+    def test_comparing_abstract_and_concrete_wires(self):
+        """Assert that an abstract type specifier is not the same as an operator instance."""
+
+        # pylint: disable=useless-parent-delegation
+        class SimpleOp(Operator2):
+            def __init__(self, wires) -> None:
+                super().__init__(wires)
+
+        op1 = SimpleOp(AbstractWires(1))
+        op2 = SimpleOp([0])
+
+        assert qp.equal(op1, op2) is False
+
+    def test_comparing_dynamic_args(self):
+        """Tests that abstract dynamic args behave correctly."""
+
+        op1 = DynOp(AbstractArray((1, 2), float), 0)
+        op2 = DynOp(AbstractArray((1, 2), float), 0)
+        op3 = DynOp(AbstractArray((2, 1), int), 0)
+        op4 = DynOp(3.14, 0)
+
+        assert qp.equal(op1, op2)
+        assert not qp.equal(op1, op3)
+        assert not qp.equal(op1, op4)
+
+    @pytest.mark.parametrize(
+        "shape1, shape2, are_equal",
+        [
+            ((2, -1), (2, -1), True),  # Identical dynamic shapes
+            ((-1,), (-1,), True),  # Identical dynamic shape
+            ((2, -1), (2, 3), False),  # Dynamic vs static shape
+            ((-1, 4), (2, 4), False),  # Dynamic vs static shape (leading dim)
+            ((-1, -1), (-1,), False),  # Different ranks with dynamic dims
+            (..., ..., True),  # Identical unconstrained ranks
+        ],
+    )
+    def test_abstract_arrays_symbolic_shapes(self, shape1, shape2, are_equal):
+        """Test equality when abstract arrays are defined with dynamic (-1) or unconstrained (...) shapes."""
+
+        op1 = DynOp(AbstractArray(shape1, float), 0)
+        op2 = DynOp(AbstractArray(shape2, float), 0)
+
+        assert qp.equal(op1, op2) is are_equal
 
 
 def _jit_eq_fn(phi, wires, assert_=False):

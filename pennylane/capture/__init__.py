@@ -33,7 +33,6 @@ quantum-classical programs.
     ~enabled
     ~pause
     ~determine_abstracted_axes
-    ~expand_plxpr_transforms
     ~eval_jaxpr
     ~run_autograph
     ~disable_autograph
@@ -182,6 +181,7 @@ from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_r
 from .patching import Patcher
 from .jax_patches import get_jax_patches
 from .subroutine import subroutine
+from .symbolic_array import symbolic_array
 
 if TYPE_CHECKING:
     # pylint: disable=import-outside-toplevel, unused-import
@@ -189,7 +189,6 @@ if TYPE_CHECKING:
     # cannot be imported at runtime without ModuleNotFoundErrors if JAX isn't installed
     from .base_interpreter import PlxprInterpreter, eval_jaxpr
     from .custom_primitives import QpPrimitive
-    from .expand_transforms import expand_plxpr_transforms
     from .primitives import AbstractMeasurement, AbstractOperator, qnode_prim
 
 
@@ -225,11 +224,6 @@ def __getattr__(key):
 
         return eval_jaxpr
 
-    if key == "expand_plxpr_transforms":
-        from .expand_transforms import expand_plxpr_transforms
-
-        return expand_plxpr_transforms
-
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
 
@@ -241,7 +235,6 @@ __all__ = (
     "CaptureMeta",
     "ABCCaptureMeta",
     "determine_abstracted_axes",
-    "expand_plxpr_transforms",
     "register_custom_staging_rule",
     "AbstractOperator",
     "AbstractMeasurement",
@@ -252,4 +245,5 @@ __all__ = (
     "make_plxpr",
     "Patcher",
     "get_jax_patches",
+    "symbolic_array",
 )

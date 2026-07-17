@@ -29,7 +29,6 @@ import pennylane as qp
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
@@ -40,12 +39,18 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_involutory,
     pow_rotation,
-    self_adjoint,
+    self_adjoint_legacy,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .controlled import ControlledOp
+from .controlled import (
+    ControlledOp,
+    _is_empty_or_all_true,
+    _resolve_ctrl_values,
+    custom_ctrl_dispatch,
+)
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
@@ -177,7 +182,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type="borrowed",
     ):
-
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
@@ -197,7 +201,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: str | None = "borrowed",
     ):
-
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
@@ -425,7 +428,7 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
-add_decomps("Adjoint(CH)", self_adjoint)
+add_decomps("Adjoint(CH)", self_adjoint_legacy)
 add_decomps("Pow(CH)", pow_involutory)
 
 
@@ -575,7 +578,7 @@ def _cy_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CY, _cy, _cy_to_ppr)
-add_decomps("Adjoint(CY)", self_adjoint)
+add_decomps("Adjoint(CY)", self_adjoint_legacy)
 add_decomps("Pow(CY)", pow_involutory)
 
 
@@ -672,6 +675,13 @@ class CZ(ControlledOp):
         return [qp.ControlledPhaseShift(np.pi, wires=wires)]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_cz(base: CZ, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CCZ(control + base.wires)
+    return NotImplemented
+
+
 def _cz_to_cps_resources():
     return {qp.ControlledPhaseShift: 1}
 
@@ -709,7 +719,7 @@ def _cz_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
-add_decomps("Adjoint(CZ)", self_adjoint)
+add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
@@ -885,7 +895,7 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
-add_decomps("Adjoint(CSWAP)", self_adjoint)
+add_decomps("Adjoint(CSWAP)", self_adjoint_legacy)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
@@ -906,7 +916,7 @@ class CCZ(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
         0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
         \end{pmatrix}
-    
+
     .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
 
     **Details:**
@@ -1085,7 +1095,7 @@ class CCZ(ControlledOp):
 def _ccz_resources():
     return {
         qp.CNOT: 6,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(qp.T): 3,
         qp.T: 4,
         qp.Hadamard: 2,
     }
@@ -1122,7 +1132,7 @@ def _ccz_to_toffoli(wires: WiresLike, **__):
 
 
 add_decomps(CCZ, _ccz, _ccz_to_toffoli)
-add_decomps("Adjoint(CCZ)", self_adjoint)
+add_decomps("Adjoint(CCZ)", self_adjoint_legacy)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
@@ -1264,6 +1274,17 @@ class CNOT(ControlledOp):
         return qp.Toffoli(wires=wire + self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
+    wires = control + base.wires
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True], len(control))
+        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+    if len(control) == 1 and not work_wires:
+        return qp.Toffoli(control + base.wires)
+    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
 def _cnot_cz_h_resources():
     return {qp.H: 2, qp.CZ: 1}
 
@@ -1293,7 +1314,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
-add_decomps("Adjoint(CNOT)", self_adjoint)
+add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
@@ -1314,7 +1335,7 @@ class Toffoli(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
         \end{pmatrix}
-    
+
     .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
 
     **Details:**
@@ -1487,6 +1508,15 @@ class Toffoli(ControlledOp):
         ]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_toffoli(base: Toffoli, control, control_values, work_wires, work_wire_type):
+    wires = control + base.wires
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control))
+        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
 def _check_and_convert_control_values(control_values, control_wires):
     if isinstance(control_values, str):
         # Make sure all values are either 0 or 1
@@ -1509,7 +1539,7 @@ def _toffoli_resources():
         qp.Hadamard: 2,
         qp.CNOT: 6,
         qp.T: 4,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(qp.T): 3,
     }
 
 
@@ -1556,12 +1586,12 @@ def _toffoli_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
-add_decomps("Adjoint(Toffoli)", self_adjoint)
+add_decomps("Adjoint(Toffoli)", self_adjoint_legacy)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 def _toffoli_elbow_resources():
-    return {change_op_basis_resource_rep(resource_rep(qp.Elbow), qp.CNOT): 1}
+    return {change_op_basis_resource_rep(qp.Elbow, qp.CNOT): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
@@ -1676,6 +1706,7 @@ class MultiControlledX(ControlledOp):
                     isinstance(control_values, (list, tuple))
                     and all(isinstance(val, (bool, int)) for val in control_values)
                 )
+                or (hasattr(control_values, "dtype") and control_values.dtype.kind in ("i", "b"))
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
 
@@ -1877,7 +1908,7 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
 
 
 def _2cx_elbow_explicit_resources(**__):
-    return {qp.Elbow: 1, qp.CNOT: 1, adjoint_resource_rep(qp.Elbow): 1}
+    return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(qp.Elbow): 1}
 
 
 def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
@@ -1910,7 +1941,7 @@ add_decomps(
     decompose_mcx_with_no_worker,
     decompose_mcx_two_controls_elbows,
 )
-add_decomps("Adjoint(MultiControlledX)", self_adjoint)
+add_decomps("Adjoint(MultiControlledX)", self_adjoint_legacy)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
