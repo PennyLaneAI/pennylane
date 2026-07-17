@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -82,7 +82,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -119,7 +119,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
 
     def test_decomposition_condition(self):
@@ -247,7 +247,6 @@ class TestDecompositionRule:
             qp.RZ(theta, wires=wires[1])
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
             assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
             assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
@@ -292,7 +291,6 @@ class TestDecompositionRule:
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
         class MissingFixedSigOp(Operator2):
-
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
@@ -332,7 +330,6 @@ class TestDecompositionRule:
         """Tests that abstract operators can be used as keys."""
 
         class FixedSigOp(Operator2):
-
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
@@ -428,7 +425,7 @@ class TestDecompositionRule:
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 500, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 500, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -438,7 +435,7 @@ class TestDecompositionRule:
         )
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
 
@@ -601,7 +598,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
@@ -628,7 +624,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Controlled(DynOp)", _controlled_rule)
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
@@ -671,7 +666,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
 
