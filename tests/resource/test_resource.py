@@ -15,6 +15,8 @@
 Test base Resource class and its associated methods
 """
 
+import dataclasses
+
 # pylint: disable=unnecessary-dunder-call,protected-access
 import textwrap
 from dataclasses import FrozenInstanceError
@@ -175,34 +177,293 @@ class TestSpecsResources:
 
 
 class TestPBCSpecsResources:
+    """Separate class for testing PBC depth counting since it will be refactor soon."""
+
     @pytest.fixture
-    def example_pbc_specs_resource(self):
-        """Generate an example SpecsResources instance."""
+    def example_resource(self):
         return PBCSpecsResources(
-            counts={"Hadamard": 2, "CNOT": 1},
+            counts={"Hadamard": 1, "CNOT": 2},
             measurement_processes={"expval(PauliZ)": 1},
             num_allocs=2,
-            any_commuting_depth=2,
-            qubit_disjoint_depth=3,
+            any_commuting_depth=3,
+            qubit_disjoint_depth=6,
         )
 
-    def test_str(self, example_pbc_specs_resource):
-        """Test the string representation of a SpecsResources instance."""
-
-        s = example_pbc_specs_resource
+    def test_str_pbc_depth(self, example_resource):
+        """Test the string representation of a SpecsResources instance with PBC depth."""
+        s = example_resource
 
         expected = textwrap.dedent("""\
             Quantum operations:
             - Total: 3
-            - Hadamard: 2
-            - CNOT: 1
+            - Hadamard: 1
+            - CNOT: 2
             Measurement processes:
             - expval(PauliZ): 1
             Wire allocations: 2
-            Any Commuting Depth: 2
-            Qubit Disjoint Depth: 3""")
+            PBC Depths:
+            - Any commuting depth: 3
+            - Qubit disjoint depth: 6
+        """)
+
+        assert str(s) == expected.strip()
+
+    def test_ipython_display_pbc_depth(self, example_resource):
+        """Test the IPython display of a SpecsResources instance with PBC depth."""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Quantum operations:** | |
+            | Total | 3 |
+            | Hadamard | 1 |
+            | CNOT | 2 |
+            | **Measurement processes:** | |
+            | expval(PauliZ) | 1 |
+            | **Wire allocations** | 2 |
+            | **PBC Depths** | |
+            | Any commuting depth | 3 |
+            | Qubit disjoint depth | 6 |
+        """)
+        actual = example_resource._repr_markdown_()
+
+        assert actual.strip() == expected.strip()
+
+    def test_circuit_specs_str(self, example_resource):
+        """Test the string representation of a CircuitSpecs instance with PBC depth."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={1: example_resource},
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+
+            ↓Metric         Level→ |  1
+            ---------------------------
+            Quantum operations:    |
+            - Total                |  3
+            - Hadamard             |  1
+            - CNOT                 |  2
+            Measurement processes: |
+            - expval(PauliZ)       |  1
+            Wire allocations       |  2
+            PBC Depths:            |
+            - Any commuting depth  |  3
+            - Qubit disjoint depth |  6
+        """).strip()
 
         assert str(s) == expected
+
+    def test_circuit_specs_md(self, example_resource):
+        """Test the string representation of a CircuitSpecs instance with PBC depth."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={1: example_resource},
+        )
+
+        expected = textwrap.dedent("""\
+            <details open>
+            <summary>Circuit Specs</summary>
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 1 | l1 |
+
+            </details>
+            <details open>
+            <summary>Resources</summary>
+
+            | ↓Metric / Level→ | 1 |
+            | :--- | ---: |
+            | **Quantum operations** |  |
+            | Total | 3 |
+            | Hadamard | 1 |
+            | CNOT | 2 |
+            | **Measurement processes** |  |
+            | expval(PauliZ) | 1 |
+            | **Wire allocations** | 2 |
+            | **PBC Depths** |  |
+            | Any commuting depth | 3 |
+            | Qubit disjoint depth | 6 |
+
+            </details>
+        """)
+
+        assert s._repr_markdown_() == expected.strip()
+
+    def test_symbolic_pbc_depth_subs(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = PBCSpecsResources(
+            counts={"Hadamard": Expression({("x",): 2})},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=Expression({("x",): 3}),
+            qubit_disjoint_depth=Expression({("x",): 6}),
+        )
+
+        assert s.subs({"x": 2}) == PBCSpecsResources(
+            counts={"Hadamard": 4},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=6,
+            qubit_disjoint_depth=12,
+        )
+
+    def test_symbolic_pbc_depth_str(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={
+                1: PBCSpecsResources(
+                    counts={"Hadamard": Expression({("x",): 2})},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    any_commuting_depth=Expression({("x",): 3}),
+                    qubit_disjoint_depth=Expression({("x",): 6}),
+                )
+            },
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+
+            ↓Metric         Level→ |   1
+            ----------------------------
+            Quantum operations:    |
+            - Total                | 2*x
+            - Hadamard             | 2*x
+            Measurement processes: |
+            - expval(PauliZ)       |   1
+            Wire allocations       |   2
+            PBC Depths:            |
+            - Any commuting depth  | 3*x
+            - Qubit disjoint depth | 6*x
+        """).strip()
+
+        assert str(s) == expected
+
+    def test_mixed_pbc_and_normal_tabular(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    circuit_depth=2,
+                ),
+                2: PBCSpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    any_commuting_depth=2,
+                    qubit_disjoint_depth=4,
+                ),
+            },
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+            - 2: l2
+
+            ↓Metric         Level→ |  1 |  2
+            --------------------------------
+            Quantum operations:    |
+            - Total                |  2 |  2
+            - Hadamard             |  2 |  2
+            Measurement processes: |
+            - expval(PauliZ)       |  1 |  1
+            Wire allocations       |  2 |  2
+            Circuit depth          |  2 |  -
+            PBC Depths:            |
+            - Any commuting depth  |  - |  2
+            - Qubit disjoint depth |  - |  4
+        """).strip()
+
+        assert str(s) == expected
+
+    def test_mixed_pbc_and_normal_tabular_markdown(self):
+        """Test that symbolic PBC depth is correctly displayed in the Markdown representation."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    circuit_depth=2,
+                ),
+                2: PBCSpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    any_commuting_depth=2,
+                    qubit_disjoint_depth=4,
+                ),
+            },
+        )
+
+        expected = textwrap.dedent("""\
+            **Circuit Specs:**
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 1 | l1 |
+            | 2 | l2 |
+
+            **Resources:**
+
+            | ↓Metric / Level→ | 1 | 2 |
+            | :--- | ---: | ---: |
+            | **Quantum operations** |  |  |
+            | Total | 2 | 2 |
+            | Hadamard | 2 | 2 |
+            | **Measurement processes** |  |  |
+            | expval(PauliZ) | 1 | 1 |
+            | **Wire allocations** | 2 | 2 |
+            | **Circuit depth** | 2 | N/A |
+            | **PBC Depths** |  |  |
+            | Any commuting depth | N/A | 2 |
+            | Qubit disjoint depth | N/A | 4 |
+        """).strip()
+
+        assert s._repr_markdown_(collapsible=False) == expected
 
 
 class TestSymbolicSpecsResources:
@@ -643,7 +904,9 @@ class TestCircuitSpecs:
         Measurement processes: |
         - expval(PauliX)       |    1 |    1 |    0
         - expval(PauliZ)       |    1 |    0 |    1
-        Wire allocations       |    2 |    2 |    2""")
+        Wire allocations       |    2 |    2 |    2
+        Circuit depth          |    2 |    1 |    1
+        """).strip()
 
     def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
         """Test the tabular string representation of a CircuitSpecs instance with symbolic resources."""
@@ -666,7 +929,9 @@ class TestCircuitSpecs:
             Measurement processes: |
             - expval(PauliX)       |     1 |     1 |     0
             - expval(PauliZ)       |     1 |     0 |     1
-            Wire allocations       |     2 |     2 |     2""")
+            Wire allocations       |     2 |     2 |     2
+            Circuit depth          |     2 |     1 |     1
+            """).strip()
 
     def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""
@@ -786,8 +1051,8 @@ class TestIPythonDisplays:
             | expval(PauliZ) | 1 |
             | **Wire allocations** | 2 |
             | **PBC Depths** | |
-            | Any Commuting Depth | 2 |
-            | Qubit Disjoint Depth | 3 |
+            | Any commuting depth | 2 |
+            | Qubit disjoint depth | 3 |
         """)
         actual = example_pbc_specs_resource._repr_markdown_()
 
@@ -982,8 +1247,9 @@ class TestIPythonDisplays:
 
         assert actual.strip() == expected.strip()
 
+    @pytest.mark.parametrize("with_depth", [True, False])
     def test_multi_level_circuit_specs_ipython_display(
-        self, example_symbolic_specs_resource, example_specs_resource
+        self, example_symbolic_specs_resource, example_specs_resource, with_depth
     ):
         """Test the IPython display of a single-level CircuitSpecs instance."""
         s = CircuitSpecs(
@@ -996,6 +1262,12 @@ class TestIPythonDisplays:
                 1: [example_specs_resource, example_specs_resource],
             },
         )
+
+        if not with_depth:
+            s.resources[0] = dataclasses.replace(s.resources[0], circuit_depth=None)
+            s.resources[1][0] = dataclasses.replace(s.resources[1][0], circuit_depth=None)
+            s.resources[1][1] = dataclasses.replace(s.resources[1][1], circuit_depth=None)
+
         actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
@@ -1021,6 +1293,11 @@ class TestIPythonDisplays:
             | expval(PauliZ) | 1 | 1 | 1 |
             | **Wire allocations** | 2 | 2 | 2 |
         """)
+
+        if with_depth:
+            expected += textwrap.dedent("""\
+            | **Circuit depth** | 2 | 2 | 2 |
+            """)
 
         assert actual.strip() == expected.strip()
 

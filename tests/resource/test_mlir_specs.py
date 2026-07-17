@@ -305,7 +305,7 @@ class TestAnalysisPassConversion:
         """Test that PBC depth information is correctly extracted from the analysis pass result."""
         example_loop_analysis_pass_result["for_loop_2"]["depth"] = {
             "any_commuting_depth": 5,
-            "qubit_disjoint_depth": 0,  # TODO: Do we have to account for the case where only 1 field is defined?
+            "qubit_disjoint_depth": 0,
         }
         example_loop_analysis_pass_result["for_loop_1"]["depth"] = {
             "any_commuting_depth": 2,

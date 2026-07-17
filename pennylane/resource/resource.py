@@ -118,7 +118,7 @@ class Resources:
         init=False,
         repr=False,
         default_factory=frozenset,
-        metadata={"display_name": "Symbolic Variables"},
+        metadata={"display_name": "Symbolic variables"},
     )
 
     def __post_init__(self):
@@ -351,12 +351,12 @@ class SpecsResources(Resources):
 
     num_allocs: int | Expression = field(metadata={"display_name": "Wire allocations"})
     circuit_depth: int | Expression | None = field(
-        default=None, metadata={"display_name": "Circuit Depth"}
+        default=None, metadata={"display_name": "Circuit depth"}
     )
 
     # Automatically generated
     total_quantum_operations: int | Expression = field(
-        init=False, metadata={"display_name": "Total Quantum Operations"}
+        init=False, metadata={"display_name": "Total quantum operations"}
     )
 
     def __post_init__(self):
@@ -520,10 +520,10 @@ class PBCSpecsResources(SpecsResources):
     """
 
     any_commuting_depth: int | Expression | None = field(
-        default=None, metadata={"display_name": "Any Commuting Depth"}
+        default=None, metadata={"display_name": "Any commuting depth"}
     )
     qubit_disjoint_depth: int | Expression | None = field(
-        default=None, metadata={"display_name": "Qubit Disjoint Depth"}
+        default=None, metadata={"display_name": "Qubit disjoint depth"}
     )
 
     # TODO: Handle None values for these depths
@@ -541,9 +541,9 @@ class PBCSpecsResources(SpecsResources):
         s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
 
         s += (
-            "\n"
-            f"{' ' * preindent}Any Commuting Depth: {_count_to_str(self.any_commuting_depth)}\n"
-            f"{' ' * preindent}Qubit Disjoint Depth: {_count_to_str(self.qubit_disjoint_depth)}"
+            "\nPBC Depths:\n"
+            f"{' ' * preindent}- Any commuting depth: {_count_to_str(self.any_commuting_depth)}\n"
+            f"{' ' * preindent}- Qubit disjoint depth: {_count_to_str(self.qubit_disjoint_depth)}"
         )
 
         return s
@@ -562,8 +562,8 @@ class PBCSpecsResources(SpecsResources):
         s += (
             "\n"
             "| **PBC Depths** | |\n"
-            f"| Any Commuting Depth | {_count_to_str(self.any_commuting_depth, markdown_safe=True)} |\n"
-            f"| Qubit Disjoint Depth | {_count_to_str(self.qubit_disjoint_depth, markdown_safe=True)} |"
+            f"| Any commuting depth | {_count_to_str(self.any_commuting_depth, markdown_safe=True)} |\n"
+            f"| Qubit disjoint depth | {_count_to_str(self.qubit_disjoint_depth, markdown_safe=True)} |"
         )
 
         return s
@@ -722,7 +722,7 @@ class CircuitSpecs:
     ) -> tuple[int, int, dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
-        # This is the length of the longest metric name (currently "Quantum Allocations") plus padding
+        # This is the length of the longest metric name (currently "Measurement processes") plus padding
         max_metric_length = 22
         max_column_size = max(len(level) for level in flat_resources) + 2
 
@@ -816,6 +816,47 @@ class CircuitSpecs:
             )
         )
 
+        if any(r.circuit_depth is not None for r in flat_resources.values()):
+            lines.append(
+                "Circuit depth".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    (
+                        _count_to_str(res.circuit_depth, extra_compact=True).rjust(max_column_size)
+                        if res.circuit_depth is not None
+                        else "-".rjust(max_column_size)
+                    )
+                    for res in flat_resources.values()
+                )
+            )
+
+        if any(isinstance(r, PBCSpecsResources) for r in flat_resources.values()):
+            lines.append("PBC Depths:".ljust(max_metric_length) + " |")
+            lines.append(
+                "- Any commuting depth".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    (
+                        _count_to_str(r.any_commuting_depth, extra_compact=True)
+                        if isinstance(r, PBCSpecsResources)
+                        else "-"
+                    ).rjust(max_column_size)
+                    for r in flat_resources.values()
+                )
+            )
+            lines.append(
+                "- Qubit disjoint depth".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    (
+                        _count_to_str(r.qubit_disjoint_depth, extra_compact=True)
+                        if isinstance(r, PBCSpecsResources)
+                        else "-"
+                    ).rjust(max_column_size)
+                    for r in flat_resources.values()
+                )
+            )
+
         return "\n".join(lines).rstrip("\n")
 
     def to_pretty_str(self, tabular: bool = True) -> str:
@@ -906,6 +947,50 @@ class CircuitSpecs:
                 [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
             )
         )
+
+        if any(r.circuit_depth is not None for r in flat_resources.values()):
+            lines.append(
+                data_row(
+                    "**Circuit depth**",
+                    [
+                        (
+                            _count_to_str(res.circuit_depth, markdown_safe=True)
+                            if res.circuit_depth is not None
+                            else "N/A"
+                        )
+                        for res in flat_resources.values()
+                    ],
+                )
+            )
+
+        if any(isinstance(r, PBCSpecsResources) for r in flat_resources.values()):
+            lines.append(data_row("**PBC Depths**", [""] * len(levels)))
+            lines.append(
+                data_row(
+                    "Any commuting depth",
+                    [
+                        (
+                            _count_to_str(r.any_commuting_depth, markdown_safe=True)
+                            if isinstance(r, PBCSpecsResources)
+                            else "N/A"
+                        )
+                        for r in flat_resources.values()
+                    ],
+                )
+            )
+            lines.append(
+                data_row(
+                    "Qubit disjoint depth",
+                    [
+                        (
+                            _count_to_str(r.qubit_disjoint_depth, markdown_safe=True)
+                            if isinstance(r, PBCSpecsResources)
+                            else "N/A"
+                        )
+                        for r in flat_resources.values()
+                    ],
+                )
+            )
 
         return "\n".join(lines)
 
