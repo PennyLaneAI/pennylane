@@ -2108,7 +2108,6 @@ class TestCtrl:
         """Tests that custom controlled dispatchers work for `Operator2`."""
 
         class CustomOp(Operator2):
-
             def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 

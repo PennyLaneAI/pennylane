@@ -464,16 +464,9 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    if isinstance(op, Operator1):
-        # An Operator2 nested inside a legacy operator contributes its wires as dynamic
-        # pytree leaves. Those are structural leaves, not legacy `.data` parameters, so
-        # they are excluded before comparing the parameter leaves against `op.data`.
-        param_leaves = [
-            leaf
-            for leaf in jax.tree_util.tree_leaves(op, is_leaf=lambda x: isinstance(x, Wires))
-            if not isinstance(leaf, Wires)
-        ]
-        for d1, d2 in zip(op.data, param_leaves, strict=True):
+    # Protect against cases where you have an Operator1 consuming Operator2
+    if isinstance(op, Operator1) and not any(isinstance(sub, Operator2) for sub in data):
+        for d1, d2 in zip(op.data, leaves, strict=True):
             assert qp.math.allclose(
                 d1, d2
             ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
