@@ -28,6 +28,7 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
@@ -258,7 +259,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         )
 
     # Tests that the decomposition produces the same matrix
-    if op.has_matrix and not skip_decomp_matrix_check:
+    if op.has_matrix and not skip_decomp_matrix_check and not _decomp_contains_mcm(rule, params):
         # Add projector to the additional wires (work wires) on the tape
         work_wires = tape.wires - op.wires
         all_wires = op.wires + work_wires
