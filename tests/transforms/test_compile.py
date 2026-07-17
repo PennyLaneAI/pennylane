@@ -324,7 +324,7 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert qml.math.allclose(original_result, transformed_result)
+        assert qp.math.allclose(original_result, transformed_result)
 
         tape = qp.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         transformed_ops = _fuse_global_phases(tape.operations)
