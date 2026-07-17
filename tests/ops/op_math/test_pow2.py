@@ -14,8 +14,11 @@
 
 """Tests for the Pow2 class."""
 
-from pennylane.ops import ISWAP, Identity, PhaseShift, T, Z
+import pytest
+
+from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.pow2 import Pow2, pow2
+from pennylane.templates.subroutines import ControlledSequence
 from tests.core.operator.operator2_utils import DynOp
 
 
@@ -53,3 +56,14 @@ def test_initialization():
     assert isinstance(op, Pow2)
     assert op.static_args["z"] == 1.5
     assert op.base == base
+
+
+@pytest.mark.parametrize(
+    "op", [pow2(T(0), z=3), pow2(ControlledSequence(S(0) @ S(1), control=2), z=3)]
+)
+def test_repr(op):
+    """Tests __repr__ method."""
+    if op.base.arithmetic_depth > 0:
+        assert repr(op) == f"({op.base})**{op.static_args["z"]}"
+    else:
+        assert repr(op) == f"{op.base}**{op.static_args["z"]}"
