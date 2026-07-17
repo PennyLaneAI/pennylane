@@ -656,6 +656,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Leftover Python 3.9 support branch has been removed.
+  [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
+
 * The :attr:`~.Operator.data` property is now read-only. Assigning trainable parameters via
   ``op.data = new_data`` is no longer supported. To create an operator with updated parameters,
   use :func:`~.ops.functions.bind_new_parameters`, which returns a new operator and leaves the
