@@ -47,7 +47,7 @@ class Pow2(SymbolicOp2):
     **Example**
 
     >>> sqrt_x = Pow2(qp.X(0), 0.5)
-    >>> sqrt_x.decomposition()
+    >>> Pow2.compute_decomposition(qp.X(0), 0.5)
     [SX(0)]
     >>> qp.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
@@ -128,6 +128,19 @@ class Pow2(SymbolicOp2):
                 return False
             raise e
         return True
+
+    @staticmethod
+    def compute_decomposition(base, z):
+        try:
+            return base.pow(z)
+        except PowUndefinedError as e:
+            if isinstance(z, int) and z > 0:
+                return [apply(base) for _ in range(z)]
+            # TODO: consider: what if z is an int and less than 0?
+            # do we want Pow(base, -1) to be a "more fundamental" op
+            raise DecompositionUndefinedError from e
+        except Exception as e:
+            raise DecompositionUndefinedError from e
 
     @property
     def has_diagonalizing_gates(self):
