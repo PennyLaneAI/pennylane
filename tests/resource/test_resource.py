@@ -431,7 +431,7 @@ class TestNestedDictHelpers:
     def test_collect_dict_vars_flat(self):
         """Variables should be collected from top-level Expression values."""
         data = {"a": Expression({("x",): 1}), "b": 2}
-        assert _collect_dict_vars(data) == {"x"}
+        assert set(_collect_dict_vars(data)) == {"x"}
 
     def test_collect_dict_vars_nested(self):
         """Variables should be collected from Expressions at arbitrary depth."""
@@ -439,11 +439,11 @@ class TestNestedDictHelpers:
             "a": Expression({("x",): 1}),
             "b": {"c": Expression({("y",): 1}), "d": {"e": Expression({("z",): 1})}},
         }
-        assert _collect_dict_vars(data) == {"x", "y", "z"}
+        assert set(_collect_dict_vars(data)) == {"x", "y", "z"}
 
     def test_collect_dict_vars_none(self):
         """A dictionary without Expressions should yield an empty set."""
-        assert _collect_dict_vars({"a": 1, "b": {"c": 2}}) == set()
+        assert set(_collect_dict_vars({"a": 1, "b": {"c": 2}})) == set()
 
     def test_subs_dict_flat(self):
         """Substitution should apply to top-level Expression values."""

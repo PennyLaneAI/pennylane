@@ -96,13 +96,11 @@ def _collect_dict_vars(data: dict) -> set:
     Returns:
         set: The union of all symbolic variables found across every :class:`Expression` value.
     """
-    all_vars = set()
     for value in data.values():
         if isinstance(value, Expression):
-            all_vars |= value.vars
+            yield from value.vars
         elif isinstance(value, dict):
-            all_vars |= _collect_dict_vars(value)
-    return all_vars
+            yield from _collect_dict_vars(value)
 
 
 def _subs_dict(data: dict, substitutions: dict) -> dict:
@@ -202,7 +200,7 @@ class Resources:
                 all_vars |= value.vars
             elif isinstance(value, dict):
                 # Recurse into (possibly nested) dictionaries to collect all Expression variables
-                all_vars |= _collect_dict_vars(value)
+                all_vars |= set(_collect_dict_vars(value))
 
         object.__setattr__(self, "vars", frozenset(all_vars))
 
