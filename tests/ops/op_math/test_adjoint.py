@@ -157,8 +157,8 @@ class TestInitialization:
 class TestProperties:
     """Test Adjoint properties."""
 
-    def test_data(self):
-        """Test base data can be get and set through Adjoint class."""
+    def test_data_is_read_only(self):
+        """Test that Adjoint data is read-only."""
         x = np.array(1.234)
 
         base = qp.RX(x, wires="a")
@@ -166,16 +166,10 @@ class TestProperties:
 
         assert adj.data == (x,)
 
-        # update parameters through adjoint
-        x_new = np.array(2.3456)
-        adj.data = (x_new,)
-        assert base.data == (x_new,)
-        assert adj.data == (x_new,)
-
-        # update base data updates Adjoint data
-        x_new2 = np.array(3.456)
-        base.data = (x_new2,)
-        assert adj.data == (x_new2,)
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'AdjointOperation' object has no setter"
+        ):
+            setattr(adj, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self):
         """Test `has_matrix` property carries over when base op defines matrix."""
