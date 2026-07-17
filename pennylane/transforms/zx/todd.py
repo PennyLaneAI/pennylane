@@ -18,7 +18,7 @@ pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/lates
 to a PennyLane Clifford + T circuit.
 """
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -55,7 +55,7 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
-        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        the transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
@@ -67,24 +67,24 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         import pennylane.transforms.zx as zx
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @zx.todd
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.T(0)
-            qml.CNOT([0, 1])
-            qml.S(0)
-            qml.T(0)
-            qml.T(1)
-            qml.CNOT([0, 2])
-            qml.T(1)
-            return qml.state()
+            qp.T(0)
+            qp.CNOT([0, 1])
+            qp.S(0)
+            qp.T(0)
+            qp.T(1)
+            qp.CNOT([0, 2])
+            qp.T(1)
+            return qp.state()
 
-    >>> print(qml.draw(circuit)())
-    0: ──S†─╭Z─╭●─╭●─┤  State
-    1: ──S──╰●─│──╰X─┤  State
-    2: ────────╰X────┤  State
+    >>> print(qp.draw(circuit)())
+    0: ──S†─╭Z─╭●─╭●─┤ ╭State
+    1: ──S──╰●─│──╰X─┤ ├State
+    2: ────────╰X────┤ ╰State
 
     """
     # pylint: disable=import-outside-toplevel
@@ -97,7 +97,7 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         pyzx_circ = pyzx.phase_block_optimize(pyzx_circ.to_basic_gates())
     except TypeError as e:
         raise TypeError(
-            "The input circuit must be a Clifford + T circuit. Consider using `qml.clifford_t_decomposition` first."
+            "The input circuit must be a Clifford + T circuit. Consider using `qp.clifford_t_decomposition` first."
         ) from e
 
     qscript = from_zx(pyzx_circ.to_graph())

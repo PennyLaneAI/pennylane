@@ -19,11 +19,11 @@ Contains the CommutingEvolution template.
 import copy
 
 from pennylane import math
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires, WiresLike
 
 from .approx_time_evolution import ApproxTimeEvolution
@@ -136,7 +136,7 @@ class CommutingEvolution(Operation):
             "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
         }
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
         # pylint: disable=import-outside-toplevel,too-many-positional-arguments
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
@@ -158,7 +158,7 @@ class CommutingEvolution(Operation):
             "shifts": shifts,
         }
 
-        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
+        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

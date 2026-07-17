@@ -1,4 +1,4 @@
-name: Documentation Tests
+name: Test Documentation Code Examples
 permissions:
   contents: read
 
@@ -32,16 +32,16 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
-    name: Documentation Tests on Python 3.11
+    name: Test Documentation Code Examples on Python 3.11
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install pip and setuptools
         run: |
@@ -56,9 +56,13 @@ jobs:
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
 
+      - name: Install PyTorch (CPU-only)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
       - name: Install PennyLane (editable)
         run: |
-          pip install --group doctest -e . 
+          pip install --group doctest -e .
 
       - name: Print Dependencies
         run: |
@@ -71,6 +75,7 @@ jobs:
         run: |
           WONT_FIX="
           --ignore=pennylane/labs
+          --ignore=pennylane/logging
           --ignore=pennylane/workflow/interfaces/tensorflow.py
           --ignore=pennylane/devices/_legacy_device.py
           --ignore=pennylane/devices/_qubit_device.py
@@ -83,12 +88,10 @@ jobs:
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/capture
-          --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
           --ignore=pennylane/io
-          --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
           --ignore=pennylane/data
@@ -129,7 +132,6 @@ jobs:
           --ignore=doc/introduction/interfaces
           --ignore=doc/introduction/logging.rst
           --ignore=doc/introduction/measurements.rst
-          --ignore=doc/introduction/pennylane.rst
           --ignore=doc/introduction/templates.rst
           --ignore=doc/introduction/unsupported_gradients.rst
           "
@@ -141,7 +143,12 @@ jobs:
 
           pytest doc ${IGNORE}
 
+        # NOTE: Only run if the file exists (invert result to ensure exit code 0). 
+        # This avoids CI breakage when RC wranches don't have the 'changelog-dev.md' file.
+        # NOTE: Suppress pytest exit code 5 (No Tests Collected).
+        # This avoids CI breakage when the changelog is reset after a RC
+        # branch is cut and hasn't yet accumulated any code snippets to test.
       - name: Test `changelog-dev.md` file
         if: always()
         run: |
-          pytest doc/releases/changelog-dev.md
+          ! [ -f "doc/releases/changelog-dev.md" ] || pytest doc/releases/changelog-dev.md || [ $? -eq 5 ] 

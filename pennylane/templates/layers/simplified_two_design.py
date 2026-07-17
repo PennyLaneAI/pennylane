@@ -17,8 +17,8 @@ Contains the SimplifiedTwoDesign template.
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, RY
 
 has_jax = True
@@ -112,7 +112,7 @@ class SimplifiedTwoDesign(Operation):
 
     resource_keys = {"num_wires", "n_layers"}
 
-    def __init__(self, initial_layer_weights, weights, wires, id=None):
+    def __init__(self, initial_layer_weights, weights, wires):
         shape = math.shape(weights)
 
         if len(shape) > 1:
@@ -134,7 +134,7 @@ class SimplifiedTwoDesign(Operation):
 
         self.n_layers = shape[0]
 
-        super().__init__(initial_layer_weights, weights, wires=wires, id=id)
+        super().__init__(initial_layer_weights, weights, wires=wires)
 
     @property
     def num_params(self):
@@ -239,10 +239,10 @@ class SimplifiedTwoDesign(Operation):
 def _simplified_two_design_resources(n_layers, num_wires):
     if num_wires > 1:
         return {
-            resource_rep(RY): num_wires + (n_layers * num_wires - n_layers) * 2,
-            resource_rep(CZ): n_layers * num_wires - n_layers,
+            RY: num_wires + (n_layers * num_wires - n_layers) * 2,
+            CZ: n_layers * num_wires - n_layers,
         }
-    return {resource_rep(RY): num_wires}
+    return {RY: num_wires}
 
 
 @register_resources(_simplified_two_design_resources)

@@ -1,4 +1,6 @@
 name: "Read the Docs check"
+permissions:
+  contents: read
 on:
   merge_group:
     types:
@@ -17,7 +19,8 @@ jobs:
   rtd_check:
     runs-on: ubuntu-24.04
     env:
-      PYTHON_VERSION: "3.11"
+      PYTHON_VERSION: "3.12"
+      TORCH_VERSION: "2.9.0"  # must match pyproject.toml [dependency-groups] docs
       # Space separated list of packages to install for each package manager
       PIP_PACKAGES_TO_INSTALL: "sphinx"
       APT_PACKAGES_TO_INSTALL: "graphviz"
@@ -44,6 +47,7 @@ jobs:
         pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
         pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
+        pip install torch~=${{ env.TORCH_VERSION }} --index-url https://download.pytorch.org/whl/cpu
         pip install --group docs
 
     - name: Build Sphinx HTML

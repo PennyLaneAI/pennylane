@@ -19,7 +19,7 @@ import numpy as np
 from pennylane import math
 
 
-def binary_decimals(phi: float, precision: int, unit: float = 1.0):
+def binary_decimals(phi: float | np.ndarray, precision: int, unit: float = 1.0):
     r"""
     Compute the binary decimals :math:`X_{-1} X_{-2} \cdots X_{-p}` of the binary representation of :math:`\phi = (\cdots X_1 X_0.X_{-1} X_{-2} \cdots X_{-p} X_{-p-1} \cdots)_2` up to precision :math:`p`.
 
@@ -30,7 +30,7 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
     In this case, we set the ``unit`` to :math:`2\pi`. In case we additionally divide the angle by 2, as is the case in rotation gates such as :class:`~.RZ`, we use a ``unit`` of :math:`4\pi`.
 
     Args:
-        phi (float): The number to be represented in binary.
+        phi (float or np.ndarray): The number to be represented in binary.
         precision (int): The number of digits to keep.
         unit (float): The angle is to be in the unit of ``unit``, meaning we consider ``(phi % unit)/unit``. The default is :math:`1`.
 
@@ -43,26 +43,26 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
 
     >>> precision = 2
     >>> phi = (1 / 2 + 1 / 4 + 0 / 8 + 1 / 16 + 1 / 32) # = 0.84375
-    >>> qml.math.binary_decimals(phi, precision)
+    >>> qp.math.binary_decimals(phi, precision)
     array([1, 1])
 
     When we pass the midpoint of the cut off decimals, we round up. In particular, for :math:`(0.1011)_2`, we round to :math:`(0.11)_2`:
 
     >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1 / 16) # = 0.6875
-    >>> qml.math.binary_decimals(phi, precision)
+    >>> qp.math.binary_decimals(phi, precision)
     array([1, 1])
 
     If we want to represent the angle for a rotation like :class:`~.RZ`, where the convention the angle is divided by :math:`2`, we want to specify the unit.
     For example, looking at :math:`(0.1011)_2 4\pi` we obtain the following:
 
     >>> phi = (1 / 2 + 0 / 4 + 1 / 8 + 1 / 16) * 4 * np.pi # = 0.6875 * 4pi
-    >>> qml.math.binary_decimals(phi, precision, unit = 4 * np.pi)
+    >>> qp.math.binary_decimals(phi, precision, unit = 4 * np.pi)
     array([1, 1])
 
     Note that we always ignore the integer part. E.g., because :math:`(0.1111)_2` rounds to :math:`(1.0000)_2`, we obtain ``[0, 0]``:
 
     >>> phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16) # = 0.9375
-    >>> qml.math.binary_decimals(phi, precision)
+    >>> qp.math.binary_decimals(phi, precision)
     array([0, 0])
 
     .. details::
@@ -76,7 +76,7 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
         Turning it back to a fraction we obtain :math:`\tfrac{2}{2^2} = 0.5 = (0.10)_2`.
 
         >>> phi = 1 / 2 + 0 / 4 + 1 / 8 + 0 / 16 + 0 / 32
-        >>> qml.math.binary_decimals(phi, precision)
+        >>> qp.math.binary_decimals(phi, precision)
         array([1, 0])
 
         Note it is easier and cheaper to to simply translate the integer :math:`2=(10)_2` to its binary representation, which is equivalent.
@@ -93,7 +93,7 @@ def int_to_binary(integer: int | np.ndarray, width: int) -> np.ndarray:
     given length, representing the integers as binaries.
 
     Args:
-        integer (int | np.ndarray): Integer(s) to convert. Either a single integers or an
+        integer (int | np.ndarray): Integer(s) to convert. Either a single integer or an
             array of integers.
         width (int): Length of the bitstrings to which the integer(s) are converted. Note
             that the ``width`` **least** significant bits corresponding to
@@ -111,7 +111,7 @@ def int_to_binary(integer: int | np.ndarray, width: int) -> np.ndarray:
     We may compute the binary representation of the integer ``13`` on five bits, for example:
 
     >>> width = 5
-    >>> print(qml.math.int_to_binary(13, width=width))
+    >>> print(qp.math.int_to_binary(13, width=width))
     [0 1 1 0 1]
 
     This matches the output of ``np.binary_repr`` but returns a numerical array instead
@@ -126,7 +126,7 @@ def int_to_binary(integer: int | np.ndarray, width: int) -> np.ndarray:
     >>> x = np.array([[7, 3], [17, 9], [2, 8]])
     >>> print(x.shape)
     (3, 2)
-    >>> bits = qml.math.int_to_binary(x, width=width)
+    >>> bits = qp.math.int_to_binary(x, width=width)
     >>> print(bits.shape)
     (3, 2, 5)
 
@@ -170,7 +170,7 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
     >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
     ...                           [1, 0, 1, 0, 0, 0, 1, 0],
     ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
-    >>> print(qml.math.binary_finite_reduced_row_echelon(binary_matrix))
+    >>> print(qp.math.binary_finite_reduced_row_echelon(binary_matrix))
     [[1, 0, 0, 0, 0, 1, 0, 0],
      [0, 0, 1, 0, 0, 1, 1, 0],
      [0, 0, 0, 1, 1, 0, 0, 1]]
@@ -245,12 +245,12 @@ def binary_matrix_rank(binary_matrix: np.ndarray) -> int:
 
     We may compute its rank over :math:`\mathbb{Z}_2` and find that it does not have full rank:
 
-    >>> print(qml.math.binary_matrix_rank(binary_matrix))
+    >>> print(qp.math.binary_matrix_rank(binary_matrix))
     3
 
     Note that it would have full rank over the real numbers :math:`\mathbb{R}`:
 
-    >>> print(qml.math.linalg.matrix_rank(binary_matrix))
+    >>> print(qp.math.linalg.matrix_rank(binary_matrix))
     4
 
     """
@@ -299,7 +299,7 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
 
     Then we can solve the system ``A@x=b`` for ``x`` over :math:`\mathbb{Z}_2`:
 
-    >>> x = qml.math.binary_solve_linear_system(A, b)
+    >>> x = qp.math.binary_solve_linear_system(A, b)
     >>> print(x)
     [1 1 0]
 

@@ -24,6 +24,10 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 from pennylane import math, ops
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.shots import Shots
+from pennylane.core.transforms import CompilePipeline, transform
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import (
@@ -33,12 +37,9 @@ from pennylane.exceptions import (
     QuantumFunctionError,
 )
 from pennylane.math import Interface, requires_grad
-from pennylane.measurements import ExpectationMP, Shots
-from pennylane.operation import Operator
+from pennylane.measurements import ExpectationMP
 from pennylane.ops import MidMeasure
-from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
-from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.wires import Wires
 
 from ._legacy_device import Device as LegacyDevice
@@ -497,7 +498,7 @@ class LegacyDeviceFacade(Device):
         batched_res = tuple(
             self.execute_and_compute_derivatives((c,), execution_config) for c in circuits
         )
-        return tuple(zip(*batched_res))
+        return tuple(zip(*batched_res, strict=True))
 
     def compute_derivatives(self, circuits, execution_config: ExecutionConfig | None = None):
         if execution_config is None:

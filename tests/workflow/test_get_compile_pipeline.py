@@ -17,15 +17,54 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.devices.execution_config import ExecutionConfig
-from pennylane.transforms.core.compile_pipeline import CompilePipeline
-from pennylane.transforms.core.transform import BoundTransform
 from pennylane.workflow import get_compile_pipeline
 
 
 class TestValidation:
     """Tests for validation errors."""
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_input_is_not_qjit_qnode(self):
+        """Tests when the input is QJIT'd but not a qnode."""
+
+        @qp.qjit
+        def inc(x):
+            return x + 1
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Can only retrieve the compilation pipeline if the QJIT'd object is a QNode."
+            ),
+        ):
+            _ = get_compile_pipeline(inc)()
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "unsupported_level",
+        (
+            "device",
+            "gradient",
+        ),
+    )
+    def test_unsupported_levels_qjit(self, unsupported_level):
+        """Tests unsupported levels when the input is QJIT'd QNode."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(f"'level={unsupported_level}' is not supported for QJIT'd QNodes."),
+        ):
+            _ = get_compile_pipeline(circuit, level=unsupported_level)()
 
     @pytest.mark.parametrize(
         "unsupported_level",
@@ -39,9 +78,9 @@ class TestValidation:
     def test_incorrect_level_type(self, unsupported_level):
         """Tests validation for incorrect level types."""
 
-        @qml.qnode(qml.device("null.qubit", wires=2))
+        @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(
             ValueError,
@@ -54,9 +93,9 @@ class TestValidation:
     def test_missing_marker_label(self):
         """Tests that a string that doesn't have a marker raises an exception."""
 
-        @qml.qnode(qml.device("null.qubit", wires=2))
+        @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(
             ValueError,
@@ -65,52 +104,86 @@ class TestValidation:
             _ = get_compile_pipeline(circuit, level="my_marker")()
 
 
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
 class TestUserLevel:
     """Tests 'user' level transforms."""
 
-    def test_user_level_pipeline(self):
+    def test_user_level_pipeline_with_markers(self, use_qjit):
+        """Tests that markers are properly retained."""
+
+        dev = qp.device("null.qubit")
+
+        pipeline = CompilePipeline()
+        pipeline += qp.transforms.merge_rotations
+        pipeline.add_marker("after-merge-rotations")
+        pipeline += qp.transforms.cancel_inverses
+        pipeline.add_marker("after-cancel-inverses")
+
+        @pipeline
+        @qp.qnode(dev)
+        def circuit():
+            return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
+
+        cp = get_compile_pipeline(circuit, level="user")()
+        assert cp == pipeline
+
+    def test_user_level_pipeline(self, use_qjit):
         """Tests the contents of a user level pipeline."""
 
-        dev = qml.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
-        @qml.transforms.merge_rotations(atol=1e-5)
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev)
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
         assert len(cp) == 2
-        assert cp[0].tape_transform == qml.transforms.cancel_inverses.tape_transform
-        assert cp[1].tape_transform == qml.transforms.merge_rotations.tape_transform
+        assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
+        assert cp[1].tape_transform == qp.transforms.merge_rotations.tape_transform
 
-    def test_user_level_with_final_transform(self):
+    def test_user_level_with_final_transform(self, use_qjit):
         """Tests that a final transform is correctly re-appended."""
 
-        dev = qml.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
-        @qml.gradients.metric_tensor
-        @qml.transforms.merge_rotations(atol=1e-5)
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
+        @qp.gradients.metric_tensor
+        @qp.transforms.merge_rotations(atol=1e-5)
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev)
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
 
         assert len(cp) == 4
-        assert cp[0].tape_transform == qml.transforms.cancel_inverses.tape_transform
-        assert cp[1].tape_transform == qml.transforms.merge_rotations.tape_transform
-        assert cp[2].tape_transform == qml.gradients.metric_tensor.expand_transform
-        assert cp[3].tape_transform == qml.gradients.metric_tensor.tape_transform
+        assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
+        assert cp[1].tape_transform == qp.transforms.merge_rotations.tape_transform
+        assert cp[2].tape_transform == qp.gradients.metric_tensor.expand_transform
+        assert cp[3].tape_transform == qp.gradients.metric_tensor.tape_transform
 
-    def test_no_user_levels(self):
+    def test_no_user_levels(self, use_qjit):
         """Ensures an empty compile pipeline if no user transforms."""
-        dev = qml.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
 
@@ -123,27 +196,27 @@ class TestGradientLevel:
     def test_gradient_level_pipeline(self):
         """Tests the contents of a gradient level pipeline."""
 
-        dev = qml.device("reference.qubit")
+        dev = qp.device("reference.qubit")
 
-        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
+        @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         cp = get_compile_pipeline(circuit, level="gradient")()
 
         assert len(cp) == 1
         assert cp[0] == BoundTransform(
-            qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
+            qp.transform(qp.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_no_gradient_levels(self, diff_method):
         """Ensures an empty compile pipeline if no gradient transforms."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         cp = get_compile_pipeline(circuit, level="gradient")()
 
@@ -152,18 +225,18 @@ class TestGradientLevel:
     def test_gradient_level_with_final_transform(self):
         """Tests that a final transform is before the gradient transform."""
 
-        dev = qml.device("reference.qubit")
+        dev = qp.device("reference.qubit")
 
-        @qml.gradients.metric_tensor
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.gradients.metric_tensor
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         cp = get_compile_pipeline(circuit, level="gradient")()
 
-        assert cp[0].tape_transform == qml.gradients.metric_tensor.expand_transform
-        assert cp[1].tape_transform == qml.gradients.metric_tensor.tape_transform
-        assert cp[2] == BoundTransform(qml.transform(qml.gradients.param_shift.expand_transform))
+        assert cp[0].tape_transform == qp.gradients.metric_tensor.expand_transform
+        assert cp[1].tape_transform == qp.gradients.metric_tensor.tape_transform
+        assert cp[2] == BoundTransform(qp.transform(qp.gradients.param_shift.expand_transform))
 
 
 class TestDeviceLevel:
@@ -173,24 +246,24 @@ class TestDeviceLevel:
     def test_reference_qubit(self, device):
         """Tests the contents of a device level pipeline."""
 
-        dev = qml.device(device)
+        dev = qp.device(device)
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         cp = get_compile_pipeline(circuit, level="device")()
 
         expected_cp = CompilePipeline()
 
         # User transforms
-        expected_cp.add_transform(qml.transforms.cancel_inverses)
-        expected_cp.add_transform(qml.transforms.merge_rotations)
+        expected_cp.add_transform(qp.transforms.cancel_inverses)
+        expected_cp.add_transform(qp.transforms.merge_rotations)
 
         # Gradient expansion
-        expected_cp.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+        expected_cp.add_transform(qp.transform(qp.gradients.param_shift.expand_transform))
 
         # Device transforms
         device_cp, _ = dev.preprocess()
@@ -201,19 +274,19 @@ class TestDeviceLevel:
     def test_device_derivative(self):
         """Tests the compile pipeline if a device derivative exists."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.transforms.split_non_commuting
-        @qml.qnode(dev, diff_method="adjoint", device_vjp=False)
+        @qp.transforms.split_non_commuting
+        @qp.qnode(dev, diff_method="adjoint", device_vjp=False)
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         cp = get_compile_pipeline(circuit, level="device")(1.0)
 
         expected_cp = CompilePipeline()
         # User transforms
-        expected_cp.add_transform(qml.transforms.split_non_commuting)
+        expected_cp.add_transform(qp.transforms.split_non_commuting)
 
         # Device transforms
         basic_config = ExecutionConfig(gradient_method="adjoint", use_device_jacobian_product=False)
@@ -225,106 +298,150 @@ class TestDeviceLevel:
     def test_device_level_with_final_transform(self):
         """Tests that a final transform works with level=device."""
 
-        dev = qml.device("reference.qubit")
+        dev = qp.device("reference.qubit")
 
-        @qml.gradients.metric_tensor
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.gradients.metric_tensor
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         cp = get_compile_pipeline(circuit, level="device")()
 
         expected_cp = CompilePipeline()
 
         # User transforms
-        expected_cp.add_transform(qml.transform(qml.gradients.metric_tensor.expand_transform))
-        expected_cp.add_transform(qml.transform(qml.gradients.metric_tensor.tape_transform))
+        expected_cp.add_transform(qp.transform(qp.gradients.metric_tensor.expand_transform))
+        expected_cp.add_transform(qp.transform(qp.gradients.metric_tensor.tape_transform))
 
         # Gradient expansion
-        expected_cp.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+        expected_cp.add_transform(qp.transform(qp.gradients.param_shift.expand_transform))
 
         # Device transforms
         device_cp, _ = dev.preprocess()
         expected_cp += device_cp
 
-        assert cp[0].tape_transform == qml.gradients.metric_tensor.expand_transform
-        assert cp[1].tape_transform == qml.gradients.metric_tensor.tape_transform
+        assert cp[0].tape_transform == qp.gradients.metric_tensor.expand_transform
+        assert cp[1].tape_transform == qp.gradients.metric_tensor.tape_transform
         assert cp[2:] == expected_cp[2:]
 
 
-def test_marker_level():
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+def test_marker_level(use_qjit):
     """Tests that a string corresponding to a marker level can be used."""
 
-    dev = qml.device("reference.qubit")
+    dev = qp.device("null.qubit")
 
-    @qml.transforms.merge_rotations
-    @qml.marker("blah")
-    @qml.transforms.cancel_inverses
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qp.transforms.merge_rotations
+    @qp.marker("blah")
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
     def circuit():
-        return qml.expval(qml.Z(0))
+        return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
 
     cp = get_compile_pipeline(circuit, level="blah")()
     assert len(cp) == 1
-    assert cp[0].tape_transform == qml.transforms.cancel_inverses.tape_transform
+    assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
 
 
-def test_level_is_top():
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+def test_level_is_top(use_qjit):
     """Tests that level is top returns an empty pipeline."""
 
-    dev = qml.device("reference.qubit")
+    dev = qp.device("null.qubit")
 
-    @qml.transforms.merge_rotations(atol=1e-5)
-    @qml.transforms.cancel_inverses
-    @qml.qnode(dev)
+    @qp.transforms.merge_rotations
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
     def circuit():
-        return qml.expval(qml.Z(0))
+        return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
 
     cp = get_compile_pipeline(circuit, level="top")()
     assert cp == CompilePipeline()
 
 
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
 @pytest.mark.parametrize("level", [0, 1, 2])
-def test_level_is_integer(level):
+def test_level_is_integer(level, use_qjit):
     """Tests that levels can be integers corresponding to their position
     in the compile pipeline."""
 
-    dev = qml.device("reference.qubit")
+    dev = qp.device("null.qubit")
 
-    @qml.transforms.merge_rotations
-    @qml.transforms.cancel_inverses
-    @qml.qnode(dev)
+    @qp.transforms.merge_rotations
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
     def circuit():
-        return qml.expval(qml.Z(0))
+        return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
 
     cp = get_compile_pipeline(circuit, level=level)()
 
     if level == 0:
         assert cp == CompilePipeline()
     elif level == 1:
-        assert cp == CompilePipeline(qml.transforms.cancel_inverses)
+        assert cp == CompilePipeline(qp.transforms.cancel_inverses)
     elif level == 2:
-        assert cp == CompilePipeline(qml.transforms.cancel_inverses, qml.transforms.merge_rotations)
+        assert cp == CompilePipeline(qp.transforms.cancel_inverses, qp.transforms.merge_rotations)
+
+
+@pytest.mark.external
+@pytest.mark.catalyst
+@pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])
+def test_level_is_slice_qjit(level_slice):
+    """Tests level is slice when using qjit."""
+
+    user_pipeline = CompilePipeline(
+        qp.decompose,
+        qp.transforms.cancel_inverses,
+        qp.transforms.merge_rotations,
+    )
+
+    @qp.qjit
+    @user_pipeline
+    @qp.qnode(
+        qp.device("null.qubit"),
+    )
+    def circuit():
+        qp.X(0)
+        return qp.expval(qp.Z(0))
+
+    sliced_cp = get_compile_pipeline(circuit, level=level_slice)()
+    full_cp = user_pipeline
+    assert full_cp[level_slice] == sliced_cp
 
 
 @pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])
 def test_level_is_slice(level_slice):
     """Tests that slice levels are correctly handled."""
 
-    @qml.metric_tensor
-    @qml.transforms.merge_rotations
-    @qml.transforms.cancel_inverses
-    @qml.qnode(
-        qml.device("default.qubit"),
+    @qp.metric_tensor
+    @qp.transforms.merge_rotations
+    @qp.transforms.cancel_inverses
+    @qp.qnode(
+        qp.device("default.qubit"),
         diff_method="parameter-shift",
-        gradient_kwargs={"shifts": qml.numpy.pi / 4},
+        gradient_kwargs={"shifts": qp.numpy.pi / 4},
     )
     def circuit(x):
-        qml.RX(x, wires=0)
-        qml.H(0)
-        qml.H(0)
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x, wires=0)
+        qp.H(0)
+        qp.H(0)
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
     sliced_cp = get_compile_pipeline(circuit, level=level_slice)(1.0)
     full_cp = get_compile_pipeline(circuit, level="device")(1.0)
@@ -334,30 +451,30 @@ def test_level_is_slice(level_slice):
 def test_informative_transforms():
     """Tests that informative transforms are handled correctly."""
 
-    dev = qml.device("reference.qubit")
+    dev = qp.device("reference.qubit")
 
     # Some random normalized state, no particular relevance
-    init_state = qml.numpy.array([0.16769259, 0.71277864, 0.54562903, 0.4075718])
+    init_state = qp.numpy.array([0.16769259, 0.71277864, 0.54562903, 0.4075718])
 
     def ansatz(angles, wires):
-        qml.StatePrep(init_state, wires=wires)
-        qml.Hadamard(wires[0])
-        qml.RX(angles[0], wires=wires[0])
-        qml.S(wires[1])
-        qml.RY(angles[1], wires=wires[1])
+        qp.StatePrep(init_state, wires=wires)
+        qp.Hadamard(wires[0])
+        qp.RX(angles[0], wires=wires[0])
+        qp.S(wires[1])
+        qp.RY(angles[1], wires=wires[1])
 
-    @qml.adjoint_metric_tensor  # INFORMATIVE!
-    @qml.transforms.merge_rotations
-    @qml.qnode(dev)
+    @qp.adjoint_metric_tensor  # INFORMATIVE!
+    @qp.transforms.merge_rotations
+    @qp.qnode(dev)
     def circuit(angles):
         ansatz(angles, wires=[0, 1])
-        return qml.expval(qml.Z(0) @ qml.X(1))
+        return qp.expval(qp.Z(0) @ qp.X(1))
 
-    angles = qml.numpy.random.uniform(size=(2,), requires_grad=True)
+    angles = qp.numpy.random.uniform(size=(2,), requires_grad=True)
 
     pipeline = get_compile_pipeline(circuit)(angles)
     # Informative transforms by pass the gradient and device transforms
     assert len(pipeline) == 3
-    assert pipeline[0].tape_transform == qml.transforms.merge_rotations.tape_transform
-    assert pipeline[1].tape_transform == qml.gradients.adjoint_metric_tensor.expand_transform
-    assert pipeline[2].tape_transform == qml.gradients.adjoint_metric_tensor.tape_transform
+    assert pipeline[0].tape_transform == qp.transforms.merge_rotations.tape_transform
+    assert pipeline[1].tape_transform == qp.gradients.adjoint_metric_tensor.expand_transform
+    assert pipeline[2].tape_transform == qp.gradients.adjoint_metric_tensor.tape_transform

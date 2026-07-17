@@ -72,6 +72,17 @@ def generate_polynomial_coeffs(degree, parity=None):
 pytestmark = pytest.mark.external
 
 
+@pytest.mark.usefixtures("preserve_jax_x64")
+def test_jax_x64_warning():
+    """Ensures a warning is raised if running in 32-bit JAX."""
+
+    jax.config.update("jax_enable_x64", False)
+
+    poly = generate_polynomial_coeffs(4, 0)
+    with pytest.warns(UserWarning, match="JAX 64-bit mode is recommended"):
+        _ = qp.poly_to_angles(list(poly), "QSP", angle_solver="iterative-optax")
+
+
 class TestOptaxAngleSolver:
     """Tests for the Optax-based QSP angle solver (iterative-optax)."""
 

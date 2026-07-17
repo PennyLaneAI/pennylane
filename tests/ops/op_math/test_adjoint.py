@@ -20,6 +20,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.gradients import parameter_frequencies
+from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
@@ -28,6 +30,7 @@ class PlainOperator(qp.operation.Operator):
     """just an operator."""
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("target", (qp.PauliZ(0), qp.Rot(1.2, 2.3, 3.4, wires=0)))
 def test_basic_validity(target):
     """Run basic operator validity fucntions."""
@@ -154,8 +157,8 @@ class TestInitialization:
 class TestProperties:
     """Test Adjoint properties."""
 
-    def test_data(self):
-        """Test base data can be get and set through Adjoint class."""
+    def test_data_is_read_only(self):
+        """Test that Adjoint data is read-only."""
         x = np.array(1.234)
 
         base = qp.RX(x, wires="a")
@@ -163,16 +166,10 @@ class TestProperties:
 
         assert adj.data == (x,)
 
-        # update parameters through adjoint
-        x_new = np.array(2.3456)
-        adj.data = (x_new,)
-        assert base.data == (x_new,)
-        assert adj.data == (x_new,)
-
-        # update base data updates Adjoint data
-        x_new2 = np.array(3.456)
-        base.data = (x_new2,)
-        assert adj.data == (x_new2,)
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'AdjointOperation' object has no setter"
+        ):
+            setattr(adj, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -266,11 +263,6 @@ class TestProperties:
         op = Adjoint(MyOp(0))
 
         assert op.has_diagonalizing_gates is False
-
-    def test_queue_category(self):
-        """Test that the queue category `"_ops"` carries over."""
-        op = Adjoint(qp.PauliX(0))
-        assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_verified_hermitian(self, value):
@@ -432,9 +424,10 @@ class TestAdjointOperation:
         base = qp.RX(param, wires=0)
         op = Adjoint(base)
 
-        base_angles = base.single_qubit_rot_angles()
-        angles = op.single_qubit_rot_angles()
+        *base_angles, base_phase = single_qubit_zyz_angles(base)
+        *angles, phase = single_qubit_zyz_angles(op)
 
+        assert base_phase == phase
         for angle1, angle2 in zip(angles, reversed(base_angles)):
             assert angle1 == -angle2
 
@@ -449,7 +442,10 @@ class TestAdjointOperation:
     )
     def test_basis_property(self, base, basis):
         op = Adjoint(base)
-        assert op.basis == basis
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="Operation.basis is deprecated"
+        ):
+            assert op.basis == basis
 
     def test_control_wires(self):
         """Test the control_wires of an adjoint are the same as the base op."""
@@ -485,7 +481,7 @@ class TestAdjointOperationDiffInfo:
     )
     def test_parameter_frequencies(self, base):
         """Test that the parameter frequencies of an Adjoint are the same as those of the base."""
-        assert Adjoint(base).parameter_frequencies == base.parameter_frequencies
+        assert parameter_frequencies(Adjoint(base)) == parameter_frequencies(base)
 
 
 class TestQueueing:

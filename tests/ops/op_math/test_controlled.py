@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for Controlled"""
 
+import pickle
 from copy import copy
 from functools import partial
 
@@ -37,14 +38,19 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core import Operator2
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation, Operator
-from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
-from pennylane.tape import QuantumScript
+from pennylane.gradients import parameter_frequencies
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.transforms import decompose
+from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import DynOp
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=protected-access
@@ -119,6 +125,31 @@ class TestControlledInheritance:
         op = ControlledOp(base, "b")
 
         assert type(op) is ControlledOp  # pylint: disable=unidiomatic-typecheck
+
+    @pytest.mark.parametrize(
+        "base",
+        [
+            qp.prod(qp.X(0), qp.X(1)),  # Prod -> CompositeOp
+            qp.X(0) + qp.Y(1),  # Sum  -> CompositeOp
+            2.0 * qp.X(0),  # SProd
+            qp.ctrl(qp.X(0), control=[1]),
+            qp.ctrl(qp.H(0), control=[1]),
+        ],
+    )
+    def test_pickle_roundtrip_composite_base(self, base):
+        """
+        Plain ``Controlled`` (i.e. with a non-Operation base like Prod/Sum/SProd)
+        used to fail to unpickle because ``Controlled.__new__`` required ``base``
+        positionally, but the default pickle protocol reconstructs via
+        ``cls.__new__(cls)`` with no arguments. The ``ControlledOp`` branch already
+        had a no-required-arg ``__new__``; this test guards parity on the
+        ``Controlled`` branch.
+        """
+        op = Controlled(base, control_wires=[2], work_wires=[3])
+        assert isinstance(op, Controlled)
+
+        roundtripped = pickle.loads(pickle.dumps(op))
+        qp.assert_equal(op, roundtripped)
 
 
 class TestControlledInit:
@@ -200,6 +231,19 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "base",
+        [
+            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            qp.X(0) + qp.Y(1),
+        ],
+    )
+    def test_standard_validity_composite_base(self, base):
+        """``assert_valid`` should pass for ``Controlled`` wrapping a CompositeOp."""
+        op = Controlled(base, control_wires=[3, 4, 5], work_wires=[6, 7, 8])
+        qp.ops.functions.assert_valid(op)
+
 
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
@@ -223,7 +267,7 @@ class TestControlledProperties:
         }
 
     def test_data(self):
-        """Test that the base data can be get and set through Controlled class."""
+        """Test that Controlled data is read-only."""
 
         x = pnp.array(1.234)
 
@@ -232,15 +276,10 @@ class TestControlledProperties:
 
         assert op.data == (x,)
 
-        x_new = (pnp.array(2.3454),)
-        op.data = x_new
-        assert op.data == (x_new,)
-        assert base.data == (x_new,)
-
-        x_new2 = (pnp.array(3.456),)
-        base.data = x_new2
-        assert op.data == (x_new2,)
-        assert op.parameters == [x_new2]
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'ControlledOp' object has no setter"
+        ):
+            setattr(op, "data", (pnp.array(2.3454),))
 
     @pytest.mark.parametrize(
         "val, arr", ((4, [1, 0, 0]), (6, [1, 1, 0]), (1, [0, 0, 1]), (5, [1, 0, 1]))
@@ -346,17 +385,6 @@ class TestControlledProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_diagonalizing_gates is value
 
-    @pytest.mark.parametrize("value", ("_ops", None))
-    def test_queue_cateogry(self, value):
-        """Test that Controlled defers `_queue_category` to base operator."""
-
-        class DummyOp(Operator):
-            num_wires = 1
-            _queue_category = value
-
-        op = Controlled(DummyOp(1), 0)
-        assert op._queue_category == value
-
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
         """Test that Controlled defers `is_hermitian` to base operator."""
@@ -441,7 +469,9 @@ class TestControlledMiscMethods:
         assert copied_op.control_values == op.control_values
         assert copied_op.data == (param1,)
 
-        copied_op.data = (6.54,)
+        copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+        assert copied_op.data == (6.54,)
         assert op.data == (param1,)
 
     def test_label(self):
@@ -531,29 +561,29 @@ class TestControlledMiscMethods:
             assert op1.wires == op2.wires
 
     def test_hash(self):
-        """Test that op.hash uniquely describes an op up to work wires."""
+        """Test that hash(op) uniquely describes an op up to work wires."""
 
         base = qp.RY(1.2, wires=0)
         # different control wires
         op1 = Controlled(base, (1, 2), [0, 1])
         op2 = Controlled(base, (2, 1), [0, 1])
-        assert op1.hash != op2.hash
+        assert hash(op1) != hash(op2)
 
         # different control values
         op3 = Controlled(base, (1, 2), [1, 0])
-        assert op1.hash != op3.hash
-        assert op2.hash != op3.hash
+        assert hash(op1) != hash(op3)
+        assert hash(op2) != hash(op3)
 
         # all variations on default control_values
         op4 = Controlled(base, (1, 2))
         op5 = Controlled(base, (1, 2), [True, True])
         op6 = Controlled(base, (1, 2), [1, 1])
-        assert op4.hash == op5.hash
-        assert op4.hash == op6.hash
+        assert hash(op4) == hash(op5)
+        assert hash(op4) == hash(op6)
 
         # work wires
         op7 = Controlled(base, (1, 2), [0, 1], work_wires="aux")
-        assert op7.hash != op1.hash
+        assert hash(op7) != hash(op1)
 
 
 class TestControlledOperationProperties:
@@ -582,7 +612,8 @@ class TestControlledOperationProperties:
 
         base = DummyOp(1)
         op = Controlled(base, 2)
-        assert op.basis == "Z"
+        with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning):
+            assert op.basis == "Z"
 
     @pytest.mark.parametrize(
         "base, expected",
@@ -597,7 +628,7 @@ class TestControlledOperationProperties:
         """Test parameter-frequencies against expected values."""
 
         op = Controlled(base, (4, 5))
-        assert op.parameter_frequencies == expected
+        assert parameter_frequencies(op) == expected
 
     def test_parameter_frequencies_no_generator_error(self):
         """An error should be raised if the base doesn't have a generator."""
@@ -608,7 +639,7 @@ class TestControlledOperationProperties:
             qp.operation.ParameterFrequenciesUndefinedError,
             match=r"does not have parameter frequencies",
         ):
-            op.parameter_frequencies
+            parameter_frequencies(op)
 
     def test_parameter_frequencies_multiple_params_error(self):
         """An error should be raised if the base has more than one parameter."""
@@ -619,7 +650,7 @@ class TestControlledOperationProperties:
             qp.operation.ParameterFrequenciesUndefinedError,
             match=r"does not have parameter frequencies",
         ):
-            op.parameter_frequencies
+            parameter_frequencies(op)
 
 
 class TestControlledSimplify:
@@ -1063,7 +1094,7 @@ class TestDecomposition:
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
                     qp.CH(wires=[2, 0]),
-                    Controlled(qp.S(wires=1), control_wires=2),
+                    ctrl(qp.S(wires=1), control=2),
                     qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
@@ -1863,9 +1894,9 @@ class TestCtrl:
 
         assert len(q) == 1
         assert q.queue[0] is op
-        expected = Controlled(
+        expected = ctrl(
             qp.S(wires=[0]),
-            control_wires=[3, 2, 1],
+            control=[3, 2, 1],
             control_values=[1, 0, 1],
         )
         assert op == expected
@@ -2012,6 +2043,13 @@ class TestCtrl:
                 None,
                 qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]),
             ),
+            (
+                qp.Toffoli(wires=[1, 2, 3]),
+                [0],
+                [0],
+                None,
+                qp.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 1], work_wires=[]),
+            ),
         ],
     )
     def test_pauli_x_based_ctrl_ops(self, op, ctrl_wires, ctrl_values, work_wires, expected_op):
@@ -2043,6 +2081,38 @@ class TestCtrl:
             assert op.name == "C(QSVT)"
 
         assert len(q.queue) == 2
+
+    def test_ctrl_on_abstract_controlled_op(self):
+        """Tests that applying `ctrl` on abstract controlled op works."""
+
+        op = qp.ctrl(DynOp(Float, Wire[2]), control=[0], control_values=1)
+        assert isinstance(op, ControlledOp2)
+        assert op.base == DynOp(Float, Wire[2])
+        assert op.wires == Wire[3]
+        assert op.control_wires == Wire[1]
+        assert op.control_values == Bool[1]
+
+        new_op = qp.ctrl(op, control=[3, 4], work_wires=[5])
+        assert isinstance(new_op, ControlledOp2)
+        assert new_op.base == DynOp(Float, Wire[2])
+        assert new_op.wires == Wire[5]
+        assert new_op.control_wires == Wire[3]
+        assert new_op.control_values == Bool[3]
+        assert new_op.work_wires == Wire[1]
+
+    # pylint: disable=too-few-public-methods,unused-argument
+    def test_custom_ctrl_dispatch(self):
+        """Tests that custom controlled dispatchers work for `Operator2`."""
+
+        class CustomOp(Operator2):
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        @custom_ctrl_dispatch.register
+        def _ctrl_custom(base: CustomOp, control, control_values, work_wires, work_wire_type):
+            return qp.CNOT(control + base.wires)
+
+        assert qp.ctrl(CustomOp([0]), control=1) == qp.CNOT([1, 0])
 
 
 class _Rot(Operation):

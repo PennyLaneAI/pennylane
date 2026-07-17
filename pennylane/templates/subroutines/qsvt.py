@@ -16,6 +16,7 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import copy
+import warnings
 from collections import defaultdict
 from collections.abc import Sequence
 from functools import partial, reduce
@@ -26,11 +27,11 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops, pytrees
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane import math, ops
+from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.queuing import QueuingManager, apply
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
-from pennylane.operation import Operation, Operator
-from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -65,7 +66,6 @@ def jit_if_jax_available(f, **kwargs):
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
-
     if block_encoding not in ["prepselprep", "qubitization", None]:
         raise ValueError(
             f"block_encoding = {block_encoding} not supported for A of type {type(A)}. "
@@ -192,8 +192,8 @@ def qsvt(
         angle_solver (str): Specifies the method used to calculate the angles of the routine
             via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
 
-            - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
-            - ``"iterative"`` (Default): Effective for polynomials of degree higher than :math:`\sim 1000` for
+            - ``"root-finding"`` (Default): effective for polynomials of degree up to :math:`\sim 1000`
+            - ``"iterative"``: Effective for polynomials of degree higher than :math:`\sim 1000` for
               the ``"QSP"`` and ``"QSVT"`` routines. Uses Scipy (L-BFGS-B).
             - ``"iterative-optax"``: Recommended for high-degree polynomials
               **when using polynomials of the same degree and running repeatedly**;
@@ -510,7 +510,7 @@ class QSVT(Operation):
 
     resource_keys = {"UA", "projectors"}
 
-    def __init__(self, UA, projectors, id=None):
+    def __init__(self, UA, projectors):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
 
@@ -521,7 +521,7 @@ class QSVT(Operation):
 
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
-        super().__init__(wires=total_wires, id=id)
+        super().__init__(wires=total_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -549,16 +549,6 @@ class QSVT(Operation):
         ``QSVT`` block encoding and projector-controlled phase shift data.
         """
         return tuple(datum for op in self._operators for datum in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
-        # assign the QSVT data to an empty tuple (since no positional arguments are provided).
-        if new_data:
-            for op in self._operators:
-                if op.num_params > 0:
-                    op.data = new_data[: op.num_params]
-                    new_data = new_data[op.num_params :]
 
     def __copy__(self):
         # Override Operator.__copy__() to avoid setting the "data" property before the new instance
@@ -692,35 +682,29 @@ class QSVT(Operation):
 
 def _QSVT_resources(projectors, UA):
     resources = defaultdict(int)
-    resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] = 1
+    resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
-        resources[
-            change_op_basis_resource_rep(
-                resource_rep(type(UA), **UA.resource_params),
-                resource_rep(type(projectors[i]), **projectors[i].resource_params),
-            )
-        ] += 1
-        resources[resource_rep(type(projectors[i + 1]), **projectors[i + 1].resource_params)] += 1
+        resources[change_op_basis_resource_rep(abstractify(UA), abstractify(projectors[i]))] += 1
+        resources[abstractify(projectors[i + 1])] += 1
 
     if len(projectors) % 2 == 0:
-        resources[resource_rep(type(UA), **UA.resource_params)] += 1
-        resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] += 1
+        resources[abstractify(UA)] += 1
+        resources[abstractify(projectors[0])] += 1
 
     return dict(resources)
 
 
 @register_resources(_QSVT_resources)
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
-
-    pytrees.unflatten(*pytrees.flatten(projectors[0]))
+    apply(projectors[0])
 
     for i in range(1, len(projectors) - 1, 2):
         ops.change_op_basis(UA, projectors[i])
-        pytrees.unflatten(*pytrees.flatten(projectors[i + 1]))
+        apply(projectors[i + 1])
 
     if len(projectors) % 2 == 0:
-        pytrees.unflatten(*pytrees.flatten(UA))
-        pytrees.unflatten(*pytrees.flatten(projectors[-1]))
+        apply(UA)
+        apply(projectors[-1])
 
 
 add_decomps(QSVT, _QSVT_decomposition)
@@ -823,7 +807,6 @@ def _compute_qsp_angle(poly_coeffs):
     # Adaptation of Algorithm 1 of [arXiv:2308.01501]
     with QueuingManager.stop_recording():
         for idx in range(num_terms - 1, -1, -1):
-
             poly_a, poly_b = polynomial_matrix[:, idx]
             rotation_angles[idx] = np.arctan2(poly_b.real, poly_a.real)
 
@@ -1154,10 +1137,22 @@ def _compute_qsp_angles_iteratively_optax(poly):
         ModuleNotFoundError: if JAX or Optax are not installed
     """
     if not is_jax_available:
-        raise ModuleNotFoundError("jax is required!")  # pragma: no cover
+        raise ModuleNotFoundError(
+            "JAX is required for this functionality. Please install it with 'pip install jax'."
+        )  # pragma: no cover
 
     if not is_optax_available:
-        raise ModuleNotFoundError("optax is required!")  # pragma: no cover
+        raise ModuleNotFoundError(
+            "Optax is required for this functionality. Please install it with 'pip install optax'."
+        )  # pragma: no cover
+
+    if not jax.config.jax_enable_x64:
+        warnings.warn(
+            UserWarning(
+                "JAX 64-bit mode is recommended for this functionality. "
+                'Please enable it with: jax.config.update("jax_enable_x64", True)'
+            )
+        )
 
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
@@ -1229,7 +1224,6 @@ def _compute_gqsp_angles(poly_coeffs):
     angles_theta, angles_phi, angles_lambda = math.zeros([3, num_elements])
 
     for idx in range(num_elements - 1, -1, -1):
-
         component_a, component_b = input_data[:, idx]
         angles_theta[idx] = math.arctan2(np.abs(component_b), math.abs(component_a))
         angles_phi[idx] = (

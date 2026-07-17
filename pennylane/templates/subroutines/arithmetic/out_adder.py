@@ -17,13 +17,13 @@ Contains the OutAdder template.
 
 from collections import defaultdict
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import Prod, change_op_basis
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
@@ -157,7 +157,6 @@ class OutAdder(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
-        id=None,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -200,7 +199,7 @@ class OutAdder(Operation):
             all_wires += self.hyperparameters["work_wires"]
 
         self.hyperparameters["mod"] = mod
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:

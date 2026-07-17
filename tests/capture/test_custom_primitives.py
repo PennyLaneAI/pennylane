@@ -20,6 +20,7 @@ import pytest
 
 jax = pytest.importorskip("jax")
 
+import pennylane as qp
 from pennylane.capture.custom_primitives import PrimitiveType, QpPrimitive
 
 pytestmark = pytest.mark.jax
@@ -34,7 +35,7 @@ def test_qp_primitive_prim_type_default():
 
 @pytest.mark.parametrize("cast_in_enum", [True, False])
 @pytest.mark.parametrize("prim_type", ["operator", "measurement", "transform", "higher_order"])
-def test_qml_primitive_prim_type_setter(prim_type, cast_in_enum):
+def test_qp_primitive_prim_type_setter(prim_type, cast_in_enum):
     """Test that the QpPrimitive.prim_type setter works correctly"""
     prim = QpPrimitive("primitive")
     prim.prim_type = PrimitiveType(prim_type) if cast_in_enum else prim_type
@@ -42,8 +43,25 @@ def test_qml_primitive_prim_type_setter(prim_type, cast_in_enum):
     assert prim.prim_type == prim_type
 
 
-def test_qml_primitive_prim_type_setter_invalid():
+def test_qp_primitive_prim_type_setter_invalid():
     """Test that setting an invalid prim_type raises an error"""
     prim = QpPrimitive("primitive")
     with pytest.raises(ValueError, match="not a valid PrimitiveType"):
         prim.prim_type = "blah"
+
+
+# pylint: disable=protected-access
+@pytest.mark.capture
+def test_compile_time_constant_eval():
+    """Test that operators and measurements are correctly added to the jaxpr when compile time
+    constant evaluation is enabled."""
+
+    def f():
+        qp.RX(0.5, 0)
+        return qp.expval(qp.Z(0))
+
+    with jax._src.config.eager_constant_folding(True):
+        jaxpr = jax.make_jaxpr(f)()
+
+    assert jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert jaxpr.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive

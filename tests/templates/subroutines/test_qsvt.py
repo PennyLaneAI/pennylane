@@ -24,7 +24,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.queuing import AnnotatedQueue
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -103,7 +103,7 @@ class TestQSVTBasics:
         with qp.queuing.AnnotatedQueue() as q:
             decomp = op.decomposition()
 
-        ops, _ = qp.queuing.process_queue(q)
+        ops = qp.tape.QuantumScript.from_queue(q).operations
         for op1, op2 in zip(ops, decomp):
             qp.assert_equal(op1, op2)
 
@@ -190,11 +190,12 @@ class TestQSVTBasics:
         assert op.label(base_label="custom_label") == "custom_label"
 
     def test_data(self):
-        """Test that the data property gets and sets the correct values"""
+        """Test that the data property is read-only."""
         op = qp.QSVT(qp.RX(1, wires=0), [qp.RY(2, wires=0), qp.RZ(3, wires=0)])
         assert op.data == (1, 2, 3)
-        op.data = [4, 5, 6]
-        assert op.data == (4, 5, 6)
+
+        with pytest.raises(AttributeError, match="property 'data' of 'QSVT' object has no setter"):
+            setattr(op, "data", [4, 5, 6])
 
     def test_copy(self):
         """Test that a QSVT operator can be copied."""

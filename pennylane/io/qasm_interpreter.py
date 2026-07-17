@@ -17,7 +17,7 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import MeasurementValue, MidMeasure, measure
 
 NON_PARAMETERIZED_GATES = {
@@ -666,7 +666,7 @@ class QasmInterpreter:
     @visit.register(ast.BranchingStatement)
     def visit_branching_statement(self, node: ast.BranchingStatement, context: Context):
         """
-        Registers a branching statement. Like switches, uses qml.cond.
+        Registers a branching statement. Like switches, uses qp.cond.
 
         Args:
             node (BranchingStatement): the branch QASMNode.
@@ -914,7 +914,7 @@ class QasmInterpreter:
         evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments] + [
             _resolve_name(qubit) for qubit in node.qubits
         ]
-        for evald_arg, param in list(zip(evald_args, gate_context.params)):
+        for evald_arg, param in list(zip(evald_args, gate_context.params, strict=True)):
             if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
                 gate_context.vars[param] = Variable(
                     evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
@@ -960,7 +960,7 @@ class QasmInterpreter:
             )
             for raw_arg in node.arguments
         ]
-        for evald_arg, param in list(zip(evald_args, func_context.params)):
+        for evald_arg, param in list(zip(evald_args, func_context.params, strict=True)):
             if isinstance(evald_arg, str):  # this would indicate a quantum parameter
                 self._bind_quantum_parameter(param, evald_arg, func_context, context)
             else:

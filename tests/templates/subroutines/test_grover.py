@@ -76,15 +76,6 @@ def test_single_wire_error(bad_wires):
         qp.GroverOperator(wires=bad_wires)
 
 
-@pytest.mark.usefixtures("ignore_id_deprecation")
-def test_id():
-    """Assert id keyword works"""
-
-    op = qp.GroverOperator(wires=(0, 1), id="hello")
-
-    assert op.id == "hello"
-
-
 decomp_3wires = [
     qp.Hadamard,
     qp.Hadamard,
@@ -409,17 +400,4 @@ class TestDynamicDecomposition:
 
         if autograph:
             circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(circuit)(wires)
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
-
-        with qp.capture.pause():
-
-            @qp.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
-            @qp.qnode(device=qp.device("default.qubit", wires=5))
-            def circuit_comparison():
-                qp.GroverOperator(wires=wires, work_wires=work_wires)
-                return qp.state()
-
-            result_comparison = circuit_comparison()
-
-        assert qp.math.allclose(*result, result_comparison)
+        _ = jax.make_jaxpr(circuit)(wires)

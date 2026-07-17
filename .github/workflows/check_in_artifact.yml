@@ -1,15 +1,15 @@
 # Different workflows within CI generate artifacts, and there has been a need to check-in some of those artifacts
 # into the repository for historical tracking purposes.
-# 
-# This workflow is designed to check in artifacts to a specified branch and create a pull request to merge the changes 
-# into the main branch on GitHub Actions. 
-# 
-# The workflow is triggered by a workflow call and requires inputs such as the artifact name pattern to match the artifacts, 
-# the path to save the artifacts to, the name of the branch to create from main, the title and body of the pull request, 
-# and additional parameters for the commit message. 
-# 
-# The workflow includes steps to checkout the main branch, download the artifacts, determine if changes have been made, 
-# prepare the commit author, stage the changes, and create a pull request to the main branch. 
+#
+# This workflow is designed to check in artifacts to a specified branch and create a pull request to merge the changes
+# into the main branch on GitHub Actions.
+#
+# The workflow is triggered by a workflow call and requires inputs such as the artifact name pattern to match the artifacts,
+# the path to save the artifacts to, the name of the branch to create from main, the title and body of the pull request,
+# and additional parameters for the commit message.
+#
+# The workflow includes steps to checkout the main branch, download the artifacts, determine if changes have been made,
+# prepare the commit author, stage the changes, and create a pull request to the main branch.
 # The workflow utilizes the GitHub CLI (gh) to interact with the GitHub API for creating the pull request.
 
 name: Check in Artifact
@@ -69,7 +69,9 @@ on:
 jobs:
   check_in_artifact:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout main
         uses: actions/checkout@v6
@@ -135,11 +137,11 @@ jobs:
           EXISTING_PR="$(gh pr list --state open --base main --head $HEAD_BRANCH_NAME --json 'url' --jq '.[].url' | head -n 1)"
           EXISTING_CLOSED_PR="$(gh pr list --state closed --base main --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
 
-          if [ '${{ steps.prep_commit.outputs.branch_exists }}' = 'false' ]; then
+          if [[ '${{ steps.prep_commit.outputs.branch_exists }}' = 'false' ]]; then
             echo "Creating PR..."
             gh pr create --title "$PR_TITLE" --body "$PR_BODY"
             exit 0
-          elif [ -n $EXISTING_PR ]; then
+          elif [[ -n $EXISTING_PR ]]; then
             echo "Open PR already exists ==> $EXISTING_PR"
             echo "Editing with provided title and body..."
             gh pr edit --title "$PR_TITLE" --body "$PR_BODY"

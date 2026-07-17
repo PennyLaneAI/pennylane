@@ -25,8 +25,8 @@ import numpy as np
 
 from pennylane import math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -228,7 +228,6 @@ class kUpCCGSD(Operation):
         k: int = 1,
         delta_sz: int = 0,
         init_state: Sequence[int] | None = None,
-        id: str | None = None,
     ):
         wires = Wires(wires)
 
@@ -263,7 +262,7 @@ class kUpCCGSD(Operation):
             "k": k,
             "delta_sz": delta_sz,
         }
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)

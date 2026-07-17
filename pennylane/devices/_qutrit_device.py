@@ -22,8 +22,8 @@ import itertools
 
 import numpy as np
 
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.exceptions import EigvalsUndefinedError, QuantumFunctionError
-from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
 
 from ._qubit_device import QubitDevice
@@ -376,7 +376,7 @@ class QutritDevice(QubitDevice):
                 # to satisfy the case of jax interface, as jax arrays do not support str.
                 samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
             states, counts = np.unique(samples, return_counts=True)
-            return dict(zip(states, counts))
+            return dict(zip(states, counts, strict=True))
 
         # TODO: Add special cases for any observables that require them once list of
         # observables is updated.

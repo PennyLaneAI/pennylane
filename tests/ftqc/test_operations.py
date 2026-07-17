@@ -17,11 +17,11 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ftqc.operations import RotXZX
 from pennylane.ops.functions import assert_valid
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
@@ -36,28 +36,21 @@ class TestRotXZX:
         assert op.wires == Wires(wires)
         assert op.data == (phi, theta, omega)
 
+    @pytest.mark.jax
     def test_is_valid_op(self):
         """Assert RotXZX is a valid operator"""
         op = RotXZX(1.2, 2.3, -0.5, wires=0)
         assert_valid(op)
-
-    def test_single_qubit_rot_angles(self):
-        """Test that the single_qubit_rot_angles method works as expected for the
-        RotXZX gate"""
-        phi, theta, omega = np.pi / 4, 1.23, -0.5
-        op = RotXZX(phi, theta, omega, wires=0)
-
-        assert op.single_qubit_rot_angles() == (phi, theta, omega)
 
     @pytest.mark.parametrize("use_graph", [True, False])
     def test_decomposition(self, use_graph):
         """Test that the RotXZX has the expected decomposition"""
         phi, theta, omega = np.pi / 4, 1.23, -0.5
         wire = 0
-        expected_decomp = [qml.RX(phi, wire), qml.RZ(theta, wire), qml.RX(omega, wire)]
+        expected_decomp = [qp.RX(phi, wire), qp.RZ(theta, wire), qp.RX(omega, wire)]
 
         if use_graph:
-            decomp_qfuncs = qml.list_decomps(RotXZX)
+            decomp_qfuncs = qp.list_decomps(RotXZX)
             assert len(decomp_qfuncs) == 1
 
             with AnnotatedQueue() as q:
@@ -68,7 +61,7 @@ class TestRotXZX:
             ops = RotXZX.compute_decomposition(phi, theta, omega, wires=wire)
 
         for op, expected_op in zip(ops, expected_decomp):
-            qml.assert_equal(op, expected_op)
+            qp.assert_equal(op, expected_op)
 
     def test_adjoint(self):
         """Test that the adjoint method works as expected for the RotXZX gate"""
@@ -78,16 +71,16 @@ class TestRotXZX:
         phi, theta, omega = np.pi / 4, 1.23, -0.5
 
         op = RotXZX(phi, theta, omega, wires=0)
-        adj_op = qml.adjoint(op, lazy=False)
+        adj_op = qp.adjoint(op, lazy=False)
 
         assert isinstance(adj_op, RotXZX)
         assert adj_op.data == (-omega, -theta, -phi)
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(state):
-            qml.StatePrep(state, wires=0)
+            qp.StatePrep(state, wires=0)
             RotXZX(phi, theta, omega, wires=0)
-            qml.adjoint(RotXZX(phi, theta, omega, wires=0))
-            return qml.state()
+            qp.adjoint(RotXZX(phi, theta, omega, wires=0))
+            return qp.state()
 
         assert np.allclose(circuit(input_state), input_state)

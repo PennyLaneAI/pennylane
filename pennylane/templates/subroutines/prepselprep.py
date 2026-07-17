@@ -16,20 +16,19 @@ Contains the PrepSelPrep template.
 """
 
 # pylint: disable=arguments-differ
-import copy
-
 from pennylane import math
+from pennylane import ops as qp_ops
+from pennylane.core.operator import Operation, abstractify
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
-from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires, WiresLike
 
@@ -42,7 +41,9 @@ def _get_new_terms(lcu):
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
     # The following will produce a nested `Prod` object for a `Prod` object in`ops`
-    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
+    new_ops = [
+        prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops, strict=True)
+    ]
 
     return math.abs(coeffs), new_ops
 
@@ -88,12 +89,12 @@ class PrepSelPrep(Operation):
     @property
     def resource_params(self):
         ops = self.lcu.terms()[1]
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        op_reps = tuple(abstractify(op) for op in ops)
         return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None
 
-    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike, id=None) -> None:
+    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike) -> None:
         control = Wires(control)
         target_wires = lcu.wires
 
@@ -105,7 +106,7 @@ class PrepSelPrep(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires, id=id)
+        super().__init__(*self.data, wires=all_wires)
 
     def _flatten(self):
         return (self.lcu,), (self.control,)
@@ -132,7 +133,7 @@ class PrepSelPrep(Operation):
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         op_label = base_label or self.__class__.__name__
         if cache is None or not isinstance(cache.get("matrices", None), list):
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
+            return op_label
 
         coeffs = math.array(self.coeffs)
         for i, mat in enumerate(cache["matrices"]):
@@ -144,7 +145,7 @@ class PrepSelPrep(Operation):
             cache["matrices"].append(coeffs)
             str_wo_id = f"{op_label}(M{mat_num})"
 
-        return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
+        return str_wo_id
 
     @staticmethod
     def compute_decomposition(lcu, control):
@@ -159,28 +160,13 @@ class PrepSelPrep(Operation):
 
     def __copy__(self):
         """Copy this op"""
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-
-        new_data = copy.copy(self.data)
-
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
-
-        copied_op.data = new_data
-
-        return copied_op
+        with QueuingManager.stop_recording():
+            return qp_ops.functions.bind_new_parameters(self, self.data)
 
     @property
     def data(self):
         """Create data property"""
         return self.lcu.data
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        self.hyperparameters["lcu"].data = new_data
 
     @property
     def lcu(self):
@@ -221,7 +207,7 @@ class PrepSelPrep(Operation):
 
 def _prepselprep_resources(op_reps, num_control):
     prod_reps = tuple(
-        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
+        resource_rep(Prod, resources={abstractify(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     return {
         change_op_basis_resource_rep(

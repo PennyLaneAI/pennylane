@@ -47,10 +47,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.decomposition.reconstruct import get_decomp_kwargs
-from pennylane.ops.functions.assert_valid import (
-    _test_decomposition_rule,
-)
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
@@ -637,7 +634,7 @@ class TestMultiControlledX:
     def test_decomposition_no_control_values(self):
         """Test decomposition has default control values of all ones."""
         decomp1 = qp.MultiControlledX.compute_decomposition((0, 1, 2))
-        decomp2 = qp.MultiControlledX.compute_decomposition((0, 1, 2), control_values=[1, 1, 1])
+        decomp2 = qp.MultiControlledX.compute_decomposition((0, 1, 2), control_values=[1, 1])
 
         assert len(decomp1) == len(decomp2)
 
@@ -1145,10 +1142,8 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
             if rule.is_applicable(**pow_op.resource_params):
 
-                rule_params = get_decomp_kwargs(pow_op)
-
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*pow_op.parameters, wires=pow_op.wires, **rule_params)
+                    rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
 
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.
@@ -1231,17 +1226,6 @@ def test_label_method(op, label):
 
 
 control_data = [
-    (qp.Identity(0), Wires([])),
-    (qp.Hadamard(0), Wires([])),
-    (qp.PauliX(0), Wires([])),
-    (qp.PauliY(0), Wires([])),
-    (qp.S(wires=0), Wires([])),
-    (qp.T(wires=0), Wires([])),
-    (qp.SX(wires=0), Wires([])),
-    (qp.SWAP(wires=(0, 1)), Wires([])),
-    (qp.ISWAP(wires=(0, 1)), Wires([])),
-    (qp.SISWAP(wires=(0, 1)), Wires([])),
-    (qp.ECR(wires=(0, 1)), Wires([])),
     # Controlled operations
     (qp.CY(wires=(0, 1)), Wires(0)),
     (qp.CZ(wires=(0, 1)), Wires(0)),

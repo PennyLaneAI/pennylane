@@ -17,15 +17,15 @@ Contains the 'label' function for customizing operator labels.
 
 # pylint: disable=unused-argument
 
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal,
     _equal_dispatch,
 )
 from pennylane.ops.op_math import SymbolicOp
-from pennylane.queuing import apply
 
 
 class LabelledOp(SymbolicOp):
@@ -37,7 +37,7 @@ class LabelledOp(SymbolicOp):
 
     **Example:**
 
-    >>> op = qml.RX(1.23456, wires=0)
+    >>> op = qp.RX(1.23456, wires=0)
     >>> labelled_op = LabelledOp(op, "my-rx")
     >>> print(labelled_op.hyperparameters["custom_label"])
     my-rx
@@ -139,8 +139,8 @@ def label(op: Operator, new_label: str) -> LabelledOp:
 
     **Example:**
 
-    >>> op = qml.X(0)
-    >>> labelled_op = qml.drawer.label(op, "my-x")
+    >>> op = qp.X(0)
+    >>> labelled_op = qp.drawer.label(op, "my-x")
     >>> print(labelled_op.custom_label)
     my-x
 
@@ -148,15 +148,15 @@ def label(op: Operator, new_label: str) -> LabelledOp:
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.drawer.label(qml.H(0), "my-h")
-            qml.CNOT([0,1])
-            return qml.probs()
+            qp.drawer.label(qp.H(0), "my-h")
+            qp.CNOT([0,1])
+            return qp.probs()
 
-    >>> print(qml.draw(circuit)())
-    0: ──H("my-h")─╭●─┤  Probs
-    1: ────────────╰X─┤  Probs
+    >>> print(qp.draw(circuit)())
+    0: ──H("my-h")─╭●─┤ ╭Probs
+    1: ────────────╰X─┤ ╰Probs
 
     """
     return LabelledOp(op, new_label)

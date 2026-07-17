@@ -20,12 +20,12 @@ import copy
 from collections import defaultdict
 
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
-from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
 
@@ -146,7 +146,7 @@ class ApproxTimeEvolution(Operation):
             "n": self.hyperparameters["n"],
         }
 
-    def __init__(self, hamiltonian, time, n, id=None):
+    def __init__(self, hamiltonian, time, n):
         if getattr(hamiltonian, "pauli_rep", None) is None:
             raise ValueError(
                 f"hamiltonian must be a linear combination of pauli words, got {type(hamiltonian).__name__}"
@@ -158,7 +158,7 @@ class ApproxTimeEvolution(Operation):
         self._hyperparameters = {"hamiltonian": hamiltonian, "n": n}
 
         # trainable parameters are passed to the base init method
-        super().__init__(*hamiltonian.data, time, wires=wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=wires)
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)

@@ -21,7 +21,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -32,11 +32,13 @@ OP_NAME_ALIASES = {
     "measure": "MidMeasureMP",
     "MidMeasure": "MidMeasureMP",
     "MidCircuitMeasure": "MidMeasureMP",
+    "MidCircuitPauliMeasure": "PauliMeasure",
     "ppm": "PauliMeasure",
     "pauli_measure": "PauliMeasure",
     "Elbow": "TemporaryAND",
     "BasisStateProjector": "Projector",
     "StateVectorProjector": "Projector",
+    "BasisEmbedding": "BasisState",
 }
 
 

@@ -19,7 +19,8 @@ from copy import copy
 from warnings import warn
 
 import pennylane as qp
-from pennylane import math, queuing
+from pennylane import math
+from pennylane.core import queuing
 from pennylane.exceptions import GeneratorUndefinedError
 
 from .exp import Exp
@@ -32,7 +33,6 @@ class Evolution(Exp):
         base (~.operation.Operator): The operator to be used as a generator, G.
         param (float): The evolution parameter, x. This parameter is expected not to have
             any complex component.
-        id (str): id for the Evolution operator. Default is None.
 
     Returns:
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,
@@ -77,8 +77,8 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    def __init__(self, generator, param=1, id=None):
-        super().__init__(generator, coeff=-1j * param, id=id)
+    def __init__(self, generator, param=1):
+        super().__init__(generator, coeff=-1j * param)
         self._data = (param,)
 
     def __repr__(self):
@@ -91,10 +91,6 @@ class Evolution(Exp):
     @property
     def data(self):
         return self._data
-
-    @data.setter
-    def data(self, new_data):
-        self._data = new_data
 
     @property
     def param(self):

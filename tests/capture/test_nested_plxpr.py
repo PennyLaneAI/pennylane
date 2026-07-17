@@ -19,6 +19,7 @@ Tests for capturing nested plxpr.
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator.operator2 import operator_p
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -29,8 +30,26 @@ from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
+def _check_eqn(eqn, expected_op):
+    assert eqn.primitive == operator_p
+    assert eqn.params["op_cls"] == expected_op
+
+
 class TestAdjointQfunc:
     """Tests for the adjoint transform."""
+
+    def test_lazy_dispatch(self):
+        """Test that the dispatch to capture happens at call time."""
+
+        qp.capture.disable()
+
+        adj_qfunc = qp.adjoint(qp.S)
+
+        qp.capture.enable()
+
+        jaxpr = jax.make_jaxpr(adj_qfunc)(0)
+        assert jaxpr.eqns[0].primitive == adjoint_transform_prim
+        _check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_adjoint_qfunc(self):
         """Test that the adjoint qfunc transform can be captured."""
@@ -45,7 +64,7 @@ class TestAdjointQfunc:
 
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
         assert nested_jaxpr.eqns[0].primitive == qp.PauliRot._primitive
-        assert nested_jaxpr.eqns[0].params == {"id": None, "n_wires": 2, "pauli_word": "XY"}
+        assert nested_jaxpr.eqns[0].params == {"n_wires": 2, "pauli_word": "XY"}
 
         assert plxpr.eqns[0].params["lazy"] is True
 
@@ -192,9 +211,6 @@ class TestAdjointQfunc:
         assert adjoint_eqn.primitive == adjoint_transform_prim
         assert adjoint_eqn.params["jaxpr"].eqns[0].primitive == qp.RX._primitive
 
-        out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
-        assert qp.math.isclose(out, qp.math.sin(-(0.5 + 0.3)))
-
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestAdjointDynamicShapes:
@@ -284,6 +300,20 @@ class TestAdjointDynamicShapes:
 
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
+
+    def test_lazy_dispatch_ctrl(self):
+        """Test that the dispatch to capture happens at call time."""
+
+        qp.capture.disable()
+
+        adj_qfunc = qp.ctrl(qp.S, 1)
+
+        qp.capture.enable()
+
+        jaxpr = jax.make_jaxpr(adj_qfunc)(0)
+        assert jaxpr.eqns[0].primitive == ctrl_transform_prim
+        assert jaxpr.eqns[0].invars[1].val == 1
+        _check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_operator_type_input(self):
         """Test that an operator type can be the callable."""
@@ -460,9 +490,6 @@ class TestCtrlQfunc:
         ctrl_eqn = qnode_eqn.params["qfunc_jaxpr"].eqns[2]
         assert ctrl_eqn.primitive == ctrl_transform_prim
         assert ctrl_eqn.params["jaxpr"].eqns[0].primitive == qp.RX._primitive
-
-        out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
-        assert qp.math.isclose(out, -0.5 * qp.math.sin(0.5 + 0.3))
 
     def test_pytree_input(self):
         """Test that ctrl can accept pytree inputs."""

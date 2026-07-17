@@ -16,7 +16,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.typing import AbstractArray
 
 
 class TestNumpyMimicForFFT:
@@ -24,13 +25,13 @@ class TestNumpyMimicForFFT:
 
     def test_find_fft_module_and_funcs(self):
         """Test that the FFT module can be accessed and contains functions."""
-        fft_module = qml.math.fft
+        fft_module = qp.math.fft
         for fn in ["fft", "ifft", "fft2", "ifft2"]:
             assert hasattr(fft_module, fn)
 
     def test_find_other_module_and_funcs(self):
         """Test that a module other than FFT can be accessed and contains functions."""
-        linalg_module = qml.math.linalg
+        linalg_module = qp.math.linalg
         for fn in ["expm", "eigvals"]:
             assert hasattr(linalg_module, fn)
 
@@ -50,7 +51,7 @@ class TestIsRealObjOrClose:
     def test_numpy(self, data, dtype, exp_output):
         """Test with numpy."""
         x = np.array(data, dtype=dtype)
-        assert qml.math.is_real_obj_or_close(x) is exp_output
+        assert qp.math.is_real_obj_or_close(x) is exp_output
 
     @pytest.mark.autograd
     def test_autograd(self, data, dtype, exp_output):
@@ -58,7 +59,7 @@ class TestIsRealObjOrClose:
         from pennylane import numpy as pnp
 
         x = pnp.array(data, dtype=dtype)
-        assert qml.math.is_real_obj_or_close(x) is exp_output
+        assert qp.math.is_real_obj_or_close(x) is exp_output
 
     @pytest.mark.tf
     def test_tf(self, data, dtype, exp_output):
@@ -67,7 +68,7 @@ class TestIsRealObjOrClose:
 
         dtype = tf.float64 if dtype == "float" else tf.complex128
         x = tf.Variable(data, dtype=dtype)
-        assert qml.math.is_real_obj_or_close(x) is exp_output
+        assert qp.math.is_real_obj_or_close(x) is exp_output
 
     @pytest.mark.torch
     def test_torch(self, data, dtype, exp_output):
@@ -76,7 +77,7 @@ class TestIsRealObjOrClose:
 
         dtype = torch.float64 if dtype == "float" else torch.complex128
         x = torch.tensor(data, dtype=dtype)
-        assert qml.math.is_real_obj_or_close(x) is exp_output
+        assert qp.math.is_real_obj_or_close(x) is exp_output
 
     @pytest.mark.jax
     def test_jax(self, data, dtype, exp_output):
@@ -85,4 +86,13 @@ class TestIsRealObjOrClose:
         from jax import numpy as jnp
 
         x = jax.numpy.array(data, dtype=dtype)
-        assert qml.math.is_real_obj_or_close(x) == jnp.array(exp_output)
+        assert qp.math.is_real_obj_or_close(x) == jnp.array(exp_output)
+
+
+@pytest.mark.parametrize(
+    "dtype, expected", [(int, True), (np.float64, True), (np.complex128, False)]
+)
+def test_is_real_obj_or_close_abstract_array(dtype, expected):
+    """Test that `is_real_obj_or_close` handles qp.typing.AbstractArray correctly."""
+    x = AbstractArray((1, 2, 3), dtype=dtype)
+    assert qp.math.is_real_obj_or_close(x) is expected

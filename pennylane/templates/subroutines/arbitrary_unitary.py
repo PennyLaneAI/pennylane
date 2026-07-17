@@ -16,8 +16,8 @@ Contains the ArbitraryUnitary template.
 """
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 from pennylane.wires import WiresLike
 
@@ -101,7 +101,7 @@ class ArbitraryUnitary(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, weights, wires, id=None):
+    def __init__(self, weights, wires):
         shape = math.shape(weights)
         dim = 4 ** len(wires) - 1
         if len(shape) not in (1, 2) or shape[-1] != dim:
@@ -109,7 +109,7 @@ class ArbitraryUnitary(Operation):
                 f"Weights tensor must be of shape {(dim,)} or (batch_dim, {dim}); got {shape}."
             )
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @property
     def resource_params(self) -> dict:

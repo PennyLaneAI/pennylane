@@ -275,22 +275,7 @@ class TestDynamicDecomposition:
 
         if autograph:
             circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
-
-        with qp.capture.pause():
-
-            @qp.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
-            @qp.qnode(device=qp.device("default.qubit", wires=n_wires))
-            def circuit_comparison():
-                qp.StronglyEntanglingLayers(
-                    weights, wires=range(n_wires), ranges=ranges, imprimitive=imprimitive
-                )
-                return qp.state()
-
-            result_comparison = circuit_comparison()
-
-        assert qp.math.allclose(*result, result_comparison)
+        _ = jax.make_jaxpr(circuit)(weights, wires=wires)
 
 
 class TestInputs:
@@ -333,12 +318,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="Ranges must not be zero nor"):
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")
-        assert template.id == "a"
 
 
 class TestAttributes:

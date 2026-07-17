@@ -19,13 +19,29 @@ from functools import partial, singledispatch
 
 import networkx as nx
 
-from pennylane import PhaseShift, adjoint, math, measure
+from pennylane import math
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.decomposition import enabled_graph, gate_sets, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
-from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
+from pennylane.ops import (
+    CNOT,
+    CZ,
+    RZ,
+    GlobalPhase,
+    H,
+    Identity,
+    PhaseShift,
+    Rot,
+    S,
+    X,
+    Y,
+    Z,
+    adjoint,
+    cond,
+    measure,
+)
 from pennylane.transforms import decompose, transform
 
 from .conditional_measure import cond_measure
@@ -76,19 +92,19 @@ def ppr_to_mbqc_setup_inputs():
 
     .. code-block::
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.ftqc.decomposition import ppr_to_mbqc
         from pennylane.transforms.decompositions import to_ppr
 
         p = [("my_pipe", ["quantum-compilation-stage"])]
 
-        @qml.qjit(pipelines=p, target="mlir", keep_intermediate=True)
+        @qp.qjit(pipelines=p, target="mlir", keep_intermediate=True)
         @ppr_to_mbqc
         @to_ppr
-        @qml.qnode(qml.device("null.qubit", wires=2))
+        @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit():
-            qml.H(0)
-            qml.CNOT([0, 1])
+            qp.H(0)
+            qp.CNOT([0, 1])
             return
 
         print(circuit.mlir_opt)
@@ -130,7 +146,7 @@ ppr_to_mbqc = transform(pass_name="ppr-to-mbqc", setup_inputs=ppr_to_mbqc_setup_
 @register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = Rot.compute_matrix(phi, theta, omega)
-    lam, theta, phi = math.decomposition.xzx_rotation_angles(mat)
+    lam, theta, phi, _ = math.decomposition.xzx_rotation_angles(mat)
     RotXZX(lam, theta, phi, wires)
 
 
@@ -141,7 +157,7 @@ def convert_to_mbqc_gateset(tape):
     if not enabled_graph():
         raise RuntimeError(
             "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
-            " method. This can be toggled by calling `qml.decomposition.enable_graph()`"
+            " method. This can be toggled by calling `qp.decomposition.enable_graph()`"
         )
     tapes, fn = decompose(tape, gate_set=gate_sets.MBQC_GATES, alt_decomps={Rot: [_rot_to_xzx]})
     return tapes, fn

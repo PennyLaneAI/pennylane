@@ -18,7 +18,7 @@ Contains the CVNeuralNetLayers template.
 from pennylane import math
 
 # pylint: disable=too-many-arguments
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops.cv import Displacement, Kerr, Squeezing
 from pennylane.templates.subroutines import Interferometer
 
@@ -101,7 +101,6 @@ class CVNeuralNetLayers(Operation):
         phi_a,
         k,
         wires,
-        id=None,
     ):
         n_wires = len(wires)
         # n_if -> theta and phi shape for Interferometer
@@ -119,7 +118,7 @@ class CVNeuralNetLayers(Operation):
         # check second dimensions
         second_dims = [s[1] for s in shapes]
         expected = [n_if] * 2 + [n_wires] * 3 + [n_if] * 2 + [n_wires] * 4
-        if not all(e == d for e, d in zip(expected, second_dims)):
+        if not all(e == d for e, d in zip(expected, second_dims, strict=True)):
             raise ValueError("Got unexpected shape for one or more parameters.")
 
         self.n_layers = shapes[0][0]
@@ -137,7 +136,6 @@ class CVNeuralNetLayers(Operation):
             phi_a,
             k,
             wires=wires,
-            id=id,
         )
 
     @property

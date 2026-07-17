@@ -17,7 +17,7 @@ Unit tests for the ``GradientDescentOptimizer``.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.optimize import GradientDescentOptimizer
 
@@ -84,12 +84,12 @@ class TestGradientDescentOptimizer:
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def quant_fun(*variables):
-            qml.RX(variables[0][1], wires=[0])
-            qml.RY(variables[1][2], wires=[0])
-            qml.RY(variables[2], wires=[0])
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(variables[0][1], wires=[0])
+            qp.RY(variables[1][2], wires=[0])
+            qp.RY(variables[2], wires=[0])
+            return qp.expval(qp.PauliZ(0))
 
         inputs = [
             np.array((0.2, 0.3), requires_grad=True),
@@ -109,12 +109,12 @@ class TestGradientDescentOptimizer:
         sgd_opt = GradientDescentOptimizer(stepsize)
         multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def quant_fun_mdarr(var):
-            qml.RX(var[0, 1], wires=[0])
-            qml.RY(var[1, 0], wires=[0])
-            qml.RY(var[1, 1], wires=[0])
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(var[0, 1], wires=[0])
+            qp.RY(var[1, 0], wires=[0])
+            qp.RY(var[1, 1], wires=[0])
+            return qp.expval(qp.PauliZ(0))
 
         _, res = sgd_opt.step_and_cost(quant_fun_mdarr, multid_array)
         expected = quant_fun_mdarr(multid_array)

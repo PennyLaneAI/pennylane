@@ -24,11 +24,14 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.select import (
     _partial_select,
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
+from pennylane.typing import Wire
 
 
 @pytest.mark.jax
@@ -205,10 +208,10 @@ class TestSelect:
 
         ops = [qp.X(2), qp.X(3), qp.X(4), qp.Y(2)]
         op_reps = (
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.Y),
+            abstractify(qp.X),
+            abstractify(qp.X),
+            abstractify(qp.X),
+            abstractify(qp.Y),
         )
         control = (0, 1)
 
@@ -218,14 +221,10 @@ class TestSelect:
 
         assert resource_obj.num_gates == 4
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
-
-        kwargs = {"base_params": {}, "num_control_wires": 2, "num_work_wires": 0}
-
         expected_counts = {
-            c_resource(base_class=qp.X, **kwargs, num_zero_control_values=2): 1,
-            c_resource(base_class=qp.X, **kwargs, num_zero_control_values=1): 2,
-            c_resource(base_class=qp.Y, **kwargs, num_zero_control_values=0): 1,
+            _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
+            _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=1): 2,
+            _ctrl_abstract(qp.Y, Wire[2], num_zero_control_values=0): 1,
         }
         assert resource_obj.gate_counts == expected_counts
 
@@ -251,9 +250,9 @@ class TestSelect:
 
         ops = [qp.X(2), qp.X(3), qp.SWAP([2, 3])]
         op_reps = (
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.SWAP),
+            abstractify(qp.X),
+            abstractify(qp.X),
+            abstractify(qp.SWAP),
         )
         control = (0, 1)
 
@@ -263,23 +262,17 @@ class TestSelect:
 
         assert resource_obj.num_gates == 3
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
-
-        kwargs22 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 2}
-        kwargs21 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 1}
-        kwargs10 = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 0}
-
         if partial:
             expected_counts = {
-                c_resource(base_class=qp.X, **kwargs22): 1,
-                c_resource(base_class=qp.X, **kwargs10): 1,
-                c_resource(base_class=qp.SWAP, **kwargs10): 1,
+                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
+                _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=0): 1,
+                _ctrl_abstract(qp.SWAP, Wire[1], num_zero_control_values=0): 1,
             }
         else:
             expected_counts = {
-                c_resource(base_class=qp.X, **kwargs22): 1,
-                c_resource(base_class=qp.X, **kwargs21): 1,
-                c_resource(base_class=qp.SWAP, **kwargs21): 1,
+                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
+                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=1): 1,
+                _ctrl_abstract(qp.SWAP, Wire[2], num_zero_control_values=1): 1,
             }
         assert resource_obj.gate_counts == expected_counts
 
@@ -307,7 +300,7 @@ class TestSelect:
         decomp = qp.list_decomps(qp.Select)[0]
 
         ops = [qp.Z(1)]
-        op_reps = (qp.resource_rep(qp.Z),)
+        op_reps = (abstractify(qp.Z),)
         control = (0,)
 
         resource_obj = decomp.compute_resources(
@@ -316,14 +309,10 @@ class TestSelect:
 
         assert resource_obj.num_gates == 1
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
-
-        kwargs = {"base_params": {}, "num_control_wires": 1, "num_work_wires": 0}
-
         if partial:
-            expected_counts = {qp.resource_rep(qp.Z): 1}
+            expected_counts = {abstractify(qp.Z): 1}
         else:
-            expected_counts = {c_resource(base_class=qp.Z, **kwargs, num_zero_control_values=1): 1}
+            expected_counts = {_ctrl_abstract(qp.Z, Wire[1], num_zero_control_values=1): 1}
         assert resource_obj.gate_counts == expected_counts
 
         op = qp.Select(ops, control, partial=partial)
@@ -353,10 +342,10 @@ class TestSelect:
         assert resources["num_control_wires"] == 2
 
         op_reps = (
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.Y),
+            abstractify(qp.X),
+            abstractify(qp.X),
+            abstractify(qp.X),
+            abstractify(qp.Y),
         )
 
         assert resources["op_reps"] == op_reps
@@ -768,6 +757,37 @@ class TestUnaryIterator:
             _select_decomp_unary(ops=[], control=control, work_wires=work, partial=partial)
 
         assert len(q) == 0
+
+    def test_with_few_ops(self, partial):
+        """Test that the unary iterator is correct when there are only a few operators compared to
+        the maximal capacity of the iterator."""
+
+        control = list(range(5))
+        work = list(range(5, 9))
+        ops = [qp.RY(0.1 * 2**i, 9) for i in range(4)]
+        if partial:
+            state = np.random.random(2**3) + 1j * np.random.random(2**3)
+            state /= np.linalg.norm(state)
+            state_prep_wires = [3, 4, 9]
+        else:
+            state = np.random.random(2**6) + 1j * np.random.random(2**6)
+            state /= np.linalg.norm(state)
+            state_prep_wires = control + [9]
+
+        @qp.qnode(qp.device("lightning.qubit"))
+        def node():
+            qp.StatePrep(state, wires=state_prep_wires)
+            _select_decomp_unary(ops=ops, control=control, work_wires=work, partial=partial)
+            for i, op in enumerate(ops):
+                cvals = (i >> np.arange(4, -1, -1)) & 1
+                qp.ctrl(qp.adjoint(op), control=control, control_values=cvals)
+            qp.adjoint(qp.StatePrep)(state, wires=state_prep_wires)
+            return qp.probs(list(range(10)))
+
+        probs = node()
+        exp_probs = np.zeros(2**10)
+        exp_probs[0] = 1.0
+        assert np.allclose(exp_probs, probs)
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_identity_with_basis_states(self, num_controls, num_ops, partial):

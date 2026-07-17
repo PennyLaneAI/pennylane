@@ -137,23 +137,23 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_with_weights(w, x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.Rot(*w[0], wires=0)
-            qml.Rot(*w[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.Rot(*w[0], wires=0)
+            qp.Rot(*w[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:
@@ -169,7 +169,7 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
         for _ in range(100):
             weights = np.random.normal(0, 1, size=(2, 3))
-            c = qml.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            c = qp.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
             coeffs.append(c)
 
     We can now plot by setting up a pair of ``matplotlib`` axes and passing them
@@ -198,7 +198,7 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     # Get the labels and data
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
-    for data_type, axis in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax, strict=True):
         violinplt = axis.violinplot(data[data_type], showextrema=False)
         for bd in violinplt["bodies"]:
             bd.set_color(colour_dict[data_type])
@@ -244,23 +244,23 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_with_weights(w, x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.Rot(*w[0], wires=0)
-            qml.Rot(*w[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.Rot(*w[0], wires=0)
+            qp.Rot(*w[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:
@@ -276,7 +276,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
 
         for _ in range(100):
             weights = np.random.normal(0, 1, size=(2, 3))
-            c = qml.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            c = qp.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
             coeffs.append(c)
 
     We can now plot by setting up a pair of ``matplotlib`` axes and passing them
@@ -306,7 +306,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
     # Get the labels and data
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
-    for data_type, axis in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax, strict=True):
         data_colour = colour_dict[data_type]
         axis.boxplot(
             data[data_type],
@@ -362,23 +362,23 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_with_weights(w, x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.Rot(*w[0], wires=0)
-            qml.Rot(*w[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.Rot(*w[0], wires=0)
+            qp.Rot(*w[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     We would like to compute and plot a single set of Fourier coefficients. We will
     choose some values for ``w`` at random:
@@ -391,7 +391,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
         degree = 2
 
         weights = np.random.normal(0, 1, size=(2, 3))
-        coeffs = qml.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+        coeffs = qp.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
 
     We can now plot by setting up a pair of ``matplotlib`` axes and passing them
     to the plotting function:
@@ -421,7 +421,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     nvecs_formatted, data = _extract_data_and_labels(np.array([coeffs]))
     data_len = len(data["real"][0])
 
-    for data_type, axis in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax, strict=True):
         axis.bar(np.arange(data_len), data[data_type][0], color=colour_dict[data_type], alpha=0.7)
         axis.set_ylabel(data_type)
         axis.xaxis.set_ticks(np.arange(data_len))
@@ -465,23 +465,23 @@ def panel(coeffs, n_inputs, ax, colour=None):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_with_weights(w, x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.Rot(*w[0], wires=0)
-            qml.Rot(*w[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.Rot(*w[0], wires=0)
+            qp.Rot(*w[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:
@@ -497,7 +497,7 @@ def panel(coeffs, n_inputs, ax, colour=None):
 
         for _ in range(100):
             weights = np.random.normal(0, 1, size=(2, 3))
-            c = qml.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            c = qp.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
             coeffs.append(c)
 
     We can now plot by setting up a pair of ``matplotlib`` axes and passing them
@@ -601,23 +601,23 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_with_weights(w, x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.Rot(*w[0], wires=0)
-            qml.Rot(*w[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.Rot(*w[0], wires=0)
+            qp.Rot(*w[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[1, 0])
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:
@@ -633,7 +633,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
 
         for _ in range(100):
             weights = np.random.normal(0, 1, size=(2, 3))
-            c = qml.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            c = qp.fourier.coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
             coeffs.append(c)
 
     We can now plot by setting up a pair of ``matplotlib`` axes and passing them
@@ -649,7 +649,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             figsize=(15, 8)
         )
 
-        qml.fourier.visualize.radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+        qp.fourier.visualize.radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
 
     .. image:: ../../_static/fourier_vis_radial_box.png
         :align: center
@@ -679,7 +679,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
     # Set up the violin plots
-    for data_type, a in zip(["real", "imag"], ax):
+    for data_type, a in zip(["real", "imag"], ax, strict=True):
         data_colour = colour_dict[data_type]
 
         a.boxplot(
@@ -708,7 +708,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     # https://stackoverflow.com/questions/46719340/how-to-rotate-tick-labels-in-polar-matplotlib-plot
     for a in ax:
         if show_freqs:
-            for label, angle in zip(a.get_xticklabels(), angles):
+            for label, angle in zip(a.get_xticklabels(), angles, strict=True):
                 x, y = label.get_position()
                 lab = a.text(
                     x,

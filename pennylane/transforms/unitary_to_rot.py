@@ -15,83 +15,17 @@
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
 
-from functools import lru_cache, partial
-
-from pennylane import capture, math
-from pennylane.operation import Operator
+from pennylane import math
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-@lru_cache
-def _get_plxpr_unitary_to_rot():
-    try:
-        # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
-
-        from pennylane.capture import PlxprInterpreter
-    except ImportError:  # pragma: no cover
-        return None, None
-
-    # pylint: disable=redefined-outer-name, too-few-public-methods
-    class UnitaryToRotInterpreter(PlxprInterpreter):
-        """Plxpr Interpreter for applying the ``unitary_to_rot``
-        transform when program capture is enabled."""
-
-        def interpret_operation(self, op: Operator):
-            """Decompose a PennyLane operation instance if it is a QubitUnitary.
-
-            Args:
-                op (Operator): a pennylane operator instance
-
-            Returns:
-                list: The decomposed operations.
-
-            This method is only called when the operator's output is a dropped variable,
-            so the output will not affect later equations in the circuit.
-
-            See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
-            """
-            if isinstance(op, QubitUnitary):
-                ops = []
-                with capture.pause():
-                    matrix_shape = math.shape(op.parameters[0])
-                    if matrix_shape == (2, 2):
-                        ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
-                    elif matrix_shape == (4, 4):
-                        ops = two_qubit_decomposition(op.parameters[0], op.wires)
-                    else:
-                        ops = [op]
-                # List comprehensions are run in a separate scope.
-                # The automatic insertion of __class__ and self for zero-argument super does not work in such a nested scope.
-                # pylint: disable=super-with-arguments
-                return [super(UnitaryToRotInterpreter, self).interpret_operation(o) for o in ops]
-
-            return super().interpret_operation(op)
-
-    def unitary_to_rot_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
-        """Function for applying the ``unitary_to_rot`` transform on plxpr."""
-        # Restore tkwargs from hashable tuple to dict
-        tkwargs = dict(tkwargs)
-
-        interpreter = UnitaryToRotInterpreter(*targs, **tkwargs)
-
-        def wrapper(*inner_args):
-            return interpreter.eval(jaxpr, consts, *inner_args)
-
-        return make_jaxpr(wrapper)(*args)
-
-    return UnitaryToRotInterpreter, unitary_to_rot_plxpr_to_plxpr
-
-
-UnitaryToRotInterpreter, unitary_to_rot_plxpr_to_plxpr = _get_plxpr_unitary_to_rot()
-
-
-@partial(transform, plxpr_transform=unitary_to_rot_plxpr_to_plxpr)
+@transform
 def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decompose all single-qubit and two-qubit :class:`~.QubitUnitary` operations to parametrized single-qubit operations and CNOTs.
 
@@ -106,10 +40,10 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         operations. See usage details below.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -127,15 +61,15 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     .. code-block:: python
 
-        @qml.transforms.unitary_to_rot
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.unitary_to_rot
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.QubitUnitary(U, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.QubitUnitary(U, wires=0)
+            return qp.expval(qp.Z(0))
 
     The original circuit is:
 
-    >>> print(qml.draw(circuit, level=0)())
+    >>> print(qp.draw(circuit, level=0)())
     0: ──U(M0)─┤  <Z>
     M0 =
     [[-0.171...+0.5856...j -0.693...-0.383...j]
@@ -143,7 +77,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     We can use the transform to decompose the gate:
 
-    >>> print(qml.draw(circuit, level=1)())
+    >>> print(qp.draw(circuit, level=1)())
     0: ──RZ(11.22)──RY(1.83)──RZ(11.96)─┤  <Z>
 
 
@@ -162,16 +96,16 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
             U = scipy.stats.unitary_group.rvs(4, random_state=12345)
 
-            @qml.transforms.unitary_to_rot
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.transforms.unitary_to_rot
+            @qp.qnode(qp.device("default.qubit"))
             def circuit(angles):
-                qml.QubitUnitary(U, wires=["a", "b"])
-                qml.RX(angles[0], wires="a")
-                qml.RY(angles[1], wires="b")
-                qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.Z("a"))
+                qp.QubitUnitary(U, wires=["a", "b"])
+                qp.RX(angles[0], wires="a")
+                qp.RY(angles[1], wires="b")
+                qp.CNOT(wires=["b", "a"])
+                return qp.expval(qp.Z("a"))
 
-        >>> g = qml.grad(circuit)
+        >>> g = qp.grad(circuit)
         >>> params = pnp.array([0.2, 0.3], requires_grad=True)
         >>> g(params)
         array([ 0.342..., -0.077...])
@@ -180,8 +114,8 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         .. code-block:: python
 
-            @qml.transforms.unitary_to_rot
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.transforms.unitary_to_rot
+            @qp.qnode(qp.device("default.qubit"))
             def circuit(angles):
                 z = angles[0]
                 x = angles[1]
@@ -194,15 +128,15 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
                 U = pnp.kron(Z_mat, X_mat)
 
-                qml.Hadamard(wires="a")
+                qp.Hadamard(wires="a")
 
                 # U depends on the input parameters
-                qml.QubitUnitary(U, wires=["a", "b"])
+                qp.QubitUnitary(U, wires=["a", "b"])
 
-                qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.X("a"))
+                qp.CNOT(wires=["b", "a"])
+                return qp.expval(qp.X("a"))
 
-        >>> g = qml.grad(circuit)
+        >>> g = qp.grad(circuit)
         >>> params = pnp.array([0.2, 0.3], requires_grad=True)
         >>> g(params)
         array([nan, nan])

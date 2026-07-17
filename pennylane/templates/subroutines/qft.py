@@ -22,8 +22,8 @@ import numpy as np
 from pennylane import math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.wires import Wires, WiresLike
 
@@ -129,10 +129,10 @@ class QFT(Operation):
     grad_method = None
     resource_keys = {"num_wires"}
 
-    def __init__(self, wires: WiresLike, id=None):
+    def __init__(self, wires: WiresLike):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())
@@ -186,16 +186,12 @@ class QFT(Operation):
         for i, wire in enumerate(wires):
             decomp_ops.append(Hadamard(wire))
 
-            for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
+            for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :], strict=True):
                 op = ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 
-        first_half_wires = wires[: num_wires // 2]
-        last_half_wires = wires[-(num_wires // 2) :]
-
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-            swap = SWAP(wires=[wire1, wire2])
-            decomp_ops.append(swap)
+        for i in range(num_wires // 2):
+            decomp_ops.append(SWAP(wires=[wires[i], wires[num_wires - i - 1]]))
 
         return decomp_ops
 

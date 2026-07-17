@@ -103,7 +103,7 @@ please consult their respective documentation pages for information on gradient 
         def circuit(_x):
             qp.RX(_x, wires=0)
             return qp.expval(qp.Z(0))
-        
+
         return qp.grad(circuit)(x)
 
 >>> x = jnp.array(jnp.pi / 4)
@@ -297,7 +297,6 @@ errors may occur. Currently, this includes:
 * :func:`~.pennylane.transforms.single_qubit_fusion`
 * :func:`~.pennylane.transforms.transpile`
 * :func:`~.pennylane.transforms.unitary_to_rot`
-* :func:`~.pennylane.transforms.transpile`
 * :func:`~.pennylane.transforms.rz_phase_gradient`
 * :func:`~.pennylane.transforms.zx.optimize_t_count`
 * :func:`~.pennylane.transforms.zx.push_hadamards`

@@ -20,9 +20,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.math import binary_solve_linear_system
 from pennylane.ops import CNOT
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -79,7 +79,7 @@ def postorder_traverse(tree, source: int, source_parent: int | None = None):
     retrieve from the ``nx.Graph`` itself. In addition, the last entry, which is always the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
-    >>> traversal = qml.transforms.intermediate_reps.postorder_traverse(G, 0)
+    >>> traversal = qp.transforms.intermediate_reps.postorder_traverse(G, 0)
     >>> print(traversal)
     [(8, 3), (3, 1), (4, 1), (5, 1), (1, 0), (6, 2), (7, 2), (2, 0)]
     >>> expected = [8, 3, 4, 5, 1, 6, 7, 2] # Skipping trailing root
@@ -164,7 +164,7 @@ def preorder_traverse(tree, source: int, source_parent: int = None):
     retrieve from the ``nx.Graph`` itself. In addition, the first entry, which always is the root
     of the tree provided via the ``source`` argument, is *not* included in the output.
 
-    >>> traversal = qml.transforms.intermediate_reps.preorder_traverse(G, 0)
+    >>> traversal = qp.transforms.intermediate_reps.preorder_traverse(G, 0)
     >>> print(traversal) # doctest: +SKIP
     [(1, 0), (3, 1), (8, 3), (4, 1), (5, 1), (2, 0), (6, 2), (7, 2)]
     >>> expected = [1, 3, 8, 4, 5, 2, 6, 7] # Skipping leading root
@@ -298,7 +298,7 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
-        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        the transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         TypeError: if the input quantum circuit is not a CNOT circuit.
@@ -325,14 +325,14 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
 
     .. code-block: python
 
-        import pennylane as qml
+        import pennylane as qp
         def qfunc():
             for i in range(4):
-                qml.CNOT((i, i+1))
+                qp.CNOT((i, i+1))
             for (i, j) in [(0, 4), (3, 0), (0, 2), (3, 1), (2, 4)]:
-                qml.CNOT((i, j))
+                qp.CNOT((i, j))
 
-    >>> print(qml.draw(qfunc, wire_order=range(5))())
+    >>> print(qp.draw(qfunc, wire_order=range(5))())
     0: ─╭●──────────╭●─╭X─╭●───────┤
     1: ─╰X─╭●───────│──│──│──╭X────┤
     2: ────╰X─╭●────│──│──╰X─│──╭●─┤
@@ -341,8 +341,8 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
 
     We now run the algorithm:
 
-    >>> new_qfunc = qml.transforms.rowcol(qfunc)
-    >>> print(qml.draw(new_qfunc, wire_order=range(5))()) # doctest: +SKIP
+    >>> new_qfunc = qp.transforms.rowcol(qfunc)
+    >>> print(qp.draw(new_qfunc, wire_order=range(5))()) # doctest: +SKIP
     0: ──────────╭X─╭X─╭●─╭●─╭●─╭X─┤
     1: ────╭●─╭X─│──│──│──│──│──│──┤
     2: ─╭X─╰X─╰●─│──╰●─│──│──╰X─╰●─┤
@@ -352,8 +352,8 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
     We can confirm that this circuit indeed implements the original circuit:
 
     >>> import numpy as np
-    >>> U1 = qml.matrix(new_qfunc, wire_order=range(5))() # doctest: +SKIP
-    >>> U2 = qml.matrix(qfunc, wire_order=range(5))() # doctest: +SKIP
+    >>> U1 = qp.matrix(new_qfunc, wire_order=range(5))() # doctest: +SKIP
+    >>> U2 = qp.matrix(qfunc, wire_order=range(5))() # doctest: +SKIP
     >>> np.allclose(U1, U2) # doctest: +SKIP
     True
 

@@ -19,8 +19,8 @@ from collections import defaultdict
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ, H, MultiRZ, cond
 from pennylane.wires import Wires
 
@@ -176,7 +176,7 @@ class QAOAEmbedding(Operation):
 
     resource_keys = {"repeat", "n_features", "num_wires", "local_field"}
 
-    def __init__(self, features, weights, wires, local_field="Y", id=None):
+    def __init__(self, features, weights, wires, local_field="Y"):
         if local_field == "Z":
             local_field = RZ
         elif local_field == "X":
@@ -220,7 +220,7 @@ class QAOAEmbedding(Operation):
             raise ValueError(f"Weights tensor must be of shape {exp_shape}; got {shape}")
 
         self._hyperparameters = {"local_field": local_field}
-        super().__init__(features, weights, wires=wires, id=id)
+        super().__init__(features, weights, wires=wires)
 
     @property
     def num_params(self):
@@ -349,22 +349,16 @@ class QAOAEmbedding(Operation):
 
 
 def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
-    resources = defaultdict(int)
-
-    resources.update(
+    multi_rz_count = num_wires * repeat if num_wires > 2 else repeat
+    resources = defaultdict(
+        int,
         {
-            resource_rep(RX): n_features * (repeat + 1),
-            resource_rep(H): (num_wires - n_features) * (repeat + 1),
-        }
+            RX: n_features * (repeat + 1),
+            H: (num_wires - n_features) * (repeat + 1),
+            resource_rep(MultiRZ, num_wires=2): multi_rz_count,
+        },
     )
-
-    resources[resource_rep(local_field)] += num_wires * repeat
-
-    if num_wires == 2:
-        resources[resource_rep(MultiRZ, num_wires=2)] = repeat
-    elif num_wires > 2:
-        resources[resource_rep(MultiRZ, num_wires=2)] = num_wires * repeat
-
+    resources[abstractify(local_field)] += num_wires * repeat
     return resources
 
 

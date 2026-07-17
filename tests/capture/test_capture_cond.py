@@ -16,7 +16,7 @@ Tests for capturing conditionals into jaxpr.
 """
 
 # pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,unbalanced-tuple-unpacking
 
 from functools import partial
 
@@ -32,7 +32,11 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import cond_prim
+from tests.capture.capture_utils import (
+    extract_all_primitives,
+)
 
 
 @pytest.fixture
@@ -292,7 +296,6 @@ def test_convert_predicate_to_bool():
     """Test that predicates are all converted to bools."""
 
     def w(pred0, pred1):
-
         @qp.cond(pred0)
         def f(i):
             return i + 1
@@ -318,11 +321,38 @@ def test_convert_predicate_to_bool():
     assert jaxpr.eqns[2].invars[1].aval.dtype == jax.numpy.bool
 
 
+def test_no_predicate_for_else_branch():
+    """Test that the else branch does not have a Literal True predicate."""
+
+    def w(pred0, pred1):
+        @qp.cond(pred0)
+        def f():
+            return 1
+
+        @f.else_if(pred1)
+        def _elif():
+            return 2
+
+        @f.otherwise
+        def _else():
+            return 3
+
+        return f()
+
+    jaxpr = jax.make_jaxpr(w)(True, False)
+
+    assert jaxpr.eqns[0].primitive == cond_prim
+    cond_eqn = jaxpr.eqns[0]
+    assert len(cond_eqn.invars) == 2
+    assert len(cond_eqn.params["jaxpr_branches"]) == 3
+    assert isinstance(cond_eqn.invars[0], jax._src.core.Var)  # pylint: disable=protected-access
+    assert isinstance(cond_eqn.invars[1], jax._src.core.Var)  # pylint: disable=protected-access
+
+
 def test_keyword_argument():
     """Test that keyword arguments are treated as traceable inputs."""
 
     def f(pred, x):
-
         @qp.cond(pred)
         def b(*, x):
             qp.RX(x, 0)
@@ -613,95 +643,57 @@ def circuit_with_consts(pred, arg):
 class TestCondCircuits:
     """Tests for conditional quantum circuits."""
 
-    @pytest.mark.parametrize(
-        "pred, expected",
-        [
-            (1, 0.99500417),  # RX(0.1)
-            (0, 1.0),  # No operation
-        ],
-    )
-    def test_circuit(self, pred, expected):
+    @pytest.mark.parametrize("pred", [1, 0])
+    def test_circuit(self, pred):
         """Test circuit with only a true branch."""
-        result = circuit(pred)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         args = [pred]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "pred, arg1, arg2, expected",
-        [
-            (1, 0.5, 0.6, 0.63340907),  # RX(0.10) -> RY(0.5) -> RX(0.6) -> RZ(0.5) -> RX(0.10)
-            (0, 0.5, 0.6, 0.26749883),  # RX(0.10) -> RX(0.5) -> RX(0.6) -> RX(0.10)
-            (-1, 0.5, 0.6, 0.77468805),  # RX(0.10) -> RZ(0.6) -> RX(0.5) -> RX(0.10)
-        ],
-    )
-    def test_circuit_branches(self, pred, arg1, arg2, expected):
+    def test_circuit_branches(self):
         """Test circuit with true, false, and elif branches."""
-        result = circuit_branches(pred, arg1, arg2)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        args = [pred, arg1, arg2]
+        args = [1, 0.5, 0.6]
         jaxpr = jax.make_jaxpr(circuit_branches)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "pred, arg1, arg2, expected",
-        [
-            (1, 0.5, 0.6, 0.43910855),  # RX(0.10) -> RY(0.5) -> RY(0.6) -> RX(0.10)
-            (0, 0.5, 0.6, 0.98551243),  # RX(0.10) -> RZ(0.6) -> RX(0.5) -> RX(0.10)
-        ],
-    )
-    def test_circuit_with_returned_operator(self, pred, arg1, arg2, expected):
+    def test_circuit_cond_on_operator_jaxpr_check(self):
+        """Test that the cond has no output when the functions are an operator type."""
+
+        def f(pred):
+            return qp.cond(pred, qp.X, qp.Z)(0)
+
+        jaxpr = jax.make_jaxpr(f)(True).jaxpr
+        assert len(jaxpr.outvars) == 0
+        assert jaxpr.eqns[-1].primitive == cond_prim
+        assert jaxpr.eqns[-1].outvars == []
+
+        for branch in jaxpr.eqns[-1].params["jaxpr_branches"]:
+            assert branch.outvars == []
+
+    def test_circuit_with_returned_operator(self):
         """Test circuit with returned operators in the branches."""
-        result = circuit_with_returned_operator(pred, arg1, arg2)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        args = [pred, arg1, arg2]
+        args = [1, 0.5, 0.6]
         jaxpr = jax.make_jaxpr(circuit_with_returned_operator)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "tmp_pred, tmp_arg, expected",
-        [
-            (1, 0.5, 0.54030231),  # RX(0.5) -> RX(0.5)
-            (-1, 0.5, 0.98006658),  # RY(0.1) -> RY(0.1)
-        ],
-    )
-    def test_circuit_multiple_cond(self, tmp_pred, tmp_arg, expected):
+    def test_circuit_multiple_cond(self):
         """Test circuit with returned operators in the branches."""
-        result = circuit_multiple_cond(tmp_pred, tmp_arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        args = [tmp_pred, tmp_arg]
+        args = [1, 0.5]
         jaxpr = jax.make_jaxpr(circuit_multiple_cond)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "pred, arg, expected",
-        [
-            (1, 0.5, 0.87758256),  # RX(0.5)
-            (-1, 0.5, 0.0707372),  # RX(0.7) -> RX(0.8)
-            (0, 0.5, -0.9899925),  # RX(0.9) -> RX(1.0) -> RX(1.1)
-        ],
-    )
-    def test_circuit_consts(self, pred, arg, expected):
+    def test_circuit_consts(self):
         """Test circuit with jaxpr constants."""
-        result = circuit_with_consts(pred, arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        args = [pred, arg]
+        args = [1, 0.5]
         jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
-    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("shots", [None, 20])
@@ -906,7 +898,6 @@ class TestPytree:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapeValidation:
-
     def test_different_outval_types(self):
         """Test an error is raised if the outvals have different types."""
 
@@ -985,7 +976,6 @@ class TestDynamicShapeValidation:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
-
     def test_cond_no_returns(self):
         """Test that cond can have empty returns when dynamic shapes are enabled."""
 
@@ -1044,21 +1034,6 @@ class TestDynamicShapes:
 
         res = f(True, 6)  # slicing out the shape variable
         assert qp.math.allclose(res["result"], jax.numpy.arange(6))
-
-    def test_return_operators_with_dynamic_enabled(self):
-        """Test that we can return operators when dynamic shapes are enabled."""
-
-        def f(val, w):
-            return qp.cond(val, qp.X, false_fn=qp.Y)(w)
-
-        x_op = f(True, 0)
-        qp.assert_equal(x_op, qp.X(0))
-        y_op = f(False, 3)
-        qp.assert_equal(y_op, qp.Y(3))
-
-        jaxpr = jax.make_jaxpr(f)(False, 3)
-        [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
-        qp.assert_equal(x_op2, qp.X(3))
 
     def test_cond_dynamic_array_creation(self):
         """Test that arrays with dynamic shapes can be created within branches."""

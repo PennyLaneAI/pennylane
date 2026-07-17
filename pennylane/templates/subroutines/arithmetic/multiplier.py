@@ -17,6 +17,7 @@ Contains the Multiplier template.
 
 import numpy as np
 
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -24,7 +25,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
@@ -118,7 +118,7 @@ class Multiplier(Operation):
     resource_keys = {"num_x_wires", "mod", "num_work_wires"}
 
     def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -150,7 +150,7 @@ class Multiplier(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
         all_wires = x_wires + work_wires
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -237,7 +237,9 @@ class Multiplier(Operation):
             ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
         )
 
-        target_op = prod(*reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap)]))
+        target_op = prod(
+            *reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap, strict=True)])
+        )
 
         inv_k = pow(k, -1, mod)
         op2 = change_op_basis(
@@ -269,7 +271,7 @@ def _multiplier_decomposition_resources(
                 resource_rep(QFT, num_wires=num_wires_aux),
                 resource_rep(ControlledSequence, **cs_base_params),
             ): 1,
-            resource_rep(Prod, resources={resource_rep(SWAP): num_x_wires}): 1,
+            resource_rep(Prod, resources={abstractify(SWAP): num_x_wires}): 1,
             change_op_basis_resource_rep(
                 resource_rep(QFT, num_wires=num_wires_aux),
                 adjoint_resource_rep(ControlledSequence, cs_base_params),
@@ -307,7 +309,10 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
     )
     prod(
         *reversed(
-            [SWAP(wires=[x_wire, aux_wire]) for x_wire, aux_wire in zip(x_wires, wires_aux_swap)]
+            [
+                SWAP(wires=[x_wire, aux_wire])
+                for x_wire, aux_wire in zip(x_wires, wires_aux_swap, strict=True)
+            ]
         )
     )
     change_op_basis(

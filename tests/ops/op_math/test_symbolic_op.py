@@ -19,17 +19,9 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
-
-
-def test_id_deprecation():
-    """Tests that the id kwarg is deprecated"""
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
-        _ = SymbolicOp(qp.X(0), id="something")
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
@@ -64,8 +56,7 @@ def test_initialization():
 
 
 def test_copy():
-    """Test that a copy of the operator can have its parameters updated independently
-    of the original operator."""
+    """Test that a copy can be rebound independently of the original."""
     param1 = 1.234
     base = Operator(param1, "a")
     op = SymbolicOp(base)
@@ -74,8 +65,11 @@ def test_copy():
 
     assert copied_op.__class__ is op.__class__
     assert copied_op.data == (param1,)
+    assert copied_op.base is not op.base
 
-    copied_op.data = (6.54,)
+    copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+    assert copied_op.data == (6.54,)
     assert op.data == (param1,)
 
 
@@ -101,8 +95,7 @@ class TestProperties:
     # pylint:disable=too-few-public-methods
 
     def test_data(self):
-        """Test that the data property for symbolic ops allows for the getting
-        and setting of the base operator's data."""
+        """Test that the data property for symbolic ops is read-only."""
         x = np.array(1.234)
 
         base = Operator(x, "a")
@@ -110,16 +103,10 @@ class TestProperties:
 
         assert op.data == (x,)
 
-        # update parameters through op
-        x_new = np.array(2.345)
-        op.data = (x_new,)
-        assert base.data == (x_new,)
-        assert op.data == (x_new,)
-
-        # update base data updates symbolic data
-        x_new2 = np.array(3.45)
-        base.data = (x_new2,)
-        assert op.data == (x_new2,)
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'SymbolicOp' object has no setter"
+        ):
+            setattr(op, "data", (np.array(2.345),))
 
     def test_parameters(self):
         """Test parameter property is a list of the base's trainable parameters."""
@@ -163,16 +150,6 @@ class TestProperties:
         base = DummyOp("b")
         op = SymbolicOp(base)
         assert op.is_verified_hermitian == is_herm
-
-    @pytest.mark.parametrize("queue_cat", ("_ops", None))
-    def test_queuecateory(self, queue_cat):
-        """Test that a symbolic operator inherits the queue_category from its base."""
-
-        class DummyOp(Operator):
-            _queue_category = queue_cat
-
-        op = SymbolicOp(DummyOp("b"))
-        assert op._queue_category == queue_cat  # pylint:disable=protected-access
 
     def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""
@@ -252,22 +229,15 @@ class TestScalarSymbolicOp:
         assert op.data[1] == 1.1
 
     def test_data(self):
-        """Tests the data property."""
+        """Test that the data property is read-only."""
         op = TempScalar(Operator(1.1, wires=[0]), 2.2)
         assert op.scalar == 2.2
         assert op.data == (2.2, 1.1)
 
-        # check setting through ScalarSymbolicOp
-        op.data = (3.3, 4.4)  # pylint:disable=attribute-defined-outside-init
-        assert op.data == (3.3, 4.4)
-        assert op.scalar == 3.3
-        assert op.base.data == (4.4,)
-
-        # check setting through base
-        op.base.data = (5.5,)
-        assert op.data == (3.3, 5.5)
-        assert op.scalar == 3.3
-        assert op.base.data == (5.5,)
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'TempScalar' object has no setter"
+        ):
+            setattr(op, "data", (3.3, 4.4))
 
     def test_hash(self):
         """Test that a hash correctly identifies ScalarSymbolicOps."""
@@ -276,6 +246,6 @@ class TestScalarSymbolicOp:
         op2 = TempScalar(Operator(1.1, wires=[0]), 0.6)
         op3 = TempScalar(Operator(1.2, wires=[0]), 0.3)
         op4 = TempScalarCopy(Operator(1.1, wires=[0]), 0.3)
-        assert op0.hash == op1.hash
+        assert hash(op0) == hash(op1)
         for second_op in [op2, op3, op4]:
-            assert op0.hash != second_op.hash
+            assert hash(op0) != hash(second_op)

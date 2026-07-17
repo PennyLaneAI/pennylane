@@ -22,8 +22,12 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Channel
 from pennylane.devices.qutrit_mixed import apply_operation, measure
-from pennylane.operation import Channel
+from pennylane.devices.qutrit_mixed.utils import QUDIT_DIM
+
+# Small additive constant to prevent negative sqrt arguments from floating-point errors
+_SQRT_STABILITY_EPS = 1e-14
 
 ml_frameworks_list = [
     "numpy",
@@ -41,16 +45,18 @@ class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
     num_params = 1
     num_wires = 1
 
-    def __init__(self, p, wires, id=None):
-        super().__init__(p, wires=wires, id=id)
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p):
         if math.get_interface(p) == "tensorflow":
             p = math.cast_like(p, 1j)
 
-        K0 = math.sqrt(1 - p + math.eps) * math.convert_like(math.eye(3, dtype=complex), p)
-        K1 = math.sqrt(p + math.eps) * math.convert_like(kraus_matrix, p)
+        K0 = math.sqrt(1 - p + _SQRT_STABILITY_EPS) * math.convert_like(
+            math.eye(3, dtype=complex), p
+        )
+        K1 = math.sqrt(p + _SQRT_STABILITY_EPS) * math.convert_like(kraus_matrix, p)
         return [K0, K1]
 
 
@@ -312,8 +318,8 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         num_params = 1
         num_wires = 1
 
-        def __init__(self, p, wires, id=None):
-            super().__init__(p, wires=wires, id=id)
+        def __init__(self, p, wires):
+            super().__init__(p, wires=wires)
 
         @staticmethod
         def compute_kraus_matrices(p):
@@ -569,3 +575,191 @@ class TestChannelCalcGrad:
         phi_jacobian = tf.math.conj(jacobians[0])
 
         self.compare_expected_result(p, state, probs, phi_jacobian)
+
+
+def get_valid_density_matrix(num_wires):
+    """Helper function to create a valid density matrix"""
+    # Create a pure state first
+    state = np.zeros(QUDIT_DIM**num_wires, dtype=np.complex128)
+    state[0] = 1 / np.sqrt(2)
+    state[-1] = 1 / np.sqrt(2)
+    # Convert to density matrix
+    return np.outer(state, state.conjugate())
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+class TestDensityMatrix:
+    """Test that apply_operation works for QutritDensityMatrix"""
+
+    num_qutrits = [1, 2, 3]
+
+    @pytest.mark.parametrize("num_q", num_qutrits)
+    def test_valid_density_matrix(self, num_q, ml_framework):
+        """Test applying a valid density matrix to the state"""
+        density_matrix = get_valid_density_matrix(num_q)
+        # Convert density matrix to the given ML framework and ensure complex dtype
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)  # ensure complex
+
+        op = qp.QutritDensityMatrix(density_matrix, wires=range(num_q))
+
+        # Create the initial state as zeros in the same framework and ensure complex dtype
+        shape = (QUDIT_DIM,) * (2 * num_q)
+        state = np.zeros(shape, dtype=np.complex128)
+        state = math.asarray(state, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        # Apply operation
+        result = qp.devices.qutrit_mixed.apply_operation(op, state)
+
+        # Reshape and cast expected result
+        expected = math.reshape(density_matrix, shape)
+        expected = math.cast(expected, dtype=complex)
+
+        assert math.allclose(result, expected)
+
+    @pytest.mark.parametrize("num_q", num_qutrits)
+    def test_batched_state(self, num_q, ml_framework):
+        """Test applying density matrix to batched states"""
+        batch_size = 3
+        density_matrix = get_valid_density_matrix(num_q)
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)
+
+        op = qp.QutritDensityMatrix(density_matrix, wires=range(num_q))
+
+        shape = (batch_size,) + (QUDIT_DIM,) * (2 * num_q)
+        state = math.zeros(shape, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        result = qp.devices.qutrit_mixed.apply_operation(op, state, is_state_batched=True)
+
+        expected_single = math.reshape(density_matrix, (QUDIT_DIM,) * (2 * num_q))
+        expected_single = math.cast(expected_single, dtype=complex)
+        # Tile along batch dimension
+        expected = math.stack([expected_single] * batch_size, axis=0)
+
+        assert math.allclose(result, expected)
+
+    def test_partial_trace_single_qutrit_update(self, ml_framework):
+        """Minimal test for partial tracing when applying QutritDensityMatrix to a subset of wires."""
+
+        # Initial 2-qutrit state as a (9,9) density matrix representing |00><00|
+        # |00> in vector form = [1,0,0,0,0,0,0,0,0]
+        # |00><00| as a 9x9 matrix = diag([1,0,0,0,0,0,0,0,0])
+        initial_state = np.zeros((9, 9), dtype=complex)
+        initial_state[0, 0] = 1.0
+        initial_state = math.asarray(initial_state, like=ml_framework)
+        initial_state = math.reshape(initial_state, (QUDIT_DIM,) * 4)
+
+        # Define the single-qutrit density matrix |+><+| = 1/3 * [[1,1,1],[1,1,1],[1,1,1]]
+        plus_state = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=complex) / 3
+        plus_state = math.asarray(plus_state, like=ml_framework)
+
+        # Apply QutritDensityMatrix on the first wire (wire=0)
+        op = qp.QutritDensityMatrix(plus_state, wires=[0])
+
+        # The expected final state should be |+><+| ⊗ |0><0|
+        # |0><0| = [[1,0,0],[0,0,0],[0,0,0]]
+        zero_dm = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]], dtype=complex)
+        expected = np.kron(plus_state, zero_dm)  # shape (9,9)
+        expected = math.reshape(expected, [QUDIT_DIM] * 4)
+        # Apply the operation
+        result = qp.devices.qutrit_mixed.apply_operation(op, initial_state)
+
+        assert math.allclose(result, expected, atol=1e-8)
+
+    def test_partial_trace_batched_update(self, ml_framework):  # TODO
+        """Minimal test for partial tracing when applying QutritDensityMatrix to a subset of wires, batched."""
+
+        batch_size = 3
+
+        # Initial 2-qutrit state as a (9,9) density matrix representing |00><00| batched
+        initial_state = np.zeros((batch_size, 9, 9), dtype=complex)
+        for b in range(batch_size):
+            initial_state[b, 0, 0] = 1.0
+        initial_state = math.asarray(initial_state, like=ml_framework)
+        initial_state = math.reshape(initial_state, [batch_size] + [QUDIT_DIM] * 4)
+
+        # Define the single-qutrit density matrix |+><+| = 0.5 * [[1,1],[1,1]]
+        plus_state = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=complex) / 3
+        plus_state = math.asarray(plus_state, like=ml_framework)
+
+        # Apply QutritDensityMatrix on the first wire (wire=0)
+        op = qp.QutritDensityMatrix(plus_state, wires=[0])
+
+        # The expected final state should be |+><+| ⊗ |0><0| for each batch
+        zero_dm = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]], dtype=complex)
+        expected_single = np.kron(plus_state, zero_dm)  # shape (9,9)
+        expected = np.stack([expected_single] * batch_size, axis=0)
+        expected = math.reshape(expected, [batch_size] + [QUDIT_DIM] * 4)
+
+        # Apply the operation
+        result = qp.devices.qutrit_mixed.apply_operation(op, initial_state, is_state_batched=True)
+
+        assert math.allclose(result, expected, atol=1e-8)
+
+    @pytest.mark.parametrize("wires", ([0, 1], [0, 2]))
+    def test_partial_trace_tensor_format_state(self, wires, ml_framework):
+        """Test partial tracing with state in tensor format (as used by the actual mixed device).
+
+        This test reproduces the bug from GitHub issue #8932 where QutritDensityMatrix
+        fails when applied to a subset of wires because the state is in tensor format
+        (3, 3, ..., 3) rather than 2D matrix format (dim, dim).
+        """
+        # Initial 4-qutrit state in tensor format (3,3,3,3,3,3,3,3) representing |0000><0000|
+        num_wires = 4
+        initial_state = np.zeros([QUDIT_DIM] * (2 * num_wires), dtype=complex)
+        initial_state[0, 0, 0, 0, 0, 0, 0, 0] = 1.0  # |0000><0000|
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the 2-qutrit density matrix for GHZ state: (|00> + |11> + |22>)/sqrt(3)
+        ghz = np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=complex) / np.sqrt(3)
+        ghz_dm = np.outer(ghz, np.conj(ghz))  # shape (9, 9)
+        ghz_dm = math.asarray(ghz_dm, like=ml_framework)
+
+        # Apply QutritDensityMatrix on the first 2 wires (wires=[0, 1])
+        op = qp.QutritDensityMatrix(ghz_dm, wires=wires)
+
+        # Apply the operation - this should not raise ValueError
+        result = qp.devices.qutrit_mixed.apply_operation(op, initial_state)
+
+        # Verify result shape matches input shape
+        assert result.shape == initial_state.shape
+
+        # Verify the result is a valid density matrix
+        result_2d = math.reshape(result, (81, 81))
+        # Trace should be 1
+        trace_val = math.trace(result_2d)
+        assert math.allclose(trace_val, 1.0, atol=1e-8)
+
+
+def test_qutrit_density_matrix_qnode_integration():
+    """Integration test for QutritDensityMatrix on subset of wires using QNode.
+
+    This reproduces the exact bug scenario from GitHub issue #8932.
+    """
+    n = 2
+    dev = qp.device("default.qutrit.mixed", wires=2 * n)
+
+    @qp.qnode(dev)
+    def test_circuit(rho):
+        # Only initialize n of the 2n qutrits using with rho
+        qp.QutritDensityMatrix(rho, wires=range(0, n))
+
+        # Apply THadamard gate to ancilla qutrits
+        for a in range(n, 2 * n):
+            qp.THadamard(a)
+
+        return qp.probs(wires=range(n))
+
+    # Define the 2-qutrit density matrix for GHZ state: (|00> + |11> + |22>)/sqrt(3)
+    ghz = np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=complex) / np.sqrt(3)
+    ghz_dm = np.outer(ghz, np.conj(ghz))  # shape (9, 9)
+
+    # This should not raise ValueError
+    result = test_circuit(ghz_dm)
+
+    # Expected: probabilities for GHZ state are [1/3, 0, 0,0, 1/3,0,0,0,1/3]
+    expected = np.array([1 / 3, 0, 0, 0, 1 / 3, 0, 0, 0, 1 / 3])
+    assert np.allclose(result, expected, atol=1e-8)

@@ -24,18 +24,15 @@ from copy import copy
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import (
-    pow_involutory,
-    qjit_compatible_self_adjoint,
-)
-from pennylane.operation import FlatPytree, Operation
-from pennylane.typing import TensorLike
+from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint_legacy
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
@@ -370,7 +367,7 @@ def _qubitsum_to_cnots(wires: WiresLike, **__):
 
 
 add_decomps(QubitSum, _qubitsum_to_cnots)
-add_decomps("Adjoint(QubitSum)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(QubitSum)", self_adjoint_legacy)
 add_decomps("Pow(QubitSum)", pow_involutory)
 
 
@@ -637,7 +634,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
     num_controls = num_wires - 1
     binary_str = format(value, f"0{num_controls}b")
     last_significant = binary_str.rfind("1")
-    gate_counts = {resource_rep(qp.X): (last_significant + 1) * 2}
+    gate_counts = {qp.X: (last_significant + 1) * 2}
 
     first_significant = binary_str.find("1")
     gate_counts[
@@ -796,7 +793,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
             work_wire_type="borrowed",
         )
     ] = 1
-    gate_set[resource_rep(qp.X)] = 2
+    gate_set[qp.X] = 2
 
     while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
         gate_set[
@@ -808,7 +805,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
                 work_wire_type="borrowed",
             )
         ] = 1
-        gate_set[resource_rep(qp.X)] += 2
+        gate_set[qp.X] += 2
 
     gate_set[
         resource_rep(

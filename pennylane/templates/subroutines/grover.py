@@ -19,8 +19,8 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike
 
@@ -112,7 +112,7 @@ class GroverOperator(Operation):
         hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
         return tuple(), (self.wires, hyperparameters)
 
-    def __init__(self, wires: WiresLike, work_wires: WiresLike = (), id=None):
+    def __init__(self, wires: WiresLike, work_wires: WiresLike = ()):
         wires = Wires(wires)
         work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -124,7 +124,7 @@ class GroverOperator(Operation):
             "work_wires": work_wires,
         }
 
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:

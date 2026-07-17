@@ -17,11 +17,40 @@ multiple types of operations should exist in this file. Type-specific tests shou
 the more specific file.
 """
 
-# pylint: disable=too-few-public-methods
 import pytest
 from gate_data import I
 
 import pennylane as qp
+
+# pylint: disable=too-few-public-methods
+from pennylane.exceptions import PennyLaneDeprecationWarning
+
+
+@pytest.mark.parametrize(
+    "op, basis",
+    [
+        (qp.X(0), "X"),
+        (qp.Y(0), "Y"),
+        (qp.Z(0), "Z"),
+        (qp.S(0), "Z"),
+        (qp.T(0), "Z"),
+        (qp.SX(0), "X"),
+        (qp.RX(0.5, 0), "X"),
+        (qp.RY(0.5, 0), "Y"),
+        (qp.RZ(0.5, 0), "Z"),
+        (qp.PhaseShift(0.5, 0), "Z"),
+        (qp.PCPhase(1.23, 7, (1, 2, 3)), "Z"),
+        (qp.X(0) + qp.Y(0), None),
+        (qp.X(0) @ qp.Y(1), None),
+    ],
+)
+def test_basis_deprecation(op, basis):
+    """Test Operation.basis raises a deprecation warning."""
+    with pytest.warns(
+        qp.exceptions.PennyLaneDeprecationWarning,
+        match="Operation.basis is deprecated in v0.46 and will be removed in v0.47.",
+    ):
+        assert op.basis == basis
 
 
 class TestOperations:
@@ -34,8 +63,6 @@ class TestOperations:
             (qp.PauliX(wires=0)),
             (qp.PauliY(wires=0)),
             (qp.PauliZ(wires=0)),
-            (qp.S(wires=0)),
-            (qp.T(wires=0)),
             (qp.SX(wires=0)),
             (qp.RX(0.3, wires=0)),
             (qp.RY(0.3, wires=0)),
@@ -47,7 +74,10 @@ class TestOperations:
     def test_single_qubit_rot_angles(self, op):
         """Tests that the Rot gates yielded by single_qubit_rot_angles
         are equivalent to the true operations up to a global phase."""
-        angles = op.single_qubit_rot_angles()
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="single_qubit_rot_angles method"):
+            angles = op.single_qubit_rot_angles()
+
         obtained_mat = qp.Rot(*angles, wires=0).matrix()
 
         # Check whether the two matrices are each others conjugate transposes

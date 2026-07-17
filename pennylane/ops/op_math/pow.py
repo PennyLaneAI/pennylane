@@ -22,22 +22,22 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator
 from pennylane.ops.identity import Identity
-from pennylane.queuing import QueuingManager, apply
 
 from .symbolicop import ScalarSymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, id=None) -> Operator:
+def pow(base, z=1, lazy=True) -> Operator:
     """Raise an Operator to a power.
 
     Args:
@@ -47,8 +47,6 @@ def pow(base, z=1, lazy=True, id=None) -> Operator:
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
 
     Returns:
         Operator
@@ -91,15 +89,15 @@ def pow(base, z=1, lazy=True, id=None) -> Operator:
 
     """
     if lazy:
-        return Pow(base, z, id=id)
+        return Pow(base, z)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z, id=id)
+        return Pow(base, z)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
-        pow_op = qp.Identity(base.wires, id=id)
+        pow_op = qp.Identity(base.wires)
     elif num_ops == 1:
         pow_op = pow_ops[0]
     else:
@@ -136,13 +134,13 @@ class Pow(ScalarSymbolicOp):
     resource_keys = {"base_class", "base_params", "z"}
 
     def _flatten(self):
-        return (self.base, self.z), tuple()
+        return (self.base,), (self.z,)
 
     @classmethod
-    def _unflatten(cls, data, _):
-        return pow(data[0], z=data[1])
+    def _unflatten(cls, data, metadata):
+        return pow(data[0], z=metadata[0])
 
-    def __new__(cls, base=None, z=1, id=None):
+    def __new__(cls, base=None, z=1):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be
@@ -168,11 +166,11 @@ class Pow(ScalarSymbolicOp):
 
         return object.__new__(Pow)
 
-    def __init__(self, base=None, z=1, id=None):
+    def __init__(self, base=None, z=1):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, scalar=z, id=id)
+        super().__init__(base, scalar=z)
 
         if isinstance(self.z, int) and self.z > 0:
             if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
@@ -196,6 +194,12 @@ class Pow(ScalarSymbolicOp):
 
     @property
     def resource_params(self) -> dict:
+        if isinstance(self.base, Operator2):
+            return {
+                "base_class": type(self.base),
+                "base_params": abstractify(self.base).arguments,
+                "z": self.z,
+            }
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
@@ -215,10 +219,6 @@ class Pow(ScalarSymbolicOp):
     def data(self):
         """The trainable parameters"""
         return self.base.data
-
-    @data.setter
-    def data(self, new_data):
-        self.base.data = new_data
 
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
@@ -389,7 +389,7 @@ class Pow(ScalarSymbolicOp):
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         base = self.base if qp.capture.enabled() else self.base.simplify()

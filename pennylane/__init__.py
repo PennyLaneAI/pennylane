@@ -21,16 +21,19 @@ import warnings
 from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
-from pennylane.queuing import QueuingManager, apply
+from pennylane import queuing
+from pennylane.core.queuing import QueuingManager, apply
 
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
 from pennylane import math
 from pennylane import operation
+from pennylane.core import operator
 from pennylane import allocation
 from pennylane.allocation import allocate, deallocate
 from pennylane import decomposition
@@ -39,6 +42,7 @@ from pennylane.decomposition import (
     register_condition,
     add_decomps,
     list_decomps,
+    inspect_decomps,
     resource_rep,
 )
 from pennylane import templates
@@ -114,6 +118,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     decompose,
+    decomp_inspector,
     defer_measurements,
     dynamic_one_shot,
     quantum_monte_carlo,
@@ -150,6 +155,7 @@ from pennylane.ops.functions import (
     iterative_qpe,
     commutator,
     comm,
+    single_qubit_zyz_angles,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *

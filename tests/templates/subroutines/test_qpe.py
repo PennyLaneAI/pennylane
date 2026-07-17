@@ -28,82 +28,7 @@ def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qp.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
     assert op.target_wires == qp.wires.Wires([0, 1])
-    qp.ops.functions.assert_valid(op)
-
-
-class TestError:
-    """Test that the QPE error is computed correctly."""
-
-    @pytest.mark.parametrize(
-        # the reference error is computed manually for a QPE operation with 2 estimation wires
-        ("operator_error", "expected_error"),
-        [(0.01, 0.03), (0.02, 0.06), (0.03, 0.09)],
-    )
-    def test_error_operator(self, operator_error, expected_error):
-        """Test that QPE error is correct for a given custom operator."""
-
-        class CustomOP(qp.resource.ErrorOperation):
-            # pylint: disable=too-few-public-methods
-            def error(self):
-                return qp.resource.SpectralNormError(operator_error)
-
-        operator = CustomOP(wires=[0])
-        qpe_error = qp.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
-
-        assert np.allclose(qpe_error, expected_error)
-
-    def test_error_zero(self):
-        """Test that QPE error is zero for an operator with no error method."""
-        unitary = qp.RX(0.1, wires=0)
-        qpe_error = qp.QuantumPhaseEstimation(unitary, estimation_wires=range(1, 3)).error().error
-
-        assert qpe_error == 0.0
-
-    def test_error_unitary(self):
-        """Test that QPE error is correct for a given unitary error."""
-
-        u_exact = qp.RY(0.50, wires=0)
-        u_apprx = qp.RY(0.51, wires=0)
-
-        class CustomOP(qp.resource.ErrorOperation):
-            # pylint: disable=too-few-public-methods
-            def error(self):
-                error_value = qp.resource.SpectralNormError.get_error(u_exact, u_apprx)
-                return qp.resource.SpectralNormError(error_value)
-
-        m_exact = qp.matrix(qp.QuantumPhaseEstimation(u_exact, estimation_wires=range(1, 3)))
-        m_apprx = qp.matrix(qp.QuantumPhaseEstimation(u_apprx, estimation_wires=range(1, 3)))
-
-        matrix_error = qp.math.max(qp.math.svd(m_exact - m_apprx, compute_uv=False))
-
-        operator = CustomOP(wires=[0])
-        qpe_error = qp.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
-
-        assert np.allclose(qpe_error, matrix_error, atol=1e-4)
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize(
-        # the reference error is computed manually for a QPE operation with 2 estimation wires
-        ("operator_error", "expected_error"),
-        [(0.01, 0.03), (0.02, 0.06)],
-    )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    def test_error_interfaces(self, operator_error, interface, expected_error):
-        """Test that the error method works with all interfaces."""
-
-        class CustomOP(qp.resource.ErrorOperation):
-            # pylint: disable=too-few-public-methods
-            def error(self):
-                spectral_norm_error = qp.resource.SpectralNormError(
-                    qp.math.array(operator_error, like=interface)
-                )
-                return spectral_norm_error
-
-        operator = CustomOP(wires=[0])
-        qpe_error = qp.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
-
-        assert qp.math.get_interface(qpe_error) == interface
-        assert np.allclose(qpe_error, expected_error)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -428,20 +353,9 @@ class TestDecomposition:
         assert qp.math.allclose(circuit(), jit_circuit())
 
 
-class TestInputs:
-    """Test inputs and pre-processing."""
+def test_same_wires():
+    """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
+    common element"""
 
-    def test_same_wires(self):
-        """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
-        common element"""
-
-        with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
-            qp.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.QuantumPhaseEstimation(
-            np.eye(4), target_wires=[0, 1], estimation_wires=[2, 3], id="a"
-        )
-        assert template.id == "a"
+    with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
+        qp.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])

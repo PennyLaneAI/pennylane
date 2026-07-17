@@ -22,7 +22,9 @@ import numbers
 from copy import copy
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator, Operator2
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
+from pennylane.pytrees import flatten, unflatten
 
 from .sprod import SProd
 from .sum import Sum
@@ -48,7 +50,6 @@ class LinearCombination(Sum):
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation), or
             ``'gis'`` (IndependentSet). Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
-        id (str): name to be assigned to this ``LinearCombination`` instance
 
     .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
         for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
@@ -118,7 +119,21 @@ class LinearCombination(Sum):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
-        return cls._primitive.bind(*coeffs, *observables, **kwargs, n_obs=len(observables))
+        leaves, structure = flatten(observables, is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_observables = unflatten(new_leaves, structure)
+
+        return cls._primitive.bind(*coeffs, *new_observables, **kwargs, n_obs=len(observables))
 
     def __init__(
         self,
@@ -129,7 +144,6 @@ class LinearCombination(Sum):
         *,
         _grouping_indices=None,
         _pauli_rep=None,
-        id=None,
     ):
         if isinstance(observables, Operator):
             raise ValueError(
@@ -149,15 +163,16 @@ class LinearCombination(Sum):
 
         self._hyperparameters = {"ops": self._ops}
 
-        with qp.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             # type.__call__ valid when capture is enabled and creating an instance
-            operands = tuple(type.__call__(SProd, c, op) for c, op in zip(coeffs, observables))
+            operands = tuple(
+                type.__call__(SProd, c, op) for c, op in zip(coeffs, observables, strict=True)
+            )
 
         super().__init__(
             *operands,
             grouping_type=grouping_type,
             method=method,
-            id=id,
             _grouping_indices=_grouping_indices,
             _pauli_rep=_pauli_rep,
         )
@@ -168,7 +183,7 @@ class LinearCombination(Sum):
 
         if all(pauli_reps := [op.pauli_rep for op in observables]):
             new_rep = qp.pauli.PauliSentence()
-            for c, ps in zip(coeffs, pauli_reps):
+            for c, ps in zip(coeffs, pauli_reps, strict=True):
                 for pw, coeff in ps.items():
                     new_rep[pw] += coeff * c
             return new_rep
@@ -274,7 +289,7 @@ class LinearCombination(Sum):
         return "LinearCombination"
 
     @staticmethod
-    @qp.QueuingManager.stop_recording()
+    @QueuingManager.stop_recording()
     def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
@@ -401,7 +416,7 @@ class LinearCombination(Sum):
 
     __rmul__ = __mul__
 
-    def queue(self, context: qp.QueuingManager | qp.queuing.AnnotatedQueue = qp.QueuingManager):
+    def queue(self, context: QueuingManager | AnnotatedQueue = QueuingManager):
         """Queues a ``qp.ops.LinearCombination`` instance"""
         if qp.QueuingManager.recording():
             for o in self.ops:
@@ -515,7 +530,6 @@ class Hamiltonian:
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
             or ``'gis'`` (Greedy Independent Set). Ignored if ``grouping_type=None``.
-        id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
 

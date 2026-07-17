@@ -26,8 +26,10 @@ from pennylane.capture.primitives import (
     pauli_measure_prim,
     qnode_prim,
 )
-
-from .resources import adjoint_resource_rep, controlled_resource_rep, resource_rep
+from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 class CollectResourceOps(FlattenedInterpreter):
@@ -38,7 +40,7 @@ class CollectResourceOps(FlattenedInterpreter):
         self.state = {"ops": set()}
 
     def interpret_operation(self, op):
-        self.state["ops"].add(resource_rep(type(op), **op.resource_params))
+        self.state["ops"].add(abstractify(op))
         return op
 
     def interpret_measurement_eqn(self, eqn):
@@ -87,7 +89,7 @@ def _adjoint_transform_prim(
     child = CollectResourceOps()
     child.eval(jaxpr, consts, *args)
     for op in child.state["ops"]:
-        self.state["ops"].add(adjoint_resource_rep(op.op_type, op.params))
+        self.state["ops"].add(_adjoint_abstract(op))
     return []
 
 
@@ -111,8 +113,11 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     # Create resource reps
     for op in child.state["ops"]:
         self.state["ops"].add(
-            controlled_resource_rep(
-                op.op_type, op.params, num_control_wires, num_zero_control_values, num_work_wires
+            _ctrl_abstract(
+                op,
+                Wire[num_control_wires],
+                Wire[num_work_wires],
+                num_zero_control_values=num_zero_control_values,
             )
         )
 
@@ -122,11 +127,9 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 @CollectResourceOps.register_primitive(cond_prim)
 def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
-    n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
     args = invals[slice(*args_slice)]
     outvals = ()
-    for _, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
+    for jaxpr, consts_slice in zip(jaxpr_branches, consts_slices, strict=True):
         consts = invals[slice(*consts_slice)]
         dummy = copy(self).eval(jaxpr, consts, *args)
         # The cond_prim may or may not expect outvals, so we need to check whether

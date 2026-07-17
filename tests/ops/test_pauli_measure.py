@@ -16,20 +16,35 @@
 import pytest
 
 import pennylane as qp
-from pennylane import queuing
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.core import queuing
 from pennylane.ops import MeasurementValue, PauliMeasure
 from pennylane.wires import Wires
 
 
-def test_id_is_deprecated():
-    """Tests that the 'id' argument is deprecated and renamed."""
+@pytest.mark.external
+@pytest.mark.catalyst
+def test_pauli_measure_catalyst_dispatch():
+    """Test that qp.pauli_measure can be used with qjit and capture disabled."""
 
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
-    ):
-        op = PauliMeasure("XY", wires=[0, 1], id="blah")
-    assert op.meas_uid == "blah"
+    pytest.importorskip("catalyst")
+
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def c():
+        qp.X(0)
+        m = qp.pauli_measure("Z", wires=[0])
+
+        def f():
+            qp.X(1)
+
+        qp.cond(m, f)()
+
+        return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
+
+    z0, z1 = c()
+
+    assert qp.math.allclose(z0, -1)
+    assert qp.math.allclose(z1, -1)
 
 
 class TestPauliMeasure:

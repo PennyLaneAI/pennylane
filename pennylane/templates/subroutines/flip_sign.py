@@ -17,14 +17,11 @@ Contains the FlipSign template.
 
 from functools import reduce
 
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import X, Z, cond, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 class FlipSign(Operation):
@@ -76,7 +73,7 @@ class FlipSign(Operation):
     def __repr__(self):
         return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
 
-    def __init__(self, n, wires, id=None):
+    def __init__(self, n, wires):
         if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("At least one valid wire is required.")
 
@@ -94,7 +91,7 @@ class FlipSign(Operation):
             raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
 
         self._hyperparameters = {"arr_bin": n}
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self):
@@ -160,15 +157,14 @@ class FlipSign(Operation):
 
 def _flip_sign_resources(num_wires, arr_bin):
     res = {
-        controlled_resource_rep(
+        _ctrl_abstract(
             Z,
-            {},
-            num_control_wires=num_wires - 1,
+            Wire[num_wires - 1],
             num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), arr_bin[:-1], 0),
         ): 1
     }
     if arr_bin[-1] == 0:
-        res[resource_rep(X)] = 2
+        res[X] = 2
 
     return res
 

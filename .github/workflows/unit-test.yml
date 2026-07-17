@@ -7,6 +7,8 @@
 # file as an artifact.
 
 name: Unit Test
+permissions:
+  contents: read
 on:
   workflow_call:
     inputs:
@@ -41,7 +43,7 @@ on:
         description: The version of Python to use in order to run unit tests
         required: false
         type: string
-        default: '3.11'
+        default: '3.12'
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false

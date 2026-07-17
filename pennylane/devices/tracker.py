@@ -76,8 +76,7 @@ class Tracker:
     {'batches': 2, 'simulations': 3, 'executions': 3, 'results': np.float64(1.02), 'shots': 300}
     >>> import pprint
     >>> pprint.pprint(tracker.latest)
-    {'errors': {},
-     'executions': 1,
+    {'executions': 1,
      'resources': SpecsResources(gate_types={'RX': 1},
                                  gate_sizes={1: 1},
                                  measurements={'expval(PauliZ)': 1},
@@ -87,7 +86,7 @@ class Tracker:
      'shots': 100,
      'simulations': 1}
     >>> tracker.history.keys()
-    dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources', 'errors'])
+    dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources'])
     >>> tracker.history['results']
     [np.float64(1.0), np.float64(-0.1), np.float64(0.12)]
     >>> print(tracker.history['resources'][0])
@@ -207,7 +206,6 @@ class Tracker:
          'b': [2],
          'batches': [1],
          'c': ['c'],
-         'errors': [{}],
          'executions': [1],
          'resources': [SpecsResources(gate_types={'RX': 1},
                                       gate_sizes={1: 1},
@@ -252,3 +250,11 @@ class Tracker:
         """
         if self.callback is not None:
             self.callback(totals=self.totals, history=self.history, latest=self.latest)
+
+    def __repr__(self):
+        """String representation."""
+        return (
+            f"Tracker(active={self.active}, totals={self.totals}, "
+            f"history={self.history}, latest={self.latest}, "
+            f"persistent={self.persistent}, callback={self.callback!r})"
+        )

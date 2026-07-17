@@ -15,12 +15,13 @@
 Unit tests for :mod:`pennylane.wires`.
 """
 
+import re
 from importlib import import_module, util
 
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import WireError
 from pennylane.wires import Wires
 
@@ -51,12 +52,12 @@ class TestWires:
     @pytest.mark.parametrize(
         "iterable",
         [
-            [qml.RX, qml.RY],
-            [qml.PauliX],
-            (None, qml.expval),
+            [qp.RX, qp.RY],
+            [qp.PauliX],
+            (None, qp.expval),
             (
-                qml.device("default.qubit", wires=range(3)),
-                qml.device("default.gaussian", wires=[qml.RX, 3]),
+                qp.device("default.qubit", wires=range(3)),
+                qp.device("default.gaussian", wires=[qp.RX, 3]),
             ),
         ],
     )
@@ -403,6 +404,20 @@ class TestWires:
         wires2 = tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+    def test_class_index(self):
+        """Test that indexing the class raises."""
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[3]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[3]
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[Ellipsis]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[...]
 
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",

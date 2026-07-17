@@ -20,7 +20,11 @@ import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qp
+from pennylane.core import Operator2
 from pennylane.ops.functions import bind_new_parameters
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 
 @pytest.mark.parametrize(
@@ -116,6 +120,71 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
+# pylint: disable=too-few-public-methods
+class MultiRot(Operator2):
+    """MultiRot class used for testing purposes."""
+
+    dynamic_argnames = ("angles",)
+    wire_argnames = ("wires",)
+    static_argnames = ("string",)
+
+    def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
+        """
+        A simple MultiRot operator based on Operator2.
+
+        Args:
+            angles: The angles of each rotation.
+            wires: The wires each rotation applies to.
+            string: The type ("X", "Y", "Z") of each rotation.
+        """
+        assert len(angles) == len(string) == len(wires)
+        for letter in string:
+            assert letter in ("X", "Y", "Z")
+        super().__init__(angles, wires, string)
+
+    def compute_decomposition(self, angles: TensorLike, wires: WiresLike, string: str):
+        decomp = []
+        for angle, wire, letter in zip(angles, wires, string, strict=True):
+            if letter == "X":
+                decomp.append(qp.RX(angle, wire))
+            elif letter == "Y":
+                decomp.append(qp.RY(angle, wire))
+            else:
+                decomp.append(qp.RZ(angle, wire))
+
+        return decomp
+
+
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
+        (
+            MultiRot([np.pi, np.pi / 2], [0, 1], "XY"),
+            ([np.pi / 4, np.pi / 8],),
+            MultiRot([np.pi / 4, np.pi / 8], [0, 1], "XY"),
+        ),
+        (
+            MultiRot([np.pi, np.pi / 2], [1, 2], "ZX"),
+            ([np.pi / 3, np.pi / 6],),
+            MultiRot([np.pi / 3, np.pi / 6], [1, 2], "ZX"),
+        ),
+        (
+            Adjoint2(MultiRot([np.pi, np.pi / 2], [1, 2], "ZX")),
+            ([np.pi / 3, np.pi / 6],),
+            Adjoint2(MultiRot([np.pi / 3, np.pi / 6], [1, 2], "ZX")),
+        ),
+    ],
+)
+def test_operator_2_ops(op, new_params, expected_op):
+    """Test that `bind_new_arguments` with `Operator2` returns a new
+    operator with the new arguments without mutating the original
+    operator."""
+    new_op = bind_new_parameters(op, new_params)
+
+    qp.assert_equal(new_op, expected_op)
+    assert new_op is not op
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [
@@ -175,6 +244,31 @@ def test_controlled_sequence():
     new_op = bind_new_parameters(op, (0.5,))
     assert qp.math.allclose(new_op.data[0], 0.5)
     qp.assert_equal(new_op.base, qp.RX(0.5, wires=3))
+
+
+def test_prep_sel_prep():
+    """Test that rebinding PrepSelPrep replaces its LCU without mutating the original."""
+    lcu = qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
+    op = qp.PrepSelPrep(lcu, control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op.lcu, qp.dot([0.5, 0.5], [qp.Z(2), qp.X(1) @ qp.X(2)]))
+    assert new_op is not op
+    assert new_op.lcu is not op.lcu
+    assert op.data == (0.25, 0.75)
+
+
+def test_select():
+    """Test that rebinding Select replaces its operands without mutating the original."""
+    op = qp.Select([qp.RX(0.25, wires=2), qp.RY(0.75, wires=2)], control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op, qp.Select([qp.RX(0.5, wires=2), qp.RY(0.5, wires=2)], control=0))
+    assert new_op is not op
+    assert new_op.ops[0] is not op.ops[0]
+    assert op.data == (0.25, 0.75)
 
 
 TEST_BIND_LINEARCOMBINATION = [
@@ -434,7 +528,7 @@ def test_conditional_ops(op, new_params, expected_op):
 def test_unsupported_op_copy_and_set():
     """Test that trying to use `bind_new_parameters` on an operator without
     a supported dispatcher will fall back to copying the operator and setting
-    `new_op.data` to the new parameters."""
+    its private parameter storage to the new parameters."""
     op = qp.PCPhase(0.123, 2, wires=[1, 2])
     new_op = bind_new_parameters(op, [0.456])
 

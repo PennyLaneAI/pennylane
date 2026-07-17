@@ -23,14 +23,18 @@ from operator import matmul
 import numpy as np
 import scipy.sparse as sps
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
+from pennylane.typing import TensorLike
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
+
+#: Tolerance for checking if a sparse matrix is Hermitian.
+_HERMITIAN_TOLERANCE = 1e-8
 
 
 def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):
@@ -77,7 +81,7 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
 
 def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> tuple[qml.typing.TensorLike, list]:
+) -> tuple[TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
 
     This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
@@ -101,7 +105,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
             that are not of shape :math:`2^n\times 2^n` by padding them with zeros if ``True``.
 
     Returns:
-        Tuple[qml.math.array[complex], list]: the matrix decomposed as a linear combination of Pauli operators
+        Tuple[qp.math.array[complex], list]: the matrix decomposed as a linear combination of Pauli operators
         as a tuple consisting of an array of complex coefficients and a list of corresponding Pauli terms.
 
     **Example:**
@@ -110,7 +114,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  1j]])
-    >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A)
+    >>> coeffs, obs = qp.pauli.conversion._generalized_pauli_decompose(A)
     >>> coeffs
     array([-1. +0.25j, -1.5+0.j  , -0.5+0.j  , -1. -0.25j, -1.5+0.j  ,
        -1. +0.j  , -0.5+0.j  ,  1. -0.j  ,  0. -0.25j, -0.5+0.j  ,
@@ -131,7 +135,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 
     We can also set custom wires using the ``wire_order`` argument:
 
-    >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, wire_order=['a', 'b'])
+    >>> coeffs, obs = qp.pauli.conversion._generalized_pauli_decompose(A, wire_order=['a', 'b'])
     >>> obs
     [I('a') @ I('b'),
     I('a') @ X('b'),
@@ -153,7 +157,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
         For non-square matrices, we need to provide the ``padding=True`` keyword argument:
 
         >>> A = np.array([[-2, -2 + 1j]])
-        >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, padding=True)
+        >>> coeffs, obs = qp.pauli.conversion._generalized_pauli_decompose(A, padding=True)
         >>> coeffs
         array([-1. +0.j , -1. +0.5j, -0.5-1.j , -1. +0.j ])
         >>> obs
@@ -161,14 +165,14 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 
         We can also use the method within a differentiable workflow and obtain gradients:
 
-        >>> A = qml.numpy.array([[-2, -2 + 1j]], requires_grad=True)
-        >>> dev = qml.device("default.qubit", wires=1)
-        >>> @qml.qnode(dev)
+        >>> A = qp.numpy.array([[-2, -2 + 1j]], requires_grad=True)
+        >>> dev = qp.device("default.qubit", wires=1)
+        >>> @qp.qnode(dev)
         ... def circuit(A):
-        ...    coeffs, _ = qml.pauli.conversion._generalized_pauli_decompose(A, padding=True)
-        ...    qml.RX(qml.math.real(coeffs[2]), 0)
-        ...    return qml.expval(qml.Z(0))
-        >>> qml.grad(circuit)(A)
+        ...    coeffs, _ = qp.pauli.conversion._generalized_pauli_decompose(A, padding=True)
+        ...    qp.RX(qp.math.real(coeffs[2]), 0)
+        ...    return qp.expval(qp.Z(0))
+        >>> qp.grad(circuit)(A)
         array([[0.+0.j        , 0.+0.2397...j]])
 
     """
@@ -227,9 +231,9 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
             continue
 
         observables = (
-            [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+            [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True) if o != I]
             if hide_identity and not all(t == I for t in pauli_rep)
-            else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+            else [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True)]
         )
         if observables:
             coeffs.append(coefficient)
@@ -238,7 +242,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     coeffs = math.stack(coeffs)
 
     if not pauli:
-        with qml.QueuingManager.stop_recording():
+        with qp.QueuingManager.stop_recording():
             obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs]
 
     return (coeffs, obs)
@@ -246,7 +250,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 
 def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> tuple[qml.typing.TensorLike, list]:
+) -> tuple[TensorLike, list]:
     r"""Sparse SciPy implementation of the generalized Pauli decomposition.
 
     This function computes a weighted sum of Pauli words that is equivalent to the input
@@ -272,7 +276,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         ``wire_order[0]`` and the rightmost to ``wire_order[-1]``.
 
     Returns:
-        Tuple[qml.typing.TensorLike, list]:
+        Tuple[TensorLike, list]:
             A tuple ``(coeffs, terms)`` where ``coeffs`` is a complex-valued array of coefficients.
             ``terms`` is either a list of operator tensors (if ``pauli=False``) or a list of
             lists of ``(pauli_char, wire)`` pairs (if ``pauli=True``).
@@ -282,14 +286,14 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
             ``padding=False``), or if the matrix is empty.
 
     Example:
-        >>> import pennylane as qml
+        >>> import pennylane as qp
         >>> import scipy.sparse as sps
         >>> # Decompose a 2-qubit sparse matrix: Z(0) @ Z(1) + 0.5 * X(0)
         >>> # Matrix: [[1, 0, 0.5, 0], [0, -1, 0, 0.5], [0.5, 0, -1, 0], [0, 0.5, 0, 1]]
         >>> sparse_matrix = sps.csr_matrix(
         ...     [[1, 0, 0.5, 0], [0, -1, 0, 0.5], [0.5, 0, -1, 0], [0, 0.5, 0, 1]]
         ... )
-        >>> coeffs, terms = qml.pauli.conversion._generalized_pauli_decompose_sparse(
+        >>> coeffs, terms = qp.pauli.conversion._generalized_pauli_decompose_sparse(
         ...     sparse_matrix, wire_order=[0, 1]
         ... )
         >>> coeffs
@@ -325,7 +329,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     rows, cols, data = sparse_matrix.row, sparse_matrix.col, sparse_matrix.data
 
     # Decompose each nonzero matrix entry into Pauli word contributions
-    for row, col, value in zip(rows, cols, data):
+    for row, col, value in zip(rows, cols, data, strict=True):
         contributions = [("", complex(value))]
 
         # Process each qubit position (MSB first)
@@ -361,9 +365,11 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         if math.allclose(coeff, 0):
             continue
         if hide_identity and not all(char == I for char in word):
-            observables = [(char, wire) for wire, char in zip(wire_order, word) if char != I]
+            observables = [
+                (char, wire) for wire, char in zip(wire_order, word, strict=True) if char != I
+            ]
         else:
-            observables = [(char, wire) for wire, char in zip(wire_order, word)]
+            observables = [(char, wire) for wire, char in zip(wire_order, word, strict=True)]
         coeffs.append(coeff)
         obs_terms.append(observables)
 
@@ -373,7 +379,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         coeffs = math.cast(math.stack(coeffs), complex)
 
     if not pauli:
-        with qml.QueuingManager.stop_recording():
+        with qp.QueuingManager.stop_recording():
             obs_terms = [reduce(matmul, [op_map[o](w) for o, w in term]) for term in obs_terms]
 
     return (coeffs, obs_terms)
@@ -419,7 +425,7 @@ def _check_hermitian_sparse(H):
         nnz = diff.count_nonzero()
     if nnz:
         max_diff = np.abs(diff.data).max()
-        if max_diff > 1e-8:
+        if max_diff > _HERMITIAN_TOLERANCE:
             raise ValueError(f"The matrix is not Hermitian. (max diff: {max_diff})")
 
 
@@ -449,11 +455,11 @@ def pauli_decompose(
     We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
     matrix:
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> import numpy as np
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
-    >>> H = qml.pauli_decompose(A)
+    >>> H = qp.pauli_decompose(A)
     >>> import pprint
     >>> pprint.pprint(H)
     (
@@ -471,7 +477,7 @@ def pauli_decompose(
 
     We can return a :class:`~.PauliSentence` instance by using the keyword argument ``pauli=True``:
 
-    >>> ps = qml.pauli_decompose(A, pauli=True)
+    >>> ps = qp.pauli_decompose(A, pauli=True)
     >>> print(ps)
     -1.0 * I
     + -1.5 * X(1)
@@ -487,7 +493,7 @@ def pauli_decompose(
     By default the wires are numbered [0, 1, ..., n], but we can also set custom wires using the
     ``wire_order`` argument:
 
-    >>> ps = qml.pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
+    >>> ps = qp.pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
     >>> print(ps)
     -1.0 * I
     + -1.5 * X(b)
@@ -518,7 +524,7 @@ def pauli_decompose(
 
         >>> import scipy.sparse as sps
         >>> sparse_H = sps.csr_matrix([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
-        >>> qml.pauli_decompose(sparse_H)
+        >>> qp.pauli_decompose(sparse_H)
         1.0 * (Z(0) @ Z(1))
 
     """
@@ -556,12 +562,12 @@ def pauli_decompose(
         return PauliSentence(
             {
                 PauliWord({w: o for o, w in obs_n_wires}): coeff
-                for coeff, obs_n_wires in zip(coeffs, obs)
+                for coeff, obs_n_wires in zip(coeffs, obs, strict=True)
             }
         )
 
-    with qml.queuing.QueuingManager.stop_recording():
-        return qml.Hamiltonian(coeffs, obs)
+    with qp.queuing.QueuingManager.stop_recording():
+        return qp.Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):

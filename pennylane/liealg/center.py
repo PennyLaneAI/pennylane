@@ -18,7 +18,7 @@ from itertools import combinations
 import numpy as np
 from scipy.linalg import norm, null_space
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .structure_constants import structure_constants
@@ -85,21 +85,23 @@ def center(
     Returns:
         List[Union[Operator, PauliSentence]]: The center of the Lie algebra ``g``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~structure_constants`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: 
+        :func:`~lie_closure`, :func:`~structure_constants`, :class:`~pennylane.pauli.PauliVSpace`,
+        and our demo :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     **Example**
 
     We can compute the center of a DLA ``g``. First we compute the DLA via :func:`~lie_closure`.
 
-    >>> generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
-    >>> g = qml.lie_closure(generators)
+    >>> generators = [qp.X(0), qp.X(0) @ qp.X(1), qp.Y(1)]
+    >>> g = qp.lie_closure(generators)
     >>> g
     [X(0), X(0) @ X(1), Y(1), X(0) @ Z(1)]
 
     The ``center`` is then the collection of operators that commute with `all` other operators in the DLA.
     In this case, just ``X(0)``.
 
-    >>> qml.center(g)
+    >>> qp.center(g)
     [X(0)]
 
     .. details::
@@ -182,11 +184,13 @@ def center(
             return []
 
     # Construct operators from numerical output and convert to desired format
-    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in kernel_intersection.T]
+    res = [
+        sum(c * x for c, x in zip(c_coeffs, g, strict=True)) for c_coeffs in kernel_intersection.T
+    ]
 
     have_paulis = all(isinstance(x, (PauliWord, PauliSentence)) for x in res)
     if pauli or have_paulis:
-        _ = [el.simplify() for el in res]
+        _ = [el.prune() for el in res]
         if not pauli:
             res = [el.operation() for el in res]
     else:

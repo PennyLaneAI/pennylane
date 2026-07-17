@@ -20,16 +20,17 @@ import copy
 
 import numpy as np
 
-from pennylane import ops, pytrees
+from pennylane import ops
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    controlled_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -130,7 +131,7 @@ class Reflection(Operation):
         U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
-    def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
+    def __init__(self, U, alpha=np.pi, reflection_wires=None):
         self._name = "Reflection"
         wires = U.wires
 
@@ -145,7 +146,7 @@ class Reflection(Operation):
             "reflection_wires": tuple(reflection_wires),
         }
 
-        super().__init__(alpha, *U.data, wires=wires, id=id)
+        super().__init__(alpha, *U.data, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -211,6 +212,9 @@ class Reflection(Operation):
             decomp_ops.append(ops.PhaseShift(alpha, wires=wires))
             decomp_ops.append(ops.X(wires=wires))
 
+        if QueuingManager.recording():
+            apply(U)
+
         decomp_ops.append(U)
 
         return decomp_ops
@@ -230,15 +234,12 @@ def _reflection_decomposition_resources(
 
     if num_wires > 1:
         resources[
-            controlled_resource_rep(
-                ops.PhaseShift,
-                {},
-                num_control_wires=num_wires - 1,
-                num_zero_control_values=num_wires - 1,
+            _ctrl_abstract(
+                ops.PhaseShift, Wire[num_wires - 1], num_zero_control_values=num_wires - 1
             )
         ] = 1
     else:
-        resources[resource_rep(ops.PhaseShift)] = 1
+        resources[ops.PhaseShift] = 1
 
     resources[resource_rep(base_class, **base_params)] = 1
 
@@ -272,7 +273,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
         ops.PhaseShift(alpha, wires=wires)
         ops.PauliX(wires=wires)
 
-    pytrees.unflatten(*pytrees.flatten(U))
+    apply(U)
 
 
 add_decomps(Reflection, _reflection_decomposition)

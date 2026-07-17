@@ -45,9 +45,12 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     circuit = circuit.map_to_standard_wires()
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qp.operation.StatePrepBase):
-        prep = circuit[0]
-
+    if len(circuit) > 0:
+        if isinstance(circuit[0], qp.operation.StatePrepBase):
+            prep = circuit[0]
+        if isinstance(circuit[0], qp.QutritDensityMatrix):
+            if list(circuit.wires) == list(circuit[0].wires):
+                prep = circuit[0]
     state = create_initial_state(
         sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
     )
@@ -136,7 +139,7 @@ def measure_final_state(  # pylint: disable=too-many-arguments
     if len(circuit.measurements) == 1:
         return results[0]
     if circuit.shots.has_partitioned_shots:
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
     return results
 
 

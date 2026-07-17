@@ -23,10 +23,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Channel, Operation, Operator, StatePrepBase
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
 from pennylane.fourier.mark import MarkedOp
-from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
@@ -191,8 +191,6 @@ _ABSTRACT_OR_META_TYPES = {
     qp.ops.qubit.StateVectorProjector,
     qp.templates.core.CollectedSubroutine,
     StatePrepBase,
-    qp.resource.ResourcesOperation,
-    qp.resource.ErrorOperation,
     PowOperation,
     qp.StatePrep,
     qp.FromBloq,
