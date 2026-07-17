@@ -45,6 +45,7 @@ from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecati
 from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -769,7 +770,7 @@ def _controlled_rz_decomp(
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp))
+add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_decomp))
 
 
 class PhaseShift(Operation):
