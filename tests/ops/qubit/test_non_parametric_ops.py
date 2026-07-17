@@ -1350,6 +1350,32 @@ class TestPauliRep:
 class TestPauliYOperator2:
     """Regression tests for the ``PauliY`` migration from ``Operation`` to ``Operator2``."""
 
+    def test_standard_validity(self):
+        """``assert_valid`` must be run explicitly because ``Operator2`` classes are not
+        picked up by the class sweep in ``tests/ops/functions/conftest.py``."""
+        qp.ops.functions.assert_valid(qp.Y(0))
+
+    def test_pow_graph_decomposition(self):
+        """A legacy ``Pow`` wrapping an ``Operator2`` base, including nested and adjoint
+        bases, must decompose through the graph system."""
+        qp.decomposition.enable_graph()
+        try:
+
+            @qp.transforms.decompose(gate_set={"RY", "RZ", "RX", "GlobalPhase"})
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit():
+                qp.pow(qp.Y(0), 3)
+                qp.pow(qp.adjoint(qp.Y(0)), 3)
+                qp.pow(qp.pow(qp.Y(0), 2), 3)
+                return qp.state()
+
+            ops = qp.workflow.construct_tape(circuit, level="device")().operations
+        finally:
+            qp.decomposition.disable_graph()
+
+        assert ops, "pow of PauliY must decompose to gates in the target gate set"
+        assert all(op.name in {"RY", "RZ", "RX", "GlobalPhase"} for op in ops)
+
     def test_concrete_contract(self):
         """A concrete ``PauliY`` should retain its wire constructor argument and matrix.
 
@@ -1362,6 +1388,10 @@ class TestPauliYOperator2:
         assert op.arguments == {"wires": Wires(["target"])}
         assert qp.math.allclose(qp.Y.compute_matrix(wires=["target"]), op.matrix())
         assert qp.Y.compute_decomposition is Operator2.compute_decomposition
+        assert op.decomposition() == [
+            qp.RY(np.pi, wires="target"),
+            qp.GlobalPhase(-np.pi / 2, wires="target"),
+        ]
 
     def test_abstract_contract(self):
         """Abstract construction should preserve a one-wire shape and avoid indexing it.
