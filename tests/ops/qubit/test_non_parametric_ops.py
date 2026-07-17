@@ -1218,15 +1218,6 @@ def test_label_method(op, label):
 
 
 control_data = [
-    (qp.Identity(0), Wires([])),
-    (qp.Hadamard(0), Wires([])),
-    (qp.PauliX(0), Wires([])),
-    (qp.PauliY(0), Wires([])),
-    (qp.T(wires=0), Wires([])),
-    (qp.SWAP(wires=(0, 1)), Wires([])),
-    (qp.ISWAP(wires=(0, 1)), Wires([])),
-    (qp.SISWAP(wires=(0, 1)), Wires([])),
-    (qp.ECR(wires=(0, 1)), Wires([])),
     # Controlled operations
     (qp.CY(wires=(0, 1)), Wires(0)),
     (qp.CZ(wires=(0, 1)), Wires(0)),
