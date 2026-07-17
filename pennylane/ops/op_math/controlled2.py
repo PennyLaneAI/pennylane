@@ -791,6 +791,8 @@ def _ctrl_abstract(
     num_zero_control_values: int = 0,
 ):
     op = abstractify(op)
+    control_wires = abstractify(control_wires)
+    work_wires = abstractify(work_wires)
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(

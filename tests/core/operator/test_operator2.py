@@ -1355,7 +1355,7 @@ class TestDunderMethods:
             wire_argnames = ("wires",)
             arg_specs = {"wires": Wire[1]}
 
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op = Op(Wire[1])
@@ -1364,7 +1364,7 @@ class TestDunderMethods:
         class Op2(Operator2):
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op = Op2(Wire[1])
