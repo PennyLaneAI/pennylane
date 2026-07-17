@@ -138,6 +138,12 @@ class TestExpression:
         assert isinstance(new_expr3, int)
         assert new_expr3 == 32
 
+    def test_subs_cancels_out(self):
+        s = Expression({("x",): 1, ("y",): -1})
+        subbed = s.subs({"x": 5, "y": 5})
+        assert subbed == 0
+        assert isinstance(subbed, int)
+
     def test_subs_kwargs(self, sample_expr):
         assert sample_expr.subs(x=2, z=3) == sample_expr.subs({"x": 2, "z": 3})
 

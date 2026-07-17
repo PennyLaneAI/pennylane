@@ -160,7 +160,7 @@ class Resources:
         lines = []
 
         if self.is_symbolic:
-            lines.append(f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars))}")
+            lines.append(f"{prefix}Symbolic variables: {', '.join(sorted(self.vars))}")
 
         for obj_field in fields(self):
             if obj_field.repr is False:
@@ -183,6 +183,12 @@ class Resources:
                     _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
                 )
                 lines.append(f"{prefix}{field_name}: {value_str}")
+
+        if self.extra is not None:
+            lines.append(f"{prefix}Extra fields:")
+            for k, v in self.extra.items():
+                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                lines.append(f"{prefix}- {k}: {value_str}")
 
         return "\n".join(lines)
 
@@ -229,6 +235,11 @@ class Resources:
                     _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
                 )
                 lines.append(f"| **{field_name}** | {value_str} |")
+        if self.extra is not None:
+            lines.append("| **Extra Fields** | |")
+            for k, v in self.extra.items():
+                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                lines.append(f"| {k} | {value_str} |")
 
         return "\n".join(lines)
 

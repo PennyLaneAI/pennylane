@@ -30,6 +30,7 @@ from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
     PBCSpecsResources,
+    Resources,
     SpecsResources,
     _count_to_str,
     num_to_letters,
@@ -53,6 +54,191 @@ def test_specs_compute_depth(compute_depth):
     resources = resources_from_tape(tape, compute_depth=compute_depth)
 
     assert resources.depth == (3 if compute_depth else None)
+
+
+class TestBaseResources:
+    """Test the methods and attributes of the base Resources class"""
+
+    @pytest.fixture
+    def example_base_resources(self):
+        return Resources(counts={"Hadamard": 2, "CNOT": 1}, extra={"n": 10})
+
+    @pytest.fixture
+    def example_base_resources_symbolic(self):
+        return Resources(counts={"Hadamard": Expression({("x",): 1}), "CNOT": 1}, extra={"n": 10})
+
+    def test_str(self, example_base_resources):
+        """Test the string representation of a Resources instance."""
+
+        r = example_base_resources
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - CNOT: 1
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_symbolic(self, example_base_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_base_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_multi_symbolic(self, example_base_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_base_resources_symbolic
+
+        r = dataclasses.replace(r, counts={**r.counts, "PauliX": Expression({("y",): 1})})
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x, y
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            - PauliX: y
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_subs(self, example_base_resources_symbolic):
+        """Test that the subs method correctly substitutes values for variables."""
+
+        r = example_base_resources_symbolic
+
+        new_r = r.subs({"x": 3})
+        assert new_r.counts == {"Hadamard": 3, "CNOT": 1}
+        assert new_r.vars == set()
+
+    def test_invalid_subs(self, example_base_resources_symbolic):
+        """Test that the subs method raises a ValueError when substituting a variable not present in the expression."""
+        r = example_base_resources_symbolic
+
+        # Substituting a variable that doesn't exist should raise
+        with pytest.raises(
+            ValueError,
+            match="Substitutions contain variables {'y'} which are not in the expression's variables",
+        ):
+            r.subs({"y": 5})
+
+
+class TestBaseResourcesExtension:
+    """Test the methods and attributes of the base Resources class correctly handle
+    extensions automatically"""
+
+    @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+    class DummyResources(Resources):
+        """Dummy class to test automatic subclass field handling"""
+
+        foo: int = dataclasses.field(default=5, metadata={"display_name": "My field"})
+
+    @pytest.fixture
+    def example_dummy_resources(self):
+        return self.DummyResources(counts={"Hadamard": 2, "CNOT": 1}, extra={"n": 10}, foo=12)
+
+    @pytest.fixture
+    def example_dummy_resources_symbolic(self):
+        return self.DummyResources(
+            counts={"Hadamard": Expression({("x",): 1}), "CNOT": 1},
+            extra={"n": 10},
+            foo=Expression({("x",): 2}),
+        )
+
+    def test_str(self, example_dummy_resources):
+        """Test the string representation of a Resources instance."""
+
+        r = example_dummy_resources
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - CNOT: 1
+            My field: 12
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_symbolic(self, example_dummy_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_dummy_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            My field: 2*x
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_multi_symbolic(self, example_dummy_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_dummy_resources_symbolic
+
+        r = dataclasses.replace(r, foo=Expression({("y",): 1}))
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x, y
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            My field: y
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_subs(self, example_dummy_resources_symbolic):
+        """Test that the subs method correctly substitutes values for variables."""
+
+        r = example_dummy_resources_symbolic
+
+        new_r = r.subs({"x": 3})
+        assert new_r.counts == {"Hadamard": 3, "CNOT": 1}
+        assert new_r.foo == 6
+        assert new_r.vars == set()
 
 
 class TestSpecsResources:
@@ -452,7 +638,7 @@ class TestPBCSpecsResources:
             | ↓Metric / Level→ | 1 | 2 |
             | :--- | ---: | ---: |
             | **Quantum operations** |  |  |
-            | Total | 2 | 2 |
+            | *Total* | 2 | 2 |
             | Hadamard | 2 | 2 |
             | **Measurement processes** |  |  |
             | expval(PauliZ) | 1 | 1 |
