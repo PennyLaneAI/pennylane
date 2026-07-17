@@ -173,7 +173,7 @@ class AQFT(Operation):
         **Example:**
 
         >>> qp.AQFT.compute_decomposition((0, 1, 2), order=1)
-        [H(0), ControlledPhaseShift(1.57..., wires=Wires([1, 0])), H(1), ControlledPhaseShift(1.57..., wires=Wires([2, 1])), H(2), SWAP(wires=[0, 2])]
+        [H(0), ControlledPhaseShift(1.57..., wires=[1, 0]), H(1), ControlledPhaseShift(1.57..., wires=[2, 1]), H(2), SWAP(wires=[0, 2])]
 
         """
         n_wires = len(wires)
