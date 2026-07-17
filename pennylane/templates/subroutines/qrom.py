@@ -21,7 +21,7 @@ from functools import reduce
 
 import numpy as np
 
-from pennylane import compiler, math, capture
+from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
@@ -36,6 +36,7 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -899,7 +900,9 @@ def _temporary_and_triples(control: WiresLike, work: WiresLike) -> list[list]:
         list[list]: List with ``c-1`` elements, where each element is a three-element list.
 
     """
-    aux = [control[0]] + [_wires[i] for i in range(len(control) - 1) for _wires in [control[1:], work]]
+    aux = [control[0]] + [
+        _wires[i] for i in range(len(control) - 1) for _wires in [control[1:], work]
+    ]
     return [aux[2 * i : 2 * i + 3] for i in range(len(control) - 1)]
 
 
@@ -910,12 +913,91 @@ def _popcount(x, nbits=40):
     return pc
 
 
+def _qrom_unary_iteration_condition(num_control_wires=None, num_work_wires=None, **_):
+    return num_work_wires >= num_control_wires - 1
+
+
 def _qrom_unary_iteration_resources(
-    num_bitstrings=None, num_target_wires=None, base_params=None, **_
+    num_bitstrings=None, num_control_wires=None, num_target_wires=None, **_
 ):
-    return {resource_rep(BasisState, num_wires=13): 1}
+    c = num_control_wires
+    K = num_bitstrings
+
+    basis_rep = resource_rep(BasisState, num_wires=num_target_wires)
+    cbasis_rep = controlled_resource_rep(
+        BasisState, base_params={"num_wires": num_target_wires}, num_control_wires=1
+    )
+    if c == 0:
+        return {basis_rep: 1}
+    if c == 1:
+        return {cbasis_rep: 1, basis_rep: 1}
+
+    # The number of elbows required for non-partial unary iteration is given by
+    # N(c, K) = c + K - 2 - ‖K-1‖_H - int(K>2^{c-1}),
+    # where ‖.‖_H denotes the Hamming weight, or bit count.
+    # To see this, note that adding a control node to a given unary iteration is done by using the
+    # given iteration, and replacing each "slot" (controlled unitary) by a construction that
+    # yields two new "slots" and requires one elbow. Consequently, the addition of a control
+    # node uses the given iteration with ⌈K/2⌉ slots, and ⌈K/2⌉ additional elbows, leading to the
+    # recursion relation
+    # N(c+1, K) = N(c, ⌈K/2⌉) + ⌈K/2⌉
+    # In addition, we know that for two control nodes, just a single elbow is required:
+    # N(2, K) = 1
+    # The formula at the top is the solution to this recursion relation. An alternative expression
+    # for the same is
+    # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
+    num_elbows = c + K - 2 - (K - 1).bit_count() - int(K > 2 ** (c - 1))
+    return {
+        TemporaryAND: num_elbows,
+        _adjoint_abstract(TemporaryAND): num_elbows,
+        CNOT: K - 1 + int(K > 2 ** (c - 1)),
+        X: 2 * int(K > 2 ** (c - 2)),
+        cbasis_rep: K,
+    }
 
 
+def _main_unary_loop(data, triples, target_wires):
+    K = len(data)
+    c = len(triples) + 1
+    # last work wire in use acts as the flag qubit for data loading.
+    flag = triples[-1][2]
+
+    # Loop over all data but the last one
+    @for_loop(K - 1)
+    def loop(k):
+        # 1. load data[k], controlled on the flag circuit
+        qp_ops.ctrl(BasisState(data[k], target_wires), control=[flag])
+
+        # 2. transition address k -> k+1
+        # a is the MSB-first index of least-significant 0 bit of k
+        a = c - _popcount(math.bitwise_xor(k, k + 1))
+
+        # Whether we are in the first half of the iteration, so that the top bit
+        # has not been flipped yet
+        top_not_flipped = k < (1 << (c - 1))
+
+        # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
+        for i in range(c - 2, 0, -1):
+            qp_ops.adjoint(cond(i >= a, TemporaryAND))(wires=triples[i])
+
+        # 2b. merge gate(s) at the boundary
+        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
+        cond(a > 0, CNOT)(triples[a - 1][::2])
+        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
+
+        cond(a == 0, CNOT)(triples[0][::2])
+        cond(a == 0, CNOT)(triples[0][1:])
+        # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
+        for i in range(1, c - 1):
+            cond(i >= a, TemporaryAND)(triples[i], (1, 0))
+
+    loop()  # pylint: disable=no-value-for-parameter
+
+    # Load last bit string
+    qp_ops.ctrl(BasisState(data[K - 1], target_wires), control=[flag])
+
+
+@register_condition(_qrom_unary_iteration_condition)
 @register_resources(_qrom_unary_iteration_resources)
 def _qrom_unary_iteration(
     data, control_wires, target_wires, work_wires, clean, **__
@@ -925,75 +1007,39 @@ def _qrom_unary_iteration(
     K = len(data)
     c = len(control_wires)
 
-    # ---- degenerate cases ----
     if c == 0:
+        # Simply load unique bit string
         BasisState(data[0], target_wires)
         return
 
     if c == 1:
-        # Two operators, control-applied directly on the single control wire.
+        # Two bit strings to be applies. Load the first unconditionally and control-load the diff
         BasisState(data[0], target_wires)
         qp_ops.ctrl(BasisState((data[0] + data[1]) % 2, target_wires), control=control_wires)
         return
 
-    # ---- general case: c >= 2 ----
+    # Compute unary iteration wires
     triples = _temporary_and_triples(control_wires, work_wires)
-    flag = triples[-1][2]  # last work wire in use acts as the flag qubit for data loading.
 
     if compiler.active() or capture.enabled():
         data = math.array(data, like="jax")
         triples = math.array(triples, like="jax")
 
-    # ---- initial ladder of left elbows (open at level 0 with (0,0)) ----
+    # initial ladder of left elbows (open at level 0 with cvals (0,0))
     TemporaryAND(triples[0], (0, 0))
     for i in range(1, c - 1):
         TemporaryAND(triples[i], (1, 0))
 
-    # Loop over all data but the last one
+    _main_unary_loop(data, triples, target_wires)
 
-    @for_loop(K - 1)
-    def loop(k):
-        # 1. load data[k], controlled on the flag circuit
-        qp_ops.ctrl(BasisState(data[k], target_wires), control=[flag])
-
-        # 2. transition address k -> k+1
-        # a = MSB-first index of least-significant 0 bit of k
-        a = c - _popcount(math.bitwise_xor(k, k + 1))
-        top_not_flipped = k < (1 << (c - 1))  # first_bit_has_flipped
-
-        # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
-        for i in range(c - 2, 0, -1):
-            qp_ops.adjoint(cond(i >= a, TemporaryAND))(wires=triples[i])
-
-        # 2b. merge gate(s) at the boundary
-        c0, c1, c2 = triples[0]
-
-        cond(math.logical_and(a==1, top_not_flipped), X)(triples[0][0])
-        cond(a>0, CNOT)(triples[a-1][::2])
-        cond(math.logical_and(a==1, top_not_flipped), X)(triples[0][0])
-
-        cond(a==0, CNOT)(triples[0][::2])
-        cond(a==0, CNOT)(triples[0][1:])
-        # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-        for i in range(1, c - 1):
-            cond(i >= a, TemporaryAND)(triples[i], (1, 0))
-
-    loop()
-    # Load last bit string
-    qp_ops.ctrl(BasisState(data[K - 1], target_wires), control=[flag])
-
-    # ---- closing ladder of right elbows for address K-1 ----
-    # control values depend on the bits of K-1; for K == 2**c, K-1 is all-ones,
-    # so every closing elbow uses cv=(1,1) except the outermost which uses (1,1)
-    # as well (bits [1,1]). We reproduce PennyLane's closing structure exactly.
+    # closing ladder of right elbows for address K-1; control values depend on the bits of K-1
     closing_bits = [(K - 1 >> (c - 1 - b)) & 1 for b in range(c)]
-    # levels c-2 .. 1 close with cv=(1, closing_bits[i+1]); level 0 closes with
-    # cv=(closing_bits[0], closing_bits[1]).
+    # levels i=c-2 .. 1 close with cvals (1, closing_bits[i+1]); level 0 closes with
+    # cvals closing_bits[:2]
     for i in range(c - 2, 0, -1):
         qp_ops.adjoint(TemporaryAND(wires=triples[i], control_values=(1, closing_bits[i + 1])))
     qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
 
-add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition)
-add_decomps(QROM, _qrom_unary_iteration)
+add_decomps(QROM, _qrom_unary_iteration, _qrom_decomposition, _qrom_measurement_decomposition)
 add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
