@@ -37,7 +37,6 @@ from .primitives import (
     for_loop_prim,
     jacobian_prim,
     jvp_prim,
-    operator_p,
     qnode_prim,
     quantum_subroutine_prim,
     value_and_grad_prim,
@@ -324,8 +323,6 @@ class PlxprInterpreter:
 
         """
         invals = (self.read(invar) for invar in eqn.invars)
-        if eqn.primitive is operator_p:
-            return eqn.primitive.bind(*invals, **eqn.params)
         with qp.QueuingManager.stop_recording():
             op = eqn.primitive.impl(*invals, **eqn.params)
         if isinstance(eqn.outvars[0], jax.core.DropVar):
