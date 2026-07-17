@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires:
+    def wires(self) -> Wires | None:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -335,6 +335,11 @@ class Operator2(metaclass=OperatorMeta):
         if self._batch_size is _UNSET_BATCH_SIZE:
             self._check_batching()
         return self._ndim_params
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
 
     @property
     def arithmetic_depth(self) -> int:
@@ -784,7 +789,7 @@ class Operator2(metaclass=OperatorMeta):
             return self.compute_decomposition(**self.arguments)
 
         for decomp in qp.list_decomps(self):
-            if decomp.is_applicable():
+            if decomp.is_applicable(**self.arguments):
                 with AnnotatedQueue() as q:
                     decomp(**self.arguments)
                 if QueuingManager.recording():
@@ -953,6 +958,19 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        # NOTE: Handle special case for single wire non-parameteric
+        # operators like 'repr(qp.X(wires=0)) = X(0)'
+        non_wire_args = (
+            self.dynamic_argnames
+            + self.static_argnames
+            + self.compilable_argnames
+            + self.hybrid_argnames
+        )
+        if not non_wire_args and len(self.wire_argnames) == 1:
+            wire_arg = self.arguments[self.wire_argnames[0]]
+            if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
+
         inputs = []
 
         for key, value in self.arguments.items():
@@ -1232,14 +1250,12 @@ class Operator2(metaclass=OperatorMeta):
                 wire_lens.append(len(value))
 
         hybrid_lens, hybrid_trees = [], []
+        forward_mask = []
         for name in self.hybrid_argnames:
-            # Partial flattening to extract operators used as data so their
-            # equations can be deleted from the jaxpr.
-            op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
-            _ = pop_op_eqns(filter(_is_op, op_leaves))
-
-            # Full flattening to feed the operator's dynamic data to the primitive.
-            leaves, tree = flatten(self.arguments[name])
+            leaves, tree, mask = _process_bind_hybrid_arg(
+                self.arguments[name], is_wire_arg=name in self.wire_argnames
+            )
+            forward_mask.extend(mask)
             pos_args.extend(leaves)
             hybrid_lens.append(len(leaves))
             hybrid_trees.append(tree)
@@ -1257,6 +1273,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            forward_mask=forward_mask,
             n_ctrls=0,
             adjoint=False,
             **static_args,
@@ -1560,7 +1577,7 @@ if has_jax:
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,unused-argument
     @operator_p.def_impl
     def _op_impl(
         *all_args,
@@ -1568,6 +1585,7 @@ if has_jax:
         wire_lens,
         hybrid_lens,
         hybrid_trees,
+        forward_mask,
         n_ctrls=0,
         adjoint=False,
         **static_args,
@@ -1647,6 +1665,37 @@ def pop_op_eqns(ops: Iterable):
             op.tracer = None
 
     return old_eqns
+
+
+def _op_arg_forward_mask(op: Operator2) -> list[bool]:
+    """Build ``forward_mask`` entries for an operator argument."""
+    op_leaves, _ = flatten(op, is_leaf=_is_wires)
+    hybrid_mask = []
+    for op_leaf in op_leaves:
+        if isinstance(op_leaf, Wires):
+            hybrid_mask.extend([False] * len(op_leaf))
+        else:
+            hybrid_mask.append(True)
+    return hybrid_mask
+
+
+def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
+    """Process a hybrid argument for binding an operator primitive."""
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
+    _ = pop_op_eqns(filter(_is_op, partial_leaves))
+
+    leaves, tree = flatten(hybrid_val)
+    if is_wire_arg:
+        return leaves, tree, [False] * len(leaves)
+
+    hybrid_mask: list[bool] = []
+    for partial_leaf in partial_leaves:
+        if isinstance(partial_leaf, Operator2):
+            hybrid_mask.extend(_op_arg_forward_mask(partial_leaf))
+        else:
+            hybrid_mask.append(False)
+
+    return leaves, tree, hybrid_mask
 
 
 # -----------------------------------------------------------------------------
