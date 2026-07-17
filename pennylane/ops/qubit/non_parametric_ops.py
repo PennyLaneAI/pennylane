@@ -1519,8 +1519,9 @@ class SX(Operator2):
             )
         return self._pauli_rep
 
+    _matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+
     @staticmethod
-    @lru_cache
     # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1539,7 +1540,7 @@ class SX(Operator2):
         [[0.5+0.5j 0.5-0.5j]
          [0.5-0.5j 0.5+0.5j]]
         """
-        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+        return SX._matrix
 
     @staticmethod
     # pylint: disable=arguments-differ,unused-argument
