@@ -200,6 +200,8 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
+        # NOTE: Use 'getattr' to not clobber '_is_abstract' if coming
+        # from '__abstract_init__'
         self._is_abstract = getattr(self, "_is_abstract", False)
 
         self._bound_args = self._sig.bind(*args, **kwargs)
