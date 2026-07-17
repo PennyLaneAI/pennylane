@@ -166,7 +166,6 @@ class Resources:
     Args:
         counts (dict[str, int]): A dictionary mapping resources to their counts.
         extra (dict[int, int]): A dictionary for storing any extra fields that need to be tracked.
-        vars (frozenset[str]): The set of all symbolic variables present in the resource counts.
 
     .. details::
         :title: Symbolic Resource Information
