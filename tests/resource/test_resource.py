@@ -64,6 +64,10 @@ class TestBaseResources:
 
     @pytest.fixture
     def example_base_resources(self):
+        return Resources(counts={"Hadamard": 2, "CNOT": 1})
+
+    @pytest.fixture
+    def example_base_resources_extra(self):
         return Resources(counts={"Hadamard": 2, "CNOT": 1}, extra={"n": 10})
 
     @pytest.fixture
@@ -74,6 +78,22 @@ class TestBaseResources:
         """Test the string representation of a Resources instance."""
 
         r = example_base_resources
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - CNOT: 1
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_extra(self, example_base_resources_extra):
+        """Test the string representation of a Resources instance with extra fields."""
+
+        r = example_base_resources_extra
 
         expected = textwrap.dedent("""\
             counts:
@@ -129,6 +149,55 @@ class TestBaseResources:
         expected_indented = textwrap.indent(expected, " " * 4)
         assert r.to_pretty_str(preindent=4) == expected_indented
 
+    def test_markdown(self, example_base_resources):
+        """Test the markdown representation of a Resources instance."""
+
+        r = example_base_resources
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | CNOT | 1 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_extra(self, example_base_resources_extra):
+        """Test the markdown representation of a Resources instance with extra fields."""
+
+        r = example_base_resources_extra
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | CNOT | 1 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_symbolic(self, example_base_resources_symbolic):
+        """Test the markdown representation of a symbolic Resources instance."""
+
+        r = example_base_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | x |
+            | CNOT | 1 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
     def test_subs(self, example_base_resources_symbolic):
         """Test that the subs method correctly substitutes values for variables."""
 
@@ -159,6 +228,9 @@ class TestBaseResourcesExtension:
         """Dummy class to test automatic subclass field handling"""
 
         foo: int = dataclasses.field(default=5, metadata={"display_name": "My field"})
+        bar: dict = dataclasses.field(
+            default_factory=lambda: {"a": 1, "b": 2}, metadata={"display_name": "My dict field"}
+        )
 
     @pytest.fixture
     def example_dummy_resources(self):
@@ -170,6 +242,7 @@ class TestBaseResourcesExtension:
             counts={"Hadamard": Expression({("x",): 1}), "CNOT": 1},
             extra={"n": 10},
             foo=Expression({("x",): 2}),
+            bar={"a": Expression({("y",): 1}), "b": 2},
         )
 
     def test_str(self, example_dummy_resources):
@@ -182,6 +255,9 @@ class TestBaseResourcesExtension:
             - Hadamard: 2
             - CNOT: 1
             My field: 12
+            My dict field:
+            - a: 1
+            - b: 2
             Extra fields:
             - n: 10
         """).strip()
@@ -191,17 +267,31 @@ class TestBaseResourcesExtension:
         expected_indented = textwrap.indent(expected, " " * 4)
         assert r.to_pretty_str(preindent=4) == expected_indented
 
+    def test_str_empty(self):
+        """Test the string representation of a Resources instance with empty fields."""
+        r = Resources(counts={})
+
+        expected = textwrap.dedent("""\
+            counts:
+            - None present.
+        """).strip()
+
+        assert str(r) == expected
+
     def test_str_symbolic(self, example_dummy_resources_symbolic):
         """Test the string representation of a symbolic Resources instance."""
 
         r = example_dummy_resources_symbolic
 
         expected = textwrap.dedent("""\
-            Symbolic variables: x
+            Symbolic variables: x, y
             counts:
             - Hadamard: x
             - CNOT: 1
             My field: 2*x
+            My dict field:
+            - a: y
+            - b: 2
             Extra fields:
             - n: 10
         """).strip()
@@ -224,6 +314,9 @@ class TestBaseResourcesExtension:
             - Hadamard: x
             - CNOT: 1
             My field: y
+            My dict field:
+            - a: y
+            - b: 2
             Extra fields:
             - n: 10
         """).strip()
@@ -233,14 +326,70 @@ class TestBaseResourcesExtension:
         expected_indented = textwrap.indent(expected, " " * 4)
         assert r.to_pretty_str(preindent=4) == expected_indented
 
+    def test_markdown(self, example_dummy_resources):
+        """Test the markdown representation of a Resources instance."""
+
+        r = example_dummy_resources
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | CNOT | 1 |
+            | **My field** | 12 |
+            | **My dict field** | |
+            | a | 1 |
+            | b | 2 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_empty(self):
+        """Test the string representation of a Resources instance with empty fields."""
+        r = Resources(counts={})
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | *None present* | |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_symbolic(self, example_dummy_resources_symbolic):
+        """Test the markdown representation of a symbolic Resources instance."""
+
+        r = example_dummy_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | x |
+            | CNOT | 1 |
+            | **My field** | 2*x |
+            | **My dict field** | |
+            | a | y |
+            | b | 2 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
     def test_subs(self, example_dummy_resources_symbolic):
         """Test that the subs method correctly substitutes values for variables."""
 
         r = example_dummy_resources_symbolic
 
-        new_r = r.subs({"x": 3})
+        new_r = r.subs({"x": 3, "y": 2})
         assert new_r.counts == {"Hadamard": 3, "CNOT": 1}
         assert new_r.foo == 6
+        assert new_r.bar == {"a": 2, "b": 2}
         assert new_r.vars == set()
 
 

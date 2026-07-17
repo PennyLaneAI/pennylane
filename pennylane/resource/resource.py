@@ -255,7 +255,7 @@ class Resources:
                 )
                 lines.append(f"{prefix}{field_name}: {value_str}")
 
-        if self.extra is not None:
+        if self.extra:
             lines.append(f"{prefix}Extra fields:")
             for k, v in _flatten_dict(self.extra).items():
                 value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
@@ -299,14 +299,15 @@ class Resources:
                     value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
                     lines.append(f"| {k} | {value_str} |")
                 if len(dict_items) == 0:
-                    lines.append("| *None present*| |")
+                    lines.append("| *None present* | |")
             else:
                 value = getattr(self, obj_field.name)
                 value_str = (
                     _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
                 )
                 lines.append(f"| **{field_name}** | {value_str} |")
-        if self.extra is not None:
+
+        if self.extra:
             lines.append("| **Extra Fields** | |")
             for k, v in _flatten_dict(self.extra).items():
                 value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
