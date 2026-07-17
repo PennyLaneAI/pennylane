@@ -21,7 +21,7 @@ from functools import reduce
 
 import numpy as np
 
-from pennylane import compiler, math
+from pennylane import compiler, math, capture
 from pennylane import ops as qp_ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
@@ -70,7 +70,7 @@ def _new_ops(depth, target_wires, capacity, swap_wires, data):
     return new_ops
 
 
-def _new_data(depth, target_wires, capacity, swap_wires, data):
+def _new_data(depth, capacity, swap_wires, data):
     num_data, num_bits = data.shape
     # Pad with zeros to fill up to max-capacity bitstrings
     data = math.concatenate([data, np.zeros((capacity - num_data, num_bits), dtype=data.dtype)])
@@ -80,7 +80,7 @@ def _new_data(depth, target_wires, capacity, swap_wires, data):
     # depth is min(a power of two, num_bits), so it can happen that num_data%depth != 0
     new_num_data = num_data // depth + int(num_data % depth > 0)
     new_num_bits = len(swap_wires)
-    assert new_num_bits == len(target_wires) * depth  # TMP
+    assert new_num_bits == num_bits * depth  # TMP
     new_data = math.zeros((new_num_data, new_num_bits), dtype=data.dtype)
     # TODO: vectorize
     for i in range(new_num_data):
@@ -523,6 +523,8 @@ def _qrom_decomposition_resources(
                 num_control_wires=num_control_select_wires,
                 num_target_wires=num_swap_wires,
                 num_work_wires=num_work_wires_select,
+                num_bitstrings=num_bitstrings,
+                clean=True,
             ): 1
         }
     else:
@@ -897,7 +899,7 @@ def _temporary_and_triples(control: WiresLike, work: WiresLike) -> list[list]:
         list[list]: List with ``c-1`` elements, where each element is a three-element list.
 
     """
-    aux = [control[0]] + [_wires[i] for i in range(len(control) - 1) for _wires in [control, work]]
+    aux = [control[0]] + [_wires[i] for i in range(len(control) - 1) for _wires in [control[1:], work]]
     return [aux[2 * i : 2 * i + 3] for i in range(len(control) - 1)]
 
 
@@ -961,12 +963,7 @@ def _qrom_unary_iteration(
 
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
         for i in range(c - 2, 0, -1):
-
-            @cond(i >= a)
-            def _unc():
-                qp_ops.adjoint(TemporaryAND(wires=triples[i]))
-
-            _unc()
+            cond(i >= a, qp_ops.adjoint(TemporaryAND))(wires=triples[i])
 
         # 2b. merge gate(s) at the boundary
         c0, c1, c2 = triples[0]
