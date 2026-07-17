@@ -60,6 +60,8 @@ class Pow2(SymbolicOp2):
 
     """
 
+    z: int | float
+
     wire_argnames = ()
     hybrid_argnames = ("base",)
     static_argnames = ("z",)
