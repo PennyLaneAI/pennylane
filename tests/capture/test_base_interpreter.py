@@ -160,7 +160,7 @@ def test_default_operator_handling():
 
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
-    assert jaxpr.eqns[2].primitive == qp.T._primitive
+    _check_op_eqn(jaxpr.eqns[2], qp.T)
     _check_op_eqn(jaxpr.eqns[3], qp.X)
     _check_op_eqn(jaxpr.eqns[4], qp.X)
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
