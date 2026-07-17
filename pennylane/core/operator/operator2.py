@@ -1601,10 +1601,10 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete impl.
-                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
-                i += len_
+                # TODO: impl is being used here for reconstruction while the interpreter itself is under JAX tracing. Need to separate this logic from such scenario. For now, we can use the fact that wires are always integers and cast them to int.
+                args[name] = Wires(
+                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
+                )
 
         # Reorder hybrid args such that hybrid wire args are first
         for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
