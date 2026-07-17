@@ -24,10 +24,8 @@ import pennylane as qp
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    AbstractOperator,
-    operator_p,
-)
+from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
+from tests.capture.capture_utils import check_eqn  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -520,8 +518,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == operator_p
-        assert jaxpr.eqns[1].params["op_cls"] is qp.Y
+        check_eqn(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -543,8 +540,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == operator_p
-        assert jaxpr.eqns[1].params["op_cls"] is qp.Y
+        check_eqn(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -565,8 +561,7 @@ class TestAbstractDunders:
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
 
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is qp.Y
+        check_eqn(jaxpr.eqns[0], qp.Y)
 
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[1].invars[0].val == 2

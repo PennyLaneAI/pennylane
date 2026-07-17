@@ -38,10 +38,8 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    AbstractMeasurement,
-    operator_p,
-)
+from pennylane.capture.primitives import AbstractMeasurement  # pylint: disable=wrong-import-position
+from tests.capture.capture_utils import check_eqn  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -433,8 +431,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] == PauliX
+        check_eqn(jaxpr.eqns[0], PauliX)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -510,8 +507,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
         assert jaxpr.eqns[0].primitive == qp.X._primitive
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == operator_p
-        assert jaxpr.eqns[2].params["op_cls"] is qp.Y
+        check_eqn(jaxpr.eqns[2], qp.Y)
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
         assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[3].outvars[0]
         assert jaxpr.eqns[4].primitive == m_type._obs_primitive

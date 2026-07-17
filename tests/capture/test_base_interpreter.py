@@ -37,13 +37,9 @@ from tests.core.operator.operator2_utils import (  # pylint: disable=wrong-impor
     DynOp,
     NonParametricOp,
 )
+from tests.capture.capture_utils import check_eqn  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
-
-
-def _check_eqn(eqn, op_type):
-    assert eqn.primitive is operator_p
-    assert eqn.params["op_cls"] is op_type
 
 
 class SimplifyInterpreter(PlxprInterpreter):
@@ -163,7 +159,7 @@ def test_default_operator_handling():
 
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
-    _check_eqn(jaxpr.eqns[2], qp.T)
+    check_eqn(jaxpr.eqns[2], qp.T)
     assert jaxpr.eqns[3].primitive == qp.X._primitive
     assert jaxpr.eqns[4].primitive == qp.X._primitive
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive

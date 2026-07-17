@@ -34,6 +34,7 @@ from pennylane.capture.primitives import (
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
+from tests.capture.capture_utils import check_eqn
 
 pytestmark = [
     pytest.mark.jax,
@@ -180,8 +181,7 @@ class TestDecomposeInterpreter:
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-4].primitive == qp.PauliX._primitive
-        assert jaxpr.eqns[-3].primitive == operator_p
-        assert jaxpr.eqns[-3].params["op_cls"] is qp.PauliY
+        check_eqn(jaxpr.eqns[-3], qp.PauliY)
         assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
@@ -198,8 +198,7 @@ class TestDecomposeInterpreter:
 
         assert transformed_jaxpr.eqns[-4].primitive == qp.PauliX._primitive
         assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
-        assert transformed_jaxpr.eqns[-2].primitive == operator_p
-        assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.PauliY
+        check_eqn(transformed_jaxpr.eqns[-2], qp.PauliY)
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -246,8 +245,7 @@ class TestDecomposeInterpreter:
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-4].primitive == qp.PauliX._primitive
-        assert jaxpr.eqns[-3].primitive == operator_p
-        assert jaxpr.eqns[-3].params["op_cls"] is qp.PauliY
+        check_eqn(jaxpr.eqns[-3], qp.PauliY)
         assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Prod._primitive
 
@@ -255,14 +253,12 @@ class TestDecomposeInterpreter:
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
             assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
-            assert transformed_jaxpr.eqns[-2].primitive == operator_p
-            assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.PauliY
+            check_eqn(transformed_jaxpr.eqns[-2], qp.PauliY)
             assert transformed_jaxpr.eqns[-1].primitive == qp.PauliX._primitive
         else:
             assert transformed_jaxpr.eqns[-4].primitive == qp.PauliX._primitive
             assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
-            assert transformed_jaxpr.eqns[-2].primitive == operator_p
-            assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.PauliY
+            check_eqn(transformed_jaxpr.eqns[-2], qp.PauliY)
             assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Prod._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
