@@ -29,7 +29,9 @@ def _symbolic_array_primitive():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    estimation_p = jax.extend.core.Primitive("symbolic_array")
+    import pennylane  # pylint: disable=import-outside-toplevel
+
+    estimation_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
 
     @estimation_p.def_abstract_eval
     def _estimation_p_abstract_eval(shape, dtype):
