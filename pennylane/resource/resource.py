@@ -336,7 +336,7 @@ class Resources:
         substitutions.update(kwargs)
 
         subs_vars = set(substitutions.keys())
-        if extra_vars := (subs_vars - self.vars):
+        if extra_vars := subs_vars - self.vars:
             raise ValueError(
                 f"Substitutions contain variables {extra_vars} which are not in the expression's variables {self.vars}."
             )
