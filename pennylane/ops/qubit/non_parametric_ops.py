@@ -363,6 +363,11 @@ class PauliX(Operator2):
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
 
+    def __repr__(self) -> str:
+        if isinstance(self.wires, Wires):
+            return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+        return f"X(wires={self.wires})"
+
     def label(
         self,
         decimals: int | None = None,
