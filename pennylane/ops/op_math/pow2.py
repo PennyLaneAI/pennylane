@@ -129,18 +129,6 @@ class Pow2(SymbolicOp2):
             raise e
         return True
 
-    def decomposition(self):
-        try:
-            return self.base.pow(self.z)
-        except PowUndefinedError as e:
-            if isinstance(self.z, int) and self.z > 0:
-                return [apply(self.base) for _ in range(self.z)]
-            # TODO: consider: what if z is an int and less than 0?
-            # do we want Pow(base, -1) to be a "more fundamental" op
-            raise DecompositionUndefinedError from e
-        except Exception as e:
-            raise DecompositionUndefinedError from e
-
     @property
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates

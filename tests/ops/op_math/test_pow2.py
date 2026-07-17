@@ -181,28 +181,6 @@ def test_has_decomposition():
         _ = pow(BadPowOp(0), z=0.5).has_decomposition
 
 
-def test_decomposition():
-    """Tests the decomposition method across all branches."""
-
-    # base.pow defines the decomposition directly
-    decomp = pow(RealPowOp(2.0, wires=0), z=3).decomposition()
-    qp.assert_equal(decomp[0], RealPowOp(6.0, wires=0))
-
-    # PowUndefinedError with a positive integer power repeats the base
-    with qp.queuing.AnnotatedQueue():
-        repeated = pow(NoPowOp(0), z=3).decomposition()
-    assert len(repeated) == 3
-    assert all(isinstance(op, NoPowOp) for op in repeated)
-
-    # PowUndefinedError with a non positive-integer power is undefined
-    with pytest.raises(DecompositionUndefinedError):
-        pow(NoPowOp(0), z=0.5).decomposition()
-
-    # a generic error during base.pow is wrapped in DecompositionUndefinedError
-    with pytest.raises(DecompositionUndefinedError):
-        pow(BadPowOp(0), z=0.5).decomposition()
-
-
 def test_diagonalizing_gates():
     """Tests the diagonalizing_gates method and has_diagonalizing_gates property."""
 
