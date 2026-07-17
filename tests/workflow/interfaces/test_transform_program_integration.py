@@ -89,9 +89,9 @@ class TestCompilePipeline:
 
         assert tracker.totals["executions"] == 2
         assert tracker.history["resources"][0].quantum_operations["PauliX"] == 1
-        assert tracker.history["resources"][0].num_gates == 1
+        assert tracker.history["resources"][0].total_quantum_operations == 1
         assert tracker.history["resources"][1].quantum_operations["PauliX"] == 1
-        assert tracker.history["resources"][1].num_gates == 1
+        assert tracker.history["resources"][1].total_quantum_operations == 1
 
     @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     def test_shot_distributing_transform(self, interface):

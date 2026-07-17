@@ -163,13 +163,13 @@
   Level: Before MLIR Passes
   <BLANKLINE>
   Symbolic Variables: a
-  Wire allocations: 1
-  Total gates: a + 2
   Quantum operations:
+  - Total: a + 2
   - Hadamard: 1
   - PauliX: a + 1
   Measurements:
   - expval(PauliX): 1
+  Wire allocations: 1
   Circuit Depth: Not computed
 
   ```
@@ -179,13 +179,13 @@
   ```pycon
   >>> res = specs_result.resources
   >>> print(res.subs(a=5))
-  Wire allocations: 1
-  Total gates: 7
   Quantum operations:
+  - Total: 7
   - Hadamard: 1
   - PauliX: 6
   Measurements:
   - expval(PauliX): 1
+  Wire allocations: 1
   Circuit Depth: Not computed
 
   ```
