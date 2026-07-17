@@ -2399,6 +2399,8 @@ class CRZ(Controlled2):
     wire_sizes = (2,)
     num_wires = 2
     """int: Number of wires that the operation acts on."""
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
 
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
