@@ -73,6 +73,18 @@ class TestGenerateName:
         )
         assert name == "my_func(arg1=10, kwarg1=b)"
 
+    def test_kwargs_edge_case(self):
+        """Test that the parameters and hyperparameters are properly bound"""
+
+        def f(a, *args, k="kd"):
+            return a, k
+
+        name1 = _generate_name(f, ["k"], 1, 2)
+        name2 = _generate_name(f, ["k"], 1, 2, 3)
+
+        assert name1 == "f(k=kd)"  # use default k = "kd"
+        assert name2 == "f(k=kd)"
+
 
 class TestMarkSubroutine:
     """Tests for the ``mark_subroutine`` decorator."""
