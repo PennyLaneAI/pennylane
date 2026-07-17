@@ -167,7 +167,7 @@
   - Total: a + 2
   - Hadamard: 1
   - PauliX: a + 1
-  Measurements:
+  Measurement processes:
   - expval(PauliX): 1
   Wire allocations: 1
   Circuit Depth: Not computed
@@ -183,7 +183,7 @@
   - Total: 7
   - Hadamard: 1
   - PauliX: 6
-  Measurements:
+  Measurement processes:
   - expval(PauliX): 1
   Wire allocations: 1
   Circuit Depth: Not computed
