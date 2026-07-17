@@ -76,7 +76,7 @@ class TestGenerateName:
     def test_kwargs_edge_case(self):
         """Test that the parameters and hyperparameters are properly bound"""
 
-        def f(a, *args, k="kd"):
+        def f(a, *args, k="kd"):  # pylint: disable=unused-argument
             return a, k
 
         name1 = _generate_name(f, ["k"], 1, 2)
