@@ -1605,6 +1605,7 @@ if has_jax:
                 args[name] = Wires(
                     tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
                 )
+                i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
         for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
