@@ -22,7 +22,7 @@ import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from importlib.util import find_spec
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
 from warnings import warn
 
 import numpy as np
@@ -31,6 +31,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import capture
 from pennylane._class_property import classproperty
+from pennylane.capture import ABCCaptureMeta
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -49,6 +50,11 @@ from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
+
+from .utils import abstractify
+
+if TYPE_CHECKING:
+    from pennylane.decomposition.resources import CompressedResourceOp
 
 has_jax = find_spec("jax") is not None
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
@@ -184,7 +190,7 @@ def _process_data(op):
 
 
 # pylint: disable=abstract-method
-class _GiveOperatorMeta(capture.ABCCaptureMeta):
+class _GiveOperatorMeta(ABCCaptureMeta):
     """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
 
     def __new__(mcs, name, bases, attrs):
@@ -250,7 +256,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
-class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -636,12 +642,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __copy__(self) -> "Operator":
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = copy.copy(self.data)
+        copied_op._data = copy.copy(self.data)
         # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
             copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
-            if attr not in {"data", "_hyperparameters"}:
+            if attr not in {"_data", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
@@ -655,11 +661,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         memo[id(self)] = copied_op
 
         for attribute, value in self.__dict__.items():
-            if attribute == "data":
+            if attribute == "_data":
                 # Shallow copy the list of parameters. We avoid a deep copy
                 # here, since PyTorch does not support deep copying of tensors
                 # within a differentiable computation.
-                copied_op.data = copy.copy(value)
+                copied_op._data = copy.copy(value)
             else:
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
@@ -1029,9 +1035,14 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
-        self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
+        self._data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
         self.queue()
+
+    @property
+    def data(self) -> tuple[TensorLike, ...]:
+        """tuple: Trainable parameters that the operator depends on."""
+        return self._data
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1098,8 +1109,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """Constructor-call-like representation."""
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return f"{self.name}({params}, wires={self.wires.tolist()})"
-        return f"{self.name}(wires={self.wires.tolist()})"
+            return f"{self.name}({params}, wires={self.wires})"
+        return f"{self.name}(wires={self.wires})"
 
     @property
     def num_params(self) -> int:
@@ -1624,6 +1635,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         hyperparameters_dict = dict(metadata[1])
         return cls(*data, wires=metadata[0], **hyperparameters_dict)
+
+
+@abstractify.register(ABCCaptureMeta)
+def _abstractify_operator1_subclass(op_type: type[Operator]) -> "CompressedResourceOp":
+    return qp.resource_rep(op_type)
+
+
+@abstractify.register(Operator)
+def _abstractify_operator1(op: Operator) -> "CompressedResourceOp":
+    return qp.resource_rep(type(op), **op.resource_params)
 
 
 # =============================================================================

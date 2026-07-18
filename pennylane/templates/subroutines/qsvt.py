@@ -27,10 +27,10 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math, ops, pytrees
-from pennylane.core.operator import Operation, Operator
+from pennylane import math, ops
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -550,16 +550,6 @@ class QSVT(Operation):
         """
         return tuple(datum for op in self._operators for datum in op.data)
 
-    @data.setter
-    def data(self, new_data):
-        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
-        # assign the QSVT data to an empty tuple (since no positional arguments are provided).
-        if new_data:
-            for op in self._operators:
-                if op.num_params > 0:
-                    op.data = new_data[: op.num_params]
-                    new_data = new_data[op.num_params :]
-
     def __copy__(self):
         # Override Operator.__copy__() to avoid setting the "data" property before the new instance
         # is assigned hyper-parameters since QSVT data is derived from the hyper-parameters.
@@ -692,34 +682,29 @@ class QSVT(Operation):
 
 def _QSVT_resources(projectors, UA):
     resources = defaultdict(int)
-    resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] = 1
+    resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
-        resources[
-            change_op_basis_resource_rep(
-                resource_rep(type(UA), **UA.resource_params),
-                resource_rep(type(projectors[i]), **projectors[i].resource_params),
-            )
-        ] += 1
-        resources[resource_rep(type(projectors[i + 1]), **projectors[i + 1].resource_params)] += 1
+        resources[change_op_basis_resource_rep(abstractify(UA), abstractify(projectors[i]))] += 1
+        resources[abstractify(projectors[i + 1])] += 1
 
     if len(projectors) % 2 == 0:
-        resources[resource_rep(type(UA), **UA.resource_params)] += 1
-        resources[resource_rep(type(projectors[0]), **projectors[0].resource_params)] += 1
+        resources[abstractify(UA)] += 1
+        resources[abstractify(projectors[0])] += 1
 
     return dict(resources)
 
 
 @register_resources(_QSVT_resources)
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
-    pytrees.unflatten(*pytrees.flatten(projectors[0]))
+    apply(projectors[0])
 
     for i in range(1, len(projectors) - 1, 2):
         ops.change_op_basis(UA, projectors[i])
-        pytrees.unflatten(*pytrees.flatten(projectors[i + 1]))
+        apply(projectors[i + 1])
 
     if len(projectors) % 2 == 0:
-        pytrees.unflatten(*pytrees.flatten(UA))
-        pytrees.unflatten(*pytrees.flatten(projectors[-1]))
+        apply(UA)
+        apply(projectors[-1])
 
 
 add_decomps(QSVT, _QSVT_decomposition)

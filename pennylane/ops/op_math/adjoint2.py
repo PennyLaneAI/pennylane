@@ -20,12 +20,13 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    get_fixed_decomp,
     list_decomps,
     register_condition,
     register_resources,
@@ -127,6 +128,10 @@ class Adjoint2(SymbolicOp2):
     def generator(self):
         return -1 * self.base.generator()
 
+    @property
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
+        return any(rule.is_applicable(**self.arguments) for rule in list_decomps(self))
+
     @override
     def _bind_primitive(self):
         """Bind the operator primitive. ``Adjoint2`` has to override the method of the base
@@ -166,10 +171,21 @@ class Adjoint2(SymbolicOp2):
 
 @list_decomps.register
 def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
+
     abs_op = abstractify(op)
+
+    # fixed_decomps would override everything.
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
+
+    # special case of cancelling nested adjoints.
     if isinstance(abs_op.base, Adjoint2):
         return DecompCollection([cancel_adjoint])
+
+    # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = list_decomps.dispatch(object)(abs_op)
+
+    # Decomposition rules populated by applying adjoint on the base decomp rules
     wrapped_rules = DecompCollection(
         [
             _make_adjoint_decomp(rule)
@@ -192,7 +208,7 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     def _resource_fn(base):
         base_res = base_rule.compute_resources(**base.arguments)
         base_gates = base_res.gate_counts
-        return {_adjoint(op): count for op, count in base_gates.items()}
+        return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
     base_source = base_rule._source
 
@@ -217,10 +233,11 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     return _impl
 
 
-def _adjoint(op: AbstractOperatorLike):
+def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
+    op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
-    return Adjoint2(op)
+    return qp.adjoint(op)
 
 
 def _cancel_adjoint_resources(base):

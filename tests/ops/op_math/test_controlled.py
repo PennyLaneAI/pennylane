@@ -38,13 +38,14 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
-from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.transforms import decompose
 from pennylane.typing import Bool, Float, Wire
@@ -266,7 +267,7 @@ class TestControlledProperties:
         }
 
     def test_data(self):
-        """Test that the base data can be get and set through Controlled class."""
+        """Test that Controlled data is read-only."""
 
         x = pnp.array(1.234)
 
@@ -275,15 +276,10 @@ class TestControlledProperties:
 
         assert op.data == (x,)
 
-        x_new = (pnp.array(2.3454),)
-        op.data = x_new
-        assert op.data == (x_new,)
-        assert base.data == (x_new,)
-
-        x_new2 = (pnp.array(3.456),)
-        base.data = x_new2
-        assert op.data == (x_new2,)
-        assert op.parameters == [x_new2]
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'ControlledOp' object has no setter"
+        ):
+            setattr(op, "data", (pnp.array(2.3454),))
 
     @pytest.mark.parametrize(
         "val, arr", ((4, [1, 0, 0]), (6, [1, 1, 0]), (1, [0, 0, 1]), (5, [1, 0, 1]))
@@ -473,7 +469,9 @@ class TestControlledMiscMethods:
         assert copied_op.control_values == op.control_values
         assert copied_op.data == (param1,)
 
-        copied_op.data = (6.54,)
+        copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+        assert copied_op.data == (6.54,)
         assert op.data == (param1,)
 
     def test_label(self):
@@ -1096,7 +1094,7 @@ class TestDecomposition:
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
                     qp.CH(wires=[2, 0]),
-                    Controlled(qp.S(wires=1), control_wires=2),
+                    ctrl(qp.S(wires=1), control=2),
                     qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
@@ -1896,9 +1894,9 @@ class TestCtrl:
 
         assert len(q) == 1
         assert q.queue[0] is op
-        expected = Controlled(
+        expected = ctrl(
             qp.S(wires=[0]),
-            control_wires=[3, 2, 1],
+            control=[3, 2, 1],
             control_values=[1, 0, 1],
         )
         assert op == expected
@@ -2045,6 +2043,13 @@ class TestCtrl:
                 None,
                 qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]),
             ),
+            (
+                qp.Toffoli(wires=[1, 2, 3]),
+                [0],
+                [0],
+                None,
+                qp.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 1], work_wires=[]),
+            ),
         ],
     )
     def test_pauli_x_based_ctrl_ops(self, op, ctrl_wires, ctrl_values, work_wires, expected_op):
@@ -2094,6 +2099,20 @@ class TestCtrl:
         assert new_op.control_wires == Wire[3]
         assert new_op.control_values == Bool[3]
         assert new_op.work_wires == Wire[1]
+
+    # pylint: disable=too-few-public-methods,unused-argument
+    def test_custom_ctrl_dispatch(self):
+        """Tests that custom controlled dispatchers work for `Operator2`."""
+
+        class CustomOp(Operator2):
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        @custom_ctrl_dispatch.register
+        def _ctrl_custom(base: CustomOp, control, control_values, work_wires, work_wire_type):
+            return qp.CNOT(control + base.wires)
+
+        assert qp.ctrl(CustomOp([0]), control=1) == qp.CNOT([1, 0])
 
 
 class _Rot(Operation):
