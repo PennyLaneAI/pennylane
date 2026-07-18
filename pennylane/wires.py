@@ -168,6 +168,10 @@ class Wires(Sequence):
         """Method defining the string representation of this class."""
         return f"Wires({list(self._labels)})"
 
+    def __str__(self):
+        """Defines how a wires object is printed."""
+        return str(list(self._labels))
+
     def __eq__(self, other):
         """Method to support the '==' operator.
         This will also implicitly define the '!=' operator."""
