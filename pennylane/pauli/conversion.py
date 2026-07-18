@@ -386,6 +386,9 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     # entry values placed at their row index. It mirrors the dense routine (XOR-permute
     # -> Walsh-Hadamard -> Y-phase) while skipping every empty group, replacing the
     # per-entry O(nnz * n * 2**n) expansion with an O(num_groups * n * 2**n) transform.
+    # Relative to Georges et al. eq. 8: d = r, z = s, and we scatter by row rather
+    # than column (substituting q -> q ^ r), which flips the paper's i**(-popcount(r & s))
+    # prefactor to the i**(+popcount(z & d)) phase applied below.
     diffs = rows ^ sparse_matrix.col.astype(np.int64, copy=False)
     order = np.argsort(diffs, kind="stable")
     diffs, rows, data = diffs[order], rows[order], data[order]
