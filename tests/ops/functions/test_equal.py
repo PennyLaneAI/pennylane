@@ -3076,6 +3076,21 @@ def test_ops_with_abstract_parameters_not_equal():
         jax.jit(assert_equal)(qp.X(0) * 0.5, qp.X(0) * 0.5)
 
 
+@pytest.mark.jax
+def test_ops_with_same_abstract_parameter_equal():
+    """Test that ops are equal when they contain the same tracer object."""
+
+    import jax
+
+    def compare(parameter):
+        op1 = qp.RX(parameter, 0)
+        op2 = qp.RX(parameter, 0)
+        assert_equal(op1, op2)
+        return qp.equal(op1, op2)
+
+    assert jax.jit(compare)(0.1)
+
+
 @pytest.mark.parametrize(
     "op, other_op",
     [

@@ -339,16 +339,14 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
-    if any(math.is_abstract(d) for d in op1.data + op2.data):
-        # assume all tracers are independent
-        return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if len(op1.data) != len(op2.data):
         return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
-    if not all(
-        math.allclose(d1, d2, rtol=rtol, atol=atol)
-        for d1, d2 in zip(op1.data, op2.data, strict=True)
-    ):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+    for d1, d2 in zip(op1.data, op2.data, strict=True):
+        if math.is_abstract(d1) or math.is_abstract(d2):
+            if d1 is not d2:
+                return "Data contains a tracer. Abstract tracers are assumed to be unique."
+        elif not math.allclose(d1, d2, rtol=rtol, atol=atol):
+            return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data, strict=True):
@@ -522,6 +520,8 @@ def _check_dynamic_value(
         return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
 
     if math.is_abstract(dval1) or math.is_abstract(dval2):
+        if dval1 is dval2:
+            return True
         return (
             f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
             "tracers are assumed to be unique."

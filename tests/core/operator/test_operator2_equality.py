@@ -506,15 +506,30 @@ def _jit_eq_fn(phi, wires, assert_=False):
 class TestAbstractDynamicArgs:
     """Tests for checking for equality of traced dynamic arguments."""
 
-    def test_abstract_dynamic_arg_not_equal(self):
-        """Test that operators with traced dynamic arguments are unequal."""
+    def test_same_abstract_dynamic_arg_equal(self):
+        """Test that operators sharing the same traced dynamic argument are equal."""
         import jax
 
         test_fn = jax.jit(_jit_eq_fn, static_argnums=(1, 2))
         result = test_fn(0.5, 0, assert_=False)
-        assert bool(result) is False
+        assert bool(result) is True
+        assert bool(test_fn(0.5, 0, assert_=True)) is True
+
+    def test_distinct_abstract_dynamic_args_not_equal(self):
+        """Test that operators with distinct traced dynamic arguments are unequal."""
+        import jax
+
+        def compare(phi1, phi2, assert_=False):
+            op1 = DynOp(phi1, wires=0)
+            op2 = DynOp(phi2, wires=0)
+            if assert_:
+                qp.assert_equal(op1, op2)
+            return qp.equal(op1, op2)
+
+        test_fn = jax.jit(compare, static_argnums=2)
+        assert bool(test_fn(0.5, 0.5)) is False
         with pytest.raises(AssertionError, match="tracer value for 'phi'"):
-            _ = test_fn(0.5, 0, assert_=True)
+            _ = test_fn(0.5, 0.5, assert_=True)
 
     def test_abstract_wire_arg_not_equal(self):
         """Test that operators with traced wire arguments are unequal."""
