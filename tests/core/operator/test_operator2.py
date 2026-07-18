@@ -1298,7 +1298,43 @@ class TestDunderMethods:
                 super().__init__(wires=wires)
 
         op = Op(wires=0)
-        assert repr(op) == "Op(wires=[0])"
+        assert repr(op) == "Op(0)"
+
+        op = Op(wires="a")
+        assert repr(op) == "Op('a')"
+
+    @pytest.mark.parametrize("num_wires", [1, 2])
+    def test_repr_without_dynamic_args_abstract_wires(self, num_wires):
+        """Test that __repr__ prints without dynamic parameters if there are none."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = Op(wires=AbstractWires(num_wires))
+        assert repr(op) == f"Op(wires={AbstractWires(num_wires)!r})"
+
+    def test_repr_without_dynamic_args_multiwire(self):
+        """Test that __repr__ prints without dynamic parameters if there are none."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = Op(wires=[0, 1, 2])
+        assert repr(op) == "Op(wires=[0, 1, 2])"
+
+    def test_repr_without_dynamic_args_different_wire_argname(self):
+        """Test that __repr__ prints without dynamic parameters if there are none."""
+
+        class Op(Operator2):
+            wire_argnames = ("my_wires",)
+
+            def __init__(self, my_wires):
+                super().__init__(my_wires=my_wires)
+
+        op = Op(my_wires=0)
+        assert repr(op) == "Op(0)"
 
     def test_repr_with_hybrid_wires(self):
         """Test that __repr__ prints correctly if there are hybrid wire arguments."""
@@ -1311,6 +1347,28 @@ class TestDunderMethods:
 
         op = Op(wires=[[0], 1, [2, 3]])
         assert repr(op) == "Op(wires=[[0], [1], [2, 3]])"
+
+    def test_str_with_abstract_and_fixed_sigs(self):
+        """Tests that __str__ is simplified for abstract and fixed ops."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires",)
+            arg_specs = {"wires": Wire[1]}
+
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        op = Op(Wire[1])
+        assert str(op) == "Op"
+
+        class Op2(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        op = Op2(Wire[1])
+        assert str(op) == "Op2(wires=AbstractWires(1))"
 
     def test_copy(self):
         """Test that shallow copies of operators are created correctly."""

@@ -23,14 +23,9 @@ from functools import reduce
 
 from pennylane import capture, math
 from pennylane.core import queuing
-from pennylane.core.operator import Operator, Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.decomposition.resources import adjoint_resource_rep
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -38,6 +33,10 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.pytrees import flatten, unflatten
+from pennylane.typing import Wire
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -191,6 +190,13 @@ def change_op_basis(
     """
 
     if capture.enabled():
+        # NOTE: Need to pop any eagerly constructed operators present in the traced function
+        # out of the jaxpr. This ensures that the order is kept consistent if any operators
+        # were built outside of the traced function. '_apply_op_or_func' will bind the primitives
+        # and insert them in the correct order.
+        for _op in (compute_op, target_op):
+            if isinstance(_op, Operator2) and _op.tracer is not None:
+                pop_op_eqns((_op,))
         _apply_op_or_func(compute_op)
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
@@ -247,6 +253,23 @@ class ChangeOpBasis(CompositeOp):
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
+
+        leaves, structure = flatten(
+            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, Operator)
+        )
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        compute_op, target_op, uncompute_op = unflatten(new_leaves, structure)
+
         return cls._primitive.bind(compute_op, target_op, uncompute_op)
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
@@ -272,11 +295,11 @@ class ChangeOpBasis(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = {}
-        resources["compute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
-        resources["target_op"] = resource_rep(type(self[1]), **self[1].resource_params)
-        resources["uncompute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
-        return resources
+        return {
+            "compute_op": abstractify(self[2]),
+            "target_op": abstractify(self[1]),
+            "uncompute_op": abstractify(self[0]),
+        }
 
     grad_method = None
 
@@ -347,7 +370,7 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
     target_op = base_params["target_op"]
-    resources[adjoint_resource_rep(target_op.op_type, target_op.params)] += 1
+    resources[_adjoint_abstract(target_op)] += 1
     return resources
 
 
@@ -375,13 +398,12 @@ def _controlled_change_op_basis_resources(
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
-        controlled_resource_rep(
-            base_params["target_op"].op_type,
-            base_params["target_op"].params,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+        _ctrl_abstract(
+            base_params["target_op"],
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
+            num_zero_control_values,
         )
     ] += 1
     resources[base_params["uncompute_op"]] += 1

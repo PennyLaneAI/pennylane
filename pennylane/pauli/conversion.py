@@ -27,6 +27,7 @@ from pennylane import math
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
+from pennylane.typing import TensorLike
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
@@ -91,7 +92,7 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
 
 def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> tuple[qp.typing.TensorLike, list]:
+) -> tuple[TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
 
     This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
@@ -290,7 +291,7 @@ def _fast_walsh_hadamard_transform(vec: np.ndarray) -> np.ndarray:
 
 def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> tuple[qp.typing.TensorLike, list]:
+) -> tuple[TensorLike, list]:
     r"""Sparse SciPy implementation of the generalized Pauli decomposition.
 
     This function computes a weighted sum of Pauli words that is equivalent to the input
@@ -322,7 +323,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         ``wire_order[0]`` and the rightmost to ``wire_order[-1]``.
 
     Returns:
-        Tuple[qp.typing.TensorLike, list]:
+        Tuple[TensorLike, list]:
             A tuple ``(coeffs, terms)`` where ``coeffs`` is a complex-valued array of coefficients.
             ``terms`` is either a list of operator tensors (if ``pauli=False``) or a list of
             lists of ``(pauli_char, wire)`` pairs (if ``pauli=True``).
