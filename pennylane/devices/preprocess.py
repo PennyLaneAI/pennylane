@@ -33,7 +33,7 @@ from pennylane.exceptions import (
     QuantumFunctionError,
     WireError,
 )
-from pennylane.math import is_abstract, requires_grad
+from pennylane.math import is_abstract, requires_grad, stack
 from pennylane.measurements import (
     counts,
     sample,
@@ -728,21 +728,25 @@ def measurements_from_counts(tape):
         """A processing function to get measurement values from counts."""
         counts_res = results[0]
 
-        if tape.shots.has_partitioned_shots:
-            results_processed = []
-            for c in counts_res:
-                res = [m.process_counts(c, measured_wires) for m in tape.measurements]
-                if len(tape.measurements) == 1:
-                    res = res[0]
-                results_processed.append(res)
-        else:
-            results_processed = [
-                m.process_counts(counts_res, measured_wires) for m in tape.measurements
-            ]
-            if len(tape.measurements) == 1:
-                results_processed = results_processed[0]
+        def process_single_shot(counts_result):
+            processed = []
+            for measurement in tape.measurements:
+                if tape.batch_size is None:
+                    measurement_result = measurement.process_counts(counts_result, measured_wires)
+                else:
+                    measurement_result = [
+                        measurement.process_counts(c, measured_wires) for c in counts_result
+                    ]
+                    if not isinstance(measurement_result[0], dict):
+                        measurement_result = stack(measurement_result)
+                processed.append(measurement_result)
 
-        return results_processed
+            return processed[0] if len(tape.measurements) == 1 else processed
+
+        if tape.shots.has_partitioned_shots:
+            return [process_single_shot(c) for c in counts_res]
+
+        return process_single_shot(counts_res)
 
     return [new_tape], postprocessing_fn
 
