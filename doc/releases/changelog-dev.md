@@ -1048,6 +1048,10 @@
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
+* Fixed :func:`~pennylane.devices.preprocess.measurements_from_counts` to support
+  parameter-broadcasted tapes, including tapes with partitioned shots.
+  [(#9613)](https://github.com/PennyLaneAI/pennylane/issues/9613)
+
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
   Also adjusted the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier`
@@ -1170,6 +1174,7 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 David D.W. Ren,
 Jay Soni,
+Sankalp Thakur,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
