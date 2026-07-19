@@ -1050,7 +1050,7 @@
 
 * Fixed :func:`~pennylane.devices.preprocess.measurements_from_counts` to support
   parameter-broadcasted tapes, including tapes with partitioned shots.
-  [(#9613)](https://github.com/PennyLaneAI/pennylane/issues/9613)
+  [(#9864)](https://github.com/PennyLaneAI/pennylane/pull/9864)
 
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
