@@ -1848,13 +1848,13 @@ class TestCtrl:
         ctrl_values = [False] * len(ctrl_wires)
 
         if isinstance(op, Controlled):
-            expected = Controlled(
+            expected = qp.ctrl(
                 op.base,
-                control_wires=ctrl_wires + op.control_wires,
+                control=ctrl_wires + op.control_wires,
                 control_values=ctrl_values + op.control_values,
             )
         else:
-            expected = Controlled(op, control_wires=ctrl_wires, control_values=ctrl_values)
+            expected = qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values)
 
         assert qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values) == expected
 
