@@ -38,7 +38,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    flip_zero_control_legacy,
+    flip_zero_control,
     pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
@@ -272,7 +272,7 @@ def _controlled_rx_decomp(*params, wires, control_wires, work_wires, work_wire_t
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(RX)", flip_zero_control_legacy(_controlled_rx_decomp))
+add_decomps("C(RX)", flip_zero_control(_controlled_rx_decomp))
 
 
 class RY(Operation):
@@ -498,7 +498,7 @@ def _controlled_ry_decomp(*params, wires, control_wires, work_wires, work_wire_t
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RY)", flip_zero_control_legacy(_controlled_ry_decomp))
+add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp))
 
 
 class RZ(Operation):
@@ -775,7 +775,7 @@ def _controlled_rz_decomp(*params, wires, control_wires, work_wires, work_wire_t
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RZ)", flip_zero_control_legacy(_controlled_rz_decomp))
+add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp))
 
 
 class PhaseShift(Operation):
@@ -1000,7 +1000,7 @@ def _cphase_to_ppr(theta, wires, **_):
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
-add_decomps("C(PhaseShift)", flip_zero_control_legacy(_cphase_to_ppr))
+add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
 class Rot(Operation):
@@ -1254,7 +1254,7 @@ def _controlled_rot_decomp(
     qp.RZ(omega, wires=wires[-1])
 
 
-add_decomps("C(Rot)", flip_zero_control_legacy(_controlled_rot_decomp))
+add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp))
 
 
 class U1(Operation):

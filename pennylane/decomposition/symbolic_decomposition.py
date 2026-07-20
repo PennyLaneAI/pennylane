@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
 from pennylane.typing import Wire
 
@@ -159,6 +160,8 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
+            if issubclass(base_class, Operator2):
+                return {abstractify(base_class(**base_params)): 1}
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
@@ -277,7 +280,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     return _impl
 
 
-def flip_zero_control_legacy(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
+def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):
@@ -389,7 +392,7 @@ def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
 
 
-ctrl_single_work_wire = flip_zero_control_legacy(_ctrl_single_work_wire)
+ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
 
 
 def _to_controlled_qu_condition(base_class, **__):

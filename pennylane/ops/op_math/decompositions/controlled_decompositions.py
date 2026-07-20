@@ -28,7 +28,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import flip_zero_control_legacy
+from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
@@ -439,7 +439,7 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
         loop_down()
 
 
-decompose_mcx_many_workers_explicit = flip_zero_control_legacy(
+decompose_mcx_many_workers_explicit = flip_zero_control(
     _mcx_many_workers, name="many_explicit_workers"
 )
 
@@ -462,7 +462,7 @@ def _mcx_many_zeroed_workers(wires, **kwargs):
         _mcx_many_workers(wires, **kwargs)
 
 
-decompose_mcx_many_zeroed_workers = flip_zero_control_legacy(
+decompose_mcx_many_zeroed_workers = flip_zero_control(
     _mcx_many_zeroed_workers, name="many_zeroed_workers"
 )
 
@@ -485,7 +485,7 @@ def _mcx_many_borrowed_workers(wires, **kwargs):
         _mcx_many_workers(wires, **kwargs)
 
 
-decompose_mcx_many_borrowed_workers = flip_zero_control_legacy(
+decompose_mcx_many_borrowed_workers = flip_zero_control(
     _mcx_many_borrowed_workers, name="many_borrowed_workers"
 )
 
@@ -573,7 +573,7 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_two_workers_explicit = flip_zero_control_legacy(
+decompose_mcx_two_workers_explicit = flip_zero_control(
     _mcx_two_workers, name="two_explicit_workers"
 )
 
@@ -590,7 +590,7 @@ def _mcx_two_zeroed_workers(wires, **kwargs):
         _mcx_two_workers(wires, **kwargs)
 
 
-decompose_mcx_two_zeroed_workers = flip_zero_control_legacy(
+decompose_mcx_two_zeroed_workers = flip_zero_control(
     _mcx_two_zeroed_workers, name="two_zeroed_workers"
 )
 
@@ -607,7 +607,7 @@ def _mcx_two_borrowed_workers(wires, **kwargs):
         _mcx_two_workers(wires, **kwargs)
 
 
-decompose_mcx_two_borrowed_workers = flip_zero_control_legacy(
+decompose_mcx_two_borrowed_workers = flip_zero_control(
     _mcx_two_borrowed_workers, name="two_borrowed_workers"
 )
 
@@ -674,9 +674,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_one_worker_explicit = flip_zero_control_legacy(
-    _mcx_one_worker, name="one_explicit_worker"
-)
+decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker, name="one_explicit_worker")
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -691,7 +689,7 @@ def _mcx_one_zeroed_worker(wires, **kwargs):
         _mcx_one_worker(wires, **kwargs)
 
 
-decompose_mcx_one_zeroed_worker = flip_zero_control_legacy(
+decompose_mcx_one_zeroed_worker = flip_zero_control(
     _mcx_one_zeroed_worker, name="one_zeroed_worker"
 )
 
@@ -708,7 +706,7 @@ def _mcx_one_borrowed_worker(wires, **kwargs):
         _mcx_one_worker(wires, **kwargs)
 
 
-decompose_mcx_one_borrowed_worker = flip_zero_control_legacy(
+decompose_mcx_one_borrowed_worker = flip_zero_control(
     _mcx_one_borrowed_worker, name="one_borrowed_worker"
 )
 
@@ -743,7 +741,7 @@ def _decompose_mcx_with_no_worker(wires, **_):
     ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
 
 
-decompose_mcx_with_no_worker = flip_zero_control_legacy(_decompose_mcx_with_no_worker, "no_workers")
+decompose_mcx_with_no_worker = flip_zero_control(_decompose_mcx_with_no_worker, "no_workers")
 
 ####################
 # Helper Functions #

@@ -1042,7 +1042,7 @@ def _equal_subroutineop(
         if (val1 := op1.bound_args.arguments[wire_arg]) != (
             val2 := op2.bound_args.arguments[wire_arg]
         ):
-            return f"op1 has value {val1} and op2 has value {val2} for register {wire_arg}"
+            return f"op1 has value {val1!r} and op2 has value {val2!r} for register {wire_arg}"
     for dynamic_arg in op1.subroutine.dynamic_argnames:
         vals1, tree1 = flatten(op1.bound_args.arguments[dynamic_arg])
         vals2, tree2 = flatten(op2.bound_args.arguments[dynamic_arg])

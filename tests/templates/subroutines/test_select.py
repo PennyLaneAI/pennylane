@@ -68,10 +68,10 @@ def test_repr():
     control = [1]
 
     op = qp.Select(ops, control)
-    assert repr(op) == "Select(ops=(X(0), Y(0)), control=Wires([1]), partial=False)"
+    assert repr(op) == "Select(ops=(X(0), Y(0)), control=[1], partial=False)"
 
     op = qp.Select(ops, control, partial=True)
-    assert repr(op) == "Select(ops=(X(0), Y(0)), control=Wires([1]), partial=True)"
+    assert repr(op) == "Select(ops=(X(0), Y(0)), control=[1], partial=True)"
 
 
 @pytest.mark.unit

@@ -348,7 +348,7 @@ class PauliRot(Operation):
             )
 
     def __repr__(self) -> str:
-        return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
+        return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires})"
 
     def label(
         self,
