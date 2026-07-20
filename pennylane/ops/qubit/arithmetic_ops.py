@@ -548,7 +548,7 @@ class IntegerComparator(Operation):
             for control_values in control_values_list:
                 control_values = [int(n) for n in control_values]
                 mat = mat @ qp.MultiControlledX.compute_matrix(
-                    control_wires, control_values=control_values
+                    control_wires + ["target"], control_values=control_values
                 )
 
         return mat
@@ -646,7 +646,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
     while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
         gate_counts[
             qp.MultiControlledX(
-                Wire[first_significant + 1],
+                Wire[first_significant + 2],
                 work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
             )
         ] = 1
@@ -779,7 +779,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
     while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
         gate_set[
             qp.MultiControlledX(
-                Wire[first_zero + 2], work_wires=[num_work_wires + num_wires - 2 - first_zero]
+                Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
             )
         ] = 1
         gate_set[qp.X] += 2

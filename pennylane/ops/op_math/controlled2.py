@@ -133,7 +133,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        _ = pop_op_eqns((base,))
+        if qp.capture.enabled():
+            pop_op_eqns((base,))
 
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
@@ -737,7 +738,8 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         # The assumption here is that the operator either has "wires" or "control_wires",
         # which allows us to use this for both general controlled ops or special controlled
         # ops like MultiControlledX and ControlledQubitUnitary
-        wires = arguments.get("control_wires", arguments["wires"])
+        wires = arguments.get("control_wires", arguments.get("wires", None))
+        assert wires is not None
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):

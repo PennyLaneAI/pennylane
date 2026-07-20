@@ -652,7 +652,15 @@
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
+  :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
+  resource operators from their quantum functions.
+  [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
+
 <h3>Breaking changes 💔</h3>
+
+* Leftover Python 3.9 support branch has been removed.
+  [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
 
 * The :attr:`~.Operator.data` property is now read-only. Assigning trainable parameters via
   ``op.data = new_data`` is no longer supported. To create an operator with updated parameters,

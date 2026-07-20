@@ -40,6 +40,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     make_pow_decomp_with_period,
     pow_involutory,
+    self_adjoint,
     self_adjoint_legacy,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -364,7 +365,9 @@ class PauliX(Operator2):
         super().__init__(wires=wires)
 
     def __repr__(self) -> str:
-        return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+        if isinstance(self.wires, Wires):
+            return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+        return f"X(wires={self.wires})"
 
     def label(
         self,
@@ -517,7 +520,7 @@ def _pow_x_to_rx(wires, z, **_):
 
 
 add_decomps(PauliX, _paulix_to_rx)
-add_decomps("Adjoint(PauliX)", self_adjoint_legacy)
+add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
 
 
