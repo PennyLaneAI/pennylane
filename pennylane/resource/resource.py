@@ -467,7 +467,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        super().__post_init__()  # Fall through to parent post init
+        super(SpecsResources, self).__post_init__()  # Fall through to parent post init
 
     def __getitem__(self, key):
         # Need to match
@@ -483,7 +483,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        return super().__getitem__(key)
+        return super(SpecsResources, self).__getitem__(key)
 
     @property
     def quantum_operations(self):
@@ -645,7 +645,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super().to_pretty_str(preindent=preindent)
+        s = super(SpecsResources, self).to_pretty_str(preindent=preindent)
 
         s += (
             "\nPBC Depths:\n"
@@ -667,7 +667,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super()._repr_markdown_()
+        s = super(SpecsResources, self)._repr_markdown_()
 
         s += (
             "\n"
