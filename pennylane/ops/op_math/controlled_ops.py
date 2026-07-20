@@ -350,7 +350,7 @@ class CH(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"CH(wires={self.wires.tolist()})"
+        return f"CH(wires={self.wires})"
 
     def adjoint(self):
         return CH(self.wires)
@@ -606,7 +606,7 @@ class CZ(ControlledOp):
         super().__init__(base, wires[:1])
 
     def __repr__(self):
-        return f"CZ(wires={self.wires.tolist()})"
+        return f"CZ(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -754,7 +754,7 @@ class CSWAP(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"CSWAP(wires={self.wires.tolist()})"
+        return f"CSWAP(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -959,7 +959,7 @@ class CCZ(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"CCZ(wires={self.wires.tolist()})"
+        return f"CCZ(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -1215,7 +1215,7 @@ class CNOT(ControlledOp):
         return {}
 
     def __repr__(self):
-        return f"CNOT(wires={self.wires.tolist()})"
+        return f"CNOT(wires={self.wires})"
 
     @staticmethod
     @lru_cache
@@ -1375,7 +1375,7 @@ class Toffoli(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"Toffoli(wires={self.wires.tolist()})"
+        return f"Toffoli(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -1717,9 +1717,7 @@ class MultiControlledX(ControlledOp):
         )
 
     def __repr__(self):
-        return (
-            f"MultiControlledX(wires={self.wires.tolist()}, control_values={self.control_values})"
-        )
+        return f"MultiControlledX(wires={self.wires}, control_values={self.control_values})"
 
     @property
     def wires(self):
@@ -1975,7 +1973,7 @@ class CRX(ControlledOp):
         super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
-        return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
+        return f"CRX({self.data[0]}, wires={self.wires})"
 
     def _flatten(self):
         return self.data, (self.wires,)
@@ -2191,7 +2189,7 @@ class CRY(ControlledOp):
         super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
-        return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
+        return f"CRY({self.data[0]}, wires={self.wires}))"
 
     def _flatten(self):
         return self.data, (self.wires,)
