@@ -33,7 +33,12 @@ from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    Resources,
+    _gate_count_dict_to_str,
+)
 from .utils import to_name
 
 
@@ -1186,8 +1191,3 @@ def _decomp_contains_mcm(rule, params):
     mcm = abstractify(qp.ops.MidMeasure)
     ppm = abstractify(qp.ops.PauliMeasure)
     return mcm in resources or ppm in resources
-
-
-def _gate_count_dict_to_str(gate_counts):
-    inner = ", ".join(f"{op}: {count}" for op, count in gate_counts.items())
-    return f"{{{inner}}}"
