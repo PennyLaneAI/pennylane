@@ -1109,8 +1109,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """Constructor-call-like representation."""
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return f"{self.name}({params}, wires={self.wires.tolist()})"
-        return f"{self.name}(wires={self.wires.tolist()})"
+            return f"{self.name}({params}, wires={self.wires})"
+        return f"{self.name}(wires={self.wires})"
 
     @property
     def num_params(self) -> int:
