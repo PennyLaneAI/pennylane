@@ -467,6 +467,9 @@
 * :func:`~core.queuing.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
 
+* Implemented the `__str__` of `Wires` to display the wire labels as a list.
+  [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -649,7 +652,18 @@
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
+  [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
+  
+* Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
+  :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
+  resource operators from their quantum functions.
+  [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
+
 <h3>Breaking changes 💔</h3>
+
+* Leftover Python 3.9 support branch has been removed.
+  [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
 
 * The :attr:`~.Operator.data` property is now read-only. Assigning trainable parameters via
   ``op.data = new_data`` is no longer supported. To create an operator with updated parameters,
@@ -794,8 +808,11 @@
 <h3>Internal changes ⚙️</h3>
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - `~.S` is ported
+  - Single qubit, non-parameteric operators are ported:
+    - `~.S`, `~.T`, `~.SX`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
+  [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
+  [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -859,6 +876,7 @@
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
   [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
+  [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
