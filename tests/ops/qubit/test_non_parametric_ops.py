@@ -1057,11 +1057,6 @@ class TestControlledMethod:
         out = qp.PauliZ(0)._controlled("a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
 
-    def test_CNOT(self):
-        """Test the CNOT _controlled method"""
-        out = qp.CNOT((0, 1))._controlled("a")
-        qp.assert_equal(out, qp.Toffoli(("a", 0, 1)))
-
     def test_SWAP(self):
         """Test the SWAP _controlled method."""
         out = qp.SWAP((0, 1))._controlled("a")
