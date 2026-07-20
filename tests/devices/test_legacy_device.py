@@ -17,7 +17,6 @@ Unit tests for the :mod:`pennylane` :class:`Device` class.
 
 from collections import OrderedDict
 from importlib import metadata, reload
-from sys import version_info
 
 import numpy as np
 import pytest
@@ -917,7 +916,7 @@ class TestDeviceInit:
 
         with monkeypatch.context() as m:
             # remove all entry points
-            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
+            retval = []
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qp.plugin_devices to {}
@@ -943,7 +942,7 @@ class TestDeviceInit:
 
         with monkeypatch.context() as m:
             # remove all entry points
-            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
+            retval = []
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qp.plugin_devices to {}
