@@ -540,6 +540,13 @@ class RZ(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
+    has_decomposition = False
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        # dont use graph decomposition for RZ-> Rot
+        raise DecompositionUndefinedError
+
     @staticmethod
     def compute_matrix(
         phi: TensorLike, wires=None
