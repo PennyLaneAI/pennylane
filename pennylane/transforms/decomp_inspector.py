@@ -84,7 +84,7 @@ class _DecompInGraphInfo(_DecompInfo):
         weighted_cost = gate_set_resource.weighted_cost
         return (
             super()._gate_counts_and_allocations
-            + f"\nFull Expansion Gates: {{{gate_counts}}}"
+            + f"\nFull Expansion Gates: {gate_counts}"
             + f"\nWeighted Cost: {weighted_cost}"
         )
 
