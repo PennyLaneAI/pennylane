@@ -463,7 +463,7 @@ def build_qudit_expval_func(
         loss).
 
         When ``config.phase_fn`` is set, the returned callable requires ``phase_fn_params`` to be
-        passed as teh second argument (the trainable parameters of the phase layer).
+        passed as the second argument (the trainable parameters of the phase layer).
 
     Raises:
         ValueError: If no observables are provided either in ``config`` or at
@@ -552,7 +552,7 @@ def build_qudit_expval_func(
         Args:
             gates_params (ArrayLike): 1-D array of gate parameters.
             phase_fn_params (ArrayLike | None, optional): Trainable parameters for the
-                custom phase function. Defaults to None.
+                custom phase function. Defaults to ``None``.
             key (ArrayLike | None, optional): Runtime override for the JAX PRNG key
                 used for sampling. Defaults to None.
             n_samples (int | None, optional): Runtime override for the number of
