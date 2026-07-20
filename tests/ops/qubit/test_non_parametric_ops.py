@@ -47,6 +47,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
@@ -855,12 +856,15 @@ period_two_ops = (
 
 
 class TestPowMethod:
+    """Test the Operator.pow method."""
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
-        assert op.pow(n)[0].__class__ is op.__class__
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+        qp.assert_equal(pow_ops[0], op)
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
@@ -1085,11 +1089,17 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 
+def _get_decomp_args(op):
+    if isinstance(op, Operator2):
+        return abstractify(op).arguments, (), op.arguments
+    return op.resource_params, op.parameters, {"wires": op.wires, **op.hyperparameters}
+
+
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
     """Tests special decomposition rules for Pow of operators."""
 
     @pytest.mark.parametrize("batched", [True, False])
-    @pytest.mark.parametrize("op", [qp.X(0), qp.Y(0), qp.Z(0)])
+    @pytest.mark.parametrize("op", [qp.X(0), qp.Y(0), qp.Z(0), qp.S(0)])
     def test_op_fractional_power(self, op, batched):
         """Test that fractional powers of operators are decomposed correctly."""
 
@@ -1101,23 +1111,22 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
-            if rule.is_applicable(**half_op.resource_params):
-
+            params, args, kwargs = _get_decomp_args(half_op)
+            if rule.is_applicable(**params):
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
-                    rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
-            if rule.is_applicable(**quart_op.resource_params):
-
+            params, args, kwargs = _get_decomp_args(quart_op)
+            if rule.is_applicable(**params):
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))

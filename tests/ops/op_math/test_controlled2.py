@@ -23,7 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
-from pennylane.ops.op_math.controlled import Controlled, ControlledOp
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
@@ -67,6 +67,41 @@ class TestControlled2:
         assert op.has_matrix
         assert op.has_sparse_matrix
         assert op.has_diagonalizing_gates
+
+    def test_custom_pow_override(self):
+        """Tests the override of the custom `pow` method."""
+
+        class CustomBase(Operator2):
+            """A custom base op."""
+
+            arg_specs = {"wires": Wire[1]}
+
+            def __init__(self, wires):
+                super().__init__(wires)
+
+            @override
+            def pow(self, z):
+                if z % 2:
+                    return [CustomBase(self.wires)]
+                return []
+
+        class CustomControlled(Controlled2):
+            """A custom controlled op based on CustomBase."""
+
+            arg_specs = {"wires": Wire[2]}
+
+            def __init__(self, wires):
+                super().__init__(CustomBase(wires[1]), wires[0])
+
+        @custom_ctrl_dispatch.register
+        def _(base: CustomBase, control, control_values, work_wires, work_wire_type):
+            if len(control) == 1:
+                return CustomControlled(control + base.wires)
+            return NotImplemented
+
+        op = CustomControlled([0, 1])
+        assert op.pow(2) == []
+        assert op.pow(5) == [CustomControlled([0, 1])]
 
     def test_parametric_custom_controlled_op(self):
         """Tests parametric op that inherits from Controlled2."""
