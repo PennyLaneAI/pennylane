@@ -79,11 +79,11 @@ class _DecompInGraphInfo(_DecompInfo):
         if not self._is_reachable:
             return super()._gate_counts_and_allocations
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
-        gate_counts = gate_set_resource.gate_counts
+        gate_counts = ", ".join(f"{k}: {v}" for k, v in gate_set_resource.gate_counts.items())
         weighted_cost = gate_set_resource.weighted_cost
         return (
             super()._gate_counts_and_allocations
-            + f"\nFull Expansion Gates: {gate_counts}"
+            + f"\nFull Expansion Gates: {{{gate_counts}}}"
             + f"\nWeighted Cost: {weighted_cost}"
         )
 
@@ -125,11 +125,13 @@ class _DecompInGraphInfo(_DecompInfo):
     @override
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        estimated_str = ", ".join(f"{k}: {v}" for k, v in estimated_count.items())
         if estimated_count == actual_count:
-            return f"First-Level Expansion Gates: {estimated_count}"
+            return f"First-Level Expansion Gates: {{{estimated_str}}}"
+        actual_str = ", ".join(f"{k}: {v}" for k, v in actual_count.items())
         return (
-            f"Estimated First-Level Expansion Gates: {estimated_count}\n"
-            f"Actual First-Level Expansion Gates: {actual_count}"
+            f"Estimated First-Level Expansion Gates: {{{estimated_str}}}\n"
+            f"Actual First-Level Expansion Gates: {{{actual_str}}}"
         )
 
     @override
