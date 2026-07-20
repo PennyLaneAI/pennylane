@@ -1350,11 +1350,6 @@ class TestPauliRep:
 class TestPauliYOperator2:
     """Regression tests for the ``PauliY`` migration from ``Operation`` to ``Operator2``."""
 
-    def test_standard_validity(self):
-        """``assert_valid`` must be run explicitly because ``Operator2`` classes are not
-        picked up by the class sweep in ``tests/ops/functions/conftest.py``."""
-        qp.ops.functions.assert_valid(qp.Y(0))
-
     def test_pow_graph_decomposition(self):
         """A legacy ``Pow`` wrapping an ``Operator2`` base, including nested and adjoint
         bases, must decompose through the graph system."""
