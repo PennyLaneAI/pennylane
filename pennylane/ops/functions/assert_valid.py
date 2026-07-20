@@ -217,18 +217,20 @@ def _assert_counts_match(counts_0, counts_1):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    if not rule.is_applicable(**op.resource_params):
+    params = op.arguments if isinstance(op, Operator2) else op.resource_params
+
+    if not rule.is_applicable(**params):
         return
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**op.resource_params)
+    resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
     with qp.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qp.tape.QuantumScript.from_queue(q)
 
-    total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+    total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
         tape = _resolve_dynamic_wires(tape, total_work_wires)
 
@@ -446,7 +448,8 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    if isinstance(op, Operator1):
+    # Protect against cases where you have an Operator1 consuming Operator2
+    if isinstance(op, Operator1) and not any(isinstance(sub, Operator2) for sub in data):
         for d1, d2 in zip(op.data, leaves, strict=True):
             assert qp.math.allclose(
                 d1, d2

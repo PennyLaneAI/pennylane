@@ -337,6 +337,11 @@ class Operator2(metaclass=OperatorMeta):
         return self._ndim_params
 
     @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
+
+    @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
@@ -969,22 +974,22 @@ class Operator2(metaclass=OperatorMeta):
         inputs = []
 
         for key, value in self.arguments.items():
-            # Non-wire arguments
-            if key not in self.wire_argnames:
-                res = value
-            # Non-hybrid wire arguments
-            elif key not in self.hybrid_argnames:
-                res = value.tolist() if isinstance(value, Wires) else value
-            # Hybrid wire arguments
-            else:
+
+            # Hybrid wire arguments.
+            if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
-                res = unflatten(leaves, tree)
+                value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={res}")
+            inputs.append(f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
+
+    def __str__(self) -> str:
+        if self.is_abstract and self.has_fixed_sig:
+            return self.name
+        return repr(self)
 
     def __hash__(self) -> int:
         serialized_dynamic = tuple(
