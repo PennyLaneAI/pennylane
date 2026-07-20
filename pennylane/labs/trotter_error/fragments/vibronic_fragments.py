@@ -175,7 +175,7 @@ def _mode_frags(
     ]
     linear_frags = [_mode_linear(states, modes, index, alphas) for index in range(modes)]
 
-    frags = _mode_group_commuting(quadratic_frags + linear_frags)
+    frags = _group_commuting(quadratic_frags + linear_frags)
     momentum = _momentum_fragment(states, modes, freqs)
     potential = _mode_potential_fragment(states, modes, taylor_coeffs)
     frags.append(momentum + potential)
@@ -232,7 +232,7 @@ def _mode_linear(states, modes, index, alphas) -> tuple[RealspaceMatrix, np.ndar
     return frag, mat
 
 
-def _mode_group_commuting(frags: list[tuple[RealspaceMatrix, np.ndarray]]) -> list[RealspaceMatrix]:
+def _group_commuting(frags: list[tuple[RealspaceMatrix, np.ndarray]]) -> list[RealspaceMatrix]:
     """Sums the commuting fragments. This operation is order dependent."""
     remaining = frags
     groups = []

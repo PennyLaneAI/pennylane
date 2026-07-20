@@ -113,7 +113,7 @@ def test_mode_based_fragments_1_state():
     opL = RealspaceOperator(modes, ("Q",), RealspaceCoeffs(v, label=f"alpha[{idx0}][0,0]"))
     exp1.set_block(0, 0, RealspaceSum(modes, (opL,)))
 
-    # FC merges commuting potential fragments (exp0 + exp1)
+    #merge commuting fragments
     exp_potential = exp0 + exp1
 
     # kinetic term (appended after grouping)
