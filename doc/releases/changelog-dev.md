@@ -620,6 +620,9 @@
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
+  [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
+  
 * Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
@@ -1005,6 +1008,9 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
+  [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
