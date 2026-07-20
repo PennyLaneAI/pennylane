@@ -187,7 +187,7 @@ class QuantumScript:
         self._obs_sharing_wires_id = None
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 
     @cached_property
     def hash(self) -> int:

@@ -270,7 +270,7 @@ class TestSubroutineOp:
 
         assert (
             repr(self.op1)
-            == "<Example1(x=0.5, y=0.6, reg1=Wires([0, 'a']), reg2=Wires(['a', 1]), pauli_words=('XY', 'YZ'))>"
+            == "<Example1(x=0.5, y=0.6, reg1=[0, 'a'], reg2=['a', 1], pauli_words=('XY', 'YZ'))>"
         )
 
     def test_set_wires(self):

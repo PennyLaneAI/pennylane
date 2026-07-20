@@ -89,7 +89,7 @@ class Identity(CVObservable, Operation):
             if isinstance(wire, str):
                 return f"I('{wire}')"
             return f"I({wire})"
-        return f"I({self.wires.tolist()})"
+        return f"I({self.wires})"
 
     @property
     def name(self):
