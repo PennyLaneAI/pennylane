@@ -195,7 +195,7 @@ class Pow(ScalarSymbolicOp):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if subclass == qp.ops.op_math.pow2.Pow2:
+        if subclass == Pow2:
             return True
         return NotImplemented
 
