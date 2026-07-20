@@ -58,7 +58,7 @@ def test_repr():
 
     op = qp.PrepSelPrep(lcu, control)
     with np.printoptions(legacy="1.21"):
-        assert repr(op) == "PrepSelPrep(lcu=0.25 * Z(2) + 0.75 * (X(1) @ X(2)), control=Wires([0]))"
+        assert repr(op) == "PrepSelPrep(lcu=0.25 * Z(2) + 0.75 * (X(1) @ X(2)), control=[0])"
 
 
 def _get_new_terms(lcu):
