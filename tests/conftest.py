@@ -313,6 +313,7 @@ def pytest_collection_modifyitems(items, config):
                     "param-shift",
                     "external",
                     "capture",
+                    "catalyst",
                 ]
                 for elem in markers
             )

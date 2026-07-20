@@ -578,7 +578,6 @@ class TestInterfaces:
     )
     @pytest.mark.parametrize("device_name", ("lightning.qubit", "null.qubit"))
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_qjit(self, unitary, device_name, tol):
         """Test with qjit interface."""
         catalyst = pytest.importorskip("catalyst")
