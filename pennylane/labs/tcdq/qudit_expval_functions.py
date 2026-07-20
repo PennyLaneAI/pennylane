@@ -41,7 +41,7 @@ from jax.typing import ArrayLike
 
 @dataclass
 class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
-    """Description of a qudit IQP circuit for classical expectation-value estimation.
+    r"""Description of a qudit IQP circuit for classical expectation-value estimation.
 
     This dataclass collects the circuit data needed by
     :func:`build_qudit_expval_func`. It is the qudit analogue of
@@ -53,34 +53,37 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         gates (dict[int, list[list[int]]]): Circuit structure mapping each
             trainable-parameter index to a list of generator vectors. Each
             generator vector has length ``n_qudits`` with integer entries in
-            :math:`\\{0, \\ldots, d-1\\}` that specify the power of :math:`Z` on
+            :math:`\{0, \ldots, d-1\}` that specify the power of :math:`Z` on
             each qudit. For example, with ``d=3`` and ``n_qudits=2``,
             ``{0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}`` defines three gates:
             :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
-            :math:`Z^1 \\otimes Z^1` on both.
+            :math:`Z^1 \otimes Z^1` on both.
         n_samples (int): Number of random dit-strings drawn for the
             estimation.
         key (ArrayLike): JAX PRNG key for random dit-string generation.
         observables (tuple[ArrayLike, ArrayLike] | None): A pair
             ``(l_vecs, m_vecs)`` specifying the Heisenberg–Weyl displacement
-            operators :math:`O(\\mathbf{l}, \\mathbf{m})` to measure.
+            operators :math:`O(\mathbf{l}, \mathbf{m})` to measure.
             Each is an integer array of shape ``(n_obs, n_qudits)`` with entries
-            in :math:`\\{0, \\ldots, d-1\\}`. If ``None``, observables must be
+            in :math:`\{0, \ldots, d-1\}`. If ``None``, observables must be
             supplied at call time (e.g., when used inside
             :func:`~pennylane.labs.tcdq.build_qudit_mmd_loss`).
         init_state_elems (ArrayLike | None): Support of a custom initial state.
             Integer array of shape ``(N, n_qudits)`` with entries in
-            :math:`\\{0, \\ldots, d-1\\}`, where ``N`` is the number of non-zero
+            :math:`\{0, \ldots, d-1\}`, where ``N`` is the number of non-zero
             amplitudes. Defaults to ``None`` (uniform superposition via QFT).
         init_state_amps (ArrayLike | None): Complex amplitudes of shape ``(N,)``
             for the custom initial state. Must be provided together with
             ``init_state_elems``.
-        phase_fn (Callable | None): Optional learnable phase layer function with
-            signature ``(params: ArrayLike, z: ArrayLike) -> scalar`` where ``z``
-            is a single dit-string of shape ``(n_qudits,)`` with entries in
-            ``{0, ..., d-1}``. When supplied, its phase-difference contribution
-            ``f(params, z) - f(params, (z - l) % d)`` is added to the accumulated
-            phase matrix after the gate phases.
+        phase_fn (Callable | None): Optional phase layer with trainable parameters. The phase layer
+            is a diagonal matrix representing the operator 
+            :math:`D'(\mathbf{\xi})\vert z \rangle = e^{i f_{\mathbf{\xi}}(z)}\vert z \rangle`
+            where :math:`f_{\mathbf{\xi}}(z)` is a trainable function parameterized by :math:`\mathbf{\xi}`.
+            :math:`D'(\mathbf{\xi})` is given by a ``Callable`` with signature ``(params: ArrayLike, z: ArrayLike) -> scalar``
+            where ``z`` is a dit-string of shape ``(n_qudits, )`` with entries in :math:`\{0, \dots, d-1\}` and
+            params has shape matching :math:`\mathbf{\xi}`.
+            After including the phase layer the final trainable circuit becomes 
+            :math:`F^\dagger D'(\mathbf{\xi})D(\mathbf{\theta})F`.
 
     **Example**
 
