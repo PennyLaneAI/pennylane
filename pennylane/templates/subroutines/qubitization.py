@@ -36,8 +36,6 @@ class Qubitization(Operation):
     .. math::
         Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
 
-
-
     .. seealso:: :class:`~.AmplitudeEmbedding` and :class:`~.Select`.
 
     Args:
@@ -159,7 +157,7 @@ class Qubitization(Operation):
             from pennylane.wires import Wires
 
         >>> print(qp.Qubitization.compute_decomposition(hamiltonian=0.1 * qp.Z(0), control=Wires(1)))
-        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(lcu=0.1 * Z(0), control=Wires([1]))]
+        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(lcu=0.1 * Z(0), control=[1])]
         """
 
         hamiltonian = kwargs["hamiltonian"]
