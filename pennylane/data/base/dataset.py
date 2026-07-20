@@ -20,10 +20,19 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, TypeVar, Union, cast, get_origin
 
 # pylint doesn't think this exists
-from typing_extensions import dataclass_transform
+from typing import (
+    Any,
+    ClassVar,
+    Generic,
+    Literal,
+    TypeVar,
+    Union,
+    cast,
+    dataclass_transform,
+    get_origin,
+)
 
 from pennylane.data.base import hdf5
 from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute

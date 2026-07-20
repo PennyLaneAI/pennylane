@@ -49,7 +49,8 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=.pylintrc", # Link to your config file
         ]
-      exclude: ^(doc/|tests/)
+      files: ^pennylane/
+      exclude: ^pennylane/labs/tests/
     - id: pylint-test
       name: "🐍 pylint · Lint test suite"
       entry: pylint
