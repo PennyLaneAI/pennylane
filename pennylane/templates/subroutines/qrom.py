@@ -815,7 +815,7 @@ def _qrom_measurement_condition(
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-many-branches
+def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-many-branches,too-many-statements
     data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
 ):
     """QROM decomposition using measurement-based uncomputation.
