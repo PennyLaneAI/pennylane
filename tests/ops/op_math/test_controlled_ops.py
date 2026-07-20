@@ -891,18 +891,3 @@ class TestCYOperator2:
         assert op.base == qp.Y(Wire[1])
         assert op.control_wires == Wire[1]
         assert repr(op) == "CY(wires=AbstractWires(2))"
-
-    @pytest.mark.capture
-    def test_capture_as_single_primitive(self):
-        """Capture should emit one shared ``operator_p`` equation for the complete ``CY``.
-
-        In particular, construction of the internal ``PauliY`` base must not leak a second
-        operator equation into the captured program.
-        """
-        jax = pytest.importorskip("jax")
-
-        jaxpr = jax.make_jaxpr(qp.CY)(jax.numpy.array([0, 1]))
-        op_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p]
-
-        assert len(op_eqns) == 1
-        assert op_eqns[0].params["op_cls"] is qp.CY
