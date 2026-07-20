@@ -272,9 +272,7 @@ def is_commuting(operation1, operation2):
 
     .. note::
 
-        Most qubit-based PennyLane operations are supported.
-
-        Unsupported qubit-based operations include:
+        Most PennyLane operations are supported. Unsupported operations include:
 
         :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`,
         :class:`~.ApproxTimeEvolution`, :class:`~.ArbitraryUnitary`, :class:`~.CommutingEvolution`,
