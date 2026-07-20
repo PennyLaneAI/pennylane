@@ -154,8 +154,8 @@ class Resources:
     __rmul__ = __mul__
 
     def __repr__(self):
-        gate_counts = ", ".join(f"{k}: {v}" for k, v in self.gate_counts.items())
-        return f"<num_gates={self.num_gates}, gate_counts={{{gate_counts}}}, weighted_cost={self.weighted_cost}>"
+        gate_counts = _gate_count_dict_to_str(self.gate_counts)
+        return f"<num_gates={self.num_gates}, gate_counts={gate_counts}, weighted_cost={self.weighted_cost}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -167,6 +167,11 @@ def _combine_dict(dict1: dict, dict2: dict):
         combined_dict[k] = combined_dict.get(k, 0) + v
 
     return combined_dict
+
+
+def _gate_count_dict_to_str(gate_counts):
+    inner = ", ".join(f"{op}: {count}" for op, count in gate_counts.items())
+    return f"{{{inner}}}"
 
 
 def _scale_dict(dict1: dict, scalar: int):

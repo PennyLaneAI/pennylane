@@ -193,6 +193,12 @@ class Pow(ScalarSymbolicOp):
             else f"{self.base}**{self.z}"
         )
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == Pow2:
+            return True
+        return NotImplemented
+
     @property
     def resource_params(self) -> dict:
         if isinstance(self.base, Operator2):
