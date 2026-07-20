@@ -270,6 +270,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Internals
    :hidden:
 
+   code/qp_backline
    code/qp_capture
    code/qp_concurrency
    code/qp_core_operator
