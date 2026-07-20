@@ -813,6 +813,25 @@ class TestControlledUnitaryRecursive:
 
 class TestMCXDecomposition:
 
+    def test_wrong_work_wire_type(self):
+        """Test that an error is raised if the work wire type is not 'zeroed' or 'borrowed'."""
+
+        expected_msg = r"work_wire_type must be one of \('zeroed', 'borrowed'\). Got 'blah'."
+
+        with pytest.raises(ValueError, match=expected_msg):
+            qp.MultiControlledX(
+                wires=[0, 1, 2],
+                work_wires=3,
+                work_wire_type="blah",
+            )
+
+        with pytest.raises(ValueError, match=expected_msg):
+            qp.MultiControlledX.compute_decomposition(
+                wires=[0, 1, 2],
+                work_wires=3,
+                work_wire_type="blah",
+            )
+
     @pytest.mark.unit
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5])

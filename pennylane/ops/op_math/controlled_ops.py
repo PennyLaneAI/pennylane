@@ -1672,7 +1672,7 @@ def _setup_inputs_mcx(
     control_values = [bool(v) for v in control_values]
 
     # Validate work_wire_type
-    accepted = {"zeroed", "borrowed"}
+    accepted = ("zeroed", "borrowed")
     if work_wire_type not in accepted:
         raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
 
