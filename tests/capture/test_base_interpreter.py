@@ -33,11 +33,11 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     qnode_prim,
     while_loop_prim,
 )
+from tests.capture.capture_utils import check_eqn  # pylint: disable=wrong-import-position
 from tests.core.operator.operator2_utils import (  # pylint: disable=wrong-import-position
     DynOp,
     NonParametricOp,
 )
-from tests.capture.capture_utils import check_eqn  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
