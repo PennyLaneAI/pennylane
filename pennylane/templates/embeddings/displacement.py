@@ -44,58 +44,6 @@ class DisplacementEmbedding(Operation):
 
     Raises:
         ValueError: if inputs do not have the correct format
-
-    Example:
-
-        Depending on the ``method`` argument, the feature vector will be encoded in the phase or the amplitude.
-        The argument ``c`` will define the value of the other quantity.
-        The default values are :math:`0.1` for ``c`` and ``'amplitude'`` for ``method``.
-
-        .. code-block:: python
-
-            dev = qp.device('default.gaussian', wires=3)
-
-            @qp.qnode(dev)
-            def circuit(feature_vector):
-                qp.DisplacementEmbedding(features=feature_vector, wires=range(3))
-                qp.QuadraticPhase(0.1, wires=1)
-                return qp.expval(qp.NumberOperator(wires=1))
-
-            X = [1, 2, 3]
-
-        >>> print(circuit(X))
-            4.1215690638748494
-
-        And, the resulting circuit is:
-
-        >>> print(qp.draw(circuit, show_matrices=False)(X))
-        0: ─╭DisplacementEmbedding(M0)──────────┤
-        1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
-        2: ─╰DisplacementEmbedding(M0)──────────┤
-
-        Using different parameters:
-
-        .. code-block:: python
-
-            dev = qp.device('default.gaussian', wires=3)
-
-            @qp.qnode(dev)
-            def circuit(feature_vector):
-                qp.DisplacementEmbedding(features=feature_vector, wires=range(3), method='phase', c=0.5)
-                qp.QuadraticPhase(0.1, wires=1)
-                return qp.expval(qp.NumberOperator(wires=1))
-
-            X = [1, 2, 3]
-
-        >>> print(circuit(X))
-            0.23401288309122226
-
-        And, the resulting circuit is:
-
-        >>> print(qp.draw(circuit, show_matrices=False)(X))
-        0: ─╭DisplacementEmbedding(M0)──────────┤
-        1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
-        2: ─╰DisplacementEmbedding(M0)──────────┤
     """
 
     grad_method = None

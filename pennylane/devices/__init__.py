@@ -26,7 +26,6 @@ to verify and test quantum gradient computations.
 
     capabilities
     default_qubit
-    default_gaussian
     default_mixed
     default_qutrit
     default_qutrit_mixed
@@ -173,7 +172,6 @@ from .legacy_facade import LegacyDeviceFacade
 # DefaultTensor is not imported here to avoid possible warnings
 # from quimb. Such warnings are due to a known issue with the cotengra package
 # when the latter is installed along with certain other packages.
-from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit

@@ -657,21 +657,6 @@ def param_shift_cv(
     If any of the above constraints are not followed, the tape cannot be differentiated
     via the CV parameter-shift rule. Please use numerical differentiation instead.
 
-    **Example**
-
-    This transform can be registered directly as the quantum gradient transform
-    to use during autodifferentiation:
-
-    >>> dev = qp.device("default.gaussian", wires=2)
-    >>> @qp.qnode(dev, diff_method="parameter-shift")
-    ... def circuit(params):
-    ...     qp.Squeezing(params[0], params[1], wires=[0])
-    ...     qp.Squeezing(params[2], params[3], wires=[0])
-    ...     return qp.expval(qp.NumberOperator(0))
-    >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
-    >>> qp.jacobian(circuit)(params)
-    array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
-
     .. details::
         :title: Usage Details
 
@@ -705,16 +690,6 @@ def param_shift_cv(
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
-
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
-
-        >>> dev = qp.device("default.gaussian", wires=2)
-        >>> fn(qp.execute(gradient_tapes, dev, None))
-        (-0.32487113372219933,
-         -0.4054074025310772,
-         -0.8704985300843778,
-         0.4054074025310775)
     """
     if len(tape.measurements) > 1:
         raise ValueError(

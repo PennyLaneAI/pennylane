@@ -103,61 +103,6 @@ class Interferometer(CVOperation):
 
     Raises:
         ValueError: if inputs do not have the correct format
-
-    Example:
-
-        The template requires :math:`3` sets of parameters. The ``mesh`` and ``beamsplitter`` keyword arguments are optional and
-        have ``'rectangular'`` and ``'pennylane'`` as default values.
-
-        .. code-block:: python
-
-            dev = qp.device('default.gaussian', wires=4)
-
-            @qp.qnode(dev)
-            def circuit(params):
-                qp.Interferometer(*params, wires=range(4))
-                return qp.expval(qp.Identity(0))
-
-            shapes = [[6, ], [6, ], [4, ]]
-            params = []
-            rng = np.random.default_rng(12345)
-            params = [rng.random(shape) for shape in shapes]
-
-        Using these random parameters, the resulting circuit is:
-
-        >>> print(qp.draw(circuit, level="device")(params))
-        0: ─╭BS(0.23,0.60)────────────────╭BS(0.68,0.94)──R(0.67)────────────────┤  <I>
-        1: ─╰BS(0.23,0.60)─╭BS(0.80,0.67)─╰BS(0.68,0.94)─╭BS(0.33,0.95)──R(0.10)─┤
-        2: ─╭BS(0.32,0.19)─╰BS(0.80,0.67)─╭BS(0.39,0.25)─╰BS(0.33,0.95)──R(0.44)─┤
-        3: ─╰BS(0.32,0.19)────────────────╰BS(0.39,0.25)──R(0.89)────────────────┤
-
-        Using different values for optional arguments:
-
-        .. code-block:: python
-
-            @qp.qnode(dev)
-            def circuit(params):
-                qp.Interferometer(*params, wires=range(4), mesh='triangular', beamsplitter='clements')
-                return qp.expval(qp.Identity(0))
-
-            shapes = [[6, ], [6, ], [4, ]]
-            params = []
-            for shape in shapes:
-                params.append(np.random.random(shape))
-
-            print(qp.draw(circuit, level="device")(params))
-
-        .. code-block::
-
-            0: ──R(0.71)───────────────────────────────╭BS(0.07,0.00)──R(0.36)──────────────────────────────
-            1: ──R(0.82)────────────────╭BS(0.80,0.00)─╰BS(0.07,0.00)──R(0.77)───────╭BS(0.77,0.00)──R(0.12)
-            2: ──R(0.01)─╭BS(0.14,0.00)─╰BS(0.80,0.00)──R(0.73)───────╭BS(0.99,0.00)─╰BS(0.77,0.00)──R(0.07)
-            3: ──────────╰BS(0.14,0.00)───────────────────────────────╰BS(0.99,0.00)────────────────────────
-
-            ──────────────────────────┤  <I>
-            ──────────────────────────┤
-            ──╭BS(0.20,0.00)──R(0.86)─┤
-            ──╰BS(0.20,0.00)──R(0.62)─┤
     """
 
     grad_method = None
