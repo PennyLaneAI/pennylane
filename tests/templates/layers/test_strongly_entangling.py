@@ -78,7 +78,7 @@ class TestDecomposition:
 
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
 
-            def circuit(weights):
+            def circuit(weights, rule=rule):
                 rule(weights, wires=op.wires, **op.hyperparameters)
 
             plxpr = qp.capture.make_plxpr(circuit)(weights)
