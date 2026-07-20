@@ -2220,9 +2220,9 @@ class TestTapeExpansionWithControlled:
             [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
 
         assert tape.circuit == [
-            Controlled(qp.RZ(0.1, 0), control_wires=[3, 7]),
-            Controlled(qp.RY(0.2, 0), control_wires=[3, 7]),
-            Controlled(qp.RZ(0.3, 0), control_wires=[3, 7]),
+            qp.ctrl(qp.RZ(0.1, 0), control=[3, 7]),
+            qp.ctrl(qp.RY(0.2, 0), control=[3, 7]),
+            qp.ctrl(qp.RZ(0.3, 0), control=[3, 7]),
         ]
 
         # Tests that the decomposition of the nested controlled _Rot gate is ultimately
