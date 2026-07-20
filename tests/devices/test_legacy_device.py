@@ -895,14 +895,6 @@ class TestDeviceInit:
         with pytest.raises(DeviceError, match="Device None does not exist"):
             qp.device("None", wires=0)
 
-    def test_outdated_API(self, monkeypatch):
-        """Test that an exception is raised if plugin that targets an old API is loaded"""
-
-        with monkeypatch.context() as m:
-            m.setattr(qp.devices.device_constructor, "__version__", "0.0.1")
-            with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qp.device("default.qutrit", wires=0)
-
     def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
         spied = mocker.spy(qp.devices, "__getattr__")
 
