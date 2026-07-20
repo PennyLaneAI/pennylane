@@ -84,7 +84,7 @@ class _DecompInGraphInfo(_DecompInfo):
         weighted_cost = gate_set_resource.weighted_cost
         return (
             super()._gate_counts_and_allocations
-            + f"\nFull Expansion Gates: {{{gate_counts}}}"
+            + f"\nFull Expansion Gates: {gate_counts}"
             + f"\nWeighted Cost: {weighted_cost}"
         )
 
@@ -128,11 +128,11 @@ class _DecompInGraphInfo(_DecompInfo):
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         estimated_str = _gate_count_dict_to_str(estimated_count)
         if estimated_count == actual_count:
-            return f"First-Level Expansion Gates: {{{estimated_str}}}"
+            return f"First-Level Expansion Gates: {estimated_str}"
         actual_str = _gate_count_dict_to_str(actual_count)
         return (
-            f"Estimated First-Level Expansion Gates: {{{estimated_str}}}\n"
-            f"Actual First-Level Expansion Gates: {{{actual_str}}}"
+            f"Estimated First-Level Expansion Gates: {estimated_str}\n"
+            f"Actual First-Level Expansion Gates: {actual_str}"
         )
 
     @override
