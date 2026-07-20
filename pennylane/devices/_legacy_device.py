@@ -52,9 +52,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qp.devices.DefaultQutrit)", the overridden
+    checking "isinstance(dev, MyLegacyDevice)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qp.devices.DefaultQutrit)"
+    "isinstance(dev.target_device, MyLegacyDevice)"
     """
 
     def __instancecheck__(cls, instance):

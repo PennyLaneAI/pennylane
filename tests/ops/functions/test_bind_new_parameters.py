@@ -46,17 +46,6 @@ from pennylane.wires import WiresLike
             qp.sum(qp.s_prod(-0.5, qp.Hermitian(Z, 0)), qp.PauliZ(1)),
         ),
         (
-            qp.sum(
-                qp.s_prod(0.5, qp.sum(qp.THermitian(GELL_MANN[0], 0), qp.GellMann(0, 2))),
-                qp.prod(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[5], 2)),
-            ),
-            [-0.5, GELL_MANN[1], GELL_MANN[6]],
-            qp.sum(
-                qp.s_prod(-0.5, qp.sum(qp.THermitian(GELL_MANN[1], 0), qp.GellMann(0, 2))),
-                qp.prod(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[6], 2)),
-            ),
-        ),
-        (
             qp.prod(qp.s_prod(1.1, qp.PauliX(0)), qp.PauliZ(1)),
             [0.1],
             qp.prod(qp.s_prod(0.1, qp.PauliX(0)), qp.PauliZ(1)),
@@ -70,17 +59,6 @@ from pennylane.wires import WiresLike
             qp.prod(qp.s_prod(0.5, qp.Hermitian(X, 0)), qp.PauliZ(1)),
             [-0.5, Z],
             qp.prod(qp.s_prod(-0.5, qp.Hermitian(Z, 0)), qp.PauliZ(1)),
-        ),
-        (
-            qp.prod(
-                qp.s_prod(0.5, qp.sum(qp.THermitian(GELL_MANN[0], 0), qp.GellMann(0, 2))),
-                qp.sum(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[5], 1)),
-            ),
-            [-0.5, GELL_MANN[1], GELL_MANN[6]],
-            qp.prod(
-                qp.s_prod(-0.5, qp.sum(qp.THermitian(GELL_MANN[1], 0), qp.GellMann(0, 2))),
-                qp.sum(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[6], 1)),
-            ),
         ),
     ],
 )
@@ -462,7 +440,6 @@ def test_fermionic_template_ops(op, new_params, expected_op):
             [[1, 1]],
             qp.BasisState([1, 1], wires=[0, 1]),
         ),
-        (qp.GellMann(wires=0, index=4), [], qp.GellMann(wires=0, index=4)),
         (qp.Identity(wires=[1, 2]), [], qp.Identity(wires=[1, 2])),
         (qp.pow(qp.RX(0.123, 0), 2, lazy=False), [0.456], qp.RX(0.456, 0)),
         (

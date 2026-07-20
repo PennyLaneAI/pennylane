@@ -172,9 +172,7 @@ pl-device-test = "pennylane.devices.tests:cli"
 "default.mixed" = "pennylane.devices.default_mixed:DefaultMixed"
 "reference.qubit" = "pennylane.devices.reference_qubit:ReferenceQubit"
 "null.qubit" = "pennylane.devices.null_qubit:NullQubit"
-"default.qutrit" = "pennylane.devices.default_qutrit:DefaultQutrit"
 "default.clifford" = "pennylane.devices.default_clifford:DefaultClifford"
-"default.qutrit.mixed" = "pennylane.devices.default_qutrit_mixed:DefaultQutritMixed"
 "default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
 
 [project.entry-points."console_scripts"]

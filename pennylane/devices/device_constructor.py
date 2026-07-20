@@ -72,12 +72,6 @@ def device(name, *args, **kwargs):
     * ``'lightning.qubit'``: a more performant state simulator of qubit-based
       quantum circuit architectures written in C++.
 
-    * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
-      state simulator of qutrit-based quantum circuit architectures.
-
-    * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
-      mixed-state simulator of qutrit-based quantum circuit architectures.
-
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 

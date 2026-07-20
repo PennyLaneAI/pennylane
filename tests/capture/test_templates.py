@@ -1795,7 +1795,6 @@ unsupported_templates = [
     qp.DisplacementEmbedding,
     qp.Interferometer,
     qp.PrepSelPrep,
-    qp.QutritBasisStatePreparation,
     qp.SqueezingEmbedding,
     qp.TrotterizedQfunc,  # TODO: add support in follow up PR
     qp.templates.SubroutineOp,

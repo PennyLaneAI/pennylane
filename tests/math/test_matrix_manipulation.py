@@ -545,70 +545,6 @@ class TestExpandMatrix:
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
 
-class TestExpandMatrixQutrit:
-
-    def test_add_wire_at_end(self):
-        """Test that expand_matrix works on qutrit matrices when an additional wire is added at the end."""
-
-        mat = np.reshape(np.arange(9), (3, 3))
-
-        new_mat = expand_matrix(mat, 0, (0, 1))
-        assert qp.math.allclose(new_mat, np.kron(mat, np.eye(3)))
-
-    def test_add_wire_at_start(self):
-        """Test that expand_matrix works on qutrit matrices when an additional wire is added at the start."""
-
-        mat = np.reshape(np.arange(9), (3, 3))
-        new_mat = expand_matrix(mat, 0, (1, 0))
-        assert qp.math.allclose(new_mat, np.kron(np.eye(3), mat))
-
-    def test_wire_permutation(self):
-        """Test that wires can be permuted."""
-        m1 = np.reshape(np.arange(81), (9, 9))
-        m2 = expand_matrix(m1, (0, 1), (1, 0))
-
-        # states across row are 00, 01, 02, 10, 11, 12, 20, 21, 22
-        # extract out right qubit state with mod
-        m1_wire_zero = m1 % 3
-        m2_wire_zero = m2 % 3
-
-        # extract out left qubit state  with floor then mod
-        m1_wire_one = np.floor(m1 / 3) % 3
-        m2_wire_one = np.floor(m2 / 3) % 3
-
-        assert qp.math.allclose(m1_wire_zero, m2_wire_one)
-        assert qp.math.allclose(m1_wire_one, m2_wire_zero)
-
-        # check columns also switched
-        # now matrix numbers indicate row number
-        m1p = np.floor(m1 / 9)
-        m2p = np.floor(m2 / 9)
-
-        # states across column are 00, 01, 02, 10, 11, 12, 20, 21, 22
-        # extract out right qubit state with mod
-        m1_wire_zerop = m1p % 3
-        m2_wire_zerop = m2p % 3
-
-        # extract out left qubit state  with floor then mod
-        m1_wire_onep = np.floor(m1p / 3) % 3
-        m2_wire_onep = np.floor(m2p / 3) % 3
-
-        assert qp.math.allclose(m1_wire_zerop, m2_wire_onep)
-        assert qp.math.allclose(m1_wire_onep, m2_wire_zerop)
-
-    def test_adding_wire_in_middle(self):
-        """Test that expand_matrix can add an identity wire in the middle of a two qutrit matrix."""
-
-        m1 = np.reshape(np.arange(9), (3, 3))
-        m2 = np.reshape(np.arange(9, 18), (3, 3))
-        m3 = np.kron(m1, m2)
-
-        m3_added_wire = expand_matrix(m3, (0, 1), (1, 2, 0))
-        m3_kron = np.kron(np.kron(m2, np.eye(3)), m1)
-
-        assert qp.math.allclose(m3_added_wire, m3_kron)
-
-
 class TestExpandMatrixSparse:
     """Tests for the _sparse_expand_matrix function."""
 
@@ -942,45 +878,6 @@ class TestPartialTrace:
 
         # Perform the partial trace
         result = qp.math.quantum.partial_trace(rho, [1], c_dtype=c_dtype)
-        assert qp.math.allclose(result, expected)
-
-    @pytest.mark.parametrize("c_dtype", dtypes)
-    def test_single_density_matrix_qutrit(self, ml_framework, c_dtype):
-        """Test partial trace on a single density matrix."""
-        # Define a 2-qutrit density matrix
-        rho = np.zeros((9, 9))
-        rho[0, 0] = 1
-        rho = qp.math.asarray(rho, like=ml_framework)
-
-        # Expected result after tracing out the second qubit
-        expected = qp.math.asarray(
-            np.array([[[1, 0, 0], [0, 0, 0], [0, 0, 0]]], dtype=c_dtype), like=ml_framework
-        )
-
-        # Perform the partial trace
-        result = qp.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype, qudit_dim=3)
-        assert qp.math.allclose(result, expected)
-
-    @pytest.mark.parametrize("c_dtype", dtypes)
-    def test_batched_density_matrices_qutrit(self, ml_framework, c_dtype):
-        """Test partial trace on a batch of density matrices."""
-        # Define a batch of 2-qutrit density matrices
-        rho = np.zeros((2, 9, 9))
-        rho[0, 0, 0] = 1
-        rho[1, 1, 1] = 1
-        rho = qp.math.asarray(rho, like=ml_framework)
-
-        # Expected result after tracing out the first qubit for each matrix
-        expected = qp.math.asarray(
-            np.array(
-                [[[1, 0, 0], [0, 0, 0], [0, 0, 0]], [[1, 0, 0], [0, 0, 0], [0, 0, 0]]],
-                dtype=c_dtype,
-            ),
-            like=ml_framework,
-        )
-
-        # Perform the partial trace
-        result = qp.math.quantum.partial_trace(rho, [1], c_dtype=c_dtype, qudit_dim=3)
         assert qp.math.allclose(result, expected)
 
     @pytest.mark.parametrize("c_dtype", dtypes)
