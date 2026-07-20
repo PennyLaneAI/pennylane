@@ -49,6 +49,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator.operator2 import Operator2, operator_p
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.transforms import decompose
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
@@ -1101,28 +1102,34 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         half_op = qp.pow(op, half_data)
         quart_op = qp.pow(op, quart_data)
 
-        decomps = qp.list_decomps(f"Pow({op.name})")
-        for rule in decomps:
+        def check_power(pow_op, repetitions):
+            is_operator2 = isinstance(pow_op, Operator2)
+            rule_params = pow_op.arguments if is_operator2 else pow_op.resource_params
+            decomps = (
+                qp.list_decomps(pow_op)
+                if is_operator2
+                else qp.list_decomps(f"Pow({pow_op.base.name})")
+            )
+            applicable_rules = [rule for rule in decomps if rule.is_applicable(**rule_params)]
+            assert applicable_rules
 
-            if rule.is_applicable(**half_op.resource_params):
-
+            for rule in applicable_rules:
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
-                    rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
+                    for _ in range(repetitions):
+                        if is_operator2:
+                            rule(**pow_op.arguments)
+                        else:
+                            rule(
+                                *pow_op.parameters,
+                                wires=pow_op.wires,
+                                **pow_op.hyperparameters,
+                            )
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
-            if rule.is_applicable(**quart_op.resource_params):
-
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-
-                tape = qp.tape.QuantumScript.from_queue(q)
-                assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
+        check_power(half_op, 2)
+        check_power(quart_op, 4)
 
     @pytest.mark.parametrize("z", [0.25, 0.5, 2, 4, 8, 9, [0.25, 0.5]])
     @pytest.mark.parametrize("op", [qp.ISWAP(wires=[0, 1]), qp.SISWAP(wires=[0, 1])])
@@ -1351,8 +1358,9 @@ class TestPauliYOperator2:
     """Regression tests for the ``PauliY`` migration from ``Operation`` to ``Operator2``."""
 
     def test_pow_graph_decomposition(self):
-        """A legacy ``Pow`` wrapping an ``Operator2`` base, including nested and adjoint
-        bases, must decompose through the graph system."""
+        """``Pow2`` with plain, nested, and adjoint bases decomposes through the graph system."""
+        assert isinstance(qp.pow(qp.Y(0), 0.5), Pow2)
+
         qp.decomposition.enable_graph()
         try:
 
