@@ -877,7 +877,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert tape[2].base.__class__ is qp.RX
 
         # check parameters assigned correctly
-        assert tape[0].data == (z,)
+        assert tape[0].base.data == (z,)
         assert tape[1].data == (y,)
         assert tape[2].data == (x,)
 
