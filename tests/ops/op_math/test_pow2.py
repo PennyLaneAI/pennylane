@@ -198,9 +198,9 @@ def test_compute_decomposition():
     with pytest.raises(DecompositionUndefinedError):
         Pow2.compute_decomposition(NoPowOp(0), z=0.5)
 
-    # a generic error during base.pow is wrapped in DecompositionUndefinedError
+    # a generic (non-Pow) error during base.pow is wrapped in DecompositionUndefinedError
     with pytest.raises(DecompositionUndefinedError):
-        Pow2.compute_decomposition(NoPowOp(0), z=0.5)
+        Pow2.compute_decomposition(BadPowOp(0), z=0.5)
 
 
 def test_diagonalizing_gates():
@@ -247,6 +247,20 @@ def test_has_adjoint_and_adjoint():
     assert not frac.has_adjoint
     with pytest.raises(AdjointUndefinedError, match="only is well-defined for integer powers"):
         frac.adjoint()
+
+
+def test_pow():
+    """Tests that the pow method combines exponents by multiplication."""
+
+    op = pow(DynOp(0.5, wires=0), z=2)
+    combined = op.pow(3)
+    assert len(combined) == 1
+    assert isinstance(combined[0], Pow2)
+    qp.assert_equal(combined[0], Pow2(DynOp(0.5, wires=0), z=6))
+
+    # a fractional exponent is also combined by multiplication
+    frac = pow(DynOp(0.5, wires=0), z=2)
+    qp.assert_equal(frac.pow(0.5)[0], Pow2(DynOp(0.5, wires=0), z=1.0))
 
 
 def test_simplify_pauli_rep():

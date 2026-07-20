@@ -48,7 +48,7 @@ from pennylane.ops.identity import Identity
 from pennylane.ops.op_math import adjoint
 
 from .adjoint import Adjoint
-from .adjoint2 import Adjoint2, _adjoint_abstract
+from .adjoint2 import Adjoint2
 from .symbolicop2 import SymbolicOp2
 
 
@@ -303,11 +303,7 @@ def merge_powers(base, z):
 
 def _flip_pow_adjoint_resource(base, z):
     # base class is adjoint, and the base of the base is the target class
-    return {
-        _adjoint_abstract(
-            Pow2(base.base, z=z),
-        ): 1
-    }
+    return {qp.adjoint(Pow2(base.base, z=z)): 1}
 
 
 # pylint: disable=protected-access,unused-argument
@@ -345,17 +341,6 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 
 
 pow_involutory = make_pow_decomp_with_period(2)
-
-
-def _pow_rotation_resource(base, z):  # pylint: disable=unused-argument
-    return {abstractify(base): 1}
-
-
-# pylint: disable=protected-access,unused-argument
-@register_resources(_pow_rotation_resource)
-def pow_rotation(phi, wires, base, z):
-    """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    qp.ops.functions.bind_new_parameters(base, (phi * z,))
 
 
 @list_decomps.register

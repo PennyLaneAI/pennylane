@@ -64,7 +64,6 @@ from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
 from pennylane.typing import Float, Wire
 
@@ -475,18 +474,6 @@ class TestPowDecomposition:
         assert q.queue == [CustomOp(0.3 * 2.5, wires=[0, 1, 2])]
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
-        )
-
-    def test_pow_rotations2(self):
-        """Tests the pow_rotations decomposition."""
-
-        op = pow(DynOp(0.3, wires=[0, 1, 2]), 2.5)
-        with queuing.AnnotatedQueue() as q:
-            pow_rotation2(op.base.phi, op.base.wires, op.base, op.z)
-
-        assert q.queue == [DynOp(0.3 * 2.5, wires=[0, 1, 2])]
-        assert pow_rotation2.compute_resources(**op.arguments) == Resources(
-            {DynOp(Float, wires=Wire[3]): 1}
         )
 
     def test_list_pow_decomps2(self):
