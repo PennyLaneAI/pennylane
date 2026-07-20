@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
+  [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
+
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
@@ -654,7 +657,7 @@
 
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
-  
+
 * Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
@@ -1003,7 +1006,7 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g., 
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
   from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)

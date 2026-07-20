@@ -12,9 +12,119 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Backline - placement and transport for heterogeneous compilation and execution."""
+r"""
+.. currentmodule:: pennylane.backline
 
-from .placement import Backline, Endpoint, backline
+This module contains experimental features for compilation and execution on heterogeneous devices.
+The ``"ftqc.heterogeneous"`` device requires a ``backline`` object, which specifies the placement
+of processes (i.e. where each part of the workload runs), and the transport protocol.
+
+.. warning::
+
+    Backline is experimental. Its API may change without notice, and it is only usable through
+    the Catalyst compiler.
+
+A ``backline`` placement is built from a controller (which drives a qnode, e.g. through a
+simulator), zero or more coprocessors, and a transport. This is then passed to the
+``"ftqc.heterogeneous"`` device:
+
+.. code-block:: python
+
+    import pennylane as qp
+
+    cpu_controller = qp.controller(
+        name="cpu-controller",
+        addr="192.168.1.1",
+        port="1234",
+        triple="aarch64-unknown-linux-gnu",
+        remote=True,
+    )
+
+    gpu_coprocessor = qp.coprocessor(
+        name="gpu-coprocessor",
+        coprocessor_fn="decoder",
+        remote=False
+    )
+
+    backline = qp.backline(
+        controller=cpu_controller, coprocessors=(gpu_coprocessor,), transport="rdma"
+    )
+
+    dev = qp.device("ftqc.heterogeneous", backline=backline, wires=4)
+
+Executors
+~~~~~~~~~
+
+An executor is a node in the backline fabric.
+
+.. autosummary::
+    :toctree: api
+
+    ~Executor
+    ~Controller
+    ~Coprocessor
+    ~controller
+    ~coprocessor
+
+Coprocessor functions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+A coprocessor applies a precompiled function to each message it receives (e.g. decoding a syndrome).
+
+.. autosummary::
+    :toctree: api
+
+    ~CoprocessorFunction
+    ~css_gluon_decoder
+
+Placement
+~~~~~~~~~
+
+A placement groups the controller, coprocessors, and transport into a single object.
+
+.. autosummary::
+    :toctree: api
+
+    ~Backline
+    ~backline
+
+Transports
+~~~~~~~~~~
+
+A transport selects, by name, how messages transfer between executors. The implementation
+lives in the compiled runtime.
+
+.. autosummary::
+    :toctree: api
+
+    ~Transport
+    ~get_transport
+    ~register_transport
+"""
+
+from .functions import CoprocessorFunction, css_gluon_decoder
+from .placement import (
+    Backline,
+    Controller,
+    Coprocessor,
+    Executor,
+    backline,
+    controller,
+    coprocessor,
+)
 from .transports import Transport, get_transport, register_transport
 
-__all__ = ["Endpoint", "Backline", "backline", "Transport", "get_transport", "register_transport"]
+__all__ = [
+    "Executor",
+    "Controller",
+    "Coprocessor",
+    "Backline",
+    "CoprocessorFunction",
+    "css_gluon_decoder",
+    "controller",
+    "coprocessor",
+    "backline",
+    "Transport",
+    "get_transport",
+    "register_transport",
+]

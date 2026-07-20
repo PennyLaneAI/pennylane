@@ -14,7 +14,8 @@
 
 """The named transport registry for backline placement.
 
-A Transport specifies how data move between endpoints, and are chosen by name. The data transport implmentation lives in the compiled runtime.
+A Transport specifies how data move between executors, and are chosen by name. The data transport
+implementation lives in the compiled runtime.
 """
 
 from dataclasses import dataclass
@@ -27,7 +28,7 @@ class Transport:
     """A named data transport.
 
     Args:
-        name (str): The registry name of the transport, e.g. ``"roce"``.
+        name (str): The registry name of the transport, e.g. ``"rdma"``.
     """
 
     name: str
@@ -71,6 +72,6 @@ def get_transport(name):
     return factory()
 
 
-@register_transport("roce")
-def _roce():
-    return Transport("roce")
+@register_transport("rdma")
+def _rdma():
+    return Transport("rdma")
