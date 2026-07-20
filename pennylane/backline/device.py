@@ -72,7 +72,7 @@ class HeterogeneousDevice(Device):
         return CompilePipeline(), execution_config
 
     def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
-        """Execution is handled by a downstream compiler; there is no Python execution path."""
+        """Execution is handled by the Catalyst compiler; there is no Python execution path."""
         raise NotImplementedError(
             "The ftqc.heterogeneous device has no Python execution path; execute it via a "
             "compiler such as Catalyst (@qjit)."
