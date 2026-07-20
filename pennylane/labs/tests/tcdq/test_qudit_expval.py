@@ -382,7 +382,7 @@ class TestQuditExpvalBatchedVsExact:
         ],
     )
     def test_matches_exact(self, d, n, generators, thetas, l_vecs, m_vecs):
-        """Batched MC must agree with the exact qudit expval within sampling noise."""
+        """Batched Monte Carlo must agree with the exact qudit expval within sampling noise."""
         generators_arr = np.array(generators)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
@@ -411,7 +411,7 @@ class TestQuditExpvalBatchedVsExact:
 
 
 class TestQuditExpvalBatchedVsMatrix:
-    """Test that the batched MC version matches the brute-force matrix reference."""
+    """Test that the batched Monte Carlo version matches the brute-force matrix reference."""
 
     @pytest.mark.parametrize(
         "d, n, generators, thetas, l_vecs, m_vecs",
@@ -423,7 +423,7 @@ class TestQuditExpvalBatchedVsMatrix:
         ],
     )
     def test_matches_matrix_reference(self, d, n, generators, thetas, l_vecs, m_vecs):
-        """Batched MC must agree with the dense matrix reference."""
+        """Batched Monte Carlo must agree with the dense matrix reference."""
         generators_arr = np.array(generators)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
@@ -450,7 +450,7 @@ class TestQuditExpvalBatchedVsMatrix:
 
 
 class TestQuditExpvalBatchedEdgeCases:
-    """Edge cases and structural tests for the batched MC function."""
+    """Edge cases and structural tests for the batched Monte Carlo function."""
 
     def test_identity_observable_gives_one(self):
         """D(0, 0) = identity, so its expectation value is always 1."""
@@ -744,7 +744,7 @@ NUM_SAMPLES_INIT_STATE = 50000
 
 
 class TestQuditExpvalBatchedWithInitState:
-    """Test batched MC with general initial states against brute-force reference."""
+    """Test batched Monte Carlo with general initial states against brute-force reference."""
 
     @pytest.mark.parametrize(
         "d, n, generators, thetas, l_vecs, m_vecs, state_elems, state_amps",
@@ -832,7 +832,7 @@ class TestQuditExpvalBatchedWithInitState:
     def test_matches_matrix_reference(
         self, d, n, generators, thetas, l_vecs, m_vecs, state_elems, state_amps
     ):
-        """Batched MC with init state must agree with dense matrix reference."""
+        """Batched Monte Carlo with init state must agree with dense matrix reference."""
         generators_arr = np.array(generators)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
@@ -1130,7 +1130,7 @@ class TestQuditExpvalBatchedWithInitState:
         )
 
         # Both calls use the same fixed PRNG key, so the H ∝ |c|^2 scaling
-        # holds to float precision without any MC noise.
+        # holds to float precision without any Monte Carlo noise.
         np.testing.assert_allclose(vals_unnorm, scale**2 * vals_norm, atol=1e-5)
 
     def test_differentiable_with_init_state(self):
@@ -1165,7 +1165,7 @@ class TestQuditExpvalBatchedWithInitState:
         assert grads.shape == (len(thetas),)
         assert np.all(np.isfinite(grads))
 
-        # Finite-difference check: same PRNG key means same samples, so MC noise
+        # Finite-difference check: same PRNG key means same samples, so Monte Carlo noise
         # cancels and only O(eps^2) truncation error remains.
         eps = 1e-3
         p = np.array(params, dtype=float)
@@ -1254,7 +1254,7 @@ def test_qudit_expval_batched_init_state_matches_brute_force(
 
 
 class TestQuditExpvalWithPhaseLayer:
-    """Test batched MC with a custom phase layer against brute-force reference."""
+    """Test batched Monte Carlo with a custom phase layer against brute-force reference."""
 
     @staticmethod
     def _phase_fn(params, z):
