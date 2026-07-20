@@ -204,7 +204,6 @@ def two_qubit_decomposition(U, wires):
         )
 
     with queuing.AnnotatedQueue() as q:
-
         U, phase = math.convert_to_su4(U)
 
         if _is_jax_jit(U):
@@ -320,11 +319,14 @@ def _su2_rot_resource():
 
 def _su2_rot_decomp(U, wires, **__):
     phi, theta, omega, alpha = zyz_rotation_angles(U)
-    ops.cond(
-        math.allclose(theta, 0.0),
-        lambda: ops.RZ((phi + omega) % (4 * np.pi), wires=wires[0]),
-        lambda: ops.Rot(phi, theta, omega, wires=wires[0]),
-    )()
+
+    def _true():
+        ops.RZ((phi + omega) % (4 * np.pi), wires=wires[0])
+
+    def _false():
+        ops.Rot(phi, theta, omega, wires=wires[0])
+
+    ops.cond(math.allclose(theta, 0.0), _true, _false)()
     return alpha
 
 
@@ -1103,7 +1105,6 @@ def _compute_udv(a, b):
 
 
 def _cossin_decomposition(U, p):
-
     # pylint: disable=import-outside-toplevel
     if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
