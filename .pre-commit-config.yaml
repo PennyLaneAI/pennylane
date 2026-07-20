@@ -50,7 +50,6 @@ repos:
           "--rcfile=.pylintrc", # Link to your config file
         ]
       files: ^pennylane/
-      exclude: ^pennylane/labs/tests/
     - id: pylint-test
       name: "🐍 pylint · Lint test suite"
       entry: pylint
