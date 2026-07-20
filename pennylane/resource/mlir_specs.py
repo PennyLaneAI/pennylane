@@ -179,9 +179,11 @@ def _mlir_resources_to_specs_resources(
     }
 
     if pbc_depth is not None:
-        kwargs["any_commuting_depth"] = pbc_depth.any_commuting_depth
-        kwargs["qubit_disjoint_depth"] = pbc_depth.qubit_disjoint_depth
-        fn_resources[focus] = PBCSpecsResources(**kwargs)
+        fn_resources[focus] = PBCSpecsResources(
+            any_commuting_depth=pbc_depth.any_commuting_depth,
+            qubit_disjoint_depth=pbc_depth.qubit_disjoint_depth,
+            **kwargs,
+        )
     else:
         fn_resources[focus] = SpecsResources(**kwargs)
 
