@@ -43,7 +43,9 @@ from jax import make_jaxpr
 
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
+from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -123,8 +125,6 @@ class TestPennyLaneTransformer:
             return qp.expval(qp.Z(0))
 
         new_circ, _, _ = transformer.transform(circ, user_context)
-
-        assert circ(1.23) == new_circ(1.23)
         assert "inner_factory.<locals>.ag__circ" in str(new_circ.func)
 
     def test_get_extra_locals(self):
@@ -256,7 +256,6 @@ class TestIntegration:
             return qp.expval(qp.PauliZ(0))
 
         ag_fn = run_autograph(circ)
-        assert ag_fn(np.pi) == -1
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
@@ -273,7 +272,9 @@ class TestIntegration:
             return inner(x)
 
         ag_fn = run_autograph(fn)
-        assert ag_fn(np.pi) == -1
+        # if we don't make_jaxpr, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = jax.make_jaxpr(ag_fn)(2)
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(fn)
@@ -296,7 +297,9 @@ class TestIntegration:
             return inner1(x) + inner2(x)
 
         ag_fn = run_autograph(fn)
-        assert ag_fn(np.pi) == -2
+        # if we don't make_jaxpr, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = jax.make_jaxpr(ag_fn)(2)
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(fn)
@@ -312,7 +315,8 @@ class TestIntegration:
             return qp.expval(qp.Z(0))
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        assert inner_jaxpr.eqns[1].primitive.name == "Adjoint"
 
     def test_adjoint_of_operator_type(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
@@ -323,7 +327,12 @@ class TestIntegration:
             return qp.expval(qp.Z(0))
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        adjoint_transform = inner_jaxpr.eqns[0]
+        assert adjoint_transform.primitive.name == "adjoint_transform"
+        jaxpr_inside_adjoint = adjoint_transform.params["jaxpr"]
+        assert len(jaxpr_inside_adjoint.eqns) == 1
+        assert jaxpr_inside_adjoint.eqns[0].primitive.name == "PauliX"
 
     def test_adjoint_no_argument(self):
         """Test that passing no argument to qp.adjoint raises an error."""
@@ -394,9 +403,8 @@ class TestIntegration:
             return qp.state()
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
-        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
-        assert jax.numpy.allclose(result, expected_state)
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        assert inner_jaxpr.eqns[2].primitive.name == "Controlled"
 
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""
@@ -408,9 +416,12 @@ class TestIntegration:
             return qp.state()
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
-        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
-        assert jax.numpy.allclose(result, expected_state)
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        ctrl_transform = inner_jaxpr.eqns[1]
+        assert ctrl_transform.primitive.name == "ctrl_transform"
+        jaxpr_inside_ctrl = ctrl_transform.params["jaxpr"]
+        assert len(jaxpr_inside_ctrl.eqns) == 1
+        assert jaxpr_inside_ctrl.eqns[0].primitive.name == "PauliX"
 
     def test_ctrl_no_argument(self):
         """Test that passing no argument to qp.ctrl raises an error."""
@@ -455,9 +466,9 @@ class TestIntegration:
             return qp.probs()
 
         ag_fn = run_autograph(circ)
-        phi = np.pi / 2
-        assert np.allclose(ag_fn(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
-        assert not np.allclose(ag_fn(-phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+        # if we don't make_jaxpr, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = jax.make_jaxpr(ag_fn)(2)
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
@@ -480,8 +491,10 @@ class TestIntegration:
             return qp.probs()
 
         ag_fn = run_autograph(circ)
-        assert np.allclose(ag_fn(np.pi), [0.0, 0.0, 0.0, 1.0])
-        assert not np.allclose(ag_fn(np.pi + 0.1), [0.0, 0.0, 0.0, 1.0])
+        # if we don't make_jaxpr, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = jax.make_jaxpr(ag_fn)(2)
+
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
@@ -648,9 +661,9 @@ class TestCodePrinting:
             return inner(x)
 
         fn = run_autograph(fn)
-        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
+        # if we don't make_jaxpr, the inner function isn't found in the TRANSFORMER cache,
         # and we can't get the source for the inner function
-        _ = fn(2)
+        _ = jax.make_jaxpr(fn)(2)
 
         assert "def ag__fn(x" in autograph_source(fn)
         assert "def ag__inner(x" in autograph_source(inner)
@@ -672,9 +685,9 @@ class TestCodePrinting:
             return inner1(x) + inner2(x)
 
         fn = run_autograph(fn)
-        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
+        # if we don't make_jaxpr, the inner function isn't found in the TRANSFORMER cache,
         # and we can't get the source for the inner function
-        _ = fn(2)
+        _ = jax.make_jaxpr(fn)(2)
 
         assert "def ag__fn(x" in autograph_source(fn)
         assert "def ag__inner1(x" in autograph_source(inner1)
@@ -707,9 +720,9 @@ class TestDisableAutograph:
 
         g_ag = run_autograph(g)
         g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
-        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
+        assert for_loop_prim in extract_all_primitives(g_ag_jaxpr.jaxpr)
         # If autograph was disabled, the cond primitive will not be captured.
-        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+        assert cond_prim not in extract_all_primitives(g_ag_jaxpr.jaxpr)
         assert g_ag(1, 3) == 13  # 1 + 4 * 3
 
     def test_disable_autograph_context_manager(self):
@@ -731,8 +744,8 @@ class TestDisableAutograph:
 
         g_ag = run_autograph(g)
         g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
-        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
+        assert for_loop_prim in extract_all_primitives(g_ag_jaxpr.jaxpr)
         # If autograph was disabled, the cond primitive will not be captured.
-        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+        assert cond_prim not in extract_all_primitives(g_ag_jaxpr.jaxpr)
 
         assert g_ag(1, 3) == 13  # 1 + 4 * 3

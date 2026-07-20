@@ -21,12 +21,8 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -997,24 +993,24 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
 
     if not identity_encoding:
         ## Step 3 & 4 in paper (p.7). This is an upper bound
-        resources[resource_rep(qp.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
 
     ## Step 5 in paper (p.7)
-    resources[resource_rep(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
-    resources[adjoint_resource_rep(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
+    resources[qp.TemporaryAND] += (num_entries - 1) * (m - 1)
+    resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
     number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
-    resources[resource_rep(qp.CNOT)] += number_of_bits_to_unset
+    resources[qp.CNOT] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
     # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
     # and after the last group. This amounts to `num_entries` layers of bit flips
-    resources[resource_rep(qp.X)] += num_entries * m
+    resources[qp.X] += num_entries * m
 
     if not identity_encoding:
         ## Step 6 in paper (p.7). This is an upper bound
-        resources[resource_rep(qp.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
 
     return resources
 
@@ -1076,22 +1072,6 @@ def _sos_state_prep_with_wires(
         work_wires=qrom_work_wires,
     )
 
-    if not identity_encoding:
-        # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
-        # register. Note that we skip this step if identity_encoding=True, because the encoding
-        # is trivial in this case. This is an additional optimization compared to the paper.
-        @for_loop(data.m)
-        def encoding(i):
-            u = data.u_bits[i]
-
-            @for_loop(data.r)
-            def inner_loop(j):
-                qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
-
-            inner_loop()
-
-        encoding()
-
     # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
     mcx_ctrl_wires = selected_wires if identity_encoding else identification_wires
 
@@ -1107,6 +1087,28 @@ def _sos_state_prep_with_wires(
         b_bits = qp.math.array(b_bits, like="jax")
         mcx_ctrl_wires = qp.math.array(mcx_ctrl_wires, like="jax")
         elbow_triples = qp.math.array(elbow_triples, like="jax")
+
+    if not identity_encoding:
+        u_bits = data.u_bits
+        if qp.compiler.active() or qp.capture.enabled():
+            u_bits = qp.math.array(u_bits, like="jax")
+            selected_wires = qp.math.array(selected_wires, like="jax")
+            identification_wires = qp.math.array(identification_wires, like="jax")
+
+        # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
+        # register. Note that we skip this step if identity_encoding=True, because the encoding
+        # is trivial in this case. This is an additional optimization compared to the paper.
+        @for_loop(data.m)
+        def encoding(i):
+            u = u_bits[i]
+
+            @for_loop(data.r)
+            def inner_loop(j):
+                qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
+
+            inner_loop()
+
+        encoding()
 
     @for_loop(data.m - 1)
     def left_elbow_ladder(i):

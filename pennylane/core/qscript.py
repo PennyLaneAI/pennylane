@@ -187,7 +187,7 @@ class QuantumScript:
         self._obs_sharing_wires_id = None
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 
     @cached_property
     def hash(self) -> int:
@@ -966,8 +966,8 @@ class QuantumScript:
                 resources_from_tape,
             )
 
-            resources, errors = resources_from_tape(self, compute_errors=True)
-            self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
+            resources = resources_from_tape(self)
+            self._specs = {"resources": resources, "shots": self.shots}
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

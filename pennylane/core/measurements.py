@@ -45,7 +45,7 @@ from ._capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-from .operator import Operator
+from .operator import Operator, Operator2
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
@@ -100,6 +100,12 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             return cls._wires_primitive.bind(
                 *wires, eigvals, has_eigvals=True, **kwargs
             )  # wires + eigvals
+
+        if isinstance(obs, Operator2):
+            if obs.tracer is None:
+                obs._bind_primitive()  # pylint: disable=protected-access
+            # capture on but not tracing, tracer will still be None
+            obs = obs if obs.tracer is None else obs.tracer
 
         if isinstance(obs, Operator):
             QueuingManager.remove(obs)
@@ -279,11 +285,11 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         if self.obs:
             return f"{name_str}({self.obs})"
         if self._eigvals is not None:
-            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         name_str = self._shortname or "None"
-        return f"{name_str}(wires={self.wires.tolist()})"
+        return f"{name_str}(wires={self.wires})"
 
     def __copy__(self):
         cls = self.__class__

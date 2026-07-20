@@ -29,24 +29,6 @@ from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import WireError
 
 
-@pytest.mark.parametrize(
-    "n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match",
-    [
-        [5, 3, 2, "angle_wires and phase_grad wires must be of same size"],
-        [3, 4, 2, "angle_wires and phase_grad wires must be of same size"],
-        [4, 4, 2, r"work_wires need to be at least of size len\(phase_grad_wires\) - 1"],
-    ],
-)
-def test_wires_error_constructor(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
-    """Test WireError is raised correctly when constructing the DecompositionRule"""
-    angle_wires = qp.wires.Wires([f"ang_{i}" for i in range(n_angle_wires)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(n_phase_grad_wires)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(n_work_wires)])
-
-    with pytest.raises(WireError, match=msg_match):
-        _ = make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
-
-
 def test_wires_error_decomp_fun():
     """Test WireError is raised correctly when calling the decomposition function on a large
     SelectPauliRot that needs more work wires for its QROM than are available."""

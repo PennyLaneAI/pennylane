@@ -609,14 +609,14 @@ class DefaultTensor(Device):
         self,
         execution_config: ExecutionConfig | None = None,
     ):
-        """This function defines the device compile pileline to be applied and an updated device configuration.
+        """This function defines the device compile pipeline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A compile pileline that when called returns :class:`~.QuantumTape`'s that the
+            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns :class:`~.QuantumTape`'s that the
             device can natively execute as well as a postprocessing function to be called after execution, and a configuration
             with unset specifications filled in.
 
@@ -672,8 +672,8 @@ class DefaultTensor(Device):
                 # so we raise a more informative error here
                 raise WireError(
                     "Mismatch between circuit and device wires. "
-                    f"Circuit has wires {circuit.wires.tolist()}. "
-                    f"Tensor on device has wires {self.wires.tolist()}"
+                    f"Circuit has wires {circuit.wires}. "
+                    f"Tensor on device has wires {self.wires}"
                 )
             circuit = circuit.map_to_standard_wires()
             results.append(self.simulate(circuit))

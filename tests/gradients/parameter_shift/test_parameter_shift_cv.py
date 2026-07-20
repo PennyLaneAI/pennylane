@@ -290,7 +290,7 @@ class TestParameterShiftLogic:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.gaussian", wires=2)
@@ -307,7 +307,7 @@ class TestParameterShiftLogic:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.gaussian", wires=2)
@@ -324,7 +324,7 @@ class TestParameterShiftLogic:
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.gaussian", wires=2)
@@ -341,7 +341,7 @@ class TestParameterShiftLogic:
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.gaussian", wires=2)
@@ -357,7 +357,7 @@ class TestParameterShiftLogic:
             qp.gradients.param_shift_cv(circuit, dev)(weights)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.gaussian", wires=2)
 
@@ -425,20 +425,13 @@ class TestParameterShiftLogic:
         spy.assert_called()
 
     def test_force_order2_dim_2(self, mocker, monkeypatch):
-        """Test that if the force_order2 keyword argument is provided, the
-        second order parameter shift rule is forced for an observable with
-        2-dimensional parameters"""
+        """Test that force_order2 selects the second-order rule for an observable with a
+        two-dimensional parameter."""
         spy = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
         def _mock_transform_observable(obs, Z, device_wires):  # pylint: disable=unused-argument
-            """A mock version of the _transform_observable internal function
-            such that an operator ``transformed_obs`` of two-dimensions is
-            returned. This function is created such that when definining ``A =
-            transformed_obs.parameters[0]`` the condition ``len(A.nonzero()[0])
-            == 1 and A.ndim == 2 and A[0, 0] != 0`` is ``True``."""
-            iden = qp.Identity(0)
-            iden.data = (np.array([[1, 0], [0, 0]]),)
-            return iden
+            """Return an observable whose sole parameter triggers the second-order branch."""
+            return qp.Hermitian(np.array([[1, 0], [0, 0]]), wires=0)
 
         monkeypatch.setattr(
             qp.gradients.parameter_shift_cv,

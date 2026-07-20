@@ -19,16 +19,16 @@ Decomposition rule for SelectPauliRot in terms of `phase gradient states <https:
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    adjoint_resource_rep,
-    change_op_basis_resource_rep,
-    controlled_resource_rep,
-    resource_rep,
-)
+from pennylane.core.operator import Operator, abstractify
+from pennylane.decomposition import change_op_basis_resource_rep, resource_rep
 from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
+
+from .decomp_rz_phase_gradient import validate_phase_gradient_wires
 
 
 # pylint: disable=too-many-arguments
@@ -86,7 +86,7 @@ def _select_pauli_rot_phase_gradient(
 
 def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     r"""
-    Custom decomposition rule for :class:`~.SelectPauliRot` gates
+    Create a custom decomposition rule for :class:`~.SelectPauliRot` gates.
 
     This is a temporary workaround before moving to `capture` as default frontend, which unlocks dynamic wire allocation.
     Here, we explicitly provide the necessary wires for the `phase gradient decomposition of SelectPauliRot <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__.
@@ -148,8 +148,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     The resulting circuit corresponds to the
     `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
-    of ``SelectPauliRot``, containing two CNOT fanouts corresponding to the binary representation
-    of the angle (111 in this case), the :class:`~.SemiAdder`, and a :class:`~.GlobalPhase`.
+    of ``SelectPauliRot``, containing two static CNOT fanouts that toggle between addition and
+    subtraction based on the target wire state, two QROMs that load the binary representation of
+    the rotation angles, and the :class:`~.SemiAdder`:
 
     >>> specs
     {'QROM': 2, 'MultiControlledX': 6, 'SemiAdder': 1}
@@ -169,22 +170,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     work_1: ─╰work──────────────╰SemiAdder─╰work──────────────┤ ╰State
 
     """
-    # Sanitize wires
-    angle_wires = Wires(angle_wires)
-    phase_grad_wires = Wires(phase_grad_wires)
-    work_wires = Wires(work_wires)
-
-    if len(angle_wires) != len(phase_grad_wires):
-        raise WireError(
-            f"angle_wires and phase_grad wires must be of same size, received "
-            f"{len(angle_wires)=} and {len(phase_grad_wires)=}"
-        )
-    # Validate length of work wires for SemiAdder
-    if len(work_wires) < len(phase_grad_wires) - 1:
-        raise WireError(
-            "work_wires need to be at least of size len(phase_grad_wires) - 1, "
-            "received {len(work_wires)} but require {len(phase_grad_wires) - 1}"
-        )
+    angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
+        angle_wires, phase_grad_wires, work_wires
+    )
 
     def _resource_fn(num_wires, rot_axis):
         # decomposition costs, using information about angle_wires etc from the outer scope
@@ -193,11 +181,11 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         if num_control_wires == 0:
             match rot_axis:
                 case "X":
-                    return {resource_rep(qp.RX): 1}
+                    return {qp.RX: 1}
                 case "Y":
-                    return {resource_rep(qp.RY): 1}
+                    return {qp.RY: 1}
                 case "Z":
-                    return {resource_rep(qp.RZ): 1}
+                    return {qp.RZ: 1}
 
         # 1. QROM compressed rep
         qrom_rep = resource_rep(
@@ -211,15 +199,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         # 2. ctrl(X, control=target_wire, control_values=[0])
         #    -> Controlled X with 1 control, 1 zero-ctrl
-        ctrl_x_rep = controlled_resource_rep(
-            qp.X, base_params={}, num_control_wires=1, num_zero_control_values=1
-        )
+        ctrl_x_rep = _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=1)
 
         # 3. Prod: MUST be a dict {CompressedResourceOp: count}
-        prod_res = {
-            ctrl_x_rep: len(phase_grad_wires),
-            qrom_rep: 1,
-        }
+        prod_res = {ctrl_x_rep: len(phase_grad_wires), qrom_rep: 1}
         prod_rep = resource_rep(Prod, resources=prod_res)
 
         # 4. SemiAdder as the target_op
@@ -243,24 +226,14 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         match rot_axis:
             case "X":
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
-                    resource_rep(qp.Hadamard),
-                    change_basis_rep,
-                    resource_rep(qp.Hadamard),
+                    qp.Hadamard, change_basis_rep, qp.Hadamard
                 )
             case "Y":
                 comp_rep = resource_rep(
-                    Prod,
-                    resources={
-                        resource_rep(qp.Hadamard): 1,
-                        adjoint_resource_rep(qp.S): 1,
-                    },
+                    Prod, resources={abstractify(qp.Hadamard): 1, _adjoint_abstract(qp.S): 1}
                 )
                 uncomp_rep = resource_rep(
-                    Prod,
-                    resources={
-                        resource_rep(qp.S): 1,
-                        resource_rep(qp.Hadamard): 1,
-                    },
+                    Prod, resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1}
                 )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
                     comp_rep, change_basis_rep, uncomp_rep
