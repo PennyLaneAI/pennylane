@@ -47,6 +47,8 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -508,20 +510,20 @@ def _paulix_to_rx(wires: WiresLike):
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda **_: {qp.SX: 1})
-def _pow_x_to_sx(wires, **_):
-    qp.SX(wires=wires)
+def _pow_x_to_sx(base, z):  # pylint: disable=unused-argument
+    qp.SX(wires=base.wires)
 
 
 @register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
-def _pow_x_to_rx(wires, z, **_):
+def _pow_x_to_rx(base, z):
     z_mod2 = qp.math.array(z) % 2
-    qp.RX(np.pi * z_mod2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=wires)
+    qp.RX(np.pi * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
 
 
 add_decomps(PauliX, _paulix_to_rx)
 add_decomps("Adjoint(PauliX)", self_adjoint)
-add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
+add_decomps("Pow(PauliX)", pow_involutory2, _pow_x_to_rx, _pow_x_to_sx)
 
 
 # pylint: disable=unused-argument
@@ -1250,23 +1252,23 @@ add_decomps(S, _s_phaseshift)
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
 @register_resources(lambda **_: {qp.T: 1})
-def _pow_s_to_t(wires, **_):
-    qp.T(wires=wires)
+def _pow_s_to_t(base, z):  # pylint: disable=unused-argument
+    qp.T(wires=base.wires)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
 @register_resources(lambda **_: {qp.Z: 1})
-def _pow_s_to_z(wires, **_):
-    qp.Z(wires=wires)
+def _pow_s_to_z(base, z):  # pylint: disable=unused-argument
+    qp.Z(wires=base.wires)
 
 
 @register_resources(lambda **_: {qp.PhaseShift: 1})
-def _pow_s(wires, z, **_):
+def _pow_s(base, z):
     z_mod4 = qp.math.array(z) % 4
-    qp.PhaseShift(np.pi * z_mod4 / 2, wires=wires)
+    qp.PhaseShift(np.pi * z_mod4 / 2, wires=base.wires)
 
 
-add_decomps("Pow(S)", make_pow_decomp_with_period(4), _pow_s, _pow_s_to_t, _pow_s_to_z)
+add_decomps("Pow(S)", make_pow_decomp_with_period2(4), _pow_s, _pow_s_to_t, _pow_s_to_z)
 
 
 class T(Operator2):
