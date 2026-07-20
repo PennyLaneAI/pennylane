@@ -662,6 +662,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Removes `default.gaussian` CV device.
+
 * Leftover Python 3.9 support branch has been removed.
   [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
 
