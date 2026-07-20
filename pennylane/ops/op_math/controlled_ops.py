@@ -469,15 +469,10 @@ class CY(Controlled2):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
 
-    name = "CY"
 
     def __init__(self, wires: WiresLike):
-        wires = Wires(wires)
-        # Avoid recording the base as a separate operator during program capture.
-        base = type.__call__(qp.Y, wires=wires[1:])
-        super().__init__(base, wires[:1])
+        super().__init__(qp.Y(wires[1]), wires[0])
 
     @override
     # pylint: disable=unused-argument
