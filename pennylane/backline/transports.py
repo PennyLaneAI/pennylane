@@ -27,11 +27,11 @@ _TRANSPORTS = {}
 class Transport:
     """A named data transport.
 
-    Args:
-        name (str): The registry name of the transport, e.g. ``"rdma"``.
+    See the Attributes section to learn more about the available options.
     """
 
     name: str
+    """The registry name of the transport, e.g. ``"rdma"``."""
 
 
 def register_transport(name):

@@ -24,15 +24,15 @@ of processes (i.e. where each part of the workload runs), and the transport prot
     Backline is experimental. Its API may change without notice, and it is only usable through
     the Catalyst compiler.
 
-A ``backline`` placement is built from a controller (which drives a qnode, e.g. through a
-simulator), zero or more coprocessors, and a transport. This is then passed to the
-``"ftqc.heterogeneous"`` device:
+A ``backline`` placement is built from a :class:`controller <.Controller>` (which drives a qnode,
+e.g. through a simulator), zero or more :class:`coprocessors <.Coprocessor>`, and a
+:class:`transport <.Transport>`. This is then passed to the ``"ftqc.heterogeneous"`` device:
 
 .. code-block:: python
 
     import pennylane as qp
 
-    cpu_controller = qp.controller(
+    cpu_controller = qp.Controller(
         name="cpu-controller",
         addr="192.168.1.1",
         port="1234",
@@ -40,13 +40,13 @@ simulator), zero or more coprocessors, and a transport. This is then passed to t
         remote=True,
     )
 
-    gpu_coprocessor = qp.coprocessor(
+    gpu_coprocessor = qp.Coprocessor(
         name="gpu-coprocessor",
         coprocessor_fn="decoder",
-        remote=False
+        remote=False,
     )
 
-    backline = qp.backline(
+    backline = qp.Backline(
         controller=cpu_controller, coprocessors=(gpu_coprocessor,), transport="rdma"
     )
 
@@ -60,11 +60,9 @@ An executor is a node in the backline fabric.
 .. autosummary::
     :toctree: api
 
-    ~Executor
     ~Controller
     ~Coprocessor
-    ~controller
-    ~coprocessor
+    ~Executor
 
 Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,7 +84,6 @@ A placement groups the controller, coprocessors, and transport into a single obj
     :toctree: api
 
     ~Backline
-    ~backline
 
 Transports
 ~~~~~~~~~~
@@ -103,15 +100,7 @@ lives in the compiled runtime.
 """
 
 from .functions import CoprocessorFunction, css_gluon_decoder
-from .placement import (
-    Backline,
-    Controller,
-    Coprocessor,
-    Executor,
-    backline,
-    controller,
-    coprocessor,
-)
+from .placement import Backline, Controller, Coprocessor, Executor
 from .transports import Transport, get_transport, register_transport
 
 __all__ = [
@@ -121,9 +110,6 @@ __all__ = [
     "Backline",
     "CoprocessorFunction",
     "css_gluon_decoder",
-    "controller",
-    "coprocessor",
-    "backline",
     "Transport",
     "get_transport",
     "register_transport",

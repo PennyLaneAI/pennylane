@@ -28,15 +28,15 @@ class CoprocessorFunction:
     The compiled artifact is produced separately (cross-compiled or built on
     the same host, e.g. via Gluon) and loaded by the runtime.
 
-    Args:
-        name (str): The name the function is known by; used to resolve the precompiled symbol.
-        lib_path (str | None): Optional path to the shared library that provides the symbol. When
-            ``None``, the runtime resolves ``name`` from the symbols already loaded on the host.
-            Defaults to ``None``.
+    See the Attributes section to learn more about the available options.
     """
 
     name: str
+    """The name the function is known by; used to resolve the precompiled symbol."""
+
     lib_path: str | None = None
+    """Optional path to the shared library that provides the symbol. When ``None``, the runtime
+    resolves ``name`` from the symbols already loaded on the host."""
 
     @property
     def symbol_name(self) -> str:
