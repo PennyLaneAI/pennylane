@@ -201,7 +201,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
         wires_repr = repr(Wires([1, 2, 3]))
-        assert wires_str == "Wires([1, 2, 3])"
+        assert wires_str == "[1, 2, 3]"
         assert wires_repr == "Wires([1, 2, 3])"
 
     def test_array_representation(self):
