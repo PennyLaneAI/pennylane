@@ -31,7 +31,6 @@ SUPPORTED_GRADIENT_KWARGS = {
     "diagonal_shifts",
     "fallback_fn",
     "f0",
-    "force_order2",
     "gradient_recipes",
     "h",
     "mode",

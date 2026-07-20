@@ -65,8 +65,7 @@ constraints:
 * The quantum function must always return either a single or a tuple of
   *measurement values*, by applying a :doc:`measurement function <measurements>`
   to the qubit register. The most common example is to measure the expectation value of
-  a :ref:`qubit observable <intro_ref_ops_qobs>` or
-  :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
+  a :ref:`qubit observable <intro_ref_ops_qobs>`.
 
 .. note::
 

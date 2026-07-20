@@ -54,7 +54,7 @@ class Identity(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    ev_order = 1
+    is_verified_hermitian = True
 
     resource_keys = set()
 

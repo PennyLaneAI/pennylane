@@ -662,7 +662,15 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Removes `default.gaussian` CV device.
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+  `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
+  `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
+  `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
+  `qp.SqueezedState`, `qp.DisplacedSqueezedState`, `qp.ThermalState`, `qp.GaussianState`, `qp.FockState`,
+  `qp.FockStateVector`, `qp.FockDensityMatrix`, `qp.CatState`, `qp.NumberOperator`, `qp.TensorN`,
+  `qp.QuadX`, `qp.QuadP`, `qp.QuadOperator`, `qp.PolyXP`, `qp.FockStateProjector`,
+  `qp.DisplacementEmbedding`, `qp.SqueezingEmbedding`, `qp.CVNeuralNetLayers`, amd `qp.Interferomenter`.
+  [(#9869)](https://github.com/PennyLaneAI/pennylane/pull/9869)
 
 * Leftover Python 3.9 support branch has been removed.
   [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
