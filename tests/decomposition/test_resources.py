@@ -103,11 +103,8 @@ class TestResources:
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
-        resources = Resources({CompressedResourceOp(qp.RX, {}): 2, abstractify(qp.RZ): 1}, 5.0)
-        assert (
-            repr(resources)
-            == f"<num_gates=3, gate_counts={{RX: 2, {abstractify(qp.RZ)!r}: 1}}, weighted_cost=5.0>"
-        )
+        resources = Resources({CompressedResourceOp(qp.RX, {}): 2, qp.S(Wire[1]): 1}, 5.0)
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, S: 1}, weighted_cost=5.0>"
 
 
 class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
