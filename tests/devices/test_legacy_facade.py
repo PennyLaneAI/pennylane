@@ -61,7 +61,7 @@ class DummyDevice(qp.devices.LegacyDevice):
 
 def test_double_facade_raises_error():
     """Test that a RuntimeError is raised if a facaded device is passed to constructor"""
-    dev = qp.device("default.qutrit", wires=1)
+    dev = qp.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
 
     with pytest.raises(RuntimeError, match="already-facaded device can not be wrapped"):
         qp.devices.LegacyDeviceFacade(dev)
@@ -77,7 +77,7 @@ def test_error_if_not_legacy_device():
 
 def test_copy():
     """Test that copy works correctly"""
-    dev = qp.device("default.qutrit", wires=1)
+    dev = DefaultQubitLegacy(wires=1)
 
     for copied_devs in (copy.copy(dev), copy.deepcopy(dev)):
         assert copied_devs is not dev
