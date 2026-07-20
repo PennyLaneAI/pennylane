@@ -20,6 +20,7 @@ import pytest
 # pylint: disable=wrong-import-position
 jax = pytest.importorskip("jax")
 from jax._src.core import ClosedJaxpr, Jaxpr  # noqa: E402
+
 from pennylane.capture.primitives import operator_p  # noqa: E402
 
 

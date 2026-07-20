@@ -38,7 +38,9 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractMeasurement  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import (
+    AbstractMeasurement,  # pylint: disable=wrong-import-position
+)
 from tests.capture.capture_utils import check_eqn  # pylint: disable=wrong-import-position
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
