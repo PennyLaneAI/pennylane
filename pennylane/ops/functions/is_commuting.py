@@ -257,12 +257,9 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
 unsupported_operations = [
     "PauliRot",
     "QubitDensityMatrix",
-    "CVNeuralNetLayers",
     "ApproxTimeEvolution",
     "ArbitraryUnitary",
     "CommutingEvolution",
-    "DisplacementEmbedding",
-    "SqueezingEmbedding",
     "Exp",
 ]
 
@@ -275,14 +272,12 @@ def is_commuting(operation1, operation2):
 
     .. note::
 
-        Most qubit-based PennyLane operations are supported --- CV operations
-        are not supported at this time.
+        Most qubit-based PennyLane operations are supported.
 
         Unsupported qubit-based operations include:
 
-        :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`, :class:`~.CVNeuralNetLayers`,
+        :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`,
         :class:`~.ApproxTimeEvolution`, :class:`~.ArbitraryUnitary`, :class:`~.CommutingEvolution`,
-        :class:`~.DisplacementEmbedding`, :class:`~.SqueezingEmbedding`
         :class:`~.Exp`
 
     Args:
@@ -303,14 +298,10 @@ def is_commuting(operation1, operation2):
     if not intersection(operation1.wires, operation2.wires):
         return True
 
-    if operation1.name in unsupported_operations or isinstance(
-        operation1, (qp.operation.CVOperation, qp.operation.Channel)
-    ):
+    if operation1.name in unsupported_operations or isinstance(operation1, qp.operation.Channel):
         raise QuantumFunctionError(f"Operation {operation1.name} not supported.")
 
-    if operation2.name in unsupported_operations or isinstance(
-        operation2, (qp.operation.CVOperation, qp.operation.Channel)
-    ):
+    if operation2.name in unsupported_operations or isinstance(operation2, qp.operation.Channel):
         raise QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
     if operation1.pauli_rep is not None and operation2.pauli_rep is not None:

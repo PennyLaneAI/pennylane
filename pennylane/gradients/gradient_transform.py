@@ -258,7 +258,6 @@ def _all_zero_grad(tape):
 
     par_shapes = [math.shape(p) for p in tape.get_parameters()]
     for m in tape.measurements:
-        # TODO: Update shape for CV variables
         shape = (2 ** len(m.wires),) if isinstance(m, ProbabilityMP) else ()
         if len(tape.trainable_params) == 1:
             sub_list_zeros = math.zeros(par_shapes[0] + shape)

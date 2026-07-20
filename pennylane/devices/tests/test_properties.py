@@ -49,14 +49,11 @@ except ImportError:
 # Shared test data =====
 
 
-def qfunc_with_scalar_input(model=None):
+def qfunc_with_scalar_input():
     """Model dependent quantum function taking a single input"""
 
     def qfunc(x):
-        if model == "qubit":
-            qp.RX(x, wires=0)
-        elif model == "cv":
-            qp.Displacement(x, 0.0, wires=0)
+        qp.RX(x, wires=0)
         return qp.expval(qp.Identity(wires=0))
 
     return qfunc
@@ -112,21 +109,12 @@ class TestCapabilities:
             pytest.skip("test is old interface specific.")
         cap = get_legacy_capabilities(dev)
         assert "model" in cap
-        assert cap["model"] in ["qubit", "cv"]
+        assert cap["model"] == "qubit"
 
-        if cap["model"] == "qubit":
-
-            @qp.qnode(dev, shots=shots)
-            def circuit():
-                qp.X(0)
-                return qp.expval(qp.Z(0))
-
-        else:
-
-            @qp.qnode(dev, shots=shots)
-            def circuit():
-                qp.Displacement(1.0, 1.2345, wires=0)
-                return qp.expval(qp.QuadX(wires=0))
+        @qp.qnode(dev, shots=shots)
+        def circuit():
+            qp.X(0)
+            return qp.expval(qp.Z(0))
 
         # assert that device can measure observable from its model
         circuit()
@@ -145,7 +133,7 @@ class TestCapabilities:
         interface = cap["passthru_interface"]
         assert interface in ["autograd", "jax", "torch"]  # for new interface, add test case
 
-        qfunc = qfunc_with_scalar_input(cap["model"])
+        qfunc = qfunc_with_scalar_input()
         qnode = qp.QNode(qfunc, dev, shots=shots, interface=interface)
 
         # assert that we can do a simple gradient computation in the passthru interface

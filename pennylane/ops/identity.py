@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the Identity operation that is common to both
-cv and qubit computing paradigms in PennyLane.
+This module contains the Identity operation that is common to qubit computing paradigms in PennyLane.
 """
 
 from collections.abc import Sequence
@@ -22,7 +21,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import CVObservable, Operation
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -32,7 +31,7 @@ from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
 
-class Identity(CVObservable, Operation):
+class Identity(Operation):
     r"""
     The Identity operator
 
@@ -149,10 +148,6 @@ class Identity(CVObservable, Operation):
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)
         return self.compute_matrix(n_wires=n_wires)
-
-    @staticmethod
-    def _heisenberg_rep(p):
-        return qp.math.array([1, 0, 0])
 
     @staticmethod
     def compute_diagonalizing_gates(

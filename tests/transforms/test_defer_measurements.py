@@ -683,37 +683,6 @@ class TestQNode:
             assert isinstance(ob, qp.PauliZ)
             assert ob.wires == qp.wires.Wires(tp_wires[idx])
 
-    def test_cv_op_error(self):
-        """Test that CV operations are not supported."""
-        dev = qp.device("null.qubit", wires=3)
-
-        @qp.defer_measurements
-        @qp.qnode(dev)
-        def qnode():
-            qp.measure(0)
-            qp.Rotation(0.123, wires=[0])
-            return qp.expval(qp.NumberOperator(1))
-
-        with pytest.raises(
-            ValueError, match="Continuous variable operations and observables are not supported"
-        ):
-            qnode()
-
-    def test_cv_obs_error(self):
-        """Test that CV observables are not supported."""
-        dev = qp.device("null.qubit", wires=3)
-
-        @qp.defer_measurements
-        @qp.qnode(dev)
-        def qnode():
-            qp.measure(0)
-            return qp.expval(qp.NumberOperator(1))
-
-        with pytest.raises(
-            ValueError, match="Continuous variable operations and observables are not supported"
-        ):
-            qnode()
-
 
 class TestConditionalOperations:
     """Tests conditional operations"""
