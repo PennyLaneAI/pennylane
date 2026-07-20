@@ -44,8 +44,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     r"""Description of a qudit IQP circuit for to compute its expectation value with respect to a
     Heisenberg-Weyl (HW) observable. See `arXiv:2607.06675 <https://arxiv.org/abs/2607.06675>`_ for theoretical details.
 
-    A qudit IQP circuit is in the form :math:`U(\mathbf{\theta}) = \left( F^{\otimes n} \right)^\dagger D(\mathbf{\theta}) F^{\otimes n}` 
-    where :math:`F` is the Fourier transfoorm and :math:`D(\mathbf{\theta})` is a diagonal phase unitary on `n` qudits. 
+    A qudit IQP circuit is in the form :math:`U(\mathbf{\theta}) = \left( F^{\otimes n} \right)^\dagger D(\mathbf{\theta}) F^{\otimes n}`
+    where :math:`F` is the Fourier transfoorm and :math:`D(\mathbf{\theta})` is a diagonal phase unitary on `n` qudits.
     The diagonal phase unitary is given by a gate set :math:`\mathcal{G}`,
 
     .. math::
@@ -53,10 +53,10 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         D(\mathbf{\theta}) = \prod_{\mathbf{g} \in \mathcal{G}} \exp \left( i \theta_\mathbf{g} \mathcal{Q}_\mathbf{g} \right)
 
     where :math:`\mathbf{\theta}_\mathbf{g}` is a vector parameterizing the gate :math:`\mathbf{g}` and :math:`\mathcal{Q}_\mathbf{g}` is
-    the Hermitian counterpart to an HW observable. Optionally, one can specify an additional trainable phase layer 
+    the Hermitian counterpart to an HW observable. Optionally, one can specify an additional trainable phase layer
     :math:`D'(\mathbf{\xi})\vert z \rangle = \exp \left( i f_{\mathbf{\xi}}(z) \right) \vert z \rangle`
     where :math:`f_{\mathbf{\xi}}(z)` is a trainable function parameterized by :math:`\mathbf{\xi}`.
-    After including the phase layer the final trainable circuit becomes 
+    After including the phase layer the final trainable circuit becomes
     :math:`\left( F^{\otimes n} \right)^\dagger D'(\mathbf{\xi}) D(\mathbf{\theta}) F^{\otimes n}`.
 
     This dataclass collects the circuit data needed by
