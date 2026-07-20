@@ -48,6 +48,7 @@ from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -806,15 +807,15 @@ def _pauliy_to_ry_gp(wires: WiresLike):
 
 
 @register_resources(lambda **_: {qp.RY: 1, qp.GlobalPhase: 1})
-def _pow_y(wires, z, **_):
+def _pow_y(base, z):
     z_mod2 = qp.math.array(z) % 2
-    qp.RY(np.pi * z_mod2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=wires)
+    qp.RY(np.pi * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
 add_decomps("Adjoint(PauliY)", self_adjoint)
-add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
+add_decomps("Pow(PauliY)", pow_involutory2, _pow_y)
 
 
 def _controlled_y_resource(  # pylint: disable=unused-argument

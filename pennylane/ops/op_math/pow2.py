@@ -106,6 +106,10 @@ class Pow2(SymbolicOp2):
         )
 
     @property
+    def name(self) -> str:
+        return f"Pow({self.base.name})"
+
+    @property
     def ndim_params(self):
         return self.base.ndim_params
 
