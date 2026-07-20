@@ -338,7 +338,9 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+
+        error_msg = "have different values" if issubclass(op1, Operator2) else "have different data"
+        with pytest.raises(AssertionError, match=error_msg):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
