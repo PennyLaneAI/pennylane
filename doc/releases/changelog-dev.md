@@ -1044,6 +1044,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
+  [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
+
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
   Also adjusted the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier`
