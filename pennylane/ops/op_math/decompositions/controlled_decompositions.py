@@ -380,10 +380,10 @@ def augment_with_allocation(base_rule, num_work_wires, work_wire_type, name=""):
         exact=base_rule.exact_resources,
         name=name or f"use_allocation({base_rule.name})",
     )
-    def _impl(*args, **kwargs):
+    def _impl(**arguments):
         with qp.allocation.allocate(num_work_wires, state, restored=True) as work_wires:
-            kwargs.update({"work_wires": work_wires, "work_wire_type": work_wire_type})
-            base_rule._impl(*args, **kwargs)  # pylint: disable=protected-access
+            arguments.update({"work_wires": work_wires, "work_wire_type": work_wire_type})
+            base_rule._impl(**arguments)  # pylint: disable=protected-access
 
     return _impl
 
