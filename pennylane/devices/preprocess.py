@@ -351,7 +351,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     >>> decompose(tape, lambda obj: obj.name == "S")
     Traceback (most recent call last):
     ...
-    pennylane.exceptions.DeviceError: Operator CNOT(wires=[0, 1]) not supported with device and does not provide a decomposition.
+    pennylane.exceptions.DeviceError: Operator RZ(1.5707963267948966, wires=[1]) not supported with device and does not provide a decomposition.
 
     The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.

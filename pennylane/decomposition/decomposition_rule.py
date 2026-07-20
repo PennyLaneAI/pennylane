@@ -258,9 +258,9 @@ def register_resources(
         For each operator class, the set of parameters that affects the type of gates and their
         number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
         For example, the number of gates in the decomposition for ``qp.MultiRZ`` changes based
-        on the number of wires it acts on, in contrast to the decomposition for ``qp.CNOT``:
+        on the number of wires it acts on, in contrast to the decomposition for ``qp.H``:
 
-        >>> qp.CNOT.resource_keys
+        >>> qp.H.resource_keys
         set()
         >>> qp.MultiRZ.resource_keys
         {'num_wires'}
@@ -351,6 +351,7 @@ def register_resources(
 
           import pennylane as qp
           from pennylane.allocation import allocate
+          from pennylane.typing import Wire
 
           qp.decomposition.enable_graph()
 
@@ -857,8 +858,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        self._conditions_met = rule.is_applicable(**op.resource_params)
-        self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+        params = op.arguments if isinstance(op, Operator2) else op.resource_params
+        self._conditions_met = rule.is_applicable(**params)
+        self._work_wire_spec = rule.get_work_wire_spec(**params)
         n_work_wires = self._work_wire_spec.total
         self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires

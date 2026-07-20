@@ -107,7 +107,7 @@ Integration with the Decompose Transform
 The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
 decomposition algorithm when :func:`~pennylane.decomposition.enable_graph` is present, and allows for more
 flexible decompositions towards any target gate set. For example, the current system does not
-guarantee a decomposition to the desired target gate set:
+guarantee an optimal decomposition to the desired target gate set:
 
 .. code-block:: python
 
@@ -121,13 +121,25 @@ guarantee a decomposition to the desired target gate set:
 
 >>> pprint(new_tape.operations)
 [RZ(np.float64(1.5707963267948966), wires=[1]),
-     RY(0.25, wires=[1]),
-     CNOT(wires=[0, 1]),
-     RY(-0.25, wires=[1]),
-     CNOT(wires=[0, 1]),
-     RZ(np.float64(-1.5707963267948966), wires=[1])]
+ RY(0.25, wires=[1]),
+ RZ(1.5707963267948966, wires=[1]),
+ RX(1.5707963267948966, wires=[1]),
+ RZ(1.5707963267948966, wires=[1]),
+ CZ(wires=[0, 1]),
+ RZ(1.5707963267948966, wires=[1]),
+ RX(1.5707963267948966, wires=[1]),
+ RZ(1.5707963267948966, wires=[1]),
+ RY(-0.25, wires=[1]),
+ RZ(1.5707963267948966, wires=[1]),
+ RX(1.5707963267948966, wires=[1]),
+ RZ(1.5707963267948966, wires=[1]),
+ CZ(wires=[0, 1]),
+ RZ(1.5707963267948966, wires=[1]),
+ RX(1.5707963267948966, wires=[1]),
+ RZ(1.5707963267948966, wires=[1]),
+ RZ(np.float64(-1.5707963267948966), wires=[1])]
 
-With the new system enabled, the transform produces the expected outcome.
+With the new system enabled, the transform produces a much more efficient outcome.
 
 >>> qp.decomposition.enable_graph()
 >>> [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
