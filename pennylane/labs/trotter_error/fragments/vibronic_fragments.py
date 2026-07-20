@@ -37,7 +37,9 @@ def vibronic_fragments(
     taylor_coeffs: Sequence[ArrayLike],
     scheme: str = "blocks",
 ) -> list[RealspaceMatrix]:
-    """Returns a list of fragments summing to a vibronic Hamiltonian. Two different fragmentation schemes
+    """Returns a list of fragments summing to a vibronic Hamiltonian. 
+    
+    Two different fragmentation schemes
     are available.
 
     1. The ``blocks`` scheme is taken from Section III of `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_ and
