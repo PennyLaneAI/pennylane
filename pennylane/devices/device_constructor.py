@@ -192,7 +192,7 @@ def device(name, *args, **kwargs):
         if hasattr(plugin_device_class, "pennylane_requires"):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
             current_version = Version(__version__)
-            if current_version not in required_versions:
+            if current_version not in required_versions:  # pragma: no cover
                 raise DeviceError(
                     f"The {name} plugin requires PennyLane versions {required_versions}, "
                     f"however PennyLane version {__version__} is installed."
