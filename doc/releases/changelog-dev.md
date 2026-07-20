@@ -428,6 +428,7 @@
 * Added a decomposition of :class:`~.QROM` using `qp.pauli_measure` operators. This decomposition reduces
   the PPM count in the compilation pipeline.
   [(#9531)](https://github.com/PennyLaneAI/pennylane/pull/9531)
+  [(#9853)](https://github.com/PennyLaneAI/pennylane/pull/9853)
 
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
