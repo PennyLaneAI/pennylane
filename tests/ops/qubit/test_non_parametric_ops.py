@@ -19,6 +19,7 @@ Unit tests for the available non-parametric qubit operations
 import copy
 import itertools
 
+import mcm_utils
 import numpy as np
 import pytest
 import scipy as sp
@@ -264,6 +265,21 @@ class TestDecompositions:
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_hadamard_ppm_decomposition(self, seed):
+        """Tests that the PPM decomposition of Hadamard is correct."""
+        rule = qp.list_decomps(qp.Hadamard)["_hadamard_ppm"]
+
+        with qp.queuing.AnnotatedQueue() as queue:
+            qp.transforms.resolve_dynamic_wires(rule, zeroed=[1])(wires=[0])
+
+        rng = np.random.default_rng(seed)
+        init_state = rng.random(2) + 1j * rng.random(2)
+        init_state /= np.linalg.norm(init_state)
+        plus_state = np.array([1, 1], dtype=complex) / np.sqrt(2)
+        expected = np.kron(qp.H(0).matrix() @ init_state, plus_state)
+        init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
+        mcm_utils.assert_ppm_decomposition(queue.queue, init_state_full, [0, 1], expected)
 
     def test_CH_decomposition(self, tol):
         """Tests that the decomposition of the CH gate is correct"""

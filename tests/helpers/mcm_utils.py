@@ -21,6 +21,9 @@ from functools import reduce
 import numpy as np
 
 import pennylane as qp
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.pauli import PauliWord
 
 
 def validate_counts(shots, results1, results2, batch_size=None):
@@ -127,3 +130,57 @@ def validate_measurements(func, shots, results1, results2, batch_size=None):
         return
 
     validate_expval(shots, results1, results2, batch_size=batch_size)
+
+
+def _ppm_circuit_branches(circuit, state, wire_order, idx=0, outcomes=None):
+    """Yield normalized output states for each PPM branch of a circuit.
+
+    After each Pauli measurement the state is renormalized before continuing on
+    that branch, so every yielded state has unit norm.
+    """
+    outcomes = outcomes or {}
+    if idx == len(circuit):
+        yield state
+        return
+
+    operation = circuit[idx]
+    if isinstance(operation, PauliMeasure):
+        # Apply PPM: branch into two branches and recurse the simulation
+        pauli = PauliWord(dict(zip(operation.wires, operation.pauli_word, strict=True)))
+        observable = pauli.to_mat(wire_order=wire_order)
+        identity = np.eye(observable.shape[0], dtype=complex)
+        for outcome in (0, 1):
+            projector = (identity + (1 - 2 * outcome) * observable) / 2
+            projected = projector @ state
+            norm = np.linalg.norm(projected)
+            if norm == 0:
+                continue
+            projected /= norm
+            branch_outcomes = {**outcomes, operation.meas_uid: outcome}
+            yield from _ppm_circuit_branches(
+                circuit, projected, wire_order, idx + 1, branch_outcomes
+            )
+        return
+
+    if isinstance(operation, Conditional):
+        # Apply conditional operation. The measurement values are stored in ``outcomes``.
+        branch = tuple(outcomes[m.meas_uid] for m in operation.meas_val.measurements)
+        if operation.meas_val.processing_fn(*branch):
+            state = qp.matrix(operation.base, wire_order=wire_order) @ state
+    else:
+        # Apply standard unitary gate
+        state = qp.matrix(operation, wire_order=wire_order) @ state
+
+    yield from _ppm_circuit_branches(circuit, state, wire_order, idx + 1, outcomes)
+
+
+def assert_ppm_decomposition(circuit, init_state, wire_order, expected_state, *, atol=1e-10):
+    """Assert that every PPM branch matches ``expected_state``, including a global phase comparison.
+    This verifies that the PPM decomposition is unitary.
+    """
+    branches = list(_ppm_circuit_branches(circuit, init_state, wire_order))
+    assert branches, "No PPM branches had non-zero amplitude."
+
+    for branch_state in branches:
+        assert np.isclose(np.linalg.norm(branch_state), 1.0, atol=atol)
+        assert np.allclose(branch_state, expected_state, atol=atol)

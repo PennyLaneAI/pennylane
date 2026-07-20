@@ -720,7 +720,7 @@ def _cz_to_ppr(wires: WiresLike, **_):
 
 
 def _cz_ppm_resources():
-    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3}
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3, qp.GlobalPhase: 1}
 
 
 @qp.register_resources(_cz_ppm_resources, work_wires={"zeroed": 1})
@@ -731,6 +731,7 @@ def _cz_ppm(wires: WiresLike, **__):
         m2 = pauli_measure("X", work_wire[0])
         qp.cond(m1, qp.Z)(wires[0])
         qp.cond(m0 != m2, qp.Z)(wires[1])
+        qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
         qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire to |+>
 
 
@@ -1330,7 +1331,11 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 
 def _cnot_ppm_resources():
-    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1}
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1, qp.GlobalPhase: 1}
+
+
+def _cnot_ppm_phase_correction():
+    qp.GlobalPhase(np.pi)
 
 
 @qp.register_resources(_cnot_ppm_resources, work_wires={"zeroed": 1})
@@ -1341,6 +1346,7 @@ def _cnot_ppm(wires: WiresLike, **__):
         m2 = pauli_measure("X", work_wire[0])
         qp.cond(m1, qp.Z)(wires[0])
         qp.cond(m0 != m2, qp.X)(wires[1])
+        qp.cond(m1 & (m0 != m2), _cnot_ppm_phase_correction)()
         qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire to |+>
 
 
