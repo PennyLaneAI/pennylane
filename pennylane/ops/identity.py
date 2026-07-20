@@ -23,10 +23,12 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import CVObservable, Operation
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
 
@@ -87,7 +89,7 @@ class Identity(CVObservable, Operation):
             if isinstance(wire, str):
                 return f"I('{wire}')"
             return f"I({wire})"
-        return f"I({self.wires.tolist()})"
+        return f"I({self.wires})"
 
     @property
     def name(self):
@@ -486,13 +488,7 @@ def _controlled_g_phase_resource(
 
     return {
         qp.X: num_zero_control_values * 2,
-        controlled_resource_rep(
-            qp.PhaseShift,
-            base_params={},
-            num_control_wires=num_control_wires - 1,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-        ): 1,
+        _ctrl_abstract(qp.PhaseShift, Wire[num_control_wires - 1], Wire[num_work_wires]): 1,
     }
 
 

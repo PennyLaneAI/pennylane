@@ -754,7 +754,9 @@ class TmpPauliRot(PauliRot):
         return [PauliRot(theta, pauli_word, wires)]
 
     def __repr__(self) -> str:
-        return f"TmpPauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
+        return (
+            f"TmpPauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires})"
+        )
 
 
 def _tmp_paulirot_decomp_resources(pauli_word: str):
