@@ -33,6 +33,7 @@ from pennylane.operation import (
 )
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -1942,7 +1943,10 @@ class TestNewOpMath:
         def test_pow(self, power, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             op = base**power
-            assert isinstance(op, PowOperation)
+            if isinstance(base, Operator2):
+                assert isinstance(op, Pow2)
+            else:
+                assert isinstance(op, PowOperation)
             qp.assert_equal(op.base, base)
             assert op.z == power
 
