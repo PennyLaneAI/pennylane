@@ -303,11 +303,7 @@ def merge_powers(base, z):
 
 def _flip_pow_adjoint_resource(base, z):
     # base class is adjoint, and the base of the base is the target class
-    return {
-        _adjoint_abstract(
-            Pow2(base.base, z=z),
-        ): 1
-    }
+    return {qp.adjoint(Pow2(base.base, z=z)): 1}
 
 
 # pylint: disable=protected-access,unused-argument
