@@ -685,7 +685,7 @@ class TestQNode:
 
     def test_cv_op_error(self):
         """Test that CV operations are not supported."""
-        dev = qp.device("default.gaussian", wires=3)
+        dev = qp.device("null.qubit", wires=3)
 
         @qp.defer_measurements
         @qp.qnode(dev)
@@ -701,7 +701,7 @@ class TestQNode:
 
     def test_cv_obs_error(self):
         """Test that CV observables are not supported."""
-        dev = qp.device("default.gaussian", wires=3)
+        dev = qp.device("null.qubit", wires=3)
 
         @qp.defer_measurements
         @qp.qnode(dev)

@@ -25,35 +25,6 @@ from pennylane.wires import Wires
 class TestInterferometer:
     """Tests for the Interferometer from the pennylane.template.layers module."""
 
-    def test_invalid_mesh_exception(self):
-        """Test that Interferometer() raises correct exception when mesh not recognized."""
-        dev = qp.device("default.gaussian", wires=2)
-        varphi = [0.42342, 0.234]
-
-        @qp.qnode(dev)
-        def circuit(varphi, mesh=None):
-            qp.Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1])
-            return qp.expval(qp.NumberOperator(0))
-
-        with pytest.raises(ValueError, match="did not recognize mesh"):
-            circuit(varphi, mesh="a")
-
-    @pytest.mark.parametrize("mesh", ["rectangular", "triangular"])
-    def test_invalid_beamsplitter_exception(self, mesh):
-        """Test that Interferometer() raises correct exception when beamsplitter not recognized."""
-        dev = qp.device("default.gaussian", wires=2)
-        varphi = [0.42342, 0.234]
-
-        @qp.qnode(dev)
-        def circuit(varphi, bs=None):
-            qp.Interferometer(
-                theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, mesh=mesh, wires=[0, 1]
-            )
-            return qp.expval(qp.NumberOperator(0))
-
-        with pytest.raises(ValueError, match="did not recognize beamsplitter"):
-            circuit(varphi, bs="a")
-
     def test_clements_beamsplitter_convention(self):
         """test the beamsplitter convention"""
         N = 2
@@ -239,62 +210,6 @@ class TestInterferometer:
             assert op.parameters == [varphi[idx]]
             assert op.wires == Wires([idx])
 
-    def test_integration(self, tol):
-        """test integration with PennyLane and gradient calculations"""
-        N = 4
-        wires = range(N)
-        dev = qp.device("default.gaussian", wires=N)
-
-        sq = np.array(
-            [
-                [0.8734294, 0.96854066],
-                [0.86919454, 0.53085569],
-                [0.23272833, 0.0113988],
-                [0.43046882, 0.40235136],
-            ]
-        )
-
-        theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
-        phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])
-        varphi = np.array([0.4134863, 6.17555778, 0.80334114, 2.02400747])
-
-        @qp.qnode(dev)
-        def circuit(theta, phi, varphi):
-            for w in wires:
-                qp.Squeezing(sq[w][0], sq[w][1], wires=w)
-
-            qp.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=wires)
-            return qp.expval(qp.NumberOperator(0))
-
-        res = circuit(theta, phi, varphi)
-        expected = np.array(0.96852694)
-        assert np.allclose(res, expected, atol=tol)
-
-    def test_interferometer_wrong_dim(self):
-        """Integration test for the CVNeuralNetLayers method."""
-        dev = qp.device("default.gaussian", wires=4)
-
-        @qp.qnode(dev)
-        def circuit(theta, phi, varphi):
-            qp.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
-            return qp.expval(qp.QuadX(0))
-
-        theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
-        phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])
-        varphi = np.array([0.4134863, 6.17555778, 0.80334114, 2.02400747])
-
-        with pytest.raises(ValueError, match=r"Theta must be of shape \(6,\)"):
-            wrong_theta = np.array([0.1, 0.2])
-            circuit(wrong_theta, phi, varphi)
-
-        with pytest.raises(ValueError, match=r"Phi must be of shape \(6,\)"):
-            wrong_phi = np.array([0.1, 0.2])
-            circuit(theta, wrong_phi, varphi)
-
-        with pytest.raises(ValueError, match=r"Varphi must be of shape \(4,\)"):
-            wrong_varphi = np.array([0.1, 0.2])
-            circuit(theta, phi, wrong_varphi)
-
     @pytest.mark.parametrize(
         "n_wires, expected",
         [
@@ -309,29 +224,3 @@ class TestInterferometer:
 
         shapes = qp.Interferometer.shape(n_wires)
         assert np.allclose(shapes, expected, atol=tol, rtol=0)
-
-    @pytest.mark.jax
-    @pytest.mark.xfail(reason="JIT not supported.")
-    def test_jit(self):
-        import jax
-        import jax.numpy as jnp
-
-        dev = qp.device("default.gaussian", wires=4)
-
-        @jax.jit
-        @qp.qnode(dev)
-        def circuit(*params):
-            qp.Interferometer(*params, wires=range(4))
-            return qp.state()
-
-        shapes = [[6], [6], [4]]
-        params = []
-        for shape in shapes:
-            params.append(np.random.random(shape))
-
-        params = (
-            jnp.array([0.5, 0.5, 0.5, 0.5, 0.2, 0.1]),
-            jnp.array([0.5, 0.5, 0.5, 0.5, 0.2, 0.1]),
-            jnp.array([0.5, 0.5, 0.2, 0.1]),
-        )
-        circuit(*params)

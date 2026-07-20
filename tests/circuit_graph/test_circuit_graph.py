@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph, _WrappedObj
 from pennylane.ops.mid_measure.measurement_value import MeasurementValue
 from pennylane.ops.mid_measure.mid_measure import MidMeasure
@@ -109,22 +108,6 @@ def obs_fixture():
 def circuit_fixture(ops, obs):
     """A fixture of a circuit generated based on the ops and obs fixtures above."""
     return CircuitGraph(ops, obs, Wires([0, 1, 2]))
-
-
-@pytest.fixture(name="parametrized_circuit_gaussian")
-def parametrized_circuit_gaussian_fixture(wires):
-    def qfunc(a, b, c, d, e, f):
-        qp.Rotation(a, wires=wires[0])
-        qp.Rotation(b, wires=wires[1])
-        qp.Rotation(c, wires=wires[2])
-        qp.Beamsplitter(d, 1, wires=[wires[0], wires[1]])
-        qp.Rotation(1, wires=wires[0])
-        qp.Rotation(e, wires=wires[1])
-        qp.Rotation(f, wires=wires[2])
-
-        return qp.expval(qp.ops.NumberOperator(wires=wires[0]))
-
-    return qfunc
 
 
 def circuit_measure_max_once():
@@ -271,26 +254,33 @@ class TestCircuitGraph:
         assert circuit.wire_indices(1) == op_indices_for_wire_1
         assert circuit.wire_indices(2) == op_indices_for_wire_2
 
-    @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_layers(self, parametrized_circuit_gaussian, wires):
-        """A test of a simple circuit with 3 layers and 6 trainable parameters"""
-
-        dev = qp.device("default.gaussian", wires=wires)
-        qnode = qp.QNode(parametrized_circuit_gaussian, dev)
-        tape = qp.workflow.construct_tape(qnode)(
-            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+    def test_layers(self):
+        """A test of a simple circuit with 3 parametrized layers."""
+        ops = [
+            qp.RX(0.1, wires=0),
+            qp.RX(0.2, wires=1),
+            qp.RX(0.3, wires=2),
+            qp.CRX(0.4, wires=[0, 1]),
+            qp.RX(0.5, wires=1),
+            qp.RX(0.6, wires=2),
+        ]
+        par_info = [{"op": op, "op_idx": idx, "p_idx": 0} for idx, op in enumerate(ops)]
+        circuit = CircuitGraph(
+            ops,
+            [],
+            wires=Wires([0, 1, 2]),
+            par_info=par_info,
+            trainable_params=set(range(len(ops))),
         )
-        circuit = tape.graph
         layers = circuit.parametrized_layers
-        ops = circuit.operations
 
         assert len(layers) == 3
         assert layers[0].ops == [ops[x] for x in [0, 1, 2]]
         assert layers[0].param_inds == [0, 1, 2]
         assert layers[1].ops == [ops[3]]
         assert layers[1].param_inds == [3]
-        assert layers[2].ops == [ops[x] for x in [5, 6]]
-        assert layers[2].param_inds == [6, 7]
+        assert layers[2].ops == [ops[x] for x in [4, 5]]
+        assert layers[2].param_inds == [4, 5]
 
     def test_iterate_layers_repeat_op(self):
         """Test iterate_parametrized_layers can work when the operation is repeated."""
@@ -313,33 +303,42 @@ class TestCircuitGraph:
         assert layers[1].pre_ops == [op, qp.X(0)]
         assert layers[1].post_ops == []
 
-    @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_iterate_layers(self, parametrized_circuit_gaussian, wires):
-        """A test of the different layers, their successors and ancestors using a simple circuit"""
-
-        dev = qp.device("default.gaussian", wires=wires)
-        qnode = qp.QNode(parametrized_circuit_gaussian, dev)
-        tape = qp.workflow.construct_tape(qnode)(
-            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+    def test_iterate_layers(self):
+        """A test of the different layers, their successors and ancestors using a simple circuit."""
+        ops = [
+            qp.RX(0.1, wires=0),
+            qp.RX(0.2, wires=1),
+            qp.RX(0.3, wires=2),
+            qp.CRX(0.4, wires=[0, 1]),
+            qp.RX(0.5, wires=1),
+            qp.RX(0.6, wires=2),
+        ]
+        par_info = [{"op": op, "op_idx": idx, "p_idx": 0} for idx, op in enumerate(ops)]
+        circuit = CircuitGraph(
+            ops,
+            [],
+            wires=Wires([0, 1, 2]),
+            par_info=par_info,
+            trainable_params=set(range(len(ops))),
         )
-        circuit = tape.graph
         result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
+
         assert set(result[0][0]) == set()
-        assert set(result[0][1]) == set(circuit.operations[:3])
+        assert set(result[0][1]) == set(ops[:3])
         assert result[0][2] == (0, 1, 2)
-        assert set(result[0][3]) == set(circuit.operations[3:] + circuit.observables)
+        assert set(result[0][3]) == set(ops[3:])
 
-        assert set(result[1][0]) == set(circuit.operations[:2])
-        assert set(result[1][1]) == {circuit.operations[3]}
+        assert set(result[1][0]) == set(ops[:2])
+        assert set(result[1][1]) == {ops[3]}
         assert result[1][2] == (3,)
-        assert set(result[1][3]) == set(circuit.operations[4:6] + circuit.observables[:2])
+        assert set(result[1][3]) == {ops[4]}
 
-        assert set(result[2][0]) == set(circuit.operations[:4])
-        assert set(result[2][1]) == set(circuit.operations[5:])
-        assert result[2][2] == (6, 7)
-        assert set(result[2][3]) == set(circuit.observables[1:])
+        assert set(result[2][0]) == set(ops[:4])
+        assert set(result[2][1]) == set(ops[4:])
+        assert result[2][2] == (4, 5)
+        assert set(result[2][3]) == set()
 
     @pytest.mark.parametrize(
         "circ, expected",
