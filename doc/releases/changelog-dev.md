@@ -652,6 +652,9 @@
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
+  [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
+  
 * Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
@@ -913,6 +916,7 @@
     [(#9793)](https://github.com/PennyLaneAI/pennylane/pull/9793)
     [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
     [(#9805)](https://github.com/PennyLaneAI/pennylane/pull/9805)
+    [(#9856)](https://github.com/PennyLaneAI/pennylane/pull/9856)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
@@ -1003,7 +1007,7 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g., 
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
   from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
@@ -1040,6 +1044,9 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
+  [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
