@@ -516,7 +516,7 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Test the _flatten and _unflatten methods."""
 
-        target = qp.S(0)
+        target = qp.H(0)
         z = -0.5
         op = Pow(target, z)
         data, metadata = op._flatten()
