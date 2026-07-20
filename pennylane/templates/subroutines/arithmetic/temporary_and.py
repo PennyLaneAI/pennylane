@@ -226,7 +226,6 @@ def _temporary_and_resources():
 
 @register_resources(_temporary_and_resources, exact=False)
 def _temporary_and(wires: WiresLike, **kwargs):
-
     control_values = kwargs["control_values"]
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
