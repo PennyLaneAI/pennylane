@@ -645,7 +645,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(SpecsResources, self).to_pretty_str(preindent=preindent)
+        s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
 
         s += (
             "\nPBC Depths:\n"
@@ -667,7 +667,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(SpecsResources, self)._repr_markdown_()
+        s = super(PBCSpecsResources, self)._repr_markdown_()
 
         s += (
             "\n"
