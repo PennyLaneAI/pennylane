@@ -461,20 +461,30 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    # Protect against cases where an Operator1 consumes an Operator2 at any depth (e.g.
-    # Evolution(LinearCombination(..., Y(0)))): Operator2 wires are dynamic pytree leaves,
-    # not legacy `.data` parameters, so the comparison below does not apply. `_flatten` only
-    # exposes direct children, so nested Operator2s are detected by stopping the pytree
-    # traversal at Operator2 nodes.
-    contains_op2 = any(
-        isinstance(leaf, Operator2)
-        for leaf in jax.tree_util.tree_leaves(op, is_leaf=lambda x: isinstance(x, Operator2))
-    )
-    if isinstance(op, Operator1) and not contains_op2:
-        for d1, d2 in zip(op.data, leaves, strict=True):
-            assert qp.math.allclose(
-                d1, d2
-            ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
+    if isinstance(op, Operator1):
+        # Nested operators can contribute parameters or structural leaves (such as Operator2
+        # wires) that are intentionally absent from the outer legacy ``data`` view. Stop at
+        # nested PennyLane objects and expand only their numerical data. The outer ``data`` may
+        # intentionally omit some nested parameters (for example, ``Evolution`` excludes its
+        # generator's parameters), but every exposed parameter must still occur in pytree order.
+        def nested_pl_object(obj):
+            return obj is not op and isinstance(obj, (Operator, qp.measurements.MeasurementProcess))
+
+        legacy_leaves, _ = flatten(op, is_leaf=nested_pl_object)
+        ordered_data = []
+        for leaf in legacy_leaves:
+            if isinstance(leaf, Operator):
+                ordered_data.extend(leaf.data)
+            elif not isinstance(leaf, qp.measurements.MeasurementProcess):
+                ordered_data.append(leaf)
+
+        ordered_data = iter(ordered_data)
+        for data_item in op.data:
+            if not any(qp.math.allclose(data_item, leaf) for leaf in ordered_data):
+                raise AssertionError(
+                    "data must be the terminal leaves of the pytree in the same order. "
+                    f"Could not find {data_item} in the remaining leaves."
+                )
 
 
 def _check_capture(op):

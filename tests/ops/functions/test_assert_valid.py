@@ -28,7 +28,11 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import (
+    _check_capture,
+    _check_pytree,
+    _test_decomposition_rule,
+)
 from pennylane.wires import Wires
 
 
@@ -430,6 +434,34 @@ class TestPytree:
 
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
             assert_valid(op, skip_pickle=True)
+
+    @pytest.mark.jax
+    def test_nested_operator2_data_check(self):
+        """A nested Operator2 does not disable validation of the outer Operator1 data order."""
+
+        class ParamOp2(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        class BadLeavesOrdering(qp.ops.op_math.SProd):
+            def _flatten(self):
+                return (self.base, self.scalar), tuple()
+
+            @classmethod
+            def _unflatten(cls, data, _):
+                return cls(data[1], data[0])
+
+        with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
+            _check_pytree(BadLeavesOrdering(2.0, ParamOp2(1.2, wires=0)))
+
+    @pytest.mark.jax
+    def test_nested_operator2_with_omitted_data(self):
+        """Nested parameters omitted intentionally from outer data do not fail validation."""
+        generator = qp.ops.LinearCombination([1.0], [qp.Y(0)])
+        _check_pytree(qp.ops.Evolution(generator, 0.2))
 
 
 @pytest.mark.jax
