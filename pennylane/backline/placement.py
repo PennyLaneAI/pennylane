@@ -25,7 +25,7 @@ class Endpoint:
 
     Args:
         host (str): Hostname or IP, optionally ``host:port``.
-        role (str): Short label for the node's role, e.g. ``"fpga-qpu"`` or ``"gpu-decoder"``.
+        role (str): Short label for the node's role, e.g. ``"controller"`` or ``"gpu-decoder"``.
         name (str | None): Optional unique name, used to disambiguate when several endpoints share a
             role. Defaults to ``None``.
         local (bool): Whether the endpoint is attached to the host running the program (``True``) or a
