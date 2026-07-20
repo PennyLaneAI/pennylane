@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* ``qp.allocate`` now supports ``state="magic"`` and ``state="magic_conj"`` for requesting
+* ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
   error via ``resolve_dynamic_wires`` until native support is added.

@@ -39,11 +39,11 @@ class AllocateState(StrEnum):
 
     ZERO = "zero"
     ANY = "any"
-    MAGIC = "magic"  # |m⟩ = TH|0⟩
-    MAGIC_CONJ = "magic_conj"  # |m̄⟩ = T†H|0⟩
+    MAGIC_T = "magic-T"  # |m⟩ = TH|0⟩
+    MAGIC_T_ADJ = "magic-T-adj"  # |m̄⟩ = T†H|0⟩
 
 
-_MAGIC_STATES = frozenset({AllocateState.MAGIC, AllocateState.MAGIC_CONJ})
+_MAGIC_STATES = frozenset({AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ})
 
 
 if not has_jax:
@@ -86,7 +86,7 @@ class Allocate(Operator):
         wires (list[DynamicWire]): a list of dynamic wire values.
 
     Keyword Args:
-        state (Literal["any", "zero", "magic", "magic_conj"]): the state that the wires need to start in.
+        state (Literal["any", "zero", "magic-T", "magic-T-adj"]): the state that the wires need to start in.
         restored (bool): Whether or not the qubit will be restored to the original state before being deallocated.
 
     ..see-also:: :func:`~.allocate`.
@@ -208,7 +208,7 @@ class DynamicRegister(Wires):
 
 def allocate(
     num_wires: int,
-    state: Literal["any", "zero", "magic", "magic_conj"] | AllocateState = AllocateState.ZERO,
+    state: Literal["any", "zero", "magic-T", "magic-T-adj"] | AllocateState = AllocateState.ZERO,
     restored: bool = False,
 ) -> DynamicRegister:
     r"""Dynamically allocates new wires in-line,
@@ -219,10 +219,11 @@ def allocate(
             The number of wires to dynamically allocate.
 
     Keyword Args:
-        state (Literal["any", "zero", "magic", "magic_conj"]):
+        state (Literal["any", "zero", "magic-T", "magic-T-adj"]):
             Specifies the initial state of the allocated wires. ``"zero"`` and ``"any"`` request
-            wires in the all-zeros state or an arbitrary state, respectively. ``"magic"`` and
-            ``"magic_conj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or :math:`|\bar{m}\rangle = T^\dagger H|0\rangle`. The default value is ``state="zero"``.
+            wires in the all-zeros state or an arbitrary state, respectively. ``"magic-T"`` and
+            ``"magic-T-adj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or
+            :math:`|\bar{m}\rangle = T^\dagger H|0\rangle`. The default value is ``state="zero"``.
 
         restored (bool):
             Whether or not the dynamically allocated wires are returned to the same state they

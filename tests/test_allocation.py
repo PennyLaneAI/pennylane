@@ -136,68 +136,29 @@ def test_error_bad_state():
         allocate(2, state="no")
 
 
-def test_magic_state_enum_values():
-    """Test that magic state enum values are defined."""
-    assert AllocateState.MAGIC == "magic"
-    assert AllocateState.MAGIC_CONJ == "magic_conj"
+def test_magic_t_state_enum_values():
+    """Test that magic-T state enum values are defined."""
+    assert AllocateState.MAGIC_T == "magic-T"
+    assert AllocateState.MAGIC_T_ADJ == "magic-T-adj"
 
 
-def test_allocate_magic_state():
-    """Test that allocate accepts magic state kwargs."""
+def test_allocate_magic_t_states():
+    """Test that allocate accepts magic-T state kwargs."""
     with qp.queuing.AnnotatedQueue() as q:
-        allocate(1, state="magic")
-        allocate(1, state="magic_conj")
+        allocate(1, state="magic-T")
+        allocate(1, state="magic-T-adj")
 
-    assert q.queue[0].state == AllocateState.MAGIC
-    assert q.queue[1].state == AllocateState.MAGIC_CONJ
+    assert q.queue[0].state == AllocateState.MAGIC_T
+    assert q.queue[1].state == AllocateState.MAGIC_T_ADJ
 
 
-def test_error_magic_state_restored():
-    """Test that restored=True is rejected for magic state allocations."""
+def test_error_magic_t_state_restored():
+    """Test that restored=True is rejected for magic-T state allocations."""
     with pytest.raises(ValueError, match="restored=True is not supported for magic state"):
-        allocate(1, state="magic", restored=True)
+        allocate(1, state="magic-T", restored=True)
 
     with pytest.raises(ValueError, match="restored=True is not supported for magic state"):
-        allocate(1, state="magic_conj", restored=True)
-
-
-@pytest.mark.jax
-@pytest.mark.capture
-def test_capture_magic_state():
-    """Test that magic state allocations are captured in jaxpr."""
-    import jax
-
-    def f():
-        with allocate(1, state="magic") as wires:
-            qp.H(wires)
-
-    jaxpr = jax.make_jaxpr(f)()
-    assert jaxpr.eqns[0].params["state"] == AllocateState.MAGIC
-
-
-@pytest.mark.jax
-@pytest.mark.capture
-def test_capture_magic_conj_state():
-    """Test that magic_conj state allocations are captured in jaxpr."""
-    import jax
-
-    def f():
-        [w] = allocate(1, state="magic_conj")
-        qp.H(w)
-        deallocate(w)
-
-    jaxpr = jax.make_jaxpr(f)()
-    assert jaxpr.eqns[0].params["state"] == AllocateState.MAGIC_CONJ
-
-
-def test_resolve_dynamic_wires_magic_state_error():
-    """Test that resolve_dynamic_wires raises for magic state allocations."""
-    from pennylane.transforms import resolve_dynamic_wires
-
-    tape = qp.tape.QuantumScript([Allocate.from_num_wires(1, state=AllocateState.MAGIC)])
-
-    with pytest.raises(qp.exceptions.AllocationError, match="Magic state allocation"):
-        resolve_dynamic_wires(tape)
+        allocate(1, state="magic-T-adj", restored=True)
 
 
 def test_allocate_function():
@@ -340,6 +301,30 @@ class TestCaptureIntegration:
 
         with pytest.raises(NotImplementedError):
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+    @pytest.mark.parametrize(
+        ("state", "use_context"),
+        (
+            (AllocateState.MAGIC_T, True),
+            (AllocateState.MAGIC_T_ADJ, False),
+        ),
+    )
+    def test_capturing_magic_t_states(self, state, use_context):
+        """Test that magic-T state allocations are captured in jaxpr."""
+        import jax
+
+        def f():
+            if use_context:
+                with allocate(1, state=state) as wires:
+                    qp.H(wires)
+            else:
+                [w] = allocate(1, state=state)
+                qp.H(w)
+                deallocate(w)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == allocate_prim
+        assert jaxpr.eqns[0].params["state"] == state
 
     def test_deallocate_single_wire(self):
         """Test deallocate can accept a single wire."""

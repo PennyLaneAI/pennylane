@@ -97,7 +97,7 @@ def _new_ops(operations, manager, wire_map, deallocated):
         # check name faster than isinstance
         if op.name == "Allocate":
             state = op.hyperparameters["state"]
-            if state in (AllocateState.MAGIC, AllocateState.MAGIC_CONJ):
+            if state in (AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ):
                 raise AllocationError(
                     f"Magic state allocation (state={state!r}) is not supported by "
                     "resolve_dynamic_wires. Use Catalyst compilation for magic state allocation."
