@@ -302,13 +302,8 @@ class TestCaptureIntegration:
         with pytest.raises(NotImplementedError):
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
-    @pytest.mark.parametrize(
-        ("state", "use_context"),
-        (
-            (AllocateState.MAGIC_T, True),
-            (AllocateState.MAGIC_T_ADJ, False),
-        ),
-    )
+    @pytest.mark.parametrize("state", (AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ))
+    @pytest.mark.parametrize("use_context", (True, False))
     def test_capturing_magic_t_states(self, state, use_context):
         """Test that magic-T state allocations are captured in jaxpr."""
         import jax
