@@ -133,6 +133,9 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
+        if qp.QueuingManager.recording():
+            qp.QueuingManager.remove(base)
+
         if qp.capture.enabled():
             pop_op_eqns((base,))
 

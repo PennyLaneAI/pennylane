@@ -1178,6 +1178,8 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
 
 
 def _decomp_contains_mcm(rule, params):
+    if not rule.is_applicable(**params):
+        return False
     resources = rule.compute_resources(**params).gate_counts
     mcm = abstractify(qp.ops.MidMeasure)
     ppm = abstractify(qp.ops.PauliMeasure)
