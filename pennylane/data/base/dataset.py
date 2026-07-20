@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
 
-# pylint doesn't think this exists
 from typing import (
     Any,
     ClassVar,
