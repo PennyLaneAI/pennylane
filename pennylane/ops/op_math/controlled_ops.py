@@ -732,7 +732,7 @@ def _cz_ppm(wires: WiresLike, **__):
         qp.cond(m1, qp.Z)(wires[0])
         qp.cond(m0 != m2, qp.Z)(wires[1])
         qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
-        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire to |+>
+        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire (to |+>), achieving pure state
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr, _cz_ppm)
@@ -1334,10 +1334,6 @@ def _cnot_ppm_resources():
     return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1, qp.GlobalPhase: 1}
 
 
-def _cnot_ppm_phase_correction():
-    qp.GlobalPhase(np.pi)
-
-
 @qp.register_resources(_cnot_ppm_resources, work_wires={"zeroed": 1})
 def _cnot_ppm(wires: WiresLike, **__):
     with qp.allocate(1, state="zero", restored=False) as work_wire:
@@ -1346,8 +1342,8 @@ def _cnot_ppm(wires: WiresLike, **__):
         m2 = pauli_measure("X", work_wire[0])
         qp.cond(m1, qp.Z)(wires[0])
         qp.cond(m0 != m2, qp.X)(wires[1])
-        qp.cond(m1 & (m0 != m2), _cnot_ppm_phase_correction)()
-        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire to |+>
+        qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
+        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire (to |+>), achieving pure state
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr, _cnot_ppm)
