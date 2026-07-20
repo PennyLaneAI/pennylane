@@ -138,15 +138,17 @@ class Expression:
         """
         if substitutions is None:
             substitutions = {}
-        substitutions.update(kwargs)
+
+        # NOTE: don't mutate incoming dict
+        substitutions_copy = {**substitutions, **kwargs}
 
         new_data = defaultdict(int)
         for vars, coeff in self._data.items():
             new_k = []
             mult = 1
             for var in vars:
-                if var in substitutions:
-                    mult *= substitutions[var]
+                if var in substitutions_copy:
+                    mult *= substitutions_copy[var]
                 else:
                     new_k.append(var)
 
@@ -157,7 +159,7 @@ class Expression:
             return 0
         if len(new_data) == 1 and () in new_data:
             return new_data[()]  # Return as int rather than Expression if the result is a constant
-        return Expression(new_data, vars=self._vars.difference(substitutions.keys()))
+        return Expression(new_data, vars=self._vars.difference(substitutions_copy.keys()))
 
     @lru_cache
     def __str__(self) -> str:

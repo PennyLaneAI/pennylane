@@ -138,6 +138,14 @@ class TestExpression:
         assert isinstance(new_expr3, int)
         assert new_expr3 == 32
 
+    def test_subs_doesnt_mutate(self):
+        """Test that the subs method doesn't mutate the incoming dictionary."""
+
+        s = Expression({("x",): 1, ("y",): -1})
+        input = {"x": 5}
+        _ = s.subs(input, y=5)
+        assert input == {"x": 5}
+
     def test_subs_cancels_out(self):
         s = Expression({("x",): 1, ("y",): -1})
         subbed = s.subs({"x": 5, "y": 5})

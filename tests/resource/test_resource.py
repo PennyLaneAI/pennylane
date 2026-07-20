@@ -207,6 +207,16 @@ class TestBaseResources:
         assert new_r.counts == {"Hadamard": 3, "CNOT": 1}
         assert new_r.vars == set()
 
+    def test_subs_doesnt_mutate(self, example_base_resources_symbolic):
+        """Test that the subs method doesn't mutate the incoming dictionary."""
+
+        r = example_base_resources_symbolic
+
+        input = {}
+        _ = r.subs(input, x=3)
+        # NOTE: input shouldn't be mutated
+        assert input == {}
+
     def test_invalid_subs(self, example_base_resources_symbolic):
         """Test that the subs method raises a ValueError when substituting a variable not present in the expression."""
         r = example_base_resources_symbolic

@@ -18,11 +18,12 @@ Stores classes and logic to aggregate all the resource information from a quantu
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Generator
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
 from functools import lru_cache
 from string import ascii_lowercase
-from typing import Any, Generator
+from typing import Any
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
@@ -85,7 +86,7 @@ def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
     return flattened
 
 
-def _collect_vars(obj: Any) -> Generator[str, None, None]:
+def _collect_vars(obj: Any) -> Generator[str]:
     """Collect the symbolic variables of every :class:`Expression` within an arbitrary pytree.
 
     Uses :func:`~pennylane.pytrees.flatten` to traverse any registered container type (``dict``,
@@ -313,7 +314,7 @@ class Resources:
             f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
 
-    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> "Resources":
+    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> Resources:
         """
         Substitute symbolic variables in the object with concrete integer values.
 
@@ -355,9 +356,11 @@ class Resources:
         """
         if substitutions is None:
             substitutions = {}
-        substitutions.update(kwargs)
 
-        subs_vars = set(substitutions.keys())
+        # NOTE: don't mutate incoming dict
+        substitutions_copy = {**substitutions, **kwargs}
+
+        subs_vars = set(substitutions_copy.keys())
         if extra_vars := subs_vars - self.vars:
             raise ValueError(
                 f"Substitutions contain variables {extra_vars} which are not in the expression's variables {self.vars}."
@@ -369,7 +372,9 @@ class Resources:
                 continue
             # Each field value is treated as a pytree, so Expressions nested to any depth within
             # dicts/lists/tuples are substituted automatically while preserving the structure.
-            new_values[obj_field.name] = _subs_pytree(getattr(self, obj_field.name), substitutions)
+            new_values[obj_field.name] = _subs_pytree(
+                getattr(self, obj_field.name), substitutions_copy
+            )
 
         return type(self)(**new_values)  # pylint: disable=missing-kwoa
 
@@ -462,7 +467,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        super(SpecsResources, self).__post_init__()  # Fall through to parent post init
+        super().__post_init__()  # Fall through to parent post init
 
     def __getitem__(self, key):
         # Need to match
@@ -478,7 +483,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        return super(SpecsResources, self).__getitem__(key)
+        return super().__getitem__(key)
 
     @property
     def quantum_operations(self):
@@ -640,7 +645,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
+        s = super().to_pretty_str(preindent=preindent)
 
         s += (
             "\nPBC Depths:\n"
@@ -662,7 +667,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self)._repr_markdown_()
+        s = super()._repr_markdown_()
 
         s += (
             "\n"
