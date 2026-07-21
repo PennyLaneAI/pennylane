@@ -379,8 +379,9 @@ def _molecule_metal_transfer(i: int, j: int, config: GanConfig) -> GanCoeff:
     trans_mode = config.n_modes - 1
     monomials = defaultdict(float)
 
-    const = GanMonomial([FuncSymbol.identity()])
-    monomials[const] += config.transfer[0][i, j]
+    if len(config.transfer) > 0:
+        const = GanMonomial([FuncSymbol.identity()])
+        monomials[const] += config.transfer[0][i, j]
 
     for order, tensor in enumerate(config.transfer[1:], start=1):
         monomial = GanMonomial([FuncSymbol.position(trans_mode, order)])
