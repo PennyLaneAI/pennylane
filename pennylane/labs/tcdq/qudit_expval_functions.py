@@ -41,8 +41,8 @@ from jax.typing import ArrayLike
 
 @dataclass
 class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
-    r"""A class to store qudit IQP circuit configurations. 
-    
+    r"""A class to store qudit IQP circuit configurations.
+
     This class stores the description of a qudit IQP circuit to compute its expectation value with respect to a
     Heisenberg-Weyl (HW) observable. See `arXiv:2607.06675 <https://arxiv.org/abs/2607.06675>`_ for theoretical details.
 
