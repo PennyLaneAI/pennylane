@@ -834,6 +834,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
+  tests should only be marked `catalyst` and *not* marked `external`.
+  [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
+
 * Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
   This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
   The :class:`~.resource.Resources` class serves as the new base class,
