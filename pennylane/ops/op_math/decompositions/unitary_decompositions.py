@@ -63,14 +63,14 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
     >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
     >>> pprint(decomp)
-    [RZ(np.float64(3.14159...), wires=[0]),
+    [RZ(3.14159..., wires=[0]),
      RY(np.float64(1.57079...), wires=[0]),
-     RZ(np.float64(0.0), wires=[0]),
+     RZ(0.0, wires=[0]),
      GlobalPhase(np.float64(-1.57079...), wires=[])]
     >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
     [RX(np.float64(1.57079...), wires=[0]),
-     RZ(np.float64(1.57079...), wires=[0]),
+     RZ(1.57079..., wires=[0]),
      RX(np.float64(1.57079...), wires=[0]),
      GlobalPhase(np.float64(-1.57079...), wires=[])]
     """
@@ -177,16 +177,16 @@ def two_qubit_decomposition(U, wires):
      QubitUnitary(array([[ 0.73465919-0.15696895j,  0.51629531-0.41118825j],
            [-0.51629531-0.41118825j,  0.73465919+0.15696895j]]), wires=[1]),
      CNOT(wires=[1, 0]),
-     RZ(np.float64(0.028408953417448358), wires=[0]),
-     RY(np.float64(0.6226823676455966), wires=[1]),
+     RZ(0.028408953417448358, wires=[0]),
+     RY(0.6226823676455966, wires=[1]),
      CNOT(wires=[0, 1]),
-     RY(np.float64(-0.7259987841675299), wires=[1]),
+     RY(-0.7259987841675299, wires=[1]),
      CNOT(wires=[1, 0]),
      QubitUnitary(array([[ 0.85429569-0.34743933j,  0.14569083+0.35810469j],
            [-0.14569083+0.35810469j,  0.85429569+0.34743933j]]), wires=[0]),
      QubitUnitary(array([[-0.30052527-0.4826478j ,  0.74833925-0.34164898j],
            [-0.74833925-0.34164898j, -0.30052527+0.4826478j ]]), wires=[1]),
-     GlobalPhase(np.float64(0.07394316416802127), wires=[])]
+     GlobalPhase(0.07394316416802127, wires=[])]
 
     """
 

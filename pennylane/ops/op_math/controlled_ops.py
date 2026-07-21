@@ -2091,7 +2091,7 @@ class CRX(ControlledOp):
         **Example:**
 
         >>> qp.CRX.compute_decomposition(1.2, wires=(0,1))
-        [RZ(np.float64(1.5707963267948966), wires=[1]), RY(0.6, wires=[1]), CNOT(wires=[0, 1]), RY(-0.6, wires=[1]), CNOT(wires=[0, 1]), RZ(np.float64(-1.5707963267948966), wires=[1])]
+        [RZ(1.5707963267948966, wires=[1]), RY(0.6, wires=[1]), CNOT(wires=[0, 1]), RY(-0.6, wires=[1]), CNOT(wires=[0, 1]), RZ(-1.5707963267948966, wires=[1])]
 
         """
         pi_half = qp.math.ones_like(phi) * (np.pi / 2)
