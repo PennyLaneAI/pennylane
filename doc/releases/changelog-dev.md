@@ -1050,7 +1050,7 @@
   returned the full joint distribution instead of the single-wire marginal. The falsy
   label was silently replaced by all device wires; the default is now resolved with an
   explicit ``None`` check.
-  [(#PRNUM)](https://github.com/PennyLaneAI/pennylane/pull/PRNUM)
+  [(#9875)](https://github.com/PennyLaneAI/pennylane/pull/9875)
 
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
