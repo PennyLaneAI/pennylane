@@ -1238,7 +1238,7 @@ def param_shift(
 
 
 @singledispatch
-def parameter_frequencies(op: Operation | Operator2):
+def parameter_frequencies(op: Operation | Operator2) -> list[tuple[int | float]]:
     r"""
     Returns the frequencies for each operator parameter with respect
     to an expectation value of the form
