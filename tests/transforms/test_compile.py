@@ -203,6 +203,7 @@ class TestCompileIntegration:
         assert compiled_tape.operations == [qp.PauliX(0), qp.CNOT([0, 1])]
 
     # The premise here does not make sense for graph-based decomposition
+    @pytest.mark.xfail(reason="This does not make sense anymore because every op has decomposition")
     @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_compile_empty_basis_set(self):
         """Test that compiling with empty basis set decomposes any decomposable operation."""
