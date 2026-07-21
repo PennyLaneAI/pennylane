@@ -39,7 +39,7 @@ from .resources import (
     Resources,
     _gate_count_dict_to_str,
 )
-from .utils import to_name
+from .utils import _get_decomp_args, to_name
 
 
 @dataclass(frozen=True)
@@ -862,9 +862,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        params = op.arguments if isinstance(op, Operator2) else op.resource_params
-        self._conditions_met = rule.is_applicable(**params)
-        self._work_wire_spec = rule.get_work_wire_spec(**params)
+        self._decomp_args = _get_decomp_args(op)
+        self._conditions_met = rule.is_applicable(**self._decomp_args[0])
+        self._work_wire_spec = rule.get_work_wire_spec(**self._decomp_args[0])
         n_work_wires = self._work_wire_spec.total
         self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires
@@ -898,8 +898,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     @property
     def _circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
+        _, args, kwargs = _get_decomp_args(self._op)
         assert self._conditions_met and self._enough_work_wires
-        return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **self._op.hyperparameters)
+        return qp.draw(self._rule)(*args, **kwargs)
 
     @property
     def _name(self) -> str:
@@ -910,7 +911,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations(self) -> str:
         """The actual and estimated gate counts of this rule."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
         if allocations:
@@ -921,7 +922,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations_md(self) -> str:
         """The actual and estimated gate counts of this rule in the Markdown format."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
         if allocations:
@@ -1113,8 +1114,9 @@ def inspect_decomps(
 def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
     """Count the gates that a decomposition rule produced."""
 
+    _, args, kwargs = _get_decomp_args(op)
     with queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*args, **kwargs)
 
     actual_gate_counts = defaultdict(int)
     allocations = defaultdict(int)
