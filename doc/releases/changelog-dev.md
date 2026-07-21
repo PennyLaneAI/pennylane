@@ -1057,6 +1057,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed ``Dataset.read`` so that caller-supplied source ``Dataset`` objects remain open
+  after copying.
+  [(#9872)](https://github.com/PennyLaneAI/pennylane/pull/9872).
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
@@ -1182,6 +1186,7 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 David D.W. Ren,
 Jay Soni,
+Joshua Steier,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
