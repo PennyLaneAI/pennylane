@@ -1140,9 +1140,9 @@ class TestDecomposition:
         op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1))
         decomp = op.decomposition()
 
-        qp.assert_equal(decomp[0], qp.PhaseShift(qp.numpy.array(theta / 2), 0))
+        qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), 0))
         qp.assert_equal(decomp[1], qp.CNOT(wires=(1, 0)))
-        qp.assert_equal(decomp[2], qp.PhaseShift(qp.numpy.array(-theta / 2), 0))
+        qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), 0))
         qp.assert_equal(decomp[3], qp.CNOT(wires=(1, 0)))
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
