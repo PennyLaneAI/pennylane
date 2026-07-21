@@ -26,6 +26,7 @@ from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import Operator2, queuing
 from pennylane.core.operator import Operator
+from pennylane.core.operator.operator2 import _reconstruct_op, operator_p  # tach-ignore
 from pennylane.decomposition import (
     DecompositionGraph,
     GateSet,
@@ -305,7 +306,13 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             invals = (self.read(invar) for invar in eqn.invars)
 
             with queuing.QueuingManager.stop_recording():
-                op = eqn.primitive.impl(*invals, **eqn.params)
+                if eqn.primitive is operator_p:
+                    # See the matching branch in `PlxprInterpreter.interpret_operation_eqn`:
+                    # this replay can happen while wires are still tracers, so reconstruct
+                    # directly rather than through `impl`, which requires concrete wires.
+                    op = _reconstruct_op(*invals, **eqn.params)
+                else:
+                    op = eqn.primitive.impl(*invals, **eqn.params)
 
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
