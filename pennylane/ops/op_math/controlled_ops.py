@@ -1544,7 +1544,7 @@ class MultiControlledX(Controlled2):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = ()
+    ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     dynamic_argnames = ("control_values",)
@@ -1597,6 +1597,7 @@ class MultiControlledX(Controlled2):
     def __repr__(self):
         return f"MultiControlledX(wires={self.wires}, control_values={self.control_values})"
 
+    @override
     def adjoint(self):
         return MultiControlledX(
             wires=self.wires,
@@ -1606,6 +1607,7 @@ class MultiControlledX(Controlled2):
         )
 
     @staticmethod
+    @override
     def compute_matrix(wires: Wires, control_values: Sequence[bool], **_):
         control_wires = wires[:-1]
         padding_left = sum(2**i * int(val) for i, val in enumerate(reversed(control_values))) * 2

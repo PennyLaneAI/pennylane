@@ -475,7 +475,7 @@ class SingleRZ(Operator2):
 
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
-    ndim_params = ((),)
+    ndim_params = (0,)
 
     def __init__(self, phi, wires):
         assert isinstance(wires, int) or len(wires) == 1
