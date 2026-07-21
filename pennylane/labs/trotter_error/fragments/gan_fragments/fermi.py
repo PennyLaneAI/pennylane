@@ -40,6 +40,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Sequence
 
+import numpy as np
+
 
 class FermiType(Enum):
     """Whether a fermionic operator is a creation (``"+"``) or annihilation (``"-"``) operator."""
@@ -228,7 +230,7 @@ class FermiWord:
             if not word.is_zero():
                 sentence[word] += coeff
 
-            sentence = {word: coeff for word, coeff in sentence.items() if coeff != 0}
+            sentence = {word: coeff for word, coeff in sentence.items() if not np.isclose(coeff, 0)}
 
         return FermiSentence(sentence)
 
