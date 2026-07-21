@@ -98,7 +98,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             qp.RZ(phi, 0)
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].gate_types
+        specs = qp.specs(circuit)()["resources"].quantum_operations
 
     The resulting circuit corresponds to the `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__ of RZ,
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
