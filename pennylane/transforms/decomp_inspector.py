@@ -41,7 +41,6 @@ class _DecompInGraphInfo(_DecompInfo):
         num_work_wires: int | None,
         solution: DecompGraphSolution,
     ) -> None:
-
         decomp_node = solution._graph[decomp_node_idx]
         assert isinstance(decomp_node, _DecompositionNode)
 
@@ -243,7 +242,6 @@ class DecompGraphInspector:
         return _DecompInGraphInfoCollection(rule_infos, show_not_applicable, chosen_idx)
 
     def _find_op_node(self, op: Operator, num_work_wires: int | None = 0) -> _OperatorNode | str:
-
         if isinstance(op, type) and issubclass(op, Operator):
             raise TypeError(
                 "The inspect_decomps function takes a concrete operator instance as its "
@@ -373,7 +371,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     3: ─├●─├●────────├●─┤
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
-    First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+    First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
     Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
     Weighted Cost: 196.0
 
@@ -500,7 +498,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ─├●─├●────────├●─┤
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
-        First-Level Expansion Gates: {Controlled(RZ, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+        First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4)): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
         Full Expansion Gates: {GlobalPhase: 200, RX: 32, MidMeasure: 6, RY: 54, RZ: 170, CNOT: 96}
         Weighted Cost: 358.0
 
