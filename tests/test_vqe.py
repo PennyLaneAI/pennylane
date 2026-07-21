@@ -976,10 +976,9 @@ class TestNewVQE:
 
         assert res["resources"] == qp.resource.SpecsResources(
             num_allocs=2,
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={"expval(Hamiltonian(num_wires=2, num_terms=2))": 1},
-            depth=2,
+            counts={"Hadamard": 1, "CNOT": 1},
+            measurement_processes={"expval(Hamiltonian(num_wires=2, num_terms=2))": 1},
+            circuit_depth=2,
         )
 
 

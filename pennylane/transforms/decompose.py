@@ -733,7 +733,7 @@ def decompose(
                 qp.IsingXX(0.5, wires=[0, 1])
                 return qp.state()
 
-        >>> qp.specs(circuit)()["resources"].gate_types
+        >>> qp.specs(circuit)().resources.quantum_operations
         {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
         >>> qp.decomposition.disable_graph()
 
