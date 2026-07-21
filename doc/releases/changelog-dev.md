@@ -476,6 +476,12 @@
 * Implemented the `__str__` of `Wires` to display the wire labels as a list.
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
 
+* :func:`~pennylane.pauli_decompose` is significantly faster for SciPy sparse inputs. Nonzero entries are
+  grouped by their ``row ^ col`` XOR-difference and each group is resolved with a single fast
+  Walsh-Hadamard transform, following [Georges et al.](https://doi.org/10.1088/1367-2630/adb44d),
+  giving order-of-magnitude speedups for sparse and structured operators.
+  [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -667,6 +673,16 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
+
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+  `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
+  `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
+  `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
+  `qp.SqueezedState`, `qp.DisplacedSqueezedState`, `qp.ThermalState`, `qp.GaussianState`, `qp.FockState`,
+  `qp.FockStateVector`, `qp.FockDensityMatrix`, `qp.CatState`, `qp.NumberOperator`, `qp.TensorN`,
+  `qp.QuadX`, `qp.QuadP`, `qp.QuadOperator`, `qp.PolyXP`, `qp.FockStateProjector`,
+  `qp.DisplacementEmbedding`, `qp.SqueezingEmbedding`, `qp.CVNeuralNetLayers`, amd `qp.Interferomenter`.
+  [(#9869)](https://github.com/PennyLaneAI/pennylane/pull/9869)
 
 * Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)

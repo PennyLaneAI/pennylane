@@ -37,10 +37,6 @@
 ##
 ## heading.
 
-[default.gaussian]
-# hbar = 2
-
-
 [strawberryfields.global]
 ## Global options for the StrawberryFields plugin.
 ## If not specified, the PennyLane default is used.
