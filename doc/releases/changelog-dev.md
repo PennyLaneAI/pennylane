@@ -644,8 +644,8 @@
 
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
-
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
+
 * Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
