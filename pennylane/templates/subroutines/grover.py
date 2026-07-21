@@ -106,7 +106,9 @@ class GroverOperator(Operation):
     resource_keys = {"num_wires", "num_work_wires"}
 
     def __repr__(self):
-        return f"GroverOperator(wires={self.wires.tolist()}, work_wires={self.hyperparameters['work_wires'].tolist()})"
+        return (
+            f"GroverOperator(wires={self.wires}, work_wires={self.hyperparameters['work_wires']})"
+        )
 
     def _flatten(self):
         hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
