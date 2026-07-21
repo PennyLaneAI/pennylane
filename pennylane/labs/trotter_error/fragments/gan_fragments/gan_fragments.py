@@ -504,51 +504,10 @@ def _normal_order(monomial):
     """
 
     funcs = [func for func in monomial.funcs if func.f_type != FuncType.IDENTITY]
-    funcs.sort(key=lambda func: func.mode)  # stable
+    funcs.sort(key=lambda func: func.mode) # sort preserves the order when modes are equal
     funcs = _simplify_monomial(funcs)
     if not funcs:
         funcs = [FuncSymbol.identity()]
-
-    return GanMonomial(funcs)
-
-    """
-    funcs = list(monomial.funcs)
-    n_ops = len(funcs)
-
-    basis_types = {FuncType.POSITION, FuncType.IDENTITY}
-
-    for i in range(n_ops):
-        curr = i
-        for j in reversed(range(i)):
-            l_type = funcs[j].f_type
-            l_mode = funcs[j].mode
-            r_type = funcs[curr].f_type
-            r_mode = funcs[curr].mode
-
-            if l_type in basis_types and r_type in basis_types and l_mode > r_mode:
-                funcs[curr], funcs[j] = funcs[j], funcs[curr]
-                curr -= 1
-                continue
-
-            if (
-                l_type in basis_types
-                and r_type in basis_types
-                and l_mode == r_mode
-                and l_type > r_type
-            ):
-                funcs[curr], funcs[j] = funcs[j], funcs[curr]
-                curr -= 1
-                continue
-
-            if l_type in basis_types and r_type == FuncType.MOMENTUM and l_mode != r_mode:
-                funcs[curr], funcs[j] = funcs[j], funcs[curr]
-                curr -= 1
-                continue
-
-            break
-
-    funcs = _simplify_monomial(funcs)
-    """
 
     return GanMonomial(funcs)
 
