@@ -21,7 +21,6 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 from pennylane._version import __version__
-from pennylane.configuration import default_config
 from pennylane.exceptions import DeviceError
 
 from ._legacy_device import Device as LegacyDevice
@@ -97,10 +96,6 @@ def device(name, *args, **kwargs):
         wires (Wires): the wires (subsystems) to initialize the device with.
             Note that this is optional for certain devices, such as ``default.qubit``
 
-    Keyword Args:
-        config (pennylane.Configuration): a PennyLane configuration object
-            that contains global and/or device specific configurations.
-
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
     argument can be an integer, in which case the wires of the device are addressed
@@ -164,23 +159,12 @@ def device(name, *args, **kwargs):
         # installed the plugin during the current Python session.
         refresh_devices()
 
+    if "config" in kwargs:
+        raise ValueError(
+            "config has been removed and is no longer supported as an argument to pennylane.device."
+        )
+
     if name in plugin_devices:
-        options = {}
-
-        # load global configuration settings if available
-        config = kwargs.get("config", default_config)
-
-        if config:
-            # combine configuration options with keyword arguments.
-            # Keyword arguments take preference, followed by device options,
-            # followed by plugin options, followed by global options.
-            options.update(config["main"])
-            options.update(config[name.split(".")[0] + ".global"])
-            options.update(config[name])
-
-        kwargs.pop("config", None)
-        options.update(kwargs)
-
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
@@ -202,7 +186,7 @@ def device(name, *args, **kwargs):
                 )
 
         # Construct the device
-        dev = plugin_device_class(*args, **options)
+        dev = plugin_device_class(*args, **kwargs)
 
         if isinstance(dev, LegacyDevice):
             dev = LegacyDeviceFacade(dev)

@@ -674,6 +674,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
+
 * Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
