@@ -403,6 +403,23 @@ class Operator2(metaclass=OperatorMeta):
     grad_recipe = None
     """Legacy Operator compatibility default for parameter-shift recipes."""
 
+    def grad_method(self):
+        """Derived gradient method: 'A' if the op is parameter-shift differentiable
+        (custom grad_recipe or available parameter frequencies via a handler/generator),
+        'F' if it has params but no shift rule, and None if it has no parameters.
+        Mirrors ``Operation.grad_method`` but sources frequencies from the
+        ``qp.gradients.parameter_frequencies`` singledispatch (which handles Operator2)."""
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients import parameter_frequencies
+
+        if self.num_params == 0:
+            return None
+        if self.grad_recipe != [None] * self.num_params:
+            return "A"
+        if parameter_frequencies(self):
+            return "A"
+        return "F"
+
     grad_method = None
     """Legacy Operator compatibility default for gradient method metadata."""
 
@@ -989,7 +1006,6 @@ class Operator2(metaclass=OperatorMeta):
         )
 
         for key, value in self.arguments.items():
-
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)

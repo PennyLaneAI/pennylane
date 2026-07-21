@@ -2400,10 +2400,9 @@ class CRZ(Controlled2):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
     ndim_params = (0,)
-    grad_method = "A"
+    parameter_frequencies = [(0.5, 1.0)]
 
     name = "CRZ"
-    parameter_frequencies = [(0.5, 1.0)]
 
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[2]}

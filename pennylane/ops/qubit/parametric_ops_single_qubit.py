@@ -529,7 +529,6 @@ class RZ(Operator2):
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
-    grad_method = "A"
     parameter_frequencies = [(1,)]
     num_params = 1
     ndim_params = (0,)

@@ -298,6 +298,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         return self._work_wires
 
     @property
+    @override
+    def grad_method(self):
+        return self.base.grad_method
+
+    @property
     def work_wire_type(self):
         """The type of work wires, can be ``"zeroed"`` or ``"borrowed"``"""
         return self._work_wire_type
