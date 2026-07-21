@@ -1092,7 +1092,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
     """Tests special decomposition rules for Pow of operators."""
 
     @pytest.mark.parametrize("batched", [True, False])
-    @pytest.mark.parametrize("op", [qp.X(0), qp.Y(0), qp.Z(0)])
+    @pytest.mark.parametrize("op", [qp.X(0), qp.Y(0), qp.Z(0), qp.S(0), qp.T(0), qp.SX(0)])
     def test_op_fractional_power(self, op, batched):
         """Test that fractional powers of operators are decomposed correctly."""
 

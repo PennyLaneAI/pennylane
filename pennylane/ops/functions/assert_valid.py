@@ -171,7 +171,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
 
     for rule in qp.list_decomps(f"Pow({op_type.__name__})"):
         for z in [2, 3, 4, 8, 9]:
-            pow_op = qp.ops.Pow(op, z)
+            pow_op = qp.pow(op, z)
             _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"C({op_type.__name__})"):
