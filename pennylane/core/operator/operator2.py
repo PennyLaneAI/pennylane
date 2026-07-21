@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires:
+    def wires(self) -> Wires | None:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -335,6 +335,11 @@ class Operator2(metaclass=OperatorMeta):
         if self._batch_size is _UNSET_BATCH_SIZE:
             self._check_batching()
         return self._ndim_params
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
 
     @property
     def arithmetic_depth(self) -> int:
@@ -953,25 +958,38 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        # NOTE: Handle special case for single wire non-parameteric
+        # operators like 'repr(qp.X(wires=0)) = X(0)'
+        non_wire_args = (
+            self.dynamic_argnames
+            + self.static_argnames
+            + self.compilable_argnames
+            + self.hybrid_argnames
+        )
+        if not non_wire_args and len(self.wire_argnames) == 1:
+            wire_arg = self.arguments[self.wire_argnames[0]]
+            if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
+
         inputs = []
 
         for key, value in self.arguments.items():
-            # Non-wire arguments
-            if key not in self.wire_argnames:
-                res = value
-            # Non-hybrid wire arguments
-            elif key not in self.hybrid_argnames:
-                res = value.tolist() if isinstance(value, Wires) else value
-            # Hybrid wire arguments
-            else:
+
+            # Hybrid wire arguments.
+            if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
-                res = unflatten(leaves, tree)
+                value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={res}")
+            inputs.append(f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
+
+    def __str__(self) -> str:
+        if self.is_abstract and self.has_fixed_sig:
+            return self.name
+        return repr(self)
 
     def __hash__(self) -> int:
         serialized_dynamic = tuple(

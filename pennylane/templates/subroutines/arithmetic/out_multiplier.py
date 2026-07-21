@@ -29,16 +29,9 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import (
-    BasisState,
-    H,
-    Prod,
-    X,
-    adjoint,
-    change_op_basis,
-    ctrl,
-    prod,
-)
+from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..controlled_sequence import ControlledSequence
@@ -408,7 +401,7 @@ def _out_multiplier_with_adder_resources(
 
     resources = defaultdict(int)
     if output_wires_zeroed:
-        resources[resource_rep(TemporaryAND)] += min(m, k)
+        resources[TemporaryAND] += min(m, k)
 
     for i in range(int(output_wires_zeroed), min(k, n)):
         if output_wires_zeroed:
@@ -504,9 +497,7 @@ def _out_multiplier_with_caddsub_resources(
     resources = defaultdict(int)
 
     # Some resource reps we will need:
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = resource_rep(X)
+    cnot_on_0_rep = _ctrl_abstract(X, Wire[1], num_zero_control_values=1)
 
     # Controlled add-subtract loop
     loop_size = min(k, n)
@@ -541,11 +532,11 @@ def _out_multiplier_with_caddsub_resources(
         # bit flips corresponding to input carry activated. Accounts for the fact that
         # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
         has_work_wires = int(k > m + 1)
-        resources[x_rep] += 4 + 2 * has_work_wires
+        resources[X] += 4 + 2 * has_work_wires
 
     # Subtract y+2^(n+m)
     # First negation
-    resources[x_rep] += k
+    resources[X] += k
     # Add y
     add_rep = resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
     resources[add_rep] += 1
@@ -556,7 +547,7 @@ def _out_multiplier_with_caddsub_resources(
         resources[resource_rep(Incrementer, num_wires=size, num_work_wires=num_work_wires - 1)] = 1
 
     # Second negation
-    resources[x_rep] += k
+    resources[X] += k
 
     # Add 2^n y
     if k > n:
