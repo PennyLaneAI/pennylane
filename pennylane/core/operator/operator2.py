@@ -205,7 +205,7 @@ class Operator2(metaclass=OperatorMeta):
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
-        self._wires = None
+        self._wires = Wires([])
         _init_wires(self)
         _init_arg_types(self)
 
@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires | None:
+    def wires(self) -> Wires:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -973,15 +973,21 @@ class Operator2(metaclass=OperatorMeta):
 
         inputs = []
 
-        for key, value in self.arguments.items():
+        remove_dyn_keywords = not (
+            self.static_argnames or self.compilable_argnames or self.hybrid_argnames
+        )
 
+        for key, value in self.arguments.items():
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={value}")
+            if key in self.dynamic_argnames and remove_dyn_keywords:
+                inputs.append(f"{value}")
+            else:
+                inputs.append(f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"

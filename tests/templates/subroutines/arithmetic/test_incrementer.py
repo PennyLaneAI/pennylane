@@ -187,47 +187,16 @@ def test_controlled(init_state, expected, work_wires, control_wires, control_val
         # enough work wires for work wire decomp
         ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
         # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (8,),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
         # no work wires
         ((0, 1, 2), tuple(), (3,)),
         # 2 controls
         # enough work wires for work wire decomp
-        (
-            (0, 1, 2, 3, 4, 5),
-            (6, 7, 8, 9, 10, 11),
-            (
-                12,
-                13,
-            ),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12, 13)),
         # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (
-                8,
-                9,
-            ),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8, 9)),
         # no work wires
-        (
-            (0, 1, 2),
-            tuple(),
-            (
-                3,
-                4,
-            ),
-        ),
+        ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
 def test_controlled_decomposition_new(wires, work_wires, controls):
