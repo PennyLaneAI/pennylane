@@ -388,7 +388,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         return [
             qp.ctrl(
                 op,
-                self.control_wires,
+                control=self.control_wires,
                 control_values=self.control_values,
                 work_wires=self.work_wires,
                 work_wire_type=self.work_wire_type,
