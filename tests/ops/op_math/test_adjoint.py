@@ -30,6 +30,36 @@ class PlainOperator(qp.operation.Operator):
     """just an operator."""
 
 
+class LegacyNoParamOperation(qp.operation.Operation):
+    """A zero-parameter legacy operation for testing ``AdjointOperation`` metadata."""
+
+    num_wires = 1
+
+
+class LegacyAnalyticOperation(qp.operation.Operation):
+    """A one-parameter legacy operation with analytic gradient metadata."""
+
+    num_wires = 1
+    grad_method = "A"
+
+
+class LegacyCustomRecipeOperation(qp.operation.Operation):
+    """A one-parameter legacy operation with a custom gradient recipe."""
+
+    num_wires = 1
+    grad_recipe = ([[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 2]],)
+
+
+class LegacyFrequencyOperation(qp.operation.Operation):
+    """A legacy operation with parameter frequencies for each parameter."""
+
+    num_wires = 1
+
+    @property
+    def parameter_frequencies(self):
+        return [(idx + 1,) for idx in range(self.num_params)]
+
+
 @pytest.mark.jax
 @pytest.mark.parametrize("target", (qp.PauliZ(0), qp.Rot(1.2, 2.3, 3.4, wires=0)))
 def test_basic_validity(target):
@@ -458,18 +488,23 @@ class TestAdjointOperationDiffInfo:
 
     def test_grad_method_None(self):
         """Test grad_method copies base grad_method when it is None."""
-        base = qp.PauliX(0)
+        base = LegacyNoParamOperation(0)
         op = Adjoint(base)
 
         assert op.grad_method is None
 
-    @pytest.mark.parametrize("op", (qp.RX(1.2, wires=0),))
+    @pytest.mark.parametrize("op", (LegacyAnalyticOperation(1.2, wires=0),))
     def test_grad_method_not_None(self, op):
         """Make sure the grad_method property of a Adjoint op is the same as the base op."""
         assert Adjoint(op).grad_method == op.grad_method
 
     @pytest.mark.parametrize(
-        "base", (qp.PauliX(0), qp.RX(1.234, wires=0), qp.Rotation(1.234, wires=0))
+        "base",
+        (
+            LegacyNoParamOperation(0),
+            LegacyAnalyticOperation(1.234, wires=0),
+            LegacyCustomRecipeOperation(1.234, wires=0),
+        ),
     )
     def test_grad_recipe(self, base):
         """Test that the grad_recipe of the Adjoint is the same as the grad_recipe of the base."""
@@ -477,7 +512,10 @@ class TestAdjointOperationDiffInfo:
 
     @pytest.mark.parametrize(
         "base",
-        (qp.RX(1.23, wires=0), qp.Rot(1.23, 2.345, 3.456, wires=0), qp.CRX(1.234, wires=(0, 1))),
+        (
+            LegacyFrequencyOperation(1.23, wires=0),
+            LegacyFrequencyOperation(1.23, 2.345, 3.456, wires=0),
+        ),
     )
     def test_parameter_frequencies(self, base):
         """Test that the parameter frequencies of an Adjoint are the same as those of the base."""
