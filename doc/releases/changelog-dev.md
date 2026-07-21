@@ -146,7 +146,7 @@
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
-  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
+  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
 
   ```python
   @qp.qjit(autograph=True)
@@ -169,14 +169,14 @@
   Level: Before MLIR Passes
   <BLANKLINE>
   Symbolic Variables: a
-  Wire allocations: 1
-  Total gates: a + 2
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: a + 1
-  Measurements:
+  Quantum operations:
+  - Total: a + 2
+    - Hadamard: 1
+    - PauliX: a + 1
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -185,14 +185,14 @@
   ```pycon
   >>> res = specs_result.resources
   >>> print(res.subs(a=5))
-  Wire allocations: 1
-  Total gates: 7
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: 6
-  Measurements:
+  Quantum operations:
+  - Total: 7
+    - Hadamard: 1
+    - PauliX: 6
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -818,6 +818,12 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
+  This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
+  The :class:`~.resource.Resources` class serves as the new base class,
+  and the :class:`~.resource.SpecsResources` and :class:`~.resource.PBCSpecsResources` inherit from it.
+  [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Single qubit, non-parameteric operators are ported:

@@ -221,13 +221,13 @@ def cancel_inverses(
         Shots: Shots(total=None)
         Level: cancel-inverses
         <BLANKLINE>
-        Wire allocations: 1
-        Total gates: 1
-        Gate counts:
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 1
+          - RX: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Wire allocations: 1
+        Circuit Depth: Not computed
 
         Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.

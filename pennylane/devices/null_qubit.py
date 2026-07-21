@@ -194,14 +194,14 @@ class NullQubit(Device):
             circuit(params)
 
     >>> print(tracker.history["resources"][0])
-    Wire allocations: 100
-    Total gates: 10,000
-    Gate counts:
-    - Rot: 5,000
-    - CNOT: 5,000
-    Measurements:
+    Quantum operations:
+    - Total: 10,000
+      - Rot: 5,000
+      - CNOT: 5,000
+    Measurement processes:
     - expval(PauliZ): 100
-    Depth: 502
+    Wire allocations: 100
+    Circuit Depth: 502
 
 
     .. details::
