@@ -449,19 +449,17 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         lifetime is tracked by `num_executions`"""
 
         # test default Gaussian device
-        dev_gauss = qp.device("default.gaussian", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
 
-        def circuit_gauss(mag_alpha, phase_alpha, phi):
-            qp.Displacement(mag_alpha, phase_alpha, wires=0)
-            qp.Rotation(phi, wires=0)
-            return qp.expval(qp.NumberOperator(0))
+        def circuit():
+            return qp.expval(qp.Z(0))
 
-        node_gauss = qp.QNode(circuit_gauss, dev_gauss)
-        num_evals_gauss = 12
+        node = qp.QNode(circuit, dev)
+        num_evals = 12
 
-        for _ in range(num_evals_gauss):
-            node_gauss(0.015, 0.02, 0.005)
-        assert dev_gauss.num_executions == num_evals_gauss
+        for _ in range(num_evals):
+            node()
+        assert dev.num_executions == num_evals
 
     @pytest.mark.parametrize(
         "depth, expanded_ops",
