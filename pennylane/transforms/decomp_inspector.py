@@ -16,8 +16,7 @@
 
 from collections.abc import Sequence
 from functools import partial
-
-from typing_extensions import override
+from typing import override
 
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch

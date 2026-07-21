@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
+  magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
+  These states are currently supported when compiling with Catalyst; device simulators raise an
+  error via ``resolve_dynamic_wires`` until native support is added.
+  [(#9846)](https://github.com/PennyLaneAI/pennylane/pull/9846)
+
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
@@ -140,7 +146,7 @@
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
-  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
+  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
 
   ```python
   @qp.qjit(autograph=True)
@@ -163,14 +169,14 @@
   Level: Before MLIR Passes
   <BLANKLINE>
   Symbolic Variables: a
-  Wire allocations: 1
-  Total gates: a + 2
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: a + 1
-  Measurements:
+  Quantum operations:
+  - Total: a + 2
+    - Hadamard: 1
+    - PauliX: a + 1
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -179,14 +185,14 @@
   ```pycon
   >>> res = specs_result.resources
   >>> print(res.subs(a=5))
-  Wire allocations: 1
-  Total gates: 7
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: 6
-  Measurements:
+  Quantum operations:
+  - Total: 7
+    - Hadamard: 1
+    - PauliX: 6
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -662,6 +668,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
 * Leftover Python 3.9 support branch has been removed.
   [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
 
@@ -806,6 +815,12 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
+  This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
+  The :class:`~.resource.Resources` class serves as the new base class,
+  and the :class:`~.resource.SpecsResources` and :class:`~.resource.PBCSpecsResources` inherit from it.
+  [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Single qubit, non-parameteric operators are ported:
