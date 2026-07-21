@@ -467,6 +467,9 @@
 * :func:`~core.queuing.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
 
+* Implemented the `__str__` of `Wires` to display the wire labels as a list.
+  [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -649,7 +652,21 @@
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
+  [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
+  
+* Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
+  :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
+  resource operators from their quantum functions.
+  [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
+
 <h3>Breaking changes 💔</h3>
+
+* Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
+* Leftover Python 3.9 support branch has been removed.
+  [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
 
 * The :attr:`~.Operator.data` property is now read-only. Assigning trainable parameters via
   ``op.data = new_data`` is no longer supported. To create an operator with updated parameters,
@@ -794,8 +811,11 @@
 <h3>Internal changes ⚙️</h3>
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - `~.S` is ported
+  - Single qubit, non-parameteric operators are ported:
+    - `~.S`, `~.T`, `~.SX`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
+  [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
+  [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -859,6 +879,7 @@
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
   [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
+  [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -879,6 +900,7 @@
     [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
+    [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
@@ -895,6 +917,7 @@
     [(#9793)](https://github.com/PennyLaneAI/pennylane/pull/9793)
     [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
     [(#9805)](https://github.com/PennyLaneAI/pennylane/pull/9805)
+    [(#9856)](https://github.com/PennyLaneAI/pennylane/pull/9856)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
@@ -917,8 +940,7 @@
     [(#9839)](https://github.com/PennyLaneAI/pennylane/pull/9839)
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
-  - Capture, graph decomp and differentiation checks are run in :func:`~.assert_valid`.
-    [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
+    [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -985,7 +1007,7 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g., 
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
   from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
@@ -1027,6 +1049,9 @@
   while its wires are still abstract JAX tracers, e.g. when replaying a captured jaxpr inside a
   `for_loop`/`while_loop` body under an active trace.
   [(#9821)](https://github.com/PennyLaneAI/pennylane/pull/9821)
+
+* Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
+  [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.

@@ -85,7 +85,7 @@ class PauliMeasure(Operator):
         return type.__call__(cls, *args, **kwargs)
 
     def __repr__(self) -> str:
-        return f"PauliMeasure('{self.pauli_word}', wires={self.wires.tolist()})"
+        return f"PauliMeasure('{self.pauli_word}', wires={self.wires})"
 
     def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
         """How the pauli-product measurement is represented in diagrams and drawings."""
