@@ -369,13 +369,17 @@ def augment_with_allocation(base_rule, num_work_wires, work_wire_type, name=""):
 
     state = "zero" if work_wire_type == "zeroed" else "any"
 
+    def _resource_fn(**arguments):
+        arguments.update({"work_wires": Wire[num_work_wires], "work_wire_type": work_wire_type})
+        return base_rule._compute_resources(**arguments)  # pylint: disable=protected-access
+
     def _condition_fn(**arguments):
         arguments.update({"work_wires": Wire[num_work_wires], "work_wire_type": work_wire_type})
         return base_rule.is_applicable(**arguments)
 
     @register_condition(_condition_fn)
     @register_resources(
-        base_rule._compute_resources,  # pylint: disable=protected-access
+        _resource_fn,
         work_wires={work_wire_type: num_work_wires},
         exact=base_rule.exact_resources,
         name=name or f"use_allocation({base_rule.name})",

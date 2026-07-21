@@ -361,8 +361,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          |0>├─╰X─╰●─────────────╰X──┤
     First-Level Expansion Gates: {MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True)): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
     Wire Allocations: {'zero': 1}
-    Full Expansion Gates: {RZ: 92, CNOT: 62, GlobalPhase: 96, RY: 20, RX: 6}
-    Weighted Cost: 180.0
+    Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 70, RY: 18, RX: 14, MidMeasure: 2}
+    Weighted Cost: 126.0
     <BLANKLINE>
     Decomposition 1 (name: to_controlled_qubit_unitary)
     Not applicable (provided operator instance does not meet all conditions for this rule).
@@ -374,8 +374,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
     First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2}
-    Full Expansion Gates: {GlobalPhase: 154, RZ: 166, CNOT: 140, RX: 8, RY: 32}
-    Weighted Cost: 346.0
+    Full Expansion Gates: {GlobalPhase: 84, RZ: 80, CNOT: 72, RX: 24, MidMeasure: 4, RY: 24}
+    Weighted Cost: 204.0
 
     For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
     whereas the "Full Expansion" refers to the circuit produced by decomposing the operator all the way
@@ -453,7 +453,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         2: ───────│──╭●───│────┤
         3: ───────│──├X───│────┤
              |0>├─╰⊕─╰●──⊕╯──┤
-        Gate Count: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
+        Estimated Gate Count: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 3}
+        Actual Gate Count: {TemporaryAND: 1, Toffoli: 1, Adjoint(TemporaryAND): 1}
         Wire Allocations: {'zero': 1}
 
         These rules can only be selected if there are enough unused wires left on the device
@@ -487,8 +488,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
              |0>├─╰X─╰●─────────────╰X──┤
         First-Level Expansion Gates: {MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {RZ: 164, CNOT: 110, GlobalPhase: 178, RY: 36, RX: 16}
-        Weighted Cost: 326.0
+        Full Expansion Gates: {RZ: 94, CNOT: 58, GlobalPhase: 112, RY: 26, RX: 20, MidMeasure: 2}
+        Weighted Cost: 200.0
         <BLANKLINE>
         Decomposition 1 (name: to_controlled_qubit_unitary)
         Not applicable (provided operator instance does not meet all conditions for this rule).
@@ -501,17 +502,14 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
         First-Level Expansion Gates: {Controlled(RZ, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool, weak_type=True)): 2}
-        Full Expansion Gates: {GlobalPhase: 244, RZ: 262, CNOT: 276, RX: 26, RY: 48}
-        Weighted Cost: 612.0
+        Full Expansion Gates: {GlobalPhase: 218, RX: 50, MidMeasure: 6, RY: 54, RZ: 170, CNOT: 96}
+        Weighted Cost: 376.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])
         >>> inspector.inspect_decomps(op, num_work_wires=2)
-        Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 1 (name: no_workers)
+        Decomposition 0 (name: no_workers)
         2: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤
         3: ────├●───────────────────├●──────────────────────├●──────────────────┤
         4: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤
@@ -520,9 +518,23 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 14, RZ: 57, RX: 4, CNOT: 58}
-        Weighted Cost: 133.0
+        Estimated First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, PauliX: 4}
+        Actual First-Level Expansion Gates: {Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, QubitUnitary(num_wires=1): 2, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+        Full Expansion Gates: {GlobalPhase: 55, RX: 16, RY: 14, RZ: 57, CNOT: 58}
+        Weighted Cost: 145.0
+        <BLANKLINE>
+        Decomposition 1 (name: one_borrowed_worker)
+        2: ────╭●────────────────╭●────────────────┤
+        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
+        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
+        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
+        6: ────│────────├X───────│────────├X───────┤
+             ├─╰X───────╰●───────╰X───────╰●──┤
+        Estimated First-Level Expansion Gates: {Toffoli: 8, PauliX: 8}
+        Actual First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
+        Wire Allocations: {'any': 1}
+        Full Expansion Gates: {GlobalPhase: 80, RX: 8, CNOT: 48, RZ: 72, RY: 16}
+        Weighted Cost: 144.0
         <BLANKLINE>
         Decomposition 2 (name: one_zeroed_worker)
         2: ───────╭●─────────────────●╮────┤
@@ -531,49 +543,41 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────│──╰●────│─────╰●───│────┤
         6: ───────│────────├X─────────│────┤
              |0>├─╰⊕───────╰●────────⊕╯──┤
-        First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
+        Estimated First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 6}
+        Actual First-Level Expansion Gates: {TemporaryAND: 1, Toffoli: 3, PauliX: 2, Adjoint(TemporaryAND): 1}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
-        Weighted Cost: 77.0
+        Full Expansion Gates: {GlobalPhase: 47, RX: 10, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
+        Weighted Cost: 81.0
         <BLANKLINE>
-        Decomposition 3 (name: one_borrowed_worker)
+        Decomposition 3 (name: two_borrowed_workers)
         2: ────╭●────────────────╭●────────────────┤
-        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
-        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
-        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
+        3: ────├●──X─╭X─╭●─╭X──X─├●──X─╭X─╭●─╭X──X─┤
+        4: ────│─────├●─│──├●────│─────├●─│──├●────┤
+        5: ────│─────╰●─│──╰●────│─────╰●─│──╰●────┤
         6: ────│────────├X───────│────────├X───────┤
              ├─╰X───────╰●───────╰X───────╰●──┤
-        First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
-        Wire Allocations: {'any': 1}
-        Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
-        Weighted Cost: 140.0
+             ├────────────────────────────────┤
+        Estimated First-Level Expansion Gates: {Toffoli: 8, PauliX: 8}
+        Actual First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
+        Wire Allocations: {'any': 2}
+        Full Expansion Gates: {GlobalPhase: 80, RX: 8, CNOT: 48, RZ: 72, RY: 16}
+        Weighted Cost: 144.0
         <BLANKLINE>
-        Decomposition 4 (name: one_explicit_worker)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 5 (name: two_zeroed_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 6 (name: two_borrowed_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 7 (name: two_explicit_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        CHOSEN: Decomposition 8 (name: many_zeroed_workers)
-        2: ─────────────╭●────────────┤
-        3: ──────────╭●─│───●╮────────┤
-        4: ───────╭●─│──│────│──●╮────┤
-        5: ───────├●─│──│────│──●┤────┤
-        6: ───────│──│──├X───│───│────┤
-             |0>├─│──├⊕─╰●──⊕┤───│──┤
-             |0>├─╰⊕─╰●─────●╯──⊕╯──┤
-        First-Level Expansion Gates: {TemporaryAND: 2, Adjoint(TemporaryAND): 2, Toffoli: 1}
+        Decomposition 4 (name: two_zeroed_workers)
+        2: ───────╭●─────────────────●╮────┤
+        3: ───────├●──X─╭X─╭●─╭X──X──●┤────┤
+        4: ───────│─────├●─│──├●──────│────┤
+        5: ───────│─────╰●─│──╰●──────│────┤
+        6: ───────│────────├X─────────│────┤
+             |0>├─╰⊕───────╰●────────⊕╯──┤
+             |0>├────────────────────────┤
+        Estimated First-Level Expansion Gates: {Toffoli: 3, PauliX: 6, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
+        Actual First-Level Expansion Gates: {TemporaryAND: 1, PauliX: 2, Toffoli: 3, Adjoint(TemporaryAND): 1}
         Wire Allocations: {'zero': 2}
-        Full Expansion Gates: {GlobalPhase: 37, RX: 8, MidMeasure: 2, RY: 12, RZ: 29, CNOT: 14}
-        Weighted Cost: 65.0
+        Full Expansion Gates: {GlobalPhase: 47, RX: 10, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
+        Weighted Cost: 81.0
         <BLANKLINE>
-        Decomposition 9 (name: many_borrowed_workers)
+        Decomposition 5 (name: many_borrowed_workers)
         2: ────╭●──────────╭●─────────────┤
         3: ────│──╭●────╭●─│──╭●────╭●────┤
         4: ────│──│──╭●─│──│──│──╭●─│─────┤
@@ -581,16 +585,25 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ────├X─│──│──│──├X─│──│──│─────┤
              ├─╰●─├X─│──├X─╰●─├X─│──├X──┤
              ├────╰●─╰X─╰●────╰●─╰X─╰●──┤
-        First-Level Expansion Gates: {Toffoli: 8}
+        Estimated First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
+        Actual First-Level Expansion Gates: {Toffoli: 8}
         Wire Allocations: {'any': 2}
-        Full Expansion Gates: {CNOT: 48, GlobalPhase: 72, RZ: 72, RY: 16}
-        Weighted Cost: 136.0
+        Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
+        Weighted Cost: 140.0
         <BLANKLINE>
-        Decomposition 10 (name: many_explicit_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
+        CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+        2: ─────────────╭●────────────┤
+        3: ──────────╭●─│───●╮────────┤
+        4: ───────╭●─│──│────│──●╮────┤
+        5: ───────├●─│──│────│──●┤────┤
+        6: ───────│──│──├X───│───│────┤
+             |0>├─│──├⊕─╰●──⊕┤───│──┤
+             |0>├─╰⊕─╰●─────●╯──⊕╯──┤
+        Estimated First-Level Expansion Gates: {TemporaryAND: 2, Adjoint(TemporaryAND): 2, Toffoli: 1, PauliX: 4}
+        Actual First-Level Expansion Gates: {TemporaryAND: 2, Toffoli: 1, Adjoint(TemporaryAND): 2}
+        Wire Allocations: {'zero': 2}
+        Full Expansion Gates: {GlobalPhase: 41, RX: 12, MidMeasure: 2, RY: 12, RZ: 29, CNOT: 14}
+        Weighted Cost: 69.0
 
         We can see that the chosen decomposition rule for the ``MultiControlledX`` uses two work
         wires. However, not every ``MultiControlledX`` in the circuit can be decomposed the same
@@ -602,10 +615,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])  # concrete wire labels don't matter
         >>> inspector.inspect_decomps(op, num_work_wires=1)
-        Decomposition 0 (name: flip_zero_ctrl_values(_2cx_elbow_explicit))
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 1 (name: no_workers)
+        Decomposition 0 (name: no_workers)
         2: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤
         3: ────├●───────────────────├●──────────────────────├●──────────────────┤
         4: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤
@@ -614,9 +624,23 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 14, RZ: 57, RX: 4, CNOT: 58}
-        Weighted Cost: 133.0
+        Estimated First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, PauliX: 4}
+        Actual First-Level Expansion Gates: {Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, QubitUnitary(num_wires=1): 2, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+        Full Expansion Gates: {GlobalPhase: 55, RX: 16, RY: 14, RZ: 57, CNOT: 58}
+        Weighted Cost: 145.0
+        <BLANKLINE>
+        Decomposition 1 (name: one_borrowed_worker)
+        2: ────╭●────────────────╭●────────────────┤
+        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
+        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
+        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
+        6: ────│────────├X───────│────────├X───────┤
+             ├─╰X───────╰●───────╰X───────╰●──┤
+        Estimated First-Level Expansion Gates: {Toffoli: 8, PauliX: 8}
+        Actual First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
+        Wire Allocations: {'any': 1}
+        Full Expansion Gates: {GlobalPhase: 80, RX: 8, CNOT: 48, RZ: 72, RY: 16}
+        Weighted Cost: 144.0
         <BLANKLINE>
         CHOSEN: Decomposition 2 (name: one_zeroed_worker)
         2: ───────╭●─────────────────●╮────┤
@@ -625,46 +649,23 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────│──╰●────│─────╰●───│────┤
         6: ───────│────────├X─────────│────┤
              |0>├─╰⊕───────╰●────────⊕╯──┤
-        First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
+        Estimated First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 6}
+        Actual First-Level Expansion Gates: {TemporaryAND: 1, Toffoli: 3, PauliX: 2, Adjoint(TemporaryAND): 1}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
-        Weighted Cost: 77.0
+        Full Expansion Gates: {GlobalPhase: 47, RX: 10, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
+        Weighted Cost: 81.0
         <BLANKLINE>
-        Decomposition 3 (name: one_borrowed_worker)
-        2: ────╭●────────────────╭●────────────────┤
-        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
-        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
-        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
-        6: ────│────────├X───────│────────├X───────┤
-             ├─╰X───────╰●───────╰X───────╰●──┤
-        First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
-        Wire Allocations: {'any': 1}
-        Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
-        Weighted Cost: 140.0
-        <BLANKLINE>
-        Decomposition 4 (name: one_explicit_worker)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 5 (name: two_zeroed_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 6 (name: two_borrowed_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 7 (name: two_explicit_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
-        <BLANKLINE>
-        Decomposition 8 (name: many_zeroed_workers)
+        Decomposition 3 (name: two_borrowed_workers)
         Insufficient work wires: requires 2 but only 1 available.
         <BLANKLINE>
-        Decomposition 9 (name: many_borrowed_workers)
+        Decomposition 4 (name: two_zeroed_workers)
         Insufficient work wires: requires 2 but only 1 available.
         <BLANKLINE>
-        Decomposition 10 (name: many_explicit_workers)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
+        Decomposition 5 (name: many_borrowed_workers)
+        Insufficient work wires: requires 2 but only 1 available.
         <BLANKLINE>
-        Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
-        Not applicable (provided operator instance does not meet all conditions for this rule).
+        Decomposition 6 (name: many_zeroed_workers)
+        Insufficient work wires: requires 2 but only 1 available.
 
     """
 
