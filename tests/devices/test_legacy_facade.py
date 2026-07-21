@@ -77,7 +77,7 @@ def test_error_if_not_legacy_device():
 
 def test_copy():
     """Test that copy works correctly"""
-    dev = DefaultQubitLegacy(wires=1)
+    dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
 
     for copied_devs in (copy.copy(dev), copy.deepcopy(dev)):
         assert copied_devs is not dev
