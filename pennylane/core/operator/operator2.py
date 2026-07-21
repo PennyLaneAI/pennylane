@@ -423,9 +423,6 @@ class Operator2(metaclass=OperatorMeta):
             return "A"
         return "F"
 
-    grad_method = None
-    """Legacy Operator compatibility default for gradient method metadata."""
-
     @property
     def data(self) -> tuple:
         """Legacy Operator compatibility view of dynamic numerical arguments."""
