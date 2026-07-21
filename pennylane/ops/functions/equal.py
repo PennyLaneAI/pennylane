@@ -43,6 +43,7 @@ from pennylane.ops import (
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
@@ -699,7 +700,8 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     return True
 
 
-@_equal_dispatch.register
+@_equal_dispatch.register(Controlled)
+@_equal_dispatch.register(Controlled2)
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
     if op1.arithmetic_depth != op2.arithmetic_depth:
