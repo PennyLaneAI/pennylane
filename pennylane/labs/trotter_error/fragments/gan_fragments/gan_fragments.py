@@ -29,7 +29,7 @@ The class hierarchy is built bottom-up:
 * :class:`GanCoeff` --- a linear combination of monomials; this plays the role
   of a (operator-valued) scalar multiplying a fermionic string.
 * :class:`GanFragment` --- a :class:`~.Fragment` represented as a mapping from
-  :class:`~.FermiWord` to :class:`GanCoeff`, i.e. the full GAN operator.
+  :class:`~.GanFermi` to :class:`GanCoeff`, i.e. the full GAN operator.
 
 Each class exposes a :meth:`norm` method returning an upper bound on the
 spectral norm (used for Trotter-error bounds), and the arithmetic dunder methods
@@ -49,7 +49,7 @@ from typing import Sequence
 import numpy as np
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiWord
+from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import GanFermi
 
 
 class FuncType(IntEnum):
@@ -203,7 +203,7 @@ class GanMonomial:
         Returns:
             GanMonomial: a monomial with no factors.
         """
-        return GanMonomial([])
+        return GanMonomial([FuncSymbol.identity()])
 
     def __matmul__(self, other: GanMonomial):
         """Concatenate two monomials into their product.
@@ -376,17 +376,17 @@ class GanFragment(Fragment):
     """A GAN Hamiltonian (or fragment) as a mapping of fermionic strings to coefficients.
 
     Implements the :class:`~.Fragment` interface required by the Trotter-error
-    module. The operator is stored as a dictionary from :class:`~.FermiWord` to
+    module. The operator is stored as a dictionary from :class:`~.GanFermi` to
     :class:`GanCoeff`, i.e. each fermionic string carries a nuclear-function
     polynomial coefficient. Terms whose fermionic string vanishes or whose
     coefficient is zero are dropped at construction.
 
     Args:
-        fragment (dict[FermiWord, GanCoeff]): the fermionic-string-to-coefficient
+        fragment (dict[GanFermi, GanCoeff]): the fermionic-string-to-coefficient
             mapping defining the operator.
     """
 
-    def __init__(self, fragment: dict[FermiWord, GanCoeff]):
+    def __init__(self, fragment: dict[GanFermi, GanCoeff]):
         self.fragment = {
             fermi: coeff
             for fermi, coeff in fragment.items()
@@ -502,6 +502,16 @@ def _normal_order(monomial):
     Returns:
         GanMonomial: the normal-ordered, simplified monomial.
     """
+
+    funcs = [func for func in monomial.funcs if func.f_type != FuncType.IDENTITY]
+    funcs.sort(key=lambda func: func.mode)  # stable
+    funcs = _simplify_monomial(funcs)
+    if not funcs:
+        funcs = [FuncSymbol.identity()]
+
+    return GanMonomial(funcs)
+
+    """
     funcs = list(monomial.funcs)
     n_ops = len(funcs)
 
@@ -538,6 +548,7 @@ def _normal_order(monomial):
             break
 
     funcs = _simplify_monomial(funcs)
+    """
 
     return GanMonomial(funcs)
 

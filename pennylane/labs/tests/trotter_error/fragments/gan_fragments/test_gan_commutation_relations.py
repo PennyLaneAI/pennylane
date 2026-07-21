@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 from pennylane.labs.trotter_error import GanConfig
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
+from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     _diagonal,
     _electron_repulsion,
@@ -98,7 +98,7 @@ def fixture_feps(config):
     for i, energy in enumerate(config.energies):
         monomial = GanMonomial.identity()
         coeff = GanCoeff({monomial: energy})
-        fermi = FermiWord([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
+        fermi = GanFermi([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
         terms[fermi] += coeff
     return GanFragment(terms)
 
@@ -158,8 +158,8 @@ def _expected_mol_mol(s, k, config):
             g_ij = _molecular_coupling(i[1], j[1], config)
             g_mn = _molecular_coupling(m[1], n[1], config)
 
-            fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
-            fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
+            fermi1 = GanFermi([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
+            fermi2 = GanFermi([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
 
             terms[fermi1] += g_ij @ g_mn
             terms[fermi2] -= g_ij @ g_mn
@@ -200,17 +200,17 @@ def _expected_met_met(s, k, config):
             g_mn = _molecule_metal_transfer(mol_index, met_index, config)
 
             if i[0] == "mol" and n[0] == "mol":
-                fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
             elif i[0] == "mol" and n[0] == "met":
-                fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_met(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_mol(i[1]), FermiOp.annihilation_met(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_met(n[1]), FermiOp.annihilation_mol(i[1])])
             elif i[0] == "met" and n[0] == "mol":
-                fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_mol(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_met(i[1]), FermiOp.annihilation_mol(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_mol(n[1]), FermiOp.annihilation_met(i[1])])
             elif i[0] == "met" and n[0] == "met":
-                fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_met(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_met(i[1]), FermiOp.annihilation_met(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_met(n[1]), FermiOp.annihilation_met(i[1])])
             else:
                 raise ValueError(f"Unexpected spaces: {i[0]}, {i[1]}.")
 
@@ -250,17 +250,17 @@ def _expected_mol_met(s, k, config):
             g_mn = _molecule_metal_transfer(mol_index, met_index, config)
 
             if i[0] == "mol" and n[0] == "mol":
-                fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
             elif i[0] == "mol" and n[0] == "met":
-                fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_met(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_mol(i[1]), FermiOp.annihilation_met(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_met(n[1]), FermiOp.annihilation_mol(i[1])])
             elif i[0] == "met" and n[0] == "mol":
-                fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_mol(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_met(i[1]), FermiOp.annihilation_mol(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_mol(n[1]), FermiOp.annihilation_met(i[1])])
             elif i[0] == "met" and n[0] == "met":
-                fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_met(n[1])])
-                fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermi([FermiOp.creation_met(i[1]), FermiOp.annihilation_met(n[1])])
+                fermi2 = GanFermi([FermiOp.creation_met(n[1]), FermiOp.annihilation_met(i[1])])
             else:
                 raise ValueError(f"Unexpected spaces {i[0]}, {i[1]}.")
 
@@ -280,8 +280,8 @@ def _expected_feps_met(s, config):
         e_a = config.energies[met_index]
         g_ia = _molecule_metal_transfer(mol_index, met_index, config)
 
-        fermi1 = FermiWord([FermiOp.creation_mol(mol_index), FermiOp.annihilation_met(met_index)])
-        fermi2 = FermiWord([FermiOp.creation_met(met_index), FermiOp.annihilation_mol(mol_index)])
+        fermi1 = GanFermi([FermiOp.creation_mol(mol_index), FermiOp.annihilation_met(met_index)])
+        fermi2 = GanFermi([FermiOp.creation_met(met_index), FermiOp.annihilation_mol(mol_index)])
 
         terms[fermi1] -= e_a * g_ia
         terms[fermi2] += e_a * g_ia
@@ -312,8 +312,8 @@ def _expected_f0_mol(s, config):
             g_rr = _molecular_coupling(r, r, config)
             U_ij = _molecular_coupling(i, j, config)
 
-            fermi1 = FermiWord([FermiOp.creation_mol(r), FermiOp.annihilation_mol(a)])
-            fermi2 = FermiWord([FermiOp.creation_mol(a), FermiOp.annihilation_mol(r)])
+            fermi1 = GanFermi([FermiOp.creation_mol(r), FermiOp.annihilation_mol(a)])
+            fermi2 = GanFermi([FermiOp.creation_mol(a), FermiOp.annihilation_mol(r)])
 
             terms[fermi1] += g_rr @ U_ij
             terms[fermi2] -= g_rr @ U_ij
@@ -336,7 +336,7 @@ def _expected_f0_mol(s, config):
             V_pq = _electron_repulsion(p, q, config)
             U_ij = _molecular_coupling(i, j, config)
 
-            fermi1 = FermiWord(
+            fermi1 = GanFermi(
                 [
                     FermiOp.creation_mol(b),
                     FermiOp.annihilation_mol(b),
@@ -347,7 +347,7 @@ def _expected_f0_mol(s, config):
             for fermi, coeff in fermi1.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ U_ij
 
-            fermi2 = FermiWord(
+            fermi2 = GanFermi(
                 [
                     FermiOp.creation_mol(b),
                     FermiOp.annihilation_mol(b),
@@ -358,7 +358,7 @@ def _expected_f0_mol(s, config):
             for fermi, coeff in fermi2.normal_order().words.items():
                 terms[fermi] -= coeff * V_pq @ U_ij
 
-            fermi3 = FermiWord(
+            fermi3 = GanFermi(
                 [
                     FermiOp.creation_mol(c),
                     FermiOp.annihilation_mol(a),
@@ -369,7 +369,7 @@ def _expected_f0_mol(s, config):
             for fermi, coeff in fermi3.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ U_ij
 
-            fermi4 = FermiWord(
+            fermi4 = GanFermi(
                 [
                     FermiOp.creation_mol(a),
                     FermiOp.annihilation_mol(c),
@@ -398,8 +398,8 @@ def _expected_f0_met(s, config):
             g_rr = _molecular_coupling(r, r, config)
             W_ia = _molecule_metal_transfer(i, a, config)
 
-            fermi1 = FermiWord([FermiOp.creation_mol(r), FermiOp.annihilation_met(a)])
-            fermi2 = FermiWord([FermiOp.creation_met(a), FermiOp.annihilation_mol(r)])
+            fermi1 = GanFermi([FermiOp.creation_mol(r), FermiOp.annihilation_met(a)])
+            fermi2 = GanFermi([FermiOp.creation_met(a), FermiOp.annihilation_mol(r)])
 
             terms[fermi1] += g_rr @ W_ia
             terms[fermi2] -= g_rr @ W_ia
@@ -422,7 +422,7 @@ def _expected_f0_met(s, config):
             V_pq = _electron_repulsion(p, q, config)
             W_ia = _molecule_metal_transfer(i, a, config)
 
-            fermi1 = FermiWord(
+            fermi1 = GanFermi(
                 [
                     FermiOp.creation_mol(b),
                     FermiOp.annihilation_mol(b),
@@ -433,7 +433,7 @@ def _expected_f0_met(s, config):
             for fermi, coeff in fermi1.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ W_ia
 
-            fermi2 = FermiWord(
+            fermi2 = GanFermi(
                 [
                     FermiOp.creation_mol(b),
                     FermiOp.annihilation_mol(b),
@@ -444,7 +444,7 @@ def _expected_f0_met(s, config):
             for fermi, coeff in fermi2.normal_order().words.items():
                 terms[fermi] -= coeff * V_pq @ W_ia
 
-            fermi3 = FermiWord(
+            fermi3 = GanFermi(
                 [
                     FermiOp.creation_mol(c),
                     FermiOp.annihilation_met(a),
@@ -455,7 +455,7 @@ def _expected_f0_met(s, config):
             for fermi, coeff in fermi3.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ W_ia
 
-            fermi4 = FermiWord(
+            fermi4 = GanFermi(
                 [
                     FermiOp.creation_met(a),
                     FermiOp.annihilation_mol(c),

@@ -15,8 +15,8 @@ r"""Fermionic algebra primitives for the GAN Hamiltonian.
 
 This module provides the building blocks for the electronic (fermionic) part of
 the GAN Hamiltonian: individual creation and annihilation operators
-(:class:`FermiOp`), ordered products of them (:class:`FermiWord`), and linear
-combinations of such products (:class:`FermiSentence`).
+(:class:`FermiOp`), ordered products of them (:class:`GanFermi`), and linear
+combinations of such products (:class:`GanFermiSentence`).
 
 The operators act on two distinct single-particle spaces --- molecular
 (``"mol"``) and metallic (``"met"``) modes --- and obey the canonical fermionic
@@ -28,7 +28,7 @@ anticommutation relations,
     \{a_i, a_j\} = \{a_i^\dagger, a_j^\dagger\} = 0,
 
 where the Kronecker delta requires both the mode index and the space (molecular
-vs. metallic) to match. :meth:`FermiWord.normal_order` uses these relations to
+vs. metallic) to match. :meth:`GanFermi.normal_order` uses these relations to
 rewrite an arbitrary operator product into a canonical normal-ordered form.
 """
 
@@ -64,7 +64,7 @@ class FermiOp:
     An operator is fully specified by its type (creation or annihilation), the
     space it acts on (molecular or metallic), and its integer mode index. The
     dataclass is frozen so that operators are hashable and can be used as keys
-    and inside :class:`FermiWord`.
+    and inside :class:`GanFermi`.
 
     Args:
         op_type (FermiType): whether this is a creation or annihilation operator.
@@ -135,10 +135,10 @@ class FermiOp:
         return f"({symbol}, {space}:{self.mode})"
 
 
-class FermiWord:
+class GanFermi:
     """An ordered product of fermionic operators.
 
-    A ``FermiWord`` represents a single monomial in the fermionic operators,
+    A ``GanFermi`` represents a single monomial in the fermionic operators,
     i.e. an ordered product :math:`o_0 o_1 \\cdots o_{n-1}` of :class:`FermiOp`
     factors. The empty product is the identity (see :meth:`identity`). Words are
     hashable (by their ordered operators) so they can serve as dictionary keys,
@@ -151,12 +151,12 @@ class FermiWord:
     def __init__(self, ops: Sequence[FermiOp]):
         self.ops = list(ops)
 
-    def normal_order(self) -> FermiSentence:
+    def normal_order(self) -> GanFermiSentence:
         r"""Rewrite the word in canonical normal order.
 
         Repeatedly applies the fermionic anticommutation relations to bring the
         operators into a fixed canonical order, returning the result as a
-        :class:`FermiSentence` (a normal-ordered word may expand into several
+        :class:`GanFermiSentence` (a normal-ordered word may expand into several
         words because of the :math:`\{a_i, a_i^\dagger\} = 1` contractions).
 
         The ordering pushes annihilation operators to the right of creation
@@ -168,7 +168,7 @@ class FermiWord:
         repeated adjacent operator vanish and are dropped.
 
         Returns:
-            FermiSentence: the normal-ordered form as a linear combination of
+            GanFermiSentence: the normal-ordered form as a linear combination of
             words.
         """
 
@@ -199,7 +199,7 @@ class FermiWord:
 
                         ## {a_i, c_i} = 1
                         word[cur], word[j] = word[j], word[cur]
-                        new_word = FermiWord(word[:j] + word[cur + 1 :])
+                        new_word = GanFermi(word[:j] + word[cur + 1 :])
                         unordered_words[new_word] += coeff
                         coeff *= -1
                         cur -= 1
@@ -225,14 +225,14 @@ class FermiWord:
 
                     break
 
-            word = FermiWord(word)
+            word = GanFermi(word)
 
             if not word.is_zero():
                 sentence[word] += coeff
 
         sentence = {word: coeff for word, coeff in sentence.items() if not np.isclose(coeff, 0)}
 
-        return FermiSentence(sentence)
+        return GanFermiSentence(sentence)
 
     def is_zero(self):
         """Whether the word is identically the zero operator.
@@ -264,7 +264,7 @@ class FermiWord:
             TypeError: if ``val`` is not a :class:`FermiOp`.
         """
         if not isinstance(val, FermiOp):
-            raise TypeError(f"FermiWords must contain FermiOps, got {type(val)}.")
+            raise TypeError(f"GanFermis must contain FermiOps, got {type(val)}.")
 
         self.ops[i] = val
 
@@ -272,62 +272,62 @@ class FermiWord:
         """Return a hash based on the ordered operators."""
         return hash(tuple(self.ops))
 
-    def __add__(self, other: FermiWord | float) -> FermiSentence:
+    def __add__(self, other: GanFermi | float) -> GanFermiSentence:
         """Add two words, or a word and a scalar.
 
-        Adding two words returns their sum as a :class:`FermiSentence`. Adding a
+        Adding two words returns their sum as a :class:`GanFermiSentence`. Adding a
         ``float`` adds that multiple of the identity word.
 
         Args:
-            other (FermiWord | float): the word or scalar to add.
+            other (GanFermi | float): the word or scalar to add.
 
         Returns:
-            FermiSentence: the resulting linear combination.
+            GanFermiSentence: the resulting linear combination.
 
         Raises:
-            TypeError: if ``other`` is neither a ``FermiWord`` nor a ``float``.
+            TypeError: if ``other`` is neither a ``GanFermi`` nor a ``float``.
         """
 
-        if isinstance(other, FermiWord):
+        if isinstance(other, GanFermi):
             sentence = defaultdict(float)
             sentence[self] += 1
             sentence[other] += 1
-            return FermiSentence(sentence)
+            return GanFermiSentence(sentence)
 
         if isinstance(other, float):
-            identity = FermiWord([])
-            return FermiSentence({self: 1, identity: other})
+            identity = GanFermi([])
+            return GanFermiSentence({self: 1, identity: other})
 
-        raise TypeError(f"Cannot add FermiWord with {type(other)}.")
+        raise TypeError(f"Cannot add GanFermi with {type(other)}.")
 
-    def __mul__(self, scalar: float) -> FermiSentence:
+    def __mul__(self, scalar: float) -> GanFermiSentence:
         """Scale the word by a scalar, returning a single-term sentence.
 
         Args:
             scalar (float): the scalar multiplier.
 
         Returns:
-            FermiSentence: a sentence mapping this word to ``scalar``.
+            GanFermiSentence: a sentence mapping this word to ``scalar``.
         """
-        return FermiSentence({self: scalar})
+        return GanFermiSentence({self: scalar})
 
-    def __matmul__(self, other) -> FermiWord:
+    def __matmul__(self, other) -> GanFermi:
         """Concatenate two words into their operator product.
 
         Args:
-            other (FermiWord): the word to multiply on the right.
+            other (GanFermi): the word to multiply on the right.
 
         Returns:
-            FermiWord: the word whose operators are this word's followed by
+            GanFermi: the word whose operators are this word's followed by
             ``other``'s.
 
         Raises:
-            TypeError: if ``other`` is not a ``FermiWord``.
+            TypeError: if ``other`` is not a ``GanFermi``.
         """
-        if not isinstance(other, FermiWord):
-            raise TypeError(f"Cannot multiply FermiWord with type {type(other)}.")
+        if not isinstance(other, GanFermi):
+            raise TypeError(f"Cannot multiply GanFermi with type {type(other)}.")
 
-        return FermiWord(self.ops + other.ops)
+        return GanFermi(self.ops + other.ops)
 
     def __str__(self):
         return str(self.ops)
@@ -340,38 +340,38 @@ class FermiWord:
         """Return the identity word (the empty operator product).
 
         Returns:
-            FermiWord: a word with no operators.
+            GanFermi: a word with no operators.
         """
-        return FermiWord([])
+        return GanFermi([])
 
 
-class FermiSentence:
-    """A linear combination of :class:`FermiWord` objects.
+class GanFermiSentence:
+    """A linear combination of :class:`GanFermi` objects.
 
     Stores a mapping from each word to its (scalar) coefficient, representing a
     general fermionic operator as a sum of operator products.
 
     Args:
-        words (dict[FermiWord, float]): the word-to-coefficient mapping.
+        words (dict[GanFermi, float]): the word-to-coefficient mapping.
     """
 
-    def __init__(self, words: dict[FermiWord, float]):
+    def __init__(self, words: dict[GanFermi, float]):
         self.words = words
 
-    def __add__(self, other: FermiWord | FermiSentence | float) -> FermiSentence:
+    def __add__(self, other: GanFermi | GanFermiSentence | float) -> GanFermiSentence:
         """Add a word, sentence, or scalar to this sentence.
 
         Coefficients of shared words are summed; a ``float`` is added as a
         multiple of the identity word.
 
         Args:
-            other (FermiWord | FermiSentence | float): the term(s) to add.
+            other (GanFermi | GanFermiSentence | float): the term(s) to add.
 
         Returns:
-            FermiSentence: the combined linear combination.
+            GanFermiSentence: the combined linear combination.
 
         Raises:
-            TypeError: if ``other`` is not a ``FermiWord``, ``FermiSentence``,
+            TypeError: if ``other`` is not a ``GanFermi``, ``GanFermiSentence``,
                 or ``float``.
         """
         d = defaultdict(float)
@@ -379,66 +379,66 @@ class FermiSentence:
         for key, value in self.words.items():
             d[key] += value
 
-        if isinstance(other, FermiWord):
+        if isinstance(other, GanFermi):
             d[other] += 1
-            return FermiSentence(d)
+            return GanFermiSentence(d)
 
-        if isinstance(other, FermiSentence):
+        if isinstance(other, GanFermiSentence):
             for key, value in other.words.items():
                 d[key] += value
 
-            return FermiSentence(d)
+            return GanFermiSentence(d)
 
         if isinstance(other, float):
-            d[FermiWord([])] += other
-            return FermiSentence(d)
+            d[GanFermi([])] += other
+            return GanFermiSentence(d)
 
-        raise TypeError(f"Cannot add FermiSentence with {type(other)}.")
+        raise TypeError(f"Cannot add GanFermiSentence with {type(other)}.")
 
-    def __mul__(self, scalar: float) -> FermiSentence:
+    def __mul__(self, scalar: float) -> GanFermiSentence:
         """Scale every word's coefficient by ``scalar``.
 
         Args:
             scalar (float): the scalar multiplier.
 
         Returns:
-            FermiSentence: the scaled linear combination.
+            GanFermiSentence: the scaled linear combination.
         """
         d = defaultdict(float)
         for key, value in self.words.items():
             d[key] += scalar * value
 
-        return FermiSentence(d)
+        return GanFermiSentence(d)
 
-    def __matmul__(self, other: FermiWord | FermiSentence):
+    def __matmul__(self, other: GanFermi | GanFermiSentence):
         """Multiply this sentence by a word or another sentence.
 
-        Multiplying by a :class:`FermiWord` right-concatenates it onto every
-        word. Multiplying by a :class:`FermiSentence` distributes over all
+        Multiplying by a :class:`GanFermi` right-concatenates it onto every
+        word. Multiplying by a :class:`GanFermiSentence` distributes over all
         word pairs, concatenating operators and multiplying coefficients.
 
         Args:
-            other (FermiWord | FermiSentence): the right operand.
+            other (GanFermi | GanFermiSentence): the right operand.
 
         Returns:
-            FermiSentence: the product as a linear combination of words.
+            GanFermiSentence: the product as a linear combination of words.
         Raises:
-            TypeError: if ``other`` is neither a ``FermiWord`` nor a
-                ``FermiSentence``.
+            TypeError: if ``other`` is neither a ``GanFermi`` nor a
+                ``GanFermiSentence``.
         """
-        if isinstance(other, FermiWord):
-            return FermiSentence({key @ other: value for key, value in self.words.items()})
+        if isinstance(other, GanFermi):
+            return GanFermiSentence({key @ other: value for key, value in self.words.items()})
 
-        if isinstance(other, FermiSentence):
+        if isinstance(other, GanFermiSentence):
             d = defaultdict(float)
 
             for l_key, l_value in self.words.items():
                 for r_key, r_value in other.words.items():
                     d[l_key @ r_key] += l_value * r_value
 
-            return FermiSentence(d)
+            return GanFermiSentence(d)
 
-        raise TypeError(f"Cannot matmul FermiSentence with {type(other)}.")
+        raise TypeError(f"Cannot matmul GanFermiSentence with {type(other)}.")
 
     def __eq__(self, other):
         """Whether two sentences have the same words and coefficients."""
