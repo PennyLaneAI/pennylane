@@ -187,6 +187,35 @@ class TestCircuitGraph:
         assert descendants == [queue[8]]
         assert descendants_index == [queue[8]]
 
+    def test_descendants_sorted(self, ops, obs):
+        """Test that ``descendants`` returns descendants in queue order when ``sort=True``."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        queue = ops + obs
+
+        # queue[3] (CNOT(0, 1)) has multiple descendants: 5, 6, 7 and 8
+        descendants = circuit.descendants([queue[3]], sort=True)
+        assert descendants == [queue[5], queue[6], queue[7], queue[8]]
+
+    def test_nodes_between(self, ops, obs):
+        """Test that ``nodes_between`` returns all nodes on the directed paths between two nodes,
+        including the endpoints."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        queue = ops + obs
+
+        # Directed paths from queue[3] (CNOT(0, 1)) to queue[8] (Hermitian) pass through 5 and 6.
+        # queue[7] is a descendant of queue[3] but not an ancestor of queue[8], so it is excluded.
+        between = circuit.nodes_between(queue[3], queue[8])
+        assert {id(op) for op in between} == {id(queue[i]) for i in (3, 5, 6, 8)}
+
+    def test_nodes_between_no_path(self, ops, obs):
+        """Test that ``nodes_between`` returns an empty list when there is no directed path
+        between the two nodes."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        queue = ops + obs
+
+        # queue[7] is a terminal measurement, so no path leads from it to queue[8].
+        assert circuit.nodes_between(queue[7], queue[8]) == []
+
     @pytest.mark.parametrize("sort", [True, False])
     def test_ancestors_and_descendents_repeated_op(self, sort):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
