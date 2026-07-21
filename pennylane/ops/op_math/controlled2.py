@@ -17,10 +17,9 @@
 from collections.abc import Sequence
 from inspect import signature
 from textwrap import dedent
-from typing import Literal
+from typing import Literal, override
 
 from scipy import sparse
-from typing_extensions import override
 
 import pennylane as qp
 from pennylane import allocation, math
@@ -389,7 +388,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         return [
             qp.ctrl(
                 op,
-                self.control_wires,
+                control=self.control_wires,
                 control_values=self.control_values,
                 work_wires=self.work_wires,
                 work_wire_type=self.work_wire_type,
