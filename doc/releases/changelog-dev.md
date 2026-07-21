@@ -470,7 +470,7 @@
 * Implemented the `__str__` of `Wires` to display the wire labels as a list.
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
 
-* :func:`~.pauli_decompose` is significantly faster for SciPy sparse inputs. Nonzero entries are
+* :func:`~pennylane.pauli_decompose` is significantly faster for SciPy sparse inputs. Nonzero entries are
   grouped by their ``row ^ col`` XOR-difference and each group is resolved with a single fast
   Walsh-Hadamard transform, following [Georges et al.](https://doi.org/10.1088/1367-2630/adb44d),
   giving order-of-magnitude speedups for sparse and structured operators.
