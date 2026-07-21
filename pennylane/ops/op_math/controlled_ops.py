@@ -2394,16 +2394,19 @@ class CRZ(Controlled2):
 
     """
 
-    wire_sizes = (2,)
     num_wires = 2
     """int: Number of wires that the operation acts on."""
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
     ndim_params = (0,)
-    parameter_frequencies = [(0.5, 1.0)]
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     name = "CRZ"
+    parameter_frequencies = [(0.5, 1.0)]
 
+    wire_sizes = (2,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[2]}
 
