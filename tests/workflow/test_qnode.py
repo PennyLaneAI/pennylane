@@ -1403,8 +1403,8 @@ class TestCompilePipelineIntegration:
             circuit(0.1)
 
         assert tracker.totals["executions"] == 1
-        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert "RX" not in tracker.history["resources"][0].gate_types
+        assert tracker.history["resources"][0].quantum_operations["PauliX"] == 1
+        assert "RX" not in tracker.history["resources"][0].quantum_operations
 
     def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
@@ -1464,7 +1464,7 @@ class TestCompilePipelineIntegration:
         with circuit1.device.tracker as tracker:
             assert qp.math.allclose(circuit1(0.1), 1.0)
 
-        assert tracker.history["resources"][0].gate_types["PauliX"] == 2
+        assert tracker.history["resources"][0].quantum_operations["PauliX"] == 2
 
         @just_pauli_x_out
         @repeat_operations
@@ -1476,7 +1476,7 @@ class TestCompilePipelineIntegration:
         with circuit2.device.tracker as tracker:
             assert qp.math.allclose(circuit2(0.1), -1.0)
 
-        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
+        assert tracker.history["resources"][0].quantum_operations["PauliX"] == 1
 
     def test_transform_order_postprocessing(self):
         """Test that transform postprocessing is called in the right order."""

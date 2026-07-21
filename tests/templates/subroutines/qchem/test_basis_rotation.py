@@ -604,8 +604,8 @@ class TestInterfaces:
         circuit_dec = qp.decompose(circuit, gate_set=gate_set)
         specs = qp.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
         specs2 = qp.specs(circuit_dec, level="device")(unitary_matrix)
-        assert specs["resources"].gate_types == specs2["resources"].gate_types
-        assert specs["resources"].gate_sizes == specs2["resources"].gate_sizes
+        assert specs.resources.quantum_operations == specs2.resources.quantum_operations
+        assert specs.resources.quantum_operations == specs2.resources.quantum_operations
 
     @pytest.mark.slow
     @pytest.mark.tf

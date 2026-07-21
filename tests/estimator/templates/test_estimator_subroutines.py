@@ -342,7 +342,7 @@ class TestHybridQRAM:
                 return True
             return name == op.name
 
-        for ty, count in specs.resources.gate_types.items():
+        for ty, count in specs.resources.quantum_operations.items():
             found = False
             i = 0
             total = 0
@@ -561,7 +561,7 @@ class TestSelectOnlyQRAM:
 
         specs = qp.specs(circuit)()
 
-        for ty, count in specs.resources.gate_types.items():
+        for ty, count in specs.resources.quantum_operations.items():
             found = False
             i = 0
             while not found and i < len(expected):
