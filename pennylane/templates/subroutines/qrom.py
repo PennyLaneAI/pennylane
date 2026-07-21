@@ -34,7 +34,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, BasisState, MultiControlledX, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.embeddings import BasisEmbedding
@@ -946,12 +946,21 @@ def _qrom_unary_iteration_resources(
     # The formula at the top is the solution to this recursion relation. An alternative expression
     # for the same is
     # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
-    num_elbows = c + K - 2 - (K - 1).bit_count() - int(K > 2 ** (c - 1))
+    more_than_half = int(K > 2 ** (c - 1))
+    more_than_quarter = int(K > 2 ** (c - 2))
+    num_elbows = c + K - 2 - (K - 1).bit_count() - more_than_half
+    mcx_kwargs = {
+        "num_control_wires": 1,
+        "num_zero_control_values": 1,
+        "num_work_wires": 0,
+        "work_wire_type": "borrowed",
+    }
     return {
         TemporaryAND: num_elbows,
         _adjoint_abstract(TemporaryAND): num_elbows,
-        CNOT: K - 1 + int(K > 2 ** (c - 1)),
-        X: 2 * int(K > 2 ** (c - 2)),
+        CNOT: K - 1 + more_than_half - more_than_quarter,
+        resource_rep(MultiControlledX, **mcx_kwargs): more_than_quarter,
+        # X: 2 * int(K > 2 ** (c - 2)),
         cbasis_rep: K,
     }
 
@@ -1010,48 +1019,62 @@ def _main_unary_loop_monolithic(data, triples, target_wires, first_cval):
         qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
 
-def _main_unary_loop_recursive(data, triples, target_wires):
+def _main_unary_loop_recursive(data, triples, target_wires, first_cval):
     K = len(data)
     c = len(triples) + 1
     # last work wire in use acts as the flag qubit for data loading.
+
     flag = triples[-1][2]
+    assert c >= 2
+    assert K >= 1 << (
+        c - 2
+    )  # otherwise we should have extracted one more elbow in the leading ladder
 
-    K0 = min(K, 1 << (c - 2))
-    K1 = 1 << (c - 1) - K0
+    import catalyst
 
-    # Loop over all data but the last one
-    @for_loop(K - 1)
-    def loop(k):
-        # 1. load data[k], controlled on the flag circuit
-        qp_ops.ctrl(BasisState(data[k], target_wires), control=[flag])
+    def _sub(data, triples):
+        _c = len(triples)
+        _K = len(data)
+        if _K == 1:
+            qp_ops.ctrl(BasisState(data[0], target_wires), control=[flag])
+            return
 
-        # 2. transition address k -> k+1
-        # a is the MSB-first index of least-significant 0 bit of k
-        a = c - _popcount(math.bitwise_xor(k, k + 1))
+        capacity = 1 << _c
+        assert capacity > 1
+        end_first_half = min(_K, capacity // 2)
 
-        # Whether we are in the first half of the iteration, so that the top bit
-        # has not been flipped yet
-        top_not_flipped = k < (1 << (c - 1))
+        TemporaryAND(triples[0], (1, 0))
+        _sub(data[:end_first_half], triples[1:])
+        if end_first_half < _K:
+            CNOT(triples[0][::2])
+            _sub(data[end_first_half:], triples[1:])
 
-        # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
-        for i in range(c - 2, 0, -1):
-            qp_ops.adjoint(cond(i >= a, TemporaryAND))(wires=triples[i])
+        closing_bits = [(_K - 1 >> (_c - 1 - b)) & 1 for b in range(_c)]
+        qp_ops.adjoint(TemporaryAND)(wires=triples[-1], control_values=(1, closing_bits[_c - 1]))
+        return
 
-        # 2b. merge gate(s) at the boundary
-        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
-        cond(a > 0, CNOT)(triples[a - 1][::2])
-        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
+    end_first_quarter = 1 << (c - 2)
+    end_second_quarter = min(K, end_first_quarter + (1 << (c - 2)))
+    end_third_quarter = min(K, end_second_quarter + (1 << (c - 2)))
 
-        cond(a == 0, CNOT)(triples[0][::2])
-        cond(a == 0, CNOT)(triples[0][1:])
-        # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-        for i in range(1, c - 1):
-            cond(i >= a, TemporaryAND)(triples[i], (1, 0))
+    TemporaryAND(triples[0], (first_cval, 0))
+    _sub(data[:end_first_quarter], triples[1:])
+    if end_second_quarter > end_first_quarter:
+        MultiControlledX(triples[0][::2], control_values=[0])
+        _sub(data[end_first_quarter:end_second_quarter], triples[1:])
+        if end_third_quarter > end_second_quarter:
+            CNOT(triples[0][::2])
+            CNOT(triples[0][1:])
+            _sub(data[end_second_quarter:end_third_quarter], triples[1:])
+            if K > end_third_quarter:
+                CNOT(triples[0][::2])
+                _sub(data[end_third_quarter:], triples[1:])
 
-    loop()  # pylint: disable=no-value-for-parameter
-
-    # Load last bit string
-    qp_ops.ctrl(BasisState(data[K - 1], target_wires), control=[flag])
+    closing_bits = [(K - 1 >> (c - 1 - b)) & 1 for b in range(c)]
+    if first_cval == 0:
+        qp_ops.adjoint(TemporaryAND)(wires=triples[0], control_values=tuple(closing_bits[:2]))
+    else:
+        qp_ops.adjoint(TemporaryAND)(wires=triples[0], control_values=(1, closing_bits[0]))
 
 
 @register_condition(_qrom_unary_iteration_condition)
@@ -1086,7 +1109,7 @@ def _qrom_unary_iteration(
     num_init_elbows = max(c - 1 - ceil_log2(K), 0)
     init_triples, triples = triples[:num_init_elbows], triples[num_init_elbows:]
     # initial ladder of left elbows (open at level 0 with cvals (0,0))
-    if init_triples:
+    if num_init_elbows > 0:
         TemporaryAND(init_triples[0], (0, 0))
         for i in range(1, num_init_elbows):
             TemporaryAND(init_triples[i], (1, 0))
@@ -1094,7 +1117,11 @@ def _qrom_unary_iteration(
     else:
         first_cval = 0
 
-    _main_unary_loop_monolithic(data, triples, target_wires, first_cval)
+    if K == 1:
+        qp_ops.ctrl(BasisState(data[0], target_wires), control=triples[-1][2:])
+    else:
+        _main_unary_loop_monolithic(data, triples, target_wires, first_cval)
+        # _main_unary_loop_recursive(data, triples, target_wires, first_cval)
 
     if num_init_elbows > 0:
         # closing ladder of right elbows for address K-1; control values depend on the bits of K-1
