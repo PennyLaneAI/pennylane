@@ -43,7 +43,7 @@ from jax.typing import ArrayLike
 class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     r"""A class to store qudit IQP circuit configurations. 
     
-    This class stores description of a qudit IQP circuit to compute its expectation value with respect to a
+    This class stores the description of a qudit IQP circuit to compute its expectation value with respect to a
     Heisenberg-Weyl (HW) observable. See `arXiv:2607.06675 <https://arxiv.org/abs/2607.06675>`_ for theoretical details.
 
     A qudit IQP circuit is in the form :math:`U(\mathbf{\theta}) = \left( F^{\otimes n} \right)^\dagger D(\mathbf{\theta}) F^{\otimes n}`
@@ -96,7 +96,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         phase_fn (Callable | None): Optional phase layer with trainable parameters. The phase layer
             :math:`D'(\mathbf{\xi})` is given by a ``Callable`` with signature ``(params: ArrayLike, z: ArrayLike) -> scalar``
             where ``z`` is a dit-string of shape ``(n_qudits, )`` with entries in :math:`\{0, \dots, d-1\}` and
-            params has shape matching :math:`\mathbf{\xi}`.
+            ``params`` has shape matching :math:`\mathbf{\xi}`.
 
     **Example**
 
