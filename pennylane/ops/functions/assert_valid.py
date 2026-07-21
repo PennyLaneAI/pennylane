@@ -162,22 +162,21 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Adjoint({op_type.__name__})"):
-        adj_op = qp.ops.Adjoint(op)
+        adj_op = qp.adjoint(op)
         _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Pow({op_type.__name__})"):
         for z in [2, 3, 4, 8, 9]:
-            pow_op = qp.ops.Pow(op, z)
+            pow_op = qp.pow(op, z)
             _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"C({op_type.__name__})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
-            ctrl_op = qp.ops.Controlled(
-                op,
-                control_wires=[i + len(op.wires) for i in range(n_ctrl_wires)],
-                control_values=[c_value] * n_ctrl_wires,
-                work_wires=[i + len(op.wires) + n_ctrl_wires for i in range(n_workers)],
-            )
+            ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
+            control_wires = [i + len(op.wires) for i in range(n_ctrl_wires)]
+            control_values = [c_value] * n_ctrl_wires
+            work_wires = [i + len(op.wires) + n_ctrl_wires for i in range(n_workers)]
+            ctrl_op = ctrl(op, control_wires, control_values, work_wires)
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
@@ -214,10 +213,16 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
+def _get_decomp_args(op: Operator):
+    if isinstance(op, Operator1):
+        return op.resource_params, op.data, {"wires": op.wires, **op.hyperparameters}
+    return abstractify(op).arguments, (), op.arguments
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    params = op.arguments if isinstance(op, Operator2) else op.resource_params
+    params, args, kwargs = _get_decomp_args(op)
 
     if not rule.is_applicable(**params):
         return
@@ -227,7 +232,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     gate_counts = resources.gate_counts
 
     with qp.queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*args, **kwargs)
+
     tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total

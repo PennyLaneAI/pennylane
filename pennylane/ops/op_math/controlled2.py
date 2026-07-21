@@ -387,6 +387,20 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             work_wire_type=self.work_wire_type,
         )
 
+    @override
+    def pow(self, z):
+        """Raise the base to a power while preserving the controls."""
+        return [
+            qp.ctrl(
+                op,
+                control=self.control_wires,
+                control_values=self.control_values,
+                work_wires=self.work_wires,
+                work_wire_type=self.work_wire_type,
+            )
+            for op in self.base.pow(z)
+        ]
+
     @property
     @override
     # pylint: disable=invalid-overridden-method,arguments-differ
