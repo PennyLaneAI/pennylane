@@ -526,15 +526,30 @@ class RZ(Operator2):
     """
 
     num_wires = 1
-    wire_sizes = (1,)
-    dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Complex, "wires": Wire[1]}
-    parameter_frequencies = [(1,)]
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
+    grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
@@ -647,20 +662,6 @@ class RZ(Operator2):
             return I(wires=self.wires)
 
         return RZ(phi, wires=self.wires)
-
-    # TODO: Remove once we phase out Operation / Operator.
-
-    @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
-        warn(
-            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
-            "qp.is_commuting should be used instead to check commutivity.",
-            PennyLaneDeprecationWarning,
-        )
-        return "Z"
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
 
 
 @custom_ctrl_dispatch.register
