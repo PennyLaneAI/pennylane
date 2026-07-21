@@ -3321,7 +3321,7 @@ class TestMultiRZ:
         op = qp.MultiRZ(0.123, wires=[0, 1, 2, 3])
         qp.ops.functions.assert_valid(op)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_old(self, n):
         """Test that the decomposition with qjit with the old decomposition system
@@ -3333,7 +3333,7 @@ class TestMultiRZ:
         exp_mat = qp.MultiRZ.compute_matrix(theta, n)
         assert np.allclose(mat, exp_mat)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_new(self, n):
         """Test that the decomposition with qjit with the new decomposition system
