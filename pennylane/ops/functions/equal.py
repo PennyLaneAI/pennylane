@@ -704,6 +704,7 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
 @_equal_dispatch.register(Controlled2)
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
+
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
@@ -714,11 +715,22 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     if op1.work_wire_type != op2.work_wire_type:
         return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
 
-    # work wires and control_wire/control_value combinations compared here
-    op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
-    op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
-    if op1_control_dict != op2_control_dict:
-        return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
+    # for abstract operators, only check the length of control values and wires
+    if isinstance(op1, Controlled2) and op1.is_abstract:
+
+        if op1.control_wires != op2.control_wires:
+            return f"op1 and op2 have different control wires. Got {op1.control_wires} and {op2.control_wires}"
+
+        if op1.control_values != op2.control_values:
+            return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}"
+
+    else:
+        # Check equivalence of concrete controlled values
+        op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
+        op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
+
+        if op1_control_dict != op2_control_dict:
+            return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
 
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
