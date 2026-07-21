@@ -29,7 +29,7 @@ from pennylane.exceptions import (
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2, _superscript
+from pennylane.ops.op_math.pow2 import Pow2
 from tests.core.operator.operator2_utils import DynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
 
