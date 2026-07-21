@@ -301,7 +301,7 @@ def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanCoeff:
     """
     monomials = defaultdict(float)
 
-    for order, tensor in enumerate(config.couplings, start=1):
+    for order, tensor in enumerate(config.couplings):
         full_shape = (config.n_mol, config.n_mol) + (config.n_modes,) * order
         diag_shape = (config.n_mol, config.n_mol, config.n_modes)
 
@@ -339,7 +339,7 @@ def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanCoeff:
     """
     monomials = defaultdict(float)
 
-    for order, tensor in enumerate(config.repulsion, start=1):
+    for order, tensor in enumerate(config.repulsion):
         full_shape = (config.n_mol, config.n_mol) + (config.n_modes,) * order
         diag_shape = (config.n_mol, config.n_mol, config.n_modes)
 
@@ -405,7 +405,7 @@ def _nuclear_reference(config: GanConfig) -> GanCoeff:
     """
     monomials = defaultdict(float)
 
-    for order, tensor in enumerate(config.nuclear, start=1):
+    for order, tensor in enumerate(config.nuclear):
         full_shape = (config.n_modes,) * order
         diag_shape = (config.n_modes,)
 

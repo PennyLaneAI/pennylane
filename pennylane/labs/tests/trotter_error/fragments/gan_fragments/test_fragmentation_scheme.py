@@ -148,7 +148,7 @@ def test_molecular_coupling_matches_manual_sum(config):
     # Reconstruct the expected polynomial, mirroring both the full-tensor and
     # diagonal-tensor branches of _molecular_coupling.
     monomials = {}
-    for order, tensor in enumerate(config.couplings, start=1):
+    for order, tensor in enumerate(config.couplings):
         full_shape = (config.n_mol, config.n_mol) + (config.n_modes,) * order
         diag_shape = (config.n_mol, config.n_mol, config.n_modes)
         if tensor.shape == full_shape:
