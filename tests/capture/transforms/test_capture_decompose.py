@@ -28,7 +28,6 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
-    operator_p,
     qnode_prim,
     while_loop_prim,
 )
@@ -393,15 +392,9 @@ class TestDecomposeInterpreter:
 
         # Else branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
-        expected_primitives = [
-            qp.PhaseShift._primitive,
-            operator_p,
-            qp.measurements.ExpectationMP._obs_primitive,
-        ]
-        assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        )
+        assert branch.eqns[0].primitive == qp.PhaseShift._primitive
         assert_eqn_matches_op(branch.eqns[1], qp.X)
+        assert branch.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""
