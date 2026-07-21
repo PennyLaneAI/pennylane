@@ -302,3 +302,12 @@ def test_simplify_pow_undefined():
     assert isinstance(simplified, Pow2)
     qp.assert_equal(simplified.base, NoPowOp(0))
     assert simplified.static_args["z"] == 0.5
+
+
+def test_label():
+    """Test that the label draws the exponent as superscript."""
+    base = qp.RX(1.2, wires=0)
+    op = Pow2(base, -1.23456789)
+
+    assert op.label() == "RX⁻¹⋅²³⁴⁵⁶⁷⁸⁹"
+    assert op.label(decimals=2) == "RX\n(1.20)⁻¹⋅²³⁴⁵⁶⁷⁸⁹"

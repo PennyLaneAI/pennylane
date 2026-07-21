@@ -15,7 +15,7 @@
 """Defines the base class for the power of operators."""
 
 from functools import reduce
-from typing import Union
+from typing import Union, override
 
 from scipy.linalg import fractional_matrix_power
 
@@ -50,6 +50,8 @@ from pennylane.ops.op_math import adjoint
 from .adjoint import Adjoint
 from .adjoint2 import Adjoint2
 from .symbolicop2 import SymbolicOp2
+
+_superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
 class Pow2(SymbolicOp2):
@@ -108,6 +110,14 @@ class Pow2(SymbolicOp2):
     @property
     def ndim_params(self):
         return self.base.ndim_params
+
+    @override
+    def label(self, decimals=None, base_label=None, cache=None):
+        z_string = format(self.z).translate(_superscript)
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return (
+            f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
