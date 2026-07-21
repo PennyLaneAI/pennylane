@@ -19,7 +19,7 @@ TODO: [sc-120453] Fill docstring
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -59,6 +59,13 @@ if TYPE_CHECKING:
 has_jax = find_spec("jax") is not None
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
+
+
+class GradMethod(StrEnum):
+    """Supported gradient methods."""
+
+    ANALYTIC = "A"
+    FINITE_DIFF = "F"
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -418,10 +425,10 @@ class Operator2(metaclass=OperatorMeta):
         if self.num_params == 0:
             return None
         if self.grad_recipe != [None] * self.num_params:
-            return "A"
+            return GradMethod.ANALYTIC
         if parameter_frequencies(self):
-            return "A"
-        return "F"
+            return GradMethod.ANALYTIC
+        return GradMethod.FINITE_DIFF
 
     @property
     def data(self) -> tuple:
