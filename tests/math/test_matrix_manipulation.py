@@ -263,17 +263,17 @@ class TestExpandMatrix:
             ]
         )
         # test applied to wire 0
-        res = qp.math.expand_matrix(U, [0], [0, 4, 9])
+        res = qp.math.expand_matrix(U, 0, [0, 4, 9])
         expected = np.kron(np.kron(U, I), I)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 4
-        res = qp.math.expand_matrix(U, [4], [0, 4, 9])
+        res = qp.math.expand_matrix(U, 4, [0, 4, 9])
         expected = np.kron(np.kron(I, U), I)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 9
-        res = qp.math.expand_matrix(U, [9], [0, 4, 9])
+        res = qp.math.expand_matrix(U, 9, [0, 4, 9])
         expected = np.kron(np.kron(I, I), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
