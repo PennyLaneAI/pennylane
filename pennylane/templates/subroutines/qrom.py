@@ -845,7 +845,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     # Extra control wires beyond ceil_log2(L) are the most-significant address bits: the data
     # is loaded only when they are all zero, otherwise the operation is the identity (matching
     # the non-partial ``Select``). We build a flag qubit that is 1 iff every extra wire is 0
-    # and gate the whole load on it, reusing the unary iterator ``_measurement_qrom_inner``
+    # and control the whole load on it, reusing the unary iterator ``_measurement_qrom_inner``
     # over the real 2**n_active table.
     n_active = ceil_log2(L)
     n_extra = n_input - n_active
