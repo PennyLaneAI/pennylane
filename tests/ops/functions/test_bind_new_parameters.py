@@ -246,6 +246,31 @@ def test_controlled_sequence():
     qp.assert_equal(new_op.base, qp.RX(0.5, wires=3))
 
 
+def test_prep_sel_prep():
+    """Test that rebinding PrepSelPrep replaces its LCU without mutating the original."""
+    lcu = qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
+    op = qp.PrepSelPrep(lcu, control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op.lcu, qp.dot([0.5, 0.5], [qp.Z(2), qp.X(1) @ qp.X(2)]))
+    assert new_op is not op
+    assert new_op.lcu is not op.lcu
+    assert op.data == (0.25, 0.75)
+
+
+def test_select():
+    """Test that rebinding Select replaces its operands without mutating the original."""
+    op = qp.Select([qp.RX(0.25, wires=2), qp.RY(0.75, wires=2)], control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op, qp.Select([qp.RX(0.5, wires=2), qp.RY(0.5, wires=2)], control=0))
+    assert new_op is not op
+    assert new_op.ops[0] is not op.ops[0]
+    assert op.data == (0.25, 0.75)
+
+
 TEST_BIND_LINEARCOMBINATION = [
     (  # LinearCombination with only data being the coeffs
         qp.ops.LinearCombination(
@@ -503,7 +528,7 @@ def test_conditional_ops(op, new_params, expected_op):
 def test_unsupported_op_copy_and_set():
     """Test that trying to use `bind_new_parameters` on an operator without
     a supported dispatcher will fall back to copying the operator and setting
-    `new_op.data` to the new parameters."""
+    its private parameter storage to the new parameters."""
     op = qp.PCPhase(0.123, 2, wires=[1, 2])
     new_op = bind_new_parameters(op, [0.456])
 

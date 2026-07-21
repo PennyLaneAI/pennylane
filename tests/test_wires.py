@@ -201,7 +201,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
         wires_repr = repr(Wires([1, 2, 3]))
-        assert wires_str == "Wires([1, 2, 3])"
+        assert wires_str == "[1, 2, 3]"
         assert wires_repr == "Wires([1, 2, 3])"
 
     def test_array_representation(self):
@@ -404,6 +404,20 @@ class TestWires:
         wires2 = tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+    @pytest.mark.jax
+    def test_wires_pytree_with_array_leaves(self):
+        """Test that unflattening wire pytrees with leaves containing scalar arrays
+        is possible and correct."""
+        import jax.numpy as jnp
+        from jax.tree import flatten, unflatten
+
+        wires = Wires([0, 1, 2, 3])
+        leaves, tree = flatten(wires)
+        inner_arr_leaves = [jnp.array(l, dtype=int) for l in leaves]
+        unflattened_wires = unflatten(tree, inner_arr_leaves)
+
+        assert wires == unflattened_wires
 
     def test_class_index(self):
         """Test that indexing the class raises."""

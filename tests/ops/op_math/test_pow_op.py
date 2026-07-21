@@ -231,7 +231,7 @@ class TestProperties:
     """Test Pow properties."""
 
     def test_data(self, power_method):
-        """Test base data can be get and set through Pow class."""
+        """Test base data can be get and stay read-only."""
         x = np.array(1.234)
 
         base = qp.RX(x, wires="a")
@@ -239,16 +239,10 @@ class TestProperties:
 
         assert op.data == (x,)
 
-        # update parameters through pow
-        x_new = np.array(2.3456)
-        op.data = (x_new,)
-        assert base.data == (x_new,)
-        assert op.data == (x_new,)
-
-        # update base data updates pow data
-        x_new2 = np.array(3.456)
-        base.data = (x_new2,)
-        assert op.data == (x_new2,)
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'PowOperation' object has no setter"
+        ):
+            setattr(op, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -514,7 +508,7 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Test the _flatten and _unflatten methods."""
 
-        target = qp.S(0)
+        target = qp.H(0)
         z = -0.5
         op = Pow(target, z)
         data, metadata = op._flatten()
@@ -527,8 +521,7 @@ class TestMiscMethods:
         qp.assert_equal(new_op, op)
 
     def test_copy(self):
-        """Test that a copy of a power operator can have its parameters updated
-        independently of the original operator."""
+        """Test that a copy can be rebound independently of the original."""
         param1 = 1.2345
         z = 2.3
         base = qp.RX(param1, wires=0)
@@ -538,8 +531,11 @@ class TestMiscMethods:
         assert copied_op.__class__ is op.__class__
         assert copied_op.z == op.z
         assert copied_op.data == (param1,)
+        assert copied_op.base is not op.base
 
-        copied_op.data = (6.54,)
+        copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+        assert copied_op.data == (6.54,)
         assert op.data == (param1,)
 
     def test_label(self):

@@ -33,6 +33,7 @@ from pennylane.operation import (
 )
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -296,6 +297,20 @@ class TestOperatorConstruction:
 
         op2 = DummyOp((1, 2, 3), wires=0)
         assert isinstance(op2.data[0], np.ndarray)
+
+    def test_data_is_read_only(self):
+        """Test that operator data is exposed through a read-only property."""
+
+        class DummyOp(qp.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, wires=0)
+
+        with pytest.raises(
+            AttributeError, match=r"property 'data' of '.*DummyOp' object has no setter"
+        ):
+            setattr(op, "data", (5.678,))
 
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
@@ -2007,7 +2022,10 @@ class TestNewOpMath:
         def test_pow(self, power, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             op = base**power
-            assert isinstance(op, PowOperation)
+            if isinstance(base, Operator2):
+                assert isinstance(op, Pow2)
+            else:
+                assert isinstance(op, PowOperation)
             qp.assert_equal(op.base, base)
             assert op.z == power
 

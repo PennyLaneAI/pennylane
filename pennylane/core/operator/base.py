@@ -642,12 +642,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def __copy__(self) -> "Operator":
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = copy.copy(self.data)
+        copied_op._data = copy.copy(self.data)
         # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
             copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
-            if attr not in {"data", "_hyperparameters"}:
+            if attr not in {"_data", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
@@ -661,11 +661,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         memo[id(self)] = copied_op
 
         for attribute, value in self.__dict__.items():
-            if attribute == "data":
+            if attribute == "_data":
                 # Shallow copy the list of parameters. We avoid a deep copy
                 # here, since PyTorch does not support deep copying of tensors
                 # within a differentiable computation.
-                copied_op.data = copy.copy(value)
+                copied_op._data = copy.copy(value)
             else:
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
@@ -1035,9 +1035,14 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
-        self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
+        self._data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
         self.queue()
+
+    @property
+    def data(self) -> tuple[TensorLike, ...]:
+        """tuple: Trainable parameters that the operator depends on."""
+        return self._data
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1104,8 +1109,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """Constructor-call-like representation."""
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return f"{self.name}({params}, wires={self.wires.tolist()})"
-        return f"{self.name}(wires={self.wires.tolist()})"
+            return f"{self.name}({params}, wires={self.wires})"
+        return f"{self.name}(wires={self.wires})"
 
     @property
     def num_params(self) -> int:

@@ -14,8 +14,7 @@
 """Defines the base class for the adjoint of operators."""
 
 from textwrap import dedent
-
-from typing_extensions import override
+from typing import override
 
 import pennylane as qp
 from pennylane import math
@@ -26,6 +25,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    get_fixed_decomp,
     list_decomps,
     register_condition,
     register_resources,
@@ -170,10 +170,21 @@ class Adjoint2(SymbolicOp2):
 
 @list_decomps.register
 def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
+
     abs_op = abstractify(op)
+
+    # fixed_decomps would override everything.
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
+
+    # special case of cancelling nested adjoints.
     if isinstance(abs_op.base, Adjoint2):
         return DecompCollection([cancel_adjoint])
+
+    # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = list_decomps.dispatch(object)(abs_op)
+
+    # Decomposition rules populated by applying adjoint on the base decomp rules
     wrapped_rules = DecompCollection(
         [
             _make_adjoint_decomp(rule)
