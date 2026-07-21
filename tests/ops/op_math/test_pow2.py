@@ -305,19 +305,13 @@ def test_simplify_pow_undefined():
 
 
 @pytest.mark.parametrize(
-    "exp",
-    [
-        0,
-        -1,
-        2,
-        1.23456789,
-        -1.23456789
-    ]
+    "exp, sup",
+    [(0, "⁰"), (-1, "⁻¹"), (2, "²"), (1.23456789, "¹⋅²³⁴⁵⁶⁷⁸⁹"), (-1.23456789, "⁻¹⋅²³⁴⁵⁶⁷⁸⁹")],
 )
-def test_label(exp):
+def test_label(exp, sup):
     """Test that the label draws the exponent as superscript."""
     base = DynOp(1.2, wires=0)
     op = Pow2(base, exp)
 
-    assert op.label() == "DynOp" + format(exp).translate(_superscript)
-    assert op.label(decimals=2) == "DynOp\n(1.20)" + format(exp).translate(_superscript)
+    assert op.label() == "DynOp" + sup
+    assert op.label(decimals=2) == "DynOp\n(1.20)" + sup
