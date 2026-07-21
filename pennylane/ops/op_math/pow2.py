@@ -51,6 +51,8 @@ from .adjoint import Adjoint
 from .adjoint2 import Adjoint2
 from .symbolicop2 import SymbolicOp2
 
+_superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
+
 
 class Pow2(SymbolicOp2):
     """Symbolic operator denoting an operator raised to a power.
@@ -114,6 +116,14 @@ class Pow2(SymbolicOp2):
     @override
     def ndim_params(self):
         return self.base.ndim_params
+
+    @override
+    def label(self, decimals=None, base_label=None, cache=None):
+        z_string = format(self.z).translate(_superscript)
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return (
+            f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

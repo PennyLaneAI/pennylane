@@ -47,7 +47,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
@@ -1089,12 +1089,6 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 
-def _get_decomp_args(op):
-    if isinstance(op, Operator2):
-        return abstractify(op).arguments, (), op.arguments
-    return op.resource_params, op.parameters, {"wires": op.wires, **op.hyperparameters}
-
-
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
     """Tests special decomposition rules for Pow of operators."""
 
@@ -1140,9 +1134,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
             if rule.is_applicable(**pow_op.resource_params):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
 
