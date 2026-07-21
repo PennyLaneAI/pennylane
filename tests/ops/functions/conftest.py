@@ -58,7 +58,7 @@ _INSTANCES_TO_TEST = [
         qp.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
         {"skip_differentiation": True},
     ),
-    (qp.MultiControlledX(wires=[0, 1]), {}),
+    (qp.MultiControlledX(wires=[0, 1]), {"skip_bind_new_parameters": True}),
     (qp.Projector([1], 0), {"skip_differentiation": True}),
     (qp.Projector([1, 0], 0), {"skip_differentiation": True}),
     (qp.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),

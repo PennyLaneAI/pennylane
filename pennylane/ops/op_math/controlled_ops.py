@@ -1594,6 +1594,7 @@ class MultiControlledX(Controlled2):
     def __repr__(self):
         return f"MultiControlledX(wires={self.wires}, control_values={self.control_values})"
 
+    @override
     def adjoint(self):
         return MultiControlledX(
             wires=self.wires,

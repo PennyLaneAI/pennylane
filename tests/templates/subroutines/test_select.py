@@ -31,7 +31,7 @@ from pennylane.templates.subroutines.select import (
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 
 
 @pytest.mark.jax
@@ -204,15 +204,10 @@ class TestSelect:
         This test uses two control qubits and four target operators, so that the Select
         template is never a partial Select, and the kwarg ``partial`` has no effect.
         """
-        decomp = qp.list_decomps(qp.Select)[0]
+        decomp = qp.list_decomps(qp.Select)["_select_decomp_multi_control"]
 
         ops = [qp.X(2), qp.X(3), qp.X(4), qp.Y(2)]
-        op_reps = (
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.Y),
-        )
+        op_reps = [abstractify(op) for op in ops]
         control = (0, 1)
 
         resource_obj = decomp.compute_resources(
@@ -222,8 +217,7 @@ class TestSelect:
         assert resource_obj.num_gates == 4
 
         expected_counts = {
-            _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
-            _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=1): 2,
+            qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 3,
             _ctrl_abstract(qp.Y, Wire[2], num_zero_control_values=0): 1,
         }
         assert resource_obj.gate_counts == expected_counts
@@ -246,14 +240,10 @@ class TestSelect:
         template is a partial Select, and the kwarg ``partial`` has an effect.
         """
 
-        decomp = qp.list_decomps(qp.Select)[0]
+        decomp = qp.list_decomps(qp.Select)["_select_decomp_multi_control"]
 
         ops = [qp.X(2), qp.X(3), qp.SWAP([2, 3])]
-        op_reps = (
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.SWAP),
-        )
+        op_reps = [abstractify(op) for op in ops]
         control = (0, 1)
 
         resource_obj = decomp.compute_resources(
@@ -264,14 +254,13 @@ class TestSelect:
 
         if partial:
             expected_counts = {
-                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
-                _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=0): 1,
-                _ctrl_abstract(qp.SWAP, Wire[1], num_zero_control_values=0): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[1]): 1,
+                _ctrl_abstract(qp.SWAP, Wire[1]): 1,
             }
         else:
             expected_counts = {
-                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=2): 1,
-                _ctrl_abstract(qp.X, Wire[2], num_zero_control_values=1): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 2,
                 _ctrl_abstract(qp.SWAP, Wire[2], num_zero_control_values=1): 1,
             }
         assert resource_obj.gate_counts == expected_counts

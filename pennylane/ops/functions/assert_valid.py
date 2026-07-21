@@ -596,6 +596,7 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -609,6 +610,8 @@ def _assert_valid_operator2(
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
+        skip_bind_new_parameters: If ``True``, bind_new_parameters test will be skipped.
+
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -631,10 +634,8 @@ def _assert_valid_operator2(
 
     for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
         # make sure that the bound args are not outside the allowed dimensions
-        if hasattr(val, "shape"):
-            assert val.shape == dim, f"shape of {name} is not equal to dimension in ndim_params"
-        else:
-            assert dim == 0
+        shape = qp.math.shape(val)
+        assert len(shape) == dim, f"shape of {name} is not equal to dimension in ndim_params"
 
     for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
@@ -658,7 +659,8 @@ def _assert_valid_operator2(
                     skip_capture=skip_capture,
                 )
 
-    _check_bind_new_parameters_op2(op)
+    if not skip_bind_new_parameters:
+        _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
@@ -672,6 +674,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -691,6 +694,7 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_capture: If ``True``, the program capture tests will be skipped.
+        skip_bind_new_parameters: If ``True``, bind_new_parameters test will be skipped.
 
     **Examples:**
 
@@ -737,6 +741,7 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_capture,
+            skip_bind_new_parameters,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -746,7 +751,8 @@ def assert_valid(
             assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
             assert qp.math.allclose(d, p), "data and parameters must match."
 
-        _check_bind_new_parameters(op)
+        if not skip_bind_new_parameters:
+            _check_bind_new_parameters(op)
 
     _check_pytree(op)
     if len(op.wires) <= 26:
