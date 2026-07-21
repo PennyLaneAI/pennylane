@@ -38,6 +38,10 @@ class TestIdentity:
         new_op = Identity._unflatten(*op._flatten())
         qp.assert_equal(op, new_op)
 
+    def test_is_verified_hermitian(self):
+        """Test that identity is verified to be hermitian."""
+        assert Identity.is_verified_hermitian is True
+
     def test_class_name(self, wires):
         """Test the class name of either I and Identity is by default 'Identity'"""
         assert qp.I.__name__ == "Identity"

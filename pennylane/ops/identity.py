@@ -199,11 +199,6 @@ class Identity(Operation):
         """
         return []
 
-    @staticmethod
-    def identity_op(*params):
-        """Alias for matrix representation of the identity operator."""
-        return I.compute_matrix(*params)
-
     def adjoint(self):
         return I(wires=self.wires)
 
