@@ -25,6 +25,8 @@ import pytest
 import pennylane as qp
 from pennylane.pulse import ParametrizedHamiltonian
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""

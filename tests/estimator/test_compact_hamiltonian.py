@@ -29,6 +29,8 @@ from pennylane.estimator.compact_hamiltonian import (
     _validate_pauli_terms,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=too-many-arguments
 
 

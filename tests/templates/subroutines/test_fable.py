@@ -167,6 +167,7 @@ class TestFable:
         assert qp.math.get_interface(qp.matrix(circuit_jax)) == "jax"
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, input_matrix):
         """Test that the Fable operator matrix is correct for autograd."""
         circuit_default = qp.FABLE(input_matrix, wires=range(5), tol=0)

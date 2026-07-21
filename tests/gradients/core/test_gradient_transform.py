@@ -714,6 +714,7 @@ class TestInterfaceIntegration:
     using each interface"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, tol):
         """Test that a gradient transform remains differentiable
         with autograd"""

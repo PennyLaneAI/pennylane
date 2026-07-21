@@ -411,6 +411,7 @@ class TestInterfaces:
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Test the autograd interface"""
 

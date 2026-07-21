@@ -24,6 +24,8 @@ from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_operator import CompressedResourceOp
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
 
 

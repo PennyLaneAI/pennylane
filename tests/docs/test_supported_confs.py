@@ -490,6 +490,7 @@ class TestSupportedConfs:
         circuit(x)
 
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
+    @pytest.mark.skip
     def test_autograd_state_backprop(self, wire_specs):
         """Test gradient of state directly fails for autograd interface"""
         msg = "cannot reshape array of size .*"

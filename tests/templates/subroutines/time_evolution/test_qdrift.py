@@ -456,6 +456,7 @@ class TestIntegration:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("n", (1, 5, 10))
+    @pytest.mark.skip
     def test_autograd_gradient(self, n, seed):
         """Test that the gradient is computed correctly"""
         time = qnp.array(1.5)

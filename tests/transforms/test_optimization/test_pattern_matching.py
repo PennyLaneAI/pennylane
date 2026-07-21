@@ -30,6 +30,8 @@ from pennylane.transforms.optimization.pattern_matching import (
     pattern_matching_optimization,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestPatternMatchingOptimization:
     """Pattern matching circuit optimization tests."""

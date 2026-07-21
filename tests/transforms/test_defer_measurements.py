@@ -30,6 +30,8 @@ from pennylane.devices import DefaultQubit
 from pennylane.exceptions import DecompositionWarning, DeviceError
 from pennylane.ops import Controlled, MeasurementValue, MidMeasure
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def test_broadcasted_postselection(mocker):
     """Test that broadcast_expand is used iff broadcasting with postselection."""

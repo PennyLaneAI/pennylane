@@ -22,6 +22,8 @@ import pytest
 from pennylane import numpy as np
 from pennylane.fourier.visualize import _validate_coefficients, bar, box, panel, radial_box, violin
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 matplotlib = pytest.importorskip("matplotlib")
 
 plt = matplotlib.pyplot

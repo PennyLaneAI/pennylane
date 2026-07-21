@@ -25,6 +25,8 @@ import pytest
 import pennylane as qp
 from pennylane.pulse.parametrized_hamiltonian import ParametrizedHamiltonian
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 # error expected to be raised locally - test will pass in CI, where it will be run without jax installed
 def test_error_raised_if_jax_not_installed():

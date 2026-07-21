@@ -816,6 +816,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Skipped tests related to features slated for removal in PennyLane 2.
+  [(#9796)](https://github.com/PennyLaneAI/pennylane/pull/9796)
+
 * Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
   This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
   The :class:`~.resource.Resources` class serves as the new base class,

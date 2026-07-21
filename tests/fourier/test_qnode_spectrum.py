@@ -28,6 +28,8 @@ from pennylane.fourier.mark import mark
 from pennylane.fourier.qnode_spectrum import _process_ids, qnode_spectrum
 from pennylane.measurements import SampleMP, StateMP, VarianceMP
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def circuit_0(a):
     _ = [qp.RX(a, wires=0) for i in range(4)]

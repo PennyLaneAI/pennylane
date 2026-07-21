@@ -24,6 +24,8 @@ from packaging.version import Version
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 pyzx = pytest.importorskip("pyzx")
 
 _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access

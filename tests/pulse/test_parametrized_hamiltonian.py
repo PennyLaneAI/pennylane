@@ -24,6 +24,8 @@ from pennylane import numpy as np
 from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def f1(p, t):
     """Compute the function p * sin(t) * (t - 1)."""

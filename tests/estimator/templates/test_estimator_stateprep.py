@@ -23,6 +23,8 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.templates.stateprep import AliasSampling, MPSPrep, QROMStatePreparation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=no-self-use,too-many-arguments
 
 

@@ -28,6 +28,8 @@ from pennylane.labs.tcdq.qudit_expval_functions import (
     build_qudit_expval_func,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 

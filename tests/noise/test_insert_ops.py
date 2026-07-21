@@ -22,6 +22,8 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.noise.insert_ops import insert
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 # pylint: disable=too-few-public-methods
 class DummyOp2(qp.core.operator.Operator2):

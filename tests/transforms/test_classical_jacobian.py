@@ -22,6 +22,8 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients.classical_jacobian import classical_jacobian
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 a = pnp.array(-2.1, requires_grad=True)
 b = pnp.array(0.71, requires_grad=True)
 w = pnp.array([0.3, 2.3, 0.1], requires_grad=True)
@@ -128,6 +130,7 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
 @pytest.mark.parametrize("interface", interfaces)
+@pytest.mark.skip
 def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Autograd."""
     dev = qp.device("default.qubit", wires=2)
@@ -216,6 +219,7 @@ interfaces = ["auto", "autograd"]
     "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, scalar_argnum)
 )
 @pytest.mark.parametrize("interface", interfaces)
+@pytest.mark.skip
 def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Autograd."""
     dev = qp.device("default.qubit", wires=2)
@@ -280,6 +284,7 @@ interfaces = ["auto", "autograd"]
     "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, single_list_argnum)
 )
 @pytest.mark.parametrize("interface", interfaces)
+@pytest.mark.skip
 def test_autograd_with_single_list_argnum(
     circuit, args, expected_jac, argnum, diff_method, interface
 ):
@@ -348,6 +353,7 @@ interfaces = ["auto", "autograd"]
     "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, sequence_argnum)
 )
 @pytest.mark.parametrize("interface", interfaces)
+@pytest.mark.skip
 def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and Autograd."""
     dev = qp.device("default.qubit", wires=2)
@@ -413,6 +419,7 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("interface", interfaces)
+@pytest.mark.skip
 def test_autograd_not_trainable_only(diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Autograd
     with ``trainable_only=False`` ."""

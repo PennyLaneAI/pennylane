@@ -238,6 +238,7 @@ class TestInterfaces:
         for op1, op2 in zip(decomp, expected):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.skip
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 

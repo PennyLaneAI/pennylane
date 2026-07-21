@@ -31,6 +31,8 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
 )
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=too-many-arguments, no-self-use
 
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))

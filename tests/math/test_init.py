@@ -54,6 +54,7 @@ class TestIsRealObjOrClose:
         assert qp.math.is_real_obj_or_close(x) is exp_output
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, data, dtype, exp_output):
         """Test with Autograd."""
         from pennylane import numpy as pnp

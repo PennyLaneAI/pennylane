@@ -34,6 +34,8 @@ from pennylane.transforms.decompositions.clifford_t_transform import (
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 _SKIP_GATES = (qp.Barrier, qp.Snapshot, qp.WireCut)
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 

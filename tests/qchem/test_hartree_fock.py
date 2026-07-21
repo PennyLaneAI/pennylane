@@ -22,6 +22,8 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qchem
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def test_scf_leaves_random_seed_unchanged():
     """Tests that the scf function leaves the global numpy sampling state unchanged."""

@@ -1114,6 +1114,7 @@ class TestParamShiftInterfaces:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_gradient(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using autograd."""

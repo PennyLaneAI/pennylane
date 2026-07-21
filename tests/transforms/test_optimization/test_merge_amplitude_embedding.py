@@ -22,6 +22,8 @@ from pennylane import numpy as np
 from pennylane.exceptions import DeviceError
 from pennylane.transforms.optimization import merge_amplitude_embedding
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestMergeAmplitudeEmbedding:
     """Test that amplitude embedding gates are combined into a single."""

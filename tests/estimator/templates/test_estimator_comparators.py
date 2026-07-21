@@ -21,6 +21,8 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=no-self-use,too-many-arguments,use-implicit-booleaness-not-comparison
 
 

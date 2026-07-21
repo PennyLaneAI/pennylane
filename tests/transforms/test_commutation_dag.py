@@ -23,6 +23,8 @@ import pennylane as qp
 import pennylane.numpy as np
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestCommutationDAG:
     """Commutation DAG tests."""

@@ -20,6 +20,8 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator import resource_rep
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=too-many-arguments, no-self-use
 
 

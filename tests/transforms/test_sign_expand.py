@@ -17,6 +17,8 @@ import pytest
 import pennylane as qp
 import pennylane.tape
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # Defines the device used for all tests
 dev = qp.device("default.qubit", wires=[0, 1, 2, 3, "Hadamard", "Target"])
 

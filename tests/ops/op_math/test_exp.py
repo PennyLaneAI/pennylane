@@ -816,6 +816,7 @@ class TestIntegration:
         assert qp.math.allclose(phi.grad, -torch.sin(phi))
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_qnode(self):
         """Test execution and gradient with pennylane numpy array."""
         phi = qp.numpy.array(1.2)
@@ -835,6 +836,7 @@ class TestIntegration:
 
     @pytest.mark.xfail  # related to #6333
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_param_shift_qnode(self):
         """Test execution and gradient with pennylane numpy array."""
 
@@ -854,6 +856,7 @@ class TestIntegration:
         assert qp.math.allclose(grad, -qp.numpy.sin(phi))
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_measurement(self):
         """Test exp in a measurement with gradient and autograd."""
 

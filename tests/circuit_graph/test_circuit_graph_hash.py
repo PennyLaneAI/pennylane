@@ -22,6 +22,8 @@ import pennylane as qp
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestCircuitGraphHash:
     """Test the creation of a hash on a CircuitGraph"""

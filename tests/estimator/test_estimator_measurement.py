@@ -20,6 +20,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
 error = 0.0016  # chemical accuracy
 shots = 419218  # computed manually

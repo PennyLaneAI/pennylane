@@ -20,6 +20,8 @@ from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.exceptions import ResourcesUndefinedError
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
 

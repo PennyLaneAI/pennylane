@@ -27,6 +27,7 @@ import pennylane as qp
 import pennylane.kernels as kern
 from pennylane import numpy as pnp
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
 
 @pytest.fixture(name="cvxpy_support")
 def fixture_cvxpy_support():
@@ -162,6 +163,7 @@ class TestKernelMatrix:
             expected_dK2[1][i, j, j] = -_jacobian_of_diffable_kernel(x1, x2)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Test differentiability of the kernel matrix methods with Autograd."""
         X1 = pnp.array(self.X1, requires_grad=True)

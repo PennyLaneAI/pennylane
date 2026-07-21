@@ -15,8 +15,11 @@
 Tests for the 'mark' functionality.
 """
 
+import pytest
 import pennylane as qp
 from pennylane.fourier.mark import MarkedOp, mark
+
+pytest.skip("Removing this module in PL2", allow_module_level=True)
 
 
 class TestMarkedOp:

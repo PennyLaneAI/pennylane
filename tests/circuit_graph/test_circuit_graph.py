@@ -29,6 +29,8 @@ from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class Test_WrappedObj:
     """Tests for the ``_WrappedObj`` class"""

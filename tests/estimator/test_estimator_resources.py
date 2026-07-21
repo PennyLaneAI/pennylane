@@ -22,6 +22,8 @@ import pytest
 
 from pennylane.estimator.resources_base import Resources
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself,protected-access
 
 

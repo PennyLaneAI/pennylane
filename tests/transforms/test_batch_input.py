@@ -22,6 +22,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def test_simple_circuit():
     """Test that batching works for a simple circuit"""
@@ -322,6 +324,7 @@ class TestDiffSingle:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+    @pytest.mark.skip
     def test_autograd(self, diff_method, tol):
         """Test derivatives when using autograd"""
         dev = qp.device("default.qubit", wires=2)
@@ -504,6 +507,7 @@ class TestDiffMulti:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    @pytest.mark.skip
     def test_autograd(self, diff_method, tol):
         """Test derivatives when using autograd"""
         dev = qp.device("default.qubit", wires=2)

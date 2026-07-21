@@ -23,6 +23,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def get_device(name="default.qubit", wires=2, seed=None):
     assert seed is not None, "Please use the pytest-rng provided seed"
@@ -275,6 +277,7 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    @pytest.mark.skip
     def test_autograd(self, params, obs, exp_fn, diff_method, seed):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)

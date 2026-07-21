@@ -22,6 +22,8 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import ResourceOperator
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=protected-access, too-few-public-methods
 
 

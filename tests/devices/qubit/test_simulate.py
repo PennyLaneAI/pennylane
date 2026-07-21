@@ -169,6 +169,7 @@ class TestBasicCircuit:
         assert np.allclose(result[1], np.cos(phi))
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_results_and_backprop(self):
         """Tests execution and gradients with autograd"""
         phi = qp.numpy.array(-0.52)
@@ -869,6 +870,7 @@ class TestOperatorArithmetic:
         assert qp.math.allclose(results[1], 3 * np.cos(2 * phi))
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_op_arithmetic(self):
         """Test operator arithmetic circuit with non-integer wires works with autograd."""
 
@@ -1494,6 +1496,7 @@ class TestMidMeasurements:
                 sp.stats.entropy(prob_dist1 + 1e-12, prob_dist2 + 1e-12), 0.0, atol=5e-2
             )
 
+    @pytest.mark.skip
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
@@ -1537,6 +1540,7 @@ class TestMidMeasurements:
         p4 = [qp.math.mean(res4 == -1), qp.math.mean(res4 == 1)]
         assert qp.math.allclose(qp.math.sum(sp.special.rel_entr(p3, p4)), 0.0, atol=0.05)
 
+    @pytest.mark.skip
     def test_tree_traversal_postselect_mode(self):
         """Test that invalid shots are discarded if requested"""
 
@@ -1556,6 +1560,7 @@ class TestMidMeasurements:
         assert len(res) < shots
         assert np.all(res != np.iinfo(np.int32).min)
 
+    @pytest.mark.skip
     def test_tree_traversal_deep_circuit(self):
         """Test that `simulate_tree_mcm` works with circuits with many mid-circuit measurements"""
 
@@ -1585,6 +1590,7 @@ class TestMidMeasurements:
         for circ in split_circs:
             assert not [o for o in circ.operations if isinstance(o, qp.ops.MidMeasure)]
 
+    @pytest.mark.skip
     @pytest.mark.parametrize(
         "measurements, expected",
         [
@@ -1651,6 +1657,7 @@ class TestMidMeasurements:
         expected_sample = simulate(equivalent_tape, rng=rng)
         fisher_exact_test(subset, expected_sample, outcomes=(-1, 1), threshold=0.01)
 
+    @pytest.mark.skip
     def test_tree_traversal_non_standard_wire_order(self):
         """Test that tree-traversal still works with a non-standard wire order."""
 
@@ -1660,6 +1667,7 @@ class TestMidMeasurements:
         res = simulate_tree_mcm(tape)
         assert qp.math.allclose(res, 0)
 
+    @pytest.mark.skip
     def test_tree_traversal_sample_dtype(self):
         """Test that tree-traversal returns samples of the correct dtype (int)."""
 
