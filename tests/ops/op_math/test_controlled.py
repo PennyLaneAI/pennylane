@@ -1905,16 +1905,16 @@ class TestCtrl:
         )
 
         op = qp.ctrl(
-            Controlled(
+            qp.ctrl(
                 ctrl_op,
-                control_wires=["b"],
+                control=["b"],
                 control_values=[0],
             ),
             control=["a"],
         )
-        expected = Controlled(
+        expected = qp.ctrl(
             expected_base,
-            control_wires=["a", "b"] + base_ctrl_wires,
+            control=["a", "b"] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,
         )
         assert op == expected
