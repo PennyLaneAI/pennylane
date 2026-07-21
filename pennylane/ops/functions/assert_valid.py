@@ -28,6 +28,7 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
@@ -84,7 +85,7 @@ def _check_decomposition(op, skip_wire_mapping):
             failure_comment=failure_comment,
         )()
         # pylint: disable=expression-not-assigned
-        args, kwargs = _get_signature(op)
+        _, args, kwargs = _get_decomp_args(op)
         _assert_error_raised(
             op.compute_decomposition,
             qp.operation.DecompositionUndefinedError,
@@ -97,7 +98,7 @@ def _check_decomposition(op, skip_wire_mapping):
     processed_queue = qp.tape.QuantumScript.from_queue(queued_decomp)
 
     try:
-        args, kwargs = _get_signature(op)
+        _, args, kwargs = _get_decomp_args(op)
         compute_decomp = type(op).compute_decomposition(*args, **kwargs)
     except (qp.exceptions.DecompositionUndefinedError, TypeError):
         # sometimes decomposition is defined but not compute_decomposition
@@ -210,12 +211,6 @@ def _assert_counts_match(counts_0, counts_1):
         f"{[op for op in counts_0 if op not in counts_1]}"
     )
     raise AssertionError(assertion_error_string)
-
-
-def _get_decomp_args(op: Operator):
-    if isinstance(op, Operator1):
-        return op.resource_params, op.data, {"wires": op.wires, **op.hyperparameters}
-    return abstractify(op).arguments, (), op.arguments
 
 
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
@@ -346,7 +341,7 @@ def _check_eigendecomposition(op):
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
-            args, kwargs = _get_signature(op)
+            _, args, kwargs = _get_decomp_args(op)
             compute_dg = type(op).compute_diagonalizing_gates(*args, **kwargs)
         except (qp.operation.DiagGatesUndefinedError, TypeError):
             # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
@@ -368,7 +363,7 @@ def _check_eigendecomposition(op):
 
     has_eigvals = True
     try:
-        args, kwargs = _get_signature(op)
+        _, args, kwargs = _get_decomp_args(op)
         if isinstance(op, Operator1):
             kwargs = {k: v for k, v in kwargs.items() if k != "wires"}
         compute_eg = type(op).compute_eigvals(*args, **kwargs)

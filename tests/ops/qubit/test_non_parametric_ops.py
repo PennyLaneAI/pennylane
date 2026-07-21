@@ -47,7 +47,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
@@ -1066,12 +1066,6 @@ class TestControlledMethod:
         """Test the PauliZ _controlled method."""
         out = qp.CZ(wires=[0, 1])._controlled("a")
         qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
-
-
-def _get_decomp_args(op):
-    if isinstance(op, Operator2):
-        return abstractify(op).arguments, (), op.arguments
-    return op.resource_params, op.parameters, {"wires": op.wires, **op.hyperparameters}
 
 
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
