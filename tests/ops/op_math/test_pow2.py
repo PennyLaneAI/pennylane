@@ -29,7 +29,7 @@ from pennylane.exceptions import (
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2
+from pennylane.ops.op_math.pow2 import Pow2, _superscript
 from tests.core.operator.operator2_utils import DynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
 
@@ -304,10 +304,20 @@ def test_simplify_pow_undefined():
     assert simplified.static_args["z"] == 0.5
 
 
-def test_label():
+@pytest.mark.parametrize(
+    "exp",
+    [
+        0,
+        -1,
+        2,
+        1.23456789,
+        -1.23456789
+    ]
+)
+def test_label(exp):
     """Test that the label draws the exponent as superscript."""
     base = DynOp(1.2, wires=0)
-    op = Pow2(base, -1.23456789)
+    op = Pow2(base, exp)
 
-    assert op.label() == "DynOp⁻¹⋅²³⁴⁵⁶⁷⁸⁹"
-    assert op.label(decimals=2) == "DynOp\n(1.20)⁻¹⋅²³⁴⁵⁶⁷⁸⁹"
+    assert op.label() == "DynOp" + format(exp).translate(_superscript)
+    assert op.label(decimals=2) == "DynOp\n(1.20)" + format(exp).translate(_superscript)
