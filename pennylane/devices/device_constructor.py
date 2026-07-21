@@ -72,9 +72,6 @@ def device(name, *args, **kwargs):
     * ``'lightning.qubit'``: a more performant state simulator of qubit-based
       quantum circuit architectures written in C++.
 
-    * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
-      of Gaussian states and operations on continuous-variable circuit architectures.
-
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
       simulator of Clifford circuits.
 

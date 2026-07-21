@@ -26,7 +26,6 @@ import pytest
 from packaging.version import Version
 
 import pennylane as qp
-from pennylane.devices import DefaultGaussian
 from pennylane.exceptions import PennyLaneDeprecationWarning
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
@@ -35,14 +34,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 TOL = 1e-3
 TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
-
-
-# pylint: disable=too-few-public-methods
-class DummyDevice(DefaultGaussian):
-    """Dummy device to allow Kerr operations"""
-
-    _operation_map = DefaultGaussian._operation_map.copy()
-    _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
 @pytest.fixture(scope="session")

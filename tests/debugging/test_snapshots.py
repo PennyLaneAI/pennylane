@@ -333,56 +333,6 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("method", [None, "parameter-shift"])
-    def test_default_gaussian(self, method):
-        """Test that multiple snapshots are returned correctly on the CV simulator."""
-        dev = qp.device("default.gaussian", wires=2)
-
-        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
-
-        @qp.qnode(dev, diff_method=method)
-        def circuit():
-            qp.Snapshot()
-            qp.Displacement(0.5, 0, wires=0)
-            qp.Snapshot("very_important_state")
-            qp.Beamsplitter(0.5, 0.7, wires=[0, 1])
-            qp.Snapshot()
-            return qp.expval(qp.QuadX(0))
-
-        circuit()
-        assert dev._debugger is None
-
-        result = qp.snapshots(circuit)()
-        expected = {
-            0: {
-                "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-                "means": np.array([0, 0, 0, 0]),
-            },
-            1: {
-                "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-                "means": np.array([1, 0, 0, 0]),
-            },
-            2: {
-                "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-                "means": np.array([0.87758256, 0.36668488, 0, 0.30885441]),
-            },
-            "execution_results": np.array(0.87758256),
-        }
-
-        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
-        assert np.allclose(result["execution_results"], expected["execution_results"])
-        del result["execution_results"]
-        del expected["execution_results"]
-        assert all(
-            np.allclose(v1["cov_matrix"], v2["cov_matrix"])
-            for v1, v2 in zip(result.values(), expected.values())
-        )
-        assert all(
-            np.allclose(v1["means"], v2["means"])
-            for v1, v2 in zip(result.values(), expected.values())
-        )
-
     @pytest.mark.parametrize(
         "m,expected_result",
         [

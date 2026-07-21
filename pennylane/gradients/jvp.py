@@ -321,7 +321,6 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
             # and we can avoid a quantum computation.
 
             def func(_):
-                # TODO: Update shape for CV variables
                 res = tuple(_single_measurement_zero(m, tangent) for m in tape.measurements)
                 if not multi_m:
                     res = res[0]
