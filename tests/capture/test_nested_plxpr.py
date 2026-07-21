@@ -19,7 +19,6 @@ Tests for capturing nested plxpr.
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator.operator2 import operator_p
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -28,11 +27,7 @@ jax = pytest.importorskip("jax")
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-
-def _check_eqn(eqn, expected_op):
-    assert eqn.primitive == operator_p
-    assert eqn.params["op_cls"] == expected_op
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 
 class TestAdjointQfunc:
@@ -49,7 +44,7 @@ class TestAdjointQfunc:
 
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
-        _check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
+        assert_eqn_matches_op(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_adjoint_qfunc(self):
         """Test that the adjoint qfunc transform can be captured."""
@@ -143,7 +138,7 @@ class TestAdjointQfunc:
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
         assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_transform_prim
-        _check_eqn(plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0], qp.X)
+        assert_eqn_matches_op(plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0], qp.X)
 
         with qp.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
@@ -211,6 +206,7 @@ class TestAdjointQfunc:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestAdjointDynamicShapes:
+
     def test_dynamic_shape_input(self):
         """Test that the adjoint transform can accept arrays with dynamic shapes."""
 
@@ -309,7 +305,7 @@ class TestCtrlQfunc:
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         assert jaxpr.eqns[0].invars[1].val == 1
-        _check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
+        assert_eqn_matches_op(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_operator_type_input(self):
         """Test that an operator type can be the callable."""
@@ -505,6 +501,7 @@ class TestCtrlQfunc:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCtrlDynamicShapeInput:
+
     def test_dynamic_shape_input(self):
         """Test that ctrl can accept dynamic shape inputs."""
 

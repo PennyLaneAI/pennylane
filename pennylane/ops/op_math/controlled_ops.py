@@ -45,6 +45,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import Controlled2
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -1202,12 +1203,14 @@ class CNOT(Controlled2):
     def __abstract_init__(self, wires: WiresLike):
         super().__abstract_init__(qp.X(Wire[1]), control_wires=Wire[1])
 
+    @override
     def adjoint(self):
         return CNOT(self.wires)
 
     @staticmethod
     @lru_cache
-    # pylint: disable=arguments-differ, unused-argument
+    @override
+    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1242,18 +1245,18 @@ def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-def _cnot_cz_h_resources(wires: WiresLike = None):
+def _cnot_cz_h_resources(wires: WiresLike):
     return {qp.H: 2, qp.CZ: 1}
 
 
 @register_resources(_cnot_cz_h_resources)
-def _cnot_to_cz_h(wires: WiresLike, **__):
+def _cnot_to_cz_h(wires: WiresLike):
     qp.H(wires[1])
     qp.CZ(wires=wires)
     qp.H(wires[1])
 
 
-def _cnot_to_ppr_resource(wires: WiresLike = None):
+def _cnot_to_ppr_resource(wires: WiresLike):
     return {
         resource_rep(qp.PauliRot, pauli_word="X"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -1263,7 +1266,7 @@ def _cnot_to_ppr_resource(wires: WiresLike = None):
 
 
 @register_resources(_cnot_to_ppr_resource)
-def _cnot_to_ppr(wires: WiresLike, **_):
+def _cnot_to_ppr(wires: WiresLike):
     qp.PauliRot(-np.pi / 2, "X", wires=wires[1])
     qp.PauliRot(-np.pi / 2, "Z", wires=wires[0])
     qp.PauliRot(np.pi / 2, "ZX", wires=wires)
@@ -1272,7 +1275,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
 add_decomps("Adjoint(CNOT)", self_adjoint)
-add_decomps("Pow(CNOT)", pow_involutory)
+add_decomps("Pow(CNOT)", pow_involutory2)
 
 
 class Toffoli(Controlled2):
@@ -1351,11 +1354,13 @@ class Toffoli(Controlled2):
     def __abstract_init__(self, wires: WiresLike):
         super().__abstract_init__(qp.X(Wire[1]), Wire[2])
 
+    @override
     def adjoint(self):
         return Toffoli(self.wires)
 
     @staticmethod
     @lru_cache
+    @override
     def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1403,24 +1408,7 @@ def _ctrl_toffoli(base: Toffoli, control, control_values, work_wires, work_wire_
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-def _check_and_convert_control_values(control_values, control_wires):
-    if isinstance(control_values, str):
-        # Make sure all values are either 0 or 1
-        if not set(control_values).issubset({"1", "0"}):
-            raise ValueError("String of control values can contain only '0' or '1'.")
-
-        control_values = [int(x) for x in control_values]
-
-    if control_values is None:
-        return [1] * len(control_wires)
-
-    if len(control_values) != len(control_wires):
-        raise ValueError("Length of control values must equal number of control wires.")
-
-    return control_values
-
-
-def _toffoli_resources(wires: WiresLike = None):
+def _toffoli_resources(wires: WiresLike):
     return {
         qp.Hadamard: 2,
         qp.CNOT: 6,
@@ -1430,7 +1418,7 @@ def _toffoli_resources(wires: WiresLike = None):
 
 
 @register_resources(_toffoli_resources)
-def _toffoli(wires: WiresLike, **__):
+def _toffoli(wires: WiresLike):
     qp.Hadamard(wires=wires[2])
     CNOT(wires=[wires[1], wires[2]])
     qp.adjoint(qp.T(wires=wires[2]))
@@ -1448,7 +1436,7 @@ def _toffoli(wires: WiresLike, **__):
     CNOT(wires=[wires[0], wires[1]])
 
 
-def _toffoli_to_ppr_resource(wires: WiresLike = None):
+def _toffoli_to_ppr_resource(wires: WiresLike):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZX"): 2,
@@ -1460,7 +1448,7 @@ def _toffoli_to_ppr_resource(wires: WiresLike = None):
 
 
 @register_resources(_toffoli_to_ppr_resource)
-def _toffoli_to_ppr(wires: WiresLike, **_):
+def _toffoli_to_ppr(wires: WiresLike):
     qp.PauliRot(-np.pi / 4, "ZZ", wires=wires[:2])
     qp.PauliRot(-np.pi / 4, "ZX", wires=[wires[0], wires[2]])
     qp.PauliRot(-np.pi / 4, "ZX", wires=wires[1:])
@@ -1486,7 +1474,7 @@ def _toffoli_elbow(wires: WiresLike):
 
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr, _toffoli_elbow)
 add_decomps("Adjoint(Toffoli)", self_adjoint)
-add_decomps("Pow(Toffoli)", pow_involutory)
+add_decomps("Pow(Toffoli)", pow_involutory2)
 
 
 class MultiControlledX(Controlled2):
@@ -1603,9 +1591,9 @@ class MultiControlledX(Controlled2):
             work_wire_type=self.work_wire_type,
         )
 
+    # pylint: disable=unused-argument
     @staticmethod
     @override
-    # pylint: disable=unused-argument
     def compute_matrix(
         wires: WiresLike,
         control_values: int | bool | Sequence[int | bool] | None = None,

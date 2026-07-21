@@ -23,6 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.operation import abstractify
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
@@ -412,6 +413,18 @@ class TestControlledOp2:
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1], control_values=0)
         assert op.control_values == [False]
+
+    def test_comparison(self):
+        """Tests comparing the equality of controlled operators."""
+
+        base = DynOp(0.5, wires=[0, 1])
+        op = qp.ctrl(base, control=[2, 3], control_values=[0, 1])
+        op2 = qp.ctrl(base, control=[3, 2], control_values=[1, 0])
+        qp.assert_equal(op, op2)
+
+        op2 = qp.ctrl(base, control=[3, 2], control_values=[0, 1])
+        assert not qp.equal(op, op2)
+        assert abstractify(op) == abstractify(op2)
 
     def test_invalid_arguments(self):
         """Tests that the correct error is raised from invalid init arguments."""

@@ -1036,11 +1036,6 @@ class TestControlledMethod:
 
     # pylint: disable=protected-access
 
-    def test_Hadamard(self):
-        """Test the Hadamard _controlled method."""
-        out = qp.Hadamard(0)._controlled("a")
-        qp.assert_equal(out, qp.CH(("a", 0)))
-
     def test_PauliY(self):
         """Test the PauliY _controlled method."""
         out = qp.PauliY(0)._controlled("a")
@@ -1050,6 +1045,11 @@ class TestControlledMethod:
         """Test the PauliZ _controlled method."""
         out = qp.PauliZ(0)._controlled("a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
+
+    def test_Hadamard(self):
+        """Test the Hadamard _controlled method."""
+        out = qp.Hadamard(0)._controlled("a")
+        qp.assert_equal(out, qp.CH(("a", 0)))
 
     def test_SWAP(self):
         """Test the SWAP _controlled method."""

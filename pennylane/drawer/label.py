@@ -50,6 +50,10 @@ class LabelledOp(SymbolicOp):
 
     resource_keys = {"base"}
 
+    has_decomposition = True
+
+    name = "LabelledOp"
+
     @property
     def resource_params(self) -> dict:
         return {"base": abstractify(self.base)}

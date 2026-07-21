@@ -21,7 +21,7 @@ not depend on any parameters.
 import cmath
 from copy import copy
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, override
 from warnings import warn
 
 import numpy as np
@@ -341,6 +341,7 @@ class PauliX(Operator2):
     """int: Number of trainable parameters that the operator depends on."""
 
     @property
+    @override
     def basis(self) -> Literal["X", "Y", "Z", None]:
         """Basis of the operator."""
         warn(
@@ -355,6 +356,7 @@ class PauliX(Operator2):
     is_verified_hermitian = True
 
     @property
+    @override
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
@@ -367,10 +369,12 @@ class PauliX(Operator2):
         super().__init__(wires=wires)
 
     def __repr__(self) -> str:
+        # PauliX.name is still "PauliX" but we want the repr to be just "X"
         if isinstance(self.wires, Wires):
             return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
         return f"X(wires={self.wires})"
 
+    @override
     def label(
         self,
         decimals: int | None = None,
@@ -381,6 +385,7 @@ class PauliX(Operator2):
         return base_label or "X"
 
     @staticmethod
+    @override
     # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -404,11 +409,13 @@ class PauliX(Operator2):
 
     @staticmethod
     @lru_cache
+    @override
     # pylint: disable=arguments-differ,unused-argument
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
         return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
+    @override
     # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike | None = None) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
@@ -435,6 +442,7 @@ class PauliX(Operator2):
         return qp.pauli.pauli_eigs(1)
 
     @staticmethod
+    @override
     def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
@@ -459,9 +467,11 @@ class PauliX(Operator2):
         """
         return [Hadamard(wires=wires)]
 
+    @override
     def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
 
+    @override
     def pow(self, z: int | float) -> list[qp.operation.Operator]:
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
@@ -1120,9 +1130,7 @@ class S(Operator2):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
                 }
             )
@@ -1263,7 +1271,6 @@ class T(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            # pylint: disable=unsubscriptable-object
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
                     qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
@@ -1394,9 +1401,7 @@ class SX(Operator2):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
                 }
             )
@@ -1479,7 +1484,7 @@ def _pow_sx_to_x(base, z):  # pylint: disable=unused-argument
 
 
 @register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
-def _pow_sx(base, z):  # pylint: disable=unused-argument
+def _pow_sx(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.RX(np.pi / 2 * z_mod4, wires=base.wires)
     qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=base.wires)

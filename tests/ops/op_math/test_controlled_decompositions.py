@@ -1119,7 +1119,7 @@ class TestMCXDecomposition:
             )
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
         [(4, 1), (4, 2)],
