@@ -30,15 +30,11 @@ from pennylane import math
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
-
-
-def _check_op_eqn(eqn, expected_op):
-    assert eqn.primitive == operator_p
-    assert eqn.params["op_cls"] is expected_op
 
 
 def normalize_for_comparison(obj):
@@ -427,7 +423,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 6
 
         # due to flattening and unflattening H
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.Z._primitive
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
