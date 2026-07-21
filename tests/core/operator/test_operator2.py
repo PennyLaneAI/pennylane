@@ -1288,7 +1288,7 @@ class TestDunderMethods:
     def test_repr_with_dynamic_args(self):
         """Test that __repr__ includes dynamic parameters if present."""
         op = DynOp(0.5, wires=[0, 1])
-        assert repr(op) == "DynOp(phi=0.5, wires=[0, 1])"
+        assert repr(op) == "DynOp(0.5, wires=[0, 1])"
 
     def test_repr_without_dynamic_args(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""

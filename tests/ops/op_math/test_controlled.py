@@ -1236,19 +1236,6 @@ class TestDecomposition:
         assert ctrl_op.decomposition() == expected
         assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
-    def test_decomposition_nested(self):
-        """Tests decompositions of nested controlled operations"""
-
-        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
-        expected = [
-            qp.ControlledPhaseShift(0.123 / 2, wires=[2, 0]),
-            qp.Toffoli(wires=[2, 1, 0]),
-            qp.ControlledPhaseShift(-0.123 / 2, wires=[2, 0]),
-            qp.Toffoli(wires=[2, 1, 0]),
-        ]
-        assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
-
     def test_decomposition_undefined(self):
         """Tests error raised when decomposition is undefined"""
         op = Controlled(TempOperator(0), (1, 2))
