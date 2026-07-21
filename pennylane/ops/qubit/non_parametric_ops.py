@@ -1428,13 +1428,13 @@ def _t_phaseshift(wires=None):
 
 
 @register_resources(lambda **_: {qp.PhaseShift: 1})
-def _pow_t(wires, z, **_):
+def _pow_t(base, z):
     z_mod8 = qp.math.array(z) % 8
-    qp.PhaseShift(np.pi * z_mod8 / 4, wires=wires)
+    qp.PhaseShift(np.pi * z_mod8 / 4, wires=base.wires)
 
 
 add_decomps(T, _t_phaseshift)
-add_decomps("Pow(T)", make_pow_decomp_with_period(8), _pow_t)
+add_decomps("Pow(T)", make_pow_decomp_with_period2(8), _pow_t)
 
 
 class SX(Operator2):
@@ -1473,8 +1473,6 @@ class SX(Operator2):
             PennyLaneDeprecationWarning,
         )
         return "X"
-
-    resource_keys = set()
 
     @property
     def pauli_rep(self):
@@ -1561,18 +1559,18 @@ add_decomps(SX, _sx_to_rx)
 
 @register_condition(lambda z, **_: math.shape(z) == () and z % 4 == 2)
 @register_resources(lambda **_: {qp.X: 1})
-def _pow_sx_to_x(wires, **__):
-    qp.X(wires)
+def _pow_sx_to_x(base, z):  # pylint: disable=unused-argument
+    qp.X(base.wires)
 
 
 @register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
-def _pow_sx(wires, z, **_):
+def _pow_sx(base, z):  # pylint: disable=unused-argument
     z_mod4 = qp.math.array(z) % 4
-    qp.RX(np.pi / 2 * z_mod4, wires=wires)
-    qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=wires)
+    qp.RX(np.pi / 2 * z_mod4, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=base.wires)
 
 
-add_decomps("Pow(SX)", make_pow_decomp_with_period(4), _pow_sx_to_x, _pow_sx)
+add_decomps("Pow(SX)", make_pow_decomp_with_period2(4), _pow_sx_to_x, _pow_sx)
 
 
 class SWAP(Operation):
