@@ -404,11 +404,14 @@ class Operator2(metaclass=OperatorMeta):
     """Legacy Operator compatibility default for parameter-shift recipes."""
 
     def grad_method(self):
-        """Derived gradient method: 'A' if the op is parameter-shift differentiable
-        (custom grad_recipe or available parameter frequencies via a handler/generator),
-        'F' if it has params but no shift rule, and None if it has no parameters.
-        Mirrors ``Operation.grad_method`` but sources frequencies from the
-        ``qp.gradients.parameter_frequencies`` singledispatch (which handles Operator2)."""
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation using the parameter-shift method.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
         # pylint: disable=import-outside-toplevel
         from pennylane.gradients import parameter_frequencies
 
