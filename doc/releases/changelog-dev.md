@@ -675,6 +675,7 @@
 <h3>Breaking changes 💔</h3>
 
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
+  [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
 
 * Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
@@ -833,6 +834,10 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
+  tests should only be marked `catalyst` and *not* marked `external`.
+  [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
 
 * Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
   This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
