@@ -97,10 +97,7 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("shots", [[10, 10]])
     def test_expval_single_return_in_list(self, device, shots):
         """Test that the return shape is expected for a single expectation value in a list."""
-
         dev = qp.device(device, wires=2)
-
-        obs = qp.PauliZ(wires=1)
 
         def circuit(x):
             qubit_ansatz(x)

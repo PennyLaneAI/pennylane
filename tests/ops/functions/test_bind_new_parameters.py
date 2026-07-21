@@ -17,6 +17,7 @@ This module contains unit tests for ``qp.bind_parameters``.
 
 import numpy as np
 import pytest
+from gate_data import I, X, Y, Z
 
 import pennylane as qp
 from pennylane.core import Operator2
