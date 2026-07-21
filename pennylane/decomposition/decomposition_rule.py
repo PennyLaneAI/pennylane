@@ -33,7 +33,12 @@ from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    Resources,
+    _gate_count_dict_to_str,
+)
 from .utils import to_name
 
 
@@ -858,8 +863,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        self._conditions_met = rule.is_applicable(**op.resource_params)
-        self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+        params = op.arguments if isinstance(op, Operator2) else op.resource_params
+        self._conditions_met = rule.is_applicable(**params)
+        self._work_wire_spec = rule.get_work_wire_spec(**params)
         n_work_wires = self._work_wire_spec.total
         self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires
@@ -1179,12 +1185,9 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
 
 
 def _decomp_contains_mcm(rule, params):
+    if not rule.is_applicable(**params):
+        return False
     resources = rule.compute_resources(**params).gate_counts
     mcm = abstractify(qp.ops.MidMeasure)
     ppm = abstractify(qp.ops.PauliMeasure)
     return mcm in resources or ppm in resources
-
-
-def _gate_count_dict_to_str(gate_counts):
-    inner = ", ".join(f"{op}: {count}" for op, count in gate_counts.items())
-    return f"{{{inner}}}"
