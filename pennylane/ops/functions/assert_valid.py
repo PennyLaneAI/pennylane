@@ -225,11 +225,6 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    args, kwargs = (
-        ((), op.arguments)
-        if isinstance(op, Operator2)
-        else (op.parameters, {"wires": op.wires} | op.hyperparameters)
-    )
     with qp.queuing.AnnotatedQueue() as q:
         rule(*args, **kwargs)
 
