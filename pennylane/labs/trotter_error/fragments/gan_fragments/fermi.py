@@ -230,7 +230,7 @@ class FermiWord:
             if not word.is_zero():
                 sentence[word] += coeff
 
-            sentence = {word: coeff for word, coeff in sentence.items() if not np.isclose(coeff, 0)}
+        sentence = {word: coeff for word, coeff in sentence.items() if not np.isclose(coeff, 0)}
 
         return FermiSentence(sentence)
 
