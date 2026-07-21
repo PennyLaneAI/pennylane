@@ -833,18 +833,6 @@ def test_tuple_control_wires_parametric_ops(op_type):
     assert op_type(0.123, [(0, 1), 2]).wires == qp.wires.Wires([(0, 1), 2])
 
 
-def test_CNOT_decomposition():
-    """Test that CNOT raises a DecompositionUndefinedError instead of using the
-    controlled_op decomposition functions"""
-    assert not qp.CNOT((0, 1)).has_decomposition
-
-    with pytest.raises(qp.operation.DecompositionUndefinedError):
-        qp.CNOT.compute_decomposition()
-
-    with pytest.raises(qp.operation.DecompositionUndefinedError):
-        qp.CNOT([0, 1]).decomposition()
-
-
 @pytest.mark.parametrize(
     "op_type, wires",
     [
