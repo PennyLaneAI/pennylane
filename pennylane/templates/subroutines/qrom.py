@@ -1018,8 +1018,7 @@ def _main_unary_loop_monolithic(data, triples, target_wires, first_cval):
     if first_cval == 0:
         qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
-
-def _main_unary_loop_recursive(data, triples, target_wires, first_cval):
+def _main_unary_loop_recursive_precise(data, triples, target_wires, first_cval):
     K = len(data)
     c = len(triples) + 1
     # last work wire in use acts as the flag qubit for data loading.
@@ -1076,6 +1075,73 @@ def _main_unary_loop_recursive(data, triples, target_wires, first_cval):
     else:
         qp_ops.adjoint(TemporaryAND)(wires=triples[0], control_values=(1, closing_bits[0]))
 
+def _main_unary_loop_recursive(data, triples, target_wires, first_cval):
+    """FOR NOW ASSUME FILLED QROM"""
+    K = len(data)
+    c = len(triples) + 1
+    assert K == 1 << c
+    # last work wire in use acts as the flag qubit for data loading.
+
+    flag = triples[-1][2]
+    assert c >= 2
+    #assert K >= 1 << (
+        #c - 2
+    #)  # otherwise we should have extracted one more elbow in the leading ladder
+
+    #import catalyst
+
+    #@catalyst.qjit
+    def _sub(data, triples):
+        _c = len(triples)
+        _K = len(data)
+        if _K == 1:
+            qp_ops.ctrl(BasisState(data[0], target_wires), control=[flag])
+            return
+
+        capacity = 1 << _c
+        assert capacity > 1
+        end_first_half = min(_K, capacity // 2)
+
+        TemporaryAND(triples[0], (1, 0))
+
+        data = data.reshape((2, capacity//2, data.shape[-1]))
+
+        #@for_loop(2)
+        #def halfs(j):
+        _sub(data[0], triples[1:])
+        CNOT(triples[0][::2])
+        _sub(data[1], triples[1:])
+
+        #halfs()
+
+        closing_bits = [(_K - 1 >> (_c - 1 - b)) & 1 for b in range(_c)]
+        qp_ops.adjoint(TemporaryAND)(wires=triples[-1], control_values=(1, closing_bits[_c - 1]))
+        return
+
+    quarter = 1 << (c-2)
+    #end_first_quarter = 1 << (c - 2)
+    #end_second_quarter = min(K, end_first_quarter + (1 << (c - 2)))
+    #end_third_quarter = min(K, end_second_quarter + (1 << (c - 2)))
+
+    TemporaryAND(triples[0], (first_cval, 0))
+    data = data.reshape((4, quarter, data.shape[1]))
+
+    @for_loop(4)
+    def quarters(i):
+        _sub(data[i], triples[1:])
+        cond(i == 0, MultiControlledX)(triples[0][::2], control_values=[0])
+        cond(i == 1, CNOT)(triples[0][::2])
+        cond(i == 1, CNOT)(triples[0][1:])
+        cond(i == 2, CNOT)(triples[0][::2])
+
+    quarters()
+
+    closing_bits = [(K - 1 >> (c - 1 - b)) & 1 for b in range(c)]
+    if first_cval == 0:
+        qp_ops.adjoint(TemporaryAND)(wires=triples[0], control_values=tuple(closing_bits[:2]))
+    else:
+        qp_ops.adjoint(TemporaryAND)(wires=triples[0], control_values=(1, closing_bits[0]))
+
 
 @register_condition(_qrom_unary_iteration_condition)
 @register_resources(_qrom_unary_iteration_resources)
@@ -1120,8 +1186,9 @@ def _qrom_unary_iteration(
     if K == 1:
         qp_ops.ctrl(BasisState(data[0], target_wires), control=triples[-1][2:])
     else:
-        _main_unary_loop_monolithic(data, triples, target_wires, first_cval)
-        # _main_unary_loop_recursive(data, triples, target_wires, first_cval)
+        #_main_unary_loop_monolithic(data, triples, target_wires, first_cval)
+        _main_unary_loop_recursive(data, triples, target_wires, first_cval)
+        #_main_unary_loop_recursive_precise(data, triples, target_wires, first_cval)
 
     if num_init_elbows > 0:
         # closing ladder of right elbows for address K-1; control values depend on the bits of K-1
