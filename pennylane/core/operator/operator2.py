@@ -517,7 +517,7 @@ class Operator2(metaclass=OperatorMeta):
         ...         return [MyClass(self.phi*z, self.wires)]
         ...
         >>> MyClass(0.5, 0).pow(2)
-        [MyClass(phi=1.0, wires=[0])]
+        [MyClass(1.0, wires=[0])]
         """
         # Child methods may call super().pow(z%period) where op**period = I
         # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
@@ -573,7 +573,7 @@ class Operator2(metaclass=OperatorMeta):
         ...
         >>> op = MyClass(0.5, wires=0).adjoint()
         >>> op
-        MyClass(phi=0.5, wires=[0])
+        MyClass(0.5, wires=[0])
         """
         raise AdjointUndefinedError
 
