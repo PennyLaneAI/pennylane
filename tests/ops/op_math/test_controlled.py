@@ -1155,11 +1155,10 @@ class TestDecomposition:
         op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        qp.assert_equal(decomp[0], qp.CRZ(qp.numpy.array(theta), [4, 0]))
-        qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 0]))
-        qp.assert_equal(decomp[2], qp.CRZ(qp.numpy.array(-theta / 2), wires=[4, 0]))
-        qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 0]))
-        qp.assert_equal(decomp[4], qp.CRZ(qp.numpy.array(-theta / 2), wires=[4, 0]))
+        qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), [0]))
+        qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
+        qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), wires=[0]))
+        qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
