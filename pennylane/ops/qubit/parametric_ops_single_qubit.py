@@ -748,9 +748,14 @@ def _adjoint_rz(base):
     qp.ops.functions.bind_new_parameters(base, (-base.phi,))
 
 
+@register_resources(lambda base, z: {RZ: 1})
+def _pow_rz(base, z):
+    qp.ops.functions.bind_new_parameters(base, (base.phi * z,))
+
+
 add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
 add_decomps("Adjoint(RZ)", _adjoint_rz)
-add_decomps("Pow(RZ)", pow_rotation)
+add_decomps("Pow(RZ)", _pow_rz)
 
 
 def _controlled_rz_resource(base, control_wires, control_values, work_wires, work_wire_type):

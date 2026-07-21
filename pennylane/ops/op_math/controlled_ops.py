@@ -2541,9 +2541,14 @@ def _adjoint_crz(base):
     qp.ops.functions.bind_new_parameters(base, (-base.phi,))
 
 
+@register_resources(lambda base, z: {CRZ: 1})
+def _pow_crz(base, z):
+    qp.ops.functions.bind_new_parameters(base, (base.phi * z,))
+
+
 add_decomps(CRZ, _crz, _crz_to_ppr)
 add_decomps("Adjoint(CRZ)", _adjoint_crz)
-add_decomps("Pow(CRZ)", pow_rotation)
+add_decomps("Pow(CRZ)", _pow_crz)
 
 
 class CRot(ControlledOp):
