@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
+import pennylane as qp
 from pennylane import (
     CH,
     CNOT,
@@ -1260,8 +1261,8 @@ class TestGates:
             Toffoli(wires=["q2", "q1", "q0"]),
             Adjoint(CNOT(wires=["q0", "q1"])),
             (CNOT(wires=["q1", "q0"])) ** 2,
-            (Adjoint(PauliY("q0"))) ** 2,
-            Adjoint((CY(wires=["q0", "q1"])) ** 2),
+            qp.pow(qp.adjoint(PauliY("q0")), 2),
+            qp.adjoint(qp.pow(CY(wires=["q0", "q1"]), 2)),
         ]
 
     def test_integer_wire_maps(self):

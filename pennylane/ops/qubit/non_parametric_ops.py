@@ -48,10 +48,8 @@ from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.ops.op_math.pow2 import (
-    make_pow_decomp_with_period as make_pow_decomp_with_period2,
-    pow_involutory as pow_involutory2,
-)
+from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
 
