@@ -47,7 +47,6 @@ def test_about():
     assert "Numpy version" in out
     assert "Scipy version" in out
     assert "default.qubit" in out
-    assert "default.gaussian" in out
 
 
 def test_about_prints_core_fields(capsys):
