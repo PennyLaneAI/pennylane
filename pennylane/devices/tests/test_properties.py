@@ -46,21 +46,6 @@ try:
 except ImportError:
     JAX_SUPPORT = False
 
-# Shared test data =====
-
-
-def qfunc_with_scalar_input():
-    """Model dependent quantum function taking a single input"""
-
-    def qfunc(x):
-        qp.RX(x, wires=0)
-        return qp.expval(qp.Identity(wires=0))
-
-    return qfunc
-
-
-# =======================
-
 
 class TestDeviceProperties:
     """Test the device is created with the expected properties."""
@@ -133,7 +118,10 @@ class TestCapabilities:
         interface = cap["passthru_interface"]
         assert interface in ["autograd", "jax", "torch"]  # for new interface, add test case
 
-        qfunc = qfunc_with_scalar_input()
+        def qfunc(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Identity(wires=0))
+
         qnode = qp.QNode(qfunc, dev, shots=shots, interface=interface)
 
         # assert that we can do a simple gradient computation in the passthru interface
