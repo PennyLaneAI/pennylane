@@ -5,6 +5,12 @@
 * (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
   [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
 
+* ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
+  magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
+  These states are currently supported when compiling with Catalyst; device simulators raise an
+  error via ``resolve_dynamic_wires`` until native support is added.
+  [(#9846)](https://github.com/PennyLaneAI/pennylane/pull/9846)
+
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
@@ -664,6 +670,9 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
+
+* Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
 
 * Leftover Python 3.9 support branch has been removed.
   [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
