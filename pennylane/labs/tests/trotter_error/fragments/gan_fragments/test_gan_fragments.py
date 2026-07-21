@@ -210,43 +210,44 @@ def test_fragment_norm_sums_coeff_norms():
     assert f.norm(g) == pytest.approx(expected)
 
 
-#Q = FuncSymbol.position
-#P = FuncSymbol.momentum
-#I = FuncSymbol.identity
-#
-#@pytest.mark.parametrize(
-#    "monomial, expected",
-#    [
-#        # Already ordered single factors are unchanged.
-#        (GanMonomial([Q(0)]), GanMonomial([Q(0)])),
-#        # Merge same-base factors by summing exponents.
-#        (GanMonomial([Q(0, 1), Q(0, 2)]), GanMonomial([Q(0, 3)])),
-#        (GanMonomial([P(1, 1), P(1, 1), P(1, 1)]), GanMonomial([P(1, 3)])),
-#        # Same-mode P and Q do NOT commute: order is preserved, no merge.
-#        (GanMonomial([Q(0, 1), P(0, 1)]), GanMonomial([Q(0, 1), P(0, 1)])),
-#        (GanMonomial([P(0, 1), Q(0, 1)]), GanMonomial([P(0, 1), Q(0, 1)])),
-#        # Different modes are sorted into ascending-mode canonical order.
-#        (GanMonomial([P(2, 1), P(1, 1)]), GanMonomial([P(1, 1), P(2, 1)])),
-#        (GanMonomial([Q(2, 1), Q(0, 1)]), GanMonomial([Q(0, 1), Q(2, 1)])),
-#        # Mixed different-mode factors: stable sort by mode keeps same-mode order.
-#        (GanMonomial([Q(0, 1), P(2, 1), P(0, 1)]), GanMonomial([Q(0, 1), P(0, 1), P(2, 1)])),
-#        (GanMonomial([P(1, 2), Q(0, 1)]), GanMonomial([Q(0, 1), P(1, 2)])),
-#        # Identity is dropped when other factors are present.
-#        (GanMonomial([I(), Q(0, 1)]), GanMonomial([Q(0, 1)])),
-#        (GanMonomial([Q(0, 1), I()]), GanMonomial([Q(0, 1)])),
-#        (GanMonomial([I(), P(1, 2), I()]), GanMonomial([P(1, 2)])),
-#        # Identity-only and empty products collapse to a single identity.
-#        (GanMonomial([I()]), GanMonomial([I()])),
-#        (GanMonomial([]), GanMonomial([I()])),
-#        # Merge only fires after reordering brings same-base factors together.
-#        (GanMonomial([P(2, 1), P(1, 1), P(2, 1)]), GanMonomial([P(1, 1), P(2, 2)])),
-#        # A fuller mix: sort by mode, preserve same-mode order, merge same base.
-#        (
-#            GanMonomial([P(1, 1), Q(0, 1), Q(0, 1), P(2, 1)]),
-#            GanMonomial([Q(0, 2), P(1, 1), P(2, 1)]),
-#        ),
-#    ],
-#)
-#def test_normal_order(monomial, expected):
-#    """test the GanMonomial normal order function"""
-#    assert monomial.normal_order() == expected
+Q = FuncSymbol.position
+P = FuncSymbol.momentum
+I = FuncSymbol.identity
+
+
+@pytest.mark.parametrize(
+    "monomial, expected",
+    [
+        # Already ordered single factors are unchanged.
+        (GanMonomial([Q(0)]), GanMonomial([Q(0)])),
+        # Merge same-base factors by summing exponents.
+        (GanMonomial([Q(0, 1), Q(0, 2)]), GanMonomial([Q(0, 3)])),
+        (GanMonomial([P(1, 1), P(1, 1), P(1, 1)]), GanMonomial([P(1, 3)])),
+        # Same-mode P and Q do NOT commute: order is preserved, no merge.
+        (GanMonomial([Q(0, 1), P(0, 1)]), GanMonomial([Q(0, 1), P(0, 1)])),
+        (GanMonomial([P(0, 1), Q(0, 1)]), GanMonomial([P(0, 1), Q(0, 1)])),
+        # Different modes are sorted into ascending-mode canonical order.
+        (GanMonomial([P(2, 1), P(1, 1)]), GanMonomial([P(1, 1), P(2, 1)])),
+        (GanMonomial([Q(2, 1), Q(0, 1)]), GanMonomial([Q(0, 1), Q(2, 1)])),
+        # Mixed different-mode factors: stable sort by mode keeps same-mode order.
+        (GanMonomial([Q(0, 1), P(2, 1), P(0, 1)]), GanMonomial([Q(0, 1), P(0, 1), P(2, 1)])),
+        (GanMonomial([P(1, 2), Q(0, 1)]), GanMonomial([Q(0, 1), P(1, 2)])),
+        # Identity is dropped when other factors are present.
+        (GanMonomial([I(), Q(0, 1)]), GanMonomial([Q(0, 1)])),
+        (GanMonomial([Q(0, 1), I()]), GanMonomial([Q(0, 1)])),
+        (GanMonomial([I(), P(1, 2), I()]), GanMonomial([P(1, 2)])),
+        # Identity-only and empty products collapse to a single identity.
+        (GanMonomial([I()]), GanMonomial([I()])),
+        (GanMonomial([]), GanMonomial([I()])),
+        # Merge only fires after reordering brings same-base factors together.
+        (GanMonomial([P(2, 1), P(1, 1), P(2, 1)]), GanMonomial([P(1, 1), P(2, 2)])),
+        # A fuller mix: sort by mode, preserve same-mode order, merge same base.
+        (
+            GanMonomial([P(1, 1), Q(0, 1), Q(0, 1), P(2, 1)]),
+            GanMonomial([Q(0, 2), P(1, 1), P(2, 1)]),
+        ),
+    ],
+)
+def test_normal_order(monomial, expected):
+    """test the GanMonomial normal order function"""
+    assert monomial.normal_order() == expected

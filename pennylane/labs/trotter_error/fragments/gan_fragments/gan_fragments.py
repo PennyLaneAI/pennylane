@@ -504,7 +504,7 @@ def _normal_order(monomial):
     """
 
     funcs = [func for func in monomial.funcs if func.f_type != FuncType.IDENTITY]
-    funcs.sort(key=lambda func: func.mode) # sort preserves the order when modes are equal
+    funcs.sort(key=lambda func: func.mode)  # sort preserves the order when modes are equal
     funcs = _simplify_monomial(funcs)
     if not funcs:
         funcs = [FuncSymbol.identity()]
