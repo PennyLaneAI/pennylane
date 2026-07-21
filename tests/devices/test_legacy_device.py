@@ -984,11 +984,9 @@ class TestDeviceInit:
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        with pytest.warns(
-            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qp.device("default.qutrit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = DefaultQubitLegacy(wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
+
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
         assert shot_vector[0].copies == 1
