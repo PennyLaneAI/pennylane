@@ -122,12 +122,13 @@ def test_expval(
     max_batch_samples,
     max_batch_ops,
     indep_estimates,
+    seed,
 ):  # pylint: disable=too-many-arguments
     gates = local_gates(len(wires), 1)
     if gates_fn == "multi_gens":
         gates = [[gates[0][0], gates[1][0]]] + gates[2:]
 
-    key = jax.random.PRNGKey(np.random.randint(0, 99999))
+    key = jax.random.PRNGKey(seed)
 
     if not isinstance(ops, csr_matrix):
         ops = jnp.array(ops)
