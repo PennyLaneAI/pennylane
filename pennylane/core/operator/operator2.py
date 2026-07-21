@@ -984,10 +984,8 @@ class Operator2(metaclass=OperatorMeta):
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 value = unflatten(leaves, tree)
 
-            if key in self.dynamic_argnames and remove_dyn_keywords:
-                inputs.append(f"{value}")
-            else:
-                inputs.append(f"{key}={value}")
+            is_dyn = self.dynamic_argnames and remove_dyn_keywords
+            inputs.append(f"{value}" if is_dyn else f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
