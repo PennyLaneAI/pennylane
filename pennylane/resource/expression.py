@@ -17,7 +17,7 @@ Helper classes and functions for symbolic resource expressions.
 
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Union
+from typing import Union
 
 
 def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
@@ -38,7 +38,7 @@ class Expression:
     .. warning::
 
         This class is intended to be immutable. Do not modify the internal state of an expression
-        after it is created, as this may lead to incorrect behavior.
+        after it is created, as this may lead to incorrect behaviour.
     """
 
     __slots__ = ("_hashval", "_data", "_vars")
@@ -138,15 +138,17 @@ class Expression:
         """
         if substitutions is None:
             substitutions = {}
-        substitutions.update(kwargs)
+
+        # NOTE: don't mutate incoming dict
+        substitutions_copy = {**substitutions, **kwargs}
 
         new_data = defaultdict(int)
         for vars, coeff in self._data.items():
             new_k = []
             mult = 1
             for var in vars:
-                if var in substitutions:
-                    mult *= substitutions[var]
+                if var in substitutions_copy:
+                    mult *= substitutions_copy[var]
                 else:
                     new_k.append(var)
 
@@ -157,7 +159,7 @@ class Expression:
             return 0
         if len(new_data) == 1 and () in new_data:
             return new_data[()]  # Return as int rather than Expression if the result is a constant
-        return Expression(new_data, vars=self._vars.difference(substitutions.keys()))
+        return Expression(new_data, vars=self._vars.difference(substitutions_copy.keys()))
 
     @lru_cache
     def __str__(self) -> str:
@@ -245,14 +247,3 @@ class Expression:
 
     def __radd__(self, other) -> "Expression":
         return self.__add__(other)
-
-
-def convert_int_vals_to_expression(data: dict[Any, Any]):
-    """Replaces all integer values in a dictionary with Expression objects.
-
-    Args:
-        data (dict[Any, Any]): The dictionary to convert.
-    """
-    for key, count in data.items():
-        if isinstance(count, int):
-            data[key] = Expression(count)

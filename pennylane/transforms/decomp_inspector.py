@@ -16,14 +16,14 @@
 
 from collections.abc import Sequence
 from functools import partial
-
-from typing_extensions import override
+from typing import override
 
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
 from pennylane.decomposition.decomposition_rule import _DecompInfo, _DecompInfoCollection
+from pennylane.decomposition.resources import _gate_count_dict_to_str
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -79,7 +79,7 @@ class _DecompInGraphInfo(_DecompInfo):
         if not self._is_reachable:
             return super()._gate_counts_and_allocations
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
-        gate_counts = gate_set_resource.gate_counts
+        gate_counts = _gate_count_dict_to_str(gate_set_resource.gate_counts)
         weighted_cost = gate_set_resource.weighted_cost
         return (
             super()._gate_counts_and_allocations
@@ -125,11 +125,13 @@ class _DecompInGraphInfo(_DecompInfo):
     @override
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        estimated_str = _gate_count_dict_to_str(estimated_count)
         if estimated_count == actual_count:
-            return f"First-Level Expansion Gates: {estimated_count}"
+            return f"First-Level Expansion Gates: {estimated_str}"
+        actual_str = _gate_count_dict_to_str(actual_count)
         return (
-            f"Estimated First-Level Expansion Gates: {estimated_count}\n"
-            f"Actual First-Level Expansion Gates: {actual_count}"
+            f"Estimated First-Level Expansion Gates: {estimated_str}\n"
+            f"Actual First-Level Expansion Gates: {actual_str}"
         )
 
     @override

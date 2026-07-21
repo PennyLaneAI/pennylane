@@ -38,15 +38,17 @@ Circuit Specification Classes and Utilities
 
     ~CircuitSpecs
     ~Expression
+    ~Resources
     ~SpecsResources
-    ~SymbolicSpecsResources
+    ~PBCSpecsResources
 
     ~resources_from_tape
 """
 
 from .resource import (
+    Resources,
     SpecsResources,
-    SymbolicSpecsResources,
+    PBCSpecsResources,
     CircuitSpecs,
     resources_from_tape,
 )
@@ -54,8 +56,9 @@ from .expression import Expression
 from .specs import specs
 
 __all__ = [
+    "Resources",
     "SpecsResources",
-    "SymbolicSpecsResources",
+    "PBCSpecsResources",
     "CircuitSpecs",
     "resources_from_tape",
     "Expression",
