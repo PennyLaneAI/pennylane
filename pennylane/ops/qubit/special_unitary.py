@@ -27,7 +27,7 @@ import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.typing import FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 _pauli_matrices = np.array(
@@ -759,8 +759,8 @@ class TmpPauliRot(PauliRot):
         )
 
 
-def _tmp_paulirot_decomp_resources(pauli_word: str):
-    return {qp.resource_rep(PauliRot, pauli_word=pauli_word): 1}
+def _tmp_paulirot_decomp_resources(pauli_word: str, **__):
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_resources(_tmp_paulirot_decomp_resources)

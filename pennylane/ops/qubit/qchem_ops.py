@@ -30,7 +30,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
 )
-from pennylane.typing import TensorLike
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 I4 = np.eye(4)
@@ -295,8 +295,8 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
 
 def _single_excitation_ppr_resource():
     return {
-        resource_rep(qp.PauliRot, pauli_word="XY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YX"): 1,
+        qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
     }
 
 
@@ -897,14 +897,14 @@ def _doublexcit(phi: TensorLike, wires: WiresLike, **_):
 
 def _doublexcit_ppr_resource():
     return {
-        resource_rep(qp.PauliRot, pauli_word="YYYX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YYXY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YXYY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YXXX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XYYY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XYXX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XXYX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XXXY"): 1,
+        qp.PauliRot(Float, pauli_word="YYYX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YYXY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YXYY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YXXX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XYYY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XYXX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XXYX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XXXY", wires=Wire[4]): 1,
     }
 
 

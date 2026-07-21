@@ -19,6 +19,7 @@ from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import PauliRot
+from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike
 
 _PAULIS = ["I", "X", "Y", "Z"]
@@ -154,7 +155,7 @@ class ArbitraryUnitary(Operation):
 def _arbitrary_unitary_resources(num_wires: int) -> dict:
     resources = {}
     for pauli_word in _all_pauli_words_but_identity(num_wires):
-        resources[resource_rep(PauliRot, pauli_word=pauli_word)] = 1
+        resources[PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])] = 1
     return resources
 
 

@@ -200,7 +200,9 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
-        self._is_abstract = False
+        # NOTE: Use 'getattr' to not clobber '_is_abstract' if coming
+        # from '__abstract_init__'
+        self._is_abstract = getattr(self, "_is_abstract", False)
 
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
@@ -217,6 +219,7 @@ class Operator2(metaclass=OperatorMeta):
 
     def __abstract_init__(self, *args, **kwargs):
         """Constructor for canonicalization of abstract inputs."""
+        self._is_abstract = True
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         arguments = bound_args.arguments
@@ -1601,9 +1604,12 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete impl.
-                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
+                # Concrete wire labels are cast to ``int``. Abstract wire labels (tracers) can
+                # still reach this impl, e.g. when an intermediate operator is reconstructed by a
+                # capture interpreter; those are left untouched.
+                args[name] = Wires(
+                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
+                )
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first

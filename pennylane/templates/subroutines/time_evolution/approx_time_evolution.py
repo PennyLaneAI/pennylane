@@ -26,6 +26,7 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.ops import PauliRot
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -245,7 +246,7 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
         for pw in words:
             if len(pw) != 0:
                 term_str = "".join(pw.values())
-                resources[resource_rep(PauliRot, pauli_word=term_str)] += 1
+                resources[PauliRot(Float, pauli_word=term_str, wires=Wire[len(term_str)])] += 1
 
     return resources
 

@@ -36,6 +36,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     OperatorPropertyUndefined,
 )
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
@@ -496,7 +497,8 @@ def _pauli_rot_decomp_condition(base):
 def _pauli_rot_decomp_resource(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    return {resource_rep(qp.PauliRot, pauli_word=qp.pauli.pauli_word_to_string(base)): 1}
+    pauli_word = qp.pauli.pauli_word_to_string(base)
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_condition(_pauli_rot_decomp_condition)

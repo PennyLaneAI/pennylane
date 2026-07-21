@@ -30,13 +30,13 @@ import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
 from pennylane.core import queuing
-from pennylane.core.operator import Operation, Operator
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import FlatPytree, TensorLike, Wire
+from pennylane.typing import FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -256,7 +256,7 @@ add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
 add_decomps("Pow(MultiRZ)", pow_rotation)
 
 
-class PauliRot(Operation):
+class PauliRot(Operator2):
     r"""
     Arbitrary Pauli word rotation.
 
@@ -300,7 +300,16 @@ class PauliRot(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    do_check_domain = False
+    num_wires = None
+    """int | None: Number of wires the operator acts on. ``None`` since ``PauliRot`` acts on an
+    arbitrary number of wires."""
+
+    dynamic_argnames = ("theta",)
+    compilable_argnames = ("pauli_word",)
+    wire_argnames = ("wires",)
+    wire_sizes = (None,)
+    arg_specs = {"theta": Float, "wires": Wire[-1]}
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -314,28 +323,23 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    @classmethod
-    def _primitive_bind_call(cls, theta, pauli_word, wires=None):
-        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires)
-
     def __init__(
         self,
         theta: TensorLike,
         pauli_word: str,
         wires: WiresLike,
     ):
-        super().__init__(theta, wires=wires)
-
-        if not self._wires:
-            raise ValueError(
-                f"{self.name}: wrong number of wires. At least one wire has to be provided."
-            )
-
-        self.hyperparameters["pauli_word"] = pauli_word
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
                 "Allowed characters are I, X, Y and Z"
+            )
+
+        super().__init__(theta, pauli_word, wires=wires)
+
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
         num_wires = len(self._wires)
@@ -348,7 +352,7 @@ class PauliRot(Operation):
             )
 
     def __repr__(self) -> str:
-        return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires})"
+        return f"PauliRot({self.theta}, {self.pauli_word}, wires={self.wires})"
 
     def label(
         self,
@@ -379,8 +383,7 @@ class PauliRot(Operation):
         'PauliRot'
 
         """
-        pauli_word = self.hyperparameters["pauli_word"]
-        op_label = base_label or ("R" + pauli_word)
+        op_label = base_label or ("R" + self.pauli_word)
 
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
@@ -391,7 +394,7 @@ class PauliRot(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
+        return {"pauli_word": self.pauli_word}
 
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:
@@ -406,7 +409,7 @@ class PauliRot(Operation):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(theta: TensorLike, pauli_word: str) -> TensorLike:
+    def compute_matrix(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -476,15 +479,14 @@ class PauliRot(Operation):
         )
 
     def generator(self) -> "qp.Hamiltonian":
-        pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
 
         return qp.Hamiltonian(
-            [-0.5], [qp.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)]
+            [-0.5], [qp.pauli.string_to_pauli_word(self.pauli_word, wire_map=wire_map)]
         )
 
     @staticmethod
-    def compute_eigvals(theta: TensorLike, pauli_word: str) -> TensorLike:
+    def compute_eigvals(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -572,13 +574,13 @@ class PauliRot(Operation):
         return ops
 
     def adjoint(self):
-        return PauliRot(-self.parameters[0], self.hyperparameters["pauli_word"], wires=self.wires)
+        return PauliRot(-self.theta, self.pauli_word, wires=self.wires)
 
     def pow(self, z):
-        return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
+        return [PauliRot(self.theta * z, self.pauli_word, wires=self.wires)]
 
 
-def _pauli_rot_resources(pauli_word):
+def _pauli_rot_resources(pauli_word, **__):
     if set(pauli_word) == {"I"}:
         return {qp.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
@@ -591,7 +593,7 @@ def _pauli_rot_resources(pauli_word):
 
 @register_resources(_pauli_rot_resources)
 @disable_autograph
-def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
+def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLike, **__):
     if set(pauli_word) == {"I"}:
         qp.GlobalPhase(theta / 2)
         return
@@ -1281,7 +1283,7 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 def _isingxx_to_ppr_resource():
-    return {resource_rep(qp.PauliRot, pauli_word="XX"): 1}
+    return {PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1}
 
 
 @register_resources(_isingxx_to_ppr_resource)
@@ -1336,7 +1338,6 @@ class IsingYY(Operation):
     resource_keys = set()
 
     grad_method = "A"
-    parameter_frequencies = [(1,)]
 
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
@@ -1456,7 +1457,7 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 def _isingyy_to_ppr_resource():
-    return {resource_rep(qp.PauliRot, pauli_word="YY"): 1}
+    return {PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1}
 
 
 @register_resources(_isingyy_to_ppr_resource)
@@ -1663,7 +1664,7 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 def _isingzz_to_ppr_resource():
-    return {resource_rep(qp.PauliRot, pauli_word="ZZ"): 1}
+    return {PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1}
 
 
 @register_resources(_isingzz_to_ppr_resource)
@@ -2088,9 +2089,9 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 def _pswap_to_ppr_resources():
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
+        PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
+        PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
 

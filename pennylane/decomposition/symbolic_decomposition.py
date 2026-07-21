@@ -30,6 +30,21 @@ from .decomposition_rule import DecompositionRule, register_condition, register_
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
 
 
+def _base_resource_rep(base_class, base_params):
+    """Resource representation of ``base_class`` given its resource ``base_params``.
+
+    These legacy symbolic rules are also registered against some ``Operator2`` subclasses (e.g.
+    ``S``/``T``/``SX`` for :func:`~.make_pow_decomp_with_period`) and are exercised through the
+    legacy ``Pow``/``Adjoint`` wrappers by ``assert_valid``. ``Operator2`` subclasses are
+    represented by an abstract instance (constructed from their ``arguments``) rather than a
+    :class:`~.CompressedResourceOp`, so that they match the representation produced by
+    :func:`~.abstractify` for concrete operators.
+    """
+    if issubclass(base_class, Operator2):
+        return abstractify(base_class(**base_params))
+    return resource_rep(base_class, **base_params)
+
+
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the adjoint of a decomposition rule."""
 
@@ -85,7 +100,7 @@ def cancel_adjoint(*params, wires, base):
 
 
 def _adjoint_rotation_resource(base_class, base_params):
-    return {resource_rep(base_class, **base_params): 1}
+    return {_base_resource_rep(base_class, base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
@@ -160,9 +175,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
-            if issubclass(base_class, Operator2):
-                return {abstractify(base_class(**base_params)): 1}
-            return {resource_rep(base_class, **base_params): 1}
+            return {_base_resource_rep(base_class, base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
     @register_condition(_condition_fn)
@@ -181,7 +194,7 @@ pow_involutory = make_pow_decomp_with_period(2)
 
 
 def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
-    return {resource_rep(base_class, **base_params): 1}
+    return {_base_resource_rep(base_class, base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument

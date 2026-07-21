@@ -23,6 +23,7 @@ from pennylane import register_resources
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, resource_rep
+from pennylane.typing import Float, Wire
 
 
 @functools.lru_cache
@@ -161,7 +162,7 @@ class ArbitraryStatePreparation(Operation):
 def _arbitrary_state_preparation_resources(num_wires):
     return dict(
         Counter(
-            resource_rep(qp.PauliRot, pauli_word=pauli_word)
+            qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])
             for pauli_word in _state_preparation_pauli_words(num_wires)
         )
     )
