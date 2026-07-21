@@ -154,7 +154,6 @@ def test_givens_decomposition(shape, seed):
     ],
 )
 @pytest.mark.jax
-@pytest.mark.external
 def test_givens_decomposition_jax_qjit(shape, compiler, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
     import jax
