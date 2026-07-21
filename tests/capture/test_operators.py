@@ -24,14 +24,10 @@ import pennylane as qp
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractOperator, operator_p
+from pennylane.capture.primitives import AbstractOperator
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
-
-
-def _check_op_eqn(eqn, expected_op):
-    assert eqn.primitive == operator_p
-    assert eqn.params["op_cls"] is expected_op
 
 
 def test_abstract_operator():
@@ -99,7 +95,7 @@ def test_hybrid_capture_wires():
     assert jaxpr.eqns[0].primitive.name == "add"
 
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
-    _check_op_eqn(jaxpr.eqns[1], qp.X)
+    assert_eqn_matches_op(jaxpr.eqns[1], qp.X)
 
     with qp.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
@@ -181,7 +177,7 @@ def test_different_wires(w, as_kwarg, autograph):
     assert len(jaxpr.eqns) == 1 + offset
 
     eqn = jaxpr.eqns[offset + 0]
-    _check_op_eqn(eqn, qp.X)
+    assert_eqn_matches_op(eqn, qp.X)
     assert len(eqn.invars) == 1
     if not isinstance(w, jax.numpy.ndarray):
         assert isinstance(eqn.invars[0], jax.extend.core.Literal)
@@ -246,6 +242,7 @@ def test_parametrized_op():
 
 
 class TestSpecialOps:
+
     def test_pauli_rot(self):
         """Test a special operation that has positional metadata and overrides binding."""
 
@@ -305,6 +302,7 @@ class TestSpecialOps:
 
 
 class TestTemplates:
+
     def test_variable_wire_non_parametrized_template(self):
         """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 
@@ -332,7 +330,7 @@ class TestTemplates:
 
         assert len(jaxpr.eqns) == 6
 
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.Z._primitive
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
@@ -391,7 +389,7 @@ class TestOpmath:
         jaxpr = jax.make_jaxpr(qp.adjoint)(qp.X(0))
 
         assert len(jaxpr.eqns) == 2
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
         eqn = jaxpr.eqns[1]
         assert eqn.primitive == qp.ops.Adjoint._primitive
@@ -416,7 +414,7 @@ class TestOpmath:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
         eqn = jaxpr.eqns[1]
         assert eqn.primitive == qp.ops.Adjoint._primitive
@@ -435,7 +433,7 @@ class TestOpmath:
         assert len(cjaxpr.eqns) == 2
 
         base_eqn = cjaxpr.eqns[0]
-        _check_op_eqn(base_eqn, qp.X)
+        assert_eqn_matches_op(base_eqn, qp.X)
 
         ctrl_eqn = cjaxpr.eqns[1]
         assert ctrl_eqn.primitive == qp.ops.Controlled._primitive
@@ -519,7 +517,7 @@ class TestAbstractDunders:
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 3
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.Y._primitive
 
         eqn = jaxpr.eqns[2]
@@ -541,7 +539,7 @@ class TestAbstractDunders:
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 3
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.Y._primitive
 
         eqn = jaxpr.eqns[2]

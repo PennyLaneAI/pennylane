@@ -38,17 +38,11 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    AbstractMeasurement,
-    operator_p,
-)
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractMeasurement
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
-
-
-def _check_op_eqn(eqn, expected_op):
-    assert eqn.primitive == operator_p
-    assert eqn.params["op_cls"] is expected_op
 
 
 def _get_shapes_for(*measurements, shots=qp.measurements.Shots(None), num_device_wires=0):
@@ -106,6 +100,7 @@ def test_abstract_measurement():
 
 
 class TestCounts:
+
     def test_counts_no_implementation(self):
         """Test that counts can't be measured and raises a NotImplementedError."""
 
@@ -396,7 +391,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -437,7 +432,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        _check_op_eqn(jaxpr.eqns[0], PauliX)
+        assert_eqn_matches_op(jaxpr.eqns[0], PauliX)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -511,7 +506,7 @@ class TestExpvalVar:
             return m_type(obs=obs)
 
         jaxpr = jax.make_jaxpr(f)()
-        _check_op_eqn(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[2].primitive == qp.Y._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
@@ -520,6 +515,7 @@ class TestExpvalVar:
 
 
 class TestProbs:
+
     @pytest.mark.parametrize(
         "wires, shape", [([0, 1, 2], 8), ([], 16), (jax.numpy.array([0, 1, 2]), 8)]
     )
@@ -597,6 +593,7 @@ class TestProbs:
 
 
 class TestSample:
+
     @pytest.mark.parametrize(
         "wires, dim1_len",
         [
@@ -704,7 +701,7 @@ def test_shadow_expval(seed):
     jaxpr = jax.make_jaxpr(f)()
 
     assert len(jaxpr.eqns) == 2
-    _check_op_eqn(jaxpr.eqns[0], qp.X)
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
