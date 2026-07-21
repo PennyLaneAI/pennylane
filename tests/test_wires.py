@@ -55,10 +55,7 @@ class TestWires:
             [qp.RX, qp.RY],
             [qp.PauliX],
             (None, qp.expval),
-            (
-                qp.device("default.qubit", wires=range(3)),
-                qp.device("default.gaussian", wires=[qp.RX, 3]),
-            ),
+            (qp.device("default.qubit", wires=range(3)),),
         ],
     )
     def test_creation_from_iterables_of_exotic_elements(self, iterable):

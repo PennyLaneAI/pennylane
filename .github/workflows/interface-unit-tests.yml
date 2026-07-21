@@ -155,6 +155,7 @@ jobs:
             "capture-jax-tests": ["3.12", "3.14"],
             "all-interfaces-tests": ["3.12"],
             "external-libraries-tests": ["3.12"],
+            "catalyst-tests": ["3.12"],
             "qcut-tests": ["3.12"],
             "qchem-tests": ["3.12"],
             "gradients-tests": ["3.12"],
@@ -258,7 +259,7 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}torch-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      pytest_markers: torch and not qcut and not finite-diff and not param-shift
+      pytest_markers: torch and not qcut and not finite-diff and not param-shift and not catalyst
 
   autograd-tests:
     needs:
@@ -292,7 +293,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}autograd-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      pytest_markers: autograd and not qcut and not finite-diff and not param-shift
+      pytest_markers: autograd and not qcut and not finite-diff and not param-shift and not catalyst
 
   jax-tests:
     needs:
@@ -327,7 +328,7 @@ jobs:
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: jax and not qcut and not finite-diff and not param-shift and not capture
+      pytest_markers: jax and not qcut and not finite-diff and not param-shift and not capture and not catalyst
       pytest_additional_args: --dist=loadscope --splits 4 --group ${{ matrix.group }} --splitting-algorithm least_duration ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/jax_tests_durations.json'
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
@@ -364,7 +365,7 @@ jobs:
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: capture and not qcut and not finite-diff and not param-shift
+      pytest_markers: capture and not qcut and not finite-diff and not param-shift and not catalyst
       pytest_additional_args: --dist=loadscope ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/capture_jax_tests_durations.json'
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
@@ -400,7 +401,7 @@ jobs:
       additional_pip_packages: ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: core and not qcut and not finite-diff and not param-shift
+      pytest_markers: core and not qcut and not finite-diff and not param-shift and not catalyst
       pytest_additional_args: --splits 6 --group ${{ matrix.group }} --splitting-algorithm least_duration ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/core_tests_durations.json'
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}core-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
@@ -476,6 +477,42 @@ jobs:
       additional_pip_packages: |
         --group external-libraries
         mitiq>=0.45.1
+        ${{ needs.default-dependency-versions.outputs.jax-version }}
+        ${{ inputs.additional_python_packages }}
+
+  catalyst-tests:
+    needs:
+      - setup-ci-load
+      - determine_runner
+      - default-dependency-versions
+      - warnings-as-errors-setup
+    strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+      max-parallel: >-
+        ${{
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).catalyst-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+         }}
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-ci-load.outputs.python-version).catalyst-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
+           }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'catalyst-tests') }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+      job_name: ${{ inputs.job_name_prefix }}catalyst-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+      branch: ${{ inputs.branch }}
+      coverage_artifact_name: catalyst-tests-coverage
+      python_version: ${{ matrix.python-version }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_markers: catalyst
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}catalyst-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      additional_pip_packages: |
+        matplotlib
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
@@ -689,6 +726,7 @@ jobs:
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests
+      - catalyst-tests
       - qcut-tests
       - qchem-tests
       - gradients-tests
@@ -749,6 +787,7 @@ jobs:
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests
+      - catalyst-tests
       - qcut-tests
       - qchem-tests
       - gradients-tests

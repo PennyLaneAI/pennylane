@@ -144,7 +144,7 @@ class OutSquare(Operation):
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:
 
-        >>> specs_false = qp.specs(circuit)(False)["resources"].gate_types
+        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
         >>> print(specs_false)
         {'BasisEmbedding': 1, 'CNOT': 8, 'C(SemiAdder)': 4}
 
@@ -152,7 +152,7 @@ class OutSquare(Operation):
         some :class:`~.TemporaryAND` gates and some of
         the other adders become smaller (depending on the register sizes):
 
-        >>> specs_true = qp.specs(circuit)(True)["resources"].gate_types
+        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations
         >>> print(specs_true)
         {'BasisEmbedding': 1, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
 

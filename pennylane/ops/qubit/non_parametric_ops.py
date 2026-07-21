@@ -1459,8 +1459,6 @@ class SX(Operator2):
         )
         return "X"
 
-    resource_keys = set()
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
