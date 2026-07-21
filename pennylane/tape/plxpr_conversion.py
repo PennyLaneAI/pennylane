@@ -86,9 +86,11 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
     >>> collector = CollectOpsandMeas()
     >>> collector(qp.T)(0)
+    T(0)
     >>> collector.state['ops']
     [T(0)]
     >>> collector(qp.S)(0)
+    S(0)
     >>> collector.state['ops']
     [T(0), S(0)]
 

@@ -244,7 +244,6 @@ class TestQROM:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-
             # Initialize the work wires to a non-zero state
             for ind, wire in enumerate(work_wires):
                 qp.RX(ind, wires=wire)
@@ -481,7 +480,7 @@ def test_repr():
         clean=True,
     )
     res = repr(op)
-    expected = "QROM(control_wires=Wires([0, 1]), target_wires=Wires([2]),  work_wires=Wires([3]), clean=True)"
+    expected = "QROM(control_wires=[0, 1], target_wires=[2],  work_wires=[3], clean=True)"
     assert res == expected
 
 

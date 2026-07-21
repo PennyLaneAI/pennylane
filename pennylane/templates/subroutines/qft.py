@@ -168,10 +168,10 @@ class QFT(Operation):
 
         >>> qp.QFT.compute_decomposition(wires=(0,1,2))
         [H(0),
-         ControlledPhaseShift(1.5707963267948966, wires=Wires([1, 0])),
-         ControlledPhaseShift(0.7853981633974483, wires=Wires([2, 0])),
+         ControlledPhaseShift(1.5707963267948966, wires=[1, 0]),
+         ControlledPhaseShift(0.7853981633974483, wires=[2, 0]),
          H(1),
-         ControlledPhaseShift(1.5707963267948966, wires=Wires([2, 1])),
+         ControlledPhaseShift(1.5707963267948966, wires=[2, 1]),
          H(2),
          SWAP(wires=[0, 2])]
 

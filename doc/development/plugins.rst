@@ -676,11 +676,11 @@ to handle a single circuit. See the documentation for each modifier for more det
  'executions': [1],
  'results': [0.0],
  'resources': [SpecsResources(
-    gate_types={'S': 1},
-    gate_sizes={1: 1},
-    measurements={'expval(PauliX)': 1},
+    counts={'S': 1},
+    measurement_processes={'expval(PauliX)': 1},
     num_allocs=1,
-    depth=1)]
+    circuit_depth=1,
+    total_quantum_operations=1)]
 }
 
 
