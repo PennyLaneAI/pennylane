@@ -400,6 +400,10 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     else:
         group_starts = group_ends = ()
 
+    # ``z_indices`` enumerates the candidate Z-parts ``z`` of the symplectic label
+    # ``(x=d, z)``: each Pauli word is (up to phase) ``X**d * Z**z`` qubit-wise, so a
+    # bit set only in ``z`` gives Pauli Z, and a bit set in both ``z`` and ``d`` gives
+    # Y (= iXZ), hence ``popcount(z & d)`` counts the Y factors below.
     z_indices = np.arange(dim, dtype=np.int64)
 
     coeffs = []

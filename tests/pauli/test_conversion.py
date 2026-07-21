@@ -23,6 +23,7 @@ from pennylane.ops import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import (
     _check_hermitian_sparse,
+    _fast_walsh_hadamard_transform,
     _generalized_pauli_decompose,
     _generalized_pauli_decompose_sparse,
 )
@@ -505,6 +506,47 @@ class TestDecomposition:
         assert len(result_with_zero[0]) == len(result_without_zero[0])
         assert np.allclose(result_with_zero[0], result_without_zero[0])
         assert result_with_zero[1] == result_without_zero[1]
+
+
+class TestFastWalshHadamardTransform:
+    """Tests the _fast_walsh_hadamard_transform helper."""
+
+    def test_hadamard_2x2(self):
+        """Test the length-2 transform against the unnormalised 2x2 Hadamard matrix."""
+        result = _fast_walsh_hadamard_transform(np.array([1.0 + 0j, 2.0]))
+        assert np.allclose(result, [3.0, -1.0])
+
+    @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4])
+    def test_matches_hadamard_matrix_product(self, num_qubits):
+        """Test that the fast transform matches direct multiplication by H^(x)n."""
+        rng = np.random.default_rng(42)
+        dim = 2**num_qubits
+        vec = rng.normal(size=dim) + 1j * rng.normal(size=dim)
+
+        hadamard = np.array([[1.0, 1.0], [1.0, -1.0]])
+        full_hadamard = np.array([[1.0]])
+        for _ in range(num_qubits):
+            full_hadamard = np.kron(full_hadamard, hadamard)
+
+        result = _fast_walsh_hadamard_transform(vec.copy())
+        assert np.allclose(result, full_hadamard @ vec)
+
+    @pytest.mark.parametrize("num_qubits", [1, 2, 3])
+    def test_involution_up_to_scale(self, num_qubits):
+        """Test that applying the transform twice recovers the input scaled by 2**n."""
+        rng = np.random.default_rng(7)
+        dim = 2**num_qubits
+        vec = rng.normal(size=dim) + 1j * rng.normal(size=dim)
+
+        transformed_twice = _fast_walsh_hadamard_transform(
+            _fast_walsh_hadamard_transform(vec.copy())
+        )
+        assert np.allclose(transformed_twice, dim * vec)
+
+    def test_trivial_length_one(self):
+        """Test that a length-1 vector is returned unchanged."""
+        result = _fast_walsh_hadamard_transform(np.array([3.0 + 1j]))
+        assert np.allclose(result, [3.0 + 1j])
 
 
 class TestPhasedDecomposition:
