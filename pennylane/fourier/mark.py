@@ -44,6 +44,12 @@ class MarkedOp(SymbolicOp):
 
     """
 
+    resource_keys = {"base"}
+
+    name = "MarkedOp"
+
+    has_decomposition = True
+
     def _flatten(self):
         hyperparameters = (("marker", self.hyperparameters["marker"]),)
         return (self.base,), hyperparameters
@@ -52,8 +58,6 @@ class MarkedOp(SymbolicOp):
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
         return cls(data[0], **hyperparams_dict)
-
-    resource_keys = {"base"}
 
     def __init__(self, base: Operator, marker: str):
         super().__init__(base)

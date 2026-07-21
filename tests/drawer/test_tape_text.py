@@ -747,7 +747,6 @@ single_op_tests_data = [
         qp.StatePrep([0, 1, 0, 0], wires=(0, 1)),
         "0: ─╭|Ψ⟩─┤  \n1: ─╰|Ψ⟩─┤  ",
     ),
-    (qp.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
     (
         qp.GroverOperator(wires=(0, 1, 2)),
         "0: ─╭GroverOperator─┤  \n1: ─├GroverOperator─┤  \n2: ─╰GroverOperator─┤  ",

@@ -132,6 +132,9 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
+        if qp.QueuingManager.recording():
+            qp.QueuingManager.remove(base)
+
         if qp.capture.enabled():
             pop_op_eqns((base,))
 
@@ -144,7 +147,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if Wires.shared_wires([work_wires, base.wires + control_wires]):
             raise ValueError("work_wires must not overlap with the operator or control_wires.")
 
-        accepted = {"zeroed", "borrowed"}
+        accepted = ("zeroed", "borrowed")
         if work_wire_type not in accepted:
             raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
 
@@ -723,19 +726,13 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
 def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
-    def _condition_fn(*args, **kwargs):
-        return rule.is_applicable(*args, **kwargs)
+    def _condition_fn(**arguments):
+        return rule.is_applicable(**arguments)
 
-    def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        gate_counts = rule.compute_resources(
-            base=base,
-            control_wires=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        ).gate_counts
-        # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
-        #       gates for no reason. It'll be like this until we have a better solution.
+    def _resource_fn(**arguments):
+        control_values = arguments.pop("control_values")
+        arguments["control_values"] = None
+        gate_counts = rule.compute_resources(**arguments).gate_counts
         base_x_count = gate_counts.get(qp.X, 0)
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts

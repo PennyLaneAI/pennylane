@@ -146,32 +146,31 @@ def _check_decomposition(op, skip_wire_mapping):
 
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     """Checks involving the new system of decompositions."""
+
     op_type = type(op)
 
-    if not isinstance(op, Operator2):
+    if isinstance(op, Operator1):
+
+        err_msg = "resource_params must have the same keys as specified by resource_keys"
+        assert set(op.resource_params.keys()) == set(op_type.resource_keys), err_msg
+
         if op_type.resource_params is qp.operation.Operator.resource_params:
-            assert not qp.decomposition.has_decomp(
-                op_type
-            ), "resource_params must be defined for operators with decompositions"
-            return
+            err_msg = "resource_params must be defined for operators with decompositions"
+            assert not qp.decomposition.has_decomp(op_type), err_msg
 
-        assert set(op.resource_params.keys()) == set(
-            op_type.resource_keys
-        ), "resource_params must have the same keys as specified by resource_keys"
-
-    for rule in qp.list_decomps(op_type):
+    for rule in qp.list_decomps(op):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"Adjoint({op_type.__name__})"):
+    for rule in qp.list_decomps(f"Adjoint({op.name})"):
         adj_op = qp.adjoint(op)
         _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"Pow({op_type.__name__})"):
+    for rule in qp.list_decomps(f"Pow({op.name})"):
         for z in [2, 3, 4, 8, 9]:
             pow_op = qp.pow(op, z)
             _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"C({op_type.__name__})"):
+    for rule in qp.list_decomps(f"C({op.name})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
             control_wires = [i + len(op.wires) for i in range(n_ctrl_wires)]

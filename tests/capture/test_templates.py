@@ -1794,12 +1794,8 @@ _, all_templates = zip(*inspect.getmembers(qp.templates, filter_fn))
 
 unmodified_templates = [template for template, *_ in unmodified_templates_cases]
 unsupported_templates = [
-    qp.CVNeuralNetLayers,
-    qp.DisplacementEmbedding,
-    qp.Interferometer,
     qp.PrepSelPrep,
     qp.QutritBasisStatePreparation,
-    qp.SqueezingEmbedding,
     qp.TrotterizedQfunc,  # TODO: add support in follow up PR
     qp.templates.SubroutineOp,
     qp.templates.Subroutine,
