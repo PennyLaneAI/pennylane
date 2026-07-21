@@ -1130,9 +1130,7 @@ class S(Operator2):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
                 }
             )
@@ -1273,7 +1271,6 @@ class T(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            # pylint: disable=unsubscriptable-object
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
                     qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
@@ -1404,9 +1401,7 @@ class SX(Operator2):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
                 }
             )
@@ -1489,7 +1484,7 @@ def _pow_sx_to_x(base, z):  # pylint: disable=unused-argument
 
 
 @register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
-def _pow_sx(base, z):  # pylint: disable=unused-argument
+def _pow_sx(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.RX(np.pi / 2 * z_mod4, wires=base.wires)
     qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=base.wires)

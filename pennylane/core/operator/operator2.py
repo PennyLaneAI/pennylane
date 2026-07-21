@@ -517,7 +517,7 @@ class Operator2(metaclass=OperatorMeta):
         ...         return [MyClass(self.phi*z, self.wires)]
         ...
         >>> MyClass(0.5, 0).pow(2)
-        [MyClass(phi=1.0, wires=[0])]
+        [MyClass(1.0, wires=[0])]
         """
         # Child methods may call super().pow(z%period) where op**period = I
         # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
@@ -573,7 +573,7 @@ class Operator2(metaclass=OperatorMeta):
         ...
         >>> op = MyClass(0.5, wires=0).adjoint()
         >>> op
-        MyClass(phi=0.5, wires=[0])
+        MyClass(0.5, wires=[0])
         """
         raise AdjointUndefinedError
 
@@ -971,23 +971,20 @@ class Operator2(metaclass=OperatorMeta):
             if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
                 return f"{self.name}({wire_arg.tolist()[0]!r})"
 
+        non_dyn_args = self.static_argnames + self.compilable_argnames + self.hybrid_argnames
+
         inputs = []
-
-        remove_dyn_keywords = not (
-            self.static_argnames or self.compilable_argnames or self.hybrid_argnames
-        )
-
         for key, value in self.arguments.items():
+
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 value = unflatten(leaves, tree)
 
-            if key in self.dynamic_argnames and remove_dyn_keywords:
-                inputs.append(f"{value}")
-            else:
-                inputs.append(f"{key}={value}")
+            # Simplified repr for operators with only dynamic args
+            is_dyn = key in self.dynamic_argnames and not non_dyn_args
+            inputs.append(f"{value}" if is_dyn else f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
