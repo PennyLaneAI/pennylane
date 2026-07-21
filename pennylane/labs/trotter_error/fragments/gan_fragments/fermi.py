@@ -228,6 +228,8 @@ class FermiWord:
             if not word.is_zero():
                 sentence[word] += coeff
 
+            sentence = {word: coeff for word, coeff in sentence.items() if coeff != 0}
+
         return FermiSentence(sentence)
 
     def is_zero(self):
