@@ -207,6 +207,7 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
 
     # Remove base operator from the queue.
     qp.QueuingManager.remove(op)
+    _ = pop_op_eqns((op,))
 
     if (
         custom_op := custom_ctrl_dispatch(
@@ -220,7 +221,6 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
         return custom_op
 
     if isinstance(op, Controlled2):
-        _ = pop_op_eqns((op,))
         work_wire_type = resolve_work_wire_type(
             op.work_wires,
             op.work_wire_type,
