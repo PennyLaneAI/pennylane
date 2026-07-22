@@ -152,6 +152,7 @@ class Pow2(SymbolicOp2):
     @property
     @override
     def has_decomposition(self):
+
         if isinstance(self.z, int) and self.z > 0:
             return True
         try:
@@ -374,6 +375,7 @@ pow_involutory = make_pow_decomp_with_period(2)
 
 @list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
+
     abs_op = abstractify(op)
 
     # fixed_decomps would override everything.
