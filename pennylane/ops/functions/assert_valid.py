@@ -29,6 +29,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
@@ -85,7 +86,7 @@ def _check_decomposition(op, skip_wire_mapping):
             failure_comment=failure_comment,
         )()
         # pylint: disable=expression-not-assigned
-        args, kwargs = _get_signature(op)
+        _, args, kwargs = _get_decomp_args(op)
         _assert_error_raised(
             op.compute_decomposition,
             qp.operation.DecompositionUndefinedError,
@@ -98,7 +99,7 @@ def _check_decomposition(op, skip_wire_mapping):
     processed_queue = qp.tape.QuantumScript.from_queue(queued_decomp)
 
     try:
-        args, kwargs = _get_signature(op)
+        _, args, kwargs = _get_decomp_args(op)
         compute_decomp = type(op).compute_decomposition(*args, **kwargs)
     except (qp.exceptions.DecompositionUndefinedError, TypeError):
         # sometimes decomposition is defined but not compute_decomposition
@@ -163,22 +164,21 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Adjoint({op_type.__name__})"):
-        adj_op = qp.ops.Adjoint(op)
+        adj_op = qp.adjoint(op)
         _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"Pow({op_type.__name__})"):
         for z in [2, 3, 4, 8, 9]:
-            pow_op = qp.ops.Pow(op, z)
+            pow_op = qp.pow(op, z)
             _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
 
     for rule in qp.list_decomps(f"C({op_type.__name__})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
-            ctrl_op = qp.ops.Controlled(
-                op,
-                control_wires=[i + len(op.wires) for i in range(n_ctrl_wires)],
-                control_values=[c_value] * n_ctrl_wires,
-                work_wires=[i + len(op.wires) + n_ctrl_wires for i in range(n_workers)],
-            )
+            ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
+            control_wires = [i + len(op.wires) for i in range(n_ctrl_wires)]
+            control_values = [c_value] * n_ctrl_wires
+            work_wires = [i + len(op.wires) + n_ctrl_wires for i in range(n_workers)]
+            ctrl_op = ctrl(op, control_wires, control_values, work_wires)
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
@@ -218,7 +218,7 @@ def _assert_counts_match(counts_0, counts_1):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    params = op.arguments if isinstance(op, Operator2) else op.resource_params
+    params, args, kwargs = _get_decomp_args(op)
 
     if not rule.is_applicable(**params):
         return
@@ -228,7 +228,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     gate_counts = resources.gate_counts
 
     with qp.queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*args, **kwargs)
+
     tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total
@@ -337,7 +338,7 @@ def _check_eigendecomposition(op):
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
-            args, kwargs = _get_signature(op)
+            _, args, kwargs = _get_decomp_args(op)
             compute_dg = type(op).compute_diagonalizing_gates(*args, **kwargs)
         except (qp.operation.DiagGatesUndefinedError, TypeError):
             # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
@@ -359,7 +360,7 @@ def _check_eigendecomposition(op):
 
     has_eigvals = True
     try:
-        args, kwargs = _get_signature(op)
+        _, args, kwargs = _get_decomp_args(op)
         if isinstance(op, Operator1):
             kwargs = {k: v for k, v in kwargs.items() if k != "wires"}
         compute_eg = type(op).compute_eigvals(*args, **kwargs)

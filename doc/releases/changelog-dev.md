@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
+  magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
+  These states are currently supported when compiling with Catalyst; device simulators raise an
+  error via ``resolve_dynamic_wires`` until native support is added.
+  [(#9846)](https://github.com/PennyLaneAI/pennylane/pull/9846)
+
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
@@ -140,7 +146,7 @@
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
-  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
+  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
 
   ```python
   @qp.qjit(autograph=True)
@@ -163,14 +169,14 @@
   Level: Before MLIR Passes
   <BLANKLINE>
   Symbolic Variables: a
-  Wire allocations: 1
-  Total gates: a + 2
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: a + 1
-  Measurements:
+  Quantum operations:
+  - Total: a + 2
+    - Hadamard: 1
+    - PauliX: a + 1
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -179,14 +185,14 @@
   ```pycon
   >>> res = specs_result.resources
   >>> print(res.subs(a=5))
-  Wire allocations: 1
-  Total gates: 7
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: 6
-  Measurements:
+  Quantum operations:
+  - Total: 7
+    - Hadamard: 1
+    - PauliX: 6
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -473,6 +479,12 @@
 * Implemented the `__str__` of `Wires` to display the wire labels as a list.
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
 
+* :func:`~pennylane.pauli_decompose` is significantly faster for SciPy sparse inputs. Nonzero entries are
+  grouped by their ``row ^ col`` XOR-difference and each group is resolved with a single fast
+  Walsh-Hadamard transform, following [Georges et al.](https://doi.org/10.1088/1367-2630/adb44d),
+  giving order-of-magnitude speedups for sparse and structured operators.
+  [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -665,6 +677,16 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+  `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
+  `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
+  `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
+  `qp.SqueezedState`, `qp.DisplacedSqueezedState`, `qp.ThermalState`, `qp.GaussianState`, `qp.FockState`,
+  `qp.FockStateVector`, `qp.FockDensityMatrix`, `qp.CatState`, `qp.NumberOperator`, `qp.TensorN`,
+  `qp.QuadX`, `qp.QuadP`, `qp.QuadOperator`, `qp.PolyXP`, `qp.FockStateProjector`,
+  `qp.DisplacementEmbedding`, `qp.SqueezingEmbedding`, `qp.CVNeuralNetLayers`, amd `qp.Interferomenter`.
+  [(#9869)](https://github.com/PennyLaneAI/pennylane/pull/9869)
+
 * Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
 
@@ -813,12 +835,23 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
+  tests should only be marked `catalyst` and *not* marked `external`.
+  [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
+
+* Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
+  This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
+  The :class:`~.resource.Resources` class serves as the new base class,
+  and the :class:`~.resource.SpecsResources` and :class:`~.resource.PBCSpecsResources` inherit from it.
+  [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
+
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Single qubit, non-parameteric operators are ported:
     - `~.S`, `~.T`, `~.SX`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
+  [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -921,6 +954,8 @@
     [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
     [(#9805)](https://github.com/PennyLaneAI/pennylane/pull/9805)
     [(#9856)](https://github.com/PennyLaneAI/pennylane/pull/9856)
+    [(#9876)](https://github.com/PennyLaneAI/pennylane/pull/9876)
+    [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
