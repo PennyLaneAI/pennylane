@@ -1080,6 +1080,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where ``default.mixed`` crashed with ``TypeError: 'float' object is not iterable``
+  when ``readout_prob`` was set. The scalar probability is now converted to the list of
+  channel callables expected by the mixed-state simulator.
+  [(#9612)](https://github.com/PennyLaneAI/pennylane/issues/9612)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
