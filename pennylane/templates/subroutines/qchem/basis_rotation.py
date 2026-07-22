@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.typing import Complex, Wire
