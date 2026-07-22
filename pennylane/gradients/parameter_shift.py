@@ -1311,6 +1311,9 @@ def _handle_operation(op: Operation):
 @parameter_frequencies.register
 def _handle_operator2(op: Operator2):
     """Calculates the parameter frequencies for a given Operator2 if they are not defined explicitly."""
+    if (freqs := getattr(op, "parameter_frequencies", None)) is not None:
+        return freqs
+
     if len(op.dynamic_argnames) == 1:
         # if the operator has a single parameter, we can query the
         # generator, and if defined, use its eigenvalues.

@@ -158,7 +158,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
 
-    if active_jit := compiler.active_compiler() and not (
+    if (active_jit := compiler.active_compiler()) and not (
         isinstance(op, Operator2) and op.is_abstract
     ):
         available_eps = compiler.AvailableCompilers.names_entrypoints

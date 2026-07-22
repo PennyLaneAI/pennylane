@@ -314,6 +314,7 @@ class PauliRot(Operator2):
 
     grad_method = "A"
     grad_recipe = (None,)
+    parameter_frequencies = [(1,)]
 
     resource_keys = {"pauli_word"}
 

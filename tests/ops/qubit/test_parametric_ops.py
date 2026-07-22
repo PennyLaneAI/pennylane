@@ -4221,3 +4221,7 @@ def test_op_aliases_are_valid():
     """Tests that ops in new files can still be accessed from the old parametric_ops module."""
     assert qp.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
     assert qp.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX
+
+
+if __name__ == "__main__":
+    pytest.main(["-x", __file__])
