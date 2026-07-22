@@ -20,11 +20,10 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal
+from typing import Literal, override
 
 import numpy as np
 from scipy.linalg import block_diag
-from typing import override
 
 import pennylane as qp
 from pennylane.allocation import allocate
