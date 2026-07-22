@@ -1745,7 +1745,8 @@ def _swap_to_cnot(wires, **__):
     qp.CNOT(wires=[wires[0], wires[1]])
 
 
-def _swap_to_ppr_resource():
+# pylint: disable=unsue-argument
+def _swap_to_ppr_resource(wires: WiresLike):
     return {
         resource_rep(qp.PauliRot, pauli_word="XX"): 1,
         resource_rep(qp.PauliRot, pauli_word="YY"): 1,
@@ -1955,7 +1956,8 @@ class ECR(Operator2):
         return super().pow(z % 2)
 
 
-def _ecr_decomp_resources():
+# pylint: disable=unused-argument
+def _ecr_decomp_resources(wires: WiresLike):
     return {Z: 1, qp.CNOT: 1, SX: 1, qp.RX: 2, qp.RY: 1}
 
 
@@ -2117,7 +2119,8 @@ class ISWAP(Operator2):
         return super().pow(z_mod4)
 
 
-def _iswap_decomp_resources():
+# pylint: disable=unused-argument
+def _iswap_decomp_resources(wires: WiresLike):
     return {qp.S: 2, qp.Hadamard: 2, qp.CNOT: 2}
 
 
@@ -2131,7 +2134,8 @@ def _iswap_decomp(wires, **__):
     Hadamard(wires=wires[1])
 
 
-def _iswap_to_ppr_resource():
+# pylint: disable=unused-argument
+def _iswap_to_ppr_resource(wires: WiresLike):
     return {
         resource_rep(qp.PauliRot, pauli_word="XX"): 1,
         resource_rep(qp.PauliRot, pauli_word="YY"): 1,
@@ -2333,7 +2337,8 @@ class SISWAP(Operator2):
         return super().pow(z_mod8)
 
 
-def _siswap_decomp_resources():
+# pylint: disable=unused-argument
+def _siswap_decomp_resources(wires: WiresLike):
     return {SX: 6, qp.RZ: 4, qp.CNOT: 2}
 
 
