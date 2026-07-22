@@ -302,3 +302,16 @@ def test_simplify_pow_undefined():
     assert isinstance(simplified, Pow2)
     qp.assert_equal(simplified.base, NoPowOp(0))
     assert simplified.static_args["z"] == 0.5
+
+
+@pytest.mark.parametrize(
+    "exp, sup",
+    [(0, "⁰"), (-1, "⁻¹"), (2, "²"), (1.23456789, "¹⋅²³⁴⁵⁶⁷⁸⁹"), (-1.23456789, "⁻¹⋅²³⁴⁵⁶⁷⁸⁹")],
+)
+def test_label(exp, sup):
+    """Test that the label draws the exponent as superscript."""
+    base = DynOp(1.2, wires=0)
+    op = Pow2(base, exp)
+
+    assert op.label() == "DynOp" + sup
+    assert op.label(decimals=2) == "DynOp\n(1.20)" + sup
