@@ -15,7 +15,7 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking
+# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking,wrong-import-position
 import pytest
 
 import pennylane as qp
@@ -24,8 +24,8 @@ from pennylane.core.operator.operator2 import Operator2
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture import PlxprInterpreter  # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
+from pennylane.capture import PlxprInterpreter
+from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
@@ -34,17 +34,10 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     qnode_prim,
     while_loop_prim,
 )
-from tests.core.operator.operator2_utils import (  # pylint: disable=wrong-import-position
-    DynOp,
-    NonParametricOp,
-)
+from tests.capture.capture_utils import assert_eqn_matches_op
+from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
-
-
-def _check_eqn(eqn, op_type):
-    assert eqn.primitive is operator_p
-    assert eqn.params["op_cls"] is op_type
 
 
 class SimplifyInterpreter(PlxprInterpreter):
@@ -164,7 +157,7 @@ def test_default_operator_handling():
 
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
-    _check_eqn(jaxpr.eqns[2], qp.T)
+    assert_eqn_matches_op(jaxpr.eqns[2], qp.T)
     assert jaxpr.eqns[3].primitive == qp.X._primitive
     assert jaxpr.eqns[4].primitive == qp.X._primitive
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
