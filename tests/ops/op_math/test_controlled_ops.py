@@ -15,7 +15,6 @@
 Unit tests for Operators inheriting from ControlledOp.
 """
 
-import mcm_utils
 import numpy as np
 import pytest
 from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
@@ -844,20 +843,28 @@ def test_CNOT_decomposition():
         qp.CNOT([0, 1]).decomposition()
 
 
-@pytest.mark.parametrize(("op_type", "rule_name"), [(qp.CNOT, "_cnot_ppm"), (qp.CZ, "_cz_ppm")])
+@pytest.mark.parametrize(
+    ("op_type", "rule_name"),
+    [
+        (qp.CNOT, "_cnot_lattice_surgery_ppm"),
+        (qp.CY, "_cy_lattice_surgery_ppm"),
+        (qp.CZ, "_cz_lattice_surgery_ppm"),
+    ],
+)
 def test_ppm_decomposition(op_type, rule_name, seed):
-    """Test that the PPM decompositions of CNOT and CZ are correct."""
-    op = op_type([0, 1])
+    """Tests that the PPM decomposition of Hadamard is correct."""
     rule = qp.list_decomps(op_type)[rule_name]
-
-    with qp.queuing.AnnotatedQueue() as queue:
-        qp.transforms.resolve_dynamic_wires(rule, zeroed=[2])(wires=op.wires)
-
     rng = np.random.default_rng(seed)
     init_state = rng.random(4) + 1j * rng.random(4)
     init_state /= np.linalg.norm(init_state)
-    plus_state = np.array([1, 1], dtype=complex) / np.sqrt(2)
-    expected = np.kron(op.matrix() @ init_state, plus_state)
+
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=[0, 1, 2]))
+    def circuit():
+        qp.StatePrep(init_state, [0, 1])
+        rule([0, 1])
+        op_type([0, 1])
+        return qp.state()
 
     init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
-    mcm_utils.assert_ppm_decomposition(queue.queue, init_state_full, [0, 1, 2], expected)
+    assert np.allclose(init_state_full, circuit())
