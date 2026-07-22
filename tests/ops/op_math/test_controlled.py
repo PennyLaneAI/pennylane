@@ -1276,7 +1276,7 @@ class TestDecomposition:
         """Tests that custom ops are not converted when wires are control-on-zero."""
 
         base_op = base_cls(*params, wires=base_wires)
-        op = Controlled(base_op, control_wires=ctrl_wires, control_values=[False] * len(ctrl_wires))
+        op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
 
         decomp = op.decomposition()
 
