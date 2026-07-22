@@ -1679,6 +1679,9 @@ def _to_op_list(rule):
     def _inner(*args, **kwargs):
         with qp.queuing.AnnotatedQueue() as q:
             rule(*args, **kwargs)
+        if qp.queuing.QueuingManager.recording():
+            for op in q.queue:
+                qp.apply(op)
         return q.queue
 
     return _inner
@@ -1728,7 +1731,7 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
 
 
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
-add_decomps("Pow(MultiControlledX)", pow_involutory)
+add_decomps("Pow(MultiControlledX)", pow_involutory2)
 
 
 class CRX(ControlledOp):

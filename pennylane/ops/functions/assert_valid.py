@@ -373,8 +373,8 @@ def _check_eigendecomposition(op):
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
-        decomp_mat = qp.matrix(decomp)
-        original_mat = qp.matrix(op)
+        decomp_mat = qp.matrix(decomp, wire_order=op.wires)
+        original_mat = qp.matrix(op, wire_order=op.wires)
         failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
         assert qp.math.allclose(decomp_mat, original_mat), failure_comment
 
