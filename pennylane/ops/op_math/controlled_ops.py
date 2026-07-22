@@ -18,6 +18,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 # pylint: disable=arguments-differ,arguments-renamed
 
+from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache, partial
 from typing import Literal
@@ -563,12 +564,12 @@ def _cy(wires: WiresLike, **__):
 
 def _pauli_ctrl_pauli_ppr_resources(pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
-    return {
-        resource_rep(qp.PauliRot, pauli_word=pauli0): 1,
-        resource_rep(qp.PauliRot, pauli_word=pauli1): 1,
-        resource_rep(qp.PauliRot, pauli_word=pauli0 + pauli1): 1,
-        qp.GlobalPhase: 1,
-    }
+    resources = defaultdict(int)
+    resources[resource_rep(qp.PauliRot, pauli_word=pauli0)] += 1
+    resources[resource_rep(qp.PauliRot, pauli_word=pauli1)] += 1
+    resources[resource_rep(qp.PauliRot, pauli_word=pauli0 + pauli1)] += 1
+    resources[qp.GlobalPhase] += 1
+    return dict(resources)
 
 
 def _pauli_ctrl_pauli_ppr(wires, pauli0, pauli1):

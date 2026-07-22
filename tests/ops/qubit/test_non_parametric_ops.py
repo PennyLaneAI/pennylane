@@ -266,6 +266,7 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    @pytest.mark.catalyst
     def test_hadamard_ppm_decomposition(self, seed):
         """Tests that the PPM decomposition of Hadamard is correct."""
         rule = qp.list_decomps(qp.Hadamard)["_hadamard_ppm"]

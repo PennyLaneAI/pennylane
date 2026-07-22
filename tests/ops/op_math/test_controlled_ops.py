@@ -843,6 +843,7 @@ def test_CNOT_decomposition():
         qp.CNOT([0, 1]).decomposition()
 
 
+@pytest.mark.catalyst
 @pytest.mark.parametrize(
     ("op_type", "rule_name"),
     [
