@@ -159,10 +159,6 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             op_type.resource_keys
         ), "resource_params must have the same keys as specified by resource_keys"
 
-    controlled_type = (
-        qp.ops.op_math.ControlledOp2 if isinstance(op, Operator2) else qp.ops.Controlled
-    )
-
     for rule in qp.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
@@ -223,11 +219,11 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     params, args, kwargs = _get_decomp_args(op)
 
-    if not rule.is_applicable(**rule_params):
+    if not rule.is_applicable(**params):
         return
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**rule_params)
+    resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
     with qp.queuing.AnnotatedQueue() as q:
@@ -235,7 +231,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     tape = qp.tape.QuantumScript.from_queue(q)
 
-    total_work_wires = rule.get_work_wire_spec(**rule_params).total
+    total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
         tape = _resolve_dynamic_wires(tape, total_work_wires)
 

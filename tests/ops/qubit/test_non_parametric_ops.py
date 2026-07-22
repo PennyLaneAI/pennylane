@@ -48,7 +48,6 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane.core.operator.operator2 import Operator2, operator_p
-from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.transforms import decompose
