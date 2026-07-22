@@ -406,7 +406,8 @@ def debug_probs(wires=None, op=None):
         array([0.33355943, 0.33355943, 0.16644057, 0.16644057])
 
     """
-    if op:
+    # Use identity check: MeasurementValue intentionally raises on truthiness.
+    if op is not None:
         QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
 
     with QueuingManager.stop_recording():
