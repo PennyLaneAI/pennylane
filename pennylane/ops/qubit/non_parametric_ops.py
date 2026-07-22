@@ -1734,7 +1734,8 @@ def _ctrl_swap(base: SWAP, control, control_values, *_):
     return NotImplemented
 
 
-def _swap_to_cnot_resources():
+# pylint: disable=unused-argument
+def _swap_to_cnot_resources(wires: WiresLike):
     return {qp.CNOT: 3}
 
 
