@@ -672,7 +672,6 @@ class PauliY(Operator2):
             return f"Y({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
         return f"Y(wires={self.wires})"
 
-
     def label(
         self,
         decimals: int | None = None,
