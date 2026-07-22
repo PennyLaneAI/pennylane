@@ -666,7 +666,7 @@
 
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
-  
+
 * Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
@@ -674,7 +674,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`,
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
   `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
@@ -851,6 +851,7 @@
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+  [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
