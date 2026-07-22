@@ -52,6 +52,7 @@ from pennylane.ops import (
     MultiControlledX,
 )
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.wires import Wires
 
 try:
@@ -1485,7 +1486,7 @@ class TestGates:
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
-            PowOperation(PauliX(wires=["q0"]), 2),
+            Pow2(PauliX(wires=["q0"]), 2),
             CNOT(wires=["q1", "q0"]),
         ]
 
