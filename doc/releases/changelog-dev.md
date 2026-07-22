@@ -913,6 +913,7 @@
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
   [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
+  [(#9756)](https://github.com/PennyLaneAI/pennylane/pull/9756)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
