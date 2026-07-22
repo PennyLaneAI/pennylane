@@ -24,12 +24,6 @@ from pennylane.exceptions import DeviceError
 class TestDeviceInit:
     """Tests for device loader in __init__.py"""
 
-    def test_no_config(self):
-        """Test that an error is raised if config is passed as a kwarg."""
-
-        with pytest.raises(ValueError, match="config has been removed"):
-            qp.device("default.qubit", config=None)
-
     def test_no_device(self):
         """Test that an exception is raised for a device that doesn't exist"""
 

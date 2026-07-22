@@ -159,38 +159,35 @@ def device(name, *args, **kwargs):
         # installed the plugin during the current Python session.
         refresh_devices()
 
-    if "config" in kwargs:
-        raise ValueError(
-            "config has been removed and is no longer supported as an argument to pennylane.device."
+    if name not in plugin_devices:
+        raise DeviceError(
+            f"Device {name} does not exist. Make sure the required plugin is installed."
         )
 
-    if name in plugin_devices:
-        # loads the device class
-        plugin_device_class = plugin_devices[name].load()
+    # loads the device class
+    plugin_device_class = plugin_devices[name].load()
 
-        def _safe_specifier_set(version_str):
-            """Safely create a SpecifierSet from a version string."""
-            operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
-            if any(version_str.startswith(op) for op in operators):
-                # This is tested in the plugin-test-matrix
-                return SpecifierSet(version_str, prereleases=True)  # pragma: no cover
-            return SpecifierSet(f"=={version_str}", prereleases=True)
+    def _safe_specifier_set(version_str):
+        """Safely create a SpecifierSet from a version string."""
+        operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
+        if any(version_str.startswith(op) for op in operators):
+            # This is tested in the plugin-test-matrix
+            return SpecifierSet(version_str, prereleases=True)  # pragma: no cover
+        return SpecifierSet(f"=={version_str}", prereleases=True)
 
-        if hasattr(plugin_device_class, "pennylane_requires"):
-            required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
-            current_version = Version(__version__)
-            if current_version not in required_versions:
-                raise DeviceError(
-                    f"The {name} plugin requires PennyLane versions {required_versions}, "
-                    f"however PennyLane version {__version__} is installed."
-                )
+    if hasattr(plugin_device_class, "pennylane_requires"):
+        required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
+        current_version = Version(__version__)
+        if current_version not in required_versions:
+            raise DeviceError(
+                f"The {name} plugin requires PennyLane versions {required_versions}, "
+                f"however PennyLane version {__version__} is installed."
+            )
 
-        # Construct the device
-        dev = plugin_device_class(*args, **kwargs)
+    # Construct the device
+    dev = plugin_device_class(*args, **kwargs)
 
-        if isinstance(dev, LegacyDevice):
-            dev = LegacyDeviceFacade(dev)
+    if isinstance(dev, LegacyDevice):
+        dev = LegacyDeviceFacade(dev)
 
-        return dev
-
-    raise DeviceError(f"Device {name} does not exist. Make sure the required plugin is installed.")
+    return dev
