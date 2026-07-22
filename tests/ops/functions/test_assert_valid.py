@@ -212,7 +212,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="Gate counts expected from"):
             _test_decomposition_rule(op, rule_wrong_ops)
 
-    def test_new_decomposition_rule_with_mcm_skips_matrix_check(self, monkeypatch):
+    def test_new_decomposition_rule_with_mcm_skips_matrix_check(self, mocker):
         """Test that matrix check is skipped for decompositions containing mid-circuit measurements."""
 
         class MyOp(Operator):
@@ -229,11 +229,9 @@ class TestDecompositionErrors:
 
         rule = qp.register_resources({qp.ops.MidMeasure: 1})(mcm_rule)
 
-        def fail_matrix(*args, **kwargs):
-            raise AssertionError("qp.matrix should not be called for MCM decompositions")
-
-        monkeypatch.setattr(qp, "matrix", fail_matrix)
+        spy = mocker.spy(qp, "matrix")
         _test_decomposition_rule(op, rule)
+        spy.assert_not_called()
 
 
 class TestBadMatrix:
