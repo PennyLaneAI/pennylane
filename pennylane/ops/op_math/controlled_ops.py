@@ -24,7 +24,7 @@ from typing import Literal
 
 import numpy as np
 from scipy.linalg import block_diag
-from typing_extensions import override
+from typing import override
 
 import pennylane as qp
 from pennylane.allocation import allocate
