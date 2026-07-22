@@ -16,7 +16,6 @@ This module contains code for the main device construction delegation logic.
 """
 
 from importlib import metadata
-from sys import version_info
 
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
@@ -33,11 +32,7 @@ def _get_device_entrypoints():
     """Returns a dictionary mapping the device short name to the
     loadable entrypoint"""
 
-    entries = (
-        metadata.entry_points()["pennylane.plugins"]
-        if version_info[:2] == (3, 9)
-        else metadata.entry_points(group="pennylane.plugins")
-    )
+    entries = metadata.entry_points(group="pennylane.plugins")
     return {entry.name: entry for entry in entries}
 
 
@@ -82,9 +77,6 @@ def device(name, *args, **kwargs):
 
     * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
       mixed-state simulator of qutrit-based quantum circuit architectures.
-
-    * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
-      of Gaussian states and operations on continuous-variable circuit architectures.
 
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
       simulator of Clifford circuits.

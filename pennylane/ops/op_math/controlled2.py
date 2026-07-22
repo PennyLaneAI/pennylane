@@ -17,10 +17,9 @@
 from collections.abc import Sequence
 from inspect import signature
 from textwrap import dedent
-from typing import Literal
+from typing import Literal, override
 
 from scipy import sparse
-from typing_extensions import override
 
 import pennylane as qp
 from pennylane import allocation, math
@@ -383,6 +382,20 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             work_wire_type=self.work_wire_type,
         )
 
+    @override
+    def pow(self, z):
+        """Raise the base to a power while preserving the controls."""
+        return [
+            qp.ctrl(
+                op,
+                control=self.control_wires,
+                control_values=self.control_values,
+                work_wires=self.work_wires,
+                work_wire_type=self.work_wire_type,
+            )
+            for op in self.base.pow(z)
+        ]
+
     @property
     @override
     # pylint: disable=invalid-overridden-method,arguments-differ
@@ -511,17 +524,9 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         return f"C({self.base.name})"
 
     def __repr__(self):
-        ctrl_wires = (
-            self.control_wires.tolist()
-            if isinstance(self.control_wires, Wires)
-            else self.control_wires
-        )
-        work_wires = (
-            self.work_wires.tolist() if isinstance(self.work_wires, Wires) else self.work_wires
-        )
-        params = [f"control_wires={ctrl_wires}"]
+        params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
-            params.append(f"work_wires={work_wires}")
+            params.append(f"work_wires={self.work_wires}")
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"

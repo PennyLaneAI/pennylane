@@ -1349,6 +1349,28 @@ class TestDunderMethods:
         op = Op(wires=[[0], 1, [2, 3]])
         assert repr(op) == "Op(wires=[[0], [1], [2, 3]])"
 
+    def test_str_with_abstract_and_fixed_sigs(self):
+        """Tests that __str__ is simplified for abstract and fixed ops."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires",)
+            arg_specs = {"wires": Wire[1]}
+
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        op = Op(Wire[1])
+        assert str(op) == "Op"
+
+        class Op2(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        op = Op2(Wire[1])
+        assert str(op) == "Op2(wires=AbstractWires(1))"
+
     def test_copy(self):
         """Test that shallow copies of operators are created correctly."""
         op = FullOp(0.5, static="static", hybrid=[], wires=0)

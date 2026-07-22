@@ -1029,7 +1029,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
 class TestFullMetricTensor:
     num_wires = 3
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     def test_catalyst_compatibility(self):
         """Test that the metric tensor can be executed with catalyst."""
 
