@@ -1409,7 +1409,7 @@ class TestPauliYOperator2:
 
         assert isinstance(op.wires, AbstractWires)
         assert op.wires == Wire[1]
-        assert repr(op) == "PauliY"
+        assert repr(op) == "Y(wires=AbstractWires(1))"
 
     @pytest.mark.capture
     def test_capture_as_single_primitive(self):
