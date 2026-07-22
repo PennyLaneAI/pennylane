@@ -832,13 +832,6 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Improved interoperability between legacy operators and :class:`~.Operator2` instances.
-  :func:`qp.ops.functions.assert_valid` now validates legacy operators containing
-  :class:`~.Operator2` instances and uses a consistent wire order when checking
-  eigendecompositions. :func:`~.change_op_basis` can also be captured with mixed legacy and
-  :class:`~.Operator2` operands without reordering them.
-  [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
-
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
   [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
@@ -941,6 +934,7 @@
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
+    [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
