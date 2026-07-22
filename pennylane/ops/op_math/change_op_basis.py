@@ -204,7 +204,7 @@ def change_op_basis(
         # Operator2 constructors retain Python wrappers whose ``tracer`` attributes point to
         # their equations. If any operand is already an AbstractOperator tracer, preserve the
         # constructor order instead of moving only the Operator2 equations.
-        if not any(_is_abstract_operator(op) for op in operands if op is not None):
+        if not any(_is_abstract_operator(op) for op in operands):
             for _op in operands:
                 if isinstance(_op, Operator2) and _op.tracer is not None:
                     pop_op_eqns((_op,))
