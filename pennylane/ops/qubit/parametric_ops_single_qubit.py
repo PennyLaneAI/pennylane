@@ -767,7 +767,7 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
         resource_rep(
             qp.MultiControlledX,
             num_control_wires=len(control_wires),
-            num_zero_control_values=len(control_values),
+            num_zero_control_values=len(control_values or []),
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         ): 2,
