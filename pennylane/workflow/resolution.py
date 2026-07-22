@@ -256,14 +256,7 @@ def _resolve_diff_method(
         return _resolve_hadamard(initial_config, device)
 
     if diff_method in {"best", "parameter-shift"}:
-        if tape and any(isinstance(op, qp.operation.CV) and op.name != "Identity" for op in tape):
-            updated_values["gradient_method"] = qp.gradients.param_shift_cv
-            updated_values["gradient_keyword_arguments"] = dict(
-                initial_config.gradient_keyword_arguments
-            )
-            updated_values["gradient_keyword_arguments"]["dev"] = device
-        else:
-            updated_values["gradient_method"] = qp.gradients.param_shift
+        updated_values["gradient_method"] = qp.gradients.param_shift
 
     else:
         gradient_transform_map = {

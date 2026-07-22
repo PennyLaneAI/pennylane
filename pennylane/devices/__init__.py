@@ -13,8 +13,7 @@
 # limitations under the License.
 """
 This subpackage provides default devices for PennyLane, which do not need external plugins to be installed.
-The default devices provide basic built-in qubit
-and CV circuit simulators that can be used with PennyLane without the need for additional
+The default devices provide basic built-in qubit that can be used with PennyLane without the need for additional
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 
@@ -26,7 +25,6 @@ to verify and test quantum gradient computations.
 
     capabilities
     default_qubit
-    default_gaussian
     default_mixed
     default_qutrit
     default_qutrit_mixed
@@ -131,11 +129,11 @@ to handle a single circuit. See the documentation for each modifier for more det
 >>> pprint.pprint(dev.tracker.history)
 {'batches': [1],
  'executions': [1],
- 'resources': [SpecsResources(gate_types={'S': 1},
-                              gate_sizes={1: 1},
-                              measurements={'expval(PauliX)': 1},
+ 'resources': [SpecsResources(counts={'S': 1},
+                              measurement_processes={'expval(PauliX)': 1},
                               num_allocs=1,
-                              depth=1)],
+                              circuit_depth=1,
+                              total_quantum_operations=1)],
  'results': [0.0],
  'simulations': [1]}
 
@@ -173,7 +171,6 @@ from .legacy_facade import LegacyDeviceFacade
 # DefaultTensor is not imported here to avoid possible warnings
 # from quimb. Such warnings are due to a known issue with the cotengra package
 # when the latter is installed along with certain other packages.
-from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit

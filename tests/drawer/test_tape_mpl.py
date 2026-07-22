@@ -624,10 +624,6 @@ general_op_data = [
     qp.QFT(wires=range(3)),
     qp.Permute([4, 2, 0, 1, 3], wires=(0, 1, 2, 3, 4)),
     qp.GroverOperator(wires=(0, 1, 2, 3, 4, 5)),
-    ### Continuous Variable
-    qp.Kerr(1.234, wires=0),
-    qp.Beamsplitter(1.234, 2.345, wires=(0, 1)),
-    qp.Rotation(1.234, wires=0),
 ]
 
 
@@ -861,7 +857,6 @@ measure_data = [
     ([qp.expval(qp.PauliX(0))], [0]),
     ([qp.probs(wires=(0, 1, 2))], [0, 1, 2]),
     ([qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(0) @ qp.PauliY(1)), qp.state()], [0, 1]),
-    ([qp.expval(qp.NumberOperator(wires=0))], [0]),
 ]
 
 
