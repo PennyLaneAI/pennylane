@@ -674,6 +674,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
+  [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
+
 * Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
@@ -1180,6 +1183,10 @@
   restored as ``bytes``.
   [(#9687)](https://github.com/PennyLaneAI/pennylane/pull/9687)
 
+* Fixed a bug with :func:`~pennylane.equal` where comparing a base operator to
+  one of its subclasses returned ``True`` if they shared the same data and wires.
+  [(#9749)](https://github.com/PennyLaneAI/pennylane/pull/9749)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1195,6 +1202,7 @@ Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Austin Huang,
+Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
