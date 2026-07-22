@@ -70,6 +70,16 @@ class Identity(ResourceOperator):
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, cls.num_wires, {})
 
+    def resource_rep_from_op(self) -> CompressedResourceOp:
+        r"""Returns a compressed representation preserving the instance wire count."""
+        representation = super().resource_rep_from_op()
+        return CompressedResourceOp(
+            representation.op_type,
+            self.num_wires,
+            representation.params,
+            representation.name,
+        )
+
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
