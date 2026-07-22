@@ -156,14 +156,14 @@ class Evolution(Exp):
         return copied
 
 
-def _pauli_rot_decomp_condition(base):
+def _pauli_rot_decomp_condition(base, **__):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
     return qp.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base):
+def _pauli_rot_decomp_resource(base, **__):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     pauli_word = qp.pauli.pauli_word_to_string(base)

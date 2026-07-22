@@ -987,7 +987,7 @@ def apply_operation_core_paulirot(ops: qp.PauliRot, device):
     """Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO)."""
 
     theta = ops.parameters[0]
-    pauli_string = ops._hyperparameters["pauli_word"]
+    pauli_string = ops.hyperparameters["pauli_word"]
 
     arrays = []
     sites = list(ops.wires)
