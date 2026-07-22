@@ -14,6 +14,7 @@
 
 # pylint: disable=too-few-public-methods,useless-parent-delegation
 
+import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -55,6 +56,19 @@ class TwoDynOp(Operator2):
         super().__init__(phi, theta, wires=wires)
 
 
+class DynOpWithMatrix(Operator2):
+    """Operator with a matrix defined."""
+
+    dynamic_argnames = ("phi", "theta", "omega")
+
+    def __init__(self, phi, theta, omega, wires):
+        super().__init__(phi, theta, omega, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi, theta, omega, wires):  # pylint: disable=unused-argument
+        return qp.Rot.compute_matrix(phi, theta, omega)
+
+
 class StaticOp(Operator2):
     """Operator with a static argument."""
 
@@ -64,7 +78,7 @@ class StaticOp(Operator2):
         super().__init__(label, wires=wires)
 
 
-class CompOp(Operator2):
+class CompilableOp(Operator2):
     """Operator with a compilable static argument."""
 
     compilable_argnames = ("n",)

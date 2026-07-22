@@ -2,10 +2,17 @@
 
 <h3>New features since last release</h3>
 
+* ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
+  magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
+  These states are currently supported when compiling with Catalyst; device simulators raise an
+  error via ``resolve_dynamic_wires`` until native support is added.
+  [(#9846)](https://github.com/PennyLaneAI/pennylane/pull/9846)
+
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
+  [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -139,7 +146,7 @@
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
-  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
+  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
 
   ```python
   @qp.qjit(autograph=True)
@@ -162,14 +169,14 @@
   Level: Before MLIR Passes
   <BLANKLINE>
   Symbolic Variables: a
-  Wire allocations: 1
-  Total gates: a + 2
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: a + 1
-  Measurements:
+  Quantum operations:
+  - Total: a + 2
+    - Hadamard: 1
+    - PauliX: a + 1
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -178,14 +185,14 @@
   ```pycon
   >>> res = specs_result.resources
   >>> print(res.subs(a=5))
-  Wire allocations: 1
-  Total gates: 7
-  Gate counts:
-  - Hadamard: 1
-  - PauliX: 6
-  Measurements:
+  Quantum operations:
+  - Total: 7
+    - Hadamard: 1
+    - PauliX: 6
+  Measurement processes:
   - expval(PauliX): 1
-  Depth: Not computed
+  Wire allocations: 1
+  Circuit Depth: Not computed
 
   ```
 
@@ -424,6 +431,10 @@
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
+* Added a decomposition of :class:`~.QROM` using `qp.pauli_measure` operators. This decomposition reduces
+  the PPM count in the compilation pipeline.
+  [(#9531)](https://github.com/PennyLaneAI/pennylane/pull/9531)
+
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
@@ -459,7 +470,27 @@
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
+* :func:`~core.queuing.apply` is now compatible with program capture.
+  [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
+
+* Implemented the `__str__` of `Wires` to display the wire labels as a list.
+  [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
+
+* :func:`~pennylane.pauli_decompose` is significantly faster for SciPy sparse inputs. Nonzero entries are
+  grouped by their ``row ^ col`` XOR-difference and each group is resolved with a single fast
+  Walsh-Hadamard transform, following [Georges et al.](https://doi.org/10.1088/1367-2630/adb44d),
+  giving order-of-magnitude speedups for sparse and structured operators.
+  [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
+  an unsigned-integer register with a signed-integer register into an unsigned-integer register.
+  This specific setup is useful for a vibronic dynamics workflow.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
+
+* The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
+  [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
   decompositions of :class:`~.CRZ`, as described
@@ -627,15 +658,66 @@
   Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
   application algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
 
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
+  [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
+  
+* Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
+  :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
+  resource operators from their quantum functions.
+  [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
+
 <h3>Breaking changes 💔</h3>
 
-* Plxpr transforms have been removed.
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+  `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
+  `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
+  `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
+  `qp.SqueezedState`, `qp.DisplacedSqueezedState`, `qp.ThermalState`, `qp.GaussianState`, `qp.FockState`,
+  `qp.FockStateVector`, `qp.FockDensityMatrix`, `qp.CatState`, `qp.NumberOperator`, `qp.TensorN`,
+  `qp.QuadX`, `qp.QuadP`, `qp.QuadOperator`, `qp.PolyXP`, `qp.FockStateProjector`,
+  `qp.DisplacementEmbedding`, `qp.SqueezingEmbedding`, `qp.CVNeuralNetLayers`, amd `qp.Interferomenter`.
+  [(#9869)](https://github.com/PennyLaneAI/pennylane/pull/9869)
+
+* Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
+* Leftover Python 3.9 support branch has been removed.
+  [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
+
+* The :attr:`~.Operator.data` property is now read-only. Assigning trainable parameters via
+  ``op.data = new_data`` is no longer supported. To create an operator with updated parameters,
+  use :func:`~.ops.functions.bind_new_parameters`, which returns a new operator and leaves the
+  original unchanged:
+
+  ```python
+  op = qp.RX(0.1, wires=0)
+
+  # Before (no longer supported):
+  # op.data = (0.2,)  # AttributeError: property 'data' of 'RX' object has no setter
+
+  # After:
+  op_new = qp.ops.functions.bind_new_parameters(op, (0.2,))
+  ```
+
+  [(#9836)](https://github.com/PennyLaneAI/pennylane/pull/9836)
+
+* Support for compiling PennyLane workflows with CUDA Quantum through :func:`~.qjit` has been
+  removed following the removal of the CUDA Quantum integration from Catalyst.
+  [(Catalyst #2984)](https://github.com/PennyLaneAI/catalyst/pull/2984)
+  [(#9817)](https://github.com/PennyLaneAI/pennylane/pull/9817)
+
+* The :class:`pennylane.resource.Resources`, :class:`~.ResourceOperator`, and :class:`~.ErrorOperator` classes as well as the entire :mod:`pennylane.resource.error` module have been removed.
+  [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
+
+* Plxpr transforms and associated infrastructure have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
+  [(#9797)](https://github.com/PennyLaneAI/pennylane/pull/9797)
 
 * Support for executing PLxPR without qjit has been removed.
   [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
@@ -750,6 +832,40 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
+  tests should only be marked `catalyst` and *not* marked `external`.
+  [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
+
+* Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
+  This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
+  The :class:`~.resource.Resources` class serves as the new base class,
+  and the :class:`~.resource.SpecsResources` and :class:`~.resource.PBCSpecsResources` inherit from it.
+  [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
+
+* The following legacy operators are now ported to the new `~.Operator2` base class.
+  - Single qubit, non-parameteric operators are ported:
+    - `~.S`, `~.T`, `~.SX`
+  [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
+  [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
+  [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
+  [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+
+* The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
+  else branch.
+  [(#9815)](https://github.com/PennyLaneAI/pennylane/pull/9815)
+
+* PennyLane primitives are now explicitly called with a turned-off JAX compile time constant evaluation context
+  ``jax._src.config.eager_constant_folding(False)``. This enables JAX's compile time constant evaluation
+  to only evaluate classical constants, and ignore all quantum primitives.
+  [(#9755)](https://github.com/PennyLaneAI/pennylane/pull/9755)
+
+* Adds `qp.capture.symbolic_array` for producing tracers with the correct shape and dtype but no known values.
+  Could be used for dry-runs and resource calculations with program capture.
+  [(#9763)](https://github.com/PennyLaneAI/pennylane/pull/9763)
+
+* Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
+  [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
+
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
@@ -787,59 +903,79 @@
   [(#9590)](https://github.com/PennyLaneAI/pennylane/pull/9590)
 
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
-  base class, :class:`~.Operator2`. This is an internal, work-in-progress effort that is being incrementally
-  integrated into the PennyLane ecosystem. Supported functionality so far:
-  - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
-  - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
-  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
-  - Arithmetic can be performed with :class:`~.Operator2` instances.
-  - Symbolic operators with :class:`~.Operator2` instances as the base.
-  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
-  - Integration with :mod:`pennylane.capture`.
-  - Integration with :func:`pennylane.apply`.
-  - Integration with measurements and capture.
-  - Integration with the graph-based decomposition system.
-  - Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
-  - Integration with :func:`pennylane.adjoint` and :func:`pennylane.ctrl`.
+  base class, :class:`~.Operator2`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
-  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
-  [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
-  [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
-  [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
-  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
-  [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
-  [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
-  [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
-  [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
-  [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
-  [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
   [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
-  [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
-  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
-  [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
-  [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
-  [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
-  [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
-  [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
-  [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
-  [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
-  [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
-  [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
-  [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
-  [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
-  [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
+  [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
+  [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
+  [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
 
-* Added an internal `abstractify` utility function that is able to convert various objects
-  to their abstract versions.
-  [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+  This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
+  ecosystem. Supported functionality so far:
 
-* Added an `is_abstract` property to `Operator2` in order to improve abstractification efficiency.
-  [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
+  - Create instances of :class:`~.Operator2` with abstract data.
+    [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
+    [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
+    [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+    [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
+  - Some backwards compatibility with the legacy operator interface.
+    [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
+    [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+    [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
+  - Compatibility with the `drawer` module.
+    [(#9849)](https://github.com/PennyLaneAI/pennylane/pull/9849)
+  - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
+    [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+    [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
+  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
+    [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
+    [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
+  - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+    [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
+  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
+    [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
+    [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
+  - Symbolic operators with :class:`~.Operator2` instances as the base.
+    [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
+    [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
+    [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
+    [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
+    [(#9758)](https://github.com/PennyLaneAI/pennylane/pull/9758)
+    [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
+    [(#9793)](https://github.com/PennyLaneAI/pennylane/pull/9793)
+    [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
+    [(#9805)](https://github.com/PennyLaneAI/pennylane/pull/9805)
+    [(#9856)](https://github.com/PennyLaneAI/pennylane/pull/9856)
+    [(#9876)](https://github.com/PennyLaneAI/pennylane/pull/9876)
+    [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+  - Integration with :mod:`pennylane.capture`.
+    [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
+    [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+    [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
+    [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
+    [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
+    [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
+  - Integration with measurements.
+    [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
+  - Integration with :func:`pennylane.apply`.
+    [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
+  - Integration with :func:`pennylane.insert`.
+    [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
+  - Integration with the graph-based decomposition system.
+    [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
+    [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+    [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
+    [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
+    [(#9825)](https://github.com/PennyLaneAI/pennylane/pull/9825)
+    [(#9839)](https://github.com/PennyLaneAI/pennylane/pull/9839)
+    [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
+    [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
+    [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -855,6 +991,8 @@
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
   [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
   [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
+  [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
   [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)
@@ -904,6 +1042,11 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
+* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
+  from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
+  singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
+  [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
+
 <h3>Documentation 📝</h3>
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
@@ -936,6 +1079,19 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
+  [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
+
+* Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
+  were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
+  Also adjusted the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier`
+  to be compatible with traced wires.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
+
+* Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to
+  :class:`~.Incrementer` were also included in the target wires.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
 * Fixed a bug in :class:~.OutMultiplier` for small output registers.
   [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
@@ -1038,6 +1194,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Austin Huang,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,

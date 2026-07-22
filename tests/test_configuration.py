@@ -27,8 +27,8 @@ config_filename = "default_config.toml"
 
 
 test_config = """\
-[default.gaussian]
-hbar = 2
+[default.qubit]
+max_workers = 2
 
 [strawberryfields.global]
 hbar = 1
@@ -222,7 +222,6 @@ class TestPennyLaneInit:
 
     def test_device_load(self, default_config):
         """Test loading a device with a configuration."""
-        dev = qp.device("default.gaussian", wires=2, config=default_config)
+        dev = qp.device("default.qubit", wires=2, config=default_config)
 
-        assert dev.hbar == 2
-        assert not dev.shots
+        assert dev._max_workers == 2  # pylint: disable=protected-access

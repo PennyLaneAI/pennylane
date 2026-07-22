@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires:
+    def wires(self) -> Wires | None:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -335,6 +335,11 @@ class Operator2(metaclass=OperatorMeta):
         if self._batch_size is _UNSET_BATCH_SIZE:
             self._check_batching()
         return self._ndim_params
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
 
     @property
     def arithmetic_depth(self) -> int:
@@ -784,7 +789,7 @@ class Operator2(metaclass=OperatorMeta):
             return self.compute_decomposition(**self.arguments)
 
         for decomp in qp.list_decomps(self):
-            if decomp.is_applicable():
+            if decomp.is_applicable(**self.arguments):
                 with AnnotatedQueue() as q:
                     decomp(**self.arguments)
                 if QueuingManager.recording():
@@ -953,25 +958,38 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        # NOTE: Handle special case for single wire non-parameteric
+        # operators like 'repr(qp.X(wires=0)) = X(0)'
+        non_wire_args = (
+            self.dynamic_argnames
+            + self.static_argnames
+            + self.compilable_argnames
+            + self.hybrid_argnames
+        )
+        if not non_wire_args and len(self.wire_argnames) == 1:
+            wire_arg = self.arguments[self.wire_argnames[0]]
+            if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
+
         inputs = []
 
         for key, value in self.arguments.items():
-            # Non-wire arguments
-            if key not in self.wire_argnames:
-                res = value
-            # Non-hybrid wire arguments
-            elif key not in self.hybrid_argnames:
-                res = value.tolist() if isinstance(value, Wires) else value
-            # Hybrid wire arguments
-            else:
+
+            # Hybrid wire arguments.
+            if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
-                res = unflatten(leaves, tree)
+                value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={res}")
+            inputs.append(f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
+
+    def __str__(self) -> str:
+        if self.is_abstract and self.has_fixed_sig:
+            return self.name
+        return repr(self)
 
     def __hash__(self) -> int:
         serialized_dynamic = tuple(
@@ -1232,14 +1250,12 @@ class Operator2(metaclass=OperatorMeta):
                 wire_lens.append(len(value))
 
         hybrid_lens, hybrid_trees = [], []
+        forward_mask = []
         for name in self.hybrid_argnames:
-            # Partial flattening to extract operators used as data so their
-            # equations can be deleted from the jaxpr.
-            op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
-            _ = pop_op_eqns(filter(_is_op, op_leaves))
-
-            # Full flattening to feed the operator's dynamic data to the primitive.
-            leaves, tree = flatten(self.arguments[name])
+            leaves, tree, mask = _process_bind_hybrid_arg(
+                self.arguments[name], is_wire_arg=name in self.wire_argnames
+            )
+            forward_mask.extend(mask)
             pos_args.extend(leaves)
             hybrid_lens.append(len(leaves))
             hybrid_trees.append(tree)
@@ -1257,6 +1273,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            forward_mask=forward_mask,
             n_ctrls=0,
             adjoint=False,
             **static_args,
@@ -1378,17 +1395,23 @@ def _init_arg_types(op: Operator2) -> None:
             argval.dtype if isinstance(argval, AbstractArray) else math.get_dtype_name(argval)
         )
         comparison_abstract_type = AbstractArray(unbatched_shape, np.dtype(argval_dtype))
+
+        # Check if either shape or dtype is not compatible
         if not exp_type.is_compatible_with(comparison_abstract_type):
+            # Isolate if it's a pure dtype issue by comparing with a mock type that has the
+            # expected shape but the actual dtype
             actual_dtype = argval_dtype
-            if is_broadcasted:
+            if not exp_type.is_compatible_with(AbstractArray(exp_type.shape, actual_dtype)):
                 raise ValueError(
-                    f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
-                    f"for the non-broadcasting dimensions and dtype '{exp_type.dtype.name}', but "
-                    f"got input shape {arg_shape} with dtype '{actual_dtype}'."
+                    f"Parameter '{name}' does not match the operator's expected 'arg_specs' dtype. "
+                    f"Expected {exp_type.dtype} but received {actual_dtype}."
                 )
+
+            # If dtype is fine, must be a shape mismatch
+            broadcast_msg = " (non-broadcasting dimensions)" if is_broadcasted else ""
             raise ValueError(
-                f"Expected '{name}' to have shape {exp_type.shape} and dtype "
-                f"'{exp_type.dtype.name}', but got shape {arg_shape} with dtype '{actual_dtype}'."
+                f"Parameter '{name}' does not match the operator's expected 'arg_specs' shape. "
+                f"Expected {exp_type.shape}{broadcast_msg} but received {arg_shape}."
             )
 
         # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
@@ -1554,7 +1577,7 @@ if has_jax:
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,unused-argument
     @operator_p.def_impl
     def _op_impl(
         *all_args,
@@ -1562,6 +1585,7 @@ if has_jax:
         wire_lens,
         hybrid_lens,
         hybrid_trees,
+        forward_mask,
         n_ctrls=0,
         adjoint=False,
         **static_args,
@@ -1643,6 +1667,37 @@ def pop_op_eqns(ops: Iterable):
     return old_eqns
 
 
+def _op_arg_forward_mask(op: Operator2) -> list[bool]:
+    """Build ``forward_mask`` entries for an operator argument."""
+    op_leaves, _ = flatten(op, is_leaf=_is_wires)
+    hybrid_mask = []
+    for op_leaf in op_leaves:
+        if isinstance(op_leaf, Wires):
+            hybrid_mask.extend([False] * len(op_leaf))
+        else:
+            hybrid_mask.append(True)
+    return hybrid_mask
+
+
+def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
+    """Process a hybrid argument for binding an operator primitive."""
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
+    _ = pop_op_eqns(filter(_is_op, partial_leaves))
+
+    leaves, tree = flatten(hybrid_val)
+    if is_wire_arg:
+        return leaves, tree, [False] * len(leaves)
+
+    hybrid_mask: list[bool] = []
+    for partial_leaf in partial_leaves:
+        if isinstance(partial_leaf, Operator2):
+            hybrid_mask.extend(_op_arg_forward_mask(partial_leaf))
+        else:
+            hybrid_mask.append(False)
+
+    return leaves, tree, hybrid_mask
+
+
 # -----------------------------------------------------------------------------
 # --------------------------- Miscelleneous helpers ---------------------------
 # -----------------------------------------------------------------------------
@@ -1701,9 +1756,10 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     else:
         mod_val = None
 
-    # We stringify the data because arrays are unhashable
     if isinstance(d, AbstractArray):
-        return str(d)
+        return hash(d)
+
+    # We stringify the data because arrays are unhashable
     return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
 
 

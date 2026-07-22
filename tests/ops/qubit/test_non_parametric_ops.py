@@ -47,6 +47,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
@@ -234,18 +235,10 @@ class TestDecompositions:
         op = qp.SX(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 4
-        assert all(res[i].wires == Wires([0]) for i in range(4))
+        assert len(res) == 2
 
-        assert res[0].name == "RZ"
-        assert res[1].name == "RY"
-        assert res[2].name == "RZ"
-        assert res[3].name == "GlobalPhase"
-
-        assert res[0].data[0] == np.pi / 2
-        assert res[1].data[0] == np.pi / 2
-        assert res[2].data[0] == -np.pi / 2
-        assert res[3].data[0] == -np.pi / 4
+        qp.assert_equal(res[0], qp.RX(np.pi / 2, wires=0))
+        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4, wires=0))
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -863,12 +856,15 @@ period_two_ops = (
 
 
 class TestPowMethod:
+    """Test the Operator.pow method."""
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
-        assert op.pow(n)[0].__class__ is op.__class__
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+        qp.assert_equal(pow_ops[0], op)
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
@@ -1109,23 +1105,22 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
-            if rule.is_applicable(**half_op.resource_params):
-
+            params, args, kwargs = _get_decomp_args(half_op)
+            if rule.is_applicable(**params):
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
-                    rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
-            if rule.is_applicable(**quart_op.resource_params):
-
+            params, args, kwargs = _get_decomp_args(quart_op)
+            if rule.is_applicable(**params):
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
-                    rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
+                    rule(*args, **kwargs)
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
@@ -1226,17 +1221,6 @@ def test_label_method(op, label):
 
 
 control_data = [
-    (qp.Identity(0), Wires([])),
-    (qp.Hadamard(0), Wires([])),
-    (qp.PauliX(0), Wires([])),
-    (qp.PauliY(0), Wires([])),
-    (qp.S(wires=0), Wires([])),
-    (qp.T(wires=0), Wires([])),
-    (qp.SX(wires=0), Wires([])),
-    (qp.SWAP(wires=(0, 1)), Wires([])),
-    (qp.ISWAP(wires=(0, 1)), Wires([])),
-    (qp.SISWAP(wires=(0, 1)), Wires([])),
-    (qp.ECR(wires=(0, 1)), Wires([])),
     # Controlled operations
     (qp.CY(wires=(0, 1)), Wires(0)),
     (qp.CZ(wires=(0, 1)), Wires(0)),

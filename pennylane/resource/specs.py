@@ -23,43 +23,24 @@ import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
-from functools import partial, wraps
+from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pennylane as qp
 
-from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
+from ._utils import (
+    apply_partial_args,
+    get_last_tape_transform_level,
+    get_marker_level_map,
+    make_level_name_unique,
+    preprocess_level_input,
+    unwrap_partial,
+)
+from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
-
-if TYPE_CHECKING:
-    from pennylane.core.transforms import CompilePipeline
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
-
-
-def _unwrap_partial(fn):
-    """Return the base callable and arguments bound by nested ``functools.partial`` wrappers."""
-    args = ()
-    kwargs = {}
-    while isinstance(fn, partial):
-        args = fn.args + args
-        kwargs = {**(fn.keywords or {}), **kwargs}
-        fn = fn.func
-    return fn, args, kwargs
-
-
-def _apply_partial_args(fn, args, kwargs):
-    """Return a callable that prepends partial-bound arguments to call-time arguments."""
-    if not args and not kwargs:
-        return fn
-
-    @wraps(fn)
-    def wrapper(*call_args, **call_kwargs):
-        return fn(*args, *call_args, **{**kwargs, **call_kwargs})
-
-    return wrapper
 
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
@@ -129,135 +110,41 @@ def _specs_qjit_device_level_tracking(
             resource_data = json.load(f)
 
         return SpecsResources(
-            gate_types=resource_data["gate_types"],
-            gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
-            measurements=resource_data["measurements"],
+            counts=resource_data["gate_types"],
+            measurement_processes=resource_data["measurements"],
             num_allocs=resource_data["num_wires"],
-            depth=resource_data["depth"],
+            circuit_depth=resource_data["depth"],
         )
-
-
-def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
-    """Helper function to get the last level which is a tape transform and not an MLIR pass.
-
-    Note that this includes an implicit level 0 which corresponds to the original circuit.
-
-    Args:
-        compile_pipeline: The compile pipeline of the QNode, which contains both user-applied tape transforms and MLIR passes
-
-    Returns:
-        int: The last level which is a tape transform and not an MLIR pass, or 0 if there are no tape transforms
-    """
-    # Find the seam where transforms end and MLIR passes begin
-    # If the pass name is None, it indicates a transform which is NOT also a Catalyst pass
-    for i, trans in reversed(list(enumerate(compile_pipeline))):
-        if trans.pass_name is None:
-            #  Add 1 to account for the implicit "Before Tape Transforms" at level=0
-            return i + 1
-    return 0
-
-
-def _preprocess_level_input(  # pylint: disable=too-many-branches
-    level: str | int | slice | list[int | str],
-    marker_to_level: dict[str, int],
-    pipeline_len: int,
-    num_tape_levels: int,
-) -> list[int]:
-    """Preprocesses the level input to always return a sorted list of integers.
-
-    Args:
-        level (str | int | slice | iter[int | str]): The level input to preprocess
-        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers.
-            Note that this should already account for any inserted lowering pass.
-        pipeline_len (int): The length of the compile pipeline (number of transforms and passes)
-        num_tape_levels (int): The number of tape levels in the compile pipeline (including the implicit level 0)
-    Returns:
-        list[int]: The preprocessed level input
-    """
-    # Account for "Before MLIR passes" level
-    total_levels = pipeline_len + 1
-
-    if num_tape_levels > 1:
-        # Account for an additional "Before Tape Transforms" level
-        total_levels += 1
-
-    if level == "all":
-        return list(range(0, total_levels))
-    if level == "all-mlir":
-        return list(range(num_tape_levels, total_levels))
-    if level == "user":
-        return [total_levels - 1]
-
-    if isinstance(level, (int, str)):
-        level = [level]
-    elif isinstance(level, slice):
-        level = list(range(level.start or 0, level.stop, level.step or 1))
-    else:
-        level = list(level)
-
-    # Convert marker names to the associated level number
-    for i, lvl in enumerate(level):
-        if isinstance(lvl, str):
-            if lvl not in marker_to_level:
-                raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
-            level[i] = marker_to_level[lvl]
-        elif isinstance(lvl, int):
-            if lvl < 0 or lvl >= total_levels:
-                raise ValueError(
-                    "The 'level' argument to qp.specs for QJIT'd QNodes is out of bounds, "
-                    f"got {lvl}."
-                )
-        else:
-            raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
-
-    level_sorted = sorted(set(level))
-    if level != level_sorted:
-        warnings.warn(
-            "The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
-            "order with no duplicate levels.",
-            UserWarning,
-        )
-
-    return level_sorted
 
 
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
 ]:  # pragma: no cover
-    # pylint: disable=too-many-branches,too-many-statements
 
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
-    num_tape_levels = _get_last_tape_transform_level(compile_pipeline)
+    num_tape_levels = get_last_tape_transform_level(compile_pipeline)
     if num_tape_levels != 0:
         # Account for the "Before Tape Transforms" tape at level 0
         num_tape_levels += 1
 
-    # Maps to convert back and forth between marker name and int level
-    marker_to_level: dict[str, int] = {}
-    for marker in compile_pipeline.markers:
-        lvl = compile_pipeline.get_marker_level(marker)
-        marker_to_level[marker] = lvl
-
-        # Account for the MLIR lowering pass if necessary
-        if 0 < num_tape_levels <= lvl:
-            marker_to_level[marker] += 1
-
-    # Multiple markers can correspond to the same level
-    level_to_markers = defaultdict(list)
+    # Map to convert back and forth between marker name and int level
+    marker_to_level = get_marker_level_map(compile_pipeline)
+    level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
 
-    # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
-    return_single_level = isinstance(level, (int, str)) and level not in (
+    return_single_level: bool = isinstance(level, (int, str)) and level not in (
         "all",
         "all-mlir",
     )
-    level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
-    level_to_name: dict[int, str] = {}  # This will be a map of level to its name
+
+    # Easier to assume level is always a sorted list of int levels
+    level = preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
+    level_to_name: dict[int, str] = {}
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
     mlir_levels = [lvl for lvl in level if lvl >= num_tape_levels]
@@ -427,21 +314,21 @@ def specs(
     Shots: Shots(total=None)
     Level: gradient
     <BLANKLINE>
-    Wire allocations: 2
-    Total gates: 98
-    Gate counts:
-    - RX: 1
-    - CNOT: 1
-    - Evolution: 96
-    Measurements:
+    Quantum operations:
+    - Total: 4
+      - RX: 1
+      - CNOT: 1
+      - TrotterProduct: 2
+    Measurement processes:
     - probs(all wires): 1
-    Depth: 98
+    Wire allocations: 2
+    Circuit Depth: 4
 
     The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
     access to the data fields. For example:
 
-    >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
-    {'RX': 1, 'CNOT': 1, 'Evolution': 96}
+    >>> qp.specs(circuit)(x, add_ry=False).resources.quantum_operations
+    {'RX': 1, 'CNOT': 1, 'TrotterProduct': 2}
 
     .. details::
         :title: Specs with Tape Transforms
@@ -470,56 +357,56 @@ def specs(
         First, we can inspect the unmodified QNode by setting ``level=0``. Note that ``level="top"`` is equivalent:
 
         >>> print(qp.specs(circuit, level=0)(0.1).resources)
-        Wire allocations: 2
-        Total gates: 6
-        Gate counts:
-        - RandomLayers: 1
-        - RX: 2
-        - SWAP: 1
-        - PauliX: 2
-        Measurements:
+        Quantum operations:
+        - Total: 6
+          - RandomLayers: 1
+          - RX: 2
+          - SWAP: 1
+          - PauliX: 2
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 6
+        Wire allocations: 2
+        Circuit Depth: 6
 
         We can analyze the effects of, for example, applying the first two transforms
         (:func:`~pennylane.transforms.cancel_inverses` and :func:`~pennylane.transforms.undo_swaps`) by setting
         ``level=2``. The result will show that ``SWAP`` and ``PauliX`` are not present in the circuit:
 
         >>> print(qp.specs(circuit, level=2)(0.1).resources)
-        Wire allocations: 2
-        Total gates: 3
-        Gate counts:
-        - RandomLayers: 1
-        - RX: 2
-        Measurements:
+        Quantum operations:
+        - Total: 3
+          - RandomLayers: 1
+          - RX: 2
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 3
+        Wire allocations: 2
+        Circuit Depth: 3
 
         We can then check the resources after applying all user transforms with ``level="user"`` (which, in this particular example,
         would be equivalent to ``level=3``). The two rotations merge and cancel out, leaving us with only ``RandomLayers``:
 
         >>> print(qp.specs(circuit, level="user")(0.1).resources)
-        Wire allocations: 2
-        Total gates: 1
-        Gate counts:
-        - RandomLayers: 1
-        Measurements:
+        Quantum operations:
+        - Total: 1
+          - RandomLayers: 1
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 1
+        Wire allocations: 2
+        Circuit Depth: 1
 
         After the user transforms, additional transforms for device compatibility and gradient support may be applied. To see the
         resources after all transforms are applied, we can use ``level="device"``. In this case, ``RandomLayers`` is not
         device-compatible and is further decomposed before handing the circuit off to the device:
 
         >>> print(qp.specs(circuit, level="device")(0.1).resources)
-        Wire allocations: 2
-        Total gates: 2
-        Gate counts:
-        - RY: 1
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 2
+          - RY: 1
+          - RX: 1
+        Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Depth: 1
+        Wire allocations: 2
+        Circuit Depth: 1
 
         If a QNode with a tape-splitting transform is supplied to the function, the output will provide
         resource information separately for each tape:
@@ -543,29 +430,38 @@ def specs(
         Level: user
         <BLANKLINE>
         Batched tape a:
-            Wire allocations: 2
-            Total gates: 1
-            Gate counts:
-            - RandomLayers: 1
-            Measurements:
+            Quantum operations:
+            - Total: 1
+              - RandomLayers: 1
+            Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
-            Depth: 1
+            Wire allocations: 2
+            Circuit Depth: 1
         <BLANKLINE>
         Batched tape b:
-            Wire allocations: 3
-            Total gates: 1
-            Gate counts:
-            - RandomLayers: 1
-            Measurements:
+            Quantum operations:
+            - Total: 1
+              - RandomLayers: 1
+            Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
-            Depth: 1
+            Wire allocations: 3
+            Circuit Depth: 1
 
         In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
         :class:`~.resource.SpecsResources` for each resulting tape:
 
-        >>> qp.specs(circuit, level="user")().resources
-        [SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, depth=1),
-         SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, depth=1)]
+        >>> from pprint import pprint
+        >>> pprint(qp.specs(circuit, level="user")().resources)
+        [SpecsResources(counts={'RandomLayers': 1},
+                        measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                        num_allocs=2,
+                        circuit_depth=1,
+                        total_quantum_operations=1),
+         SpecsResources(counts={'RandomLayers': 1},
+                        measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                        num_allocs=3,
+                        circuit_depth=1,
+                        total_quantum_operations=1)]
 
     .. details::
         :title: Runtime Specs with Catalyst
@@ -601,14 +497,14 @@ def specs(
         Shots: Shots(total=None)
         Level: device
         <BLANKLINE>
-        Wire allocations: 3
-        Total gates: 2
-        Gate counts:
-        - CNOT: 1
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 2
+          - CNOT: 1
+          - RX: 1
+        Measurement processes:
         - probs(all wires): 1
-        Depth: 2
+        Wire allocations: 3
+        Circuit Depth: 2
 
         .. note::
 
@@ -689,44 +585,44 @@ def specs(
         - 1: cancel-inverses
         - 2: merge-rotations
         <BLANKLINE>
-        ↓Metric     Level→ |  0 |  1 |  2
-        ---------------------------------
-        Wire allocations   |  3 |  3 |  3
-        Total gates        |  5 |  3 |  2
-        Gate counts:       |
-        - CNOT             |  1 |  1 |  1
-        - PauliX           |  2 |  0 |  0
-        - RX               |  2 |  2 |  1
-        Measurements:      |
-        - probs(all wires) |  1 |  1 |  1
+        ↓Metric         Level→ |  0 |  1 |  2
+        -------------------------------------
+        Quantum operations:    |
+        - Total                |  5 |  3 |  2
+          - CNOT               |  1 |  1 |  1
+          - PauliX             |  2 |  0 |  0
+          - RX                 |  2 |  2 |  1
+        Measurement processes: |
+        - probs(all wires)     |  1 |  1 |  1
+        Wire allocations       |  3 |  3 |  3
 
         When invoked with an iterable of levels, or ``"all"`` as above, the resources at different levels can be
         accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
         the name of a pass or marker. For example:
 
         >>> print(all_specs.resources['merge-rotations'])
-        Wire allocations: 3
-        Total gates: 2
-        Gate counts:
-        - CNOT: 1
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 2
+          - CNOT: 1
+          - RX: 1
+        Measurement processes:
         - probs(all wires): 1
-        Depth: Not computed
+        Wire allocations: 3
+        Circuit Depth: Not computed
 
         A shortcut to access the resources after all user-specified transforms and passes have been
         applied is to use the ``"user"`` level. For example, the following will also return the
         resources after the ``merge-rotations`` pass:
 
         >>> print(qp.specs(circuit, level="user")(1.23).resources)
-        Wire allocations: 3
-        Total gates: 2
-        Gate counts:
-        - CNOT: 1
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 2
+          - CNOT: 1
+          - RX: 1
+        Measurement processes:
         - probs(all wires): 1
-        Depth: Not computed
+        Wire allocations: 3
+        Circuit Depth: Not computed
 
         .. warning::
             Certain transforms, like the ``split_non_commuting`` transform, can result in splitting a single execution
@@ -756,15 +652,15 @@ def specs(
         - 2: Before MLIR Passes
         - 3: cancel-inverses
         <BLANKLINE>
-        ↓Metric   Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  3-a |  3-b
-        -----------------------------------------------------------------
-        Wire allocations |    1 |    1 |    1 |    3 |    3 |    3 |    3
-        Total gates      |    2 |    2 |    2 |    2 |    2 |    0 |    0
-        Gate counts:     |
-        - PauliX         |    2 |    2 |    2 |    2 |    2 |    0 |    0
-        Measurements:    |
-        - expval(PauliZ) |    1 |    1 |    0 |    1 |    0 |    1 |    0
-        - expval(PauliX) |    1 |    0 |    1 |    0 |    1 |    0 |    1
+        ↓Metric         Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  3-a |  3-b
+        -----------------------------------------------------------------------
+        Quantum operations:    |
+        - Total                |    2 |    2 |    2 |    2 |    2 |    0 |    0
+          - PauliX             |    2 |    2 |    2 |    2 |    2 |    0 |    0
+        Measurement processes: |
+        - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0 |    1 |    0
+        - expval(PauliX)       |    1 |    0 |    1 |    0 |    1 |    0 |    1
+        Wire allocations       |    1 |    1 |    1 |    3 |    3 |    3 |    3
 
         Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
@@ -778,10 +674,8 @@ def specs(
         This can occur when the resources depend on values that are not known at
         compile time, such as the number of iterations in a loop.
         In these cases, the resource information will be returned as a
-        :class:`~.resource.SymbolicSpecsResources` including symbolic expressions,
-        rather than a
-        :class:`~.resource.SpecsResources` with concrete values.
-
+        :class:`~.resource.SpecsResources` including symbolic expressions,
+        rather than one with concrete values.
         For example, consider the following circuit which contains a ``for`` loop with a
         non-static range:
 
@@ -812,50 +706,50 @@ def specs(
         Level: Before MLIR Passes
         <BLANKLINE>
         Symbolic Variables: a, b
-        Wire allocations: 1
-        Total gates: b + a + 2
-        Gate counts:
-        - Hadamard: 1
-        - PauliX: a + 1
-        - PauliZ: b
-        Measurements:
+        Quantum operations:
+        - Total: b + a + 2
+          - Hadamard: 1
+          - PauliX: a + 1
+          - PauliZ: b
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Wire allocations: 1
+        Circuit Depth: Not computed
 
         You can estimate the concrete resource values using the ``.subs`` method of the
-        returned :class:`~.resource.SymbolicSpecsResources` object, and providing keyword arguments
+        returned :class:`~.resource.SpecsResources` object, and providing keyword arguments
         which describe the mapping from each symbolic variable to an integer value:
 
         >>> res = specs_result.resources
         >>> print(res.subs(a=5, b=3))
-        Wire allocations: 1
-        Total gates: 10
-        Gate counts:
-        - Hadamard: 1
-        - PauliX: 6
-        - PauliZ: 3
-        Measurements:
+        Quantum operations:
+        - Total: 10
+          - Hadamard: 1
+          - PauliX: 6
+          - PauliZ: 3
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Wire allocations: 1
+        Circuit Depth: Not computed
 
         These substitutions may also be provided as a dictionary, which can be helpful in
         programmatic contexts:
 
         >>> print(res.subs({"a": 5, "b": 3}))
-        Wire allocations: 1
-        Total gates: 10
-        Gate counts:
-        - Hadamard: 1
-        - PauliX: 6
-        - PauliZ: 3
-        Measurements:
+        Quantum operations:
+        - Total: 10
+          - Hadamard: 1
+          - PauliX: 6
+          - PauliZ: 3
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Wire allocations: 1
+        Circuit Depth: Not computed
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
-    qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
+    qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
 
     specs_fn = _specs_qnode if isinstance(qnode, qp.QNode) else None
 
@@ -879,7 +773,7 @@ def specs(
             pass
 
     if specs_fn is not None:
-        return _apply_partial_args(
+        return apply_partial_args(
             partial(specs_fn, qnode, level, compute_depth), partial_args, partial_kwargs
         )
 

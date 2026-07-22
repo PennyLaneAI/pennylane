@@ -17,9 +17,8 @@ Stores classes and logic to aggregate all the resource information from a quantu
 
 from __future__ import annotations
 
-import copy
-from abc import abstractmethod
 from collections import defaultdict
+from collections.abc import Generator
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
 from functools import lru_cache
@@ -27,13 +26,12 @@ from string import ascii_lowercase
 from typing import Any
 
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operation
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.ops.op_math import Controlled, ControlledOp
+from pennylane.pytrees import flatten, unflatten
 
-from .error.error import _compute_algo_error
-from .expression import Expression, convert_int_vals_to_expression
+from .expression import Expression
 
 
 def _count_to_str(
@@ -57,6 +55,77 @@ def _count_to_str(
             return retval
         count = int(count)
     return f"{count:,}" if count < 100_000 else f"{Decimal(count):.3E}"
+
+
+def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
+    """Recursively flatten a (possibly nested) dictionary into a single-level dictionary.
+
+    Nested dictionaries are collapsed into dotted keys of arbitrary depth. Only nested
+    ``dict`` values are recursed into; all other value types are left untouched.
+
+    Args:
+        data (dict): The dictionary to flatten.
+        prefix (str): The key prefix to prepend to each key (used internally for recursion).
+        sep (str): The separator to use when joining nested keys.
+
+    Returns:
+        dict: A flattened dictionary mapping dotted keys to their (non-dict) values.
+
+    **Example**
+
+    >>> _flatten_dict({"a": 1, "b": {"c": 2, "d": {"e": 3}}})
+    {'a': 1, 'b.c': 2, 'b.d.e': 3}
+    """
+    flattened = {}
+    for key, value in data.items():
+        full_key = f"{prefix}{sep}{key}" if prefix else str(key)
+        if isinstance(value, dict):
+            flattened.update(_flatten_dict(value, prefix=full_key, sep=sep))
+        else:
+            flattened[full_key] = value
+    return flattened
+
+
+def _collect_vars(obj: Any) -> Generator[str]:
+    """Collect the symbolic variables of every :class:`Expression` within an arbitrary pytree.
+
+    Uses :func:`~pennylane.pytrees.flatten` to traverse any registered container type (``dict``,
+    ``list``, ``tuple``, ...) to arbitrary depth, yielding the variables of every :class:`Expression`
+    leaf. Non-``Expression`` leaves are ignored.
+
+    Args:
+        obj (Any): The (possibly nested) object to search.
+
+    Yields:
+        str: Each symbolic variable found across every :class:`Expression` leaf.
+    """
+    leaves, _ = flatten(obj)
+    for leaf_val in leaves:
+        if isinstance(leaf_val, Expression):
+            yield from leaf_val.vars
+
+
+def _subs_pytree(obj: Any, substitutions: dict) -> Any:
+    """Substitute symbolic variables within every :class:`Expression` leaf of an arbitrary pytree.
+
+    Uses :func:`~pennylane.pytrees.flatten`/:func:`~pennylane.pytrees.unflatten` to traverse any
+    registered container type (``dict``, ``list``, ``tuple``, ...) to arbitrary depth, substituting
+    into every :class:`Expression` leaf while preserving the original structure. Non-``Expression``
+    leaves are left untouched.
+
+    Args:
+        obj (Any): The (possibly nested) object to substitute into.
+        substitutions (dict): A mapping from variable names to their concrete integer values.
+
+    Returns:
+        Any: A new object of the same structure with substitutions applied.
+    """
+    leaves, struct = flatten(obj)
+    new_leaves = (
+        leaf_val.subs(substitutions) if isinstance(leaf_val, Expression) else leaf_val
+        for leaf_val in leaves
+    )
+    return unflatten(new_leaves, struct)
 
 
 @lru_cache
@@ -83,307 +152,357 @@ def num_to_letters(num: int) -> str:
     return num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Resources:
-    r"""Contains attributes which store key resources such as number of gates, number of wires, shots,
-    depth and gate types.
+    """
+    Base class for storing resource information.
+
+    .. warning::
+
+        This class is intended to be immutable. Modifying the attributes after creation may lead to
+        unexpected behaviour.
 
     Args:
-        num_wires (int): number of qubits
-        num_gates (int): number of gates
-        gate_types (dict): dictionary storing operation names (str) as keys
-            and the number of times they are used in the circuit (int) as values
-        gate_sizes (dict): dictionary storing the number of :math:`n` qubit gates in the circuit
-            as a key-value pair where :math:`n` is the key and the number of occurances is the value
-        depth (int): the depth of the circuit defined as the maximum number of non-parallel operations
-        shots (Shots): number of samples to generate
+        counts (dict[str, int]): A dictionary mapping resources to their counts.
+        extra (dict[int, int]): A dictionary for storing any extra fields that need to be tracked.
 
     .. details::
+        :title: Symbolic Resource Information
 
-        The resources being tracked can be accessed as class attributes.
-        Additionally, the :code:`Resources` instance can be nicely displayed in the console.
-
-        **Example**
-
-        >>> from pennylane.resource import Resources
-        >>> r = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
-        >>> print(r)
-        num_wires: 2
-        num_gates: 2
-        depth: 2
-        shots: Shots(total=None)
-        gate_types:
-        {'Hadamard': 1, 'CNOT': 1}
-        gate_sizes:
-        {1: 1, 2: 1}
-
-        :class:`~.Resources` objects can be added together or multiplied by a scalar.
-
-        >>> from pennylane.resource import Resources
-        >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
-        >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
-        >>> print(r1 + r2)
-        num_wires: 2
-        num_gates: 4
-        depth: 4
-        shots: Shots(total=None)
-        gate_types:
-        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
-        gate_sizes:
-        {1: 2, 2: 2}
-        >>> print(r1 * 2)
-        num_wires: 2
-        num_gates: 4
-        depth: 4
-        shots: Shots(total=None)
-        gate_types:
-        {'Hadamard': 2, 'CNOT': 2}
-        gate_sizes:
-        {1: 2, 2: 2}
+        Attributes in this class can be of type :class:`Expression`, allowing for symbolic
+        manipulation and substitution of variables. When variables of type :class:`Expression` are
+        present as top-level fields or as values within (possibly nested) dictionaries of arbitrary
+        depth, the :attr:`vars` attribute will contain the set of all symbolic variables used in the
+        resource counts. This includes fields introduced in derived classes. Similarly, the
+        :meth:`subs` method can be used to substitute symbolic variables with concrete integer
+        values.
     """
 
-    num_wires: int = 0
-    num_gates: int = 0
-    gate_types: dict[str, int] = field(default_factory=dict)
-    gate_sizes: dict[int, int] = field(default_factory=dict)
-    depth: int | None = 0
-    shots: Shots = field(default_factory=Shots)
+    counts: dict
+    extra: dict = field(repr=False, default_factory=dict)
 
-    def __add__(self, other: Resources):
-        r"""Adds two :class:`~resource.Resources` objects together as if the circuits were executed in series.
+    vars: frozenset[str] = field(
+        init=False,
+        repr=False,
+        default_factory=frozenset,
+        metadata={"display_name": "Symbolic variables"},
+    )
 
-        Args:
-            other (Resources): the resource object to add
+    def __post_init__(self):
+        all_vars = set()
 
-        Returns:
-            Resources: the combined resources
+        # Iterate over all fields of the dataclass to find any Expression instances and collect
+        # their variables. Each field value is treated as a pytree, so Expressions nested to any
+        # depth within dicts/lists/tuples are found automatically.
+        for obj_field in fields(self):
+            if obj_field.name == "vars":
+                continue
+            all_vars.update(_collect_vars(getattr(self, obj_field.name)))
 
-        .. details::
+        object.__setattr__(self, "vars", frozenset(all_vars))
 
-            **Example**
+    def to_pretty_str(self, preindent: int = 0) -> str:
+        """Convert a :class:`Resources` object into a human-readable string representation.
 
-            First we build two :class:`~.resource.Resources` objects.
+        Automatically iterates over all fields of the dataclass and formats them into a string,
+        including any nested dictionaries.
 
-            .. code-block:: python
+        .. note::
 
-                from pennylane.core.shots import Shots
-                from pennylane.resource import Resources
-
-                r1 = Resources(
-                    num_wires = 2,
-                    num_gates = 2,
-                    gate_types = {"Hadamard": 1, "CNOT": 1},
-                    gate_sizes = {1: 1, 2: 1},
-                    depth = 2,
-                    shots = Shots(10)
-                )
-
-                r2 = Resources(
-                    num_wires = 3,
-                    num_gates = 2,
-                    gate_types = {"RX": 1, "CNOT": 1},
-                    gate_sizes = {1: 1, 2: 1},
-                    depth = 1,
-                    shots = Shots((5, (2, 10)))
-                )
-
-            Now we print their sum.
-
-            >>> print(r1 + r2)
-            num_wires: 3
-            num_gates: 4
-            depth: 3
-            shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
-            gate_types:
-            {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
-            gate_sizes:
-            {1: 2, 2: 2}
-        """
-        return add_in_series(self, other)
-
-    def __mul__(self, scalar: int):
-        r"""Multiply the :class:`~resource.Resources` object by a scalar as if that many copies of the circuit were executed in series
+            This method does not have to be implemented by derived classes, but may be overridden
+            if a different formatting is desired.
 
         Args:
-            scalar (int): the scalar to multiply the resource object by
+            preindent (int, optional): The number of spaces to insert before each line. Defaults to 0.
 
         Returns:
-            Resources: the combined resources
-
-        .. details::
-
-            **Example**
-
-            First we build a :class:`~.resource.Resources` object.
-
-            .. code-block:: python
-
-                from pennylane.core.shots import Shots
-                from pennylane.resource import Resources
-
-                resources = Resources(
-                    num_wires = 2,
-                    num_gates = 2,
-                    gate_types = {"Hadamard": 1, "CNOT": 1},
-                    gate_sizes = {1: 1, 2: 1},
-                    depth = 2,
-                    shots = Shots(10)
-                )
-
-            Now we print the product.
-
-            >>> print(resources * 2)
-            num_wires: 2
-            num_gates: 4
-            depth: 4
-            shots: Shots(total=20)
-            gate_types:
-            {'Hadamard': 2, 'CNOT': 2}
-            gate_sizes:
-            {1: 2, 2: 2}
+            str: A human-readable string representation of this object.
         """
-        return mul_in_series(self, scalar)
+        prefix = " " * preindent
+        lines = []
 
-    __rmul__ = __mul__
+        if self.is_symbolic:
+            lines.append(f"{prefix}Symbolic variables: {', '.join(sorted(self.vars))}")
+
+        for obj_field in fields(self):
+            if obj_field.repr is False:
+                # Skip fields that are not meant to be included in the representation
+                continue
+
+            field_name = obj_field.metadata.get("display_name", obj_field.name)
+            if isinstance(getattr(self, obj_field.name), dict):
+                lines.append(f"{prefix}{field_name}:")
+                # Flatten nested dictionaries into dotted keys of arbitrary depth
+                dict_items = _flatten_dict(getattr(self, obj_field.name))
+                for k, v in dict_items.items():
+                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    lines.append(f"{prefix}- {k}: {value_str}")
+                if len(dict_items) == 0:
+                    lines.append(f"{prefix}- None present.")
+            else:
+                value = getattr(self, obj_field.name)
+                value_str = (
+                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                )
+                lines.append(f"{prefix}{field_name}: {value_str}")
+
+        if self.extra:
+            lines.append(f"{prefix}Extra fields:")
+            for k, v in _flatten_dict(self.extra).items():
+                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                lines.append(f"{prefix}- {k}: {value_str}")
+
+        return "\n".join(lines)
 
     def __str__(self):
-        items = (
-            f"num_wires: {self.num_wires}"
-            f"\nnum_gates: {self.num_gates}"
-            f"\ndepth: {self.depth}"
-            f"\nshots: {self.shots}"
+        """Convert this object to its string representation by calling :meth:`to_pretty_str`.
+
+        Automatically iterates over all fields of the dataclass and formats them into a string,
+        including any nested dictionaries.
+
+        Returns:
+            str: A human-readable string representation of this object.
+        """
+        return self.to_pretty_str()
+
+    def _repr_markdown_(self) -> str:
+        """
+        Return a Markdown table representation of this object for Jupyter notebook display.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
+        lines = []
+        lines.append("| **Metric** | **Value** |")
+        lines.append("| :--- | ---: |")
+
+        for obj_field in fields(self):
+            if obj_field.repr is False:
+                # Skip fields that are not meant to be included in the representation
+                continue
+            field_name = obj_field.metadata.get("display_name", obj_field.name)
+            if isinstance(getattr(self, obj_field.name), dict):
+                lines.append(f"| **{field_name}** | |")
+                # Flatten nested dictionaries into dotted keys of arbitrary depth
+                dict_items = _flatten_dict(getattr(self, obj_field.name))
+                for k, v in dict_items.items():
+                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    lines.append(f"| {k} | {value_str} |")
+                if len(dict_items) == 0:
+                    lines.append("| *None present* | |")
+            else:
+                value = getattr(self, obj_field.name)
+                value_str = (
+                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                )
+                lines.append(f"| **{field_name}** | {value_str} |")
+
+        if self.extra:
+            lines.append("| **Extra Fields** | |")
+            for k, v in _flatten_dict(self.extra).items():
+                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                lines.append(f"| {k} | {value_str} |")
+
+        return "\n".join(lines)
+
+    def __getitem__(self, key):
+        if key in (obj_field.name for obj_field in fields(self)):
+            return getattr(self, key)
+
+        raise KeyError(
+            f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
 
-        gate_type_str = ", ".join(
-            [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
-        )
-        items += "\ngate_types:\n{" + gate_type_str + "}"
+    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> Resources:
+        """
+        Substitute symbolic variables in the object with concrete integer values.
 
-        gate_size_str = ", ".join(
-            [f"{n_gate}: {count}" for n_gate, count in self.gate_sizes.items()]
-        )
-        items += "\ngate_sizes:\n{" + gate_size_str + "}"
-        return items
+        Automatically iterates over all fields of the dataclass and applies substitutions to any
+        Expression instances, so derived classes do not have to explicitly implement this method
+        unless they want to customize the behaviour.
 
-    def _ipython_display_(self):
-        """Displays __str__ in ipython instead of __repr__"""
-        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        print(str(self))
+        .. note::
+
+            Every :class:`Expression` leaf is substituted, including those nested to arbitrary
+            depth within registered pytree containers (``dict``, ``list``, ``tuple``, ...). The
+            original container structure is preserved.
+
+        Args:
+            substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
+                If None, an empty dictionary is used. Additional keyword arguments can also be provided.
+
+        .. details::
+
+            **Example**
+
+            >>> from pennylane.resource import SpecsResources, Expression
+            >>> res = SpecsResources(
+            ...     counts={"CNOT": Expression({("x",): 1})},
+            ...     measurement_processes={"expval(PauliX)": 1},
+            ...     num_allocs=2,
+            ...     circuit_depth=1,
+            ... )
+
+            Calling this method will return a new instance of the same type which has the same
+            structure but with the symbolic variables substituted with the provided values.
+            A substitution may either use a dictionary or keyword arguments:
+
+            >>> res.subs({"x": 3})
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
+
+            >>> res.subs(x=3)
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
+        """
+        if substitutions is None:
+            substitutions = {}
+
+        # NOTE: don't mutate incoming dict
+        substitutions_copy = {**substitutions, **kwargs}
+
+        subs_vars = set(substitutions_copy.keys())
+        if extra_vars := subs_vars - self.vars:
+            raise ValueError(
+                f"Substitutions contain variables {extra_vars} which are not in the expression's variables {self.vars}."
+            )
+
+        new_values = {}
+        for obj_field in fields(self):
+            if obj_field.init is False:
+                continue
+            # Each field value is treated as a pytree, so Expressions nested to any depth within
+            # dicts/lists/tuples are substituted automatically while preserving the structure.
+            new_values[obj_field.name] = _subs_pytree(
+                getattr(self, obj_field.name), substitutions_copy
+            )
+
+        return type(self)(**new_values)  # pylint: disable=missing-kwoa
+
+    @property
+    def is_symbolic(self) -> bool:
+        """Returns True if this object contains any symbolic variables, False otherwise."""
+        return bool(self.vars)
 
 
-# TODO: Would be better to have SpecsResources inherit from Resources directly, but there are too
-# many extra fields that are unwanted. Would be worth refactoring in the future.
-@dataclass(frozen=True)
-class SpecsResources:
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SpecsResources(Resources):
     """
     Class for storing resource information for a quantum circuit. Contains attributes which store
-    key resources such as gate counts, number of wire allocations, measurements, and circuit depth.
+    key resources such as gate counts, number of wire allocations, measurement processes, and
+    circuit depth.
 
     Note that this class is intended to be immutable. Modifying the attributes after creation may
-    lead to unexpected behavior.
+    lead to unexpected behaviour.
 
     Args:
-        gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
-        gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
-        measurements (dict[str, int]): A dictionary mapping measurements to their counts.
+        counts (dict[str, int]): A dictionary mapping gate names to their counts.
+        measurement_processes (dict[str, int]): A dictionary mapping measurement processes to their counts.
         num_allocs (int): The number of unique wire allocations. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
-        depth (int | None): The depth of the circuit, or None if not computed.
+        circuit_depth (int | None): The depth of the circuit, or None if not computed. Defaults to ``None``.
 
-    Properties:
-        num_gates (int): The total number of gates in the circuit (computed from `gate_types`).
+    .. seealso::
+
+        :class:`Resources` for the base class and its fields.
+
+    .. warning::
+
+        This class is intended to be immutable. Modifying the attributes after creation may
+        lead to unexpected behaviour.
 
     .. details::
 
         Methods have been provided to allow pretty-printing, as well as
-        indexing into it as a dictionary. See examples below.
+        indexing into the object as a dictionary. See examples below.
 
         **Example**
 
         >>> from pennylane.resource import SpecsResources
         >>> res = SpecsResources(
-        ...     gate_types={'Hadamard': 1, 'CNOT': 1},
-        ...     gate_sizes={1: 1, 2: 1},
-        ...     measurements={'expval(PauliZ)': 1},
+        ...     counts={'Hadamard': 1, 'CNOT': 1},
+        ...     measurement_processes={'expval(PauliZ)': 1},
         ...     num_allocs=2,
-        ...     depth=2
+        ...     circuit_depth=2
         ... )
 
-        >>> print(res.num_gates)
+        >>> print(res.total_quantum_operations)
         2
 
-        >>> print(res["num_gates"])
+        >>> print(res["total_quantum_operations"])
         2
 
         >>> print(res)
-        Wire allocations: 2
-        Total gates: 2
-        Gate counts:
-        - Hadamard: 1
-        - CNOT: 1
-        Measurements:
+        Quantum operations:
+        - Total: 2
+          - Hadamard: 1
+          - CNOT: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: 2
+        Wire allocations: 2
+        Circuit Depth: 2
     """
 
-    gate_types: dict[str, int]
-    gate_sizes: dict[int, int]
-    measurements: dict[str, int]
-    num_allocs: int
-    depth: int | None = None
+    measurement_processes: dict[str, int | Expression] = field(
+        metadata={"display_name": "Measurement Processes"}
+    )
+
+    num_allocs: int | Expression = field(metadata={"display_name": "Wire allocations"})
+    circuit_depth: int | Expression | None = field(
+        default=None, metadata={"display_name": "Circuit depth"}
+    )
+
+    # Automatically generated
+    total_quantum_operations: int | Expression = field(
+        init=False, metadata={"display_name": "Total quantum operations"}
+    )
 
     def __post_init__(self):
-        if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
-            raise ValueError(
-                "Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates."
-            )
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the SpecsResources to a dictionary."""
-
-        # Need to explicitly include properties
-        d = asdict(self)
-        d["num_gates"] = self.num_gates
-
-        return d
-
-    def __getitem__(self, key):
-        if key in (field.name for field in fields(self)):
-            return getattr(self, key)
-
-        match key:
-            # Fields that used to be included in specs output prior to PL version 0.44
-            case "shots":
-                raise KeyError(
-                    "shots is no longer included within specs's resources, check the top-level object instead."
-                )
-            case "num_wires":
-                raise KeyError(
-                    "num_wires has been renamed to num_allocs to more accurate describe what it measures."
-                )
-            case "num_gates":
-                # As a property, this needs to be handled differently to the true fields
-                return self.num_gates
-            case "gate_counts":
-                return self.gate_counts
-
-        raise KeyError(
-            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+        # Sum over flattened leaf values so nested operation dicts are counted correctly
+        object.__setattr__(
+            self,
+            "total_quantum_operations",
+            sum(_flatten_dict(self.quantum_operations).values()),
         )
 
-    @property
-    def num_gates(self) -> int:
-        """Total number of gates in the circuit."""
-        return sum(self.gate_types.values())
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
+        super(SpecsResources, self).__post_init__()  # Fall through to parent post init
+
+    def __getitem__(self, key):
+        # Need to match
+        match key:
+            # Properties need to be handled manually unlike true fields
+            case "quantum_operations":
+                return self.quantum_operations
+            case "depth":
+                return self.depth
+            case "num_wires":
+                return self.num_wires
+
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
+        return super(SpecsResources, self).__getitem__(key)
 
     @property
-    def gate_counts(self) -> dict[str, int]:
-        """Alias for ``gate_types``"""
-        return self.gate_types
+    def quantum_operations(self):
+        """A dictionary mapping quantum operations to their counts (alias for ``counts``)."""
+        return self.counts
+
+    @property
+    def depth(self):
+        """The circuit depth (alias for ``circuit_depth``)."""
+        return self.circuit_depth
+
+    @property
+    def num_wires(self):
+        """The number of wires (alias for ``num_allocs``)."""
+        return self.num_allocs
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
-        Pretty string representation of the SpecsResources object.
+        Pretty string representation of this :class:`SpecsResources` object.
 
         Args:
             preindent (int): Number of spaces to prepend to each line.
@@ -394,32 +513,39 @@ class SpecsResources:
         prefix = " " * preindent
         lines = []
 
-        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
-        lines.append(f"{prefix}Total gates: {_count_to_str(self.num_gates)}")
+        if self.is_symbolic:
+            lines.append(f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars))}")
 
-        lines.append(f"{prefix}Gate counts:")
-        if not self.gate_types:
-            lines.append(prefix + "- No gates.")
+        lines.append(f"{prefix}Quantum operations:")
+        if not self.quantum_operations:
+            lines.append(prefix + "- No operations.")
         else:
-            for gate, count in self.gate_types.items():
-                lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
+            lines.append(f"{prefix}- Total: {_count_to_str(self.total_quantum_operations)}")
+            for gate, count in _flatten_dict(self.quantum_operations).items():
+                lines.append(f"{prefix}  - {gate}: {_count_to_str(count)}")
 
-        lines.append(f"{prefix}Measurements:")
-        if not self.measurements:
-            lines.append(prefix + "- No measurements.")
+        lines.append(f"{prefix}Measurement processes:")
+        if not self.measurement_processes:
+            lines.append(prefix + "- No measurement processes.")
         else:
-            for meas, count in self.measurements.items():
+            for meas, count in _flatten_dict(self.measurement_processes).items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        lines.append(
-            f"{prefix}Depth: {_count_to_str(self.depth) if self.depth is not None else 'Not computed'}"
-        )
+        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
+
+        if (
+            self.circuit_depth is not None
+            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
+        ):
+            # Do not include circuit depth in the output for derived classes
+            depth_str = (
+                _count_to_str(self.circuit_depth)
+                if self.circuit_depth is not None
+                else "Not computed"
+            )
+            lines.append(f"{prefix}Circuit Depth: {depth_str}")
 
         return "\n".join(lines)
-
-    # Leave repr and str methods separate for simple and pretty printing
-    def __str__(self) -> str:
-        return self.to_pretty_str()
 
     def _repr_markdown_(self) -> str:
         """
@@ -432,174 +558,125 @@ class SpecsResources:
         lines = []
         lines.append("| **Metric** | **Value** |")
         lines.append("| :--- | ---: |")
+
+        lines.append("| **Quantum operations:** | |")
+        if not self.quantum_operations:
+            lines.append("| *No operations* | |")
+        else:
+            lines.append(
+                f"| *Total* | {_count_to_str(self.total_quantum_operations, markdown_safe=True)} |"
+            )
+            for gate, count in _flatten_dict(self.quantum_operations).items():
+                lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
+
+        lines.append("| **Measurement processes:** | |")
+        if not self.measurement_processes:
+            lines.append("| *No measurement processes* | |")
+        else:
+            for meas, count in _flatten_dict(self.measurement_processes).items():
+                lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
+
         lines.append(
             f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
         )
-        lines.append(f"| **Total gates** | {_count_to_str(self.num_gates, markdown_safe=True)} |")
-        lines.append("| **Gate counts:** | |")
-        if not self.gate_types:
-            lines.append("| *No gates* | |")
-        else:
-            for gate, count in self.gate_types.items():
-                lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
-        lines.append("| **Measurements:** | |")
-        if not self.measurements:
-            lines.append("| *No measurements* | |")
-        else:
-            for meas, count in self.measurements.items():
-                lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
-        depth_str = (
-            _count_to_str(self.depth, markdown_safe=True)
-            if self.depth is not None
-            else "Not computed"
-        )
-        lines.append(f"| **Depth** | {depth_str} |")
+
+        if (
+            self.circuit_depth is not None
+            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
+        ):
+            # Do not include circuit depth in the output for derived classes
+            depth_str = (
+                _count_to_str(self.depth, markdown_safe=True)
+                if self.depth is not None
+                else "Not computed"
+            )
+            lines.append(f"| **Circuit depth** | {depth_str} |")
+
         return "\n".join(lines)
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert this :class:`SpecsResources` to a dictionary."""
 
-@dataclass(frozen=True)
-class SymbolicSpecsResources(SpecsResources):
+        # Need to explicitly include properties
+        d = asdict(self)
+        d["total_quantum_operations"] = self.total_quantum_operations
+        d["num_wires"] = self.num_wires
+        d["quantum_operations"] = d["counts"]
+        del d["counts"]
+
+        return d
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PBCSpecsResources(SpecsResources):
     """
-    Class for storing symbolic resource information for a quantum circuit. Contains attributes
-    which store expressions representing the resources, allowing for symbolic manipulation and
-    substitution of variables.
+    Class for storing resource information for a quantum circuit with additional
+    PBC (Pauli-Based Computation) information.
+
+    .. seealso::
+
+        :class:`SpecsResources` for the base class and its fields.
 
     .. warning::
 
         This class is intended to be immutable. Modifying the attributes after creation may
-        lead to unexpected behavior.
+        lead to unexpected behaviour.
 
-    .. note::
-
-        Some of the attributes from the parent class, :class:`SpecsResources`, are overridden
-        here to be of type :class:`Expression` instead of `int`.
+    Args:
+        any_commuting_depth (int | Expression | None): The any commuting depth of the circuit.
+        qubit_disjoint_depth (int | Expression | None): The qubit disjoint depth of the circuit.
     """
 
-    # gate_types: dict[str, Expression]
-    # gate_sizes: dict[int, Expression]
-    # measurements: dict[str, Expression]
-    # num_allocs: Expression
-    # depth: Expression | None = None
-    vars: set[str] = field(init=False)
-
-    def __post_init__(self):
-        # Make sure that all fields use expressions, (converting ints to constant expressions where necessary)
-        if self.depth is not None and isinstance(self.depth, int):
-            object.__setattr__(
-                self,
-                "depth",
-                Expression(self.depth),
-            )
-        if isinstance(self.num_allocs, int):
-            object.__setattr__(
-                self,
-                "num_allocs",
-                Expression(self.num_allocs),
-            )
-
-        convert_int_vals_to_expression(self.gate_types)
-        convert_int_vals_to_expression(self.gate_sizes)
-        convert_int_vals_to_expression(self.measurements)
-
-        vars = set()
-
-        # Need to disable this since the type checker still thinks that many of these members are
-        # `int` and therefore do not contain a `var` member
-        # pylint: disable=no-member
-
-        # Need to take a union over all variables across the different expressions to
-        # ensure the top-level objects has the full set of variables
-        if self.depth is not None:
-            vars |= self.depth.vars
-        vars |= self.num_allocs.vars
-
-        # Union over all expressions
-        for expr in self.gate_types.values():
-            vars |= expr.vars
-        for expr in self.gate_sizes.values():
-            vars |= expr.vars
-        for expr in self.measurements.values():
-            vars |= expr.vars
-
-        object.__setattr__(self, "vars", vars)
-
-    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> SpecsResources:
-        """
-        Substitute variables in the symbolic resources with concrete integer values.
-        If all variables are substituted, this will return a :class:`SpecsResources` object with
-        integer values instead of another :class:`SymbolicSpecsResources` object.
-        """
-        if substitutions is None:
-            substitutions = {}
-        substitutions.update(kwargs)
-
-        subs_vars = set(substitutions.keys())
-        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
-            raise ValueError(
-                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {self.vars}."
-            )
-
-        # Need to disable this since the type checker still thinks that many of these members are
-        # `int` and therefore do not contain a `var` member
-        # pylint: disable=no-member
-
-        num_allocs = self.num_allocs.subs(substitutions)
-        depth = self.depth.subs(substitutions) if self.depth is not None else None
-
-        gate_types = {k: v.subs(substitutions) for k, v in self.gate_types.items()}
-        gate_sizes = {k: v.subs(substitutions) for k, v in self.gate_sizes.items()}
-        measurements = {k: v.subs(substitutions) for k, v in self.measurements.items()}
-
-        if len(self.vars - subs_vars) == 0:
-            # There are no variables remaining, so this can be resolved down to a `SpecsResources`
-            return SpecsResources(
-                gate_types={k: int(v) for k, v in gate_types.items()},
-                gate_sizes={k: int(v) for k, v in gate_sizes.items()},
-                measurements={k: int(v) for k, v in measurements.items()},
-                num_allocs=int(num_allocs),
-                depth=int(depth) if depth is not None else None,
-            )
-
-        return SymbolicSpecsResources(
-            gate_types=gate_types,
-            gate_sizes=gate_sizes,
-            measurements=measurements,
-            num_allocs=num_allocs,
-            depth=depth,
-        )
-
-    def __eq__(self, other):
-        if not isinstance(other, (SpecsResources, SymbolicSpecsResources)):
-            return NotImplemented
-        if not isinstance(other, SymbolicSpecsResources):
-            if self.vars:
-                return False
-            return self.subs() == other
-
-        return (
-            self.vars == other.vars
-            and self.num_allocs == other.num_allocs
-            and self.depth == other.depth
-            and self.gate_types == other.gate_types
-            and self.gate_sizes == other.gate_sizes
-            and self.measurements == other.measurements
-        )
-
-    def __call__(self, **kwargs):
-        return self.subs(kwargs)
+    any_commuting_depth: int | Expression = field(metadata={"display_name": "Any commuting depth"})
+    qubit_disjoint_depth: int | Expression = field(
+        metadata={"display_name": "Qubit disjoint depth"}
+    )
 
     def to_pretty_str(self, preindent: int = 0) -> str:
-        prefix = " " * preindent
-        return (
-            f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars)) if self.vars else 'None'}\n"
-            + super().to_pretty_str(preindent)
+        """
+        Pretty string representation of this :class:`PBCSpecsResources` object.
+
+        Args:
+            preindent (int): Number of spaces to prepend to each line.
+
+        Returns:
+            str: A pretty representation of this object.
+        """
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
+        s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
+
+        s += (
+            "\nPBC Depths:\n"
+            f"{' ' * preindent}- Any commuting depth: {_count_to_str(self.any_commuting_depth)}\n"
+            f"{' ' * preindent}- Qubit disjoint depth: {_count_to_str(self.qubit_disjoint_depth)}"
         )
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the SymbolicSpecsResources to a dictionary, including the variables."""
-        d = super().to_dict()
-        d["vars"] = sorted(self.vars)
-        return d
+        return s
+
+    def _repr_markdown_(self) -> str:
+        """
+        Return a Markdown table representation of the :class:`PBCSpecsResources` for Jupyter notebook display.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
+
+        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
+        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
+        # pylint: disable=super-with-arguments
+        s = super(PBCSpecsResources, self)._repr_markdown_()
+
+        s += (
+            "\n"
+            "| **PBC Depths** | |\n"
+            f"| Any commuting depth | {_count_to_str(self.any_commuting_depth, markdown_safe=True)} |\n"
+            f"| Qubit disjoint depth | {_count_to_str(self.qubit_disjoint_depth, markdown_safe=True)} |"
+        )
+
+        return s
 
 
 @dataclass(frozen=True)
@@ -633,11 +710,10 @@ class CircuitSpecs:
         ...     shots=Shots(1000),
         ...     level="device",
         ...     resources=SpecsResources(
-        ...         gate_types={"RX": 2, "CNOT": 1},
-        ...         gate_sizes={1: 2, 2: 1},
-        ...         measurements={"expval(PauliZ)": 1},
+        ...         counts={"RX": 2, "CNOT": 1},
+        ...         measurement_processes={"expval(PauliZ)": 1},
         ...         num_allocs=2,
-        ...         depth=3,
+        ...         circuit_depth=3,
         ...     ),
         ... )
 
@@ -653,14 +729,14 @@ class CircuitSpecs:
         Shots: Shots(total=1000)
         Level: device
         <BLANKLINE>
-        Wire allocations: 2
-        Total gates: 3
-        Gate counts:
-        - RX: 2
-        - CNOT: 1
-        Measurements:
+        Quantum operations:
+        - Total: 3
+          - RX: 2
+          - CNOT: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: 3
+        Wire allocations: 2
+        Circuit Depth: 3
     """
 
     device_name: str | None = None
@@ -692,28 +768,11 @@ class CircuitSpecs:
         return d
 
     def __getitem__(self, key):
-        if key in (field.name for field in fields(self)):
+        if key in (obj_field.name for obj_field in fields(self)):
             return getattr(self, key)
 
-        match key:
-            # Fields that used to be included in specs output prior to PL version 0.44
-            case "num_observables":
-                raise KeyError(
-                    "num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources."
-                )
-            case "interface" | "diff_method" | "errors" | "num_tape_wires":
-                raise KeyError(f"key '{key}' is no longer included in specs.")
-            case (
-                "gradient_fn"
-                | "gradient_options"
-                | "num_gradient_executions"
-                | "num_trainable_params"
-            ):
-                raise KeyError(
-                    f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information."
-                )
         raise KeyError(
-            f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
+            f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
 
     def _get_specs_header(self) -> list[str]:
@@ -773,23 +832,25 @@ class CircuitSpecs:
     ) -> tuple[int, int, dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
-        # This is the length of the longest metric name (currently "Wire allocations") plus padding
-        max_metric_length = 16
+        # This is the length of the longest metric name (currently "Measurement processes") plus padding
+        max_metric_length = 22
         max_column_size = max(len(level) for level in flat_resources) + 2
 
         # Use dict for these since they are sorted by default unlike a set
-        all_gate_types = {}
+        all_quantum_operations = {}
         all_meas_types = {}
 
         # This iteration order will present the gates in the order in which they appear
         for res in flat_resources.values():
-            for gate, count in res.gate_types.items():
-                all_gate_types[gate] = True
-                max_metric_length = max(max_metric_length, len(gate) + 2)
+            # Flatten nested operation/measurement dicts into dotted keys of arbitrary depth
+            for gate, count in _flatten_dict(res.quantum_operations).items():
+                all_quantum_operations[gate] = True
+                # Gate rows are indented by 2 extra spaces (e.g. "  - {gate}")
+                max_metric_length = max(max_metric_length, len(gate) + 4)
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
                 )
-            for meas, count in res.measurements.items():
+            for meas, count in _flatten_dict(res.measurement_processes).items():
                 all_meas_types[meas] = True
                 max_metric_length = max(max_metric_length, len(meas) + 2)
                 max_column_size = max(
@@ -798,10 +859,10 @@ class CircuitSpecs:
             max_column_size = max(
                 max_column_size,
                 len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
-                len(_count_to_str(res.num_gates, extra_compact=True)) + 1,
+                len(_count_to_str(res.total_quantum_operations, extra_compact=True)) + 1,
             )
 
-        return max_metric_length, max_column_size, all_gate_types, all_meas_types
+        return max_metric_length, max_column_size, all_quantum_operations, all_meas_types
 
     def _to_pretty_str_tabular(self) -> str:
         """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
@@ -809,8 +870,8 @@ class CircuitSpecs:
         lines = self._get_specs_header()
 
         flat_resources = self._flattened_resources()
-        max_metric_length, max_column_size, all_gate_types, all_meas_types = self._get_table_format(
-            flat_resources
+        max_metric_length, max_column_size, all_quantum_operations, all_meas_types = (
+            self._get_table_format(flat_resources)
         )
 
         num_cols = len(flat_resources)
@@ -821,6 +882,43 @@ class CircuitSpecs:
             + " |".join(level.rjust(max_column_size) for level in flat_resources)
         )
         lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
+
+        lines.append("Quantum operations:".ljust(max_metric_length) + " |")
+        lines.append(
+            "- Total".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.total_quantum_operations, extra_compact=True).rjust(
+                    max_column_size
+                )
+                for res in flat_resources.values()
+            )
+        )
+        for gate in all_quantum_operations:
+            lines.append(
+                f"  - {gate}".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    _count_to_str(
+                        _flatten_dict(res.quantum_operations).get(gate, 0), extra_compact=True
+                    ).rjust(max_column_size)
+                    for res in flat_resources.values()
+                )
+            )
+
+        lines.append("Measurement processes:".ljust(max_metric_length) + " |")
+        for meas in all_meas_types:
+            lines.append(
+                f"- {meas}".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    _count_to_str(
+                        _flatten_dict(res.measurement_processes).get(meas, 0), extra_compact=True
+                    ).rjust(max_column_size)
+                    for res in flat_resources.values()
+                )
+            )
+
         lines.append(
             "Wire allocations".ljust(max_metric_length)
             + " |"
@@ -829,37 +927,45 @@ class CircuitSpecs:
                 for res in flat_resources.values()
             )
         )
-        lines.append(
-            "Total gates".ljust(max_metric_length)
-            + " |"
-            + " |".join(
-                _count_to_str(res.num_gates, extra_compact=True).rjust(max_column_size)
-                for res in flat_resources.values()
-            )
-        )
 
-        lines.append("Gate counts:".ljust(max_metric_length) + " |")
-        for gate in all_gate_types:
+        if any(r.circuit_depth is not None for r in flat_resources.values()):
             lines.append(
-                f"- {gate}".ljust(max_metric_length)
+                "Circuit depth".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.gate_types.get(gate, 0), extra_compact=True).rjust(
-                        max_column_size
+                    (
+                        _count_to_str(res.circuit_depth, extra_compact=True).rjust(max_column_size)
+                        if res.circuit_depth is not None
+                        else "-".rjust(max_column_size)
                     )
                     for res in flat_resources.values()
                 )
             )
-        lines.append("Measurements:".ljust(max_metric_length) + " |")
-        for meas in all_meas_types:
+
+        if any(isinstance(r, PBCSpecsResources) for r in flat_resources.values()):
+            lines.append("PBC Depths:".ljust(max_metric_length) + " |")
             lines.append(
-                f"- {meas}".ljust(max_metric_length)
+                "- Any commuting depth".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.measurements.get(meas, 0), extra_compact=True).rjust(
-                        max_column_size
-                    )
-                    for res in flat_resources.values()
+                    (
+                        _count_to_str(r.any_commuting_depth, extra_compact=True)
+                        if isinstance(r, PBCSpecsResources)
+                        else "-"
+                    ).rjust(max_column_size)
+                    for r in flat_resources.values()
+                )
+            )
+            lines.append(
+                "- Qubit disjoint depth".ljust(max_metric_length)
+                + " |"
+                + " |".join(
+                    (
+                        _count_to_str(r.qubit_disjoint_depth, extra_compact=True)
+                        if isinstance(r, PBCSpecsResources)
+                        else "-"
+                    ).rjust(max_column_size)
+                    for r in flat_resources.values()
                 )
             )
 
@@ -900,12 +1006,13 @@ class CircuitSpecs:
         flat_resources = self._flattened_resources()
         levels = list(flat_resources.keys())
 
-        all_gate_types: dict[str, None] = {}
+        all_quantum_operations: dict[str, None] = {}
         all_meas_types: dict[str, None] = {}
         for res in flat_resources.values():
-            for gate in res.gate_types:
-                all_gate_types[gate] = None
-            for meas in res.measurements:
+            # Flatten nested operation/measurement dicts into dotted keys of arbitrary depth
+            for gate in _flatten_dict(res.quantum_operations):
+                all_quantum_operations[gate] = None
+            for meas in _flatten_dict(res.measurement_processes):
                 all_meas_types[meas] = None
 
         def data_row(label, values):
@@ -914,40 +1021,94 @@ class CircuitSpecs:
         lines = []
         lines.append("| ↓Metric / Level→ | " + " | ".join(str(lvl) for lvl in levels) + " |")
         lines.append("| :--- |" + " ---: |" * len(levels))
+        lines.append(data_row("**Quantum operations**", [""] * len(levels)))
+        lines.append(
+            data_row(
+                "*Total*",
+                [
+                    _count_to_str(r.total_quantum_operations, markdown_safe=True)
+                    for r in flat_resources.values()
+                ],
+            )
+        )
+        for gate in all_quantum_operations:
+            lines.append(
+                data_row(
+                    gate,
+                    [
+                        _count_to_str(
+                            _flatten_dict(r.quantum_operations).get(gate, 0), markdown_safe=True
+                        )
+                        for r in flat_resources.values()
+                    ],
+                )
+            )
+
+        lines.append(data_row("**Measurement processes**", [""] * len(levels)))
+        for meas in all_meas_types:
+            lines.append(
+                data_row(
+                    meas,
+                    [
+                        _count_to_str(
+                            _flatten_dict(r.measurement_processes).get(meas, 0), markdown_safe=True
+                        )
+                        for r in flat_resources.values()
+                    ],
+                )
+            )
+
         lines.append(
             data_row(
                 "**Wire allocations**",
                 [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
             )
         )
-        lines.append(
-            data_row(
-                "**Total gates**",
-                [_count_to_str(r.num_gates, markdown_safe=True) for r in flat_resources.values()],
-            )
-        )
-        lines.append(data_row("**Gate counts**", [""] * len(levels)))
-        for gate in all_gate_types:
+
+        if any(r.circuit_depth is not None for r in flat_resources.values()):
             lines.append(
                 data_row(
-                    gate,
+                    "**Circuit depth**",
                     [
-                        _count_to_str(r.gate_types.get(gate, 0), markdown_safe=True)
+                        (
+                            _count_to_str(res.circuit_depth, markdown_safe=True)
+                            if res.circuit_depth is not None
+                            else "N/A"
+                        )
+                        for res in flat_resources.values()
+                    ],
+                )
+            )
+
+        if any(isinstance(r, PBCSpecsResources) for r in flat_resources.values()):
+            lines.append(data_row("**PBC Depths**", [""] * len(levels)))
+            lines.append(
+                data_row(
+                    "Any commuting depth",
+                    [
+                        (
+                            _count_to_str(r.any_commuting_depth, markdown_safe=True)
+                            if isinstance(r, PBCSpecsResources)
+                            else "N/A"
+                        )
                         for r in flat_resources.values()
                     ],
                 )
             )
-        lines.append(data_row("**Measurements**", [""] * len(levels)))
-        for meas in all_meas_types:
             lines.append(
                 data_row(
-                    meas,
+                    "Qubit disjoint depth",
                     [
-                        _count_to_str(r.measurements.get(meas, 0), markdown_safe=True)
+                        (
+                            _count_to_str(r.qubit_disjoint_depth, markdown_safe=True)
+                            if isinstance(r, PBCSpecsResources)
+                            else "N/A"
+                        )
                         for r in flat_resources.values()
                     ],
                 )
             )
+
         return "\n".join(lines)
 
     def _repr_markdown_(self, collapsible: bool = True) -> str:
@@ -1020,397 +1181,10 @@ class CircuitSpecs:
         return "\n".join(lines)
 
 
-class ResourcesOperation(Operation):
-    r"""Base class that represents quantum gates or channels applied to quantum
-    states and stores the resource requirements of the quantum gate.
-
-    .. note::
-        Child classes must implement the :func:`~.ResourcesOperation.resources` method which computes
-        the resource requirements of the operation.
-    """
-
-    @abstractmethod
-    def resources(self) -> Resources:
-        r"""Compute the resources required for this operation.
-
-        Returns:
-            Resources: The resources required by this operation.
-
-        **Examples**
-
-        >>> class CustomOp(ResourcesOperation):
-        ...     num_wires = 2
-        ...     def resources(self):
-        ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
-        ...
-        >>> op = CustomOp(wires=[0, 1])
-        >>> print(op.resources())
-        num_wires: 2
-        num_gates: 3
-        depth: 2
-        shots: Shots(total=None)
-        gate_types:
-        {}
-        gate_sizes:
-        {}
-        """
-
-
-def add_in_series(r1: Resources, r2: Resources) -> Resources:
-    r"""
-    Add two :class:`~.resource.Resources` objects assuming the circuits are executed in series.
-
-    The gates in ``r1`` and ``r2`` are assumed to act on the same qubits. The resulting circuit
-    depth is the sum of the depths of ``r1`` and ``r2``. To add resources as if they were executed
-    in parallel see :func:`~.resource.add_in_parallel`.
-
-    Args:
-        r1 (Resources): a :class:`~resource.Resources` to add
-        r2 (Resources): a :class:`~resource.Resources` to add
-
-    Returns:
-        Resources: the combined resources
-
-    .. details::
-
-        **Example**
-
-        First we build two :class:`~.resource.Resources` objects.
-
-        .. code-block:: python
-
-            from pennylane.core.shots import Shots
-            from pennylane.resource import Resources
-
-            r1 = Resources(
-                num_wires = 2,
-                num_gates = 2,
-                gate_types = {"Hadamard": 1, "CNOT": 1},
-                gate_sizes = {1: 1, 2: 1},
-                depth = 2,
-                shots = Shots(10)
-            )
-
-            r2 = Resources(
-                num_wires = 3,
-                num_gates = 2,
-                gate_types = {"RX": 1, "CNOT": 1},
-                gate_sizes = {1: 1, 2: 1},
-                depth = 1,
-                shots = Shots((5, (2, 10)))
-            )
-
-        Now we print their sum.
-
-        >>> print(qp.resource.add_in_series(r1, r2))
-        num_wires: 3
-        num_gates: 4
-        depth: 3
-        shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
-        gate_types:
-        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
-        gate_sizes:
-        {1: 2, 2: 2}
-    """
-
-    new_wires = max(r1.num_wires, r2.num_wires)
-    new_gates = r1.num_gates + r2.num_gates
-    new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
-    new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = r1.shots + r2.shots
-    new_depth = r1.depth + r2.depth
-
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
-
-
-def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
-    r"""
-    Add two :class:`~.resource.Resources` objects assuming the circuits are executed in parallel.
-
-    The gates in ``r2`` and ``r2`` are assumed to act on disjoint sets of qubits. The resulting
-    circuit depth is the max depth of ``r1`` and ``r2``. To add resources as if they were executed
-    in series see :func:`~.resource.add_in_series`.
-
-    Args:
-        r1 (Resources): a :class:`~.resource.Resources` object to add
-        r2 (Resources): a :class:`~.resource.Resources` object to add
-
-    Returns:
-        Resources: the combined resources
-
-    .. details::
-
-        **Example**
-
-        First we build two :class:`~.resource.Resources` objects.
-
-        .. code-block:: python
-
-            from pennylane.core.shots import Shots
-            from pennylane.resource import Resources
-
-            r1 = Resources(
-                num_wires = 2,
-                num_gates = 2,
-                gate_types = {"Hadamard": 1, "CNOT": 1},
-                gate_sizes = {1: 1, 2: 1},
-                depth = 2,
-                shots = Shots(10)
-            )
-
-            r2 = Resources(
-                num_wires = 3,
-                num_gates = 2,
-                gate_types = {"RX": 1, "CNOT": 1},
-                gate_sizes = {1: 1, 2: 1},
-                depth = 1,
-                shots = Shots((5, (2, 10)))
-            )
-
-        Now we print their sum.
-
-        >>> print(qp.resource.add_in_parallel(r1, r2))
-        num_wires: 5
-        num_gates: 4
-        depth: 2
-        shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
-        gate_types:
-        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
-        gate_sizes:
-        {1: 2, 2: 2}
-    """
-
-    new_wires = r1.num_wires + r2.num_wires
-    new_gates = r1.num_gates + r2.num_gates
-    new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
-    new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = r1.shots + r2.shots
-    new_depth = max(r1.depth, r2.depth)
-
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
-
-
-def mul_in_series(resources: Resources, scalar: int) -> Resources:
-    """
-    Multiply the :class:`~resource.Resources` object by a scalar as if the circuit was repeated that many times in series.
-
-    The repeated copies of ``resources`` are assumed to act on the same
-    wires as ``resources``. The resulting circuit depth is the depth of ``resources`` multiplied by
-    ``scalar``. To multiply as if the circuit was repeated in parallel see
-    :func:`~.resource.mul_in_parallel`.
-
-    Args:
-        resources (Resources): a :class:`~resource.Resources` to be scaled
-        scalar (int): the scalar to multiply the :class:`~resource.Resources` by
-
-    Returns:
-        Resources: the combined resources
-
-    .. details::
-
-        **Example**
-
-        First we build a :class:`~.resource.Resources` object.
-
-        .. code-block:: python
-
-            from pennylane.core.shots import Shots
-            from pennylane.resource import Resources
-
-            resources = Resources(
-                num_wires = 2,
-                num_gates = 2,
-                gate_types = {"Hadamard": 1, "CNOT": 1},
-                gate_sizes = {1: 1, 2: 1},
-                depth = 2,
-                shots = Shots(10)
-            )
-
-        Now we print the product.
-
-        >>> print(qp.resource.mul_in_series(resources, 2))
-        num_wires: 2
-        num_gates: 4
-        depth: 4
-        shots: Shots(total=20)
-        gate_types:
-        {'Hadamard': 2, 'CNOT': 2}
-        gate_sizes:
-        {1: 2, 2: 2}
-    """
-
-    new_wires = resources.num_wires
-    new_gates = scalar * resources.num_gates
-    new_gate_types = _scale_dict(resources.gate_types, scalar)
-    new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
-    new_shots = scalar * resources.shots
-    new_depth = scalar * resources.depth
-
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
-
-
-def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
-    """
-    Multiply the :class:`~resource.Resources` object by a scalar as if the circuit was repeated that many times in parallel.
-
-    The repeated copies of ``resources`` are assumed to act on disjoint qubits. The resulting circuit
-    depth is equal to the depth of ``resources``. To multiply as if the repeated copies were
-    executed in series see :func:`~.resource.mul_in_series`.
-
-    Args:
-        resources (Resources): a :class:`~resource.Resources` to be scaled
-        scalar (int): the scalar to multiply the :class:`~resource.Resources` by
-
-    Returns:
-        Resources: The combined resources
-
-    .. details::
-
-        **Example**
-
-        First we build a :class:`~.resource.Resources` object.
-
-        .. code-block:: python
-
-            from pennylane.core.shots import Shots
-            from pennylane.resource import Resources
-
-            resources = Resources(
-                num_wires = 2,
-                num_gates = 2,
-                gate_types = {"Hadamard": 1, "CNOT": 1},
-                gate_sizes = {1: 1, 2: 1},
-                depth = 2,
-                shots = Shots(10)
-            )
-
-        Now we print the product.
-
-        >>> print(qp.resource.mul_in_parallel(resources, 2))
-        num_wires: 4
-        num_gates: 4
-        depth: 2
-        shots: Shots(total=20)
-        gate_types:
-        {'Hadamard': 2, 'CNOT': 2}
-        gate_sizes:
-        {1: 2, 2: 2}
-    """
-
-    new_wires = scalar * resources.num_wires
-    new_gates = scalar * resources.num_gates
-    new_gate_types = _scale_dict(resources.gate_types, scalar)
-    new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
-    new_shots = scalar * resources.shots
-
-    return Resources(
-        new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots
-    )
-
-
-def substitute(initial_resources: Resources, gate_info: tuple[str, int], replacement: Resources):
-    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
-
-    Args:
-        initial_resources (Resources): the :class:`~resource.Resources` object to be modified
-        gate_info (Iterable(str, int)): sequence containing the name of the gate to be replaced and the number of wires it acts on
-        replacement (Resources): the :class:`~resource.Resources` containing the resources that will replace the gate
-
-    Returns:
-        Resources: the updated :class:`~resource.Resources` after substitution
-
-    .. details::
-
-        **Example**
-
-        First we build the :class:`~.resource.Resources`.
-
-        .. code-block:: python
-
-            from pennylane.core.shots import Shots
-            from pennylane.resource import Resources
-
-            initial_resources = Resources(
-                num_wires = 2,
-                num_gates = 3,
-                gate_types = {"RX": 2, "CNOT": 1},
-                gate_sizes = {1: 2, 2: 1},
-                depth = 2,
-                shots = Shots(10)
-            )
-
-            # the RX gates will be replaced by the substitution
-            gate_info = ("RX", 1)
-
-            replacement = Resources(
-                num_wires = 1,
-                num_gates = 7,
-                gate_types = {"Hadamard": 3, "S": 4},
-                gate_sizes = {1: 7},
-                depth = 7
-            )
-
-
-        Now we print the result of the substitution.
-
-        >>> res = qp.resource.substitute(initial_resources, gate_info, replacement)
-        >>> print(res)
-        num_wires: 2
-        num_gates: 15
-        depth: 9
-        shots: Shots(total=10)
-        gate_types:
-        {'CNOT': 1, 'Hadamard': 6, 'S': 8}
-        gate_sizes:
-        {1: 14, 2: 1}
-    """
-
-    gate_name, num_wires = gate_info
-
-    if num_wires not in initial_resources.gate_sizes:
-        raise ValueError(f"initial_resources does not contain a gate acting on {num_wires} wires.")
-
-    gate_count = initial_resources.gate_types.get(gate_name, 0)
-
-    if gate_count > initial_resources.gate_sizes[num_wires]:
-        raise ValueError(
-            f"Found {gate_count} gates of type {gate_name}, but only {initial_resources.gate_sizes[num_wires]} gates act on {num_wires} wires in initial_resources."
-        )
-
-    if gate_count > 0:
-        new_wires = initial_resources.num_wires
-        new_gates = initial_resources.num_gates - gate_count + (gate_count * replacement.num_gates)
-        replacement_gate_types = _scale_dict(replacement.gate_types, gate_count)
-        replacement_gate_sizes = _scale_dict(replacement.gate_sizes, gate_count)
-
-        new_gate_types = _combine_dict(initial_resources.gate_types, replacement_gate_types)
-        new_gate_types.pop(gate_name)
-
-        new_gate_sizes = copy.copy(initial_resources.gate_sizes)
-        new_gate_sizes[num_wires] -= gate_count
-        new_gate_sizes = _combine_dict(new_gate_sizes, replacement_gate_sizes)
-
-        new_depth = initial_resources.depth + replacement.depth
-
-        wire_diff = num_wires - replacement.num_wires
-        if wire_diff < 0:
-            new_wires = initial_resources.num_wires + abs(wire_diff)
-        else:
-            new_wires = initial_resources.num_wires
-
-        return Resources(
-            new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, initial_resources.shots
-        )
-
-    return initial_resources
-
-
 # The reason why this function is not a method of the QuantumScript class is
 # because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
 # The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
-def resources_from_tape(
-    tape: QuantumScript, compute_depth: bool = True, compute_errors: bool = False
-) -> SpecsResources | tuple[SpecsResources, dict[str, Any]]:
+def resources_from_tape(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
     """
     Extracts the resource information from a quantum circuit (tape).
 
@@ -1423,43 +1197,12 @@ def resources_from_tape(
         tape (.QuantumScript): The quantum circuit for which we extract resources
         compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
             If False, the depth is set to None.
-        compute_errors (bool): If True, algorithmic errors are computed and returned alongside the resources.
-            Defaults to False.
     Returns:
-        (SpecsResources | tuple[SpecsResources, dict[str, Any]]): The resources associated with this tape, optionally
-        with algorithmic errors if `compute_errors` is set to True.
+        SpecsResources: The resources associated with this tape.
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
 
-    if compute_errors:
-        algo_errors = _compute_algo_error(tape)
-        return resources, algo_errors
-
     return resources
-
-
-def _combine_dict(dict1: dict, dict2: dict):
-    r"""Combines two dictionaries and adds values of common keys."""
-    combined_dict = copy.copy(dict1)
-
-    for k, v in dict2.items():
-        try:
-            combined_dict[k] += v
-        except KeyError:
-            combined_dict[k] = v
-
-    return combined_dict
-
-
-def _scale_dict(dict1: dict, scalar: int):
-    r"""Scales the values in a dictionary with a scalar."""
-
-    combined_dict = copy.copy(dict1)
-
-    for k in combined_dict:
-        combined_dict[k] *= scalar
-
-    return combined_dict
 
 
 def _obs_to_str(obs) -> str:
@@ -1509,36 +1252,24 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     num_wires = len(tape.wires)
     depth = tape.graph.get_depth() if compute_depth else None
 
-    gate_types = defaultdict(int)
-    measurements = defaultdict(int)
-    gate_sizes = defaultdict(int)
+    quantum_operations = defaultdict(int)
+    measurement_processes = defaultdict(int)
     for op in tape.operations:
-        if isinstance(op, ResourcesOperation):
-            op_resource = op.resources()
-            for d in op_resource.gate_types:
-                gate_types[d] += op_resource.gate_types[d]
+        gate_name = op.name
+        # pylint: disable=unidiomatic-typecheck
+        if type(op) in (Controlled, ControlledOp):
+            n_ctrls = len(op.control_wires)
+            if n_ctrls > 1:
+                gate_name = f"{n_ctrls}{gate_name}"
 
-            for n in op_resource.gate_sizes:
-                gate_sizes[n] += op_resource.gate_sizes[n]
-
-        else:
-            gate_name = op.name
-            # pylint: disable=unidiomatic-typecheck
-            if type(op) in (Controlled, ControlledOp):
-                n_ctrls = len(op.control_wires)
-                if n_ctrls > 1:
-                    gate_name = f"{n_ctrls}{gate_name}"
-
-            gate_types[gate_name] += 1
-            gate_sizes[len(op.wires)] += 1
+        quantum_operations[gate_name] += 1
 
     for meas in tape.measurements:
-        measurements[_mp_to_str(meas, num_wires)] += 1
+        measurement_processes[_mp_to_str(meas, num_wires)] += 1
 
     return SpecsResources(
-        gate_types=dict(gate_types),
-        gate_sizes=dict(gate_sizes),
-        measurements=dict(measurements),
+        counts=dict(quantum_operations),
+        measurement_processes=dict(measurement_processes),
         num_allocs=num_wires,
-        depth=depth,
+        circuit_depth=depth,
     )

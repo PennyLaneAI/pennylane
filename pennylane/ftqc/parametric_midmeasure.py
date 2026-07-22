@@ -420,7 +420,7 @@ class ParametricMidMeasure(MidMeasure):
 
     def __repr__(self):
         """Representation of this class."""
-        return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
+        return f"{self._shortname}_{self.plane.lower()}(wires={self.wires}, angle={self.angle})"
 
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
@@ -499,7 +499,7 @@ class XMidMeasure(ParametricMidMeasure):
 
     def __repr__(self):
         """Representation of this class."""
-        return f"{self._shortname}(wires={self.wires.tolist()})"
+        return f"{self._shortname}(wires={self.wires})"
 
     def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
@@ -563,7 +563,7 @@ class YMidMeasure(ParametricMidMeasure):
 
     def __repr__(self):
         """Representation of this class."""
-        return f"{self._shortname}(wires={self.wires.tolist()})"
+        return f"{self._shortname}(wires={self.wires})"
 
     def label(self, decimals: int = None, base_label: str = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.

@@ -21,13 +21,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph, _WrappedObj
 from pennylane.ops.mid_measure.measurement_value import MeasurementValue
 from pennylane.ops.mid_measure.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
 
@@ -112,22 +110,6 @@ def circuit_fixture(ops, obs):
     return CircuitGraph(ops, obs, Wires([0, 1, 2]))
 
 
-@pytest.fixture(name="parametrized_circuit_gaussian")
-def parametrized_circuit_gaussian_fixture(wires):
-    def qfunc(a, b, c, d, e, f):
-        qp.Rotation(a, wires=wires[0])
-        qp.Rotation(b, wires=wires[1])
-        qp.Rotation(c, wires=wires[2])
-        qp.Beamsplitter(d, 1, wires=[wires[0], wires[1]])
-        qp.Rotation(1, wires=wires[0])
-        qp.Rotation(e, wires=wires[1])
-        qp.Rotation(f, wires=wires[2])
-
-        return qp.expval(qp.ops.NumberOperator(wires=wires[0]))
-
-    return qfunc
-
-
 def circuit_measure_max_once():
     """A fixture of a circuit that measures wire 0 once."""
     return qp.expval(qp.PauliX(wires=0))
@@ -145,30 +127,6 @@ def circuit_measure_multiple_with_max_twice():
         qp.probs(wires=[0, 1, 2]),
         qp.var(qp.PauliZ(wires=[1]) @ qp.PauliZ([2])),
     )
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth2(ResourcesOperation):
-    num_wires = 3
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=2)
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth3(ResourcesOperation):
-    num_wires = 2
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=3)
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth4(ResourcesOperation):
-    num_wires = 2
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=4)
 
 
 # pylint: disable=too-many-public-methods
@@ -228,6 +186,35 @@ class TestCircuitGraph:
         descendants_index = circuit.descendants_of_indexes([6])
         assert descendants == [queue[8]]
         assert descendants_index == [queue[8]]
+
+    def test_descendants_sorted(self, ops, obs):
+        """Test that ``descendants`` returns descendants in queue order when ``sort=True``."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        queue = ops + obs
+
+        # queue[3] (CNOT(0, 1)) has multiple descendants: 5, 6, 7 and 8
+        descendants = circuit.descendants([queue[3]], sort=True)
+        assert descendants == [queue[5], queue[6], queue[7], queue[8]]
+
+    def test_nodes_between(self, ops, obs):
+        """Test that ``nodes_between`` returns all nodes on the directed paths between two nodes,
+        including the endpoints."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        queue = ops + obs
+
+        # Directed paths from queue[3] (CNOT(0, 1)) to queue[8] (Hermitian) pass through 5 and 6.
+        # queue[7] is a descendant of queue[3] but not an ancestor of queue[8], so it is excluded.
+        between = circuit.nodes_between(queue[3], queue[8])
+        assert {id(op) for op in between} == {id(queue[i]) for i in (3, 5, 6, 8)}
+
+    def test_nodes_between_no_path(self, ops, obs):
+        """Test that ``nodes_between`` returns an empty list when there is no directed path
+        between the two nodes."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        queue = ops + obs
+
+        # queue[7] is a terminal measurement, so no path leads from it to queue[8].
+        assert circuit.nodes_between(queue[7], queue[8]) == []
 
     @pytest.mark.parametrize("sort", [True, False])
     def test_ancestors_and_descendents_repeated_op(self, sort):
@@ -296,26 +283,33 @@ class TestCircuitGraph:
         assert circuit.wire_indices(1) == op_indices_for_wire_1
         assert circuit.wire_indices(2) == op_indices_for_wire_2
 
-    @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_layers(self, parametrized_circuit_gaussian, wires):
-        """A test of a simple circuit with 3 layers and 6 trainable parameters"""
-
-        dev = qp.device("default.gaussian", wires=wires)
-        qnode = qp.QNode(parametrized_circuit_gaussian, dev)
-        tape = qp.workflow.construct_tape(qnode)(
-            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+    def test_layers(self):
+        """A test of a simple circuit with 3 parametrized layers."""
+        ops = [
+            qp.RX(0.1, wires=0),
+            qp.RX(0.2, wires=1),
+            qp.RX(0.3, wires=2),
+            qp.CRX(0.4, wires=[0, 1]),
+            qp.RX(0.5, wires=1),
+            qp.RX(0.6, wires=2),
+        ]
+        par_info = [{"op": op, "op_idx": idx, "p_idx": 0} for idx, op in enumerate(ops)]
+        circuit = CircuitGraph(
+            ops,
+            [],
+            wires=Wires([0, 1, 2]),
+            par_info=par_info,
+            trainable_params=set(range(len(ops))),
         )
-        circuit = tape.graph
         layers = circuit.parametrized_layers
-        ops = circuit.operations
 
         assert len(layers) == 3
         assert layers[0].ops == [ops[x] for x in [0, 1, 2]]
         assert layers[0].param_inds == [0, 1, 2]
         assert layers[1].ops == [ops[3]]
         assert layers[1].param_inds == [3]
-        assert layers[2].ops == [ops[x] for x in [5, 6]]
-        assert layers[2].param_inds == [6, 7]
+        assert layers[2].ops == [ops[x] for x in [4, 5]]
+        assert layers[2].param_inds == [4, 5]
 
     def test_iterate_layers_repeat_op(self):
         """Test iterate_parametrized_layers can work when the operation is repeated."""
@@ -338,33 +332,42 @@ class TestCircuitGraph:
         assert layers[1].pre_ops == [op, qp.X(0)]
         assert layers[1].post_ops == []
 
-    @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_iterate_layers(self, parametrized_circuit_gaussian, wires):
-        """A test of the different layers, their successors and ancestors using a simple circuit"""
-
-        dev = qp.device("default.gaussian", wires=wires)
-        qnode = qp.QNode(parametrized_circuit_gaussian, dev)
-        tape = qp.workflow.construct_tape(qnode)(
-            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+    def test_iterate_layers(self):
+        """A test of the different layers, their successors and ancestors using a simple circuit."""
+        ops = [
+            qp.RX(0.1, wires=0),
+            qp.RX(0.2, wires=1),
+            qp.RX(0.3, wires=2),
+            qp.CRX(0.4, wires=[0, 1]),
+            qp.RX(0.5, wires=1),
+            qp.RX(0.6, wires=2),
+        ]
+        par_info = [{"op": op, "op_idx": idx, "p_idx": 0} for idx, op in enumerate(ops)]
+        circuit = CircuitGraph(
+            ops,
+            [],
+            wires=Wires([0, 1, 2]),
+            par_info=par_info,
+            trainable_params=set(range(len(ops))),
         )
-        circuit = tape.graph
         result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
+
         assert set(result[0][0]) == set()
-        assert set(result[0][1]) == set(circuit.operations[:3])
+        assert set(result[0][1]) == set(ops[:3])
         assert result[0][2] == (0, 1, 2)
-        assert set(result[0][3]) == set(circuit.operations[3:] + circuit.observables)
+        assert set(result[0][3]) == set(ops[3:])
 
-        assert set(result[1][0]) == set(circuit.operations[:2])
-        assert set(result[1][1]) == {circuit.operations[3]}
+        assert set(result[1][0]) == set(ops[:2])
+        assert set(result[1][1]) == {ops[3]}
         assert result[1][2] == (3,)
-        assert set(result[1][3]) == set(circuit.operations[4:6] + circuit.observables[:2])
+        assert set(result[1][3]) == {ops[4]}
 
-        assert set(result[2][0]) == set(circuit.operations[:4])
-        assert set(result[2][1]) == set(circuit.operations[5:])
-        assert result[2][2] == (6, 7)
-        assert set(result[2][3]) == set(circuit.observables[1:])
+        assert set(result[2][0]) == set(ops[:4])
+        assert set(result[2][1]) == set(ops[4:])
+        assert result[2][2] == (4, 5)
+        assert set(result[2][3]) == set()
 
     @pytest.mark.parametrize(
         "circ, expected",
@@ -392,37 +395,6 @@ class TestCircuitGraph:
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])\n"""
         assert str(circuit_w_wires) == expected
-
-    tape_depth = (
-        ([qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)], 2),
-        ([qp.X(0)] * 4, 4),
-        ([qp.Hadamard(0), qp.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
-        (
-            [
-                qp.RX(1.23, 0),
-                qp.RZ(-0.45, 0),
-                CustomOpDepth3(wires=[3, 4]),
-                qp.Hadamard(0),
-                qp.Hadamard(1),
-                qp.Hadamard(2),
-                qp.Hadamard(3),
-                qp.Hadamard(4),
-                CustomOpDepth2(wires=[1, 2, 3]),
-                qp.RZ(-1, 4),
-                qp.RX(0.5, 4),
-                qp.RX(0.5, 3),
-                CustomOpDepth4(wires=[0, 1]),
-                qp.CNOT(wires=[3, 4]),
-            ],
-            10,
-        ),
-    )
-
-    @pytest.mark.parametrize("ops, true_depth", tape_depth)
-    def test_get_depth(self, ops, true_depth):
-        """Test that depth is computed correctly for operations that define a custom depth > 1"""
-        cg = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4])
-        assert cg.get_depth() == true_depth
 
 
 def test_has_path():

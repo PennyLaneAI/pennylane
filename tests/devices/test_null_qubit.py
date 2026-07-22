@@ -142,7 +142,7 @@ def test_supports_operator_without_decomp(shots):
     with dev.tracker:
         _ = dev.execute(batch)
 
-    assert dev.tracker.latest["resources"].gate_types["MyOp"] == 1
+    assert dev.tracker.latest["resources"].quantum_operations["MyOp"] == 1
 
 
 def test_tracking():
@@ -180,14 +180,12 @@ def test_tracking():
         "resources": [
             qp.resource.SpecsResources(
                 num_allocs=2,
-                gate_types={"Hadamard": 1, "FlipSign": 1},
-                gate_sizes={1: 1, 2: 1},
-                measurements={"expval(PauliZ)": 1},
-                depth=2,
+                counts={"Hadamard": 1, "FlipSign": 1},
+                measurement_processes={"expval(PauliZ)": 1},
+                circuit_depth=2,
             )
         ]
         * 13,
-        "errors": [{}] * 13,
     }
 
 

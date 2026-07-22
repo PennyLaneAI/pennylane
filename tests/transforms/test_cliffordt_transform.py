@@ -146,16 +146,6 @@ def circuit_10():
     return qp.expval(qp.Z(0))
 
 
-@pytest.mark.capture
-def test_error_with_program_capture():
-    """Test that an error is raised when program capture is enabled."""
-    import jax
-
-    jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.5)
-    with pytest.raises(NotImplementedError):
-        qp.transforms.clifford_t_decomposition.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, (), {})
-
-
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -221,7 +211,6 @@ class TestCliffordCompile:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
-    @pytest.mark.external
     @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
@@ -239,7 +228,6 @@ class TestCliffordCompile:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
-    @pytest.mark.external
     @pytest.mark.parametrize("circuit", [circuit_1, circuit_10])
     def test_decomposition_with_rs_qjit_repeated_decomp(self, circuit):
         """Test decomposition for multiple Clifford transforms with Ross-Selinger method with QJIT enabled with repeated parameters."""
@@ -723,7 +711,6 @@ class TestCatalyst:
     """Unit tests for catalyst integration."""
 
     # pylint: disable=import-outside-toplevel
-    @pytest.mark.external
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
         """Test that the catalyst integration is working correctly."""
@@ -743,7 +730,6 @@ class TestCatalyst:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
-    @pytest.mark.external
     def test_decomposition_with_rs_qjit_dynamic_param(self):
         """Test clifford T decomposition with qjit and dynamic parameters."""
 
@@ -769,7 +755,6 @@ class TestCatalyst:
 
         assert qp.math.allclose(default_res, qjit_res, atol=1e-2)
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     def test_decomposition_with_sk_qjit_raise(self):
         """Test decomposition for the Clifford transform with Solovay-Kitaev method
