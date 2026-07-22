@@ -315,12 +315,6 @@ def _equal_operators(
 ):
     """Default function to determine whether two Operator objects are equal."""
 
-    if isinstance(op1, qp.Identity):
-        # All Identities are equivalent, independent of wires.
-        # We already know op1 and op2 are of the same type, so no need to check
-        # that op2 is also an Identity
-        return True
-
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
@@ -329,6 +323,16 @@ def _equal_operators(
         # If any new operations are added with arithmetic depth > 0, a new dispatch
         # should be created for them.
         return f"op1 and op2 have arithmetic depth > 0. Got arithmetic depth {op1.arithmetic_depth}"
+
+    # Symbolic operators that compare equal across subclasses have their own dispatches.
+    if type(op1) is not type(op2):
+        return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
+
+    if isinstance(op1, qp.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
 
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
