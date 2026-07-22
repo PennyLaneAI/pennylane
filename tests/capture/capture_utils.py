@@ -29,8 +29,6 @@ def check_eqn(eqn, expected_op):
     assert eqn.primitive == operator_p
     assert eqn.params["op_cls"] == expected_op
 
-from pennylane.capture.primitives import operator_p
-
 
 def extract_ops_and_meas_prims(jaxpr):
     """Extract the primitives that are operators and measurements."""
