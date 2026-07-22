@@ -293,7 +293,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added decompositions of `CNOT`, `CZ`, and `Hadamard` directly to PPMs.
+* Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
   [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)
 
 * Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
