@@ -913,7 +913,6 @@
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
   [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
-  [(#9756)](https://github.com/PennyLaneAI/pennylane/pull/9756)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -927,6 +926,7 @@
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
     [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
+    [(#9756)](https://github.com/PennyLaneAI/pennylane/pull/9756)
   - Compatibility with the `drawer` module.
     [(#9849)](https://github.com/PennyLaneAI/pennylane/pull/9849)
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.

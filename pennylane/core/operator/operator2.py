@@ -41,6 +41,7 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -433,9 +434,11 @@ class Operator2(metaclass=OperatorMeta):
             return None
         if self.grad_recipe != [None] * self.num_params:
             return GradMethod.ANALYTIC
-        if parameter_frequencies(self):
+        try:
+            _ = parameter_frequencies(self)
             return GradMethod.ANALYTIC
-        return GradMethod.FINITE_DIFF
+        except ParameterFrequenciesUndefinedError:
+            return GradMethod.FINITE_DIFF
 
     @property
     def data(self) -> tuple:
