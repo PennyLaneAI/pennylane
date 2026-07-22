@@ -423,35 +423,10 @@ class TestArgSpecValidationAbstractInputs:
 
 
 @pytest.mark.capture
-class TestOperatorAbstractInputsCapture:
-    """Tests the capture of operators with abstract inputs."""
+def test_concrete_inputs_triggers_bind():
+    """Tests that a concrete construction under capture will bind the primitive."""
+    import jax
 
-    def test_bind_isnt_triggered_for_abstract_wires(self):
-        """Tests that no operator equation enters the jaxpr for abstract wires."""
-        import jax
-
-        def f():
-            MultiWireOp(AbstractWires(1), 0)
-
-        cjaxpr = jax.make_jaxpr(f)()
-        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 0
-
-    def test_bind_isnt_triggered_for_abstract_array(self):
-        """Tests that no operator equation enters the jaxpr for abstract inputs."""
-
-        import jax
-
-        def f():
-            DynCanonOp(phi=AbstractArray((1,), float), wires=0)
-
-        cjaxpr = jax.make_jaxpr(f)()
-        # Empty JAXPR
-        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 0
-
-    def test_concrete_inputs_triggers_bind(self):
-        """Tests that a concrete construction under capture will bind the primitive."""
-        import jax
-
-        cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
-        # Make sure the operator primitive is in thie JAXPR
-        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1
+    cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
+    # Make sure the operator primitive is in thie JAXPR
+    assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1

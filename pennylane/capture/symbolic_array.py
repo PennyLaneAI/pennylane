@@ -31,19 +31,19 @@ def _symbolic_array_primitive():
 
     import pennylane  # pylint: disable=import-outside-toplevel
 
-    estimation_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
+    symbolic_array_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
 
-    @estimation_p.def_abstract_eval
-    def _estimation_p_abstract_eval(shape, dtype):
+    @symbolic_array_p.def_abstract_eval
+    def _symbolic_array_p_abstract_eval(shape, dtype):
         return jax.core.ShapedArray(shape, dtype)
 
-    @estimation_p.def_impl
-    def _estimation_p_impl(shape, dtype):
+    @symbolic_array_p.def_impl
+    def _symbolic_array_p_impl(shape, dtype):
         raise NotImplementedError(
             "symbolic_arrays can only be produced for abstract evaluation and cannot be executed."
         )
 
-    return estimation_p
+    return symbolic_array_p
 
 
 def symbolic_array(shape: tuple[int, ...], dtype: type):
