@@ -2427,7 +2427,8 @@ class CRZ(Controlled2):
         return CRZ(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi, wires=None):  # pylint: disable=arguments-differ
+    # pylint: disable=unused-argument, arguments-differ
+    def compute_matrix(phi, wires=None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2470,7 +2471,8 @@ class CRZ(Controlled2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi, wires=None):  # pylint: disable=arguments-differ
+    # pylint: disable=unused-argument, arguments-differ
+    def compute_eigvals(phi, wires=None):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2514,6 +2516,7 @@ class CRZ(Controlled2):
         return self.compute_eigvals(*self.parameters)
 
 
+# pylint: disable=unused-argument
 def _crz_resources(phi, wires):
     return {qp.RZ: 2, qp.CNOT: 2}
 
@@ -2526,6 +2529,7 @@ def _crz(phi: TensorLike, wires: WiresLike):
     qp.CNOT(wires=wires)
 
 
+# pylint: disable=unused-argument
 def _crz_to_ppr_resources(phi, wires):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
@@ -2539,11 +2543,13 @@ def _crz_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "ZZ", wires=wires)
 
 
+# pylint: disable=unused-argument
 @register_resources(lambda base=None: {CRZ: 1})
 def _adjoint_crz(base):
     qp.ops.functions.bind_new_parameters(base, (-base.phi,))
 
 
+# pylint: disable=unused-argument
 @register_resources(lambda base, z: {CRZ: 1})
 def _pow_crz(base, z):
     qp.ops.functions.bind_new_parameters(base, (base.phi * z,))
