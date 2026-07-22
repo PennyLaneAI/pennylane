@@ -983,6 +983,73 @@ samples_su2_su2 = [
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
 
+    @staticmethod
+    def canonical_unitary(x, y, z):
+        """Construct a two-qubit unitary with the given canonical coordinates."""
+        return reduce(
+            np.matmul,
+            (
+                qp.IsingXX.compute_matrix(-2 * x),
+                qp.IsingYY.compute_matrix(-2 * y),
+                qp.IsingZZ.compute_matrix(-2 * z),
+            ),
+        )
+
+    @pytest.mark.parametrize(
+        ("coordinates", "expected_cnots"),
+        [
+            ((0.0, 0.0, 0.0), 0),
+            ((np.pi / 4, 0.0, 0.0), 1),
+            ((0.3, 0.2, 0.0), 2),
+            ((0.3, 0.2, 0.1), 3),
+        ],
+    )
+    def test_compute_num_cnots_exact_boundaries(self, coordinates, expected_cnots):
+        """Test exact representatives of every CNOT-count class."""
+        U = self.canonical_unitary(*coordinates)
+        U_su4, _ = qp.math.convert_to_su4(U)
+
+        assert _compute_num_cnots(U_su4) == expected_cnots
+
+    @pytest.mark.parametrize(
+        ("coordinates", "expected_cnots"),
+        [
+            ((2e-8, 0.0, 0.0), 2),
+            ((np.pi / 4, 2e-8, 0.0), 2),
+            ((0.3, 2e-8, 2e-8), 3),
+            ((0.3, 0.2, 2e-8), 3),
+        ],
+    )
+    def test_compute_num_cnots_near_boundaries(self, coordinates, expected_cnots):
+        """Test that nearby unitaries are not treated as exact boundary cases."""
+        U = self.canonical_unitary(*coordinates)
+        U_su4, _ = qp.math.convert_to_su4(U)
+
+        assert _compute_num_cnots(U_su4) == expected_cnots
+
+    @pytest.mark.parametrize(
+        ("coordinates", "expected_cnots"),
+        [
+            ((5e-9, 0.0, 0.0), 2),
+            ((2e-8, 0.0, 0.0), 2),
+            ((np.pi / 4, 5e-9, 0.0), 2),
+            ((np.pi / 4, 2e-8, 0.0), 2),
+            ((0.3, 5e-9, 5e-9), 3),
+            ((0.3, 2e-8, 2e-8), 3),
+        ],
+    )
+    def test_decomposition_accuracy_near_cnot_boundaries(self, coordinates, expected_cnots):
+        """Test reconstruction on both sides of the numerical error contract."""
+        U = self.canonical_unitary(*coordinates)
+        U_su4, _ = qp.math.convert_to_su4(U)
+
+        assert _compute_num_cnots(U_su4) == expected_cnots
+
+        decomposition = two_qubit_decomposition(U, wires=[0, 1])
+        obtained_matrix = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1])
+
+        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-8)
+
     @pytest.mark.unit
     @pytest.mark.parametrize("U", samples_2_cnots)
     def test_compute_num_cnots_identifies_2_cnots(self, U):
@@ -1084,9 +1151,163 @@ class TestTwoQubitUnitaryDecomposition:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+    def test_two_qubit_decomposition_weakly_entangling_unitary(self):
+        """Test the locally transformed weak entangler reported in issue 9631."""
+        rng = np.random.default_rng(123)
+
+        def random_su2():
+            matrix = rng.normal(size=(2, 2)) + 1j * rng.normal(size=(2, 2))
+            q, r = np.linalg.qr(matrix)
+            q *= np.diag(r) / np.abs(np.diag(r))
+            return q / np.sqrt(np.linalg.det(q))
+
+        local_gates = [random_su2() for _ in range(4)]
+        operations = [
+            qp.QubitUnitary(local_gates[0], wires=0),
+            qp.QubitUnitary(local_gates[1], wires=1),
+            qp.CNOT(wires=[1, 0]),
+            qp.RZ(8.4719e-4, wires=0),
+            qp.RX(-1.3556e-3, wires=1),
+            qp.CNOT(wires=[1, 0]),
+            qp.QubitUnitary(local_gates[2], wires=0),
+            qp.QubitUnitary(local_gates[3], wires=1),
+        ]
+        U = np.eye(4, dtype=complex)
+        for operation in operations:
+            U = qp.matrix(operation, wire_order=[0, 1]) @ U
+
+        U_su4, _ = qp.math.convert_to_su4(U)
+
+        assert _compute_num_cnots(U_su4) == 2
+
+        obtained_decomposition = two_qubit_decomposition(U, wires=[0, 1])
+        obtained_matrix = qp.matrix(
+            qp.tape.QuantumScript(obtained_decomposition), wire_order=[0, 1]
+        )
+
+        assert check_matrix_equivalence(U, obtained_matrix)
+
 
 class TestTwoQubitUnitaryDecompositionInterfaces:
     """Test the decomposition in the non-autograd interfaces."""
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("x", [1e-7, 1e-6, 1e-5])
+    def test_weak_entangler_jax_complex64(self, x):
+        """Test that resolvable complex64 entanglement is not treated as a tensor product."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+        import jax.numpy as jnp
+
+        with jax.experimental.disable_x64():
+            U = qp.IsingXX.compute_matrix(jnp.asarray(-2 * x, dtype=jnp.float32))
+            U_su4, _ = qp.math.convert_to_su4(U)
+
+            assert U_su4.dtype == jnp.complex64
+            assert _compute_num_cnots(U_su4) == 2
+
+            decomposition = two_qubit_decomposition(U, wires=[0, 1])
+            obtained_matrix = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1])
+
+            assert check_matrix_equivalence(U, obtained_matrix, atol=1e-5)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        ("coordinates", "expected_cnots"),
+        [
+            ((np.pi / 4, 1e-6, 0.0), 2),
+            ((np.pi / 4, 3e-6, 0.0), 2),
+            ((0.3, 0.2, 3e-7), 3),
+            ((0.3, 0.2, 1e-6), 3),
+        ],
+    )
+    def test_near_nonlocal_boundaries_jax_complex64(self, coordinates, expected_cnots):
+        """Test complex64 classification and reconstruction near the 1/2-CNOT boundaries."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+        import jax.numpy as jnp
+
+        with jax.experimental.disable_x64():
+            x, y, z = (jnp.asarray(value, dtype=jnp.float32) for value in coordinates)
+            U = reduce(
+                jnp.matmul,
+                (
+                    qp.IsingXX.compute_matrix(-2 * x),
+                    qp.IsingYY.compute_matrix(-2 * y),
+                    qp.IsingZZ.compute_matrix(-2 * z),
+                ),
+            )
+            U_su4, _ = qp.math.convert_to_su4(U)
+
+            assert U_su4.dtype == jnp.complex64
+            assert _compute_num_cnots(U_su4) == expected_cnots
+
+            decomposition = two_qubit_decomposition(U, wires=[0, 1])
+            obtained_matrix = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1])
+
+            assert check_matrix_equivalence(U, obtained_matrix, atol=1e-5)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        ("coordinates", "expected_cnots"),
+        [((np.pi / 4, 0.0, 0.0), 1), ((0.3, 0.2, 0.0), 2)],
+    )
+    def test_exact_nonlocal_boundaries_jax_complex64(self, coordinates, expected_cnots):
+        """Test exact complex64 CNOT-count representatives after local transformations."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+        import jax.numpy as jnp
+
+        with jax.experimental.disable_x64():
+            x, y, z = (jnp.asarray(value, dtype=jnp.float32) for value in coordinates)
+            canonical = reduce(
+                jnp.matmul,
+                (
+                    qp.IsingXX.compute_matrix(-2 * x),
+                    qp.IsingYY.compute_matrix(-2 * y),
+                    qp.IsingZZ.compute_matrix(-2 * z),
+                ),
+            )
+            left = jnp.kron(
+                jnp.asarray(samples_su2_su2[1][0], dtype=jnp.complex64),
+                jnp.asarray(samples_su2_su2[1][1], dtype=jnp.complex64),
+            )
+            right = jnp.kron(
+                jnp.asarray(samples_su2_su2[2][0], dtype=jnp.complex64),
+                jnp.asarray(samples_su2_su2[2][1], dtype=jnp.complex64),
+            )
+            U = left @ canonical @ right
+            U_su4, _ = qp.math.convert_to_su4(U)
+
+            assert U_su4.dtype == jnp.complex64
+            assert _compute_num_cnots(U_su4) == expected_cnots
+
+            decomposition = two_qubit_decomposition(U, wires=[0, 1])
+            obtained_matrix = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1])
+
+            assert check_matrix_equivalence(U, obtained_matrix, atol=1e-5)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("U_pair", samples_su2_su2)
+    def test_tensor_products_jax_complex64(self, U_pair):
+        """Test that exact complex64 tensor products retain the zero-CNOT decomposition."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+        import jax.numpy as jnp
+
+        with jax.experimental.disable_x64():
+            U1 = jnp.asarray(U_pair[0], dtype=jnp.complex64)
+            U2 = jnp.asarray(U_pair[1], dtype=jnp.complex64)
+            U = qp.math.kron(U1, U2)
+            U_su4, _ = qp.math.convert_to_su4(U)
+
+            assert U_su4.dtype == jnp.complex64
+            assert _compute_num_cnots(U_su4) == 0
+
+            decomposition = two_qubit_decomposition(U, wires=[0, 1])
+            obtained_matrix = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1])
+
+            assert check_matrix_equivalence(U, obtained_matrix, atol=1e-5)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
