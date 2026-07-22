@@ -24,6 +24,7 @@ from pennylane import numpy as np
 from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 
 
 # pylint: disable=too-few-public-methods
@@ -165,15 +166,15 @@ class TestInitialization:
 
     def test_nonparametric_ops(self, power_method):
         """Test pow initialization for a non parameteric operation."""
-        base = qp.PauliX("a")
 
+        base = qp.PauliX("a")
         op: Pow = power_method(base=base, z=-4.2)
 
         assert op.base is base
         assert op.z == -4.2
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
-        assert op.name == "PauliX**-4.2"
+        assert op.name == ("Pow(PauliX)" if isinstance(op, Pow2) else "PauliX**-4.2")
 
         assert op.num_params == 0
         assert op.parameters == []

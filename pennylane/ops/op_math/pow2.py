@@ -117,6 +117,12 @@ class Pow2(SymbolicOp2):
     def ndim_params(self):
         return self.base.ndim_params
 
+    @property
+    @override
+    def num_wires(self):
+        """The number of wires this power op acts on."""
+        return self.base.num_wires
+
     @override
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
