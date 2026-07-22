@@ -719,23 +719,23 @@ def _cz_to_ppr(wires: WiresLike, **_):
     qp.GlobalPhase(np.pi / 4)
 
 
-def _cz_ppm_resources():
+def _cz_lattice_surgery_ppm_resources():
     return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3, qp.GlobalPhase: 1}
 
 
-@qp.register_resources(_cz_ppm_resources, work_wires={"zeroed": 1})
-def _cz_ppm(wires: WiresLike, **__):
-    with qp.allocate(1, state="zero", restored=False) as work_wire:
-        m0 = pauli_measure("ZX", [wires[0], work_wire[0]])
-        m1 = pauli_measure("ZZ", [work_wire[0], wires[1]])
-        m2 = pauli_measure("X", work_wire[0])
+@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+def _cz_lattice_surgery_ppm(wires: WiresLike, **__):
+    with qp.allocate(1, state="zero", restored=False) as work_wires:
+        m0 = pauli_measure("ZX", [wires[0], work_wires[0]])
+        m1 = pauli_measure("ZZ", [work_wires[0], wires[1]])
+        m2 = pauli_measure("X", work_wires[0])
         qp.cond(m1, qp.Z)(wires[0])
         qp.cond(m0 != m2, qp.Z)(wires[1])
         qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
-        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire (to |+>), achieving pure state
+        qp.cond(m2, qp.Z)(work_wires[0])  # Reset work wire (to |+>), achieving pure state
 
 
-add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr, _cz_ppm)
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr, _cz_lattice_surgery_ppm)
 add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
@@ -1330,12 +1330,12 @@ def _cnot_to_ppr(wires: WiresLike, **_):
     qp.GlobalPhase(np.pi / 4)
 
 
-def _cnot_ppm_resources():
+def _cnot_lattice_surgery_ppm_resources():
     return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1, qp.GlobalPhase: 1}
 
 
-@qp.register_resources(_cnot_ppm_resources, work_wires={"zeroed": 1})
-def _cnot_ppm(wires: WiresLike, **__):
+@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+def _cnot_lattice_surgery_ppm(wires: WiresLike, **__):
     with qp.allocate(1, state="zero", restored=False) as work_wire:
         m0 = pauli_measure("ZX", [wires[0], work_wire[0]])
         m1 = pauli_measure("ZX", [work_wire[0], wires[1]])
@@ -1346,7 +1346,7 @@ def _cnot_ppm(wires: WiresLike, **__):
         qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire (to |+>), achieving pure state
 
 
-add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr, _cnot_ppm)
+add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr, _cnot_lattice_surgery_ppm)
 add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
