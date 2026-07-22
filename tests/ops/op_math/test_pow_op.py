@@ -1025,3 +1025,15 @@ class TestIntegration:
 
         assert np.allclose(res, expected)
         assert np.allclose(res_grad, expected_grad)
+
+
+def test_fractional_power_negative_base_eigvals_are_finite():
+    """Fractional powers of negative real eigenvalues must not be NaN (#9632)."""
+    import numpy as np
+
+    op = qp.pow(qp.PauliZ(0), 0.5)
+    ev = np.asarray(qp.eigvals(op))
+    assert np.all(np.isfinite(ev))
+    # agree with matrix spectrum up to ordering
+    mat_ev = np.linalg.eigvals(qp.matrix(op))
+    assert np.allclose(np.sort_complex(ev), np.sort_complex(mat_ev), atol=1e-6)
