@@ -824,6 +824,18 @@ class TestProperties:
         assert op.label(decimals=2, cache=cache) == "-1.20*U\n(M0)"
         assert len(cache["matrices"]) == 1
 
+
+    def test_batched_scalar_label(self):
+        """Batched coefficients must format without TypeError (#9633)."""
+        op = s_prod(np.array([1.234, 2.345]), qp.PauliX(0))
+        lab = op.label(decimals=2)
+        assert "1.23" in lab
+        assert "2.35" in lab
+        # draw path also formats coefficients
+        tape = qp.tape.QuantumScript([op], [qp.expval(qp.PauliZ(0))])
+        text = qp.drawer.tape_text(tape)
+        assert text is not None
+
     op_pauli_reps = (
         (
             qp.s_prod(1.23, qp.PauliZ(wires=0)),
