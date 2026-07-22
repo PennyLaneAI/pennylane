@@ -188,7 +188,7 @@ class TestInspectDecompGraph:
                  |0>├─╰X─╰●─────────────╰X──┤    
             First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {RZ: 58, CNOT: 36, GlobalPhase: 62, RY: 14, MidMeasure: 2, RX: 8}
+            Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, MidMeasure: 2, RX: 8}
             Weighted Cost: 120.0
 
             Decomposition 1 (name: to_controlled_qubit_unitary)
