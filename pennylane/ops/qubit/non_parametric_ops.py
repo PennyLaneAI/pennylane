@@ -254,7 +254,8 @@ Args:
 """
 
 
-def _hadamard_rz_rx_resources():
+# pylint: disable=unused-argument
+def _hadamard_rz_rx_resources(wires: WiresLike):
     return {qp.RZ: 2, qp.RX: 1, qp.GlobalPhase: 1}
 
 
@@ -266,7 +267,8 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qp.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-def _hadamard_rz_ry_resources():
+# pylint: disable=unused-argument
+def _hadamard_rz_ry_resources(wires: WiresLike):
     return {qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1}
 
 
