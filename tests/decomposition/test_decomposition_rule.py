@@ -26,6 +26,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _decompositions_private,
+    _fix_decomp,
     register_condition,
     register_resources,
 )
@@ -33,6 +34,7 @@ from pennylane.decomposition.resources import CompressedResourceOp, Resources
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
@@ -658,6 +660,41 @@ class TestDecompDictionary:
                 "ctrl_single_work_wire",
                 "to_controlled_unitary",
             }
+
+    def test_list_pow_decomps2(self):
+        """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
+
+        # a fixed decomposition rule overrides everything else
+        op = pow(DynOp(0.5, wires=0), 2)
+        with qp.decomposition.local_decomps():
+            _fix_decomp(op, repeat_pow_base)
+            assert list(qp.list_decomps(op)) == [repeat_pow_base]
+
+        # custom decomp registered for the power
+        with qp.decomposition.local_decomps():
+
+            @register_resources({DynOp: 1})
+            def _custom_decomp(base, z):
+                raise NotImplementedError
+
+            qp.add_decomps("Pow(DynOp)", _custom_decomp)
+            assert _custom_decomp in qp.list_decomps(op)
+
+        # nested powers list only the merge_powers rule
+        nested = pow(pow(qp.S(0), 3), 2)
+        assert list(qp.list_decomps(nested)) == [merge_powers]
+
+        # a power of an adjoint lists only the flip_pow_adjoint rule
+        pow_adjoint = pow(qp.adjoint(DynOp(0.5, wires=0)), 2)
+        assert list(qp.list_decomps(pow_adjoint)) == [flip_pow_adjoint]
+
+        # an integer power appends repeat_pow_base to the custom rules
+        integer_pow = pow(DynOp(0.5, wires=0), 3)
+        assert repeat_pow_base in qp.list_decomps(integer_pow)
+
+        # a non-integer power does not append repeat_pow_base
+        fractional_pow = pow(DynOp(0.5, wires=0), 0.5)
+        assert repeat_pow_base not in qp.list_decomps(fractional_pow)
 
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed."""

@@ -128,6 +128,18 @@ class Wires(Sequence):
     @classmethod
     def _unflatten(cls, data, _metadata):
         """De-serialize flattened representation back into the Wires object."""
+        # This is needed to handle the case where `Wires` are flattened with scalar tracers, but
+        # unflattened after concretization, resulting in scalar tracers being replaced by scalar
+        # arrays, which are not valid wire labels.
+        if math.get_deep_interface(data) == "jax":
+            data = tuple(
+                (
+                    w.item()
+                    if isinstance(w, jax.Array) and not math.is_abstract(w) and w.ndim == 0
+                    else w
+                )
+                for w in data
+            )
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
