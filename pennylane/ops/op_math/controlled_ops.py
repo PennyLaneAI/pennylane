@@ -728,7 +728,7 @@ def _cz_lattice_surgery_ppm(wires: WiresLike, **__):
     with qp.allocate(1, state="zero", restored=False) as work_wires:
         m0 = pauli_measure("ZX", [wires[0], work_wires[0]])
         m1 = pauli_measure("ZZ", [work_wires[0], wires[1]])
-        m2 = pauli_measure("X", work_wires[0])
+        m2 = pauli_measure("X", work_wires)
         qp.cond(m1, qp.Z)(wires[0])
         qp.cond(m0 != m2, qp.Z)(wires[1])
         qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
@@ -1336,14 +1336,14 @@ def _cnot_lattice_surgery_ppm_resources():
 
 @qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
 def _cnot_lattice_surgery_ppm(wires: WiresLike, **__):
-    with qp.allocate(1, state="zero", restored=False) as work_wire:
-        m0 = pauli_measure("ZX", [wires[0], work_wire[0]])
-        m1 = pauli_measure("ZX", [work_wire[0], wires[1]])
-        m2 = pauli_measure("X", work_wire[0])
+    with qp.allocate(1, state="zero", restored=False) as work_wires:
+        m0 = pauli_measure("ZX", [wires[0], work_wires[0]])
+        m1 = pauli_measure("ZX", [work_wires[0], wires[1]])
+        m2 = pauli_measure("X", work_wires)
         qp.cond(m1, qp.Z)(wires[0])
         qp.cond(m0 != m2, qp.X)(wires[1])
         qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
-        qp.cond(m2, qp.Z)(work_wire[0])  # Reset work wire (to |+>), achieving pure state
+        qp.cond(m2, qp.Z)(work_wires[0])  # Reset work wire (to |+>), achieving pure state
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr, _cnot_lattice_surgery_ppm)

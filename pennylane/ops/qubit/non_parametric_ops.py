@@ -276,14 +276,13 @@ def _hadamard_ppm_resources():
 
 @qp.register_resources(_hadamard_ppm_resources, work_wires={"zeroed": 1})
 def _hadamard_ppm(wires, **__):
-    with qp.allocate(1, state="zero", restored=False) as work_wire:
+    with qp.allocate(1, state="zero", restored=False) as work_wires:
         qp.Z(wires)
-        both_wires = [wires[0], work_wire[0]]
-        m0 = pauli_measure("YY", both_wires)
-        m1 = pauli_measure("X", work_wire)
+        m0 = pauli_measure("YY", [wires[0], work_wires[0]])
+        m1 = pauli_measure("X", work_wires)
         qp.cond(m0 == m1, qp.Y)(wires)
         qp.cond(m0 == m1, qp.GlobalPhase)(np.pi / 2)
-        qp.cond(m1, qp.Z)(work_wire)  # Reset work wire to |+>
+        qp.cond(m1, qp.Z)(work_wires[0])  # Reset work wire to |+>
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry, _hadamard_ppm)
