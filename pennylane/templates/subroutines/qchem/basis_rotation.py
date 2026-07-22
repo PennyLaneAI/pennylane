@@ -325,7 +325,7 @@ class BasisRotation(Operator2):
 
     @property
     def ndim_params(self):
-        return ((len(self.wires), len(self.wires)),)
+        return (2,)
 
     @staticmethod
     def compute_decomposition(

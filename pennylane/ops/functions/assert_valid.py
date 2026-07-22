@@ -623,7 +623,9 @@ def _assert_valid_operator2(
     for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
         # make sure that the bound args are not outside the allowed dimensions
         if hasattr(val, "shape"):
-            assert val.shape == dim, f"shape of {name} is not equal to dimension in ndim_params"
+            assert (
+                len(val.shape) == dim
+            ), f"shape of {name} is not equal to dimension in ndim_params"
         else:
             assert dim == 0
 
