@@ -180,8 +180,9 @@ class TestLocalExecutor:
     @pytest.mark.parametrize(
         "fn,data,result",
         [
-            (custom_func1, range(7), [custom_func1(i) for i in range(7)]),
-            (custom_func2, range(3), list(map(lambda x: x**2, range(3)))),
+            # Single-iterable: pass the iterable as one *args entry (Python map style).
+            (custom_func1, (range(7),), [custom_func1(i) for i in range(7)]),
+            (custom_func2, (range(3),), list(map(lambda x: x**2, range(3)))),
             (custom_func3, (range(3), range(3)), list(map(custom_func3, range(3), range(3)))),
             (
                 custom_func4,
@@ -201,6 +202,18 @@ class TestLocalExecutor:
 
         with create_executor(backend[0]) as executor_ctx:
             assert np.allclose(result, list(executor_ctx.map(fn, *data)))
+
+    def test_map_single_arg_iterable(self, backend):
+        """executor.map(fn, iterable) must apply fn element-wise (GH-9601)."""
+        data = [1, 2, 3, 4, 5]
+        expected = [custom_func2(x) for x in data]
+
+        executor = create_executor(backend[0])
+        assert list(executor.map(custom_func2, data)) == expected
+        executor.shutdown()
+
+        with create_executor(backend[0]) as executor_ctx:
+            assert list(executor_ctx.map(custom_func2, data)) == expected
 
     @pytest.mark.parametrize(
         "fn,data,result",

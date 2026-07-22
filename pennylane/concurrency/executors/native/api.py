@@ -18,7 +18,6 @@ Base API for defining an executor relying on native Python standard library impl
 """
 
 import abc
-import inspect
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any
@@ -78,8 +77,17 @@ class PyNativeExec(IntExec, abc.ABC):
         exec_be = self._get_backend()
         output = None
         fn_p = partial(fn, **kwargs)
-        if self._cfg.map_unpack and len(inspect.signature(fn).parameters) > 1:
+        # Always unpack *args when map_unpack is True so that
+        # ``executor.map(fn, iterable)`` matches Python's map(fn, iterable)
+        # for single-argument functions (GH-9601). The previous check on
+        # ``len(signature(fn).parameters) > 1`` left the single-arg path
+        # wrapping the iterable in a 1-tuple and calling ``fn`` once on the
+        # entire sequence.
+        if self._cfg.map_unpack:
             output = self._map_fn(exec_be)(fn_p, *args)
+        elif len(args) == 1:
+            # Backends such as multiprocessing.Pool.map take a single iterable.
+            output = self._map_fn(exec_be)(fn_p, args[0])
         else:
             output = self._map_fn(exec_be)(fn_p, args)
 
