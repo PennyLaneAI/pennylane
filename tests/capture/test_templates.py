@@ -26,7 +26,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator.operator2 import operator_p
 from tests.capture.test_nested_plxpr import _check_eqn
 
 jax = pytest.importorskip("jax")
