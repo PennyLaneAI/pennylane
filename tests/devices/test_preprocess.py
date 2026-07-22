@@ -819,6 +819,47 @@ class TestMeasurementsFromCountsOrSamples:
 
         assert np.allclose(res, expected_res(theta), atol=0.05)
 
+    def test_measurements_from_counts_with_broadcasting_and_partitioned_shots(self):
+        """Test counts postprocessing with parameter broadcasting and partitioned shots."""
+        tape = qp.tape.QuantumScript(
+            [qp.RX([0.1, 0.9], wires=0)],
+            measurements=[qp.probs(wires=0)],
+            shots=(2, 3),
+        )
+        _, fn = measurements_from_counts(tape)
+        counts_results = (
+            [{"0": 2}, {"1": 2}],
+            [{"0": 3}, {"1": 3}],
+        )
+
+        results = fn((counts_results,))
+
+        expected = np.array([[1.0, 0.0], [0.0, 1.0]])
+        assert len(results) == 2
+        assert all(np.allclose(result, expected) for result in results)
+
+    def test_measurements_from_counts_with_broadcasting_and_multiple_measurements(self):
+        """Test batched counts postprocessing for different measurement result types."""
+        tape = qp.tape.QuantumScript(
+            [qp.RX([0.1, 0.9], wires=0)],
+            measurements=[
+                qp.expval(qp.Z(0)),
+                qp.probs(wires=0),
+                qp.counts(wires=0),
+                qp.sample(wires=0),
+            ],
+            shots=2,
+        )
+        _, fn = measurements_from_counts(tape)
+        counts_results = [{"0": 2}, {"1": 2}]
+
+        expval_result, probs_result, counts_result, sample_result = fn((counts_results,))
+
+        assert np.allclose(expval_result, [1.0, -1.0])
+        assert np.allclose(probs_result, [[1.0, 0.0], [0.0, 1.0]])
+        assert counts_result == counts_results
+        assert np.array_equal(sample_result, [[0, 0], [1, 1]])
+
     @pytest.mark.parametrize(
         "counts_kwargs",
         [
