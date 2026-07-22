@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -354,7 +354,6 @@ class Adjoint(SymbolicOp):
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
 
         """
-
         if isinstance(base, Operation):
             # not an observable
             return object.__new__(AdjointOperation)
@@ -381,6 +380,11 @@ class Adjoint(SymbolicOp):
 
     @property
     def resource_params(self) -> dict:
+        if isinstance(self.base, Operator2):
+            return {
+                "base_class": type(self.base),
+                "base_params": abstractify(self.base).arguments,
+            }
         return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @property

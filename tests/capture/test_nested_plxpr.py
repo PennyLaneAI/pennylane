@@ -63,8 +63,9 @@ class TestAdjointQfunc:
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
 
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
-        assert nested_jaxpr.eqns[0].primitive == qp.PauliRot._primitive
-        assert nested_jaxpr.eqns[0].params == {"n_wires": 2, "pauli_word": "XY"}
+        assert nested_jaxpr.eqns[0].primitive == operator_p
+        assert nested_jaxpr.eqns[0].params["op_cls"] is qp.PauliRot
+        assert nested_jaxpr.eqns[0].params["pauli_word"][0] == ("XY",)
 
         assert plxpr.eqns[0].params["lazy"] is True
 

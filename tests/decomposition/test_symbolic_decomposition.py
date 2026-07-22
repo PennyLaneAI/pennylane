@@ -610,9 +610,9 @@ class TestControlledDecomposition:
                 control_wires=[6, 0],
                 work_wires=[7],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6],
+                control=[6],
                 work_wires=[7],
             ),
             qp.CZ(wires=[6, 0]),
@@ -760,9 +760,9 @@ class TestControlledDecomposition:
                 control_wires=[6, 7, 0],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6, 7],
+                control=[6, 7],
                 work_wires=[8],
             ),
             qp.CCZ(wires=[6, 7, 0]),
@@ -874,9 +874,9 @@ class TestControlledDecomposition:
                 control_wires=[6, 7, 9, 0],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6, 7, 9],
+                control=[6, 7, 9],
                 work_wires=[8],
             ),
             qp.ops.Controlled(qp.Z(0), control_wires=[6, 7, 9], work_wires=[8]),

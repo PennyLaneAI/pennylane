@@ -1864,9 +1864,17 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
     new_args = dict(op.arguments)
+    # The abstract representation must be batch-insensitive so that broadcasted and non-broadcasted
+    # operators produce the same resource key. Strip the leading batch axis from dynamic arguments.
+    # ``op.batch_size`` is only meaningful (and only safe to compute) for operators with dynamic
+    # parameters, hence the guard.
+    batched = bool(op_cls.dynamic_argnames) and op.batch_size is not None
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
-        new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
+        val = new_args[name]
+        if batched and kind is _ArgType.DYN and not _is_abstract_specifier(val):
+            val = math.asarray(val)[0]
+        new_args[name] = _canonicalize_abstract_type(val, kind)
     return op_cls(**new_args)
 
 

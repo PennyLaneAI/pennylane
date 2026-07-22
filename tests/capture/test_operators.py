@@ -24,7 +24,14 @@ import pennylane as qp
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import (
+    AbstractOperator,
+    operator_p,
+)
+from pennylane.tape.plxpr_conversion import (
+    CollectOpsandMeas,
+)
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -252,17 +259,18 @@ class TestSpecialOps:
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
 
-        assert eqn.primitive == qp.PauliRot._primitive
-        assert eqn.params == {"pauli_word": "XY", "n_wires": 2}
+        assert eqn.primitive == operator_p
+        assert eqn.params["op_cls"] is qp.PauliRot
+        assert eqn.params["pauli_word"][0] == ("XY",)
 
         assert len(eqn.invars) == 3  # The rotation parameter and the two wires
         assert jaxpr.jaxpr.invars == eqn.invars
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
 
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.PauliRot(2.5, "XY", (3, 4)))
+        assert len(collector.state["ops"]) == 1
+        qp.assert_equal(collector.state["ops"][0], qp.PauliRot(2.5, "XY", (3, 4)))
 
     def test_GlobalPhase(self):
         """Test that a global phase on no wires can be captured."""

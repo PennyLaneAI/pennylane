@@ -35,7 +35,9 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation_op2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation_op2
 from pennylane.typing import FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -311,6 +313,9 @@ class PauliRot(Operator2):
     arg_specs = {"theta": Float, "wires": Wire[-1]}
 
     grad_method = "A"
+    grad_recipe = (None,)
+    """tuple: Gradient recipe for the trainable parameter. ``None`` defers to
+    :attr:`parameter_frequencies` for the parameter-shift rule."""
     parameter_frequencies = [(1,)]
 
     resource_keys = {"pauli_word"}
@@ -352,7 +357,7 @@ class PauliRot(Operator2):
             )
 
     def __repr__(self) -> str:
-        return f"PauliRot({self.theta}, {self.pauli_word}, wires={self.wires})"
+        return f"PauliRot({self.arguments["theta"]}, {self.arguments["pauli_word"]}, wires={self.wires})"
 
     def label(
         self,
@@ -383,7 +388,7 @@ class PauliRot(Operator2):
         'PauliRot'
 
         """
-        op_label = base_label or ("R" + self.pauli_word)
+        op_label = base_label or ("R" + self.arguments["pauli_word"])
 
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
@@ -394,7 +399,8 @@ class PauliRot(Operator2):
 
     @property
     def resource_params(self) -> dict:
-        return {"pauli_word": self.pauli_word}
+        """Resource parameters for graph-based decompositions."""
+        return {"pauli_word": self.arguments["pauli_word"]}
 
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:
@@ -409,7 +415,9 @@ class PauliRot(Operator2):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
+    def compute_matrix(  # pylint: disable=unused-argument
+        theta: TensorLike, pauli_word: str, wires=None
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -482,11 +490,13 @@ class PauliRot(Operator2):
         wire_map = {w: i for i, w in enumerate(self.wires)}
 
         return qp.Hamiltonian(
-            [-0.5], [qp.pauli.string_to_pauli_word(self.pauli_word, wire_map=wire_map)]
+            [-0.5], [qp.pauli.string_to_pauli_word(self.arguments["pauli_word"], wire_map=wire_map)]
         )
 
     @staticmethod
-    def compute_eigvals(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
+    def compute_eigvals(  # pylint: disable=unused-argument
+        theta: TensorLike, pauli_word: str, wires=None
+    ) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -574,10 +584,12 @@ class PauliRot(Operator2):
         return ops
 
     def adjoint(self):
-        return PauliRot(-self.theta, self.pauli_word, wires=self.wires)
+        return PauliRot(-self.arguments["theta"], self.arguments["pauli_word"], wires=self.wires)
 
     def pow(self, z):
-        return [PauliRot(self.theta * z, self.pauli_word, wires=self.wires)]
+        return [
+            PauliRot(self.arguments["theta"] * z, self.arguments["pauli_word"], wires=self.wires)
+        ]
 
 
 def _pauli_rot_resources(pauli_word, **__):
@@ -615,8 +627,8 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
-add_decomps("Adjoint(PauliRot)", adjoint_rotation)
-add_decomps("Pow(PauliRot)", pow_rotation)
+add_decomps("Adjoint(PauliRot)", adjoint_rotation_op2)
+add_decomps("Pow(PauliRot)", pow_rotation_op2)
 
 
 class PCPhase(Operation):

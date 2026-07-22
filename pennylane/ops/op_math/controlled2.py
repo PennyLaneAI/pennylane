@@ -803,18 +803,18 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    if not num_zero_control_values:
-        return qp.ctrl(
-            op,
-            control=control_wires,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
+    # ``op`` is an abstract ``Operator2``. Build the controlled operator directly instead of
+    # dispatching through ``qp.ctrl``: this helper only ever produces abstract resource
+    # representations, and ``qp.ctrl`` would be routed to the active compiler (e.g. Catalyst under
+    # qjit), which rejects abstract wires.
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.controlled import create_controlled_op2  # tach-ignore
 
-    return qp.ctrl(
+    control_values = Bool[len(control_wires)] if num_zero_control_values else None
+    return create_controlled_op2(
         op,
-        control=control_wires,
-        control_values=Bool[len(control_wires)],
+        control_wires=control_wires,
+        control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
