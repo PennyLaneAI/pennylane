@@ -115,6 +115,23 @@ def _check_mat_commutation(op1, op2):
     return qp.math.allclose(mat_12, mat_21)
 
 
+def _maybe_matrix_commutes(op1, op2, default=False):
+    """Fall back to dense matrix multiplication when the wire-control heuristic is wrong.
+
+    The control/target lookup treats controlled ops asymmetrically (e.g. ``CZ`` as control +
+    target ``Z``). That mis-classifies some fully-overlapping two-qubit pairs such as ``CZ``
+    and ``SWAP``, which do commute. Embed both operators on a shared ``wire_order`` so the
+    comparison is basis-aligned (do not rename wires via ``map_wires``).
+    """
+    try:
+        wire_order = Wires.all_wires([op1.wires, op2.wires])
+        mat1 = qp.matrix(op1, wire_order=wire_order)
+        mat2 = qp.matrix(op2, wire_order=wire_order)
+        return qp.math.allclose(mat1 @ mat2, mat2 @ mat1)
+    except Exception:  # pylint: disable=broad-exception-caught
+        return default
+
+
 def _create_commute_function():
     """This function constructs the ``_commutes`` helper utility function while using closure
     to hide the ``commutation_map`` data away from the global scope of the file.
@@ -331,13 +348,28 @@ def is_commuting(operation1, operation2):
     target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
     target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
 
+    involves_swap = (
+        ctrl_base_1 in SWAP_GROUP
+        or ctrl_base_2 in SWAP_GROUP
+        or operation1.name in SWAP_GROUP
+        or operation2.name in SWAP_GROUP
+    )
+
     if intersection(target_wires_1, target_wires_2) and not _commutes(ctrl_base_1, ctrl_base_2):
+        # SWAP-family vs controlled-Z style ops can be misclassified by the asymmetric
+        # control/target heuristic; verify with matrices only in that case (#9623).
+        if involves_swap:
+            return _maybe_matrix_commutes(operation1, operation2, default=False)
         return False
 
     if intersection(target_wires_1, op2_control_wires) and not _commutes("ctrl", ctrl_base_1):
+        if involves_swap:
+            return _maybe_matrix_commutes(operation1, operation2, default=False)
         return False
 
     if intersection(target_wires_2, op1_control_wires) and not _commutes("ctrl", ctrl_base_2):
+        if involves_swap:
+            return _maybe_matrix_commutes(operation1, operation2, default=False)
         return False
 
     return True
