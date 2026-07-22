@@ -205,7 +205,7 @@ class Operator2(metaclass=OperatorMeta):
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
-        self._wires = None
+        self._wires = Wires([])
         _init_wires(self)
         _init_arg_types(self)
 
@@ -274,7 +274,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires | None:
+    def wires(self) -> Wires:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -517,7 +517,7 @@ class Operator2(metaclass=OperatorMeta):
         ...         return [MyClass(self.phi*z, self.wires)]
         ...
         >>> MyClass(0.5, 0).pow(2)
-        [MyClass(phi=1.0, wires=[0])]
+        [MyClass(1.0, wires=[0])]
         """
         # Child methods may call super().pow(z%period) where op**period = I
         # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
@@ -573,7 +573,7 @@ class Operator2(metaclass=OperatorMeta):
         ...
         >>> op = MyClass(0.5, wires=0).adjoint()
         >>> op
-        MyClass(phi=0.5, wires=[0])
+        MyClass(0.5, wires=[0])
         """
         raise AdjointUndefinedError
 
@@ -971,8 +971,9 @@ class Operator2(metaclass=OperatorMeta):
             if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
                 return f"{self.name}({wire_arg.tolist()[0]!r})"
 
-        inputs = []
+        non_dyn_args = self.static_argnames + self.compilable_argnames + self.hybrid_argnames
 
+        inputs = []
         for key, value in self.arguments.items():
 
             # Hybrid wire arguments.
@@ -981,7 +982,9 @@ class Operator2(metaclass=OperatorMeta):
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={value}")
+            # Simplified repr for operators with only dynamic args
+            is_dyn = key in self.dynamic_argnames and not non_dyn_args
+            inputs.append(f"{value}" if is_dyn else f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
