@@ -17,10 +17,11 @@
 # TODO: [sc-120982] Add integration tests
 
 import copy
+from typing import override
 
 import numpy as np
 import pytest
-from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp
+from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp, NonParametricOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
@@ -2406,26 +2407,30 @@ class TestStatePrepBase:
             BadStatePrep(0)  # pylint: disable=abstract-class-instantiated
 
 
-class NoParamOp(Operator2):
-    """A simple operator with wires and no dynamic parameters."""
-
-    def __init__(self, wires):
-        super().__init__(wires=wires)
-
-
 class TestLegacyCompatibilityViews:
     """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
 
     def test_default_gradient_metadata(self):
         """Test the default legacy gradient metadata."""
-        op = NoParamOp(wires=0)
+        op = NonParametricOp(wires=0)
 
-        assert op.grad_recipe is None
+        assert op.grad_recipe == []
         assert op.grad_method is None
+
+        class DummyRZ(DynOp):
+            parameter_frequencies = [(1,)]
+
+            @override
+            def generator(self):
+                return -0.5 * qp.Z(0)
+
+        op = DummyRZ(0.5, 0)
+        assert op.grad_recipe == [None]
+        assert op.grad_method == "A"
 
     def test_no_param_op_legacy_views(self):
         """Test legacy views for an operator with no dynamic parameters."""
-        op = NoParamOp(wires=0)
+        op = NonParametricOp(wires=0)
 
         assert op.data == ()
         assert op.parameters == []

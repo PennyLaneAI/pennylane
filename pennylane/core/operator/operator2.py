@@ -19,7 +19,7 @@ TODO: [sc-120453] Fill docstring
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -59,6 +59,13 @@ if TYPE_CHECKING:
 has_jax = find_spec("jax") is not None
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
+
+
+class GradMethod(StrEnum):
+    """Supported gradient methods."""
+
+    ANALYTIC = "A"
+    FINITE_DIFF = "F"
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -200,7 +207,9 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
-        self._is_abstract = False
+        # NOTE: Use 'getattr' to not clobber '_is_abstract' if coming
+        # from '__abstract_init__'
+        self._is_abstract = getattr(self, "_is_abstract", False)
 
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
@@ -215,8 +224,12 @@ class Operator2(metaclass=OperatorMeta):
 
         self.tracer = None
 
+        if self.grad_recipe is None and not self._is_abstract:
+            self.grad_recipe = [None] * self.num_params
+
     def __abstract_init__(self, *args, **kwargs):
         """Constructor for canonicalization of abstract inputs."""
+        self._is_abstract = True
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         arguments = bound_args.arguments
@@ -227,7 +240,6 @@ class Operator2(metaclass=OperatorMeta):
             arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
         Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
-        self._is_abstract = True
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -398,8 +410,26 @@ class Operator2(metaclass=OperatorMeta):
     grad_recipe = None
     """Legacy Operator compatibility default for parameter-shift recipes."""
 
-    grad_method = None
-    """Legacy Operator compatibility default for gradient method metadata."""
+    @property
+    def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation using the parameter-shift method.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients import parameter_frequencies
+
+        if self.num_params == 0:
+            return None
+        if self.grad_recipe != [None] * self.num_params:
+            return GradMethod.ANALYTIC
+        if parameter_frequencies(self):
+            return GradMethod.ANALYTIC
+        return GradMethod.FINITE_DIFF
 
     @property
     def data(self) -> tuple:
