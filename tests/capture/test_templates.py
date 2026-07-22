@@ -1795,9 +1795,7 @@ unsupported_templates = [
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
 ]
-migrated_templates = [
-    qp.BasisRotation
-]
+migrated_templates = [qp.BasisRotation]
 
 
 @pytest.mark.parametrize("template", modified_templates)
