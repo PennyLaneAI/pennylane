@@ -1080,6 +1080,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed ``PyNativeExec.map`` so single-argument callables receive each element of
+  the iterable (matching Python's ``map``) instead of the whole sequence as one
+  argument when ``map_unpack=True``.
+  [(#9601)](https://github.com/PennyLaneAI/pennylane/issues/9601)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
