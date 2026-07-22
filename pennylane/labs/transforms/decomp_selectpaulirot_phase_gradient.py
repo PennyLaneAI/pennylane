@@ -144,7 +144,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             qp.SelectPauliRot(angles, control_wires=range(3), target_wire=3)
             return qp.state()
 
-        specs = qp.specs(circuit)(angles)["resources"].gate_types
+        specs = qp.specs(circuit)(angles)["resources"].quantum_operations
 
     The resulting circuit corresponds to the
     `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
