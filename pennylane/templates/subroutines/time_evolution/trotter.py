@@ -391,18 +391,14 @@ def _trotter_product_decomposition_resources(n, order, ops):
 
     if order == 1:
         for op in ops:
-            reps[resource_rep(qp_ops.op_math.Evolution, base=op, real_coeff=False)] = n * _count(
-                op, ops
-            )
+            reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = n * _count(op, ops)
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qp_ops.op_math.Evolution, base=op, real_coeff=False)] = (
-                n * 2 * _count(op, ops)
-            )
+            reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = n * 2 * _count(op, ops)
         return reps
     for op in ops:
-        reps[resource_rep(qp_ops.op_math.Evolution, base=op, real_coeff=False)] = (
+        reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = (
             n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
