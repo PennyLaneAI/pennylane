@@ -1238,3 +1238,13 @@ class TestBoseSentenceArithmetic:
         ):
             method_to_test = getattr(bs1, method_name)
             _ = method_to_test(np.array([1, 2]))
+
+
+def test_mul_independent_of_dict_insertion_order():
+    """BoseWord multiplication must not depend on dict insertion order (#9650)."""
+    w1 = BoseWord({(0, 0): "+", (1, 1): "-"})
+    w2 = BoseWord({(1, 1): "-", (0, 0): "+"})
+    assert w1 == w2
+    assert (w1 * w1) == (w1 * w2)
+    assert (w1 * w1) == (w2 * w1)
+    assert str(w1 * w2) == str(w1 * w1)
