@@ -1080,6 +1080,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :class:`~.estimator.ops.Identity` resource representations so multi-wire instances preserve
+  their wire count and remain distinct from identities with a different arity.
+  [(#9881)](https://github.com/PennyLaneAI/pennylane/pull/9881)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
