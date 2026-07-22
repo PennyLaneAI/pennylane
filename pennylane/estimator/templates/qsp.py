@@ -331,13 +331,16 @@ class GQSPTimeEvolution(ResourceOperator):
                 )
             )
 
-        if poly_approx_precision is not None:
-            if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
-                raise (
-                    ValueError(
-                        f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
-                    )
+        if poly_approx_precision is None:
+            raise ValueError(
+                "Expected 'poly_approx_precision' to be a positive real number greater than zero; got None"
+            )
+        if (not isinstance(poly_approx_precision, (int, float))) or poly_approx_precision <= 0:
+            raise (
+                ValueError(
+                    f"Expected 'poly_approx_precision' to be a positive real number greater than zero, got {poly_approx_precision}"
                 )
+            )
 
         self.walk_op = walk_op.resource_rep_from_op()
         self.time = time
@@ -477,6 +480,11 @@ class GQSPTimeEvolution(ResourceOperator):
         Returns:
             int: the minimum degree of the polynomial approximation
         """
+        if epsilon is None:
+            raise ValueError(
+                "poly_approx_precision must be a positive real number greater than zero; got None. "
+                "Pass poly_approx_precision explicitly when constructing GQSPTimeEvolution."
+            )
         N_0 = int(qnp.ceil(qnp.abs(time * one_norm)))  # initial guess for the degree
         error = qnp.abs(sps.jv(N_0 + 1, time * one_norm))  # initial error
 
