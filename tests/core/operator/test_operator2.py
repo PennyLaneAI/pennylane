@@ -2437,7 +2437,7 @@ class TestLegacyCompatibilityViews:
 
         op = NonParametricOp(wires=Wire[1])
 
-        assert op.grad_recipe is None
+        assert op.grad_recipe == []
         assert op.grad_method is None
 
         class DummyRZ(DynOp):
@@ -2448,8 +2448,8 @@ class TestLegacyCompatibilityViews:
                 return -0.5 * qp.Z(0)
 
         op = DummyRZ(Float, Wire[1])
-        assert op.grad_recipe is None
-        assert op.grad_method is None
+        assert op.grad_recipe == [None]
+        assert op.grad_method == "A"
 
     def test_default_gradient_metadata(self):
         """Test the default legacy gradient metadata."""
