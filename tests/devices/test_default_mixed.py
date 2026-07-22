@@ -53,6 +53,36 @@ class TestDefaultMixedInit:
         with pytest.raises(TypeError, match="readout error probability should be an integer"):
             DefaultMixed(wires=1, readout_prob=readout_prob)
 
+    def test_readout_prob_does_not_crash(self):
+        """Test that setting readout_prob applies BitFlip readout error without crashing (GH-9612)."""
+        import numpy as np
+
+        p = 0.1
+        dev = DefaultMixed(wires=1, shots=None, readout_prob=p)
+
+        # Analytic |+> state measured in X basis: ideal expval = 1, with BitFlip(p) on X → 1 - 2p
+        qs = qp.tape.QuantumScript(
+            [qp.Hadamard(0)],
+            [qp.expval(qp.PauliX(0))],
+        )
+        result = dev.execute(qs)
+        assert np.allclose(result, 1 - 2 * p)
+
+    def test_readout_prob_finite_shots(self):
+        """Test that readout_prob works with finite shots (GH-9612)."""
+        import numpy as np
+
+        p = 0.0  # no error: |0> measured in Z should give +1
+        dev = DefaultMixed(wires=1, seed=42, readout_prob=p)
+
+        @qp.set_shots(1000)
+        @qp.qnode(dev)
+        def circuit():
+            return qp.expval(qp.PauliZ(0))
+
+        result = circuit()
+        assert np.allclose(result, 1.0)
+
     def test_seed_global(self):
         """Test global seed initialization"""
         dev = DefaultMixed(wires=1, seed="global")

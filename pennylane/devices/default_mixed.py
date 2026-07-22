@@ -173,6 +173,28 @@ def warn_readout_error_state(
     return (tape,), null_postprocessing
 
 
+def get_readout_errors(readout_prob) -> list[Callable] | None:
+    """Convert a scalar readout-error probability into channel callables.
+
+    ``simulate`` / ``measure`` expect ``readout_errors`` to be a list of callables that
+    take a wire label and return a channel (here :class:`~.BitFlip`). Passing the raw
+    float causes ``TypeError: 'float' object is not iterable``.
+
+    Args:
+        readout_prob (float | int | None): Probability of a bit-flip readout error.
+
+    Returns:
+        list[Callable] | None: ``[BitFlip(p, wires=·)]`` factory list, or ``None``.
+    """
+    if readout_prob is None:
+        return None
+
+    def readout_error(wires, p=readout_prob):
+        return qp.BitFlip(p, wires=wires)
+
+    return [readout_error]
+
+
 @simulator_tracking
 @single_tape_support
 class DefaultMixed(Device):
@@ -227,6 +249,8 @@ class DefaultMixed(Device):
                 )
             if self.readout_err < 0 or self.readout_err > 1:
                 raise ValueError("The readout error probability should be in the range [0,1].")
+        # Convert scalar probability into the list[Callable] expected by simulate/measure.
+        self._readout_errors = get_readout_errors(self.readout_err)
         super().__init__(wires=wires, shots=shots)
 
         # Seed setting
@@ -277,7 +301,7 @@ class DefaultMixed(Device):
                 prng_key=self._prng_key,
                 debugger=self._debugger,
                 interface=execution_config.interface,
-                readout_errors=self.readout_err,
+                readout_errors=self._readout_errors,
             )
             for c in circuits
         )
