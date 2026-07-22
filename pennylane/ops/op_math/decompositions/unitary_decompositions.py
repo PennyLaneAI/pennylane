@@ -517,27 +517,67 @@ def _compute_num_cnots(U):
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
     """
 
-    U = math.dot(E_dag, math.dot(U, E))
+    # Use residuals that vary linearly with distance from each exact CNOT-count manifold. The
+    # gamma_{16n^2} tolerance covers roundoff in the fixed-size products and normal eigensolve.
+    matrix_dim = U.shape[-1]
+    roundoff_factor = 16 * matrix_dim**2
+    eps = math.finfo(U.dtype).eps
+    exact_atol = roundoff_factor * eps / (1 - roundoff_factor * eps)
+    # These structural residuals are linear witnesses for leaving each exact manifold. Keep their
+    # tolerances close to machine precision; gamma squared needs a larger roundoff allowance.
+    zero_cnot_atol = 2 * eps
+    one_cnot_atol = 32 * eps
+    two_cnot_atol = 4 * eps
+    U = math.dot(math.cast_like(E_dag, U), math.dot(U, math.cast_like(E, U)))
     gamma = math.dot(U, math.T(U))
     trace = math.trace(gamma)
     g2 = math.dot(gamma, gamma)
     id4 = math.eye(4, like=g2)
+    eigvals = math.linalg.eigvals(gamma)
+    traceless_gamma = gamma - math.cast_like(trace / matrix_dim, gamma) * id4
+    zero_cnot_residual = math.linalg.norm(math.imag(traceless_gamma))
+    one_cnot_residual = math.linalg.norm(g2 + id4)
+    two_cnot_residual = math.abs(math.imag(trace))
 
-    # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
+    def conjugate_pair_error(first_pair, second_pair):
+        return math.maximum(
+            math.abs(eigvals[first_pair[0]] - math.conj(eigvals[first_pair[1]])),
+            math.abs(eigvals[second_pair[0]] - math.conj(eigvals[second_pair[1]])),
+        )
+
+    conjugate_pair_errors = math.stack(
+        (
+            conjugate_pair_error((0, 1), (2, 3)),
+            conjugate_pair_error((0, 2), (1, 3)),
+            conjugate_pair_error((0, 3), (1, 2)),
+        )
+    )
+    conjugate_pair_residual = math.min(conjugate_pair_errors)
+
     return ops.cond(
-        # Case: 0 CNOTs (tensor product), the trace is +/- 4
-        math.allclose(trace, 4, atol=1e-7) | math.allclose(trace, -4, atol=1e-7),
+        # Case: 0 CNOTs (tensor product), gamma is +/- identity.
+        (
+            math.allclose(gamma, id4, rtol=0, atol=exact_atol)
+            | math.allclose(gamma, -id4, rtol=0, atol=exact_atol)
+        )
+        & math.allclose(zero_cnot_residual, 0.0, rtol=0, atol=zero_cnot_atol),
         lambda: 0,
         # Case: 3 CNOTs, the trace is a non-zero complex number with both real and imaginary parts.
         lambda: 3,
         elifs=[
             # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
             (
-                math.allclose(trace, 0.0, atol=1e-7) & math.allclose(g2 + id4, 0.0, atol=1e-7),
+                math.allclose(trace, 0.0, rtol=0, atol=exact_atol)
+                & math.allclose(g2 + id4, 0.0, rtol=0, atol=exact_atol)
+                & math.allclose(one_cnot_residual, 0.0, rtol=0, atol=one_cnot_atol),
                 lambda: 1,
             ),
-            # Case: 2 CNOTs, the trace has only a real part (or is 0)
-            (math.allclose(math.imag(trace), 0.0, atol=1e-7), lambda: 2),
+            # Case: 2 CNOTs, the eigenvalues of gamma form two conjugate pairs.
+            (
+                math.allclose(conjugate_pair_residual, 0.0, rtol=0, atol=exact_atol)
+                & math.allclose(two_cnot_residual, 0.0, rtol=0, atol=two_cnot_atol),
+                lambda: 2,
+            ),
         ],
     )()
 
@@ -905,35 +945,34 @@ def _extract_abde(A):
 
     The performed computation steps are the following:
     1. Compute a' from A_{00} and A_{30}
-        a. If cos(d')sin(a')≠0 or cos(d')cos(a')≠0, use
-           atan2(cos(d')sin(a'), cos(d')cos(a')) = atan2(sin(a'), cos(a')) = a'
-        b. If cos(d')sin(a')=cos(d')cos(a')=0, use
-           atan2(sin(d')sin(a'), sin(d')cos(a')) = atan2(sin(a'), cos(a')) = a'
-        Note that if cos(d')sin(a')=cos(d')cos(a')=0, we know that cos(d')=0 and sin(d')≠0
+        a. If the real components have the larger norm, use
+        atan2(cos(d')sin(a'), cos(d')cos(a')) = atan2(sin(a'), cos(a')) = a'
+        b. Otherwise, use the imaginary components:
+        atan2(sin(d')sin(a'), sin(d')cos(a')) = atan2(sin(a'), cos(a')) = a'
     2. Compute b' from A_{11} and A_{21}
-        a. If cos(e')sin(b')≠0 or cos(e')cos(b')≠0, use
-           atan2(cos(e')sin(b'), cos(e')cos(b')) = atan2(sin(b'), cos(b')) = b'
-        b. If cos(e')sin(b')=cos(e')cos(b')=0, use
-           atan2(sin(e')sin(b'), sin(e')cos(b')) = atan2(sin(b'), cos(b')) = b'
-        Note that if cos(e')sin(b')=cos(e')cos(b')=0, we know that cos(e')=0 and sin(e')≠0
+        a. Select between the real and imaginary components in the same way.
+        atan2(cos(e')sin(b'), cos(e')cos(b')) = atan2(sin(b'), cos(b')) = b'
+        b. The alternative is
+        atan2(sin(e')sin(b'), sin(e')cos(b')) = atan2(sin(b'), cos(b')) = b'
     3. Compute a = a' + b' and b = a' - b'
-    4. Compute exp(-id') from A_{00} or A_{30}
-        a. If A_{00}≠0, use it and compute exp(-i d')cos(a') / cos(a')
-        b. If A_{00}=0, us A_{30} and compute exp(-i d')sin(a') / sin(a')
-    5. Compute exp(ie') from A_{11} or A_{21}
-        a. If A_{21}≠0, use it and compute exp(i e')cos(b') / cos(b')
-        b. If A_{21}=0, us A_{11} and compute exp(i e')sin(b') / sin(b')
+    4. Compute exp(-id') from the larger of A_{00} and A_{30}, dividing by the
+       corresponding cosine or sine.
+    5. Compute exp(ie') from the larger of A_{11} and A_{21} in the same way.
     6. Compute d = d' + e' as arg(exp(ie') exp(-id')*)
     7. Compute e = (d' - e')/2 as -arg(exp(ie') exp(-id/2))
     """
+    first_real = math.real(A[::3, 0])
+    first_imag = math.imag(A[::3, 0])
     a_plus_b_half = math.cond(
-        math.allclose(math.real(A[::3, 0]), math.zeros_like(math.real(A[::3, 0]))),
+        math.sum(first_real**2) < math.sum(first_imag**2),
         lambda: math.arctan2(math.imag(A[3, 0]), math.imag(A[0, 0])),
         lambda: math.arctan2(math.real(A[3, 0]), math.real(A[0, 0])),
         (),
     )
+    second_real = math.real(A[1:3, 1])
+    second_imag = math.imag(A[1:3, 1])
     a_minus_b_half = math.cond(
-        math.allclose(math.real(A[1:3, 1]), math.zeros_like(math.real(A[1:3, 1]))),
+        math.sum(second_real**2) < math.sum(second_imag**2),
         lambda: math.arctan2(math.imag(A[1, 1]), math.imag(A[2, 1])),
         lambda: math.arctan2(math.real(A[1, 1]), math.real(A[2, 1])),
         (),
@@ -942,13 +981,13 @@ def _extract_abde(A):
     b = a_plus_b_half - a_minus_b_half
 
     apb_frac = math.cond(
-        math.isclose(A[0, 0], math.zeros_like(A[0, 0])),
+        math.abs(A[0, 0]) < math.abs(A[3, 0]),
         lambda: A[3, 0] / math.cast_like(math.sin(a_plus_b_half), A[3, 0]),
         lambda: A[0, 0] / math.cast_like(math.cos(a_plus_b_half), A[0, 0]),
         (),
     )
     amb_frac = math.cond(
-        math.isclose(A[2, 1], math.zeros_like(A[2, 1])),
+        math.abs(A[2, 1]) < math.abs(A[1, 1]),
         lambda: A[1, 1] / math.cast_like(math.sin(a_minus_b_half), A[1, 1]),
         lambda: A[2, 1] / math.cast_like(math.cos(a_minus_b_half), A[2, 1]),
         (),
