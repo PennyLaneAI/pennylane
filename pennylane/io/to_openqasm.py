@@ -220,6 +220,9 @@ def to_openqasm(
         circuit (QNode or QuantumScript): the quantum circuit to be serialized.
         wires (Wires or None): the wires to use when serializing the circuit.
             Default is ``None``, such that all the wires of the circuit are used for serialization.
+            When wire labels are non-contiguous or non-zero-based integers, pass the full wire
+            order explicitly (e.g. ``wires=[0, 1, 2]``) so OpenQASM qubit indices match your
+            intended mapping instead of packing to the lowest unused indices.
         rotations (bool): if ``True``, add gates that rotate the quantum state into the eigenbasis
             of the circuit's observables. Default is ``True``.
         measure_all (bool): if ``True``, add a computational basis measurement on all the qubits.
@@ -265,6 +268,26 @@ def to_openqasm(
 
     .. details::
         :title: Usage Details
+
+        **Wire order and non-contiguous labels.** OpenQASM 2.0 qubit registers are indexed from
+        zero. If the circuit only uses a subset of wires (for example wires ``0`` and ``2`` on a
+        three-wire device), leaving ``wires=None`` packs those wires into contiguous OpenQASM
+        indices ``q[0]`` and ``q[1]``. Pass the full device wire order via ``wires`` to keep a
+        stable mapping:
+
+        .. code-block:: python
+
+            dev = qp.device("default.qubit", wires=3)
+
+            @qp.qnode(dev)
+            def circuit():
+                qp.PauliX(wires=2)
+                return qp.sample()
+
+            # Packs to q[0] (only used wires):
+            # print(qp.to_openqasm(circuit)())
+            # Keeps PauliX on q[2]:
+            print(qp.to_openqasm(circuit, wires=[0, 1, 2])())
 
         By default, the resulting OpenQASM code will have terminal measurements on all qubits,
         where all the measurements are performed in the computational basis.
