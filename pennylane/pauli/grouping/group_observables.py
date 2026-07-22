@@ -217,28 +217,39 @@ class PauliGroupingStrategy:
 
         Colours the complement graph using a greedy colouring algorithm and groups indices by colour.
 
-        Uses the ``graph_greedy_color`` function from ``Rustworkx`` to colour the graph defined by
-        ``self.complement_graph`` using a specified strategy from ``RX_STRATEGIES``. It then groups the indices
-        (nodes) of the graph by their assigned colours.
+        For the default ``'lf'`` (Largest First) strategy, the colouring is computed directly
+        from the bit-packed symplectic representation of the observables, without building
+        the graph. This lowers the memory usage from quadratic in the number of observables
+        to linear, and, for the ``'qwc'`` grouping type, also avoids all pairwise relation
+        checks during the greedy colouring by testing candidates against per-group
+        aggregates.
+
+        The remaining strategies use the ``graph_greedy_color`` function from ``Rustworkx``
+        to colour the graph defined by ``self.complement_graph`` using a specified strategy
+        from ``RX_STRATEGIES``. The indices (nodes) of the graph are then grouped by their
+        assigned colours.
 
         Returns:
             dict[int, list[int]]: A dictionary where the keys are colours (integers) and the values are lists
                 of indices (nodes) that have been assigned that colour.
         """
-        # A dictionary where keys are node indices and the value is the colour
-        if new_rx:
-            # 'strategy' kwarg was implemented in Rustworkx 0.15
+        if self.graph_colourer == "lf":
+            x_words, z_words = _pack_symplectic(self.binary_observables)
+            colours = _colour_packed_lf(x_words, z_words, self.grouping_type)
+            colouring_items = enumerate(colours)
+        else:
+            # A dictionary where keys are node indices and the value is the colour.
+            # The remaining strategies ('dsatur', 'gis') require Rustworkx >= 0.15,
+            # which is enforced at construction time.
             colouring_dict = rx.graph_greedy_color(
                 self.complement_graph, strategy=RX_STRATEGIES[self.graph_colourer]
             )
-        else:
-            # Default value for <0.15.0 was 'lf'.
-            colouring_dict = rx.graph_greedy_color(self.complement_graph)
+            colouring_items = sorted(colouring_dict.items())
 
         # group together indices (values) of the same colour (keys)
         groups = defaultdict(list)
-        for idx, colour in sorted(colouring_dict.items()):
-            groups[colour].append(idx)
+        for idx, colour in colouring_items:
+            groups[int(colour)].append(idx)
 
         return groups
 
@@ -337,10 +348,112 @@ def items_partitions_from_idx_partitions(
     return items_partitioned
 
 
+# Number of uint64 elements allowed in the pairwise temporaries of the blocked
+# kernels below (2**23 words = 64 MB), which bounds their peak memory usage.
+_BLOCK_WORD_BUDGET = 2**23
+
+
+def _pack_symplectic(symplectic_matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Pack the X and Z halves of a symplectic binary matrix into 64-bit words.
+
+    Each row of the ``m x 2n`` symplectic matrix is the binary vector ``(x | z)`` of a Pauli
+    word. The ``n`` X-bits and ``n`` Z-bits of every row are packed (little-endian within
+    each word) into ``ceil(n / 64)`` unsigned 64-bit integers, so that pairwise relations
+    between Pauli words can be evaluated with a constant number of bitwise word operations
+    per 64 qubits.
+
+    Args:
+        symplectic_matrix (np.ndarray): 2D binary matrix. Each row is the symplectic
+            representation of a Pauli word.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: arrays of shape ``(m, ceil(n / 64))`` and dtype
+        ``uint64`` holding the packed X-bits and Z-bits, respectively.
+    """
+    n_rows, two_n = np.shape(symplectic_matrix)
+    n_qubits = two_n // 2
+    bits = np.asarray(symplectic_matrix, dtype=np.uint8)
+
+    n_bytes = -(-n_qubits // 8)
+    n_words = max(1, -(-n_bytes // 8))
+
+    packed = np.zeros((2, n_rows, n_words * 8), dtype=np.uint8)
+    if n_qubits:
+        packed[0, :, :n_bytes] = np.packbits(bits[:, :n_qubits], axis=1, bitorder="little")
+        packed[1, :, :n_bytes] = np.packbits(bits[:, n_qubits:], axis=1, bitorder="little")
+
+    x_words = packed[0].view(np.uint64)
+    z_words = packed[1].view(np.uint64)
+    return x_words, z_words
+
+
+def _conflict_block(
+    x_blk: np.ndarray,
+    z_blk: np.ndarray,
+    x_all: np.ndarray,
+    z_all: np.ndarray,
+    grouping_type: str,
+) -> np.ndarray:
+    """Complement-graph edges between a block of Pauli words and all Pauli words.
+
+    Evaluates, for every pair ``(i, j)`` with ``i`` in the block, whether the pair violates
+    the binary relation selected by ``grouping_type``, directly on the packed symplectic
+    representation:
+
+    - two Pauli words qubit-wise commute iff on every qubit occupied by both, their X- and
+      Z-bits agree;
+    - two Pauli words commute (anticommute) iff their symplectic inner product
+      ``x_i . z_j + z_i . x_j`` is 0 (1) modulo 2 [1]. The parity of the total popcount is
+      obtained as the popcount parity of the XOR-fold of the per-word products, since
+      ``popcount(a ^ b) = popcount(a) + popcount(b) (mod 2)``.
+
+    [1] Andrew Jena (2019). Partitioning Pauli Operators: in Theory and in Practice.
+    UWSpace. http://hdl.handle.net/10012/15017
+
+    Args:
+        x_blk (np.ndarray): packed X-bits of the block, shape ``(b, n_words)``.
+        z_blk (np.ndarray): packed Z-bits of the block, shape ``(b, n_words)``.
+        x_all (np.ndarray): packed X-bits of all words, shape ``(m, n_words)``.
+        z_all (np.ndarray): packed Z-bits of all words, shape ``(m, n_words)``.
+        grouping_type (str): the binary relation used to define partitions of
+            the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
+            ``'anticommuting'``.
+
+    Returns:
+        np.ndarray: boolean matrix of shape ``(b, m)`` where ``True`` marks a pair that does
+        **not** satisfy the relation (an edge of the complement graph).
+    """
+    if grouping_type == "qwc":
+        # Conflict on a qubit occupied by both words whose X- or Z-bits differ.
+        occupied = (x_blk | z_blk)[:, None, :] & (x_all | z_all)[None, :, :]
+        conflict = occupied & (
+            (x_blk[:, None, :] ^ x_all[None, :, :]) | (z_blk[:, None, :] ^ z_all[None, :, :])
+        )
+        return np.bitwise_or.reduce(conflict, axis=2).astype(bool)
+
+    fold = np.bitwise_xor.reduce(
+        (x_blk[:, None, :] & z_all[None, :, :]) ^ (z_blk[:, None, :] & x_all[None, :, :]),
+        axis=2,
+    )
+    anticommutes = (np.bitwise_count(fold) & 1).astype(bool)
+    if grouping_type == "commuting":
+        return anticommutes
+    return ~anticommutes
+
+
+def _block_rows(n_cols: int, n_words: int) -> int:
+    """Number of block rows keeping the pairwise temporaries within the word budget."""
+    return int(max(1, _BLOCK_WORD_BUDGET // max(1, n_cols * n_words)))
+
+
 def _adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str) -> np.ndarray:
     """Get adjacency matrix of (anti-)commuting graph based on grouping type.
 
     This is the adjacency matrix of the complement graph. Based on symplectic representations and inner product of [1].
+
+    The pairwise relations are evaluated on a bit-packed symplectic representation in blocks
+    of rows, so the peak memory beyond the output matrix is constant instead of the
+    ``O(m^2 n)`` of a dense per-qubit broadcast.
 
     [1] Andrew Jena (2019). Partitioning Pauli Operators: in Theory and in Practice.
     UWSpace. http://hdl.handle.net/10012/15017
@@ -356,34 +469,175 @@ def _adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: st
         np.ndarray: Adjacency matrix. Binary matrix such that adj_matrix[i,j] = 1 if observables[i]
         observables[j] do **not** (anti-)commute, as determined by the ``grouping_type``.
     """
+    x_words, z_words = _pack_symplectic(symplectic_matrix)
+    n_rows, n_words = x_words.shape
 
-    n_qubits = symplectic_matrix.shape[1] // 2
-
-    # Convert symplectic representation to integer format.
-    # This is equivalent to the map: {0: I, 1: X, 2:Y, Z:3}
-    pauli_matrix_int = 2 * symplectic_matrix[:, :n_qubits] + symplectic_matrix[:, n_qubits:]
-    pauli_matrix_int = pauli_matrix_int.astype(np.int8)
-    # Broadcast the second dimension, sucht that pauli_matrix_broad.shape = (m, 1, n_qubits)
-    # with m = len(observables). This allows for calculation of all possible combinations of Pauli observable pairs (Pi, Pj).
-    # Something like: result[i, j, k] = pauli_matrix_int[i, k] * pauli_matrix_int[j, k]
-    pauli_matrix_broad = pauli_matrix_int[:, None]
-    # Calculate the symplectic inner product in [1], using the integer representation - hence the difference in the equation form.
-    # qubit_anticommutation_mat[i,j, k] is k=0 if Pi and Pj commute, else k!=0 if they anticommute.
-    qubit_anticommutation_mat = (pauli_matrix_int * pauli_matrix_broad) * (
-        pauli_matrix_int - pauli_matrix_broad
-    )
-    # 'adjacency_mat[i, j]' is True iff Paulis 'i' and 'j' do not (anti-)commute under given grouping_type.
-    if grouping_type == "qwc":
-        # True if any term anti commutes
-        adj_matrix = np.logical_or.reduce(qubit_anticommutation_mat, axis=2)
-    elif grouping_type == "commuting":
-        # True if the number of anti commuting terms is odd (anti commte)
-        adj_matrix = np.logical_xor.reduce(qubit_anticommutation_mat, axis=2)
-    else:
-        # True if the number of anti commuting terms is even (commute)
-        adj_matrix = ~np.logical_xor.reduce(qubit_anticommutation_mat, axis=2)
+    adj_matrix = np.empty((n_rows, n_rows), dtype=bool)
+    block = _block_rows(n_rows, n_words)
+    for start in range(0, n_rows, block):
+        stop = min(start + block, n_rows)
+        adj_matrix[start:stop] = _conflict_block(
+            x_words[start:stop], z_words[start:stop], x_words, z_words, grouping_type
+        )
 
     return adj_matrix
+
+
+def _complement_graph_degrees(
+    x_words: np.ndarray, z_words: np.ndarray, grouping_type: str
+) -> np.ndarray:
+    """Degrees of the complement-graph nodes, computed in blocks with ``O(m)`` memory."""
+    n_rows, n_words = x_words.shape
+    degrees = np.zeros(n_rows, dtype=np.int64)
+
+    block = _block_rows(n_rows, n_words)
+    for start in range(0, n_rows, block):
+        stop = min(start + block, n_rows)
+        conflicts = _conflict_block(
+            x_words[start:stop], z_words[start:stop], x_words, z_words, grouping_type
+        )
+        degrees[start:stop] = conflicts.sum(axis=1)
+
+    if grouping_type == "anticommuting":
+        # A word commutes with itself, so the diagonal is a spurious self-conflict.
+        degrees -= 1
+
+    return degrees
+
+
+def _smallest_missing_colour(blocked: np.ndarray, n_colours: int) -> int:
+    """Smallest colour in ``[0, n_colours]`` that does not appear in ``blocked``."""
+    if blocked.size == 0:
+        return 0
+    used = np.zeros(n_colours + 1, dtype=bool)
+    used[blocked] = True
+    return int(np.nonzero(~used)[0][0])
+
+
+def _greedy_colour_qwc(x_words: np.ndarray, z_words: np.ndarray, order: np.ndarray) -> np.ndarray:
+    """Greedy colouring for the qubit-wise commuting relation using group aggregates.
+
+    Qubit-wise commutativity with every member of a group is equivalent to consistency
+    with the union of the members' qubit assignments, because mutually consistent partial
+    assignments (qubit -> Pauli letter) remain consistent under unions. Each colour class
+    is therefore summarized by the OR-aggregate of its members' packed X- and Z-bits, and
+    testing a candidate word against a whole group costs ``O(n / 64)`` regardless of the
+    group size. This makes the colouring run in ``O(m * g * n / 64)`` time and ``O(m)``
+    memory, with ``g`` the number of groups, without materializing the conflict graph.
+
+    Args:
+        x_words (np.ndarray): packed X-bits of the Pauli words.
+        z_words (np.ndarray): packed Z-bits of the Pauli words.
+        order (np.ndarray): order in which the words are greedily coloured.
+
+    Returns:
+        np.ndarray: the colour assigned to each Pauli word (indexed as ``x_words``).
+    """
+    n_rows, n_words = x_words.shape
+    colours = np.empty(n_rows, dtype=np.int64)
+
+    capacity = 16
+    group_x = np.zeros((capacity, n_words), dtype=np.uint64)
+    group_z = np.zeros((capacity, n_words), dtype=np.uint64)
+    n_groups = 0
+
+    for v in order:
+        x_v, z_v = x_words[v], z_words[v]
+        occupied_v = x_v | z_v
+
+        colour = n_groups
+        if n_groups:
+            g_x, g_z = group_x[:n_groups], group_z[:n_groups]
+            conflict = ((g_x | g_z) & occupied_v) & ((g_x ^ x_v) | (g_z ^ z_v))
+            compatible = np.nonzero(~conflict.any(axis=1))[0]
+            if compatible.size:
+                colour = int(compatible[0])
+
+        if colour == n_groups:
+            if n_groups == capacity:
+                group_x = np.concatenate([group_x, np.zeros_like(group_x)])
+                group_z = np.concatenate([group_z, np.zeros_like(group_z)])
+                capacity *= 2
+            n_groups += 1
+
+        group_x[colour] |= x_v
+        group_z[colour] |= z_v
+        colours[v] = colour
+
+    return colours
+
+
+def _greedy_colour_pairwise(
+    x_words: np.ndarray, z_words: np.ndarray, order: np.ndarray, grouping_type: str
+) -> np.ndarray:
+    """Greedy colouring for the (anti)commuting relations from the packed representation.
+
+    General (anti)commutativity is a parity condition that is not closed under unions, so
+    a group cannot be summarized by an aggregate. Instead, each candidate is tested with a
+    single vectorized symplectic-parity kernel against all previously coloured words, and
+    the smallest colour with no conflicting member is selected. This preserves the
+    ``O(m^2)`` pair checks of the graph-based approach but runs them 64 qubits per word
+    operation with ``O(m)`` memory instead of building an explicit graph.
+
+    Args:
+        x_words (np.ndarray): packed X-bits of the Pauli words.
+        z_words (np.ndarray): packed Z-bits of the Pauli words.
+        order (np.ndarray): order in which the words are greedily coloured.
+        grouping_type (str): either ``'commuting'`` or ``'anticommuting'``.
+
+    Returns:
+        np.ndarray: the colour assigned to each Pauli word (indexed as ``x_words``).
+    """
+    n_rows = x_words.shape[0]
+    x_sorted, z_sorted = x_words[order], z_words[order]
+
+    colours_in_order = np.empty(n_rows, dtype=np.int64)
+    colours = np.empty(n_rows, dtype=np.int64)
+    n_groups = 0
+
+    for t in range(n_rows):
+        colour = 0
+        if t:
+            fold = np.bitwise_xor.reduce(
+                (x_sorted[t] & z_sorted[:t]) ^ (z_sorted[t] & x_sorted[:t]), axis=1
+            )
+            anticommutes = (np.bitwise_count(fold) & 1).astype(bool)
+            conflict = anticommutes if grouping_type == "commuting" else ~anticommutes
+            colour = _smallest_missing_colour(colours_in_order[:t][conflict], n_groups)
+
+        n_groups = max(n_groups, colour + 1)
+        colours_in_order[t] = colour
+        colours[order[t]] = colour
+
+    return colours
+
+
+def _colour_packed_lf(
+    x_words: np.ndarray, z_words: np.ndarray, grouping_type: str
+) -> np.ndarray:
+    """Largest-First greedy colouring of the complement graph, computed directly from the
+    packed symplectic representation without materializing the graph.
+
+    Nodes are coloured in order of decreasing complement-graph degree (ties broken by node
+    index, matching the stable Degree strategy of ``rustworkx``), each receiving the
+    smallest colour not taken by a conflicting, already-coloured node.
+
+    Args:
+        x_words (np.ndarray): packed X-bits of the Pauli words.
+        z_words (np.ndarray): packed Z-bits of the Pauli words.
+        grouping_type (str): the binary relation used to define partitions of
+            the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
+            ``'anticommuting'``.
+
+    Returns:
+        np.ndarray: the colour assigned to each Pauli word.
+    """
+    degrees = _complement_graph_degrees(x_words, z_words, grouping_type)
+    order = np.argsort(-degrees, kind="stable")
+
+    if grouping_type == "qwc":
+        return _greedy_colour_qwc(x_words, z_words, order)
+    return _greedy_colour_pairwise(x_words, z_words, order, grouping_type)
 
 
 def compute_partition_indices(
