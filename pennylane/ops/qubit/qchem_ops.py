@@ -25,7 +25,6 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,

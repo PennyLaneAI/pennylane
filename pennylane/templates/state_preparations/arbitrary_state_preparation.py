@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane import register_resources
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, resource_rep
+from pennylane.decomposition import add_decomps
 from pennylane.typing import Float, Wire
 
 
