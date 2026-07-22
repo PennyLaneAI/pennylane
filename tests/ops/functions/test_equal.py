@@ -1353,6 +1353,7 @@ class TestEqual:
     def test_equal_subclass_returns_false(self):
         """Test that a strict subclass is not equal to its parent operator."""
 
+        # pylint: disable=too-few-public-methods
         class MyPauliX(qp.X):
             pass
 
@@ -1367,6 +1368,7 @@ class TestEqual:
     def test_equal_identity_subclass_returns_false(self):
         """Test that a subclass of Identity is not equal to Identity itself."""
 
+        # pylint: disable=too-few-public-methods
         class MyIdentity(qp.Identity):
             pass
 
