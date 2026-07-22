@@ -903,6 +903,27 @@ class TestEstimateProb:
 
     @pytest.mark.parametrize(
         "wires, expected",
+        [(0, [0.5, 0.5]), (1, [0.5, 0.5])],
+    )
+    def test_estimate_probability_integer_wire_label(
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests that estimate_probability returns the single-wire marginal when
+        passed an integer wire label. Regression test for a truthiness bug where
+        the falsy label ``0`` was silently replaced by all device wires, so
+        ``estimate_probability(wires=0)`` returned the full joint distribution
+        instead of the marginal for wire 0."""
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        samples = np.array([[0, 0], [1, 1], [1, 1], [0, 0]])
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires)
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "wires, expected",
         [
             ([0], [[0.0, 0.5], [1.0, 0.5]]),
             (None, [[0.0, 0.5], [0, 0], [0, 0.5], [1.0, 0]]),
