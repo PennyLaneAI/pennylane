@@ -224,9 +224,6 @@ class Operator2(metaclass=OperatorMeta):
 
         self.tracer = None
 
-        if self.grad_recipe is None and not self._is_abstract:
-            self.grad_recipe = [None] * self.num_params
-
     def __abstract_init__(self, *args, **kwargs):
         """Constructor for canonicalization of abstract inputs."""
         self._is_abstract = True
@@ -407,8 +404,19 @@ class Operator2(metaclass=OperatorMeta):
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
-    grad_recipe = None
+    _grad_recipe = None
     """Legacy Operator compatibility default for parameter-shift recipes."""
+
+    @property
+    def grad_recipe(self):
+        """Compute 'grad_recipe' lazily."""
+        if self._grad_recipe is None and not self.is_abstract:
+            return [None] * self.num_params
+        return self._grad_recipe
+
+    @grad_recipe.setter
+    def grad_recipe(self, recipe):
+        self._grad_recipe = recipe
 
     @property
     def grad_method(self):
@@ -423,6 +431,8 @@ class Operator2(metaclass=OperatorMeta):
         # pylint: disable=import-outside-toplevel
         from pennylane.gradients import parameter_frequencies
 
+        if self.is_abstract:
+            return None
         if self.num_params == 0:
             return None
         if self.grad_recipe != [None] * self.num_params:
@@ -1010,7 +1020,6 @@ class Operator2(metaclass=OperatorMeta):
         inputs = []
 
         for key, value in self.arguments.items():
-
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)

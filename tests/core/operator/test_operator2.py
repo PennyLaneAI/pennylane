@@ -2432,6 +2432,25 @@ class TestStatePrepBase:
 class TestLegacyCompatibilityViews:
     """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
 
+    def test_grad_properties_with_abstract_operator(self):
+        """Tests that the grad_* properties work with abstract operators."""
+
+        op = NonParametricOp(wires=Wire[1])
+
+        assert op.grad_recipe is None
+        assert op.grad_method is None
+
+        class DummyRZ(DynOp):
+            parameter_frequencies = [(1,)]
+
+            @override
+            def generator(self):
+                return -0.5 * qp.Z(0)
+
+        op = DummyRZ(Float, Wire[1])
+        assert op.grad_recipe is None
+        assert op.grad_method is None
+
     def test_default_gradient_metadata(self):
         """Test the default legacy gradient metadata."""
         op = NonParametricOp(wires=0)
