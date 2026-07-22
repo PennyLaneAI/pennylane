@@ -667,13 +667,11 @@ class PauliY(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
-        if not isinstance(self.wires, Wires):
-            return self.name
+        # PauliY.name is still "PauliY" but we want the repr to be just "Y"
+        if isinstance(self.wires, Wires):
+            return f"Y({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+        return f"Y(wires={self.wires})"
 
-        wire = self.wires[0]  # pylint:disable=unsubscriptable-object
-        if isinstance(wire, str):
-            return f"Y('{wire}')"
-        return f"Y({wire})"
 
     def label(
         self,
