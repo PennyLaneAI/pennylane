@@ -62,15 +62,15 @@ class Controller(Executor):
     """
 
     simulator: str = "null.qubit"
-    """The QPU simulator running on the controller, e.g. ``"null.qubit"``."""
+    """The QPU simulator running on the controller, e.g., ``"null.qubit"``."""
 
 
 @dataclass(frozen=True, kw_only=True)
 class Coprocessor(Executor):
     """The executor that runs a coprocessor function per received message.
 
-    A coprocessor receives messages from the controller (e.g. syndromes). The ``coprocessor_fn`` is
-    used to process the message, and sends the result back (e.g. corrections). Depending on the
+    A coprocessor receives messages from the controller (e.g., syndromes). The ``coprocessor_fn`` is
+    used to process the message, and sends the result back (e.g., corrections). Depending on the
     connection type, a ``coprocessor_fn`` may be a persistent kernel.
 
     See the Attributes section to learn more about the available options.

@@ -17,15 +17,14 @@ r"""
 
 This module contains experimental features for compilation and execution on heterogeneous devices.
 The ``"ftqc.heterogeneous"`` device requires a ``backline`` object, which specifies the placement
-of processes (i.e. where each part of the workload runs), and the transport protocol.
+of processes (i.e., where each part of the workload runs), and the transport protocol.
 
 .. warning::
 
     Backline is experimental. Its API may change without notice, and it is only usable through
     the Catalyst compiler.
 
-A ``backline`` placement is built from a :class:`controller <.Controller>` (which drives a qnode,
-e.g. through a simulator), zero or more :class:`coprocessors <.Coprocessor>`, and a
+A ``backline`` placement is built from a :class:`controller <.Controller>` (which drives a QNode and executes through a backend simulator such as ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
 :class:`transport <.Transport>`. This is then passed to the ``"ftqc.heterogeneous"`` device:
 
 .. code-block:: python
@@ -67,13 +66,13 @@ An executor is a node in the backline fabric.
 Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-A coprocessor applies a precompiled function to each message it receives (e.g. decoding a syndrome).
+A coprocessor applies a precompiled function to each message it receives (e.g., decoding a syndrome). Currently, coprocessor functions can be defined directly in C++ as a runtime function, or in Python through helper functions such as ``css_decoder``.
 
 .. autosummary::
     :toctree: api
 
     ~CoprocessorFunction
-    ~css_gluon_decoder
+    ~css_decoder
 
 Placement
 ~~~~~~~~~
@@ -99,7 +98,7 @@ lives in the compiled runtime.
     ~register_transport
 """
 
-from .functions import CoprocessorFunction, css_gluon_decoder
+from .functions import CoprocessorFunction, css_decoder
 from .placement import Backline, Controller, Coprocessor, Executor
 from .transports import Transport, get_transport, register_transport
 
@@ -109,7 +108,7 @@ __all__ = [
     "Coprocessor",
     "Backline",
     "CoprocessorFunction",
-    "css_gluon_decoder",
+    "css_decoder",
     "Transport",
     "get_transport",
     "register_transport",

@@ -37,7 +37,7 @@ from pennylane.backline import (
     Coprocessor,
     CoprocessorFunction,
     Executor,
-    css_gluon_decoder,
+    css_decoder,
 )
 from pennylane import math
 from pennylane import operation

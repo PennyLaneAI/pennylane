@@ -26,7 +26,7 @@ class CoprocessorFunction:
     This is a thin handle over a precompiled library symbol. It contains the information needed to
     locate and dispatch the function (its symbol name, and the library it lives in).
     The compiled artifact is produced separately (cross-compiled or built on
-    the same host, e.g. via Gluon) and loaded by the runtime.
+    the same host, e.g., via Triton) and loaded by the runtime.
 
     See the Attributes section to learn more about the available options.
     """
@@ -44,14 +44,14 @@ class CoprocessorFunction:
         return self.name
 
 
-def css_gluon_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
-    """Compile a CSS code's Tanner graph into a coprocessor decode function via Gluon.
+def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
+    """Compile a CSS code's Tanner graph into a coprocessor decode function.
 
     Accepts the X- and Z-type parity-check matrices of a CSS code and compiles a decoder down to a
-    shared library (via Gluon) that can be used as a :class:`CoprocessorFunction`.
+    shared library that can be used as a :class:`CoprocessorFunction`.
 
     .. note::
-        Not yet implemented — this is a placeholder for the Gluon-based decoder compiler.
+        Not yet implemented — this is a placeholder for the Triton-based decoder compiler.
 
     Args:
         Hx (np.ndarray): The X parity-check matrix.
@@ -61,6 +61,6 @@ def css_gluon_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
         CoprocessorFunction: The compiled decode function.
     """
     raise NotImplementedError(
-        "css_gluon_decoder is not yet implemented; it will compile a CSS code's Tanner graph "
-        "into a CoprocessorFunction via Gluon."
+        "css_decoder is not yet implemented; it will compile a CSS code's Tanner graph "
+        "into a CoprocessorFunction via Triton."
     )
