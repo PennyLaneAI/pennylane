@@ -1080,6 +1080,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed an ``IndexError`` in :func:`~.math.multi_dispatch` / :func:`~.math.stack` when
+  tensor arguments were passed by keyword (e.g. ``qml.math.stack(values=[...])``) instead
+  of positionally.
+  [(#9140)](https://github.com/PennyLaneAI/pennylane/issues/9140)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 

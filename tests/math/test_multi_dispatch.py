@@ -62,6 +62,24 @@ def test_multi_dispatch_stack(x):
     assert fn.allequal(res, [[1.0, 0.0], [2.0, 3.0]])
 
 
+def test_multi_dispatch_stack_keyword_arg():
+    """Test that multi_dispatch handles a tensor list passed as a keyword argument (GH-9140)."""
+    tensor1 = onp.array([[1, 2], [3, 4]])
+    tensor2 = onp.array([[5, 6], [7, 8]])
+    result = fn.stack(values=[tensor1, tensor2], axis=0)
+    assert fn.allequal(result, onp.stack([tensor1, tensor2], axis=0))
+
+
+def test_multi_dispatch_stack_keyword_arg_empty():
+    """Test that stack(values=[], ...) no longer raises IndexError (GH-9140).
+
+    NumPy still rejects an empty sequence; the important behavior is that
+    multi_dispatch resolves the keyword argument without a tuple-index crash.
+    """
+    with pytest.raises(ValueError, match="need at least one array to stack"):
+        fn.stack(values=[], axis=0)
+
+
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
 def test_multi_dispatch_decorate(x):
     """Test decorating a standard numpy function for PennyLane"""
