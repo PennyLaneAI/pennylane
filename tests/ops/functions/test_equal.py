@@ -1739,8 +1739,18 @@ class TestMeasurementsEqual:
 
         assert qp.equal(mv1 * mv2, mv2 * mv1) is True
         assert qp.equal(mv1 + mv2, mv3 + mv2) is True
-        # NOTE: we are deliberatily just checking for measurements and not for processing_fn, such that two MeasurementValue objects composed from the same operators will be qp.equal
-        assert qp.equal(3 * mv1 + 1, 4 * mv3 + 2) is True
+        # Different processing functions yield different classical branch maps.
+        assert qp.equal(3 * mv1 + 1, 4 * mv3 + 2) is False
+        assert qp.equal(3 * mv1 + 1, 3 * mv3 + 1) is True
+
+    def test_opposite_measurement_value_predicates(self):
+        """Opposite predicates on the same measurement must not be equal (#9622)."""
+        m0 = qp.measure(0)
+        assert qp.equal(m0 == 0, m0 == 1) is False
+        assert qp.equal(m0 == 0, m0 == 0) is True
+        c0 = qp.ops.op_math.Conditional(m0 == 0, qp.X(1))
+        c1 = qp.ops.op_math.Conditional(m0 == 1, qp.X(1))
+        assert qp.equal(c0, c1) is False
 
     @pytest.mark.parametrize("mp_fn", [qp.probs, qp.sample, qp.counts])
     def test_mv_list_as_op(self, mp_fn):
