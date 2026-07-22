@@ -2875,7 +2875,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qp.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="have different data"):
+        with pytest.raises(AssertionError, match="have different values"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
