@@ -38,6 +38,28 @@ from .resources import (
 )
 
 
+def _adjoint_base_resource_rep(base_class, base_params):
+    """Adjoint resource representation of ``base_class`` given its resource ``base_params``."""
+    if issubclass(base_class, Operator2):
+        return abstractify(qp.ops.op_math.Adjoint2(base_class(**base_params)))
+    return adjoint_resource_rep(base_class, base_params)
+
+
+def _base_resource_rep(base_class, base_params):
+    """Resource representation of ``base_class`` given its resource ``base_params``.
+
+    These legacy symbolic rules are also registered against some ``Operator2`` subclasses (e.g.
+    ``S``/``T``/``SX`` for :func:`~.make_pow_decomp_with_period`) and are exercised through the
+    legacy ``Pow``/``Adjoint`` wrappers by ``assert_valid``. ``Operator2`` subclasses are
+    represented by an abstract instance (constructed from their ``arguments``) rather than a
+    :class:`~.CompressedResourceOp`, so that they match the representation produced by
+    :func:`~.abstractify` for concrete operators.
+    """
+    if issubclass(base_class, Operator2):
+        return abstractify(base_class(**base_params))
+    return resource_rep(base_class, **base_params)
+
+
 def _adjoint(op: AbstractOperatorLike):
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
