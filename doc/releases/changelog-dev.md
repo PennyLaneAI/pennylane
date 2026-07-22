@@ -486,8 +486,9 @@
   :func:`~.pauli.compute_partition_indices`) now evaluates (qubit-wise) commutation on a
   bit-packed symplectic representation, and the default ``"lf"`` strategy colours observables
   without building the conflict graph. Peak memory drops from ``O(m^2 n)`` to ``O(m n)`` for
-  ``m`` observables on ``n`` qubits, with order-of-magnitude speedups (e.g. 6 GB and 35 s down
-  to 0.3 GB and 0.9 s for 8000 observables on 30 qubits), while producing identical partitions.
+  ``m`` observables on ``n`` qubits, with order-of-magnitude speedups (e.g. 23 GB and 150s down
+  to 0.29 GB and 3.6s for 8000 observables on 30 qubits), while producing identical partitions.
+  [(#9880)](https://github.com/PennyLaneAI/pennylane/pull/9880)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
