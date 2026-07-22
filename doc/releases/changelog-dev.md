@@ -1049,6 +1049,8 @@
 
 <h3>Documentation 📝</h3>
 
+* Adds a `classic_removals` page for keeping track of hard removals for the PennyLane 2 transition.
+
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
   [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
 
