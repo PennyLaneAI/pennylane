@@ -2359,7 +2359,8 @@ def _siswap_decomp(wires, **__):
     SX(wires=wires[1])
 
 
-def _siswap_to_ppr_resource():
+# pylint: disable=unused-argument
+def _siswap_to_ppr_resource(wires: WiresLike):
     return {
         resource_rep(qp.PauliRot, pauli_word="XX"): 1,
         resource_rep(qp.PauliRot, pauli_word="YY"): 1,
