@@ -162,10 +162,12 @@ def test_default_operator_handling():
     jaxpr = jax.make_jaxpr(f)(1.2)
 
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
-    assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
+    assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive    
     _check_eqn(jaxpr.eqns[2], qp.T)
-    assert jaxpr.eqns[3].primitive == qp.X._primitive
-    assert jaxpr.eqns[4].primitive == qp.X._primitive
+    assert jaxpr.eqns[3].primitive == operator_p
+    assert jaxpr.eqns[3].params["op_cls"] is qp.PauliX
+    assert jaxpr.eqns[4].primitive == operator_p
+    assert jaxpr.eqns[4].params["op_cls"] is qp.PauliX
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
 
 
@@ -212,7 +214,8 @@ def test_measurement_handling():
 
     jaxpr = jax.make_jaxpr(f)(0)
 
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert jaxpr.eqns[0].primitive == operator_p
+    assert jaxpr.eqns[0].params["op_cls"] is qp.PauliX
     assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
     assert jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
     assert jaxpr.eqns[3].primitive == qp.measurements.ProbabilityMP._wires_primitive
@@ -532,7 +535,8 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 1
-        assert inner_jaxpr.eqns[0].primitive == qp.X._primitive  # no adjoint of x
+        assert inner_jaxpr.eqns[0].primitive == operator_p
+        assert inner_jaxpr.eqns[0].params["op_cls"] is qp.PauliX
 
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""
@@ -570,7 +574,8 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qp.Z._primitive  # no adjoint of x
+        assert inner_jaxpr.eqns[0].primitive == operator_p
+        assert inner_jaxpr.eqns[0].params["op_cls"] is qp.Z
 
     def test_while_loop_consts(self):
         """Test the higher order while loop registration propagates consts correctly."""
@@ -691,7 +696,8 @@ class TestHigherOrderPrimitiveRegistrations:
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == operator_p
+        assert qfunc_jaxpr.eqns[2].params["op_cls"] is qp.Z
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     def test_vjp(self):
@@ -712,7 +718,8 @@ class TestHigherOrderPrimitiveRegistrations:
         vjp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = vjp_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == operator_p
+        assert qfunc_jaxpr.eqns[2].params["op_cls"] is qp.Z
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     def test_jvp(self):
@@ -733,7 +740,8 @@ class TestHigherOrderPrimitiveRegistrations:
         jvp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = jvp_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == operator_p
+        assert qfunc_jaxpr.eqns[2].params["op_cls"] is qp.Z
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     @pytest.mark.parametrize("grad_f", (qp.grad, qp.jacobian))

@@ -396,6 +396,11 @@ class Operator2(metaclass=OperatorMeta):
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
     @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.dynamic_argnames)
+
+    @property
     def data(self) -> tuple:
         """Legacy Operator compatibility view of dynamic numerical arguments."""
         return tuple(self.arguments[name] for name in self.dynamic_argnames)

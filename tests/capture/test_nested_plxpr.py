@@ -26,7 +26,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
+from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, operator_p
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
@@ -143,9 +143,9 @@ class TestAdjointQfunc:
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
         assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_transform_prim
+        assert plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0].primitive == operator_p
         assert (
-            plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0].primitive
-            == qp.PauliX._primitive
+            plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0].params["op_cls"] is qp.X
         )
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -214,7 +214,6 @@ class TestAdjointQfunc:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestAdjointDynamicShapes:
-
     def test_dynamic_shape_input(self):
         """Test that the adjoint transform can accept arrays with dynamic shapes."""
 
@@ -509,7 +508,6 @@ class TestCtrlQfunc:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCtrlDynamicShapeInput:
-
     def test_dynamic_shape_input(self):
         """Test that ctrl can accept dynamic shape inputs."""
 

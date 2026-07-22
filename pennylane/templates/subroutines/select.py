@@ -538,9 +538,6 @@ class Select(Operation):
         return self.hyperparameters["partial"]
 
 
-# Decomposition of Select using multi-control strategy
-
-
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
     return _ctrl_abstract(
         target_rep,
@@ -571,6 +568,7 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial, num_wor
 
 @register_resources(_select_resources_multi_control)
 def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
+    """Decomposition of Select using multi-control strategy."""
 
     if partial:
         if len(ops) == 1:
@@ -1077,7 +1075,6 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
 
             resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
             resources[_multi_controlled_rep(X, num_control_wires, state, num_work_wires - 1)] += 2
-
     return dict(resources)
 
 

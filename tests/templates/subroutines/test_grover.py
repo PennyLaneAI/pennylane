@@ -317,7 +317,7 @@ class TestDynamicDecomposition:
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
         import jax
 
-        from pennylane.capture.primitives import for_loop_prim
+        from pennylane.capture.primitives import for_loop_prim, operator_p
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -348,7 +348,7 @@ class TestDynamicDecomposition:
             eqn
             for eqn in jaxpr_eqns
             if eqn.primitive
-            in (qp.PauliZ._primitive, qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
+            in (operator_p, qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
         ]
         assert len(remaining_ops) == 4
 
