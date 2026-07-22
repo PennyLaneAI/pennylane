@@ -792,8 +792,17 @@ def _equal_conditional(op1: Conditional, op2: Conditional, **kwargs):
 
 @_equal_dispatch.register
 def _equal_measurement_value(op1: MeasurementValue, op2: MeasurementValue, **kwargs):
-    """Determine whether two MeasurementValue objects are equal"""
-    return op1.measurements == op2.measurements
+    """Determine whether two MeasurementValue objects are equal.
+
+    Compare underlying mid-circuit measurements *and* the branch outcomes of any
+    processing function. Comparing only ``measurements`` would treat opposite
+    predicates (e.g. ``m0 == 0`` vs ``m0 == 1``) as equal.
+    """
+    if op1.measurements != op2.measurements:
+        return False
+    # Evaluate all classical outcomes; predicates differ here without comparing
+    # opaque callables by identity.
+    return op1.branches == op2.branches
 
 
 @_equal_dispatch.register
