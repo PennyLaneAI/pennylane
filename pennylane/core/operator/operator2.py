@@ -41,6 +41,7 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -407,8 +408,19 @@ class Operator2(metaclass=OperatorMeta):
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
-    grad_recipe = None
+    _grad_recipe = None
     """Legacy Operator compatibility default for parameter-shift recipes."""
+
+    @property
+    def grad_recipe(self):
+        """Compute 'grad_recipe' lazily."""
+        if self._grad_recipe is None:
+            return [None] * self.num_params
+        return self._grad_recipe
+
+    @grad_recipe.setter
+    def grad_recipe(self, recipe):
+        self._grad_recipe = recipe
 
     @property
     def grad_method(self):
@@ -427,9 +439,11 @@ class Operator2(metaclass=OperatorMeta):
             return None
         if self.grad_recipe != [None] * self.num_params:
             return GradMethod.ANALYTIC
-        if parameter_frequencies(self):
+        try:
+            _ = parameter_frequencies(self)
             return GradMethod.ANALYTIC
-        return GradMethod.FINITE_DIFF
+        except ParameterFrequenciesUndefinedError:
+            return GradMethod.FINITE_DIFF
 
     @property
     def data(self) -> tuple:
