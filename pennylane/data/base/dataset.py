@@ -293,13 +293,17 @@ class Dataset(MapperMixin, _DatasetTransform):
             overwrite: Whether to overwrite attributes that already exist in this
                 dataset.
         """
+        opened_here = False
         if not isinstance(source, Dataset):
             source = Path(source).expanduser()
             source = Dataset.open(source, mode="r")
+            opened_here = True
 
         source.write(self, attributes=attributes, overwrite=overwrite)
 
-        source.close()
+        # Only close HDF5 handles we opened from a path; caller-owned Datasets stay open.
+        if opened_here:
+            source.close()
 
     def write(
         self,
