@@ -1113,6 +1113,9 @@ class TestDecomposition:
         op = Controlled(target, 2)
         assert op.decomposition() == decomp
 
+    @pytest.mark.xfail(
+        reason="The behaviour of decomposing a controlled op to a qubit unitary exists as a standalone decomposition rule now for Operator2 instances."
+    )
     def test_non_differentiable_one_qubit_special_unitary(self):
         """Assert that a non-differentiable on qubit special unitary uses the bisect decomposition."""
 
