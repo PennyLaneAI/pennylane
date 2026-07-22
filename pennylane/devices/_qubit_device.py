@@ -1179,7 +1179,7 @@ class QubitDevice(Device):
             array[float]: list of the probabilities
         """
 
-        wires = wires or self.wires
+        wires = wires if wires is not None else self.wires
         # convert to a Wires object
         wires = Wires(wires)
         # translate to wire labels used by device
@@ -1270,7 +1270,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: list of the probabilities
         """
-        wires = wires or self.wires
+        wires = wires if wires is not None else self.wires
         if self.shots is None:
             return self.analytic_probability(wires=wires)
 
