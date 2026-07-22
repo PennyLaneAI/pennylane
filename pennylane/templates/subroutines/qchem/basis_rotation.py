@@ -403,7 +403,7 @@ def _basis_rotation_decomp_resources(wires, unitary_matrix, check=False):
 
 # Not exact because PhaseShift(s) might be skipped
 @register_resources(_basis_rotation_decomp_resources, exact=False)
-def _basis_rotation_decomp(wires, unitary_matrix, **__):
+def _basis_rotation_decomp(unitary_matrix, wires, **__):
 
     if isinstance(wires, Wires):
         wires = wires.labels
