@@ -27,7 +27,7 @@ jax = pytest.importorskip("jax")
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from tests.capture.capture_utils import check_eqn
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 
 class TestAdjointQfunc:
@@ -44,7 +44,7 @@ class TestAdjointQfunc:
 
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
-        check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
+        assert_eqn_matches_op(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_adjoint_qfunc(self):
         """Test that the adjoint qfunc transform can be captured."""
@@ -308,7 +308,7 @@ class TestCtrlQfunc:
         jaxpr = jax.make_jaxpr(adj_qfunc)(0)
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         assert jaxpr.eqns[0].invars[1].val == 1
-        check_eqn(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
+        assert_eqn_matches_op(jaxpr.eqns[0].params["jaxpr"].eqns[0], qp.S)
 
     def test_operator_type_input(self):
         """Test that an operator type can be the callable."""

@@ -303,7 +303,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():
+        def compute_eigvals():  # pylint: disable=signature-differs
             return [-1, 1]
 
     with pytest.raises(
@@ -507,7 +507,7 @@ class SingleRZ(Operator2):
 
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
-    ndim_params = ((),)
+    ndim_params = (0,)
 
     def __init__(self, phi, wires):
         assert isinstance(wires, int) or len(wires) == 1
