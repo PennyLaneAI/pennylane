@@ -44,6 +44,7 @@ from pennylane.ops import (
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.controlled2 import Controlled2
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
@@ -754,9 +755,11 @@ def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence,
     return True
 
 
-@_equal_dispatch.register
+@_equal_dispatch.register(Pow)
+@_equal_dispatch.register(Pow2)
 def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
+
     check_interface, check_trainability = kwargs["check_interface"], kwargs["check_trainability"]
 
     if check_interface:
