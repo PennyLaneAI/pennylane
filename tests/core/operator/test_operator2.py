@@ -2442,7 +2442,7 @@ class TestLegacyCompatibilityViews:
         """Test the default legacy gradient metadata."""
         op = NoParamOp(wires=0)
 
-        assert op.grad_recipe is None
+        assert op.grad_recipe == []
         assert op.grad_method is None
 
     def test_no_param_op_legacy_views(self):

@@ -410,6 +410,7 @@ class Operator2(metaclass=OperatorMeta):
     grad_recipe = None
     """Legacy Operator compatibility default for parameter-shift recipes."""
 
+    @property
     def grad_method(self):
         """Gradient computation method.
 
