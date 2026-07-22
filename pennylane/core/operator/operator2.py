@@ -1577,11 +1577,9 @@ if has_jax:
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
 
-    def _int_if_concrete(w):
-        return w if math.is_abstract(w) else int(w)
-
     # pylint: disable=too-many-arguments,unused-argument
-    def _reconstruct_op(
+    @operator_p.def_impl
+    def _op_impl(
         *all_args,
         op_cls,
         wire_lens,
@@ -1590,19 +1588,8 @@ if has_jax:
         forward_mask,
         n_ctrls=0,
         adjoint=False,
-        cast_wires=_int_if_concrete,
         **static_args,
     ):
-        """Reconstruct an operator instance from the flat arguments and params of an
-        ``operator_p`` equation; the inverse of ``Operator2._bind_primitive``.
-
-        ``cast_wires`` is applied to every wire value. The default supports plxpr interpreters
-        replaying an equation that may be under an outer JAX trace (e.g. while transforming a
-        ``for_loop`` body): wire leaves that are still tracers pass through unchanged, while
-        concrete values (such as a wire computed by an earlier equation) become plain ``int``
-        labels. The primitive's concrete implementation (registered below) instead casts
-        unconditionally, as concrete evaluation must never encounter a tracer.
-        """
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1614,7 +1601,10 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                args[name] = Wires(tuple(map(cast_wires, all_args[i : i + len_])))
+                # TODO: impl is being used here for reconstruction while the interpreter itself is under JAX tracing. Need to separate this logic from such scenario. For now, we can use the fact that wires are always integers and cast them to int.
+                args[name] = Wires(
+                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
+                )
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
@@ -1643,8 +1633,6 @@ if has_jax:
             )
         return op
 
-    operator_p.def_impl(partial(_reconstruct_op, cast_wires=int))
-
     @operator_p.def_abstract_eval
     def _op_aval(*_, **__):
         AbstractOperator = _get_abstract_operator()
@@ -1652,7 +1640,6 @@ if has_jax:
 
 else:  # pragma: no cover
     operator_p = None
-    _reconstruct_op = None
 
 
 def pop_op_eqns(ops: Iterable):

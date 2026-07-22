@@ -1045,11 +1045,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a `ConcretizationTypeError` raised when reconstructing an :class:`~.Operator2` equation
-  while its wires are still abstract JAX tracers, e.g. when replaying a captured jaxpr inside a
-  `for_loop`/`while_loop` body under an active trace.
-  [(#9821)](https://github.com/PennyLaneAI/pennylane/pull/9821)
-
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 

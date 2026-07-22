@@ -28,7 +28,6 @@ from packaging.version import Version
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import _reconstruct_op, operator_p  # tach-ignore
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -325,15 +324,7 @@ class PlxprInterpreter:
         """
         invals = (self.read(invar) for invar in eqn.invars)
         with qp.QueuingManager.stop_recording():
-            if eqn.primitive is operator_p:
-                # Reconstruct directly instead of going through `operator_p`'s `impl`: this
-                # replay can happen while the interpreter itself is under an active JAX trace
-                # (e.g. replaying a captured jaxpr inside a `for_loop`/`while_loop` body), in
-                # which case wire leaves may still be tracers. `impl` is reserved for genuine
-                # concrete jaxpr execution, where wires are guaranteed to already be plain ints.
-                op = _reconstruct_op(*invals, **eqn.params)
-            else:
-                op = eqn.primitive.impl(*invals, **eqn.params)
+            op = eqn.primitive.impl(*invals, **eqn.params)
         if isinstance(eqn.outvars[0], jax.core.DropVar):
             return self.interpret_operation(op)
         return op
