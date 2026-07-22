@@ -629,8 +629,6 @@ class PauliY(Operator2):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    wire_sizes = (1,)
-
     arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True

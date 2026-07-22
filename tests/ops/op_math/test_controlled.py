@@ -1928,7 +1928,8 @@ class TestCtrl:
             ),
             control=["a"],
         )
-        expected = ControlledOp2(
+        expected_type = ControlledOp2 if isinstance(expected_base, Operator2) else Controlled
+        expected = expected_type(
             expected_base,
             control_wires=["a", "b"] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,

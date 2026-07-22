@@ -189,8 +189,10 @@ def test_controlled_operator_handling(op_class, args, kwargs):
         return qp.expval(qp.Z(0))
 
     jaxpr = jax.make_jaxpr(f)()
-    expected_primitive = operator_p if op_class._operator_version == 2 else op_class._primitive
-    assert jaxpr.eqns[0].primitive == expected_primitive
+    if op_class._operator_version == 2:
+        assert_eqn_matches_op(jaxpr.eqns[0], op_class)
+    else:
+        assert jaxpr.eqns[0].primitive == op_class._primitive
 
 
 def test_measurement_handling():

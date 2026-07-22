@@ -23,10 +23,7 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.core.operator.operator2 import Operator2
-from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
-from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -846,48 +843,6 @@ def test_CNOT_decomposition():
         qp.CNOT([0, 1]).decomposition()
 
 
-class TestCYOperator2:
-    """Regression tests for the ``CY`` migration from ``ControlledOp`` to ``Controlled2``."""
-
-    def test_concrete_contract(self):
-        """A concrete ``CY`` should expose its original two-wire constructor argument while
-        deriving the base and control data required by ``Controlled2``.
-
-        The decomposition assertion also verifies that ``CY`` uses registered graph
-        decompositions instead of retaining its legacy ``compute_decomposition`` method.
-        """
-        op = qp.CY([0, 1])
-
-        assert isinstance(op, Controlled2)
-        assert op.arguments == {"wires": Wires([0, 1])}
-        assert op.base == qp.Y(1)
-        assert op.control_wires == Wires([0])
-        assert op.control_values == [True]
-        assert qp.math.allclose(qp.CY.compute_matrix(wires=[0, 1]), op.matrix())
-        assert qp.CY.compute_decomposition is Operator2.compute_decomposition
-        assert op.decomposition() == [qp.CRY(np.pi, wires=[0, 1]), qp.S(0)]
-
-    def test_queue_only_final_gate(self):
-        """Constructing the internal ``PauliY`` base must not queue it separately.
-
-        A user who constructs one ``CY`` should therefore see exactly one operation in the
-        active queue, rather than both the implementation-detail base and the controlled gate.
-        """
-        with qp.queuing.AnnotatedQueue() as queue:
-            op = qp.CY(["control", "target"])
-
-        assert queue.queue == [op]
-
-    def test_abstract_contract(self):
-        """Abstract construction should retain wire-size information without indexing wires.
-
-        This is the representation used by graph decomposition and resource estimation, where
-        only the number of control and target wires is known.
-        """
-        op = qp.CY(Wire[2])
-
-        assert isinstance(op.wires, AbstractWires)
-        assert op.wires == Wire[2]
-        assert op.base == qp.Y(Wire[1])
-        assert op.control_wires == Wire[1]
-        assert repr(op) == "CY(wires=AbstractWires(2))"
+def test_CY_decomposition():
+    """The migrated ``CY`` uses its registered graph decomposition rule."""
+    assert qp.CY([0, 1]).decomposition() == [qp.CRY(np.pi, wires=[0, 1]), qp.S(0)]

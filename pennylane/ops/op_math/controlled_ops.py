@@ -457,7 +457,6 @@ class CY(Controlled2):
         wires (Sequence[int]): the wires the operation acts on
     """
 
-    wire_argnames = ("wires",)
     arg_specs = {"wires": Wire[2]}
 
     num_wires = 2
@@ -484,6 +483,7 @@ class CY(Controlled2):
         return CY(self.wires)
 
     @staticmethod
+    @override
     # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
