@@ -248,6 +248,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         alt_decomps: dict | None = None,
         strict: bool = True,
     ):
+
         if not isinstance(gate_set, GateSet):
             gate_set = GateSet(gate_set)
 
@@ -297,6 +298,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # on the base of the symbolic operator to retrieve the base decomposition rules. When this
         # happens, we need alt_decomps and fixed_decomps to still be respected.
         with local_decomps():
+
             for op, decomps in self._alt_decomps.items():
                 add_decomps(op, *decomps)
 
@@ -460,6 +462,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # rule is determined by operator that uses the MOST number of work wires.
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
+
             if self._base_in_progress(op):
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
