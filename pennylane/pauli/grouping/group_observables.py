@@ -612,9 +612,7 @@ def _greedy_colour_pairwise(
     return colours
 
 
-def _colour_packed_lf(
-    x_words: np.ndarray, z_words: np.ndarray, grouping_type: str
-) -> np.ndarray:
+def _colour_packed_lf(x_words: np.ndarray, z_words: np.ndarray, grouping_type: str) -> np.ndarray:
     """Largest-First greedy colouring of the complement graph, computed directly from the
     packed symplectic representation without materializing the graph.
 
