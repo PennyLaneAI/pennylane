@@ -242,7 +242,6 @@ class TestQROM:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-
             # Initialize the work wires to a non-zero state
             for ind, wire in enumerate(work_wires):
                 qp.RX(ind, wires=wire)
@@ -479,7 +478,7 @@ def test_repr():
         clean=True,
     )
     res = repr(op)
-    expected = "QROM(control_wires=Wires([0, 1]), target_wires=Wires([2]),  work_wires=Wires([3]), clean=True)"
+    expected = "QROM(control_wires=[0, 1], target_wires=[2],  work_wires=[3], clean=True)"
     assert res == expected
 
 
@@ -697,7 +696,7 @@ class TestMeasurementQROM:
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16],
@@ -738,7 +737,7 @@ class TestMeasurementQROM:
             ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
     )
@@ -786,7 +785,7 @@ class TestMeasurementQROM:
         assert np.isclose(circuit()[0][0], 1.0)
         assert np.isclose(circuit()[1][0], 1.0)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
         [3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15],

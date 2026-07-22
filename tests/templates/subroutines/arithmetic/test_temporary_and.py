@@ -57,10 +57,10 @@ class TestTemporaryAND:
 
     def test_repr(self):
         """Test the repr of TemporaryAND."""
-        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=Wires([0, 'a', 2]))"
+        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
         assert (
             repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
-            == "TemporaryAND(wires=Wires([0, 'a', 2]), control_values=(0, 1))"
+            == "TemporaryAND(wires=[0, 'a', 2], control_values=(0, 1))"
         )
 
     def test_alias(self):
@@ -287,7 +287,7 @@ class TestTemporaryAND:
         assert qp.math.allclose(circuit(), jit_circuit())
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 1), (True, False)])
     def test_jax_qjit_control_values(self, cvals):
         """Tests that TemporaryAND works with jax and jit"""

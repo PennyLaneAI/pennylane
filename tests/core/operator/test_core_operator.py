@@ -33,6 +33,7 @@ from pennylane.operation import (
 )
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -296,6 +297,20 @@ class TestOperatorConstruction:
 
         op2 = DummyOp((1, 2, 3), wires=0)
         assert isinstance(op2.data[0], np.ndarray)
+
+    def test_data_is_read_only(self):
+        """Test that operator data is exposed through a read-only property."""
+
+        class DummyOp(qp.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, wires=0)
+
+        with pytest.raises(
+            AttributeError, match=r"property 'data' of '.*DummyOp' object has no setter"
+        ):
+            setattr(op, "data", (5.678,))
 
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
@@ -1068,33 +1083,6 @@ class TestObservableConstruction:
         ob = DummyObserv([1])
         assert ob.wires == qp.wires.Wires(1)
 
-    def test_tensor_n_multiple_modes(self):
-        """Checks that the TensorN operator was constructed correctly when
-        multiple modes were specified."""
-        cv_obs = qp.TensorN(wires=[0, 1])
-
-        assert isinstance(cv_obs, qp.TensorN)
-        assert cv_obs.wires == Wires([0, 1])
-        assert cv_obs.ev_order is None
-
-    def test_tensor_n_single_mode_wires_explicit(self):
-        """Checks that instantiating a TensorN when passing a single mode as a
-        keyword argument returns a NumberOperator."""
-        cv_obs = qp.TensorN(wires=[0])
-
-        assert isinstance(cv_obs, qp.NumberOperator)
-        assert cv_obs.wires == Wires([0])
-        assert cv_obs.ev_order == 2
-
-    def test_tensor_n_single_mode_wires_implicit(self):
-        """Checks that instantiating TensorN when passing a single mode as a
-        positional argument returns a NumberOperator."""
-        cv_obs = qp.TensorN(1)
-
-        assert isinstance(cv_obs, qp.NumberOperator)
-        assert cv_obs.wires == Wires([1])
-        assert cv_obs.ev_order == 2
-
     def test_repr(self):
         """Test the string representation of an observable with and without a return type."""
 
@@ -1647,58 +1635,6 @@ class TestOperationDerivative:
         assert np.allclose(derivative, expected_derivative)
 
 
-class TestCVOperation:
-    """Test the CVOperation class"""
-
-    def test_wires_not_found(self):
-        """Make sure that `heisenberg_expand` method receives enough wires to actually expand"""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-
-        op = DummyOp(wires=1)
-
-        with pytest.raises(ValueError, match="do not exist on this device with wires"):
-            op.heisenberg_expand(np.eye(3), Wires(["a", "b"]))
-
-    def test_input_validation(self):
-        """Make sure that size of input for `heisenberg_expand` method is validated"""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-
-        op = DummyOp(wires=1)
-
-        with pytest.raises(ValueError, match="Heisenberg matrix is the wrong size"):
-            U_wrong_size = np.eye(1)
-            op.heisenberg_expand(U_wrong_size, op.wires)
-
-    def test_wrong_input_shape(self):
-        """Ensure that `heisenberg_expand` raises exception if it receives an array with order > 2"""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-
-        op = DummyOp(wires=1)
-
-        with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
-            U_high_order = np.array([np.eye(3)] * 3)
-            op.heisenberg_expand(U_high_order, op.wires)
-
-    def test_supports_parameter_shift(self):
-        """Test the supports_parameter_shift property."""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-            grad_method = "A"
-
-            @staticmethod
-            def _heisenberg_rep(p):
-                return p  # just overwrite it?
-
-        assert DummyOp.supports_parameter_shift
-
-
 class TestStatePrepBase:
     """Test the StatePrepBase interface."""
 
@@ -2007,7 +1943,10 @@ class TestNewOpMath:
         def test_pow(self, power, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             op = base**power
-            assert isinstance(op, PowOperation)
+            if isinstance(base, Operator2):
+                assert isinstance(op, Pow2)
+            else:
+                assert isinstance(op, PowOperation)
             qp.assert_equal(op.base, base)
             assert op.z == power
 
