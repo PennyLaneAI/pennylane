@@ -25,13 +25,17 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+    resource_rep,
+)
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     OperatorPropertyUndefined,
 )
-from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
@@ -201,7 +205,7 @@ class Exp(ScalarSymbolicOp, Operation):
     control_wires = Wires([])
     _name = "Exp"
 
-    resource_keys = {"base", "real_coeff"}
+    resource_keys = {"base"}
 
     def _flatten(self):
         return (self.base, self.data[0]), ()
@@ -242,14 +246,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
     @property
     def resource_params(self) -> dict:
-        coeff = self.coeff
-        # A plain ``Exp`` with a real-valued coefficient is non-unitary and has no ``PauliRot``
-        # decomposition: the resulting rotation angle ``2j * coeff`` would be complex, which op2
-        # ``PauliRot`` rejects. ``Evolution`` is always treated as unitary time-evolution and is
-        # exempt, and abstract coefficients are assumed valid. This mirrors :attr:`has_decomposition`.
-        # pylint: disable=unidiomatic-typecheck
-        real_coeff = type(self) is Exp and not math.is_abstract(coeff) and bool(math.real(coeff))
-        return {"base": self.base, "real_coeff": real_coeff}
+        return {"base": self.base}
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
@@ -489,21 +486,17 @@ class Exp(ScalarSymbolicOp, Operation):
         )
 
 
-def _pauli_rot_decomp_condition(base, real_coeff=False, **__):
-    # A real coefficient yields a non-unitary exponential whose PauliRot angle would be complex.
-    if real_coeff:
-        return False
+def _pauli_rot_decomp_condition(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
     return qp.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base, **__):
+def _pauli_rot_decomp_resource(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    pauli_word = qp.pauli.pauli_word_to_string(base)
-    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
+    return {resource_rep(qp.PauliRot, pauli_word=qp.pauli.pauli_word_to_string(base)): 1}
 
 
 @register_condition(_pauli_rot_decomp_condition)

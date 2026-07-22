@@ -1127,15 +1127,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2], [Wires([0, 1])], []), ('XY',))
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.5, XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -1165,12 +1161,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.5, XY, wires=[0, 1])
         """
         args = {}
 
@@ -1864,17 +1859,10 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
     new_args = dict(op.arguments)
-    # The abstract representation must be batch-insensitive so that broadcasted and non-broadcasted
-    # operators produce the same resource key. Strip the leading batch axis from dynamic arguments.
-    # ``op.batch_size`` is only meaningful (and only safe to compute) for operators with dynamic
-    # parameters, hence the guard.
-    batched = bool(op_cls.dynamic_argnames) and op.batch_size is not None
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
-        val = new_args[name]
-        if batched and kind is _ArgType.DYN and not _is_abstract_specifier(val):
-            val = math.asarray(val)[0]
-        new_args[name] = _canonicalize_abstract_type(val, kind)
+        new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
+
     return op_cls(**new_args)
 
 

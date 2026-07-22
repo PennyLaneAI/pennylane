@@ -192,8 +192,6 @@ class TestDecomposition:
 
     DECOMP_PARAMS = [
         (np.arange(np.prod((15,)), dtype=float).reshape((15,)), range(2)),
-        (np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)), range(2)),
-        (np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)), range(2)),
         (np.random.random(size=(63,)), range(3)),
     ]
 

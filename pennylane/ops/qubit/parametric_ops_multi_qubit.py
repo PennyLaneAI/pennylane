@@ -314,9 +314,6 @@ class PauliRot(Operator2):
 
     grad_method = "A"
     grad_recipe = (None,)
-    """tuple: Gradient recipe for the trainable parameter. ``None`` defers to
-    :attr:`parameter_frequencies` for the parameter-shift rule."""
-    parameter_frequencies = [(1,)]
 
     resource_keys = {"pauli_word"}
 
