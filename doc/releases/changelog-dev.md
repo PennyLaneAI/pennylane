@@ -1080,6 +1080,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed ``probability`` and ``estimate_probability`` treating ``wires=0`` as all wires on legacy qubit and qutrit devices. [(#9888)](https://github.com/PennyLaneAI/pennylane/pull/9888)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
