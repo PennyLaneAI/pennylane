@@ -370,7 +370,9 @@ class PauliX(Operator2):
 
     def __repr__(self) -> str:
         # PauliX.name is still "PauliX" but we want the repr to be just "X"
-        return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+        if isinstance(self.wires, Wires):
+            return f"X({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+        return f"X(wires={self.wires})"
 
     @override
     def label(
