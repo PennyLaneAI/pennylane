@@ -18,7 +18,7 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 from itertools import combinations
 
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -353,7 +353,7 @@ def _out_multiplier_with_qft_resources(
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        compute_rep = resource_rep(Prod, resources={H: qft_wires})
+        compute_rep = resource_rep(Prod, resources={abstractify(H): qft_wires})
     else:
         compute_rep = resource_rep(QFT, num_wires=qft_wires)
 
