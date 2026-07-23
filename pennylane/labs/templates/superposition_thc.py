@@ -57,12 +57,19 @@ class SuperpositionTHC(Operation):
 
     .. note::
 
-        Every work wire is returned to the zero state, except for the wires that carry the
-        prepared flags: ``work_wires[0]``, ``work_wires[3]``, and ``work_wires[6]``.
+        Every work wire is returned to the zero state, except for the two wires that carry the
+        prepared flags, ``work_wires[3]`` and ``work_wires[6]``, and for ``work_wires[0]``, which
+        is left as a dirty work wire (see below).
 
-        - ``work_wires[0]``: Assures that the amplitude amplification process has been performed correctly.
-        - ``work_wires[3]``: Evaluates to true if the system is in the state :math:`|\eta = M\rangle`.
-        - ``work_wires[6]``: Evaluates to true if the superposition has been prepared correctly.
+        - ``work_wires[0]``: It is the auxiliary wire used
+          by the amplitude amplification step, which would normally be reset to
+          :math:`|0\rangle` by a final cleaning rotation. That single cleaning rotation is
+          intentionally omitted here, so this wire is left in an arbitrary (non-zero) state.
+          It carries no meaningful information and should not be measured or interpreted.
+        - ``work_wires[3]``: A flag that evaluates to true if the system is in the state
+          :math:`|\eta = M\rangle`.
+        - ``work_wires[6]``: A flag that evaluates to true if the superposition has been prepared
+          correctly.
 
     Args:
         M (int): The THC rank. Together with ``N``
@@ -184,7 +191,7 @@ class SuperpositionTHC(Operation):
         self.hyperparameters["nu_wires"] = nu_wires
         self.hyperparameters["work_wires"] = work_wires
 
-        all_wires = Wires.all_wires([mu_wires, nu_wires, work_wires])
+        all_wires = mu_wires + nu_wires + work_wires
         super().__init__(wires=all_wires)
 
     @property
@@ -282,6 +289,10 @@ def _left_inequalities(
             ``adjoint(_left_inequalities)``), that gate is skipped so the prepared
             ``work_wires[3]`` flag is left in place as an output.
     """
+    mu_wires = Wires(mu_wires)
+    nu_wires = Wires(nu_wires)
+    work_wires = Wires(work_wires)
+
     n = len(mu_wires)
 
     LeftClassicalComparator(
@@ -315,7 +326,7 @@ def _left_inequalities(
     # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
     if not keep_eq:
         MultiControlledX(
-            wires=nu_wires + [work_wires[3]],
+            wires=nu_wires + work_wires[3:4],
             control_values=[0] * len(nu_wires),
             work_wires=work_wires[7 + 3 * n - 1 : 7 + 4 * n - 1],
         )
@@ -323,8 +334,7 @@ def _left_inequalities(
 
 def _controlled_rep(base_class, num_control_wires):
     """resource_rep of ``Controlled(base, num_control_wires)`` as built in the
-    decomposition: no zero controls, no work wires (work wires are only borrowed
-    scratch and do not change the gate type)."""
+    decomposition."""
     return resource_rep(
         Controlled,
         base_class=base_class,
@@ -385,14 +395,21 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires are returned to
-    # the zero state except work_wires[0], work_wires[3] and work_wires[6], which carry
-    # the prepared flags. Note that the paper uses 1-based indexing, whereas we will use 0-based indexing.
+    # the zero state except work_wires[3] and work_wires[6], which carry the prepared flags,
+    # and work_wires[0], which is left as a dirty work wire: it is the amplitude-amplification
+    # auxiliary wire whose final cleaning rotation is intentionally omitted, so it ends in an
+    # arbitrary (non-zero) state and carries no meaningful information.
+    # Note that the paper uses 1-based indexing, whereas we will use 0-based indexing.
+
+    mu_wires = Wires(mu_wires)
+    nu_wires = Wires(nu_wires)
+    work_wires = Wires(work_wires)
 
     n = len(mu_wires)
     extra_work = work_wires[7 + 4 * n - 1 :]
 
     # 1. Equal superposition over both index registers.
-    for wire in Wires.all_wires([mu_wires, nu_wires]):
+    for wire in mu_wires + nu_wires:
         Hadamard(wire)
 
     # 2. Rotation angle for the single round of amplitude amplification.
@@ -418,18 +435,18 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     RY(-angle, wires=work_wires[0])
 
     # 5. Reflection about the equal-superposition state (the amplification step).
-    for wire in Wires.all_wires([mu_wires, nu_wires]):
+    for wire in mu_wires + nu_wires:
         Hadamard(wire)
 
     # Fig. 3 has a typo; these X gates must be added.
-    for wire in Wires.all_wires(mu_wires + nu_wires + [work_wires[0]]):
+    for wire in mu_wires + nu_wires + work_wires[0:1]:
         X(wires=wire)
     GlobalPhase(np.pi)
     Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
-    for wire in Wires.all_wires([mu_wires, nu_wires, [work_wires[0]]]):
+    for wire in mu_wires + nu_wires + work_wires[0:1]:
         X(wires=wire)
 
-    for wire in Wires.all_wires([mu_wires, nu_wires]):
+    for wire in mu_wires + nu_wires:
         Hadamard(wire)
 
     # 6. Recompute the flags onto the output ancilla register (work_wires[5], work_wires[6]).
@@ -437,13 +454,16 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
 
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
     Controlled(
-        X(work_wires[6]), control_wires=work_wires[1:3] + work_wires[5], work_wires=extra_work
+        X(work_wires[6]), control_wires=work_wires[1:3] + work_wires[5:6], work_wires=extra_work
     )
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
 
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
+    # Note: work_wires[0] is deliberately left as a dirty work wire. The extra cleaning
+    # rotation that would reset it to |0> is intentionally omitted (a single RY), so this
+    # wire ends in an arbitrary state and should not be interpreted as a flag.
     adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
     RY(angle, wires=work_wires[0])
 
