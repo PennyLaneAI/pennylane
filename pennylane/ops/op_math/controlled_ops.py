@@ -768,10 +768,6 @@ class CSWAP(Controlled2):
     def __repr__(self):
         return f"CSWAP(wires={self.wires})"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @override
     def adjoint(self):
         return CSWAP(self.wires)
