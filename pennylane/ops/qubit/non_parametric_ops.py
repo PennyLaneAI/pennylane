@@ -46,7 +46,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire, AbstractWires
+from pennylane.typing import Wire
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.wires import Wires, WiresLike
 
@@ -275,7 +275,8 @@ add_decomps("Adjoint(Hadamard)", self_adjoint_legacy)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
-def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_type, **__):
+def _controlled_h_resources(*_, base, control_wires, work_wires, work_wire_type, **__):
+    num_control_wires = len(control_wires)
     if num_control_wires == 1:
         return {qp.CH: 1}
     return {
@@ -284,7 +285,7 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, work_wire_typ
         _ctrl_abstract(
             qp.X,
             Wire[num_control_wires],
-            Wire[num_work_wires],
+            Wire[len(work_wires)],
             work_wire_type,
         ): 1,
     }
