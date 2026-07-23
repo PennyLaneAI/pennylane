@@ -147,12 +147,17 @@ class TestDecomposition:
     DECOMP_PARAMS = [
         ([1.0, 2.0], [1, 2], 2, [[1, 2], [1, 2]]),
         ([1.0, 2.0, 3.0, 4.0], [1, 2, 3, 4], 3, [[2, 1], [1, 2]]),
-        ([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]], [1, 2, 3], 4, [[2, 1], [1, 3]]),
+        pytest.param(
+            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]],
+            [1, 2, 3],
+            4,
+            [[2, 1], [1, 3]],
+            marks=pytest.mark.xfail(
+                reason="Batched features not supported with Operator2 at the moment."
+            ),
+        ),
     ]
 
-    @pytest.mark.xfail(
-        reason="Parameter broadcasting is being re-visited in the future for Operator2."
-    )
     @pytest.mark.capture
     @pytest.mark.parametrize(("features", "wires", "num_repeats", "pattern"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, num_repeats, pattern):
