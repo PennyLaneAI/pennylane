@@ -142,12 +142,7 @@ class IQP(Operation):
 def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
     resources = defaultdict(int)
     if spin_sym:
-        resources[
-            resource_rep(
-                PauliRot,
-                pauli_word="Y" + "X" * (num_wires - 1),
-            )
-        ] = 1
+        resources[resource_rep(PauliRot, pauli_word="Y" + "X" * (num_wires - 1))] = 1
 
     resources[Hadamard] = 2 * num_wires
 
