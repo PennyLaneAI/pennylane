@@ -27,7 +27,6 @@ from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
-    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
@@ -36,7 +35,7 @@ from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
@@ -748,7 +747,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     if L == 2:
         return {
             resource_rep(BasisState, num_wires=num_target_wires): 1,
-            resource_rep(CNOT): num_target_wires,
+            CNOT: num_target_wires,
         }
 
     num_ands = _count_tempAND_in_measurement_qrom(L)
@@ -758,13 +757,13 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     # TemporaryAND counts are exact
     # CNOTs, PauliX gates and BasisState ops are an approximation
     return {
-        resource_rep(TemporaryAND): num_ands,
-        resource_rep(PauliMeasure): num_measurements,
-        resource_rep(CZ): num_cz,
-        resource_rep(CNOT): L - 1,
+        TemporaryAND: num_ands,
+        PauliMeasure: num_measurements,
+        CZ: num_cz,
+        CNOT: L - 1,
         resource_rep(BasisState, num_wires=num_target_wires): L,
-        resource_rep(X): L,
-        controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+        X: L,
+        qp_ops.ctrl(X(Wire[1]), control=Wire[1]): 1,
     }
 
 
