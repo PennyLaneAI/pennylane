@@ -293,13 +293,17 @@ class Dataset(MapperMixin, _DatasetTransform):
             overwrite: Whether to overwrite attributes that already exist in this
                 dataset.
         """
+        close_source = False
+
         if not isinstance(source, Dataset):
             source = Path(source).expanduser()
             source = Dataset.open(source, mode="r")
+            close_source = True
 
         source.write(self, attributes=attributes, overwrite=overwrite)
 
-        source.close()
+        if close_source:
+            source.close()
 
     def write(
         self,
