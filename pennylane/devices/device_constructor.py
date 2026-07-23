@@ -21,7 +21,6 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 from pennylane._version import __version__
-from pennylane.configuration import default_config
 from pennylane.exceptions import DeviceError
 
 from ._legacy_device import Device as LegacyDevice
@@ -97,10 +96,6 @@ def device(name, *args, **kwargs):
         wires (Wires): the wires (subsystems) to initialize the device with.
             Note that this is optional for certain devices, such as ``default.qubit``
 
-    Keyword Args:
-        config (pennylane.Configuration): a PennyLane configuration object
-            that contains global and/or device specific configurations.
-
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
     argument can be an integer, in which case the wires of the device are addressed
@@ -164,49 +159,35 @@ def device(name, *args, **kwargs):
         # installed the plugin during the current Python session.
         refresh_devices()
 
-    if name in plugin_devices:
-        options = {}
+    if name not in plugin_devices:
+        raise DeviceError(
+            f"Device {name} does not exist. Make sure the required plugin is installed."
+        )
 
-        # load global configuration settings if available
-        config = kwargs.get("config", default_config)
+    # loads the device class
+    plugin_device_class = plugin_devices[name].load()
 
-        if config:
-            # combine configuration options with keyword arguments.
-            # Keyword arguments take preference, followed by device options,
-            # followed by plugin options, followed by global options.
-            options.update(config["main"])
-            options.update(config[name.split(".")[0] + ".global"])
-            options.update(config[name])
+    def _safe_specifier_set(version_str):
+        """Safely create a SpecifierSet from a version string."""
+        operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
+        if any(version_str.startswith(op) for op in operators):
+            # This is tested in the plugin-test-matrix
+            return SpecifierSet(version_str, prereleases=True)  # pragma: no cover
+        return SpecifierSet(f"=={version_str}", prereleases=True)
 
-        kwargs.pop("config", None)
-        options.update(kwargs)
+    if hasattr(plugin_device_class, "pennylane_requires"):
+        required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
+        current_version = Version(__version__)
+        if current_version not in required_versions:
+            raise DeviceError(
+                f"The {name} plugin requires PennyLane versions {required_versions}, "
+                f"however PennyLane version {__version__} is installed."
+            )
 
-        # loads the device class
-        plugin_device_class = plugin_devices[name].load()
+    # Construct the device
+    dev = plugin_device_class(*args, **kwargs)
 
-        def _safe_specifier_set(version_str):
-            """Safely create a SpecifierSet from a version string."""
-            operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
-            if any(version_str.startswith(op) for op in operators):
-                # This is tested in the plugin-test-matrix
-                return SpecifierSet(version_str, prereleases=True)  # pragma: no cover
-            return SpecifierSet(f"=={version_str}", prereleases=True)
+    if isinstance(dev, LegacyDevice):
+        dev = LegacyDeviceFacade(dev)
 
-        if hasattr(plugin_device_class, "pennylane_requires"):
-            required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
-            current_version = Version(__version__)
-            if current_version not in required_versions:
-                raise DeviceError(
-                    f"The {name} plugin requires PennyLane versions {required_versions}, "
-                    f"however PennyLane version {__version__} is installed."
-                )
-
-        # Construct the device
-        dev = plugin_device_class(*args, **options)
-
-        if isinstance(dev, LegacyDevice):
-            dev = LegacyDeviceFacade(dev)
-
-        return dev
-
-    raise DeviceError(f"Device {name} does not exist. Make sure the required plugin is installed.")
+    return dev
