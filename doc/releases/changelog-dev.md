@@ -1080,6 +1080,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* ``Dataset.read`` no longer closes a caller-owned source dataset. [(#9891)](https://github.com/PennyLaneAI/pennylane/pull/9891)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
