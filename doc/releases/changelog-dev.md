@@ -1192,6 +1192,9 @@
   restored as ``bytes``.
   [(#9687)](https://github.com/PennyLaneAI/pennylane/pull/9687)
 
+* `default.clifford` now returns a scalar for `qml.expval(qml.Projector(...))` when
+  `tableau=False`, instead of the full probability vector.
+  [(#9670)](https://github.com/PennyLaneAI/pennylane/issues/9670)
 * Fixed a bug with :func:`~pennylane.equal` where comparing a base operator to
   one of its subclasses returned ``True`` if they shared the same data and wires.
   [(#9749)](https://github.com/PennyLaneAI/pennylane/pull/9749)
@@ -1226,4 +1229,5 @@ Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
 Jake Zaia,
+Leen,
 Zinan Zhou.

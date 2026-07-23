@@ -774,3 +774,21 @@ def test_state_prep_coverage():
 
     res = circuit()
     assert qp.math.isclose(res, -1.0)
+
+
+@pytest.mark.parametrize("tableau", [True, False])
+def test_projector_expval_returns_scalar(tableau):
+    """Test that expval(projecter) returns a scalar under both tableau settings"""
+
+    dev = qp.device("default.clifford", wires=2, tableau=tableau)
+
+    @qp.qnode(dev)
+    def circuit():
+        qp.Hadamard(0)
+        qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.Projector([0, 0], wires=[0, 1]))
+
+    result = circuit()
+
+    assert qp.math.shape(result) == ()
+    assert qp.math.allclose(result, 0.5)
