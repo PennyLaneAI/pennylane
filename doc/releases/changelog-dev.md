@@ -1092,6 +1092,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed ``qml.is_commuting`` returning ``False`` for commuting ``CZ`` and ``SWAP`` operations on shared wires. [(#9886)](https://github.com/PennyLaneAI/pennylane/pull/9886)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
