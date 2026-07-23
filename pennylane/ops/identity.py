@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the Identity operation that is common to both
-cv and qubit computing paradigms in PennyLane.
+This module contains the Identity operation that is common to qubit computing paradigms in PennyLane.
 """
 
 from collections.abc import Sequence
@@ -22,15 +21,17 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import CVObservable, Operation
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane.core.operator import Operation
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
 
-class Identity(CVObservable, Operation):
+class Identity(Operation):
     r"""
     The Identity operator
 
@@ -53,7 +54,7 @@ class Identity(CVObservable, Operation):
     grad_method = None
     """Gradient computation method."""
 
-    ev_order = 1
+    is_verified_hermitian = True
 
     resource_keys = set()
 
@@ -87,7 +88,7 @@ class Identity(CVObservable, Operation):
             if isinstance(wire, str):
                 return f"I('{wire}')"
             return f"I({wire})"
-        return f"I({self.wires.tolist()})"
+        return f"I({self.wires})"
 
     @property
     def name(self):
@@ -149,10 +150,6 @@ class Identity(CVObservable, Operation):
         return self.compute_matrix(n_wires=n_wires)
 
     @staticmethod
-    def _heisenberg_rep(p):
-        return qp.math.array([1, 0, 0])
-
-    @staticmethod
     def compute_diagonalizing_gates(
         wires, n_wires=1
     ):  # pylint: disable=arguments-differ,unused-argument
@@ -201,11 +198,6 @@ class Identity(CVObservable, Operation):
 
         """
         return []
-
-    @staticmethod
-    def identity_op(*params):
-        """Alias for matrix representation of the identity operator."""
-        return I.compute_matrix(*params)
 
     def adjoint(self):
         return I(wires=self.wires)
@@ -486,13 +478,7 @@ def _controlled_g_phase_resource(
 
     return {
         qp.X: num_zero_control_values * 2,
-        controlled_resource_rep(
-            qp.PhaseShift,
-            base_params={},
-            num_control_wires=num_control_wires - 1,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-        ): 1,
+        _ctrl_abstract(qp.PhaseShift, Wire[num_control_wires - 1], Wire[num_work_wires]): 1,
     }
 
 

@@ -1350,6 +1350,36 @@ class TestEqual:
         with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths"):
             assert_equal(op1, op2)
 
+    def test_equal_subclass_returns_false(self):
+        """Test that a strict subclass is not equal to its parent operator."""
+
+        # pylint: disable=too-few-public-methods
+        class MyPauliX(qp.X):
+            pass
+
+        op1 = qp.X(0)
+        op2 = MyPauliX(0)
+
+        assert qp.equal(op1, op2) is False
+        assert qp.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
+            assert_equal(op1, op2)
+
+    def test_equal_identity_subclass_returns_false(self):
+        """Test that a subclass of Identity is not equal to Identity itself."""
+
+        # pylint: disable=too-few-public-methods
+        class MyIdentity(qp.Identity):
+            pass
+
+        op1 = qp.Identity(0)
+        op2 = MyIdentity(0)
+
+        assert qp.equal(op1, op2) is False
+        assert qp.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
+            assert_equal(op1, op2)
+
     def test_equal_with_unsupported_nested_operators_returns_false(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) returns
         `False` unless there is a singledispatch function specifically comparing that operator type.
@@ -2989,7 +3019,6 @@ class TestHilbertSchmidt:
     def test_non_equal_data(self, op, other_op):
         """Test that differing data is found."""
         assert qp.equal(op, other_op) is False
-        other_op.data = op.data
 
         v_ops = op.hyperparameters["V"]
         op_params = qp.tape.QuantumScript(v_ops).get_parameters()

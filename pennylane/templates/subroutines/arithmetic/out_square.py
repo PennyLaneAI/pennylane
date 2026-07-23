@@ -149,13 +149,13 @@ class OutSquare(Operation):
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:
 
-        >>> specs_false = qp.specs(circuit)(False)["resources"].gate_types
+        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
         >>> print(specs_false)
         {'BasisEmbedding': 1, 'C(BasisState)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'PauliX': 28, 'SemiAdder': 2}
 
         When we do pass the information, we reduce the required resources by a lot:
 
-        >>> specs_true = qp.specs(circuit)(True)["resources"].gate_types
+        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations
         >>> print(specs_true)
         {'BasisEmbedding': 1, 'TemporaryAND': 11, 'CNOT': 22, 'MultiControlledX': 8, 'Adjoint(TemporaryAND)': 8}
 

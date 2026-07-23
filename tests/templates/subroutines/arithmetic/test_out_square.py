@@ -95,7 +95,6 @@ class TestOutSquare:
     """Test the OutSquare template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_qjit_dynamic_wires(self, output_wires_zeroed):
@@ -214,9 +213,7 @@ class TestOutSquare:
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [1]),
         ],
     )
-    @pytest.mark.parametrize(
-        "use_jit", [pytest.param(True, marks=(pytest.mark.catalyst, pytest.mark.external)), False]
-    )
+    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
     def test_decomposition_new(
         self,
         x_wires,
