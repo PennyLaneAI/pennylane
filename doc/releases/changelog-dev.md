@@ -668,6 +668,9 @@
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Trotter error module now supports GAN Hamiltonian workflows.
+  [(#9742)](https://github.com/PennyLaneAI/pennylane/pull/9742)
+  
 * Added an optional parameter ``phase_fn`` to ``QuditCircuitConfig`` which enables the inclusion of
   a phase layer with trainable weights to a qudit IQP circuit.
   [(#9826)][https://github.com/PennyLaneAI/pennylane/pull/9826]
