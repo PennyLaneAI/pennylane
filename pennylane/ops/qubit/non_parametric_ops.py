@@ -49,6 +49,7 @@ from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -890,7 +891,6 @@ class PauliZ(Operator2):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    wire_sizes = (1,)
     arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True
@@ -925,12 +925,10 @@ class PauliZ(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
-        if isinstance(self.wires, AbstractWires):
-            return "PauliZ"
-        wire = self.wires[0]  # pylint: disable=unsubscriptable-object
-        if isinstance(wire, str):
-            return f"Z('{wire}')"
-        return f"Z({wire})"
+        # PauliZ.name is still "PauliZ" but we want the repr to be just "Z"
+        if isinstance(self.wires, Wires):
+            return f"Z({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+        return f"Z(wires={self.wires})"
 
     def label(
         self,
@@ -942,7 +940,6 @@ class PauliZ(Operator2):
         return base_label or "Z"
 
     @staticmethod
-    @lru_cache
     # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1046,10 +1043,11 @@ class PauliZ(Operator2):
 def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
     if not _is_empty_or_all_true(control_values):
         return NotImplemented
+    is_abstract = isinstance(control, AbstractWires) or isinstance(base.wires, AbstractWires)
     if len(control) == 1:
-        return qp.CZ(control + base.wires)
+        return resource_rep(qp.CZ) if is_abstract else qp.CZ(control + base.wires)
     if len(control) == 2:
-        return qp.CCZ(control + base.wires)
+        return resource_rep(qp.CCZ) if is_abstract else qp.CCZ(control + base.wires)
     return NotImplemented
 
 
@@ -1081,25 +1079,25 @@ def _pauliz_to_ps(wires: WiresLike):
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda **_: {qp.S: 1})
-def _pow_z_to_s(wires, **_):
-    qp.S(wires=wires)
+def _pow_z_to_s(base, z):  # pylint: disable=unused-argument
+    qp.S(wires=base.wires)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.25))
 @register_resources(lambda **_: {qp.T: 1})
-def _pow_z_to_t(wires, **_):
-    qp.T(wires=wires)
+def _pow_z_to_t(base, z):  # pylint: disable=unused-argument
+    qp.T(wires=base.wires)
 
 
 @register_resources(lambda **_: {qp.PhaseShift: 1})
-def _pow_z(wires, z, **_):
+def _pow_z(base, z):
     z_mod2 = qp.math.array(z) % 2
-    qp.PhaseShift(np.pi * z_mod2, wires=wires)
+    qp.PhaseShift(np.pi * z_mod2, wires=base.wires)
 
 
 add_decomps(PauliZ, _pauliz_to_ps)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
-add_decomps("Pow(PauliZ)", pow_involutory, _pow_z, _pow_z_to_s, _pow_z_to_t)
+add_decomps("Pow(PauliZ)", pow_involutory2, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
 def _controlled_z_resources(  # pylint: disable=unused-argument

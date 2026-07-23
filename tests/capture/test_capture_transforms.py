@@ -31,6 +31,7 @@ from pennylane.capture.primitives import (
     transform_prim,
 )
 from pennylane.transforms.core import transform
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -273,7 +274,7 @@ class TestCaptureTransforms:
         assert loop_body_jaxpr.eqns[0].primitive == qp.X._primitive
         assert loop_body_jaxpr.eqns[1].primitive == qp.X._primitive
 
-        assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.Z)
         assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")

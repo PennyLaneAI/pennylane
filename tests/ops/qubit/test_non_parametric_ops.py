@@ -47,9 +47,10 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.decomposition.utils import _get_decomp_args
+from pennylane.core.operator.operator2 import Operator2
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -108,6 +109,7 @@ STRING_REPR = (
     (qp.X(1), "X(1)"),
     (qp.Y(2), "Y(2)"),
     (qp.Z(3), "Z(3)"),
+    (qp.Z(Wire[1]), "Z(wires=AbstractWires(1))"),
     (qp.T(0), "T(0)"),
     (qp.S(0), "S(0)"),
     (qp.SX(0), "SX(0)"),
@@ -139,6 +141,10 @@ class TestOperations:
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
+
+    def test_pauliz_compute_matrix_accepts_wires(self):
+        """The Operator2 compute method accepts its declared wire argument."""
+        assert np.allclose(qp.Z.compute_matrix(wires=["target"]), Z)
 
     @pytest.mark.parametrize("op, str_repr", STRING_REPR)
     def test_string_repr(self, op, str_repr):
@@ -1058,9 +1064,14 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CY(("a", 0)))
 
     def test_PauliZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qp.PauliZ(0)._controlled("a")
+        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
+        out = qp.ctrl(qp.PauliZ(0), "a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
+
+    @pytest.mark.parametrize(("control", "expected_type"), [(0, qp.CZ), (Wire[2], qp.CCZ)])
+    def test_PauliZ_abstract_control(self, control, expected_type):
+        """Abstract Z controls bridge to compressed legacy CZ and CCZ resources."""
+        assert qp.ctrl(qp.Z(Wire[1]), control) == qp.resource_rep(expected_type)
 
     def test_Hadamard(self):
         """Test the Hadamard _controlled method."""
@@ -1103,27 +1114,34 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         half_op = qp.pow(op, half_data)
         quart_op = qp.pow(op, quart_data)
 
-        decomps = qp.list_decomps(f"Pow({op.name})")
-        for rule in decomps:
-            params, args, kwargs = _get_decomp_args(half_op)
-            if rule.is_applicable(**params):
+        def check_power(pow_op, repetitions):
+            is_operator2 = isinstance(pow_op, Operator2)
+            rule_params = pow_op.arguments if is_operator2 else pow_op.resource_params
+            decomps = (
+                qp.list_decomps(pow_op)
+                if is_operator2
+                else qp.list_decomps(f"Pow({pow_op.base.name})")
+            )
+            applicable_rules = [rule for rule in decomps if rule.is_applicable(**rule_params)]
+            assert applicable_rules
+
+            for rule in applicable_rules:
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
+                    for _ in range(repetitions):
+                        if is_operator2:
+                            rule(**pow_op.arguments)
+                        else:
+                            rule(
+                                *pow_op.parameters,
+                                wires=pow_op.wires,
+                                **pow_op.hyperparameters,
+                            )
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
-            params, args, kwargs = _get_decomp_args(quart_op)
-            if rule.is_applicable(**params):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-
-                tape = qp.tape.QuantumScript.from_queue(q)
-                assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
+        check_power(half_op, 2)
+        check_power(quart_op, 4)
 
     @pytest.mark.parametrize("z", [0.25, 0.5, 2, 4, 8, 9, [0.25, 0.5]])
     @pytest.mark.parametrize("op", [qp.ISWAP(wires=[0, 1]), qp.SISWAP(wires=[0, 1])])

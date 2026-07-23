@@ -38,7 +38,7 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from tests.capture.capture_utils import extract_all_primitives
+from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
 
 
 def get_qnode_output_eqns(jaxpr):
@@ -131,7 +131,7 @@ def test_simple_qnode():
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
     assert len(qfunc_jaxpr.eqns) == 3
     assert qfunc_jaxpr.eqns[0].primitive == qp.RX._primitive
-    assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
+    assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.Z)
     assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     assert len(eqn0.outvars) == 1
@@ -171,7 +171,7 @@ def test_multiple_measurements():
 
     assert qfunc_jaxpr.eqns[0].primitive == qp.measurements.SampleMP._wires_primitive
     assert qfunc_jaxpr.eqns[1].primitive == qp.measurements.ProbabilityMP._wires_primitive
-    assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+    assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
     assert qfunc_jaxpr.eqns[3].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(
