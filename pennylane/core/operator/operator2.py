@@ -19,7 +19,7 @@ TODO: [sc-120453] Fill docstring
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -41,6 +41,7 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -59,6 +60,13 @@ if TYPE_CHECKING:
 has_jax = find_spec("jax") is not None
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
+
+
+class GradMethod(StrEnum):
+    """Supported gradient methods."""
+
+    ANALYTIC = "A"
+    FINITE_DIFF = "F"
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -394,6 +402,43 @@ class Operator2(metaclass=OperatorMeta):
     # control_wires).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
+
+    _grad_recipe = None
+    """Legacy Operator compatibility default for parameter-shift recipes."""
+
+    @property
+    def grad_recipe(self):
+        """Compute 'grad_recipe' lazily."""
+        if self._grad_recipe is None:
+            return [None] * self.num_params
+        return self._grad_recipe
+
+    @grad_recipe.setter
+    def grad_recipe(self, recipe):
+        self._grad_recipe = recipe
+
+    @property
+    def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation using the parameter-shift method.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients import parameter_frequencies
+
+        if self.num_params == 0:
+            return None
+        if self.grad_recipe != [None] * self.num_params:
+            return GradMethod.ANALYTIC
+        try:
+            _ = parameter_frequencies(self)
+            return GradMethod.ANALYTIC
+        except ParameterFrequenciesUndefinedError:
+            return GradMethod.FINITE_DIFF
 
     @property
     def data(self) -> tuple:
@@ -975,7 +1020,6 @@ class Operator2(metaclass=OperatorMeta):
 
         inputs = []
         for key, value in self.arguments.items():
-
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
@@ -1604,9 +1648,12 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete impl.
-                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
+                # TODO: impl is being used here for reconstruction while the interpreter itself is
+                # under JAX tracing. Need to separate this logic from such scenario. For now,
+                # we can use the fact that wires are always integers and cast them to int.
+                args[name] = Wires(
+                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
+                )
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
