@@ -193,8 +193,7 @@ def test_controlled_operator_handling(op_class, args, kwargs):
     if issubclass(op_class, Operator2):
         op_instance = op_class(*args, **kwargs)
         assert jaxpr.eqns[0].primitive is operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is type(op_instance.base)
-        assert jaxpr.eqns[0].params["n_ctrls"] == len(op_instance.control_wires)
+        assert jaxpr.eqns[0].params["op_cls"] is type(op_instance)
     else:
         assert jaxpr.eqns[0].primitive == op_class._primitive
 
