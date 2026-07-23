@@ -47,6 +47,20 @@ class TestIdentity:
         expected = CompressedResourceOp(Identity, 1, {})
         assert Identity.resource_rep() == expected
 
+    @pytest.mark.parametrize("num_wires", (1, 2, 3))
+    def test_resource_rep_from_op_preserves_num_wires(self, num_wires):
+        """Test that instance arity is preserved in the compressed representation."""
+        op = Identity(wires=range(num_wires))
+
+        assert op.resource_rep_from_op() == CompressedResourceOp(Identity, num_wires, {})
+
+    def test_resource_rep_from_op_distinguishes_arities(self):
+        """Test that different Identity arities have distinct compressed representations."""
+        two_wire_rep = Identity(wires=[0, 1]).resource_rep_from_op()
+        three_wire_rep = Identity(wires=[0, 1, 2]).resource_rep_from_op()
+
+        assert two_wire_rep != three_wire_rep
+
     def test_resource_params(self):
         """Test the resource params are correct"""
         op = Identity(0)
