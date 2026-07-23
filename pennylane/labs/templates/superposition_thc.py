@@ -43,10 +43,9 @@ class SuperpositionTHC(Operation):
         \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle \;\mapsto\;
         \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}} \lvert \mu \rangle \lvert \nu \rangle \lvert \text{flag} \rangle ,
 
-    Here :math:`\lvert \text{flag} \rangle` is the single success flag qubit ``work_wires[6]``;
-    a valid pair is prepared when it is :math:`\lvert 1 \rangle`. The other flags mentioned in
-    the note below are separate work wires.
-    The valid index set :math:`\mathcal{S}` is
+    where :math:`\lvert \text{flag} \rangle` is the success flag qubit ``work_wires[6]``, and a
+    valid pair is prepared when it is :math:`\lvert 1 \rangle`. The valid index set
+    :math:`\mathcal{S}` is
 
     .. math::
 
@@ -62,9 +61,8 @@ class SuperpositionTHC(Operation):
 
         Every work wire is returned to the zero state, except:
 
-        - ``work_wires[0]``: a dirty work wire, **not** a flag. It is the amplitude-amplification
-          auxiliary wire; its final cleaning rotation is intentionally omitted, so it is left in an
-          arbitrary state and should not be interpreted.
+        - ``work_wires[0]``: the amplitude amplification auxiliary wire. Its final cleaning
+          rotation is omitted, so it is left in an arbitrary state and is not a flag.
         - ``work_wires[3]``: flag, true if the system is in the state :math:`|\eta = M\rangle`.
         - ``work_wires[6]``: flag, true if the superposition has been prepared correctly.
 
@@ -331,11 +329,10 @@ def _left_inequalities(
 
 
 def _controlled_rep(base_class, num_control_wires, num_work_wires):
-    """resource_rep of ``Controlled(base, num_control_wires)`` as built in the decomposition.
+    """resource_rep of the ``Controlled`` gates used in the decomposition, with no zero controls.
 
-    ``num_work_wires`` is a resource key of ``Controlled`` and affects how the graph decomposer
-    expands a multi-controlled gate, so it must match the number of borrowed work wires the gate
-    actually receives in the decomposition (``len(extra_work)``)."""
+    ``num_work_wires`` must match the number of borrowed work wires the gate receives in the
+    decomposition, since it changes how the graph decomposer expands a multi-controlled gate."""
     return resource_rep(
         Controlled,
         base_class=base_class,
@@ -352,9 +349,8 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
 
     n = num_mu_wires
 
-    # Borrowed work-wire slices used in the decomposition, as a function of the total number of
-    # work wires. The ``Controlled`` gates borrow ``extra_work = work_wires[4n+6:]`` and the MCX
-    # inside ``_left_inequalities`` borrows ``work_wires[3n+6:4n+6]``.
+    # Number of borrowed work wires available to each gate: the Controlled gates use
+    # extra_work = work_wires[4n+6:], and the MCX in _left_inequalities uses work_wires[3n+6:4n+6].
     ctrl_work = max(0, num_work_wires - (4 * n + 6))
     mcx_work = max(0, min(4 * n + 6, num_work_wires) - (3 * n + 6))
 
@@ -402,9 +398,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires return to the zero
-    # state except the flags work_wires[3] and work_wires[6], and work_wires[0], a dirty work
-    # wire (its cleaning rotation is intentionally omitted).
-    # Note that the paper uses 1-based indexing, whereas we will use 0-based indexing.
+    # state except the flags work_wires[3] and work_wires[6], and work_wires[0], whose cleaning
+    # rotation we omit. Note that the paper uses 1-based indexing, whereas we use 0-based indexing.
 
     mu_wires = Wires(mu_wires)
     nu_wires = Wires(nu_wires)
@@ -466,8 +461,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    # work_wires[0] is left dirty: its cleaning RY is intentionally omitted.
     adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
+    # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
     RY(angle, wires=work_wires[0])
 
 
