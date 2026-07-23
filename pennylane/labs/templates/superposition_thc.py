@@ -47,8 +47,8 @@ class SuperpositionTHC(Operation):
 
     .. math::
 
-       \mathcal{S} = \{ (\mu, \nu) \mid \mu \le \nu < M \} \;\cup\;
-       \{ (\mu, M) \mid \mu < N/2 \}
+       \mathcal{S} = \{ (\mu, \nu) \mid 0\leq \mu \le \nu < M \} \;\cup\;
+       \{ (\mu, M) \mid 0\leq \mu < N/2 \}
 
     and :math:`d = N/2 + M(M+1)/2` is its size.
 
@@ -58,11 +58,11 @@ class SuperpositionTHC(Operation):
     .. note::
 
         Every work wire is returned to the zero state, except for the wires that carry the
-        prepared flags: `work_wires[0]`, `work_wires[3]`, and `work_wires[6]`.
+        prepared flags: ``work_wires[0]``, ``work_wires[3]``, and ``work_wires[6]``.
 
-        - `work_wires[0]`: Assures that the amplitude amplification process has been performed correctly.
-        - `work_wires[3]`: Evaluates to true if the system is in the state :math:`|\eta = M>`.
-        - `work_wires[6]`: Evaluates to true if the superposition has been prepared correctly.
+        - ``work_wires[0]``: Assures that the amplitude amplification process has been performed correctly.
+        - ``work_wires[3]``: Evaluates to true if the system is in the state :math:`|\eta = M\rangle`.
+        - ``work_wires[6]``: Evaluates to true if the superposition has been prepared correctly.
 
     Args:
         M (int): The THC rank. Together with ``N``
@@ -79,12 +79,12 @@ class SuperpositionTHC(Operation):
             Fig. 3 of `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_;
             the remaining wires are scratch space for the comparators and multi-controlled
             gates. At least :math:`3\,n + 5` zeroed work wires must be provided, where
-            :math:`n` is the size of `nu_wires`.
+            :math:`n` is the size of ``nu_wires``.
 
     **Example**
 
     The template prepares the THC index superposition on the ``mu_wires`` / ``nu_wires``
-    registers. Here ``n = 3``, so the minimum number of work wires is :math:`3n + 5 = 14`.
+    registers. Here :math:`n = 3`, so the minimum number of work wires is :math:`3n + 5 = 14`.
     The prepared superposition is uniform over the valid index pairs
     :math:`\mathcal{S}` conditioned on the success flag ``work_wires[6] == 1``; we
     therefore read out the ``mu`` and ``nu`` registers together with that flag.
@@ -114,14 +114,15 @@ class SuperpositionTHC(Operation):
     .. code-block:: pycon
 
         >>> probs = circuit().reshape(2**n, 2**n, 2)
-        >>> valid = sorted((mu, nu) for mu in range(2**n) for nu in range(2**n)
-        ...                if probs[mu, nu, 1] > 1e-9)
-        >>> valid
+        >>> valid = np.where(probs > 1e-9)
+        >>> valid_mu_nu = [tuple(map(int, arr)) for arr in zip(*valid[:2])]
+        >>> valid_mu_nu
         [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2), (1, 3), (1, 4), (2, 2), (2, 3), (2, 4), (3, 3), (3, 4), (4, 4)]
-        >>> len(valid) == N // 2 + M * (M + 1) // 2
+        >>> d = N // 2 + M * (M + 1) // 2
+        >>> len(valid_mu_nu) == d
         True
-        >>> round(float(probs[0, 0, 1]), 4)
-        0.0625
+        >>> np.allclose(probs[valid], 1/d)
+        True
     """
 
     grad_method = None
@@ -174,7 +175,7 @@ class SuperpositionTHC(Operation):
             raise ValueError(
                 f"mu_wires and nu_wires each need at least ceil(log2(M + 1)) wires. "
                 f"Got M={M} with {n} wires, which allows M up to {2**n - 1}. "
-                f"Provide at least {int(np.ceil(np.log2(M + 1)))} wires per index register."
+                f"Provide at least {math.ceil_log2(M + 1)} wires per index register."
             )
 
         self.hyperparameters["M"] = M
@@ -391,7 +392,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # 2. Rotation angle for the single round of amplitude amplification.
-    n_total_vals = 2 ** len(mu_wires)
+    n_total_vals = 2 ** n
     d = N // 2 + M * (M + 1) // 2
     frac_valid = d / n_total_vals**2
     limit = 0.5 / math.sqrt(frac_valid)
@@ -439,7 +440,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
+    adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
 
 
 add_decomps(SuperpositionTHC, _superposition_thc)

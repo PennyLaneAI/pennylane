@@ -106,7 +106,7 @@ def test_standard_validity(M, N, n):
 class TestSuperpositionTHC:
     """Test the SuperpositionTHC template."""
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("qjit", [False, True])
     @pytest.mark.parametrize(
         ("M", "N", "n"),
@@ -142,12 +142,7 @@ class TestSuperpositionTHC:
         probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
         success = probs[:, :, 1]
 
-        support = {
-            (mu, nu): float(success[mu, nu])
-            for mu in range(2**n)
-            for nu in range(2**n)
-            if success[mu, nu] > 1e-9
-        }
+        support = set(tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9)))
 
         assert set(support) == _valid_pairs(M, N)
 
