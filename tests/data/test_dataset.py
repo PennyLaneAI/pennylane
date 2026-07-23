@@ -428,3 +428,18 @@ class TestDataset:
 
         assert isinstance(parent.child, Dataset)
         assert parent.child.list_attributes() == child.list_attributes()
+
+
+def test_read_from_dataset_keeps_source_open():
+    """Caller-owned Dataset sources must not be closed by read() (#9651)."""
+    existing = Dataset()
+    existing.x = 1
+    existing.y = "keep-open"
+
+    dest = Dataset()
+    dest.read(existing)
+
+    assert existing.x == 1
+    assert existing.y == "keep-open"
+    assert dest.x == 1
+    assert dest.y == "keep-open"
