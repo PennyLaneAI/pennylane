@@ -1130,7 +1130,8 @@ class TestMCXDecomposition:
                 control_wires, target_wire, work_wires, work_wire_type="zeroed"
             )
 
-    @pytest.mark.external
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
         [(4, 1), (4, 2)],
@@ -1142,7 +1143,6 @@ class TestMCXDecomposition:
         from catalyst.device.decomposition import catalyst_decompose
 
         jnp = jax.numpy
-        qp.decomposition.enable_graph()
 
         gate_set = {
             "X",

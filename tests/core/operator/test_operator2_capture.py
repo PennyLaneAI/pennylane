@@ -12,11 +12,11 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking
+# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-position
 
 import pytest
 from operator2_utils import (
-    CompOp,
+    CompilableOp,
     DynOp,
     FullOp,
     HybridOp,
@@ -30,6 +30,7 @@ import pennylane as qp
 from pennylane import apply
 
 jax = pytest.importorskip("jax")
+from pennylane.capture import PlxprInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -151,7 +152,7 @@ class TestCaptureBasics:
 
     def test_compilable_arg_in_params(self):
         """Test that compilable arguments are stored as equation parameters."""
-        jaxpr = jax.make_jaxpr(lambda: CompOp(5, wires=0))()
+        jaxpr = jax.make_jaxpr(lambda: CompilableOp(5, wires=0))()
         eqn = _single_op_eqn(jaxpr)
         assert unflatten(*eqn.params["n"]) == 5
 
@@ -319,6 +320,20 @@ class TestHybridCapture:
 class TestReconstruction:
     """Tests that evaluating a captured jaxpr reconstructs the operator."""
 
+    def test_interpreter_rebinds_with_traced_wires(self):
+        """Test that interpreting an Operator2 equation rebinds its primitive."""
+        captured = jax.make_jaxpr(lambda wire: DynOp(0.5, wires=wire).tracer)(0)
+
+        def interpret(wire):
+            [op] = PlxprInterpreter().eval(captured.jaxpr, captured.consts, wire)
+            return op
+
+        interpreted = jax.make_jaxpr(interpret)(0)
+
+        assert len(interpreted.eqns) == 1
+        assert interpreted.eqns[0].primitive is operator_p
+        assert interpreted.eqns[0].params["op_cls"] is DynOp
+
     def test_simple_roundtrip(self):
         """Test that a simple operator round-trips through capture and evaluation."""
         jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0).tracer)(0.5)
@@ -339,9 +354,9 @@ class TestReconstruction:
 
     def test_compilable_roundtrip(self):
         """Test that a compilable argument round-trips through capture and evaluation."""
-        jaxpr = jax.make_jaxpr(lambda x: CompOp(5, wires=x).tracer)(0)
+        jaxpr = jax.make_jaxpr(lambda x: CompilableOp(5, wires=x).tracer)(0)
         [op] = _eval(jaxpr, 1)
-        qp.assert_equal(op, CompOp(5, wires=1))
+        qp.assert_equal(op, CompilableOp(5, wires=1))
 
     def test_multiwire_roundtrip(self):
         """Test that an operator with multiple wire arguments round-trips."""

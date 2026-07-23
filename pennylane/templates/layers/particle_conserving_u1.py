@@ -319,16 +319,16 @@ class ParticleConservingU1(Operation):
         >>> pprint(ops)
         [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
         CZ(wires=['a', 'b']),
-        CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=Wires(['a', 'b'])),
+        CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
         PhaseShift(tensor(-0.3000), wires=['b']),
         CNOT(wires=['a', 'b']),
         PhaseShift(tensor(0.3000), wires=['b']),
         CNOT(wires=['a', 'b']),
         PhaseShift(tensor(-0.3000), wires=['a']),
         CZ(wires=['b', 'a']),
-        CRot(0, tensor(2.), 0, wires=Wires(['b', 'a'])),
+        CRot(0, tensor(2.), 0, wires=['b', 'a']),
         CZ(wires=['a', 'b']),
-        CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=Wires(['a', 'b'])),
+        CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=['a', 'b']),
         PhaseShift(tensor(0.3000), wires=['b']),
         CNOT(wires=['a', 'b']),
         PhaseShift(tensor(-0.3000), wires=['b']),
@@ -369,18 +369,14 @@ class ParticleConservingU1(Operation):
 
 
 def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
-    # number of pairs of even-indexed of wires
-    num_nm_wires = num_wires - 1
-
-    resources = {
+    num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
+    return {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(CZ): 3 * num_nm_wires * n_layers,
-        resource_rep(CRot): 3 * num_nm_wires * n_layers,
-        resource_rep(PhaseShift): 6 * num_nm_wires * n_layers,
-        resource_rep(CNOT): 4 * num_nm_wires * n_layers,
+        CZ: 3 * num_nm_wires * n_layers,
+        CRot: 3 * num_nm_wires * n_layers,
+        PhaseShift: 6 * num_nm_wires * n_layers,
+        CNOT: 4 * num_nm_wires * n_layers,
     }
-
-    return resources
 
 
 def _decompose_ua_qfunc(phi: float, wires: WiresLike):

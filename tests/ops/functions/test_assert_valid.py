@@ -299,7 +299,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():
+        def compute_eigvals():  # pylint: disable=signature-differs
             return [-1, 1]
 
     with pytest.raises(
@@ -323,14 +323,14 @@ def test_bad_pickling():
 
 
 def test_bad_bind_new_parameters():
-    """Test a function that is not working with bind_new_parameters."""
+    """Test that validation fails when rebinding cannot update an operator's data."""
 
     class NoBindNewParameters(Operator):
         num_params = 1
 
-        def __init__(self, x, wires):
-            super().__init__(x, wires)
-            self.data = (1.0,)  # different x will not change data attribute
+        @property
+        def data(self):
+            return (1.0,)  # different x will not change data attribute
 
     with pytest.raises(
         AssertionError, match=r"bind_new_parameters must be able to update the operator"
@@ -460,9 +460,9 @@ def test_data_is_tuple():
     class BadData(Operator):
         num_params = 1
 
-        def __init__(self, x, wires):
-            super().__init__(x, wires)
-            self.data = [x]
+        @property
+        def data(self):
+            return list(super().data)
 
     with pytest.raises(AssertionError, match=r"op.data must be a tuple"):
         assert_valid(BadData(2.0, wires=0))
@@ -475,7 +475,7 @@ class SingleRZ(Operator2):
 
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
-    ndim_params = ((),)
+    ndim_params = (0,)
 
     def __init__(self, phi, wires):
         assert isinstance(wires, int) or len(wires) == 1
@@ -502,6 +502,7 @@ class SingleRZ(Operator2):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
 
+@pytest.mark.jax
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
     the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.

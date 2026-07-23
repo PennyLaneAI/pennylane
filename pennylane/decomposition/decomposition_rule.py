@@ -28,7 +28,7 @@ from typing import overload
 
 import pennylane as qp
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
@@ -37,10 +37,9 @@ from .resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
     Resources,
-    auto_wrap,
-    resource_rep,
+    _gate_count_dict_to_str,
 )
-from .utils import to_name
+from .utils import _get_decomp_args, to_name
 
 
 @dataclass(frozen=True)
@@ -463,7 +462,16 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
-            op = auto_wrap(op)
+            if not (
+                isinstance(op, (CompressedResourceOp, Operator2))
+                or (isinstance(op, type) and issubclass(op, Operator))
+            ):
+                raise TypeError(
+                    "The keys of the dictionary returned by the resource function must be a "
+                    "subclass of Operator or a CompressedResourceOp constructed with "
+                    "qp.resource_rep, or an Operator2 constructed with abstract inputs."
+                )
+            op = abstractify(op)
             _verify_is_abstract_and_fixed(op)
             if count > 0:
                 gate_counter.update({op: count})
@@ -640,6 +648,11 @@ _decompositions_private = defaultdict(DecompCollection)
 
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
+_fixed_decomps_private = {}
+"""dict[str, DecompositionRule]: A dictionary mapping operators a unique decomposition rule."""
+
+_fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
+
 
 def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
@@ -775,6 +788,8 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
     return _decompositions_var.get()[to_name(op)].copy()
 
 
@@ -807,13 +822,39 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    current_decomps = {k: v.copy() for k, v in _decompositions_private.items()}
+
+    # Handle the global decomposition library.
+    current_decomps = {k: v.copy() for k, v in _decompositions_var.get().items()}
     _new_decomps = defaultdict(DecompCollection, current_decomps)
-    token = _decompositions_var.set(_new_decomps)
+    token_all_decomps = _decompositions_var.set(_new_decomps)
+
+    # Handle the registry of fixed decomposition rules.
+    _new_fixed_decomps = _fixed_decomps_var.get().copy()
+    token_fixed_decomps = _fixed_decomps_var.set(_new_fixed_decomps)
+
     try:
         yield
     finally:
-        _decompositions_var.reset(token)
+        _decompositions_var.reset(token_all_decomps)
+        _fixed_decomps_var.reset(token_fixed_decomps)
+
+
+def _fix_decomp(op: type[Operator] | Operator | str, rule: DecompositionRule):
+    """Fix a unique decomposition rule for an operator.
+
+    This is a developer-facing function meant to be used within a local decomps context.
+
+    """
+    _fixed_decomps_var.get()[to_name(op)] = rule
+
+
+def get_fixed_decomp(op: type[Operator] | Operator | str) -> DecompositionRule | None:
+    """Get the decomposition rule fixed to an operator if there is one.
+
+    This is a developer-facing function meant to be used within a local decomps context.
+
+    """
+    return _fixed_decomps_var.get().get(to_name(op), None)
 
 
 class _DecompInfo:  # pylint: disable=too-few-public-methods
@@ -822,8 +863,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        self._conditions_met = rule.is_applicable(**op.resource_params)
-        self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+        self._decomp_args = _get_decomp_args(op)
+        self._conditions_met = rule.is_applicable(**self._decomp_args[0])
+        self._work_wire_spec = rule.get_work_wire_spec(**self._decomp_args[0])
         n_work_wires = self._work_wire_spec.total
         self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires
@@ -857,8 +899,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     @property
     def _circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
+        _, args, kwargs = _get_decomp_args(self._op)
         assert self._conditions_met and self._enough_work_wires
-        return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **self._op.hyperparameters)
+        return qp.draw(self._rule)(*args, **kwargs)
 
     @property
     def _name(self) -> str:
@@ -869,7 +912,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations(self) -> str:
         """The actual and estimated gate counts of this rule."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
         if allocations:
@@ -880,7 +923,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations_md(self) -> str:
         """The actual and estimated gate counts of this rule in the Markdown format."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
         if allocations:
@@ -891,9 +934,11 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        estimated_str = _gate_count_dict_to_str(estimated_count)
         if estimated_count == actual_count:
-            return f"Gate Count: {estimated_count}"
-        return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
+            return f"Gate Count: {estimated_str}"
+        actual_str = _gate_count_dict_to_str(actual_count)
+        return f"Estimated Gate Count: {estimated_str}\nActual Gate Count: {actual_str}"
 
     def _get_gate_count_markdown(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
@@ -1070,8 +1115,9 @@ def inspect_decomps(
 def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
     """Count the gates that a decomposition rule produced."""
 
+    _, args, kwargs = _get_decomp_args(op)
     with queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*args, **kwargs)
 
     actual_gate_counts = defaultdict(int)
     allocations = defaultdict(int)
@@ -1083,7 +1129,7 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
             continue
         if isinstance(_op, qp.allocation.Deallocate):
             continue
-        op_rep = resource_rep(_op.__class__, **_op.resource_params)
+        op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
 
     return dict(actual_gate_counts), dict(allocations)
@@ -1141,7 +1187,9 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
 
 
 def _decomp_contains_mcm(rule, params):
+    if not rule.is_applicable(**params):
+        return False
     resources = rule.compute_resources(**params).gate_counts
-    mcm = resource_rep(qp.ops.MidMeasure)
-    ppm = resource_rep(qp.ops.PauliMeasure)
+    mcm = abstractify(qp.ops.MidMeasure)
+    ppm = abstractify(qp.ops.PauliMeasure)
     return mcm in resources or ppm in resources
