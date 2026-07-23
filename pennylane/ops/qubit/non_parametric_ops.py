@@ -2163,7 +2163,7 @@ def _pow_iswap_to_zz(wires, **__):
     qp.Z(wires=wires[1])
 
 
-add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
+add_decomps("Pow(ISWAP)", make_pow_decomp_with_period2(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
 
 
 class SISWAP(Operator2):
@@ -2387,7 +2387,7 @@ def _pow_siswap_to_zz(wires, **_):
     qp.Z(wires=wires[1])
 
 
-add_decomps("Pow(SISWAP)", make_pow_decomp_with_period(8), _pow_siswap_to_zz, _pow_siswap_to_iswap)
+add_decomps("Pow(SISWAP)", make_pow_decomp_with_period2(8), _pow_siswap_to_zz, _pow_siswap_to_iswap)
 
 
 SQISW = SISWAP
