@@ -289,12 +289,12 @@ class TestPowDecomposition:
     def test_repeat_pow_base(self):
         """Tests repeating the same op z number of times."""
 
-        op = qp.pow(qp.H(0), 3)
+        op = qp.pow(qp.RX(0.1, 0), 3)
         with qp.queuing.AnnotatedQueue() as q:
             repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qp.H(0), qp.H(0), qp.H(0)]
-        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qp.H: 3})
+        assert q.queue == [qp.RX(0.1, 0), qp.RX(0.1, 0), qp.RX(0.1, 0)]
+        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qp.RX: 3})
 
     def test_repeat_pow_base2(self):
         """Tests repeating the same op z number of times."""

@@ -24,7 +24,6 @@ import pennylane as qp
 from pennylane import allocation, math
 from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
-from pennylane.typing import Wire
 
 from ..typing import Wire
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
@@ -252,27 +251,6 @@ def decompose_to_base(base):
 
 
 self_adjoint: DecompositionRule = decompose_to_base
-
-
-def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
-
-    if isinstance(op, CompressedResourceOp):
-        return controlled_resource_rep(
-            op.op_type,
-            op.params,
-            num_control_wires=len(control_wires),
-            num_zero_control_values=0,
-            num_work_wires=len(work_wires),
-            work_wire_type=work_wire_type,
-        )
-
-    return qp.ctrl(
-        op,
-        control=control_wires,
-        control_values=None,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
 
 
 def make_controlled_decomp(base_decomposition: DecompositionRule):
