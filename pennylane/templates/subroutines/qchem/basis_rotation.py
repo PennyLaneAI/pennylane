@@ -290,9 +290,9 @@ class BasisRotation(Operator2):
 
     """
 
-    wires_argnames = ("wires",)
-    static_argnames = ("check",)
     dynamic_argnames = ("unitary_matrix",)
+    wires_argnames = ("wires",)
+    compilable_argnames = ("check",)
 
     arg_specs = {"unitary_matrix": Complex[-1, -1], "wires": Wire[-1]}
     wire_sizes = (None,)
@@ -391,12 +391,8 @@ class BasisRotation(Operator2):
 # pylint: disable=unused-argument
 def _basis_rotation_decomp_resources(wires, unitary_matrix, check=False):
     dim = math.shape(unitary_matrix)[0]
-    is_real = math.is_real_obj_or_close(unitary_matrix)
 
     se_count = dim * (dim - 1) / 2
-    if is_real:
-        return {PhaseShift: 1, SingleExcitation: se_count}
-
     ps_count = dim + se_count
     return {PhaseShift: ps_count, SingleExcitation: se_count}
 
