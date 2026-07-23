@@ -254,7 +254,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
-    return math.concatenate([control_values, base_ctrl_values])
+    return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
 def _is_empty_or_all_true(control_values):

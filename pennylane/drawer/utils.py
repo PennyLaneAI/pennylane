@@ -240,8 +240,8 @@ def unwrap_controls(op):
     if not isinstance(op, Controlled):
         return control_wires, control_values, op
 
-    control_wires = op.control_wires
-    control_values = op.control_values
+    control_wires = list(op.control_wires)
+    control_values = list(op.control_values)
     base = op.base
 
     base_ctrl_wires, base_ctrl_values, base_base = unwrap_controls(base)
