@@ -836,6 +836,11 @@ class TestProperties:
         text = qp.drawer.tape_text(tape)
         assert text is not None
 
+    def test_batched_complex_scalar_label(self):
+        """Batched complex coefficients retain their imaginary components."""
+        op = s_prod(np.array([1 + 1j, 2 + 2j]), qp.PauliX(0))
+        assert op.label(decimals=2) == "[1.00+1.00j, 2.00+2.00j]*X"
+
     op_pauli_reps = (
         (
             qp.s_prod(1.23, qp.PauliZ(wires=0)),

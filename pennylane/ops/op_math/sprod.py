@@ -163,7 +163,7 @@ class SProd(ScalarSymbolicOp):
         else:
             # Batched coefficients cannot use the scalar float format mini-language.
             flat = scalar_arr.reshape(-1)
-            formatted = ", ".join(format(float(x), f".{decimals}f") for x in flat)
+            formatted = ", ".join(format(x, f".{decimals}f") for x in flat)
             scalar_val = f"[{formatted}]"
 
         return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
