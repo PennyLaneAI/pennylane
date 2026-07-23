@@ -26,7 +26,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from tests.capture.test_nested_plxpr import _check_eqn
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
@@ -499,7 +499,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        _check_eqn(eqn, qp.BasisRotation)
+        assert_eqn_matches_op(eqn, qp.BasisRotation)
         assert eqn.invars == jaxpr.jaxpr.invars
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
