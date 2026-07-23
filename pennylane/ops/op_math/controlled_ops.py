@@ -715,7 +715,7 @@ add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
-class CSWAP(ControlledOp):
+class CSWAP(Controlled2):
     r"""CSWAP(wires)
     The controlled-swap operator
 
@@ -741,6 +741,12 @@ class CSWAP(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    wire_argnames = ("wires",)
+
+    arg_specs = {"wires": Wire[2]}
+
+    wire_sizes = (2,)
+
     num_wires = 3
     """int : Number of wires that the operation acts on."""
 
@@ -750,29 +756,14 @@ class CSWAP(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CSWAP"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
+    def __init__(self, wires: WiresLike):
+        super().__init__(qp.SWAP(wires[1:]), wires[:1])
 
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=3)
-
-    def __init__(self, wires):
-        control_wires = wires[:1]
-        target_wires = wires[1:]
-
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.SWAP, wires=target_wires)
-        super().__init__(base, control_wires)
+    @override
+    def __abstract_init__(self, wires: WiresLike):
+        super().__abstract_init__(qp.SWAP(Wire[1]), control_wires=Wire[1])
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires})"
@@ -781,18 +772,22 @@ class CSWAP(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    @override
     def adjoint(self):
         return CSWAP(self.wires)
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. seealso:: :meth:`~.CSWAP.matrix`
+
+        Args:
+            wires (Iterable, Wires): optional wires that the operator acts on
 
         Returns:
             ndarray: matrix
@@ -823,7 +818,7 @@ class CSWAP(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -850,7 +845,8 @@ class CSWAP(ControlledOp):
         ]
 
 
-def _cswap_to_toffoli_resources():
+# pylint: disable=unused-argument
+def _cswap_to_toffoli_resources(wires: WiresLike=None):
     return {qp.CNOT: 2, qp.Toffoli: 1}
 
 
@@ -861,7 +857,8 @@ def _cswap(wires: WiresLike, **__):
     qp.CNOT([wires[2], wires[1]])
 
 
-def _cswap_to_ppr_resource():
+# pylint: disable=unused-argument
+def _cswap_to_ppr_resource(wires: WiresLike=None):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZYY"): 1,
@@ -887,7 +884,7 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
-add_decomps("Adjoint(CSWAP)", self_adjoint_legacy)
+add_decomps("Adjoint(CSWAP)", self_adjoint)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
