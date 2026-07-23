@@ -232,7 +232,7 @@ class BoseWord(dict):
             dict_other = dict(
                 zip(
                     [(order_idx, other_wires[i]) for i, order_idx in enumerate(order_final)],
-                    other.values(),
+                    other.sorted_dic.values(),
                     strict=True,
                 )
             )
