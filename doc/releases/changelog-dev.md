@@ -664,6 +664,10 @@
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
 
+* Added an optional parameter ``phase_fn`` to ``QuditCircuitConfig`` which enables the inclusion of
+  a phase layer with trainable weights to a qudit IQP circuit.
+  [(#9826)][https://github.com/PennyLaneAI/pennylane/pull/9826]
+  
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
   
@@ -938,6 +942,7 @@
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
+    [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
