@@ -43,7 +43,10 @@ class SuperpositionTHC(Operation):
         \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle \;\mapsto\;
         \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}} \lvert \mu \rangle \lvert \nu \rangle \lvert \text{flag} \rangle ,
 
-    where :math:`\mathcal{S}` is the valid index set defined as
+    Here :math:`\lvert \text{flag} \rangle` is the single success flag qubit ``work_wires[6]``;
+    a valid pair is prepared when it is :math:`\lvert 1 \rangle`. The other flags mentioned in
+    the note below are separate work wires, not part of this state.
+    The valid index set :math:`\mathcal{S}` is
 
     .. math::
 
@@ -57,19 +60,13 @@ class SuperpositionTHC(Operation):
 
     .. note::
 
-        Every work wire is returned to the zero state, except for the two wires that carry the
-        prepared flags, ``work_wires[3]`` and ``work_wires[6]``, and for ``work_wires[0]``, which
-        is left as a dirty work wire (see below).
+        Every work wire is returned to the zero state, except:
 
-        - ``work_wires[0]``: It is the auxiliary wire used
-          by the amplitude amplification step, which would normally be reset to
-          :math:`|0\rangle` by a final cleaning rotation. That single cleaning rotation is
-          intentionally omitted here, so this wire is left in an arbitrary (non-zero) state.
-          It carries no meaningful information and should not be measured or interpreted.
-        - ``work_wires[3]``: A flag that evaluates to true if the system is in the state
-          :math:`|\eta = M\rangle`.
-        - ``work_wires[6]``: A flag that evaluates to true if the superposition has been prepared
-          correctly.
+        - ``work_wires[0]``: a dirty work wire, **not** a flag. It is the amplitude-amplification
+          auxiliary wire; its final cleaning rotation is intentionally omitted, so it is left in an
+          arbitrary state and should not be interpreted.
+        - ``work_wires[3]``: flag, true if the system is in the state :math:`|\eta = M\rangle`.
+        - ``work_wires[6]``: flag, true if the superposition has been prepared correctly.
 
     Args:
         M (int): The THC rank. Together with ``N``
@@ -134,7 +131,7 @@ class SuperpositionTHC(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_mu_wires", "M", "N"}
+    resource_keys = {"num_mu_wires", "num_work_wires", "M", "N"}
 
     def __init__(
         self,
@@ -198,6 +195,7 @@ class SuperpositionTHC(Operation):
     def resource_params(self) -> dict:
         return {
             "num_mu_wires": len(self.hyperparameters["mu_wires"]),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
             "M": self.hyperparameters["M"],
             "N": self.hyperparameters["N"],
         }
@@ -332,24 +330,33 @@ def _left_inequalities(
         )
 
 
-def _controlled_rep(base_class, num_control_wires):
-    """resource_rep of ``Controlled(base, num_control_wires)`` as built in the
-    decomposition."""
+def _controlled_rep(base_class, num_control_wires, num_work_wires):
+    """resource_rep of ``Controlled(base, num_control_wires)`` as built in the decomposition.
+
+    ``num_work_wires`` is a resource key of ``Controlled`` and affects how the graph decomposer
+    expands a multi-controlled gate, so it must match the number of borrowed work wires the gate
+    actually receives in the decomposition (``len(extra_work)``)."""
     return resource_rep(
         Controlled,
         base_class=base_class,
         base_params={},
         num_control_wires=num_control_wires,
         num_zero_control_values=0,
-        num_work_wires=0,
+        num_work_wires=num_work_wires,
         work_wire_type="borrowed",
     )
 
 
-def _superposition_thc_resources(num_mu_wires, M, N):
+def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
 
     n = num_mu_wires
+
+    # Borrowed work-wire slices used in the decomposition, as a function of the total number of
+    # work wires. The ``Controlled`` gates borrow ``extra_work = work_wires[4n+6:]`` and the MCX
+    # inside ``_left_inequalities`` borrows ``work_wires[3n+6:4n+6]``.
+    ctrl_work = max(0, num_work_wires - (4 * n + 6))
+    mcx_work = max(0, min(4 * n + 6, num_work_wires) - (3 * n + 6))
 
     lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
     lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
@@ -359,7 +366,7 @@ def _superposition_thc_resources(num_mu_wires, M, N):
         MultiControlledX,
         num_control_wires=n,
         num_zero_control_values=n,
-        num_work_wires=0,
+        num_work_wires=mcx_work,
         work_wire_type="borrowed",
     )
 
@@ -367,11 +374,11 @@ def _superposition_thc_resources(num_mu_wires, M, N):
         resource_rep(GlobalPhase): 1,
         resource_rep(Hadamard): 6 * n,
         resource_rep(X): 4 * n + 4,
-        resource_rep(RY): 2,
-        _controlled_rep(X, 2): 4,
-        _controlled_rep(X, 3): 1,
-        _controlled_rep(Z, 3): 1,
-        _controlled_rep(Z, 2 * n): 1,
+        resource_rep(RY): 3,
+        _controlled_rep(X, 2, ctrl_work): 4,
+        _controlled_rep(X, 3, ctrl_work): 1,
+        _controlled_rep(Z, 3, ctrl_work): 1,
+        _controlled_rep(Z, 2 * n, ctrl_work): 1,
         # _left_inequalities applied twice in the forward direction
         lcc_le: 2,
         lcc_gt: 2,
@@ -389,16 +396,14 @@ def _superposition_thc_resources(num_mu_wires, M, N):
     return resources
 
 
-@register_resources(_superposition_thc_resources, exact=False)
+@register_resources(_superposition_thc_resources)
 def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # pylint: disable=too-many-arguments
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
-    # https://arxiv.org/pdf/2011.03494. After the routine, all work wires are returned to
-    # the zero state except work_wires[3] and work_wires[6], which carry the prepared flags,
-    # and work_wires[0], which is left as a dirty work wire: it is the amplitude-amplification
-    # auxiliary wire whose final cleaning rotation is intentionally omitted, so it ends in an
-    # arbitrary (non-zero) state and carries no meaningful information.
+    # https://arxiv.org/pdf/2011.03494. After the routine, all work wires return to the zero
+    # state except the flags work_wires[3] and work_wires[6], and work_wires[0], a dirty work
+    # wire (its cleaning rotation is intentionally omitted).
     # Note that the paper uses 1-based indexing, whereas we will use 0-based indexing.
 
     mu_wires = Wires(mu_wires)
@@ -461,9 +466,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    # Note: work_wires[0] is deliberately left as a dirty work wire. The extra cleaning
-    # rotation that would reset it to |0> is intentionally omitted (a single RY), so this
-    # wire ends in an arbitrary state and should not be interpreted as a flag.
+    # work_wires[0] is left dirty: its cleaning RY is intentionally omitted.
     adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
     RY(angle, wires=work_wires[0])
 
