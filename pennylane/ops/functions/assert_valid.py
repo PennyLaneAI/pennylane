@@ -26,6 +26,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
+from pennylane import capture
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.utils import _get_decomp_args
@@ -225,7 +226,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    with qp.queuing.AnnotatedQueue() as q:
+    with capture.pause(), qp.queuing.AnnotatedQueue() as q:
         rule(*args, **kwargs)
 
     tape = qp.tape.QuantumScript.from_queue(q)
