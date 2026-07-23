@@ -743,9 +743,9 @@ class CSWAP(Controlled2):
 
     wire_argnames = ("wires",)
 
-    arg_specs = {"wires": Wire[2]}
+    arg_specs = {"wires": Wire[3]}
 
-    wire_sizes = (2,)
+    wire_sizes = (3,)
 
     num_wires = 3
     """int : Number of wires that the operation acts on."""
@@ -763,7 +763,7 @@ class CSWAP(Controlled2):
 
     @override
     def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.SWAP(Wire[1]), control_wires=Wire[1])
+        super().__abstract_init__(qp.SWAP(Wire[2]), control_wires=Wire[1])
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires})"

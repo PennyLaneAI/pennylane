@@ -18,7 +18,6 @@ This submodule contains the template for Qubitization.
 import copy
 from functools import reduce
 
-import pennylane as qp
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
