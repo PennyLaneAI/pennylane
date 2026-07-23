@@ -461,8 +461,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
-    # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()    # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
     RY(angle, wires=work_wires[0])
 
 

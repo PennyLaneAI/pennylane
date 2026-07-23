@@ -152,6 +152,7 @@ class TestSuperpositionTHC:
 
         # The flagged amplitudes must be uniform.
         weights = success[success > 1e-9]
+        assert np.allclose(weights, weights[0])
 
     @pytest.mark.parametrize(
         ("M", "N", "n"),
