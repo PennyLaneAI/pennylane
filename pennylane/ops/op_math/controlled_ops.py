@@ -36,8 +36,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    flip_zero_control,
     pow_involutory,
+    flip_zero_control,
     pow_rotation,
     self_adjoint_legacy,
     self_adjoint,
@@ -70,6 +70,7 @@ from .decompositions.controlled_decompositions import (
     single_ctrl_decomp_zyz_rule,
 )
 from pennylane.ops.op_math.controlled2 import Controlled2
+from .pow2 import pow_involutory as pow_involutory2
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
@@ -881,7 +882,7 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
 add_decomps("Adjoint(CSWAP)", self_adjoint)
-add_decomps("Pow(CSWAP)", pow_involutory)
+add_decomps("Pow(CSWAP)", pow_involutory2)
 
 
 class CCZ(ControlledOp):

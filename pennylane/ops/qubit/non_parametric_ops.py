@@ -38,7 +38,6 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
-    make_pow_decomp_with_period,
     pow_involutory,
     self_adjoint_legacy,
     self_adjoint,
@@ -49,7 +48,7 @@ from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire, AbstractWires
-from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
+from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2, pow_involutory as pow_involutory2
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -283,7 +282,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
-add_decomps("Pow(Hadamard)", pow_involutory)
+add_decomps("Pow(Hadamard)", pow_involutory2)
 
 
 def _controlled_h_resources(*_, base, control_wires, work_wires, work_wire_type, **__):
@@ -303,7 +302,8 @@ def _controlled_h_resources(*_, base, control_wires, work_wires, work_wire_type,
 
 
 @register_resources(_controlled_h_resources)
-def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_hadamard(base, control_wires, work_wires, work_wire_type, **__):
+    wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CH(wires)
         return
@@ -1764,10 +1764,11 @@ def _swap_to_ppr(wires, **_):
 
 add_decomps(SWAP, _swap_to_cnot, _swap_to_ppr)
 add_decomps("Adjoint(SWAP)", self_adjoint)
-add_decomps("Pow(SWAP)", pow_involutory)
+add_decomps("Pow(SWAP)", pow_involutory2)
 
 
-def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_type, **__):
+def _controlled_swap_resources(*_, control_wires, work_wires, work_wire_type, **__):
+    num_control_wires = len(control_wires)
     if num_control_wires == 1:
         return {qp.CSWAP: 1}
     return {
@@ -1776,14 +1777,15 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_
             qp.MultiControlledX,
             num_control_wires=num_control_wires + 1,
             num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+            num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         ): 1,
     }
 
 
 @register_resources(_controlled_swap_resources)
-def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_swap_decomp(*_, base, control_wires, work_wires, work_wire_type, **__):
+    wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CSWAP(wires=wires)
         return
@@ -1797,7 +1799,7 @@ def _controlled_swap_decomp(*_, wires, control_wires, work_wires, work_wire_type
     qp.CNOT(wires=[wires[-2], wires[-1]])
 
 
-add_decomps("C(SWAP)", flip_zero_control(_controlled_swap_decomp))
+add_decomps("C(SWAP)", flip_zero_control2(_controlled_swap_decomp))
 
 
 class ECR(Operator2):
@@ -1972,7 +1974,7 @@ def _ecr_decomp(wires, **__):
 
 add_decomps(ECR, _ecr_decomp)
 add_decomps("Adjoint(ECR)", self_adjoint)
-add_decomps("Pow(ECR)", pow_involutory)
+add_decomps("Pow(ECR)", pow_involutory2)
 
 
 class ISWAP(Operator2):
@@ -2158,9 +2160,10 @@ def _pow_iswap_to_siswap(wires, **__):
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
 @register_resources(lambda **_: {qp.Z: 2})
-def _pow_iswap_to_zz(wires, **__):
-    qp.Z(wires=wires[0])
-    qp.Z(wires=wires[1])
+# pylint: disable=unused-argument
+def _pow_iswap_to_zz(base, z, **__):
+    qp.Z(wires=base.wires[0])
+    qp.Z(wires=base.wires[1])
 
 
 add_decomps("Pow(ISWAP)", make_pow_decomp_with_period2(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
@@ -2376,15 +2379,17 @@ add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 2))
 @register_resources(lambda **_: {qp.ISWAP: 1})
-def _pow_siswap_to_iswap(wires, **_):
-    qp.ISWAP(wires)
+# pylint: disable=unused-argument
+def _pow_siswap_to_iswap(base, z, **_):
+    qp.ISWAP(base.wires)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 4))
 @register_resources(lambda **_: {qp.Z: 2})
-def _pow_siswap_to_zz(wires, **_):
-    qp.Z(wires=wires[0])
-    qp.Z(wires=wires[1])
+# pylint: disable=unused-argument
+def _pow_siswap_to_zz(base, z, **_):
+    qp.Z(wires=base.wires[0])
+    qp.Z(wires=base.wires[1])
 
 
 add_decomps("Pow(SISWAP)", make_pow_decomp_with_period2(8), _pow_siswap_to_zz, _pow_siswap_to_iswap)
