@@ -1092,6 +1092,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :func:`~.ops.two_qubit_decomposition` incorrectly treating weakly entangling
+  unitaries as exact CNOT-count boundary cases.
+  [(#9882)](https://github.com/PennyLaneAI/pennylane/pull/9882)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
