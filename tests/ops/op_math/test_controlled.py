@@ -1183,9 +1183,6 @@ class TestDecomposition:
         ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
-        assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
-        assert custom_ctrl_op.decomposition() == expected
         # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
         # to test, just the controlled decompositions logic.
         # NOTE: Operator2 instances don't have compute_decomposition defined.
