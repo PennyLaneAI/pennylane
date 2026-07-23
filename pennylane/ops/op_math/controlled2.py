@@ -434,10 +434,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             if isinstance(simplified_base, qp.Identity):
                 return simplified_base
 
+            ctrl_values = qp.math.concatenate([self.control_values, self.base.control_values])
             return qp.ctrl(
                 simplified_base,
                 control=self.control_wires + self.base.control_wires,
-                control_values=self.control_values + self.base.control_values,
+                control_values=qp.math.array(ctrl_values, dtype="bool"),
                 work_wires=self.work_wires + self.base.work_wires,
                 work_wire_type=resolve_work_wire_type(
                     self.base.work_wires,
@@ -530,8 +531,10 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
             params.append(f"work_wires={self.work_wires}")
-        if self.control_values and not all(self.control_values):
+        if isinstance(self.control_values, AbstractArray):
             params.append(f"control_values={self.control_values}")
+        elif not all(self.control_values):
+            params.append(f"control_values={self.control_values.tolist()}")
         return f"Controlled({self.base}, {', '.join(params)})"
 
     @property
