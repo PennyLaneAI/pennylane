@@ -29,7 +29,6 @@ from pennylane.core.queuing import QueuingManager
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
 
 
@@ -186,7 +185,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(op.wires.tolist())
+            serialization_string += str(op.wires)
 
         # Adding a distinct separating string that could not occur by any combination of the
         # name of the operation and wires
@@ -203,7 +202,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(obs.wires.tolist())
+            serialization_string += str(obs.wires)
         return serialization_string
 
     @property
@@ -451,9 +450,6 @@ class CircuitGraph:
 
         # pylint: disable=unused-argument
         def weight_fn(in_idx, out_idx, w):
-            out_op = ops_with_initial_I[out_idx]
-            if isinstance(out_op, ResourcesOperation):
-                return out_op.resources().depth
             return 1
 
         return rx.dag_longest_path_length(operation_graph, weight_fn=weight_fn)

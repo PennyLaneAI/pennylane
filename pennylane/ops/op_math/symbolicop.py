@@ -63,7 +63,7 @@ class SymbolicOp(Operator):
                 if leaf.tracer is None:
                     # pylint: disable-next=protected-access
                     leaf._bind_primitive()
-                new_leaves.append(leaf.tracer)
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
             else:
                 new_leaves.append(leaf)
 
@@ -109,10 +109,6 @@ class SymbolicOp(Operator):
     def data(self):
         """The trainable parameters"""
         return self.base.data
-
-    @data.setter
-    def data(self, new_data):
-        self.base.data = new_data
 
     @property
     def num_params(self):
@@ -214,11 +210,6 @@ class ScalarSymbolicOp(SymbolicOp):
     @handle_recursion_error
     def data(self):
         return (self.scalar, *self.base.data)
-
-    @data.setter
-    def data(self, new_data):
-        self.scalar = new_data[0]
-        self.base.data = new_data[1:]
 
     @property
     @handle_recursion_error

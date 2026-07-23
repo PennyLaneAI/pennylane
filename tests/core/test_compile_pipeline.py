@@ -1517,63 +1517,6 @@ class TestCompilePipelineCall:
         dummy_results = (0.5,)
         assert fn(dummy_results) == (0.5,)
 
-    @pytest.mark.capture
-    def test_call_jaxpr_empty(self):
-        """Test that calling an empty CompilePipeline with jaxpr returns untransformed ClosedJaxpr."""
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        pipeline = CompilePipeline()
-        const = jax.numpy.array(3.5)
-
-        def f(x, n):
-            qp.IsingXX(x, [0, 1])
-
-            @qp.for_loop(n)
-            def loop_fn(i):
-                qp.Hadamard(i)
-                qp.RX(const, i)
-
-            loop_fn()
-            return qp.expval(qp.Z(0))
-
-        jaxpr = jax.make_jaxpr(f)(1.5, 5)
-        transformed_jaxpr = pipeline(jaxpr.jaxpr, jaxpr.consts, 1.5, 5)
-        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
-        assert transformed_jaxpr.consts == jaxpr.consts
-
-        for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
-            assert eqn1.primitive == eqn2.primitive
-            # Jaxpr equality is based on identity and so since they were constructed
-            # seperately, they will not be equal (hence the string check)
-            assert str(eqn1.params) == str(eqn2.params)
-
-    @pytest.mark.capture
-    def test_call_jaxpr_single_transform(self):
-        """Test that calling a CompilePipeline with a single transform with jaxpr works correctly."""
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        pipeline = CompilePipeline()
-        pipeline.add_transform(qp.transforms.cancel_inverses)
-
-        def f():
-            qp.H(0)
-            qp.X(1)
-            qp.H(0)
-            qp.X(1)
-            return qp.expval(qp.PauliZ(0))
-
-        jaxpr = jax.make_jaxpr(f)()
-        transformed_jaxpr = pipeline(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
-        assert transformed_jaxpr.consts == jaxpr.consts
-
-        assert len(transformed_jaxpr.eqns) == 2
-        # pylint: disable=protected-access
-        assert transformed_jaxpr.eqns[0].primitive == qp.PauliZ._primitive
-        assert transformed_jaxpr.eqns[1].primitive == qp.measurements.ExpectationMP._obs_primitive
-
     def test_call_fallback_on_qnode(self):
         """Test that a CompilePipeline can be applied to a QNode using the fallback."""
 
@@ -1725,9 +1668,9 @@ class TestCompilePipelineCall:
         # Check that the transform was applied: only Hadamard should remain
         # (X-X and Y-Y pairs should be cancelled)
         resources = dev.tracker.history["resources"][0]
-        assert resources.gate_types == {"Hadamard": 1}
-        assert resources.num_gates == 1
-        assert resources.depth == 1
+        assert resources.quantum_operations == {"Hadamard": 1}
+        assert resources.total_quantum_operations == 1
+        assert resources.circuit_depth == 1
 
         # Check the numerical output: H|0> gives |+>, expectation of Z is 0
         assert qp.math.allclose(result, 0.0)

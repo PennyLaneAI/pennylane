@@ -26,13 +26,9 @@ from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    DecompositionGraph,
-    GateSet,
-    enabled_graph,
-    gate_sets,
-)
+from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
@@ -355,7 +351,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
-@partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
+@transform
 def decompose(
     tape,
     *,
@@ -733,7 +729,7 @@ def decompose(
                 qp.IsingXX(0.5, wires=[0, 1])
                 return qp.state()
 
-        >>> qp.specs(circuit)()["resources"].gate_types
+        >>> qp.specs(circuit)().resources.quantum_operations
         {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
         >>> qp.decomposition.disable_graph()
 
@@ -869,11 +865,12 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
         elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
             op_rule = graph_solution.decomposition(op, num_work_wires)
+            params, args, kwargs = _get_decomp_args(op)
             with queuing.AnnotatedQueue() as decomposed_ops:
-                op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+                op_rule(*args, **kwargs)
             decomp = decomposed_ops.queue
             if num_work_wires is not None:
-                num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
+                num_work_wires -= op_rule.get_work_wire_spec(**params).total
 
         elif enabled_graph() and isinstance(op, GlobalPhase):
             warnings.warn(

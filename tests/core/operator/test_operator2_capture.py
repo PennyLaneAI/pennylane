@@ -12,11 +12,11 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking
+# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-position
 
 import pytest
 from operator2_utils import (
-    CompOp,
+    CompilableOp,
     DynOp,
     FullOp,
     HybridOp,
@@ -30,6 +30,7 @@ import pennylane as qp
 from pennylane import apply
 
 jax = pytest.importorskip("jax")
+from pennylane.capture import PlxprInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -151,7 +152,7 @@ class TestCaptureBasics:
 
     def test_compilable_arg_in_params(self):
         """Test that compilable arguments are stored as equation parameters."""
-        jaxpr = jax.make_jaxpr(lambda: CompOp(5, wires=0))()
+        jaxpr = jax.make_jaxpr(lambda: CompilableOp(5, wires=0))()
         eqn = _single_op_eqn(jaxpr)
         assert unflatten(*eqn.params["n"]) == 5
 
@@ -247,9 +248,91 @@ class TestHybridCapture:
         [op] = _eval(jaxpr, 0.7)
         qp.assert_equal(op, MixedHybridOp(0.7, [0.7, 1.0], [[0], [1, 2]], wires=3))
 
+    def test_no_hybrid_forward_mask(self):
+        """Operators without hybrid arguments should have an empty forward mask."""
+        jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == ()
+
+    def test_numeric_hybrid_forward_mask(self):
+        """Numeric hybrid leaves should not be marked as forward arguments."""
+        jaxpr = jax.make_jaxpr(lambda x: HybridOp([x, 1.0], wires=0))(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (False, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_nested_operator_forward_mask(self):
+        """Nested operator leaves should be marked as forward arguments."""
+
+        def f(x):
+            inner = DynOp(x, wires=0)
+            HybridOp([inner], wires=0)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (True, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_scalar_and_operator_tuple_forward_mask(self):
+        """Hybrid tuples with scalar and operator leaves should partition the mask."""
+
+        class TupleHybridOp(qp.core.Operator2):
+
+            hybrid_argnames = ("data",)
+
+            def __init__(self, data, wires):
+                super().__init__(data, wires=wires)
+
+        def f(x):
+            TupleHybridOp((x, DynOp(x, wires=0)), wires=0)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (False, True, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_multi_wire_operator_forward_mask(self):
+        """Nested operators with multi-wire arguments should mark each wire leaf."""
+
+        class MultiWireDyn(qp.core.Operator2):
+
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        def f(x):
+            HybridOp([MultiWireDyn(x, wires=[0, 1, 2])], wires=0)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (True, False, False, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
+    def test_mixed_hybrid_forward_mask(self):
+        """Forward masks should only mark non-wire hybrid leaves."""
+        jaxpr = jax.make_jaxpr(lambda x: MixedHybridOp(x, [x, 1.5], [[0], [1, 2]], wires=3))(0.5)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["forward_mask"] == (False, False, False, False, False)
+        assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
+
 
 class TestReconstruction:
     """Tests that evaluating a captured jaxpr reconstructs the operator."""
+
+    def test_interpreter_rebinds_with_traced_wires(self):
+        """Test that interpreting an Operator2 equation rebinds its primitive."""
+        captured = jax.make_jaxpr(lambda wire: DynOp(0.5, wires=wire).tracer)(0)
+
+        def interpret(wire):
+            [op] = PlxprInterpreter().eval(captured.jaxpr, captured.consts, wire)
+            return op
+
+        interpreted = jax.make_jaxpr(interpret)(0)
+
+        assert len(interpreted.eqns) == 1
+        assert interpreted.eqns[0].primitive is operator_p
+        assert interpreted.eqns[0].params["op_cls"] is DynOp
 
     def test_simple_roundtrip(self):
         """Test that a simple operator round-trips through capture and evaluation."""
@@ -271,9 +354,9 @@ class TestReconstruction:
 
     def test_compilable_roundtrip(self):
         """Test that a compilable argument round-trips through capture and evaluation."""
-        jaxpr = jax.make_jaxpr(lambda x: CompOp(5, wires=x).tracer)(0)
+        jaxpr = jax.make_jaxpr(lambda x: CompilableOp(5, wires=x).tracer)(0)
         [op] = _eval(jaxpr, 1)
-        qp.assert_equal(op, CompOp(5, wires=1))
+        qp.assert_equal(op, CompilableOp(5, wires=1))
 
     def test_multiwire_roundtrip(self):
         """Test that an operator with multiple wire arguments round-trips."""

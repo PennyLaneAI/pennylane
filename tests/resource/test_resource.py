@@ -15,610 +15,30 @@
 Test base Resource class and its associated methods
 """
 
-# pylint: disable=unnecessary-dunder-call,protected-access
+import dataclasses
+
+# pylint: disable=unnecessary-dunder-call,protected-access,disallowed-name
 import textwrap
-from collections import defaultdict
 from dataclasses import FrozenInstanceError
 
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operation
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
+    PBCSpecsResources,
     Resources,
-    ResourcesOperation,
     SpecsResources,
-    SymbolicSpecsResources,
-    _combine_dict,
-    _count_resources,
+    _collect_vars,
     _count_to_str,
-    _scale_dict,
-    add_in_parallel,
-    add_in_series,
-    mul_in_parallel,
-    mul_in_series,
+    _flatten_dict,
+    _subs_pytree,
     num_to_letters,
     resources_from_tape,
-    substitute,
 )
-
-
-class TestResources:
-    """Test the methods and attributes of the Resource class"""
-
-    resource_quantities = (
-        Resources(),
-        Resources(5, 0, {}, {}, 0),
-        Resources(
-            1,
-            3,
-            defaultdict(int, {"Hadamard": 1, "PauliZ": 2}),
-            defaultdict(int, {1: 3}),
-            3,
-            Shots((10, (50, 2))),
-        ),
-        Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100)),
-    )
-
-    resource_parameters = (
-        (0, 0, {}, {}, 0, Shots(None)),
-        (5, 0, {}, {}, 0, Shots(None)),
-        (
-            1,
-            3,
-            defaultdict(int, {"Hadamard": 1, "PauliZ": 2}),
-            defaultdict(int, {1: 3}),
-            3,
-            Shots((10, (50, 2))),
-        ),
-        (4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100)),
-    )
-
-    @pytest.mark.parametrize("r, attribute_tup", zip(resource_quantities, resource_parameters))
-    def test_init(self, r, attribute_tup):
-        """Test that the Resource class is instantiated as expected."""
-        num_wires, num_gates, gate_types, gate_sizes, depth, shots = attribute_tup
-
-        assert r.num_wires == num_wires
-        assert r.num_gates == num_gates
-        assert r.depth == depth
-        assert r.shots == shots
-        assert r.gate_types == gate_types
-        assert r.gate_sizes == gate_sizes
-
-    def test_set_attributes_error(self):
-        """Test that an error is raised if we try to set any attribute."""
-        r = Resources()
-        attr_lst = ["num_wires", "num_gates", "depth", "shots", "gate_types"]
-
-        for attr_name in attr_lst:
-            with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-                setattr(r, attr_name, 1)
-
-    test_str_data = (
-        (
-            "num_wires: 0\n"
-            + "num_gates: 0\n"
-            + "depth: 0\n"
-            + "shots: Shots(total=None)\n"
-            + "gate_types:\n"
-            + "{}\n"
-            + "gate_sizes:\n"
-            + "{}"
-        ),
-        (
-            "num_wires: 5\n"
-            + "num_gates: 0\n"
-            + "depth: 0\n"
-            + "shots: Shots(total=None)\n"
-            + "gate_types:\n"
-            + "{}\n"
-            + "gate_sizes:\n"
-            + "{}"
-        ),
-        (
-            "num_wires: 1\n"
-            + "num_gates: 3\n"
-            + "depth: 3\n"
-            + "shots: Shots(total=110, vector=[10 shots, 50 shots x 2])\n"
-            + "gate_types:\n"
-            + "{'Hadamard': 1, 'PauliZ': 2}\n"
-            + "gate_sizes:\n"
-            + "{1: 3}"
-        ),
-        (
-            "num_wires: 4\n"
-            + "num_gates: 2\n"
-            + "depth: 2\n"
-            + "shots: Shots(total=100)\n"
-            + "gate_types:\n"
-            + "{'Hadamard': 1, 'CNOT': 1}\n"
-            + "gate_sizes:\n"
-            + "{1: 1, 2: 1}"
-        ),
-    )
-
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
-    def test_str(self, r, rep):
-        """Test the string representation of a Resources instance."""
-        assert str(r) == rep
-
-    test_rep_data = (
-        "Resources(num_wires=0, num_gates=0, gate_types={}, gate_sizes={}, depth=0, "
-        "shots=Shots(total_shots=None, shot_vector=()))",
-        "Resources(num_wires=5, num_gates=0, gate_types={}, gate_sizes={}, depth=0, "
-        "shots=Shots(total_shots=None, shot_vector=()))",
-        "Resources(num_wires=1, num_gates=3, gate_types=defaultdict(<class 'int'>, {'Hadamard': 1, 'PauliZ': 2}), "
-        "gate_sizes=defaultdict(<class 'int'>, {1: 3}), depth=3, "
-        "shots=Shots(total_shots=110, shot_vector=(ShotCopies(10 shots x 1), ShotCopies(50 shots x 2))))",
-        "Resources(num_wires=4, num_gates=2, gate_types={'Hadamard': 1, 'CNOT': 1}, "
-        "gate_sizes={1: 1, 2: 1}, depth=2, shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),)))",
-    )
-
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_rep_data))
-    def test_repr(self, r, rep):
-        """Test the repr method of a Resources instance looks as expected."""
-        assert repr(r) == rep
-
-    def test_eq(self):
-        """Test that the equality dunder method is correct for Resources."""
-        r1 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100))
-        r2 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100))
-        r3 = Resources(4, 2, {"CNOT": 1, "Hadamard": 1}, {2: 1, 1: 1}, 2, Shots(100))  # all equal
-
-        r4 = Resources(1, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100))  # diff wires
-        r5 = Resources(
-            4, 1, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100)
-        )  # diff num_gates
-        r6 = Resources(4, 2, {"CNOT": 1}, {1: 1, 2: 1}, 2, Shots(100))  # diff gate_types
-        r7 = Resources(
-            4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 3, 2: 2}, 2, Shots(100)
-        )  # diff gate_sizes
-        r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 1, Shots(100))  # diff depth
-        r9 = Resources(
-            4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots((10, 10))
-        )  # diff shots
-
-        assert r1.__eq__(r1)
-        assert r1.__eq__(r2)
-        assert r1.__eq__(r3)
-
-        assert not r1.__eq__(r4)
-        assert not r1.__eq__(r5)
-        assert not r1.__eq__(r6)
-        assert not r1.__eq__(r7)
-        assert not r1.__eq__(r8)
-        assert not r1.__eq__(r9)
-
-    @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
-    def test_ipython_display(self, r, rep, capsys):
-        """Test that the ipython display prints the string representation of a Resources instance."""
-        r._ipython_display_()  # pylint: disable=protected-access
-        captured = capsys.readouterr()
-        assert rep in captured.out
-
-    expected_results_add_series = (
-        Resources(
-            2,
-            6,
-            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            defaultdict(int, {1: 5, 2: 1}),
-            3,
-            Shots(10),
-        ),
-        Resources(
-            5,
-            6,
-            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            defaultdict(int, {1: 5, 2: 1}),
-            3,
-            Shots(10),
-        ),
-        Resources(
-            2,
-            9,
-            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 2, "PauliZ": 2}),
-            defaultdict(int, {1: 8, 2: 1}),
-            6,
-            Shots((10, (50, 2), 10)),
-        ),
-        Resources(
-            4,
-            8,
-            defaultdict(int, {"RZ": 2, "CNOT": 2, "RY": 2, "Hadamard": 2}),
-            defaultdict(int, {1: 6, 2: 2}),
-            5,
-            Shots((100, 10)),
-        ),
-    )
-
-    @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
-    )
-    def test_add_in_series(self, resource_obj, expected_res_obj):
-        """Test the add_in_series function works with Resoruces"""
-        other_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        )
-
-        resultant_obj = add_in_series(resource_obj, other_obj)
-        assert resultant_obj == expected_res_obj
-
-    @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
-    )
-    def test_dunder_add(self, resource_obj, expected_res_obj):
-        """Test the __add__ function"""
-        other_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        )
-
-        resultant_obj = resource_obj + other_obj
-        assert resultant_obj == expected_res_obj
-
-    expected_results_add_parallel = (
-        Resources(
-            2,
-            6,
-            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            defaultdict(int, {1: 5, 2: 1}),
-            3,
-            Shots(10),
-        ),
-        Resources(
-            7,
-            6,
-            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            defaultdict(int, {1: 5, 2: 1}),
-            3,
-            Shots(10),
-        ),
-        Resources(
-            3,
-            9,
-            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 2, "PauliZ": 2}),
-            defaultdict(int, {1: 8, 2: 1}),
-            3,
-            Shots((10, (50, 2), 10)),
-        ),
-        Resources(
-            6,
-            8,
-            defaultdict(int, {"RZ": 2, "CNOT": 2, "RY": 2, "Hadamard": 2}),
-            defaultdict(int, {1: 6, 2: 2}),
-            3,
-            Shots((100, 10)),
-        ),
-    )
-
-    @pytest.mark.parametrize(
-        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_parallel)
-    )
-    def test_add_in_parallel(self, resource_obj, expected_res_obj):
-        """Test the add_in_parallel function works with Resoruces"""
-        other_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        )
-
-        resultant_obj = add_in_parallel(resource_obj, other_obj)
-        assert resultant_obj == expected_res_obj
-
-    expected_results_mul_series = (
-        Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        ),
-        Resources(
-            num_wires=2,
-            num_gates=12,
-            gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
-            gate_sizes=defaultdict(int, {1: 10, 2: 2}),
-            depth=6,
-            shots=Shots(20),
-        ),
-        Resources(
-            num_wires=2,
-            num_gates=18,
-            gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
-            gate_sizes=defaultdict(int, {1: 15, 2: 3}),
-            depth=9,
-            shots=Shots(30),
-        ),
-        Resources(
-            num_wires=2,
-            num_gates=24,
-            gate_types=defaultdict(int, {"RZ": 8, "CNOT": 4, "RY": 8, "Hadamard": 4}),
-            gate_sizes=defaultdict(int, {1: 20, 2: 4}),
-            depth=12,
-            shots=Shots(40),
-        ),
-    )
-
-    @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series)
-    )
-    def test_mul_in_series(self, scalar, expected_res_obj):
-        """Test the mul_in_series function works with Resoruces"""
-        resource_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        )
-
-        resultant_obj = mul_in_series(resource_obj, scalar)
-        assert resultant_obj == expected_res_obj
-
-    @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series)
-    )
-    def test_dunder_mul(self, scalar, expected_res_obj):
-        """Test the __mul__ function"""
-        resource_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        )
-
-        resultant_obj = resource_obj * scalar
-        assert resultant_obj == expected_res_obj
-
-    expected_results_mul_parallel = (
-        Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        ),
-        Resources(
-            num_wires=4,
-            num_gates=12,
-            gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
-            gate_sizes=defaultdict(int, {1: 10, 2: 2}),
-            depth=3,
-            shots=Shots(20),
-        ),
-        Resources(
-            num_wires=6,
-            num_gates=18,
-            gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
-            gate_sizes=defaultdict(int, {1: 15, 2: 3}),
-            depth=3,
-            shots=Shots(30),
-        ),
-        Resources(
-            num_wires=8,
-            num_gates=24,
-            gate_types=defaultdict(int, {"RZ": 8, "CNOT": 4, "RY": 8, "Hadamard": 4}),
-            gate_sizes=defaultdict(int, {1: 20, 2: 4}),
-            depth=3,
-            shots=Shots(40),
-        ),
-    )
-
-    @pytest.mark.parametrize(
-        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_parallel)
-    )
-    def test_mul_in_parallel(self, scalar, expected_res_obj):
-        """Test the mul_in_parallel function works with Resoruces"""
-        resource_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        )
-
-        resultant_obj = mul_in_parallel(resource_obj, scalar)
-        assert resultant_obj == expected_res_obj
-
-    gate_info = (("RX", 1), ("RZ", 1), ("RZ", 1))
-
-    sub_obj = (
-        Resources(
-            num_wires=1,
-            num_gates=5,
-            gate_types=defaultdict(int, {"RX": 5}),
-            gate_sizes=defaultdict(int, {1: 5}),
-            depth=1,
-            shots=Shots(shots=None),
-        ),
-        Resources(
-            num_wires=1,
-            num_gates=5,
-            gate_types=defaultdict(int, {"RX": 5}),
-            gate_sizes=defaultdict(int, {1: 5}),
-            depth=1,
-            shots=Shots(shots=None),
-        ),
-        Resources(
-            num_wires=5,
-            num_gates=5,
-            gate_types=defaultdict(int, {"RX": 5}),
-            gate_sizes=defaultdict(int, {1: 5}),
-            depth=1,
-            shots=Shots(shots=None),
-        ),
-    )
-
-    expected_results_sub = (
-        Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=2,
-            shots=Shots(10),
-        ),
-        Resources(
-            num_wires=2,
-            num_gates=14,
-            gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 13, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        ),
-        Resources(
-            num_wires=6,
-            num_gates=14,
-            gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 13, 2: 1}),
-            depth=3,
-            shots=Shots(10),
-        ),
-    )
-
-    @pytest.mark.parametrize(
-        "gate_info, sub_obj, expected_res_obj", zip(gate_info, sub_obj, expected_results_sub)
-    )
-    def test_substitute(self, gate_info, sub_obj, expected_res_obj):
-        """Test the substitute function"""
-        resource_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=2,
-            shots=Shots(10),
-        )
-
-        resultant_obj = substitute(resource_obj, gate_info, sub_obj)
-        assert resultant_obj == expected_res_obj
-
-    def test_substitute_wire_error(self):
-        """Test that substitute raises an exception when the wire count does not exist in gate_sizes"""
-
-        resource_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=2,
-            shots=Shots(10),
-        )
-
-        sub_obj = Resources(
-            num_wires=1,
-            num_gates=5,
-            gate_types=defaultdict(int, {"RX": 5}),
-            gate_sizes=defaultdict(int, {1: 5}),
-            depth=1,
-            shots=Shots(shots=None),
-        )
-
-        gate_info = ("RZ", 100)
-
-        with pytest.raises(
-            ValueError, match="initial_resources does not contain a gate acting on 100 wires."
-        ):
-            substitute(resource_obj, gate_info, sub_obj)
-
-    def test_substitute_gate_count_error(self):
-        """Test that substitute raises an exception when the substitution would result in a negative value in gate_sizes"""
-
-        resource_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=2,
-            shots=Shots(10),
-        )
-
-        sub_obj = Resources(
-            num_wires=1,
-            num_gates=5,
-            gate_types=defaultdict(int, {"RX": 5}),
-            gate_sizes=defaultdict(int, {1: 5}),
-            depth=1,
-            shots=Shots(shots=None),
-        )
-
-        gate_info = ("RZ", 2)
-        with pytest.raises(
-            ValueError,
-            match="Found 2 gates of type RZ, but only 1 gates act on 2 wires in initial_resources.",
-        ):
-            substitute(resource_obj, gate_info, sub_obj)
-
-
-class TestResourcesOperation:  # pylint: disable=too-few-public-methods
-    """Test that the ResourcesOperation class is constructed correctly"""
-
-    def test_raise_not_implemented_error(self):
-        """Test that a not type error is raised if the class is
-        initialized without a `resources` method."""
-
-        class CustomOpNoResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
-            """A custom operation that does not implement the resources method."""
-
-            num_wires = 2
-
-        class CustomOPWithResources(ResourcesOperation):  # pylint: disable=too-few-public-methods
-            """A custom operation that implements the resources method."""
-
-            num_wires = 2
-
-            def resources(self):
-                return Resources(num_wires=self.num_wires)
-
-        with pytest.raises(TypeError, match="Can't instantiate"):
-            _ = CustomOpNoResource(wires=[0, 1])  # pylint:disable=abstract-class-instantiated
-
-        assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
-
-
-def test_combine_dict():
-    """Test that we can combine dictionaries as expected."""
-    d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
-    d2 = defaultdict(int, {"a": 1, "b": 2, "d": 3})
-
-    result = _combine_dict(d1, d2)
-    expected = defaultdict(int, {"a": 3, "b": 6, "c": 6, "d": 3})
-
-    assert result == expected
-
-
-@pytest.mark.parametrize("scalar", (1, 2, 3))
-def test_scale_dict(scalar):
-    """Test that we can scale the values of a dictionary as expected."""
-    d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
-
-    expected = defaultdict(int, {k: scalar * v for k, v in d1.items()})
-    result = _scale_dict(d1, scalar)
-
-    assert result == expected
 
 
 @pytest.mark.parametrize("compute_depth", (True, False))
@@ -639,9 +59,683 @@ def test_specs_compute_depth(compute_depth):
     assert resources.depth == (3 if compute_depth else None)
 
 
-###########################################################################
-##  Tests for specs dataclasses
-###########################################################################
+class TestBaseResources:
+    """Test the methods and attributes of the base Resources class"""
+
+    @pytest.fixture
+    def example_base_resources(self):
+        return Resources(counts={"Hadamard": 2, "CNOT": 1})
+
+    @pytest.fixture
+    def example_base_resources_extra(self):
+        return Resources(counts={"Hadamard": 2, "CNOT": 1}, extra={"n": 10})
+
+    @pytest.fixture
+    def example_base_resources_symbolic(self):
+        return Resources(counts={"Hadamard": Expression({("x",): 1}), "CNOT": 1}, extra={"n": 10})
+
+    def test_str(self, example_base_resources):
+        """Test the string representation of a Resources instance."""
+
+        r = example_base_resources
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - CNOT: 1
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_extra(self, example_base_resources_extra):
+        """Test the string representation of a Resources instance with extra fields."""
+
+        r = example_base_resources_extra
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - CNOT: 1
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_symbolic(self, example_base_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_base_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_multi_symbolic(self, example_base_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_base_resources_symbolic
+
+        r = dataclasses.replace(r, counts={**r.counts, "PauliX": Expression({("y",): 1})})
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x, y
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            - PauliX: y
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_markdown(self, example_base_resources):
+        """Test the markdown representation of a Resources instance."""
+
+        r = example_base_resources
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | CNOT | 1 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_extra(self, example_base_resources_extra):
+        """Test the markdown representation of a Resources instance with extra fields."""
+
+        r = example_base_resources_extra
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | CNOT | 1 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_symbolic(self, example_base_resources_symbolic):
+        """Test the markdown representation of a symbolic Resources instance."""
+
+        r = example_base_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | x |
+            | CNOT | 1 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_subs(self, example_base_resources_symbolic):
+        """Test that the subs method correctly substitutes values for variables."""
+
+        r = example_base_resources_symbolic
+
+        new_r = r.subs({"x": 3})
+        assert new_r.counts == {"Hadamard": 3, "CNOT": 1}
+        assert new_r.vars == set()
+
+    def test_subs_doesnt_mutate(self, example_base_resources_symbolic):
+        """Test that the subs method doesn't mutate the incoming dictionary."""
+
+        r = example_base_resources_symbolic
+
+        input = {}
+        _ = r.subs(input, x=3)
+        # NOTE: input shouldn't be mutated
+        assert input == {}
+
+    def test_invalid_subs(self, example_base_resources_symbolic):
+        """Test that the subs method raises a ValueError when substituting a variable not present in the expression."""
+        r = example_base_resources_symbolic
+
+        # Substituting a variable that doesn't exist should raise
+        with pytest.raises(
+            ValueError,
+            match="Substitutions contain variables {'y'} which are not in the expression's variables",
+        ):
+            r.subs({"y": 5})
+
+
+class TestBaseResourcesExtension:
+    """Test the methods and attributes of the base Resources class correctly handle
+    extensions automatically"""
+
+    @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+    class DummyResources(Resources):
+        """Dummy class to test automatic subclass field handling"""
+
+        foo: int = dataclasses.field(default=5, metadata={"display_name": "My field"})
+        bar: dict = dataclasses.field(
+            default_factory=lambda: {"a": 1, "b": 2}, metadata={"display_name": "My dict field"}
+        )
+
+    @pytest.fixture
+    def example_dummy_resources(self):
+        return self.DummyResources(counts={"Hadamard": 2, "CNOT": 1}, extra={"n": 10}, foo=12)
+
+    @pytest.fixture
+    def example_dummy_resources_symbolic(self):
+        return self.DummyResources(
+            counts={"Hadamard": Expression({("x",): 1}), "CNOT": 1},
+            extra={"n": 10},
+            foo=Expression({("x",): 2}),
+            bar={"a": Expression({("y",): 1}), "b": 2},
+        )
+
+    def test_str(self, example_dummy_resources):
+        """Test the string representation of a Resources instance."""
+
+        r = example_dummy_resources
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - CNOT: 1
+            My field: 12
+            My dict field:
+            - a: 1
+            - b: 2
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_empty(self):
+        """Test the string representation of a Resources instance with empty fields."""
+        r = Resources(counts={})
+
+        expected = textwrap.dedent("""\
+            counts:
+            - None present.
+        """).strip()
+
+        assert str(r) == expected
+
+    def test_str_symbolic(self, example_dummy_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_dummy_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x, y
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            My field: 2*x
+            My dict field:
+            - a: y
+            - b: 2
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_str_multi_symbolic(self, example_dummy_resources_symbolic):
+        """Test the string representation of a symbolic Resources instance."""
+
+        r = example_dummy_resources_symbolic
+
+        r = dataclasses.replace(r, foo=Expression({("y",): 1}))
+
+        expected = textwrap.dedent("""\
+            Symbolic variables: x, y
+            counts:
+            - Hadamard: x
+            - CNOT: 1
+            My field: y
+            My dict field:
+            - a: y
+            - b: 2
+            Extra fields:
+            - n: 10
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
+        assert r.to_pretty_str(preindent=4) == expected_indented
+
+    def test_markdown(self, example_dummy_resources):
+        """Test the markdown representation of a Resources instance."""
+
+        r = example_dummy_resources
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | CNOT | 1 |
+            | **My field** | 12 |
+            | **My dict field** | |
+            | a | 1 |
+            | b | 2 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_empty(self):
+        """Test the string representation of a Resources instance with empty fields."""
+        r = Resources(counts={})
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | *None present* | |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_markdown_symbolic(self, example_dummy_resources_symbolic):
+        """Test the markdown representation of a symbolic Resources instance."""
+
+        r = example_dummy_resources_symbolic
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | x |
+            | CNOT | 1 |
+            | **My field** | 2*x |
+            | **My dict field** | |
+            | a | y |
+            | b | 2 |
+            | **Extra Fields** | |
+            | n | 10 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_subs(self, example_dummy_resources_symbolic):
+        """Test that the subs method correctly substitutes values for variables."""
+
+        r = example_dummy_resources_symbolic
+
+        new_r = r.subs({"x": 3, "y": 2})
+        assert new_r.counts == {"Hadamard": 3, "CNOT": 1}
+        assert new_r.foo == 6
+        assert new_r.bar == {"a": 2, "b": 2}
+        assert new_r.vars == set()
+
+
+class TestNestedDictHelpers:
+    """Test the recursion helpers used to display and substitute nested dictionaries."""
+
+    def test_flatten_dict_flat(self):
+        """A flat dictionary should be returned essentially unchanged."""
+        assert _flatten_dict({"a": 1, "b": 2}) == {"a": 1, "b": 2}
+
+    def test_flatten_dict_nested(self):
+        """Nested dictionaries should be collapsed into dotted keys."""
+        assert _flatten_dict({"a": 1, "b": {"c": 2, "d": {"e": 3}}}) == {
+            "a": 1,
+            "b.c": 2,
+            "b.d.e": 3,
+        }
+
+    def test_flatten_dict_arbitrary_depth(self):
+        """Flattening should recurse to arbitrary depth."""
+        data = {"a": {"b": {"c": {"d": {"e": 5}}}}}
+        assert _flatten_dict(data) == {"a.b.c.d.e": 5}
+
+    def test_flatten_dict_custom_separator(self):
+        """A custom separator should be respected."""
+        assert _flatten_dict({"a": {"b": 1}}, sep="/") == {"a/b": 1}
+
+    def test_flatten_dict_empty_nested(self):
+        """Empty nested dictionaries contribute no keys."""
+        assert _flatten_dict({"a": 1, "empty": {}}) == {"a": 1}
+
+    def test_flatten_dict_preserves_non_dict_values(self):
+        """Non-dict values (including Expressions) should be preserved as-is."""
+        expr = Expression({("x",): 1})
+        flat = _flatten_dict({"a": expr, "b": {"c": "str"}})
+        assert flat == {"a": expr, "b.c": "str"}
+        assert flat["a"] is expr
+
+    def test_collect_vars_flat(self):
+        """Variables should be collected from top-level Expression values."""
+        data = {"a": Expression({("x",): 1}), "b": 2}
+        assert set(_collect_vars(data)) == {"x"}
+
+    def test_collect_vars_nested(self):
+        """Variables should be collected from Expressions at arbitrary depth."""
+        data = {
+            "a": Expression({("x",): 1}),
+            "b": {"c": Expression({("y",): 1}), "d": {"e": Expression({("z",): 1})}},
+        }
+        assert set(_collect_vars(data)) == {"x", "y", "z"}
+
+    def test_collect_vars_none(self):
+        """A dictionary without Expressions should yield an empty set."""
+        assert set(_collect_vars({"a": 1, "b": {"c": 2}})) == set()
+
+    def test_collect_vars_scalar_expression(self):
+        """A bare Expression (not in a container) should have its variables collected."""
+        assert set(_collect_vars(Expression({("x",): 1}))) == {"x"}
+
+    def test_collect_vars_through_lists_and_tuples(self):
+        """Using pytrees, variables should also be found inside lists and tuples."""
+        data = {
+            "a": [Expression({("x",): 1}), 2],
+            "b": (3, {"c": Expression({("y",): 1})}),
+        }
+        assert set(_collect_vars(data)) == {"x", "y"}
+
+    def test_subs_pytree_flat(self):
+        """Substitution should apply to top-level Expression values."""
+        data = {"a": Expression({("x",): 2}), "b": 3}
+        assert _subs_pytree(data, {"x": 5}) == {"a": 10, "b": 3}
+
+    def test_subs_pytree_nested(self):
+        """Substitution should recurse into nested dictionaries and preserve structure."""
+        data = {"a": Expression({("x",): 1}), "b": {"c": Expression({("x",): 2})}}
+        assert _subs_pytree(data, {"x": 3}) == {"a": 3, "b": {"c": 6}}
+
+    def test_subs_pytree_preserves_non_expression(self):
+        """Non-Expression values should be left untouched by substitution."""
+        data = {"a": 1, "b": {"c": "unchanged"}}
+        assert _subs_pytree(data, {"x": 3}) == {"a": 1, "b": {"c": "unchanged"}}
+
+    def test_subs_pytree_scalar_expression(self):
+        """A bare Expression (not in a container) should be substituted."""
+        assert _subs_pytree(Expression({("x",): 2}), {"x": 4}) == 8
+
+    def test_subs_pytree_through_lists_and_tuples(self):
+        """Using pytrees, substitution should also reach into lists and tuples, preserving type."""
+        data = {
+            "a": [Expression({("x",): 1}), 2],
+            "b": (3, {"c": Expression({("x",): 2})}),
+        }
+        result = _subs_pytree(data, {"x": 5})
+        assert result == {"a": [5, 2], "b": (3, {"c": 10})}
+        assert isinstance(result["a"], list)
+        assert isinstance(result["b"], tuple)
+
+
+class TestNestedDictResources:
+    """Test that the base Resources class displays and substitutes nested dictionaries."""
+
+    @pytest.fixture
+    def example_nested_resources(self):
+        return Resources(
+            counts={"Hadamard": 2, "Controlled": {"CNOT": 1, "CY": 3}},
+            extra={"n": 10, "meta": {"depth": {"a": 4}}},
+        )
+
+    @pytest.fixture
+    def example_nested_resources_symbolic(self):
+        return Resources(
+            counts={
+                "Hadamard": Expression({("x",): 1}),
+                "Controlled": {"CNOT": Expression({("y",): 2}), "CY": 3},
+            },
+        )
+
+    def test_str_nested(self, example_nested_resources):
+        """Nested dictionaries should be flattened into dotted keys in the pretty string."""
+        r = example_nested_resources
+
+        expected = textwrap.dedent("""\
+            counts:
+            - Hadamard: 2
+            - Controlled.CNOT: 1
+            - Controlled.CY: 3
+            Extra fields:
+            - n: 10
+            - meta.depth.a: 4
+        """).strip()
+
+        assert str(r) == expected
+        assert r.to_pretty_str() == expected
+
+    def test_markdown_nested(self, example_nested_resources):
+        """Nested dictionaries should be flattened into dotted keys in the markdown table."""
+        r = example_nested_resources
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **counts** | |
+            | Hadamard | 2 |
+            | Controlled.CNOT | 1 |
+            | Controlled.CY | 3 |
+            | **Extra Fields** | |
+            | n | 10 |
+            | meta.depth.a | 4 |
+        """).strip()
+
+        assert r._repr_markdown_() == expected
+
+    def test_vars_collected_from_nested(self, example_nested_resources_symbolic):
+        """Symbolic variables should be collected from Expressions at any depth."""
+        r = example_nested_resources_symbolic
+        assert r.vars == {"x", "y"}
+        assert r.is_symbolic
+
+    def test_subs_nested(self, example_nested_resources_symbolic):
+        """Substitution should reach Expressions inside nested dictionaries."""
+        r = example_nested_resources_symbolic
+        new_r = r.subs({"x": 5, "y": 2})
+
+        # The nested structure is preserved, but Expressions are resolved to concrete values
+        assert new_r.counts == {"Hadamard": 5, "Controlled": {"CNOT": 4, "CY": 3}}
+        assert new_r.vars == set()
+
+    def test_subs_partial_nested(self):
+        """Partial substitution should leave other nested variables symbolic."""
+        r = Resources(
+            counts={"grouped": {"a": Expression({("x",): 1}), "b": Expression({("y",): 1})}},
+        )
+        new_r = r.subs({"x": 3})
+        assert new_r.counts["grouped"]["a"] == 3
+        assert new_r.counts["grouped"]["b"] == Expression({("y",): 1})
+        assert new_r.vars == {"y"}
+
+    def test_deeply_nested_vars_and_subs(self):
+        """Variables buried several levels deep should be collected and substituted."""
+        r = Resources(counts={"a": {"b": {"c": Expression({("z",): 2})}}})
+        assert r.vars == {"z"}
+
+        new_r = r.subs({"z": 4})
+        assert new_r.counts == {"a": {"b": {"c": 8}}}
+
+    def test_invalid_subs_nested(self):
+        """Substituting a variable absent from a nested dict should still raise."""
+        r = Resources(counts={"grouped": {"a": Expression({("x",): 1})}})
+        with pytest.raises(
+            ValueError,
+            match="Substitutions contain variables {'w'} which are not in the expression's variables",
+        ):
+            r.subs({"w": 1})
+
+
+class TestNestedDictSpecsResources:
+    """Test that SpecsResources displays and totals nested operation/measurement dictionaries."""
+
+    @pytest.fixture
+    def example_nested_specs(self):
+        return SpecsResources(
+            counts={"Hadamard": 1, "Controlled": {"CNOT": 2, "CY": 3}},
+            measurement_processes={"grouped": {"expval(PauliZ)": 1}},
+            num_allocs=2,
+            circuit_depth=2,
+        )
+
+    def test_total_counts_nested_leaves(self, example_nested_specs):
+        """The total should sum the leaf values of nested operation dictionaries."""
+        assert example_nested_specs.total_quantum_operations == 6
+
+    def test_str_nested(self, example_nested_specs):
+        """Nested operations and measurements should be flattened in the pretty string."""
+        s = example_nested_specs
+
+        expected = textwrap.dedent("""\
+            Quantum operations:
+            - Total: 6
+              - Hadamard: 1
+              - Controlled.CNOT: 2
+              - Controlled.CY: 3
+            Measurement processes:
+            - grouped.expval(PauliZ): 1
+            Wire allocations: 2
+            Circuit Depth: 2""")
+
+        assert str(s) == expected
+
+    def test_markdown_nested(self, example_nested_specs):
+        """Nested operations and measurements should be flattened in the markdown table."""
+        s = example_nested_specs
+
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Quantum operations:** | |
+            | *Total* | 6 |
+            | Hadamard | 1 |
+            | Controlled.CNOT | 2 |
+            | Controlled.CY | 3 |
+            | **Measurement processes:** | |
+            | grouped.expval(PauliZ) | 1 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |""")
+
+        assert s._repr_markdown_() == expected
+
+    def test_symbolic_nested_subs(self):
+        """Substitution should reach Expressions nested inside quantum operations."""
+        s = SpecsResources(
+            counts={"Hadamard": 1, "grouped": {"CNOT": Expression({("n",): 1})}},
+            measurement_processes={},
+            num_allocs=Expression({("n",): 1}),
+            circuit_depth=None,
+        )
+        assert s.vars == {"n"}
+
+        subbed = s.subs({"n": 3})
+        assert subbed.counts == {"Hadamard": 1, "grouped": {"CNOT": 3}}
+        assert subbed.num_allocs == 3
+        assert subbed.total_quantum_operations == 4
+        assert subbed.vars == set()
+
+
+class TestNestedDictCircuitSpecs:
+    """Test that CircuitSpecs tabular displays flatten nested operation dictionaries."""
+
+    @pytest.fixture
+    def example_nested_circuit_specs(self):
+        return CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SpecsResources(
+                    counts={"Hadamard": 4, "Controlled": {"CNOT": 2, "CY": 1}},
+                    measurement_processes={"expval(PauliX)": 1},
+                    num_allocs=2,
+                    circuit_depth=2,
+                ),
+                2: SpecsResources(
+                    counts={"Controlled": {"CNOT": 1}},
+                    measurement_processes={"grouped": {"expval(PauliZ)": 1}},
+                    num_allocs=2,
+                    circuit_depth=1,
+                ),
+            },
+        )
+
+    def test_tabular_str_nested(self, example_nested_circuit_specs):
+        """Nested operations/measurements should appear as dotted rows in the tabular string."""
+        r = example_nested_circuit_specs
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+            - 2: l2
+
+            ↓Metric           Level→ |  1 |  2
+            ----------------------------------
+            Quantum operations:      |
+            - Total                  |  7 |  1
+              - Hadamard             |  4 |  0
+              - Controlled.CNOT      |  2 |  1
+              - Controlled.CY        |  1 |  0
+            Measurement processes:   |
+            - expval(PauliX)         |  1 |  0
+            - grouped.expval(PauliZ) |  0 |  1
+            Wire allocations         |  2 |  2
+            Circuit depth            |  2 |  1""")
+
+        assert str(r) == expected
+
+    def test_tabular_markdown_nested(self, example_nested_circuit_specs):
+        """Nested operations/measurements should appear as dotted rows in the markdown table."""
+        r = example_nested_circuit_specs
+
+        expected = textwrap.dedent("""\
+            | ↓Metric / Level→ | 1 | 2 |
+            | :--- | ---: | ---: |
+            | **Quantum operations** |  |  |
+            | *Total* | 7 | 1 |
+            | Hadamard | 4 | 0 |
+            | Controlled.CNOT | 2 | 1 |
+            | Controlled.CY | 1 | 0 |
+            | **Measurement processes** |  |  |
+            | expval(PauliX) | 1 | 0 |
+            | grouped.expval(PauliZ) | 0 | 1 |
+            | **Wire allocations** | 2 | 2 |
+            | **Circuit depth** | 2 | 1 |""")
+
+        assert r._to_markdown_tabular() == expected
 
 
 class TestSpecsResources:
@@ -651,40 +745,29 @@ class TestSpecsResources:
     def example_specs_resource(self):
         """Generate an example SpecsResources instance."""
         return SpecsResources(
-            gate_types={"Hadamard": 2, "CNOT": 1},
-            gate_sizes={1: 2, 2: 1},
-            measurements={"expval(PauliZ)": 1},
+            counts={"Hadamard": 2, "CNOT": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=2,
-            depth=2,
+            circuit_depth=2,
         )
 
     def test_depth_autoassign(self):
         """Test that the SpecsResources class auto-assigns depth as None if not provided."""
 
         s = SpecsResources(
-            gate_types={"Hadamard": 2, "CNOT": 1},
-            gate_sizes={1: 2, 2: 1},
-            measurements={"expval(PauliZ)": 1},
+            counts={"Hadamard": 2, "CNOT": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=2,
         )
 
         assert s.depth is None
 
-    def test_num_gates(self, example_specs_resource):
-        """Test that the SpecsResources class handles `num_gates` as expected."""
-
-        with pytest.raises(
-            ValueError,
-            match="Inconsistent gate counts: `gate_types` and `gate_sizes` describe different amounts of gates.",
-        ):
-            # Gate counts don't match
-            _ = SpecsResources(
-                gate_types={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
-            )
+    def test_total_operations(self, example_specs_resource):
+        """Test that the SpecsResources class handles `total_quantum_operations` as expected."""
 
         s = example_specs_resource
 
-        assert s.num_gates == 3
+        assert s.total_quantum_operations == 3
 
     def test_immutable(self, example_specs_resource):
         """Test that SpecsResources is immutable."""
@@ -692,45 +775,27 @@ class TestSpecsResources:
         s = example_specs_resource
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.gate_types = {}
+            s.counts = {}
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.gate_sizes = {}
+            s.measurement_processes = {}
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.measurements = {}
-
-        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.num_allocs = 1
-
-        with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
-            s.depth = 0
+            s.circuit_depth = 0
 
     def test_getitem(self, example_specs_resource):
         """Test that SpecsResources supports indexing via __getitem__."""
 
         s = example_specs_resource
 
-        assert s["gate_types"] == s.gate_types
-        assert s["gate_counts"] == s.gate_types
-        assert s["gate_sizes"] == s.gate_sizes
-        assert s["measurements"] == s.measurements
+        assert s["counts"] == s.counts
+        assert s["quantum_operations"] == s.quantum_operations
+        assert s["measurement_processes"] == s.measurement_processes
         assert s["num_allocs"] == s.num_allocs
+        assert s["num_wires"] == s.num_wires
         assert s["depth"] == s.depth
 
-        assert s["num_gates"] == s.num_gates
-
-        # Check removed keys
-        with pytest.raises(
-            KeyError,
-            match="shots is no longer included within specs's resources, check the top-level object instead.",
-        ):
-            _ = s["shots"]
-        with pytest.raises(
-            KeyError,
-            match="num_wires has been renamed to num_allocs to more accurate describe what it measures.",
-        ):
-            _ = s["num_wires"]
+        assert s["total_quantum_operations"] == s.total_quantum_operations
 
         # Try nonexistent key
         with pytest.raises(
@@ -744,34 +809,34 @@ class TestSpecsResources:
 
         s = example_specs_resource
 
-        expected = "Wire allocations: 2\n"
-        expected += "Total gates: 3\n"
-        expected += "Gate counts:\n"
-        expected += "- Hadamard: 2\n"
-        expected += "- CNOT: 1\n"
-        expected += "Measurements:\n"
-        expected += "- expval(PauliZ): 1\n"
-        expected += "Depth: 2"
-
-        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+        expected = textwrap.dedent("""\
+            Quantum operations:
+            - Total: 3
+              - Hadamard: 2
+              - CNOT: 1
+            Measurement processes:
+            - expval(PauliZ): 1
+            Wire allocations: 2
+            Circuit Depth: 2""")
 
         assert str(s) == expected
         assert s.to_pretty_str() == expected
+        expected_indented = textwrap.indent(expected, " " * 4)
         assert s.to_pretty_str(preindent=4) == expected_indented
 
         # Check with no depth, gates, or measurements
 
-        s = SpecsResources(gate_types={}, gate_sizes={}, measurements={}, num_allocs=0)
+        s = SpecsResources(counts={}, measurement_processes={}, num_allocs=0)
 
-        expected = "Wire allocations: 0\n"
-        expected += "Total gates: 0\n"
-        expected += "Gate counts:\n"
-        expected += "- No gates.\n"
-        expected += "Measurements:\n"
-        expected += "- No measurements.\n"
-        expected += "Depth: Not computed"
+        expected = textwrap.dedent("""\
+            Quantum operations:
+            - No operations.
+            Measurement processes:
+            - No measurement processes.
+            Wire allocations: 0
+            Circuit Depth: Not computed""")
 
-        expected_indented = ("    " + expected.replace("\n", "\n    ")).replace("\n    \n", "\n\n")
+        expected_indented = textwrap.indent(expected, " " * 4)
 
         assert str(s) == expected
         assert s.to_pretty_str() == expected
@@ -783,22 +848,325 @@ class TestSpecsResources:
         s = example_specs_resource
 
         expected = {
-            "gate_types": {"Hadamard": 2, "CNOT": 1},
-            "gate_sizes": {1: 2, 2: 1},
-            "measurements": {"expval(PauliZ)": 1},
+            "quantum_operations": {"Hadamard": 2, "CNOT": 1},
+            "measurement_processes": {"expval(PauliZ)": 1},
             "num_allocs": 2,
-            "depth": 2,
-            "num_gates": 3,
+            "num_wires": 2,
+            "circuit_depth": 2,
+            "total_quantum_operations": 3,
+            "vars": frozenset(),
+            "extra": {},
         }
 
         assert s.to_dict() == expected
 
 
+class TestPBCSpecsResources:
+    """Separate class for testing PBC depth counting since it will be refactor soon."""
+
+    @pytest.fixture
+    def example_resource(self):
+        return PBCSpecsResources(
+            counts={"Hadamard": 1, "CNOT": 2},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=3,
+            qubit_disjoint_depth=6,
+        )
+
+    def test_pbc_depths_required(self):
+        with pytest.raises(
+            TypeError,
+            match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",
+        ):
+            PBCSpecsResources(
+                counts={"Hadamard": 1, "CNOT": 2},
+                measurement_processes={"expval(PauliZ)": 1},
+                num_allocs=2,
+            )
+
+    def test_str_pbc_depth(self, example_resource):
+        """Test the string representation of a SpecsResources instance with PBC depth."""
+        s = example_resource
+
+        expected = textwrap.dedent("""\
+            Quantum operations:
+            - Total: 3
+              - Hadamard: 1
+              - CNOT: 2
+            Measurement processes:
+            - expval(PauliZ): 1
+            Wire allocations: 2
+            PBC Depths:
+            - Any commuting depth: 3
+            - Qubit disjoint depth: 6
+        """)
+
+        assert str(s) == expected.strip()
+
+    def test_ipython_display_pbc_depth(self, example_resource):
+        """Test the IPython display of a SpecsResources instance with PBC depth."""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Quantum operations:** | |
+            | *Total* | 3 |
+            | Hadamard | 1 |
+            | CNOT | 2 |
+            | **Measurement processes:** | |
+            | expval(PauliZ) | 1 |
+            | **Wire allocations** | 2 |
+            | **PBC Depths** | |
+            | Any commuting depth | 3 |
+            | Qubit disjoint depth | 6 |
+        """)
+        actual = example_resource._repr_markdown_()
+
+        assert actual.strip() == expected.strip()
+
+    def test_circuit_specs_str(self, example_resource):
+        """Test the string representation of a CircuitSpecs instance with PBC depth."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={1: example_resource},
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+
+            ↓Metric         Level→ |  1
+            ---------------------------
+            Quantum operations:    |
+            - Total                |  3
+              - Hadamard           |  1
+              - CNOT               |  2
+            Measurement processes: |
+            - expval(PauliZ)       |  1
+            Wire allocations       |  2
+            PBC Depths:            |
+            - Any commuting depth  |  3
+            - Qubit disjoint depth |  6
+        """).strip()
+
+        assert str(s) == expected
+
+    def test_circuit_specs_md(self, example_resource):
+        """Test the string representation of a CircuitSpecs instance with PBC depth."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={1: example_resource},
+        )
+
+        expected = textwrap.dedent("""\
+            <details open>
+            <summary>Circuit Specs</summary>
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 1 | l1 |
+
+            </details>
+            <details open>
+            <summary>Resources</summary>
+
+            | ↓Metric / Level→ | 1 |
+            | :--- | ---: |
+            | **Quantum operations** |  |
+            | *Total* | 3 |
+            | Hadamard | 1 |
+            | CNOT | 2 |
+            | **Measurement processes** |  |
+            | expval(PauliZ) | 1 |
+            | **Wire allocations** | 2 |
+            | **PBC Depths** |  |
+            | Any commuting depth | 3 |
+            | Qubit disjoint depth | 6 |
+
+            </details>
+        """)
+
+        assert s._repr_markdown_() == expected.strip()
+
+    def test_symbolic_pbc_depth_subs(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = PBCSpecsResources(
+            counts={"Hadamard": Expression({("x",): 2})},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=Expression({("x",): 3}),
+            qubit_disjoint_depth=Expression({("x",): 6}),
+        )
+
+        assert s.subs({"x": 2}) == PBCSpecsResources(
+            counts={"Hadamard": 4},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=6,
+            qubit_disjoint_depth=12,
+        )
+
+    def test_symbolic_pbc_depth_str(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={
+                1: PBCSpecsResources(
+                    counts={"Hadamard": Expression({("x",): 2})},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    any_commuting_depth=Expression({("x",): 3}),
+                    qubit_disjoint_depth=Expression({("x",): 6}),
+                )
+            },
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+
+            ↓Metric         Level→ |   1
+            ----------------------------
+            Quantum operations:    |
+            - Total                | 2*x
+              - Hadamard           | 2*x
+            Measurement processes: |
+            - expval(PauliZ)       |   1
+            Wire allocations       |   2
+            PBC Depths:            |
+            - Any commuting depth  | 3*x
+            - Qubit disjoint depth | 6*x
+        """).strip()
+
+        assert str(s) == expected
+
+    def test_mixed_pbc_and_normal_tabular(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    circuit_depth=2,
+                ),
+                2: PBCSpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    any_commuting_depth=2,
+                    qubit_disjoint_depth=4,
+                ),
+            },
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+            - 2: l2
+
+            ↓Metric         Level→ |  1 |  2
+            --------------------------------
+            Quantum operations:    |
+            - Total                |  2 |  2
+              - Hadamard           |  2 |  2
+            Measurement processes: |
+            - expval(PauliZ)       |  1 |  1
+            Wire allocations       |  2 |  2
+            Circuit depth          |  2 |  -
+            PBC Depths:            |
+            - Any commuting depth  |  - |  2
+            - Qubit disjoint depth |  - |  4
+        """).strip()
+
+        assert str(s) == expected
+
+    def test_mixed_pbc_and_normal_tabular_markdown(self):
+        """Test that symbolic PBC depth is correctly displayed in the Markdown representation."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    circuit_depth=2,
+                ),
+                2: PBCSpecsResources(
+                    counts={"Hadamard": 2},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    any_commuting_depth=2,
+                    qubit_disjoint_depth=4,
+                ),
+            },
+        )
+
+        expected = textwrap.dedent("""\
+            **Circuit Specs:**
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 1 | l1 |
+            | 2 | l2 |
+
+            **Resources:**
+
+            | ↓Metric / Level→ | 1 | 2 |
+            | :--- | ---: | ---: |
+            | **Quantum operations** |  |  |
+            | *Total* | 2 | 2 |
+            | Hadamard | 2 | 2 |
+            | **Measurement processes** |  |  |
+            | expval(PauliZ) | 1 | 1 |
+            | **Wire allocations** | 2 | 2 |
+            | **Circuit depth** | 2 | N/A |
+            | **PBC Depths** |  |  |
+            | Any commuting depth | N/A | 2 |
+            | Qubit disjoint depth | N/A | 4 |
+        """).strip()
+
+        assert s._repr_markdown_(collapsible=False) == expected
+
+
 class TestSymbolicSpecsResources:
     @pytest.fixture
-    def example_resource(self) -> SymbolicSpecsResources:
+    def example_resource(self) -> SpecsResources:
         """
-        Generate an example SymbolicSpecsResources instance.
+        Generate an example SpecsResources instance.
         The resources roughly correspond to the following circuit:
 
         .. code-block:: python
@@ -814,71 +1182,42 @@ class TestSymbolicSpecsResources:
                     qp.PauliZ(j)
                 return expval(qp.PauliZ(0))
         """
-        return SymbolicSpecsResources(
-            gate_types={
+        return SpecsResources(
+            counts={
                 "Hadamard": Expression({(): 1}),
                 "PauliX": Expression({("x"): 1, (): 1}),
                 "CNOT": Expression({("x", "z"): 1}),
                 "PauliZ": Expression({("z",): 2}),
             },
-            gate_sizes={1: Expression({("z"): 2, "x": 1, (): 2}), 2: Expression({("x", "z"): 1})},
-            measurements={"expval(PauliZ)": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             # The values for allocs and depth are a bit off, but are helpful for testing substitutions
             num_allocs=Expression({("x",): 1, ("z",): 2, (): 1}),
-            depth=Expression({("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}),
+            circuit_depth=Expression({("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}),
         )
 
     @pytest.fixture
-    def example_resource_concrete(self) -> SymbolicSpecsResources:
+    def example_resource_concrete(self) -> SpecsResources:
         """
-        Generate an example SymbolicSpecsResources instance for a non-dynamic circuit.
+        Generate an example SpecsResources instance for a non-dynamic circuit.
 
         Specifically, returns the resources for a simple Bell state circuit with a measurement.
         """
-        return SymbolicSpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={"expval(PauliZ)": 1},
+        return SpecsResources(
+            counts={"Hadamard": 1, "CNOT": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=1,
-            depth=1,
+            circuit_depth=1,
         )
 
-    def test_init_converts_to_expression(self):
-        """Test that SymbolicSpecsResources can be instantiated with ints and correctly converts them."""
-        s = SymbolicSpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={"expval(PauliZ)": 1},
-            num_allocs=1,
-            depth=1,
+    def test_total_ops(self, example_resource):
+        s = example_resource
+        assert s.total_quantum_operations == Expression(
+            {("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}
         )
-
-        assert isinstance(s.gate_types, dict)
-        assert all(isinstance(v, Expression) for v in s.gate_types.values())
-        assert isinstance(s.gate_sizes, dict)
-        assert all(isinstance(v, Expression) for v in s.gate_sizes.values())
-        assert isinstance(s.measurements, dict)
-        assert all(isinstance(v, Expression) for v in s.measurements.values())
-        assert isinstance(s.num_allocs, Expression)
-        assert isinstance(s.depth, Expression)
 
     def test_blank_subs(self, example_resource):
         s = example_resource
         assert s.subs() == s
-
-    def test_blank_subs_concrete(self, example_resource_concrete):
-        s = example_resource_concrete
-
-        concretized = s.subs()
-        assert isinstance(concretized, SpecsResources)
-        assert not isinstance(concretized, SymbolicSpecsResources)
-        assert concretized == SpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={"expval(PauliZ)": 1},
-            num_allocs=1,
-            depth=1,
-        )
 
     def test_partial_subs(self, example_resource):
         s = example_resource
@@ -886,20 +1225,16 @@ class TestSymbolicSpecsResources:
         # Substitute x=2, leaving z symbolic
         partially_substituted = s.subs({"x": 2})
 
-        expected = SymbolicSpecsResources(
-            gate_types={
+        expected = SpecsResources(
+            counts={
                 "Hadamard": Expression({(): 1}),
                 "PauliX": Expression({(): 3}),
                 "CNOT": Expression({("z",): 2}),
                 "PauliZ": Expression({("z",): 2}),
             },
-            gate_sizes={
-                1: Expression({("z",): 2, (): 4}),
-                2: Expression({("z",): 2}),
-            },
-            measurements={"expval(PauliZ)": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=Expression({("z",): 2, (): 3}),
-            depth=Expression({("z",): 4, (): 4}),
+            circuit_depth=Expression({("z",): 4, (): 4}),
         )
 
         assert partially_substituted == expected
@@ -911,15 +1246,13 @@ class TestSymbolicSpecsResources:
         fully_substituted = s.subs({"x": 2, "z": 3})
 
         expected = SpecsResources(
-            gate_types={"Hadamard": 1, "PauliX": 3, "CNOT": 6, "PauliZ": 6},
-            gate_sizes={1: 10, 2: 6},
-            measurements={"expval(PauliZ)": 1},
+            counts={"Hadamard": 1, "PauliX": 3, "CNOT": 6, "PauliZ": 6},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=9,
-            depth=16,
+            circuit_depth=16,
         )
 
         assert fully_substituted == expected
-        assert not isinstance(fully_substituted, SymbolicSpecsResources)
 
     def test_subs_kwargs(self, example_resource):
         assert example_resource.subs(x=2, z=3) == example_resource.subs({"x": 2, "z": 3})
@@ -931,66 +1264,56 @@ class TestSymbolicSpecsResources:
         with pytest.raises(ValueError):
             example_resource.subs({"not a var": 3})
 
-    def test_call(self, example_resource):
-        assert example_resource(x=2, z=3) == example_resource.subs(x=2, z=3)
-
     def test_eq(self):
-        s1 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression({("x,"): 1})},
-            gate_sizes={1: Expression({("x,"): 1})},
-            measurements={"expval(PauliZ)": Expression(1)},
+        s1 = SpecsResources(
+            counts={"Hadamard": Expression({("x,"): 1})},
+            measurement_processes={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
-        s2 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression({("x,"): 1})},
-            gate_sizes={1: Expression({("x,"): 1})},
-            measurements={"expval(PauliZ)": Expression(1)},
+        s2 = SpecsResources(
+            counts={"Hadamard": Expression({("x,"): 1})},
+            measurement_processes={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
-        s3 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression({("z,"): 1})},
-            gate_sizes={1: Expression({("z,"): 1})},
-            measurements={"expval(PauliZ)": Expression(1)},
+        s3 = SpecsResources(
+            counts={"Hadamard": Expression({("z,"): 1})},
+            measurement_processes={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
         assert s1 == s2
         assert s1 != s3
         assert s2 != s3
         assert s1 != SpecsResources(
-            gate_types={"Hadamard": 1},
-            gate_sizes={1: 1},
-            measurements={"expval(PauliZ)": 1},
+            counts={"Hadamard": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=1,
-            depth=1,
+            circuit_depth=1,
         )
 
     def test_eq_no_var(self):
-        s1 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression(1)},
-            gate_sizes={1: Expression(1)},
-            measurements={"expval(PauliZ)": Expression(1)},
+        s1 = SpecsResources(
+            counts={"Hadamard": Expression(1)},
+            measurement_processes={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
-        s2 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression(1)},
-            gate_sizes={1: Expression(1)},
-            measurements={"expval(PauliZ)": Expression(1)},
+        s2 = SpecsResources(
+            counts={"Hadamard": Expression(1)},
+            measurement_processes={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
-        s3 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression(2)},  # different value here
-            gate_sizes={1: Expression(1)},
-            measurements={"expval(PauliZ)": Expression(1)},
+        s3 = SpecsResources(
+            counts={"Hadamard": Expression(2)},  # different value here
+            measurement_processes={"expval(PauliZ)": Expression(1)},
             num_allocs=Expression(1),
-            depth=Expression(1),
+            circuit_depth=Expression(1),
         )
 
         assert s1 == s2
@@ -998,11 +1321,10 @@ class TestSymbolicSpecsResources:
         assert s2 != s3
 
         assert s1 == SpecsResources(
-            gate_types={"Hadamard": 1},
-            gate_sizes={1: 1},
-            measurements={"expval(PauliZ)": 1},
+            counts={"Hadamard": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=1,
-            depth=1,
+            circuit_depth=1,
         )
 
     def test_eq_invalid(self, example_resource):
@@ -1012,16 +1334,16 @@ class TestSymbolicSpecsResources:
         s = example_resource
 
         expected = "Symbolic Variables: x, z\n"
-        expected += "Wire allocations: 2*z + x + 1\n"
-        expected += "Total gates: x*z + 2*z + x + 2\n"
-        expected += "Gate counts:\n"
-        expected += "- Hadamard: 1\n"
-        expected += "- PauliX: x + 1\n"
-        expected += "- CNOT: x*z\n"
-        expected += "- PauliZ: 2*z\n"
-        expected += "Measurements:\n"
+        expected += "Quantum operations:\n"
+        expected += "- Total: x*z + 2*z + x + 2\n"
+        expected += "  - Hadamard: 1\n"
+        expected += "  - PauliX: x + 1\n"
+        expected += "  - CNOT: x*z\n"
+        expected += "  - PauliZ: 2*z\n"
+        expected += "Measurement processes:\n"
         expected += "- expval(PauliZ): 1\n"
-        expected += "Depth: x*z + 2*z + x + 2"
+        expected += "Wire allocations: 2*z + x + 1\n"
+        expected += "Circuit Depth: x*z + 2*z + x + 2"
 
         assert str(s) == expected
 
@@ -1036,11 +1358,10 @@ class TestCircuitSpecs:
             shots=Shots(1000),
             level=2,
             resources=SpecsResources(
-                gate_types={"Hadamard": 2, "CNOT": 1},
-                gate_sizes={1: 2, 2: 1},
-                measurements={"expval(PauliZ)": 1},
+                counts={"Hadamard": 2, "CNOT": 1},
+                measurement_processes={"expval(PauliZ)": 1},
                 num_allocs=2,
-                depth=2,
+                circuit_depth=2,
             ),
         )
 
@@ -1054,26 +1375,23 @@ class TestCircuitSpecs:
             level={1: "l1", 2: "l2"},
             resources={
                 1: SpecsResources(
-                    gate_types={"Hadamard": 4, "CNOT": 2},
-                    gate_sizes={1: 4, 2: 2},
-                    measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    counts={"Hadamard": 4, "CNOT": 2},
+                    measurement_processes={"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     num_allocs=2,
-                    depth=2,
+                    circuit_depth=2,
                 ),
                 2: [
                     SpecsResources(
-                        gate_types={"CNOT": 1},
-                        gate_sizes={2: 1},
-                        measurements={"expval(PauliX)": 1},
+                        counts={"CNOT": 1},
+                        measurement_processes={"expval(PauliX)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
                     SpecsResources(
-                        gate_types={"CNOT": 1},
-                        gate_sizes={2: 1},
-                        measurements={"expval(PauliZ)": 1},
+                        counts={"CNOT": 1},
+                        measurement_processes={"expval(PauliZ)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
                 ],
             },
@@ -1088,30 +1406,27 @@ class TestCircuitSpecs:
             shots=Shots(1000),
             level={1: "l1", 2: "l2"},
             resources={
-                1: SymbolicSpecsResources(
-                    gate_types={
+                1: SpecsResources(
+                    counts={
                         "Hadamard": Expression({("x",): 2, (): 2}),
                         "CNOT": Expression({("x",): 2}),
                     },
-                    gate_sizes={1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
-                    measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    measurement_processes={"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     num_allocs=2,
-                    depth=2,
+                    circuit_depth=2,
                 ),
                 2: [
-                    SymbolicSpecsResources(
-                        gate_types={"CNOT": Expression({("x",): 1})},
-                        gate_sizes={2: Expression({("x",): 1})},
-                        measurements={"expval(PauliX)": 1},
+                    SpecsResources(
+                        counts={"CNOT": Expression({("x",): 1})},
+                        measurement_processes={"expval(PauliX)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
-                    SymbolicSpecsResources(
-                        gate_types={"CNOT": Expression({("x",): 1})},
-                        gate_sizes={2: Expression({("x",): 1})},
-                        measurements={"expval(PauliZ)": 1},
+                    SpecsResources(
+                        counts={"CNOT": Expression({("x",): 1})},
+                        measurement_processes={"expval(PauliZ)": 1},
                         num_allocs=2,
-                        depth=1,
+                        circuit_depth=1,
                     ),
                 ],
             },
@@ -1138,43 +1453,6 @@ class TestCircuitSpecs:
         assert r["level"] == r.level
         assert r["resources"] == r.resources
 
-    def test_getitem_removed_keys(self, example_specs_result):
-        """Test that CircuitSpecs raises more descriptive KeyErrors for removed keys."""
-
-        r = example_specs_result
-
-        with pytest.raises(
-            KeyError,
-            match="num_observables is no longer in top-level specs and has instead been absorbed into the 'measurements' attribute of the specs's resources.",
-        ):
-            _ = r["num_observables"]
-
-        for key in ("interface", "diff_method", "errors", "num_tape_wires"):
-            with pytest.raises(
-                KeyError,
-                match=f"key '{key}' is no longer included in specs.",
-            ):
-                _ = r[key]
-
-        for key in (
-            "gradient_fn",
-            "gradient_options",
-            "num_gradient_executions",
-            "num_trainable_params",
-        ):
-            with pytest.raises(
-                KeyError,
-                match=f"key '{key}' is no longer included in specs, as specs no longer gathers gradient information.",
-            ):
-                _ = r[key]
-
-        # Check nonexistent key
-        with pytest.raises(
-            KeyError,
-            match="key 'potato' not available. Options are ",
-        ):
-            _ = r["potato"]
-
     def test_to_dict(
         self, example_specs_result, example_specs_result_multi, example_specs_result_multi_symbolic
     ):
@@ -1188,12 +1466,14 @@ class TestCircuitSpecs:
             "shots": Shots(1000),
             "level": 2,
             "resources": {
-                "gate_types": {"Hadamard": 2, "CNOT": 1},
-                "gate_sizes": {1: 2, 2: 1},
-                "measurements": {"expval(PauliZ)": 1},
+                "quantum_operations": {"Hadamard": 2, "CNOT": 1},
+                "measurement_processes": {"expval(PauliZ)": 1},
                 "num_allocs": 2,
-                "depth": 2,
-                "num_gates": 3,
+                "num_wires": 2,
+                "circuit_depth": 2,
+                "total_quantum_operations": 3,
+                "vars": frozenset(),
+                "extra": {},
             },
         }
 
@@ -1208,29 +1488,35 @@ class TestCircuitSpecs:
             "level": {1: "l1", 2: "l2"},
             "resources": {
                 1: {
-                    "gate_types": {"Hadamard": 4, "CNOT": 2},
-                    "gate_sizes": {1: 4, 2: 2},
-                    "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    "quantum_operations": {"Hadamard": 4, "CNOT": 2},
+                    "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
-                    "depth": 2,
-                    "num_gates": 6,
+                    "num_wires": 2,
+                    "circuit_depth": 2,
+                    "total_quantum_operations": 6,
+                    "vars": frozenset(),
+                    "extra": {},
                 },
                 2: [
                     {
-                        "gate_types": {"CNOT": 1},
-                        "gate_sizes": {2: 1},
-                        "measurements": {"expval(PauliX)": 1},
+                        "quantum_operations": {"CNOT": 1},
+                        "measurement_processes": {"expval(PauliX)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
-                        "num_gates": 1,
+                        "num_wires": 2,
+                        "circuit_depth": 1,
+                        "total_quantum_operations": 1,
+                        "vars": frozenset(),
+                        "extra": {},
                     },
                     {
-                        "gate_types": {"CNOT": 1},
-                        "gate_sizes": {2: 1},
-                        "measurements": {"expval(PauliZ)": 1},
+                        "quantum_operations": {"CNOT": 1},
+                        "measurement_processes": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
-                        "num_gates": 1,
+                        "num_wires": 2,
+                        "circuit_depth": 1,
+                        "total_quantum_operations": 1,
+                        "vars": frozenset(),
+                        "extra": {},
                     },
                 ],
             },
@@ -1247,35 +1533,38 @@ class TestCircuitSpecs:
             "level": {1: "l1", 2: "l2"},
             "resources": {
                 1: {
-                    "gate_types": {
+                    "quantum_operations": {
                         "Hadamard": Expression({("x",): 2, (): 2}),
                         "CNOT": Expression({("x",): 2}),
                     },
-                    "gate_sizes": {1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
-                    "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_allocs": 2,
-                    "depth": 2,
-                    "num_gates": Expression({("x",): 4, (): 2}),
-                    "vars": ["x"],
+                    "num_wires": 2,
+                    "circuit_depth": 2,
+                    "total_quantum_operations": Expression({("x",): 4, (): 2}),
+                    "vars": frozenset({"x"}),
+                    "extra": {},
                 },
                 2: [
                     {
-                        "gate_types": {"CNOT": Expression({("x",): 1})},
-                        "gate_sizes": {2: Expression({("x",): 1})},
-                        "measurements": {"expval(PauliX)": 1},
+                        "quantum_operations": {"CNOT": Expression({("x",): 1})},
+                        "measurement_processes": {"expval(PauliX)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
-                        "num_gates": Expression({("x",): 1}),
-                        "vars": ["x"],
+                        "num_wires": 2,
+                        "circuit_depth": 1,
+                        "total_quantum_operations": Expression({("x",): 1}),
+                        "vars": frozenset({"x"}),
+                        "extra": {},
                     },
                     {
-                        "gate_types": {"CNOT": Expression({("x",): 1})},
-                        "gate_sizes": {2: Expression({("x",): 1})},
-                        "measurements": {"expval(PauliZ)": 1},
+                        "quantum_operations": {"CNOT": Expression({("x",): 1})},
+                        "measurement_processes": {"expval(PauliZ)": 1},
                         "num_allocs": 2,
-                        "depth": 1,
-                        "num_gates": Expression({("x",): 1}),
-                        "vars": ["x"],
+                        "num_wires": 2,
+                        "circuit_depth": 1,
+                        "total_quantum_operations": Expression({("x",): 1}),
+                        "vars": frozenset({"x"}),
+                        "extra": {},
                     },
                 ],
             },
@@ -1309,16 +1598,18 @@ class TestCircuitSpecs:
         - 1: l1
         - 2: l2
 
-        ↓Metric   Level→ |    1 |  2-a |  2-b
-        -------------------------------------
-        Wire allocations |    2 |    2 |    2
-        Total gates      |    6 |    1 |    1
-        Gate counts:     |
-        - Hadamard       |    4 |    0 |    0
-        - CNOT           |    2 |    1 |    1
-        Measurements:    |
-        - expval(PauliX) |    1 |    1 |    0
-        - expval(PauliZ) |    1 |    0 |    1""")
+        ↓Metric         Level→ |    1 |  2-a |  2-b
+        -------------------------------------------
+        Quantum operations:    |
+        - Total                |    6 |    1 |    1
+          - Hadamard           |    4 |    0 |    0
+          - CNOT               |    2 |    1 |    1
+        Measurement processes: |
+        - expval(PauliX)       |    1 |    1 |    0
+        - expval(PauliZ)       |    1 |    0 |    1
+        Wire allocations       |    2 |    2 |    2
+        Circuit depth          |    2 |    1 |    1
+        """).strip()
 
     def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
         """Test the tabular string representation of a CircuitSpecs instance with symbolic resources."""
@@ -1332,16 +1623,18 @@ class TestCircuitSpecs:
             - 1: l1
             - 2: l2
 
-            ↓Metric   Level→ |     1 |   2-a |   2-b
-            ----------------------------------------
-            Wire allocations |     2 |     2 |     2
-            Total gates      | 4*x+2 |     x |     x
-            Gate counts:     |
-            - Hadamard       | 2*x+2 |     0 |     0
-            - CNOT           |   2*x |     x |     x
-            Measurements:    |
-            - expval(PauliX) |     1 |     1 |     0
-            - expval(PauliZ) |     1 |     0 |     1""")
+            ↓Metric         Level→ |     1 |   2-a |   2-b
+            ----------------------------------------------
+            Quantum operations:    |
+            - Total                | 4*x+2 |     x |     x
+              - Hadamard           | 2*x+2 |     0 |     0
+              - CNOT               |   2*x |     x |     x
+            Measurement processes: |
+            - expval(PauliX)       |     1 |     1 |     0
+            - expval(PauliZ)       |     1 |     0 |     1
+            Wire allocations       |     2 |     2 |     2
+            Circuit depth          |     2 |     1 |     1
+            """).strip()
 
     def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""
@@ -1384,24 +1677,32 @@ class TestIPythonDisplays:
     def example_specs_resource(self) -> SpecsResources:
         return SpecsResources(
             # Pick a number that forces scientific notation
-            gate_types={"Hadamard": 1, "CNOT": 100_001},
-            gate_sizes={1: 1, 2: 100_001},
-            measurements={"expval(PauliZ)": 1},
+            counts={"Hadamard": 1, "CNOT": 100_001},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=2,
-            depth=2,
+            circuit_depth=2,
         )
 
     @pytest.fixture
-    def example_symbolic_specs_resource(self) -> SymbolicSpecsResources:
-        return SymbolicSpecsResources(
-            gate_types={
+    def example_symbolic_specs_resource(self) -> SpecsResources:
+        return SpecsResources(
+            counts={
                 "Hadamard": Expression({("a", "a", "b"): 1, ("a", "a"): 1, ("a",): 1}),
                 "CNOT": 1,
             },
-            gate_sizes={1: Expression({("a", "a", "b"): 1, ("a", "a"): 1, ("a",): 1}), 2: 1},
-            measurements={"expval(PauliZ)": 1},
+            measurement_processes={"expval(PauliZ)": 1},
             num_allocs=2,
-            depth=2,
+            circuit_depth=2,
+        )
+
+    @pytest.fixture
+    def example_pbc_specs_resource(self) -> PBCSpecsResources:
+        return PBCSpecsResources(
+            counts={"Hadamard": 1, "CNOT": 100_001},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_allocs=2,
+            any_commuting_depth=2,
+            qubit_disjoint_depth=3,
         )
 
     def test_specs_resources_ipython_display(self, example_specs_resource):
@@ -1409,34 +1710,54 @@ class TestIPythonDisplays:
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
         actual = example_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
 
     def test_symbolic_specs_resources_ipython_display(self, example_symbolic_specs_resource):
-        """Test the IPython display of a SymbolicSpecsResources instance."""
+        """Test the IPython display of a SpecsResources instance with symbolic data."""
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | a\\*a\\*b + a\\*a + a + 1 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | a\\*a\\*b + a\\*a + a + 1 |
             | Hadamard | a\\*a\\*b + a\\*a + a |
             | CNOT | 1 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
         actual = example_symbolic_specs_resource._repr_markdown_()
+
+        assert actual.strip() == expected.strip()
+
+    def test_pbc_specs_resources_ipython_display(self, example_pbc_specs_resource):
+        """Test the IPython display of a SpecsResources instance."""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurement processes:** | |
+            | expval(PauliZ) | 1 |
+            | **Wire allocations** | 2 |
+            | **PBC Depths** | |
+            | Any commuting depth | 2 |
+            | Qubit disjoint depth | 3 |
+        """)
+        actual = example_pbc_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
 
@@ -1464,14 +1785,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
 
         assert actual.strip() == expected.strip()
@@ -1503,14 +1824,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             </details>
         """)
@@ -1543,27 +1864,27 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             **Batched tape b:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
         """)
 
         assert actual.strip() == expected.strip()
@@ -1598,14 +1919,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             </details>
             <details open>
@@ -1613,14 +1934,14 @@ class TestIPythonDisplays:
 
             | **Metric** | **Value** |
             | :--- | ---: |
-            | **Wire allocations** | 2 |
-            | **Total gates** | 1.000E+5 |
-            | **Gate counts:** | |
+            | **Quantum operations:** | |
+            | *Total* | 1.000E+5 |
             | Hadamard | 1 |
             | CNOT | 1.000E+5 |
-            | **Measurements:** | |
+            | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Depth** | 2 |
+            | **Wire allocations** | 2 |
+            | **Circuit depth** | 2 |
 
             </details>
 
@@ -1629,8 +1950,9 @@ class TestIPythonDisplays:
 
         assert actual.strip() == expected.strip()
 
+    @pytest.mark.parametrize("with_depth", [True, False])
     def test_multi_level_circuit_specs_ipython_display(
-        self, example_symbolic_specs_resource, example_specs_resource
+        self, example_symbolic_specs_resource, example_specs_resource, with_depth
     ):
         """Test the IPython display of a single-level CircuitSpecs instance."""
         s = CircuitSpecs(
@@ -1643,6 +1965,12 @@ class TestIPythonDisplays:
                 1: [example_specs_resource, example_specs_resource],
             },
         )
+
+        if not with_depth:
+            s.resources[0] = dataclasses.replace(s.resources[0], circuit_depth=None)
+            s.resources[1][0] = dataclasses.replace(s.resources[1][0], circuit_depth=None)
+            s.resources[1][1] = dataclasses.replace(s.resources[1][1], circuit_depth=None)
+
         actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
@@ -1660,134 +1988,42 @@ class TestIPythonDisplays:
 
             | ↓Metric / Level→ | 0 | 1-a | 1-b |
             | :--- | ---: | ---: | ---: |
-            | **Wire allocations** | 2 | 2 | 2 |
-            | **Total gates** | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
-            | **Gate counts** |  |  |  |
+            | **Quantum operations** |  |  |  |
+            | *Total* | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
             | Hadamard | a\\*a\\*b + a\\*a + a | 1 | 1 |
             | CNOT | 1 | 1.000E+5 | 1.000E+5 |
-            | **Measurements** |  |  |  |
+            | **Measurement processes** |  |  |  |
             | expval(PauliZ) | 1 | 1 | 1 |
+            | **Wire allocations** | 2 | 2 | 2 |
         """)
+
+        if with_depth:
+            expected += textwrap.dedent("""\
+            | **Circuit depth** | 2 | 2 | 2 |
+            """)
 
         assert actual.strip() == expected.strip()
 
     def test_empty_resources_ipython_display(self):
         """Test the IPython display of an empty SpecsResources instance."""
         s = SpecsResources(
-            gate_types={},
-            gate_sizes={},
-            measurements={},
+            counts={},
+            measurement_processes={},
             num_allocs=1,
         )
         actual = s._repr_markdown_()
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |
+            | **Quantum operations:** | |
+            | *No operations* | |
+            | **Measurement processes:** | |
+            | *No measurement processes* | |
             | **Wire allocations** | 1 |
-            | **Total gates** | 0 |
-            | **Gate counts:** | |
-            | *No gates* | |
-            | **Measurements:** | |
-            | *No measurements* | |
-            | **Depth** | Not computed |
+            | **Circuit depth** | Not computed |
         """)
 
         assert actual.strip() == expected.strip()
-
-
-class TestCountResources:
-    class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
-        num_wires = 2
-        name = "CustomOp1"
-
-        def resources(self):
-            return Resources(
-                num_wires=self.num_wires,
-                num_gates=3,
-                gate_types={"Identity": 1, "PauliZ": 2},
-                gate_sizes={1: 3},
-                depth=3,
-            )
-
-    class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
-        num_wires = 2
-        name = "CustomOp2"
-
-    scripts = (
-        QuantumScript(ops=[], measurements=[]),
-        QuantumScript(
-            ops=[qp.Hadamard(0), qp.CNOT([0, 1])], measurements=[qp.expval(qp.PauliZ(0))]
-        ),
-        QuantumScript(
-            ops=[qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)],
-            measurements=[qp.expval(qp.exp(qp.PauliZ(0)))],
-            shots=Shots(10),
-        ),
-        QuantumScript(
-            ops=[
-                qp.PauliZ(0),
-                qp.CNOT([0, 1]),
-                qp.RX(1.23, 2),
-                _CustomOpWithResource(wires=[0, 2]),
-                _CustomOpWithoutResource(wires=[0, 1]),
-            ],
-            measurements=[qp.probs()],
-        ),
-        QuantumScript(
-            ops=[
-                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=range(10)),
-                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=range(5)),
-                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=[0]),
-                qp.CNOT([0, 1]),
-                qp.Toffoli([0, 1, 2]),
-                qp.ctrl(op=qp.PauliX(10), control=[0]),
-                qp.ctrl(op=qp.PauliX(10), control=[0, 1]),
-            ],
-            measurements=[qp.probs()],
-        ),
-    )
-
-    expected_resources = (
-        SpecsResources({}, {}, {}, 0, 0),
-        SpecsResources({"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, {"expval(PauliZ)": 1}, 2, 2),
-        SpecsResources(
-            {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, {"expval(Exp(PauliZ))": 1}, 3, 2
-        ),
-        SpecsResources(
-            {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
-            {1: 5, 2: 2},
-            {"probs(all wires)": 1},
-            3,
-            6,
-        ),
-        SpecsResources(
-            {"10C(IsingXX)": 1, "5C(IsingXX)": 1, "C(IsingXX)": 1, "CNOT": 2, "Toffoli": 2},
-            {12: 1, 7: 1, 3: 3, 2: 2},
-            {"probs(all wires)": 1},
-            12,
-            7,
-        ),
-    )  # SpecsResources(gate_types, gate_sizes, measurements, num_allocs, depth)
-
-    @pytest.mark.parametrize("script, expected_resources", zip(scripts, expected_resources))
-    def test_count_resources(self, script, expected_resources):
-        """Test the count resources method."""
-        computed_resources = _count_resources(script)
-        assert computed_resources == expected_resources
-
-    @pytest.mark.parametrize("script, expected_resources", zip(scripts, expected_resources))
-    def test_count_resources_no_depth(self, script, expected_resources):
-        """Test the count resources method with depth disabled."""
-
-        computed_resources = _count_resources(script, compute_depth=False)
-        expected_resources = SpecsResources(
-            gate_types=expected_resources.gate_types,
-            gate_sizes=expected_resources.gate_sizes,
-            measurements=expected_resources.measurements,
-            num_allocs=expected_resources.num_allocs,
-        )
-
-        assert computed_resources == expected_resources
 
 
 def test_count_to_str():

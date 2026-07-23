@@ -111,6 +111,11 @@ class CompressedResourceOp:
 AbstractOperatorLike = CompressedResourceOp | Operator2
 
 
+@abstractify.register(CompressedResourceOp)
+def _abstractify_resource_rep(op_rep: CompressedResourceOp):
+    return op_rep
+
+
 @dataclass(frozen=False)
 class Resources:
     r"""Stores resource estimates.
@@ -149,7 +154,8 @@ class Resources:
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
+        gate_counts = _gate_count_dict_to_str(self.gate_counts)
+        return f"<num_gates={self.num_gates}, gate_counts={gate_counts}, weighted_cost={self.weighted_cost}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -163,6 +169,11 @@ def _combine_dict(dict1: dict, dict2: dict):
     return combined_dict
 
 
+def _gate_count_dict_to_str(gate_counts):
+    inner = ", ".join(f"{op}: {count}" for op, count in gate_counts.items())
+    return f"{{{inner}}}"
+
+
 def _scale_dict(dict1: dict, scalar: int):
     r"""Scales the values in a dictionary with a scalar."""
 
@@ -173,7 +184,8 @@ def _make_hashable(d):
     if isinstance(d, dict):
         return tuple(
             sorted(
-                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
+                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()),
+                key=lambda x: repr(x[0]),
             )
         )
     if isinstance(d, CompressedResourceOp):
@@ -441,10 +453,13 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    compute_op = auto_wrap(compute_op)
-    target_op = auto_wrap(target_op)
-    uncompute_op = uncompute_op or adjoint_resource_rep(compute_op.op_type, compute_op.params)
-    uncompute_op = auto_wrap(uncompute_op)
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+    compute_op = abstractify(compute_op)
+    target_op = abstractify(target_op)
+    uncompute_op = uncompute_op or _adjoint_abstract(compute_op)
+    uncompute_op = abstractify(uncompute_op)
     return CompressedResourceOp(
         qp.ops.ChangeOpBasis,
         {
@@ -558,9 +573,9 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
 
     if base_class is qp.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qp.CNOT)
+            return abstractify(qp.CNOT)
         if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
-            return resource_rep(qp.Toffoli)
+            return abstractify(qp.Toffoli)
         return resource_rep(
             qp.MultiControlledX,
             num_control_wires=num_control_wires,
@@ -583,28 +598,6 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-
-
-def auto_wrap(op_type) -> AbstractOperatorLike:
-    """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
-        return op_type
-    if isinstance(op_type, Operator2):
-        return abstractify(op_type)
-    if isinstance(op_type, type) and issubclass(op_type, Operator2):
-        return abstractify(op_type)
-    if not issubclass(op_type, Operator):
-        raise TypeError(
-            "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qp.resource_rep"
-        )
-    try:
-        return resource_rep(op_type)
-    except TypeError as e:
-        raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
-            f"representation must be explicitly constructed using qp.resource_rep"
-        ) from e
 
 
 @to_name.register

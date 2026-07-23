@@ -175,7 +175,6 @@ def test_differentiability_tensorflow():
 
 
 @pytest.mark.catalyst
-@pytest.mark.external
 def test_catalyst_integration():
     """Test that combine_global_phases works with catalyst."""
 
@@ -198,4 +197,4 @@ def test_catalyst_integration():
         return qp.expval(qp.Z(0))
 
     specs = qp.specs(circuit)()
-    assert specs.resources.gate_counts["GlobalPhase"] == 1
+    assert specs.resources.quantum_operations["GlobalPhase"] == 1

@@ -22,11 +22,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.math import expand_matrix
 from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
 from pennylane.typing import TensorLike
@@ -146,14 +142,9 @@ class IQP(Operation):
 def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
     resources = defaultdict(int)
     if spin_sym:
-        resources[
-            resource_rep(
-                PauliRot,
-                pauli_word="Y" + "X" * (num_wires - 1),
-            )
-        ] = 1
+        resources[resource_rep(PauliRot, pauli_word="Y" + "X" * (num_wires - 1))] = 1
 
-    resources[resource_rep(Hadamard)] = 2 * num_wires
+    resources[Hadamard] = 2 * num_wires
 
     for gate in pattern:
         for gen in gate:

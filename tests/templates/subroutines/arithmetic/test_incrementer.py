@@ -87,7 +87,7 @@ def test_correct(wires, init_state, expected, work_wires):
         Incrementer(wires, work_wires)
         return state()
 
-    result = increment(wires, init_state, work_wires)
+    result = np.array(increment(wires, init_state, work_wires))
 
     expected = np.concatenate([np.array(expected), np.zeros(len(work_wires))])
 
@@ -166,7 +166,9 @@ def test_controlled(init_state, expected, work_wires, control_wires, control_val
         Controlled(Incrementer(wires, work_wires), control_wires)
         return state()
 
-    result = controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    result = np.array(
+        controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    )
 
     expected = np.concatenate(
         [np.array(expected), np.zeros(len(work_wires)), np.array(control_values)]
@@ -185,53 +187,43 @@ def test_controlled(init_state, expected, work_wires, control_wires, control_val
         # enough work wires for work wire decomp
         ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
         # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (8,),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
         # no work wires
         ((0, 1, 2), tuple(), (3,)),
         # 2 controls
         # enough work wires for work wire decomp
-        (
-            (0, 1, 2, 3, 4, 5),
-            (6, 7, 8, 9, 10, 11),
-            (
-                12,
-                13,
-            ),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12, 13)),
         # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (
-                8,
-                9,
-            ),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8, 9)),
         # no work wires
-        (
-            (0, 1, 2),
-            tuple(),
-            (
-                3,
-                4,
-            ),
-        ),
+        ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
 def test_controlled_decomposition_new(wires, work_wires, controls):
     """Tests the decomposition rule implemented with the new system."""
+    # Work wires only in incrementer
+    op = Controlled(Incrementer(wires, work_wires), controls, control_values=[1] * len(controls))
+    for rule in list_decomps("C(Incrementer)"):
+        _test_decomposition_rule(op, rule)
+    # Split work wires between incrementer and control
+    split = len(work_wires) // 2
     op = Controlled(
-        Incrementer(wires, work_wires), controls, control_values=[1 for _ in range(len(controls))]
+        Incrementer(wires, work_wires[:split]),
+        controls,
+        control_values=[1] * len(controls),
+        work_wires=work_wires[split:],
+        work_wire_type="zeroed",
+    )
+    for rule in list_decomps("C(Incrementer)"):
+        _test_decomposition_rule(op, rule)
+
+    # Work wires only in control
+    op = Controlled(
+        Incrementer(wires, []),
+        controls,
+        control_values=[1] * len(controls),
+        work_wires=work_wires,
+        work_wire_type="zeroed",
     )
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
