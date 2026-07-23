@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition import adjoint_resource_rep, resource_rep
+from pennylane.decomposition import adjoint_resource_rep, controlled_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
@@ -593,7 +593,10 @@ class TestMeasurementQROM:
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
         assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
-        assert res_two[qp.resource_rep(qp.CNOT)] == 3
+        assert (
+            res_two[controlled_resource_rep(qp.BasisState, {"num_wires": 3}, num_control_wires=1)]
+            == 1
+        )
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
@@ -695,9 +698,10 @@ class TestMeasurementQROM:
             )
         ops = q.queue
         assert isinstance(ops[0], qp.BasisState)
-        # Only the differing bit (index 0) produces a controlled load.
-        assert all(isinstance(op, qp.CNOT) for op in ops[1:])
+        # The diff bitstring is loaded with a single controlled BasisState.
         assert len(ops[1:]) == 1
+        assert isinstance(ops[1], qp.ops.Controlled)
+        assert isinstance(ops[1].base, qp.BasisState)
 
     def test_decomposition_from_base_operator(self):
         """Test that the decomposition extracts arguments from ``base`` (Adjoint path)."""
