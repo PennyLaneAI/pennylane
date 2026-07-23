@@ -26,7 +26,6 @@ from pennylane.wires import Wires
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
-@pytest.mark.external
 @pytest.mark.catalyst
 def test_measure_catalyst_dispatch():
     """Test that qp.measure can be used with qjit and capture disabled."""

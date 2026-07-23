@@ -187,7 +187,7 @@ class QuantumScript:
         self._obs_sharing_wires_id = None
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 
     @cached_property
     def hash(self) -> int:
@@ -954,11 +954,11 @@ class QuantumScript:
 
         >>> from pprint import pprint
         >>> pprint(qscript.specs['resources'])
-        SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
-                       gate_sizes={1: 4, 2: 2},
-                       measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
+        SpecsResources(counts={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
+                       measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
                        num_allocs=2,
-                       depth=4)
+                       circuit_depth=4,
+                       total_quantum_operations=6)
         """
         if self._specs is None:
             # pylint: disable=import-outside-toplevel # tach-ignore

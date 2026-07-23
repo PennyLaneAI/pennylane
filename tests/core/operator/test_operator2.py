@@ -17,10 +17,11 @@
 # TODO: [sc-120982] Add integration tests
 
 import copy
+from typing import override
 
 import numpy as np
 import pytest
-from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp
+from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp, NonParametricOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
@@ -1282,13 +1283,13 @@ class TestDunderMethods:
         op = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
         assert (
             repr(op)
-            == "DynOp(phi=AbstractArray((1, 2), float64, weak_type=True), wires=AbstractWires(1))"
+            == "DynOp(AbstractArray((1, 2), float64, weak_type=True), wires=AbstractWires(1))"
         )
 
     def test_repr_with_dynamic_args(self):
         """Test that __repr__ includes dynamic parameters if present."""
         op = DynOp(0.5, wires=[0, 1])
-        assert repr(op) == "DynOp(phi=0.5, wires=[0, 1])"
+        assert repr(op) == "DynOp(0.5, wires=[0, 1])"
 
     def test_repr_without_dynamic_args(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""
@@ -1347,6 +1348,28 @@ class TestDunderMethods:
 
         op = Op(wires=[[0], 1, [2, 3]])
         assert repr(op) == "Op(wires=[[0], [1], [2, 3]])"
+
+    def test_str_with_abstract_and_fixed_sigs(self):
+        """Tests that __str__ is simplified for abstract and fixed ops."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires",)
+            arg_specs = {"wires": Wire[1]}
+
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        op = Op(Wire[1])
+        assert str(op) == "Op"
+
+        class Op2(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                super().__init__(wires)
+
+        op = Op2(Wire[1])
+        assert str(op) == "Op2(wires=AbstractWires(1))"
 
     def test_copy(self):
         """Test that shallow copies of operators are created correctly."""
@@ -2406,11 +2429,65 @@ class TestStatePrepBase:
             BadStatePrep(0)  # pylint: disable=abstract-class-instantiated
 
 
-class NoParamOp(Operator2):
-    """A simple operator with wires and no dynamic parameters."""
+class TestLegacyGradMethodProperty:
+    """Tests the legacy 'grad_method' property."""
 
-    def __init__(self, wires):
-        super().__init__(wires=wires)
+    @pytest.mark.parametrize("wire", (0, Wire[1]))
+    def test_no_params_returns_none(self, wire):
+        """Tests no trainable parameters gives None."""
+        op = NonParametricOp(wires=wire)
+        assert op.grad_method is None
+        assert op.grad_recipe == []
+
+    def test_custom_recipe_forces_analytic(self):
+        """Tests that a custom grad_recipe forces an analytic grad method."""
+        op = DynOp(0.5, wires=0)
+        op.grad_recipe = [[[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]]
+        assert op.grad_method == "A"
+
+    def test_generator_gives_frequencies(self):
+        """Tests that a generator can create parameter frequencies which returns analytic."""
+
+        class GenOp(DynOp):
+            @override
+            def generator(self):
+                return -0.5 * qp.Z(0)
+
+        op = GenOp(0.5, wires=0)
+        assert op.grad_recipe == [None]
+        assert op.grad_method == "A"
+
+    def test_no_recipe_no_freq_gives_finite_diff(self):
+        """Tests that it defaults to finite diff if nothing else works."""
+        op = DynOp(0.5, wires=0)
+        assert op.grad_recipe == [None]
+        assert op.grad_method == "F"
+
+
+class TestLegacyGradRecipeProperty:
+    """Tests the legacy 'grad_recipe' property."""
+
+    def test_default_is_list_of_none(self):
+        """TEsts that the default is a list of None."""
+
+        assert DynOp(0.5, wires=0).grad_recipe == [None]
+        assert NonParametricOp(0).grad_recipe == []
+
+    def test_computed_lazily(self):
+        """Tests that the property is computed lazily."""
+        op = DynOp(0.5, 0)
+        assert op._ndim_params is _UNSET_BATCH_SIZE
+        _ = op.grad_recipe
+
+    def test_setter_roundtrip(self):
+        """Tests that grad_method can pick up changes from the grad_recipe setter."""
+
+        op = DynOp(0.5, 0)
+        recipe = [[[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]]
+        op.grad_recipe = recipe
+        assert op.grad_recipe == recipe
+        # Grad method should adjust accordingly.
+        assert op.grad_method == "A"
 
 
 class TestLegacyCompatibilityViews:
@@ -2418,7 +2495,7 @@ class TestLegacyCompatibilityViews:
 
     def test_no_param_op_legacy_views(self):
         """Test legacy views for an operator with no dynamic parameters."""
-        op = NoParamOp(wires=0)
+        op = NonParametricOp(wires=0)
 
         assert op.data == ()
         assert op.parameters == []
