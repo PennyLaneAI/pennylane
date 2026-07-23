@@ -389,7 +389,7 @@ class BasisRotation(Operator2):
 
 
 # pylint: disable=unused-argument
-def _basis_rotation_decomp_resources(wires, unitary_matrix, check=False):
+def _basis_rotation_decomp_resources(unitary_matrix, wires):
     dim = math.shape(unitary_matrix)[0]
 
     se_count = dim * (dim - 1) / 2
