@@ -131,7 +131,7 @@ class LeftClassicalComparator(Operation):
                 f"x_wires and target_wire must be disjoint, but share: {list(overlap)}. "
                 f"(x_wires={list(x_wires)}, target_wire={list(target_wire)})"
             )
-        if not math.is_abstract(L) and not (0<= L < 2 ** len(x_wires)):
+        if not math.is_abstract(L) and not (0 <= L < 2 ** len(x_wires)):
             raise ValueError(
                 f"L must be less than 2**len(x_wires) and non-negative. Got {L=} and {2**len(x_wires)=}"
             )

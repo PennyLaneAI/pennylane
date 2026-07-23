@@ -45,7 +45,7 @@ class SuperpositionTHC(Operation):
 
     Here :math:`\lvert \text{flag} \rangle` is the single success flag qubit ``work_wires[6]``;
     a valid pair is prepared when it is :math:`\lvert 1 \rangle`. The other flags mentioned in
-    the note below are separate work wires, not part of this state.
+    the note below are separate work wires.
     The valid index set :math:`\mathcal{S}` is
 
     .. math::
@@ -418,7 +418,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # 2. Rotation angle for the single round of amplitude amplification.
-    n_total_vals = 2 ** n
+    n_total_vals = 2**n
     d = N // 2 + M * (M + 1) // 2
     frac_valid = d / n_total_vals**2
     limit = 0.5 / math.sqrt(frac_valid)
