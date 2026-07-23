@@ -1084,6 +1084,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed ``qml.equal`` treating opposite ``MeasurementValue`` predicates as equal. [(#9885)](https://github.com/PennyLaneAI/pennylane/pull/9885)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
