@@ -48,7 +48,7 @@ from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.typing import Wire
+from pennylane.typing import Wire, AbstractWires
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.wires import Wires, WiresLike
 
@@ -87,6 +87,15 @@ class Hadamard(Operator2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
+
+    def __repr__(self) -> str:
+        """String representation."""
+        if isinstance(self.wires, AbstractWires):
+            return "H"
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"H('{wire}')"
+        return f"H({wire})"
 
     def label(
         self,

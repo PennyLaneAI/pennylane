@@ -286,7 +286,7 @@ def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
     }
 
 
-@register_resources(_iqp_embedding_resources)
+@register_resources(_iqp_embedding_resources, exact=False)
 def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
 
     if has_jax and capture.enabled():
