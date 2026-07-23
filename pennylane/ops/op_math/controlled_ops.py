@@ -40,6 +40,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     pow_rotation,
     self_adjoint_legacy,
+    self_adjoint,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import TensorLike, Wire
@@ -419,7 +420,7 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
-add_decomps("Adjoint(CH)", self_adjoint_legacy)
+add_decomps("Adjoint(CH)", self_adjoint)
 add_decomps("Pow(CH)", pow_involutory)
 
 

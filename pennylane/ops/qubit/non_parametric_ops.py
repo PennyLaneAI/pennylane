@@ -41,11 +41,13 @@ from pennylane.decomposition.symbolic_decomposition import (
     make_pow_decomp_with_period,
     pow_involutory,
     self_adjoint_legacy,
+    self_adjoint,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.wires import Wires, WiresLike
@@ -271,7 +273,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
-add_decomps("Adjoint(Hadamard)", self_adjoint_legacy)
+add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
@@ -309,7 +311,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
     qp.RY(np.pi / 4, wires=wires[-1])
 
 
-add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
+add_decomps("C(Hadamard)", flip_zero_control2(_controlled_hadamard))
 
 
 class PauliX(Operation):
@@ -1752,7 +1754,7 @@ def _swap_to_ppr(wires, **_):
 
 
 add_decomps(SWAP, _swap_to_cnot, _swap_to_ppr)
-add_decomps("Adjoint(SWAP)", self_adjoint_legacy)
+add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory)
 
 
@@ -1960,7 +1962,7 @@ def _ecr_decomp(wires, **__):
 
 
 add_decomps(ECR, _ecr_decomp)
-add_decomps("Adjoint(ECR)", self_adjoint_legacy)
+add_decomps("Adjoint(ECR)", self_adjoint)
 add_decomps("Pow(ECR)", pow_involutory)
 
 
