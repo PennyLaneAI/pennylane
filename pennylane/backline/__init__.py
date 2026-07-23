@@ -16,22 +16,25 @@ r"""
 .. currentmodule:: pennylane.backline
 
 This module contains experimental features for compilation and execution on heterogeneous devices.
-The ``"ftqc.heterogeneous"`` device requires a ``backline`` object, which specifies the placement
-of processes (i.e., where each part of the workload runs), and the transport protocol.
+The :func:`~pennylane.backline` function builds a device from a placement, which specifies where
+each part of the workload runs and the transport protocol between them.
 
 .. warning::
 
     Backline is experimental. Its API may change without notice, and it is only usable through
     the Catalyst compiler.
 
-A ``backline`` placement is built from a :class:`controller <.Controller>` (which drives a QNode and executes through a backend simulator such as ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`. This is then passed to the ``"ftqc.heterogeneous"`` device:
+A backline device is built with :func:`~pennylane.backline` from a
+:class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
+``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
+:class:`transport <.Transport>`. The resulting device is passed into a QNode:
 
 .. code-block:: python
 
     import pennylane as qp
 
     cpu_controller = qp.Controller(
+        qp.device("lightning.qubit", wires=4),
         name="cpu-controller",
         addr="192.168.1.1",
         port="1234",
@@ -45,16 +48,17 @@ A ``backline`` placement is built from a :class:`controller <.Controller>` (whic
         remote=False,
     )
 
-    backline = qp.Backline(
-        controller=cpu_controller, coprocessors=(gpu_coprocessor,), transport="rdma"
-    )
+    dev = qp.backline(cpu_controller, gpu_coprocessor, transport="rdma")
 
-    dev = qp.device("ftqc.heterogeneous", backline=backline, wires=4)
+    @qp.qjit
+    @qp.qnode(dev)
+    def circuit():
+        # To be updated
 
 Executors
 ~~~~~~~~~
 
-An executor is a node in the backline fabric.
+An executor is a node in the backline fabric. An executor can be a Controller (where the QNode is executed, and issues messages), or a Coprocessor (where the messages are processed and returned).
 
 .. autosummary::
     :toctree: api
@@ -77,12 +81,25 @@ A coprocessor applies a precompiled function to each message it receives (e.g., 
 Placement
 ~~~~~~~~~
 
-A placement groups the controller, coprocessors, and transport into a single object.
+A placement groups the controller, coprocessors, and transport. :func:`~pennylane.backline` assembles
+them into a device that can be bound to a QNode.
 
 .. autosummary::
     :toctree: api
 
+    ~backline
     ~Backline
+
+Device
+~~~~~~
+
+:func:`~pennylane.backline` returns a device that carries the placement and can be bound directly to
+a QNode. It requires the Catalyst compiler for execution.
+
+.. autosummary::
+    :toctree: api
+
+    ~HeterogeneousDevice
 
 Transports
 ~~~~~~~~~~
@@ -98,6 +115,7 @@ lives in the compiled runtime.
     ~register_transport
 """
 
+from .device import HeterogeneousDevice, backline
 from .functions import CoprocessorFunction, css_decoder
 from .placement import Backline, Controller, Coprocessor, Executor
 from .transports import Transport, get_transport, register_transport
@@ -107,6 +125,8 @@ __all__ = [
     "Controller",
     "Coprocessor",
     "Backline",
+    "backline",
+    "HeterogeneousDevice",
     "CoprocessorFunction",
     "css_decoder",
     "Transport",

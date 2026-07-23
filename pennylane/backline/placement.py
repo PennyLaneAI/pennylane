@@ -15,9 +15,13 @@
 """Placement types for backline heterogeneous compilation and execution."""
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from .functions import CoprocessorFunction
 from .transports import Transport, get_transport
+
+if TYPE_CHECKING:
+    from pennylane.devices import Device
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -25,14 +29,14 @@ class Executor:
     """A node in a backline fabric, including its name and connection information.
 
     Base class for :class:`Controller` and :class:`Coprocessor`. It carries information to determine whether the node's code needs to be cross-compiled and dispatched to a remote host or run
-    locally.
+    locally. Executors are assembled into a device with :func:`~pennylane.backline`.
 
     See the Attributes section to learn more about the available options.
     """
 
-    name: str
+    name: str | None = None
     """The backend executor device this executor maps to, e.g. ``"gpu-libibverbs"`` or
-    ``"cpu-libibverbs"``."""
+    ``"cpu-libibverbs"``. Defaults to ``None``."""
 
     addr: str | None = None
     """Host address of the executor. Required for remote executors; may be ``None`` for local ones."""
@@ -51,18 +55,28 @@ class Executor:
     """Optional backend-specific initialization arguments."""
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class Controller(Executor):
     """The executor that controls the QPU and initiates data transfers.
 
     The controller runs the qnode and is the data-initiator during a decoding step: it sends
-    syndromes to the coprocessors and receives corrections back.
+    syndromes to the coprocessors and receives corrections back. Pass it to
+    :func:`~pennylane.backline` to build a device.
 
-    See the Attributes section to learn more about the available options.
+    Args:
+        device (Device | None): The PennyLane device the controller executes (e.g. ``qp.device("lightning.qubit")``). Defaults to ``None``, which uses a ``null.qubit`` device.
+
+    See the Attributes section for the connection options inherited from :class:`Executor`.
     """
 
-    simulator: str = "null.qubit"
-    """The QPU simulator running on the controller, e.g., ``"null.qubit"``."""
+    device: "Device | None" = None
+    """The PennyLane device the controller executes, e.g. ``qp.device("lightning.qubit")``. When ``None``, a ``null.qubit`` device is used."""
+
+    def __post_init__(self):
+        if self.device is None:
+            import pennylane as qp
+
+            object.__setattr__(self, "device", qp.device("null.qubit"))
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -71,7 +85,8 @@ class Coprocessor(Executor):
 
     A coprocessor receives messages from the controller (e.g., syndromes). The ``coprocessor_fn`` is
     used to process the message, and sends the result back (e.g., corrections). Depending on the
-    connection type, a ``coprocessor_fn`` may be a persistent kernel.
+    connection type, a ``coprocessor_fn`` may be a persistent kernel. Pass coprocessors to
+    :func:`~pennylane.backline` to build a device.
 
     See the Attributes section to learn more about the available options.
     """
@@ -90,7 +105,7 @@ class Backline:
     """Declarative placement for heterogeneous execution.
 
     Contains a controller node, any coprocessor nodes, and the transport that carries data between
-    them.
+    them. Use :func:`~pennylane.backline` to assemble a controller, coprocessors, and transport into a device that carries this placement.
 
     See the Attributes section to learn more about the available options.
     """

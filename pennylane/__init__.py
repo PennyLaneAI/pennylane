@@ -31,14 +31,6 @@ from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
-from pennylane.backline import (
-    Backline,
-    Controller,
-    Coprocessor,
-    CoprocessorFunction,
-    Executor,
-    css_decoder,
-)
 from pennylane import math
 from pennylane import operation
 from pennylane.core import operator
@@ -209,6 +201,17 @@ from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
+
+# Imported after ``pennylane.devices`` because ``HeterogeneousDevice`` subclasses ``devices.Device``.
+from pennylane.backline import (
+    Backline,
+    Controller,
+    Coprocessor,
+    CoprocessorFunction,
+    Executor,
+    backline,
+    css_decoder,
+)
 
 from pennylane import spin
 

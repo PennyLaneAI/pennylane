@@ -27,6 +27,9 @@ _TRANSPORTS = {}
 class Transport:
     """A named data transport.
 
+    Passed to :func:`~pennylane.backline` as the ``transport`` argument to select how messages move
+    between executors.
+
     See the Attributes section to learn more about the available options.
     """
 
