@@ -20,7 +20,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal
+from typing import Literal, override
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -42,7 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -68,6 +68,7 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
+from ... import Controlled2
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
@@ -291,7 +292,7 @@ add_decomps(
 )
 
 
-class CH(ControlledOp):
+class CH(Controlled2):
     r"""CH(wires)
     The controlled-Hadamard operator
 
@@ -313,6 +314,12 @@ class CH(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    wire_argnames = ("wires",)
+
+    arg_specs = {"wires": Wire[2]}
+
+    wire_sizes = (2,)
+
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -322,43 +329,25 @@ class CH(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CH"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
+    def __init__(self, wires: WiresLike):
+        super().__init__(qp.H(wires[1:]), wires[:1])
 
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
-    def __init__(self, wires):
-        control_wires = wires[:1]
-        target_wires = wires[1:]
-
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.Hadamard, wires=target_wires)
-        super().__init__(base, control_wires)
+    @override
+    def __abstract_init__(self, wires: WiresLike):
+        super().__abstract_init__(qp.H(Wire[1]), control_wires=Wire[1])
 
     def __repr__(self):
         return f"CH(wires={self.wires})"
 
+    @override
     def adjoint(self):
         return CH(self.wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -366,6 +355,8 @@ class CH(ControlledOp):
 
         .. seealso:: :meth:`~.CH.matrix`
 
+        Args:
+            wires (Iterable, Wires): optional wires that the operator acts on
 
         Returns:
             ndarray: matrix
@@ -388,7 +379,7 @@ class CH(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
 
@@ -416,7 +407,7 @@ class CH(ControlledOp):
         ]
 
 
-def _ch_to_ry_cz_ry_resources():
+def _ch_to_ry_cz_ry_resources(wires: WiresLike=None):
     return {qp.RY: 2, qp.CZ: 1}
 
 
