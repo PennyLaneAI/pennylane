@@ -519,16 +519,18 @@ class TestSubroutineCapture:
 
 
 @pytest.mark.capture
-def test_no_abstract_capturing():
-    """Test that CollectedSubroutine can't occur during an abstract evaluation."""
+class TestCollectedSubroutine:  # pylint: disable=too-few-public-methods
 
-    jax = pytest.importorskip("jax")
+    def test_no_abstract_capturing(self):
+        """Test that CollectedSubroutine can't occur during an abstract evaluation."""
 
-    def f():
-        CollectedSubroutine("bla", [qp.X(0)])
+        jax = pytest.importorskip("jax")
 
-    with pytest.raises(NotImplementedError, match="should never be hit"):
-        jax.make_jaxpr(f)()
+        def f():
+            CollectedSubroutine("bla", [qp.X(0)])
+
+        with pytest.raises(NotImplementedError, match="should never be hit"):
+            jax.make_jaxpr(f)()
 
 
 @pytest.mark.integration
@@ -774,8 +776,9 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], CNOT)
-        assert rr.params["compute_op"].is_abstract
+        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "CNOT"
+        assert rr.params["compute_op"].op_type == CNOT
 
         assert isinstance(rr.params["target_op"], PauliX)
         assert rr.params["target_op"].is_abstract
