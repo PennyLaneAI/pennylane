@@ -199,12 +199,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             control_wires = abstractify(Wires(control_wires))
 
         # abstractify control values
-        if control_values is None:
-            control_values = Bool[len(control_wires)]
-        elif isinstance(control_values, (int, bool)):
-            control_values = Bool[1]
-        elif isinstance(control_values, (list, tuple, Wires)):
-            control_values = Bool[len(control_values)]
+        control_values = Bool[len(control_wires)]
 
         # abstractify the base
         base = abstractify(base)
