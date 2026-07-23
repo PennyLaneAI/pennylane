@@ -183,7 +183,7 @@ class Qubitization(Operation):
 
 
 def _qubitization_resources(num_control_wires, hamiltonian):
-    prod = Prod(I(Wire[1]))
+    prod = Prod(reduce(lambda nxt, acc: nxt @ acc, [I(Wire[1]) for _ in range(num_control_wires)]))
     return {
         resource_rep(
             Reflection,
