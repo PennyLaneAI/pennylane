@@ -953,9 +953,9 @@ special_par_op_decomps = [
         [1],
         qp.CRZ,
         [
-            qp.PhaseShift(0.123 / 2, wires=0),
+            qp.RZ(0.123 / 2, wires=0),
             qp.CNOT(wires=[1, 0]),
-            qp.PhaseShift(-0.123 / 2, wires=0),
+            qp.RZ(-0.123 / 2, wires=0),
             qp.CNOT(wires=[1, 0]),
         ],
     ),
@@ -1185,7 +1185,7 @@ class TestDecomposition:
 
         active_wires = ctrl_wires + base_wires
         base_op = base_cls(*params, wires=base_wires)
-        ctrl_op = Controlled(base_op, control_wires=ctrl_wires)
+        ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
         assert ctrl_op.decomposition() == expected
@@ -1193,7 +1193,8 @@ class TestDecomposition:
         assert custom_ctrl_op.decomposition() == expected
         # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
         # to test, just the controlled decompositions logic.
-        if base_cls not in (qp.GlobalPhase, qp.Identity):
+        # NOTE: Operator2 instances don't have compute_decomposition defined.
+        if not issubclass(base_cls, Operator2) and base_cls not in (qp.GlobalPhase, qp.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
