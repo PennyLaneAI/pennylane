@@ -262,7 +262,7 @@ class QutritDevice(QubitDevice):
             array[float]: list of the probabilities
         """
 
-        wires = wires or self.wires
+        wires = wires if wires is not None else self.wires
         # convert to a wires object
         wires = Wires(wires)
         # translate to wire labels used by device

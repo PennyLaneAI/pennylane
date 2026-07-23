@@ -1706,3 +1706,38 @@ def test_no_adjoint_jacobian_errors():
     tape2 = qp.tape.QuantumScript([qp.RX(0.1, 0)], [qp.expval(qp.Z(0))])
     with pytest.raises(QuantumFunctionError, match="Adjoint does not support shot vector"):
         dev.adjoint_jacobian(tape2)
+
+
+def test_probability_wires_zero_is_not_all_wires(monkeypatch):
+    """Integer wire label 0 must not be treated as missing wires (#9653)."""
+    import numpy as np
+
+    class DummyQubitDevice(qp.devices.QubitDevice):
+        author = None
+        name = "prob-wires0"
+        operations = {None}
+        pennylane_requires = None
+        short_name = "prob-wires0"
+        version = 0
+
+        def apply(self, operations, **kwargs):
+            raise NotImplementedError
+
+        def analytic_probability(self, wires=None):
+            # flat |00> probs over full system, then marginalize
+            prob = np.zeros(2 ** self.num_wires)
+            prob[0] = 1.0
+            return self.marginal_prob(prob, wires)
+
+    dev = DummyQubitDevice(wires=2)
+    samples = np.array([[0, 0], [0, 0]])
+    full = np.asarray(dev.probability(wires=None))
+    w0 = np.asarray(dev.probability(wires=0))
+    with monkeypatch.context() as m:
+        m.setattr(dev, "_samples", samples)
+        est_full = np.asarray(dev.estimate_probability(wires=None))
+        est_w0 = np.asarray(dev.estimate_probability(wires=0))
+    assert full.shape == (4,)
+    assert w0.shape == (2,)
+    assert est_full.shape == (4,)
+    assert est_w0.shape == (2,)

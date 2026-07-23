@@ -1246,3 +1246,21 @@ class TestUnimplemented:
 
         with pytest.raises(QuantumFunctionError, match="Qutrit devices don't support"):
             dev.shadow_expval(obs, qs)
+
+
+def test_probability_wires_zero_is_not_all_wires():
+    """Integer wire label 0 must not be treated as missing wires (#9653)."""
+    import numpy as np
+
+    dev = qp.device("default.qutrit", wires=2)
+
+    @qp.qnode(dev)
+    def circuit():
+        qp.TShift(0)
+        return qp.probs(wires=[0, 1])
+
+    circuit()
+    full = np.asarray(dev.probability(wires=None))
+    w0 = np.asarray(dev.probability(wires=0))
+    assert full.shape[0] == 9
+    assert w0.shape[0] == 3
