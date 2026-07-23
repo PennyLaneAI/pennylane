@@ -952,12 +952,7 @@ special_par_op_decomps = [
         [0],
         [1],
         qp.CRZ,
-        [
-            qp.RZ(0.123 / 2, wires=0),
-            qp.CNOT(wires=[1, 0]),
-            qp.RZ(-0.123 / 2, wires=0),
-            qp.CNOT(wires=[1, 0]),
-        ],
+        [qp.CRZ(0.123, wires=[1, 0])],
     ),
     (
         qp.Rot,
