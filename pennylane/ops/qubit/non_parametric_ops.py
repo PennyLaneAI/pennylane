@@ -43,6 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -270,7 +271,22 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qp.GlobalPhase(-np.pi / 2)
 
 
-add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
+def _hadamard_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
+
+
+@qp.register_resources(_hadamard_ppm_resources, work_wires={"zeroed": 1})
+def _hadamard_ppm(wires, **__):
+    with qp.allocate(1, state="zero", restored=False) as work_wires:
+        qp.Z(wires)
+        m0 = pauli_measure("YY", [wires[0], work_wires[0]])
+        m1 = pauli_measure("X", work_wires)
+        qp.cond(m0 == m1, qp.Y)(wires)
+        qp.cond(m0 == m1, qp.GlobalPhase)(np.pi / 2)
+        qp.cond(m1, qp.Z)(work_wires[0])  # Reset work wire to |+>
+
+
+add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry, _hadamard_ppm)
 add_decomps("Adjoint(Hadamard)", self_adjoint_legacy)
 add_decomps("Pow(Hadamard)", pow_involutory)
 

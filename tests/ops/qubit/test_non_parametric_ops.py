@@ -266,6 +266,25 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    @pytest.mark.catalyst
+    def test_hadamard_ppm_decomposition(self, seed):
+        """Tests that the PPM decomposition of Hadamard is correct."""
+        rule = qp.list_decomps(qp.Hadamard)["_hadamard_ppm"]
+        rng = np.random.default_rng(seed)
+        init_state = rng.random(2) + 1j * rng.random(2)
+        init_state /= np.linalg.norm(init_state)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=[0, 1]))
+        def circuit():
+            qp.StatePrep(init_state, [0])
+            rule([0])
+            qp.H(0)
+            return qp.state()
+
+        init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
+        assert np.allclose(init_state_full, circuit())
+
     def test_CH_decomposition(self, tol):
         """Tests that the decomposition of the CH gate is correct"""
         op = qp.CH(wires=[0, 1])

@@ -212,6 +212,27 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="Gate counts expected from"):
             _test_decomposition_rule(op, rule_wrong_ops)
 
+    def test_new_decomposition_rule_with_mcm_skips_matrix_check(self, mocker):
+        """Test that matrix check is skipped for decompositions containing mid-circuit measurements."""
+
+        class MyOp(Operator):
+            num_wires = 1
+
+            @staticmethod
+            def compute_matrix():
+                return qp.Hadamard.compute_matrix()
+
+        op = MyOp([0])
+
+        def mcm_rule(wires):
+            qp.ops.measure(wires[0])
+
+        rule = qp.register_resources({qp.ops.MidMeasure: 1})(mcm_rule)
+
+        spy = mocker.spy(qp, "matrix")
+        _test_decomposition_rule(op, rule)
+        spy.assert_not_called()
+
 
 class TestBadMatrix:
     """Tests involving matrix validation."""

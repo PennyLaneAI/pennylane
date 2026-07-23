@@ -18,6 +18,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 # pylint: disable=arguments-differ,arguments-renamed
 
+from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache, partial
 from typing import Literal
@@ -41,6 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint_legacy,
 )
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -560,24 +562,51 @@ def _cy(wires: WiresLike, **__):
     qp.S(wires=wires[0])
 
 
-def _cy_to_ppr_resource():
-    return {
-        resource_rep(qp.PauliRot, pauli_word="Y"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZY"): 1,
-        qp.GlobalPhase: 1,
-    }
+def _pauli_ctrl_pauli_ppr_resources(pauli0, pauli1):
+    """Resources for _pauli_ctrl_pauli_ppr."""
+    resources = defaultdict(int)
+    resources[resource_rep(qp.PauliRot, pauli_word=pauli0)] += 1
+    resources[resource_rep(qp.PauliRot, pauli_word=pauli1)] += 1
+    resources[resource_rep(qp.PauliRot, pauli_word=pauli0 + pauli1)] += 1
+    resources[qp.GlobalPhase] += 1
+    return dict(resources)
 
 
-@register_resources(_cy_to_ppr_resource)
-def _cy_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 2, "Y", wires=wires[1])
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[0])
-    qp.PauliRot(np.pi / 2, "ZY", wires=wires)
+def _pauli_ctrl_pauli_ppr(wires, pauli0, pauli1):
+    """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPRs."""
+    qp.PauliRot(-np.pi / 2, pauli0, wires=wires[0])
+    qp.PauliRot(-np.pi / 2, pauli1, wires=wires[1])
+    qp.PauliRot(np.pi / 2, pauli0 + pauli1, wires=wires)
     qp.GlobalPhase(np.pi / 4)
 
 
-add_decomps(CY, _cy, _cy_to_ppr)
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, "Z", "Y"))
+def _cy_to_ppr(wires: WiresLike, **_):
+    _pauli_ctrl_pauli_ppr(wires, "Z", "Y")
+
+
+def _pauli_ctrl_pauli_ppm(wires, pauli0, pauli1):
+    """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPMs."""
+    with qp.allocate(1, state="zero", restored=False) as work_wires:
+        m0 = pauli_measure(pauli0.__name__[-1] + "X", [wires[0], work_wires[0]])
+        m1 = pauli_measure("Z" + pauli1.__name__[-1], [work_wires[0], wires[1]])
+        m2 = pauli_measure("X", work_wires)
+        qp.cond(m1, pauli0)(wires[0])
+        qp.cond(m0 != m2, pauli1)(wires[1])
+        qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
+        qp.cond(m2, qp.Z)(work_wires[0])  # Reset work wire (to |+>), achieving pure state
+
+
+def _cy_lattice_surgery_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.Y: 1, qp.GlobalPhase: 1}
+
+
+@qp.register_resources(_cy_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+def _cy_lattice_surgery_ppm(wires: WiresLike, **__):
+    _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Y)
+
+
+add_decomps(CY, _cy, _cy_to_ppr, _cy_lattice_surgery_ppm)
 add_decomps("Adjoint(CY)", self_adjoint_legacy)
 add_decomps("Pow(CY)", pow_involutory)
 
@@ -702,23 +731,21 @@ def _cz_to_cnot(wires: WiresLike, **__):
     qp.H(wires=wires[1])
 
 
-def _cz_to_ppr_resource():
-    return {
-        resource_rep(qp.PauliRot, pauli_word="Z"): 2,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
-        qp.GlobalPhase: 1,
-    }
-
-
-@register_resources(_cz_to_ppr_resource)
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, "Z", "Z"))
 def _cz_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[1])
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[0])
-    qp.PauliRot(np.pi / 2, "ZZ", wires=wires)
-    qp.GlobalPhase(np.pi / 4)
+    _pauli_ctrl_pauli_ppr(wires, "Z", "Z")
 
 
-add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
+def _cz_lattice_surgery_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3, qp.GlobalPhase: 1}
+
+
+@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+def _cz_lattice_surgery_ppm(wires: WiresLike, **__):
+    _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Z)
+
+
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr, _cz_lattice_surgery_ppm)
 add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
@@ -1296,24 +1323,21 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qp.H(wires[1])
 
 
-def _cnot_to_ppr_resource():
-    return {
-        resource_rep(qp.PauliRot, pauli_word="X"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZX"): 1,
-        qp.GlobalPhase: 1,
-    }
-
-
-@register_resources(_cnot_to_ppr_resource)
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, "Z", "X"))
 def _cnot_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 2, "X", wires=wires[1])
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[0])
-    qp.PauliRot(np.pi / 2, "ZX", wires=wires)
-    qp.GlobalPhase(np.pi / 4)
+    _pauli_ctrl_pauli_ppr(wires, "Z", "X")
 
 
-add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
+def _cnot_lattice_surgery_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1, qp.GlobalPhase: 1}
+
+
+@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+def _cnot_lattice_surgery_ppm(wires: WiresLike, **__):
+    _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.X)
+
+
+add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr, _cnot_lattice_surgery_ppm)
 add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
