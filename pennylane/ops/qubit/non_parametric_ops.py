@@ -73,7 +73,7 @@ class Hadamard(Operator2):
     is_verified_hermitian = True
 
     wire_sizes = (1,)
-    arg_specs = {"wires": AbstractWires(1)}
+    arg_specs = {"wires": Wire[1]}
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -93,15 +93,6 @@ class Hadamard(Operator2):
         cache: dict | None = None,
     ) -> str:
         return base_label or "H"
-
-    def __repr__(self) -> str:
-        """String representation."""
-        if isinstance(self.wires, AbstractWires):
-            return "Hadamard"
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"H('{wire}')"
-        return f"H({wire})"
 
     @property
     def name(self) -> str:
@@ -1603,7 +1594,7 @@ class SWAP(Operator2):
     """
 
     wire_sizes = (2,)
-    arg_specs = {"wires": AbstractWires(2)}
+    arg_specs = {"wires": Wire[2]}
 
     is_verified_hermitian = True
     num_wires = 2
@@ -1824,7 +1815,7 @@ class ECR(Operator2):
     """
 
     wire_sizes = (2,)
-    arg_specs = {"wires": AbstractWires(2)}
+    arg_specs = {"wires": Wire[2]}
 
     num_wires = 2
     num_params = 0
@@ -1998,7 +1989,7 @@ class ISWAP(Operator2):
     """
 
     wire_sizes = (2,)
-    arg_specs = {"wires": AbstractWires(2)}
+    arg_specs = {"wires": Wire[2]}
 
     num_wires = 2
     num_params = 0
@@ -2189,7 +2180,7 @@ class SISWAP(Operator2):
     """
 
     wire_sizes = (2,)
-    arg_specs = {"wires": AbstractWires(2)}
+    arg_specs = {"wires": Wire[2]}
 
     num_wires = 2
     num_params = 0
