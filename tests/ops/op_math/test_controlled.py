@@ -1199,7 +1199,9 @@ class TestDecomposition:
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
         assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="Parameter broadcasting is something we are revisiting later.")
+    @pytest.mark.xfail(
+        reason="Parameter broadcasting is something we are revisiting later.", strict=False
+    )
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         special_par_op_decomps,
