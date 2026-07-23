@@ -606,8 +606,8 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
             )
         ] += 2
 
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    resources[controlled_resource_rep(X, **cnot_on_0_kwargs)] += 2 * (1 + int(num_y_wires > 1))
+    cnot_on_0_rep = _ctrl_abstract(X, Wire[1], num_zero_control_values=1)
+    resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
     for key, value in _semi_adder_resources(num_x_wires, num_y_wires).items():
         resources[key] += value
