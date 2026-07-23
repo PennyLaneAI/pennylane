@@ -306,6 +306,10 @@ def _left_inequalities(
         comparator=">=",
     )
 
+    # We check if the register is in state M.
+    # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
+    # the register is in state 0, and we shift that state with BasisState before and after.
+    # (We don't include the 'after' operation here since it will be uncomputed later.)
     BasisState(M, wires=nu_wires)
 
     # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
@@ -382,7 +386,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires are returned to
     # the zero state except work_wires[0], work_wires[3] and work_wires[6], which carry
-    # the prepared flags.
+    # the prepared flags. Note that the paper uses 1-based indexing, whereas we will use 0-based indexing.
 
     n = len(mu_wires)
     extra_work = work_wires[7 + 4 * n - 1 :]
@@ -441,6 +445,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
     adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
+    RY(angle, wires=work_wires[0])
 
 
 add_decomps(SuperpositionTHC, _superposition_thc)
