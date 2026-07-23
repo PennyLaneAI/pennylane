@@ -1080,6 +1080,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed ``BoseWord`` multiplication for factors constructed from non-sorted dictionaries. [(#9889)](https://github.com/PennyLaneAI/pennylane/pull/9889)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
