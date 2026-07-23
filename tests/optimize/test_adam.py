@@ -149,7 +149,7 @@ class TestAdamOptimizer:
                 )
                 assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
-    def test_adam_optimizer_properties(self):
+    def test_adam_optimizer_properties(self, seed):
         """Test the adam property interfaces"""
         stepsize, gamma, delta = 0.1, 0.5, 0.8
         adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
@@ -160,7 +160,8 @@ class TestAdamOptimizer:
         assert adam_opt.t is None
 
         # Do some calculations to fill accumulation
-        adam_opt.step(np.sin, np.random.rand(1))
+        rng = np.random.default_rng(seed)
+        adam_opt.step(np.sin, rng.random(1))
 
         # Check the properties return the same values, stored in accumulation
         assert adam_opt.fm == adam_opt.accumulation["fm"]
