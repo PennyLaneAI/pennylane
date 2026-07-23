@@ -20,10 +20,10 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math import Adjoint, Controlled
+from pennylane.ops.op_math import Adjoint
 from pennylane.templates.subroutines.arithmetic.out_square import (
     OutSquare,
-    _out_square_with_adder,
+    _out_square_with_adder_zeroed,
     _out_square_with_caddsub,
 )
 
@@ -57,7 +57,7 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
         return qp.probs(wires=total_wires)
 
     if use_jit:
-        qp.qjit(qp.decompose(circuit, max_expansion=2))
+        circuit = qp.qjit(qp.decompose(circuit, max_expansion=2))
 
     rng = np.random.default_rng(seed)
 
@@ -163,54 +163,54 @@ class TestOutSquare:
             OutSquare(x_wires, output_wires, work_wires)
 
     @pytest.mark.parametrize(
-        "x_wires, output_wires, work_wires, zeroed, should_raise",
+        "num_x_wires, num_output_wires, num_work_wires, zeroed, should_raise",
         [
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8], True, False),
-            ([0, 1, 2], [3, 4, 5], [6, 7], True, True),
-            ([0, 1], [3, 4, 5], [6, 7, 8], True, False),
-            ([0, 1], [3, 4, 5], [6, 7], True, True),
-            ([0], [3, 4, 5], [6, 7, 8], True, False),
-            ([0], [3, 4, 5], [6, 7], True, False),
-            ([0], [3, 4, 5], [6], True, True),
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8], False, False),
-            ([0, 1, 2], [3, 4, 5], [6, 7], False, True),
-            ([0, 1], [3, 4, 5], [6, 7, 8], False, False),
-            ([0, 1], [3, 4, 5], [6, 7], False, True),
-            ([0], [3, 4, 5], [6, 7, 8], False, False),
-            ([0], [3, 4, 5], [6, 7], False, True),
-            ([0], [3, 4, 5], [6], False, True),
+            (6, 6, 2, True, False),
+            (6, 6, 1, True, True),
+            (5, 10, 4, True, False),
+            (5, 10, 3, True, True),
+            (3, 3, 3, False, False),
+            (3, 3, 2, False, True),
+            (2, 3, 3, False, False),
+            (2, 3, 2, False, True),
+            (1, 3, 3, False, False),
+            (1, 3, 2, False, True),
+            (1, 3, 1, False, True),
         ],
     )
     def test_work_wire_number(
-        self, x_wires, output_wires, work_wires, zeroed, should_raise
+        self, num_x_wires, num_output_wires, num_work_wires, zeroed, should_raise
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised (only) when too few work wires are supplied."""
+        wires = qp.registers(
+            {"x_wires": num_x_wires, "output_wires": num_output_wires, "work_wires": num_work_wires}
+        )
         if should_raise:
             msg_match = "OutSquare requires at least"
             with pytest.raises(ValueError, match=msg_match):
-                OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+                OutSquare(**wires, output_wires_zeroed=zeroed)
         else:
-            OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+            OutSquare(**wires, output_wires_zeroed=zeroed)
 
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "work_wires", "output_wires_zeroed", "applicable_rules"),
         [
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], True, [0]),
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], False, [0]),
+            ([0, 1, 2, 3], [4, 5, 6], [9], True, [0]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], False, [1]),
             ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], False, [0, 1]),
-            ([0, 1], [3, 5], [9, 10], True, [0]),
-            ([0, 1], [3, 5], [9, 10], False, [0]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], False, [1]),
+            ([0, 1], [3, 5], [], True, [0]),
+            ([0, 1], [3, 5], [9, 10], False, [1]),
             ([0, 1], [3, 5], [9, 10, 11, 12], True, [0, 1]),
-            ([0, 1], [3, 5], [9, 10, 11, 12], False, [0, 1]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11], True, [0]),
+            ([0, 1], [3, 5], [9, 10, 11, 12], False, [1]),
+            ([0, 1], [3, 4, 5, 6], [9], True, [0]),
             ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False, [0]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13, 14], False, [0, 1]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False, [1]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13, 14], False, [1]),
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11], True, [0]),
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], True, [0, 1]),
-            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], False, [0]),
-            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [0, 1]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], False, [1]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [1]),
         ],
     )
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
@@ -243,74 +243,23 @@ class TestOutSquare:
             [7, 8, 9, 10],
         )
         with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=True)
+            _out_square_with_adder_zeroed(x_wires, output_wires, work_wires)
 
         expected = [
             # controlled copy
+            qp.TemporaryAND(wires=[2, 1, 4]),
+            qp.TemporaryAND(wires=[2, 0, 3]),
+            qp.TemporaryAND(wires=[1, 4, 7]),
+            qp.MultiControlledX(
+                wires=[1, 7, 3],
+                control_values=[True, True],
+                work_wires=[8, 9, 10, 6, 5],
+                work_wire_type="zeroed",
+            ),
+            Adjoint(qp.TemporaryAND(wires=[1, 4, 7])),
+            qp.CNOT(wires=[1, 4]),
             qp.CNOT([2, 6]),
-            qp.TemporaryAND([2, 1, 5]),
-            qp.TemporaryAND([2, 0, 4]),
-            # First CNOT-wrapped controlled adder, shifted by 1
-            qp.CNOT([1, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
-                control_wires=[7],
-                work_wires=[10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([1, 7]),
-            # Second CNOT-wrapped controlled adder, shifted by 2
-            qp.CNOT([0, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
-                control_wires=[7],
-                work_wires=[9, 10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([0, 7]),
         ]
-        assert q.queue == expected
-
-    def test_adder_decomposition_output_wires_not_zeroed(self):
-        """Test that the controlled adder decomposition has the expected structure with
-        ``output_wires_zeroed=False``."""
-        x_wires, output_wires, work_wires = (
-            [0, 1, 2],
-            [3, 4, 5, 6],
-            [7, 8, 9, 10],
-        )
-        with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=False)
-
-        expected = [
-            # controlled copy (="zeroth" CNOT-wrapped controlled adder)
-            qp.CNOT([2, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]),
-                control_wires=[7],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([2, 7]),
-            # First CNOT-wrapped controlled adder, shifted by 1
-            qp.CNOT([1, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
-                control_wires=[7],
-                work_wires=[10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([1, 7]),
-            # Second CNOT-wrapped controlled adder, shifted by 2
-            qp.CNOT([0, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
-                control_wires=[7],
-                work_wires=[9, 10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([0, 7]),
-        ]
-
         assert q.queue == expected
 
     def test_caddsub_decomposition_output_wires_zeroed(self):
@@ -322,185 +271,72 @@ class TestOutSquare:
             _out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=True)
 
         expected = [
-            # Cache first bit
-            qp.CNOT(wires=[1, 5]),
             # Controlled add-subtract block (contains decomposed adder)
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
-            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
-            qp.TemporaryAND(wires=[1, 6, 8]),
-            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
-            qp.CNOT(wires=[8, 0]),
-            qp.CNOT(wires=[8, 4]),
-            qp.TemporaryAND(wires=[0, 4, 7]),
-            qp.CNOT(wires=[8, 7]),
-            qp.CNOT(wires=[7, 3]),
-            qp.CNOT(wires=[8, 7]),
-            Adjoint(qp.TemporaryAND(wires=[0, 4, 7])),
-            qp.CNOT(wires=[8, 0]),
-            qp.CNOT(wires=[0, 4]),
-            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
-            Adjoint(qp.TemporaryAND(wires=[1, 6, 8])),
-            qp.CNOT(wires=[1, 6]),
-            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
-            # Un-cache first bit
-            qp.CNOT(wires=[1, 5]),
-            # Cache second bit
-            qp.CNOT(wires=[0, 5]),
-            # Controlled add-subtract block (contains decomposed adder)
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
-            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
-            qp.TemporaryAND(wires=[1, 4, 8]),
-            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
-            qp.CNOT(wires=[8, 0]),
-            qp.CNOT(wires=[8, 3]),
-            qp.TemporaryAND(wires=[0, 3, 7]),
-            qp.CNOT(wires=[8, 7]),
-            qp.CNOT(wires=[7, 2]),
-            qp.CNOT(wires=[8, 7]),
-            Adjoint(qp.TemporaryAND(wires=[0, 3, 7])),
-            qp.CNOT(wires=[8, 0]),
-            qp.CNOT(wires=[0, 3]),
-            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
-            Adjoint(qp.TemporaryAND(wires=[1, 4, 8])),
-            qp.CNOT(wires=[1, 4]),
-            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
-            # Un-cache second bit
-            qp.CNOT(wires=[0, 5]),
-            # Decrementer is skipped because len(y_wires) <= 2*len(x_wires)
-            # Add (2^n-x):
-            #   - flip x_wires
-            qp.X(0),
-            qp.X(1),
-            #   - Addition plus one
-            qp.X(1),
-            qp.X(6),
-            qp.TemporaryAND(wires=[1, 6, 8]),
-            qp.X(8),
-            qp.CNOT(wires=[8, 0]),
-            qp.CNOT(wires=[8, 4]),
-            qp.TemporaryAND(wires=[0, 4, 7]),
-            qp.CNOT(wires=[8, 7]),
-            qp.TemporaryAND(wires=[7, 3, 5]),
+            qp.MultiControlledX(wires=[1, 3], control_values=[False]),
+            qp.TemporaryAND(wires=[0, 3, 5]),
+            qp.MultiControlledX(wires=[1, 5], control_values=[False]),
             qp.CNOT(wires=[5, 2]),
-            Adjoint(qp.TemporaryAND(wires=[7, 3, 5])),
-            qp.CNOT(wires=[7, 3]),
-            qp.CNOT(wires=[8, 7]),
-            Adjoint(qp.TemporaryAND(wires=[0, 4, 7])),
-            qp.CNOT(wires=[8, 0]),
-            qp.CNOT(wires=[0, 4]),
-            qp.X(8),
-            Adjoint(qp.TemporaryAND(wires=[1, 6, 8])),
-            qp.CNOT(wires=[1, 6]),
-            qp.X(6),
+            qp.MultiControlledX(wires=[1, 5], control_values=[False]),
+            Adjoint(qp.TemporaryAND(wires=[0, 3, 5])),
+            qp.CNOT(wires=[0, 3]),
+            qp.MultiControlledX(wires=[1, 3], control_values=[False]),
+            # Sparse adder
+            qp.TemporaryAND(wires=[1, 4, 5]),
+            qp.TemporaryAND(wires=[5, 3, 6]),
+            qp.CNOT(wires=[6, 2]),
+            Adjoint(qp.TemporaryAND(wires=[5, 3, 6])),
+            qp.CNOT(wires=[5, 3]),
+            Adjoint(qp.TemporaryAND(wires=[1, 4, 5])),
+            qp.CNOT(wires=[1, 4]),
+            # Subtractor
+            qp.X(3),
+            qp.X(2),
+            qp.SemiAdder([0], [2, 3], [5, 6, 7, 8]),
+            qp.X(3),
+            qp.X(2),
+            # Shifted adder
             qp.X(1),
-            #   - flip x_wires back
-            qp.X(0),
+            qp.X(2),
+            qp.SemiAdder([1], [2], [5, 6, 7, 8]),
+            qp.X(2),
             qp.X(1),
-            # add 2^(n+1) x
-            qp.SemiAdder(x_wires=[0, 1], y_wires=[2], work_wires=[]),
         ]
         assert q.queue == expected
 
     def test_caddsub_decomposition_output_wires_not_zeroed(self):
         """Test that the controlled-add/subtract decomposition has the expected structure with
         ``output_wires_zeroed=False``."""
-        x_wires, output_wires, work_wires = [0, 1, 2], [3, 4], [5, 6, 7, 8]
+        x_wires, output_wires, work_wires = [0, 1, 2], [3, 4, 5], [6, 7]
 
         with qp.queuing.AnnotatedQueue() as q:
             _out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=False)
 
         expected = [
-            # Cache first bit
-            qp.CNOT(wires=[2, 5]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
-            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
-            qp.TemporaryAND(wires=[2, 6, 8]),
-            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
-            qp.CNOT(wires=[8, 1]),
-            qp.CNOT(wires=[8, 4]),
-            qp.TemporaryAND(wires=[1, 4, 7]),
-            qp.CNOT(wires=[8, 7]),
-            qp.CNOT(wires=[7, 3]),
+            # Controlled add-subtract block (contains decomposed adder)
+            qp.ctrl(qp.BasisState([1], [0]), control=[2], control_values=[False]),
+            qp.MultiControlledX(wires=[2, 4], control_values=[False]),
+            qp.TemporaryAND(wires=[1, 4, 6]),
+            qp.MultiControlledX(wires=[2, 6], control_values=[False]),
+            qp.CNOT(wires=[6, 3]),
             qp.CNOT(wires=[0, 3]),
-            qp.CNOT(wires=[8, 7]),
-            Adjoint(qp.TemporaryAND(wires=[1, 4, 7])),
-            qp.CNOT(wires=[8, 1]),
+            qp.MultiControlledX(wires=[2, 6], control_values=[False]),
+            Adjoint(qp.TemporaryAND(wires=[1, 4, 6])),
             qp.CNOT(wires=[1, 4]),
-            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
-            Adjoint(qp.TemporaryAND(wires=[2, 6, 8])),
-            qp.CNOT(wires=[2, 6]),
-            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
-            # Un-cache first bit
-            qp.CNOT(wires=[2, 5]),
-            # Cache second bit
-            qp.CNOT(wires=[1, 5]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
-            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
-            qp.TemporaryAND(wires=[2, 4, 7]),
-            qp.MultiControlledX(wires=[5, 7], control_values=[False]),
+            qp.MultiControlledX(wires=[2, 4], control_values=[False]),
+            qp.ctrl(qp.BasisState([1], [0]), control=[2], control_values=[False]),
+            # Sparse adder
+            qp.TemporaryAND(wires=[2, 5, 6]),
+            qp.TemporaryAND(wires=[6, 4, 7]),
             qp.CNOT(wires=[7, 3]),
-            qp.CNOT(wires=[1, 3]),
-            qp.MultiControlledX(wires=[5, 7], control_values=[False]),
-            Adjoint(qp.TemporaryAND(wires=[2, 4, 7])),
-            qp.CNOT(wires=[2, 4]),
-            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
-            # Un-cache second bit
-            qp.CNOT(wires=[1, 5]),
-            # Cache third bit
-            qp.CNOT(wires=[0, 5]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
-            qp.MultiControlledX(wires=[5, 3], control_values=[False]),
-            qp.CNOT(wires=[2, 3]),
-            qp.MultiControlledX(wires=[5, 3], control_values=[False]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
-            # Un-cache third bit
-            qp.CNOT(wires=[0, 5]),
-            # Decrementer is skipped because len(y_wires) <= 2*len(x_wires)
-            # Add (2^n-x):
-            #   - flip x_wires
-            qp.X(0),
-            qp.X(1),
-            qp.X(2),
-            #   - add x_wires plus one
-            qp.X(2),
-            qp.X(6),
-            qp.TemporaryAND(wires=[2, 6, 7]),
-            qp.X(7),
-            qp.CNOT(wires=[7, 1]),
-            qp.CNOT(wires=[7, 4]),
-            qp.TemporaryAND(wires=[1, 4, 5]),
-            qp.CNOT(wires=[7, 5]),
-            qp.CNOT(wires=[5, 3]),
-            qp.CNOT(wires=[0, 3]),
-            qp.CNOT(wires=[7, 5]),
-            Adjoint(qp.TemporaryAND(wires=[1, 4, 5])),
-            qp.CNOT(wires=[7, 1]),
-            qp.CNOT(wires=[1, 4]),
-            qp.X(7),
-            Adjoint(qp.TemporaryAND(wires=[2, 6, 7])),
-            qp.CNOT(wires=[2, 6]),
-            qp.X(6),
-            qp.X(2),
-            #   - flip x_wires back
-            qp.X(0),
-            qp.X(1),
-            qp.X(2),
-            # No trailing addition because 3=m<=n+1=4 (m is the augmented output size)
+            Adjoint(qp.TemporaryAND(wires=[6, 4, 7])),
+            qp.CNOT(wires=[6, 4]),
+            Adjoint(qp.TemporaryAND(wires=[2, 5, 6])),
+            qp.CNOT(wires=[2, 5]),
+            # Subtractor
+            qp.X(4),
+            qp.X(3),
+            qp.SemiAdder([0, 1], [3, 4], [6, 7]),
+            qp.X(4),
+            qp.X(3),
         ]
         assert q.queue == expected
