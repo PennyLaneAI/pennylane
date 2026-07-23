@@ -552,7 +552,7 @@ def _custom_resource(num_wires):
             {"num_wires": num_wires - 1},
             num_control_wires=1,
         ): 1,
-        resource_rep(qp.PauliRot, pauli_word="XYX"): 1,
+        qp.PauliRot(Float, pauli_word="XYX", wires=Wire[3]): 1,
         qp.Z: 1,
         qp.CZ: 1,
     }
