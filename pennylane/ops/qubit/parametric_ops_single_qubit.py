@@ -46,7 +46,7 @@ from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.typing import Complex, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -550,7 +550,7 @@ class RZ(Operator2):
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Complex, "wires": Wire[1]}
+    arg_specs = {"phi": Float, "wires": Wire[1]}
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)

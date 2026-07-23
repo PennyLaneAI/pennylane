@@ -43,7 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import Controlled2
-from pennylane.typing import Complex, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -2408,7 +2408,7 @@ class CRZ(Controlled2):
 
     wire_sizes = (2,)
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Complex, "wires": Wire[2]}
+    arg_specs = {"phi": Float, "wires": Wire[2]}
 
     def __init__(self, phi, wires):
         super().__init__(qp.RZ(phi, wires[1:]), control_wires=wires[:1])
