@@ -661,12 +661,7 @@ class TestControlledDecomposition:
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.PauliRot,
-                    {"pauli_word": "XYX"},
-                    num_control_wires=1,
-                    num_work_wires=1,
-                ): 1,
+                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[1], Wire[1]): 1,
                 abstractify(qp.CZ): 1,
                 abstractify(qp.CCZ): 1,
             }
@@ -820,12 +815,7 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.PauliRot,
-                    {"pauli_word": "XYX"},
-                    num_control_wires=2,
-                    num_work_wires=1,
-                ): 1,
+                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[2], Wire[1]): 1,
                 abstractify(qp.CCZ): 1,
                 _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
             }
@@ -935,12 +925,7 @@ class TestControlledDecomposition:
                     num_control_wires=4,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.PauliRot,
-                    {"pauli_word": "XYX"},
-                    num_control_wires=3,
-                    num_work_wires=1,
-                ): 1,
+                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[3], Wire[1]): 1,
                 _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
                 _ctrl_abstract(qp.Z, Wire[4], Wire[1]): 1,
             }
