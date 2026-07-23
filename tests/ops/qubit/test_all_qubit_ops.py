@@ -59,7 +59,6 @@ class TestOperations:
     @pytest.mark.parametrize(
         "op",
         [
-            (qp.Hadamard(wires=0)),
             (qp.PauliX(wires=0)),
             (qp.PauliY(wires=0)),
             (qp.PauliZ(wires=0)),

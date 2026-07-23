@@ -476,13 +476,13 @@ class TestPowDecomposition:
 
         # a resource representation abstractifies to a CompressedResourceOp and yields
         # a pow_resource_rep
-        assert _pow_abstract(resource_rep(qp.H), 2) == pow_resource_rep(qp.H, {}, 2)
+        assert _pow_abstract(resource_rep(qp.RX), 2) == pow_resource_rep(qp.RX, {}, 2)
 
         # a legacy operator type is also abstractified into a CompressedResourceOp
-        assert _pow_abstract(qp.H, 3) == pow_resource_rep(qp.H, {}, 3)
+        assert _pow_abstract(qp.RX, 3) == pow_resource_rep(qp.RX, {}, 3)
 
         # the default exponent is 1
-        assert _pow_abstract(resource_rep(qp.H)) == pow_resource_rep(qp.H, {}, 1)
+        assert _pow_abstract(resource_rep(qp.RX)) == pow_resource_rep(qp.RX, {}, 1)
 
         # an (abstract) Operator2 yields a Pow2
         abstract_base = DynOp(Float, wires=Wire[3])
