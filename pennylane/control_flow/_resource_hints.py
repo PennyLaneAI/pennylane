@@ -44,7 +44,11 @@ def validate_estimated_probability(value: float) -> float:
 
 
 def validate_estimated_probabilities(values: Sequence[float]) -> tuple[float, ...]:
-    """Validate branch probability hints for ``scf.index_switch``."""
+    """Validate branch probability hints for multi-branch conditionals.
+
+    The values represent the expected unconditional probability of each non-default
+    branch (in branch order). The default branch probability is ``1 - sum(values)``.
+    """
     if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
         raise TypeError(
             "'estimated_probabilities' must be a sequence of floats in [0, 1], "
@@ -56,3 +60,25 @@ def validate_estimated_probabilities(values: Sequence[float]) -> tuple[float, ..
             f"'estimated_probabilities' entries must sum to at most 1, but got {sum(probs)}."
         )
     return probs
+
+
+def normalize_estimated_probabilities(
+    value: float | Sequence[float] | None,
+) -> tuple[float, ...] | None:
+    """Normalize user-provided probability hint(s) to a validated tuple."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return validate_estimated_probabilities((float(value),))
+    return validate_estimated_probabilities(value)
+
+
+def validate_estimated_probabilities_count(
+    probs: tuple[float, ...], num_branches: int, *, arg_name: str = "estimated_probabilities"
+) -> None:
+    """Ensure there is one probability hint per non-default branch."""
+    if len(probs) != num_branches:
+        raise ValueError(
+            f"'{arg_name}' must have one entry per non-default branch, but got "
+            f"{len(probs)} probabilities for {num_branches} branch(es)."
+        )

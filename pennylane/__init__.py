@@ -29,7 +29,7 @@ from pennylane.compiler import qjit
 from pennylane import capture
 from pennylane import core
 from pennylane import control_flow
-from pennylane.control_flow import for_loop, switch, while_loop
+from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
 from pennylane import math
 from pennylane import operation
