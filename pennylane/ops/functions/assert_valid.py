@@ -31,6 +31,7 @@ from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.wires import Wires
 
 from .equal import assert_equal
@@ -225,10 +226,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    with qp.queuing.AnnotatedQueue() as q:
-        rule(*args, **kwargs)
-
-    tape = qp.tape.QuantumScript.from_queue(q)
+    if qp.capture.enabled():
+        interpreter = CollectOpsandMeas()
+        interpreter(rule)(*args, **kwargs)
+        tape = qp.core.QuantumScript(interpreter.state["ops"], interpreter.state["measurements"])
+    else:
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*args, **kwargs)
+        tape = qp.core.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
