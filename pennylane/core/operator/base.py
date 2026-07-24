@@ -397,12 +397,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
 
-        >>> op = qp.PCPhase(1.2, dim=2, wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('dim', 2),)))
-        >>> qp.PCPhase._unflatten(*op._flatten())
-        PCPhase(1.2, wires=[0, 1])
-
 
     .. details::
         :title: Parameter broadcasting
@@ -1583,23 +1577,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         will be the operator ``RX(1, wires=0)``.
 
         The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
-        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
-
-        **Example:**
-
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> qp.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qp.PCPhase(1.2, dim=2, wires=(0,1))
-        >>> qp.PCPhase._unflatten(*op._flatten())
-        PCPhase(1.2, wires=[0, 1])
-
-        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
-        ``_flatten`` methods.
-
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> op._flatten()
-        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
+        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters. Operators
+        that have trainable components that differ from their ``Operator.data`` must implement their own ``_flatten`` methods.
 
         """
         hashable_hyperparameters = tuple(
@@ -1617,20 +1596,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
         operation with ``Operator._unflatten``.
-
-        **Example:**
-
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten()
-        ((1.2, 2.3, 3.4), (Wires([0]), ()))
-        >>> qp.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qp.PCPhase(1.2, dim=2, wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('dim', 2),)))
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> type(op)._unflatten(*op._flatten())
-        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
 
         """
         hyperparameters_dict = dict(metadata[1])
