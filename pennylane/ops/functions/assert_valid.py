@@ -462,8 +462,10 @@ def _check_pytree(op):
         legacy_leaves, _ = flatten(op, is_leaf=nested_pl_object)
         ordered_data = []
         for leaf in legacy_leaves:
-            if isinstance(leaf, Operator):
+            if isinstance(leaf, Operator1):
                 ordered_data.extend(leaf.data)
+            elif isinstance(leaf, Operator2):
+                ordered_data.extend(leaf.dynamic_args.values())
             elif not isinstance(leaf, qp.measurements.MeasurementProcess):
                 ordered_data.append(leaf)
 
