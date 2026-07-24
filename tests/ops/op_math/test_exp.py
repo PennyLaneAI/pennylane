@@ -728,9 +728,6 @@ class TestIntegration:
         grad = jax.grad(circ)(phi)
         assert qp.math.allclose(grad, -jnp.sin(phi))
 
-    @pytest.mark.xfail(
-        reason="RZ in Operator2 does not support the complex angles produced by 'Exp' in this pipeline."
-    )
     @pytest.mark.catalyst
     def test_catalyst_qnode(self):
         """Test with Catalyst interface"""
