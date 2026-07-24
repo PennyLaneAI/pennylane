@@ -212,6 +212,23 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="Gate counts expected from"):
             _test_decomposition_rule(op, rule_wrong_ops)
 
+    @pytest.mark.capture
+    def test_new_decomposition_rule_capture(self):
+        """A captured decomposition is converted to a tape before validating its resources."""
+
+        class MyOp(Operator):
+            num_wires = 3
+
+        @qp.register_resources({qp.S: 3})
+        def rule(wires):  # pylint: disable=unused-argument
+            @qp.for_loop(3)
+            def loop(i):
+                qp.S(i)
+
+            loop()
+
+        _test_decomposition_rule(MyOp([0, 1, 2]), rule)
+
 
 class TestBadMatrix:
     """Tests involving matrix validation."""
