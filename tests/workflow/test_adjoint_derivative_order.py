@@ -71,6 +71,14 @@ def test_first_order_adjoint_remains_supported():
     assert resolved_config.gradient_method == "adjoint"
 
 
+@pytest.mark.parametrize(("max_workers", "expected"), [(None, True), (1, False)])
+def test_default_qubit_best_reports_resolved_higher_order_capability(max_workers, expected):
+    """Higher-order ``best`` support should reflect whether it resolves to backprop or adjoint."""
+    config = ExecutionConfig(gradient_method="best", derivative_order=2)
+
+    assert DefaultQubit(max_workers=max_workers).supports_derivatives(config) is expected
+
+
 @pytest.mark.torch
 def test_torch_classical_preprocessing_fails_fast():
     """Adjoint must not return an incomplete Torch Hessian through classical preprocessing."""
