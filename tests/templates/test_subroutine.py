@@ -776,9 +776,8 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "CNOT"
-        assert rr.params["compute_op"].op_type == CNOT
+        assert isinstance(rr.params["compute_op"], CNOT)
+        assert rr.params["compute_op"].is_abstract
 
         assert isinstance(rr.params["target_op"], PauliX)
         assert rr.params["target_op"].is_abstract
