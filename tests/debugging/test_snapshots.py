@@ -122,8 +122,8 @@ class TestSnapshotTape:
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):
             qp.Snapshot(qp.state())
 
-    def test_int_tag_fails_during_transform(self):
-        """Test ValueError is raised if user provided a int snapshot tag."""
+    def test_int_tag_fails_during_transform_qnode(self):
+        """Test ValueError is raised if the user provided an int snapshot tag."""
         dev = qp.device("default.qubit")
 
         @qp.qnode(dev)
@@ -133,6 +133,13 @@ class TestSnapshotTape:
 
         with pytest.raises(ValueError, match="can only be of type 'str'"):
             qp.snapshots(c)()
+
+    def test_int_tag_fails_during_transform_tape(self):
+        """Test that ValueError is raised if the user provided an int snapshot tag to the
+        tape transform."""
+        tape = qp.tape.QuantumScript([qp.Snapshot(2)], [qp.expval(qp.Z(0))])
+        with pytest.raises(ValueError, match="can only be of type 'str'"):
+            qp.snapshots(tape)
 
 
 @pytest.mark.parametrize(

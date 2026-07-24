@@ -181,7 +181,7 @@ def device(name, *args, **kwargs):
     # Construct the device
     dev = plugin_device_class(*args, **kwargs)
 
-    if isinstance(dev, LegacyDevice):
+    if isinstance(dev, LegacyDevice):  # pragma: no cover
         dev = LegacyDeviceFacade(dev)
 
     return dev
