@@ -129,7 +129,11 @@ class TestQSVTBasics:
         (
             qp.Hadamard(wires=0),
             [qp.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
-            [qp.RZ(-2.46, wires=[0]), qp.Hadamard(wires=0), qp.RZ(1.0, wires=[0])],
+            [
+                qp.RZ(-2.46, wires=[0]),
+                qp.change_op_basis(qp.Hadamard(0), qp.RZ(1.0, 0)),
+                qp.RZ(-8, wires=[0]),
+            ],
         ),
     ]
 
@@ -157,8 +161,17 @@ class TestQSVTBasics:
             jaxpr = qp.capture.make_plxpr(circuit)()
             tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
-            for i, op in enumerate(expected):
-                qp.assert_equal(tape.operations[i], op)
+            # NOTE: Need to flatten COB before comparing.
+            flat_expected = []
+            for op in expected:
+                if isinstance(op, qp.ops.op_math.ChangeOpBasis):
+                    flat_expected.extend(op.decomposition())
+                else:
+                    flat_expected.append(op)
+
+            assert len(tape.operations) == len(flat_expected)
+            for actual, op in zip(tape.operations, flat_expected, strict=True):
+                qp.assert_equal(actual, op)
 
     @pytest.mark.parametrize(
         ("UA", "projectors"),
