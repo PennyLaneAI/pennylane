@@ -21,7 +21,7 @@ from collections import Counter
 from pennylane import capture
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import SWAP
+from pennylane.ops import SWAP, cond
 from pennylane.wires import Wires
 
 has_jax = True
@@ -261,35 +261,38 @@ def _permute_decomposition(wires, permutation):
     working_order = wires.tolist()
 
     if has_jax and capture.enabled():
-        working_order = jnp.array(working_order)
-        permutation = jnp.array(permutation)
+        wires = jnp.array(wires)
+        working_order = wires
+
+        for idx_here, here in enumerate(permutation):
+
+            def swap(order, idx_here=idx_here, here=here):
+                idx_there = jnp.argmax(order == here)
+                SWAP(wires=[wires[idx_here], wires[idx_there]])
+
+                here_value = order[idx_here]
+                order = order.at[idx_here].set(order[idx_there])
+                return order.at[idx_there].set(here_value)
+
+            working_order = cond(working_order[idx_here] != here, swap, lambda order: order)(
+                working_order
+            )
+        return
 
     # Go through the new order and shuffle things one by one
     for idx_here, here in enumerate(permutation):
         if working_order[idx_here] != here:
             # Where do we need to send the qubit at this location?
-            idx_there = (
-                working_order.index(permutation[idx_here])
-                if not (has_jax and capture.enabled())
-                else jnp.where(working_order == permutation[idx_here])[0][0]
-            )
+            idx_there = working_order.index(permutation[idx_here])
 
             # SWAP based on the labels of the wires
-            if has_jax and capture.enabled():
-                SWAP(wires=[wires[idx_here], wires[idx_there]])
-            else:
-                SWAP(wires=wires.subset([idx_here, idx_there]))
+            SWAP(wires=wires.subset([idx_here, idx_there]))
 
             # Update the working order to account for the SWAP
-            if has_jax and capture.enabled():
-                temp = working_order[idx_here]
-                working_order = working_order.at[idx_here].set(working_order[idx_there])
-                working_order = working_order.at[idx_there].set(temp)
-            else:
-                working_order[idx_here], working_order[idx_there] = (
-                    working_order[idx_there],
-                    working_order[idx_here],
-                )
+            working_order[idx_here], working_order[idx_there] = (
+                working_order[idx_there],
+                working_order[idx_here],
+            )
 
 
 add_decomps(Permute, _permute_decomposition)
