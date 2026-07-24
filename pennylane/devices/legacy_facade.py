@@ -154,41 +154,6 @@ class LegacyDeviceFacade(Device):
 
     Args:
         device (qp.device.LegacyDevice): a device that follows the legacy device interface.
-
-    >>> import pennylane as qp
-    >>> from pennylane.devices import DefaultQutrit, LegacyDeviceFacade
-    >>> legacy_dev = DefaultQutrit(wires=2)
-    >>> new_dev = LegacyDeviceFacade(legacy_dev)
-    >>> pipeline, config = new_dev.preprocess()
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] defer_measurements(allow_postselect=False),
-      [2] legacy_device_batch_transform(device=...),
-      [3] legacy_device_expand_fn(device=...)
-    )
-    >>> import pprint
-    >>> pprint.pprint(config)
-    ExecutionConfig(grad_on_execution=None,
-                    use_device_gradient=None,
-                    use_device_jacobian_product=None,
-                    gradient_method=None,
-                    gradient_keyword_arguments={},
-                    device_options={},
-                    interface=<Interface.NUMPY: 'numpy'>,
-                    derivative_order=1,
-                    mcm_config=MCMConfig(mcm_method='deferred', postselect_mode=None),
-                    convert_to_numpy=True,
-                    executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
-    >>> new_dev.shots
-    Shots(total_shots=None, shot_vector=())
-    >>> tape = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=5)
-    >>> new_dev.execute(tape)
-    array([[0],
-       [0],
-       [0],
-       [0],
-       [0]])
-
     """
 
     # pylint: disable=super-init-not-called
