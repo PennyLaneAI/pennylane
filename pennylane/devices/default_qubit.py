@@ -274,6 +274,8 @@ def adjoint_state_measurements(
                     "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
                 )
 
+    complex_data = [math.cast(p, complex) for p in params]
+    tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
     new_mp = StateMP(wires=tape.wires)
     state_tape = tape.copy(measurements=[new_mp])
     return (state_tape,), partial(
