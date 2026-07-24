@@ -301,9 +301,7 @@ class TestValidateObservables:
 
     def test_invalid_observable(self):
         """Test that expand_fn throws an error when an observable is invalid."""
-        tape = QuantumScript(
-            ops=[qp.PauliX(0)], measurements=[qp.expval(qp.GellMann(wires=0, index=1))]
-        )
+        tape = QuantumScript(ops=[qp.PauliX(0)], measurements=[qp.expval(qp.PauliZ(0))])
         with pytest.raises(DeviceError, match=r"not supported on abc"):
             validate_observables(tape, lambda obs: obs.name == "PauliX", name="abc")
 
@@ -311,7 +309,7 @@ class TestValidateObservables:
         """Test that expand_fn throws an error when a tensor includes invalid obserables"""
         tape = QuantumScript(
             ops=[qp.PauliX(0), qp.PauliY(1)],
-            measurements=[qp.expval(qp.PauliX(0) @ qp.GellMann(wires=1, index=2))],
+            measurements=[qp.expval(qp.PauliX(0) @ qp.PauliZ(1))],
         )
         with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
