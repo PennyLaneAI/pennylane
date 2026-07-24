@@ -114,7 +114,9 @@ def _adjoint_rotation_resource(base=None, base_class=None, base_params=None, **_
 @register_resources(_adjoint_rotation_resource)
 def adjoint_rotation(*_, base, **__):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    qp.ops.functions.bind_new_parameters(base, (-base.data[0],))
+    # A rotation should only have 1 dynamic parameter
+    angle = tuple(base.dynamic_args.values)[0] if isinstance(base, Operator2) else base.data[0]
+    qp.ops.functions.bind_new_parameters(base, (-angle,))
 
 
 def is_integer(x):
@@ -213,7 +215,9 @@ def _pow_rotation_resource(
 @register_resources(_pow_rotation_resource)
 def pow_rotation(*_, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    qp.ops.functions.bind_new_parameters(base, (base.data[0] * z,))
+    # A rotation should only have 1 dynamic parameter
+    angle = tuple(base.dynamic_args.values)[0] if isinstance(base, Operator2) else base.data[0]
+    qp.ops.functions.bind_new_parameters(base, (angle * z,))
 
 
 def _decomp_to_base_legacy_res(base_class, base_params, **__):

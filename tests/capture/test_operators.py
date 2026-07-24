@@ -25,13 +25,8 @@ import pennylane as qp
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import (
-    AbstractOperator,
-    operator_p,
-)
-from pennylane.tape.plxpr_conversion import (
-    CollectOpsandMeas,
-)
+from pennylane.capture.primitives import AbstractOperator, operator_p
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

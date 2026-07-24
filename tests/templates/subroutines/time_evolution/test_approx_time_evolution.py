@@ -499,7 +499,3 @@ def test_trainable_hamiltonian(dev_name, diff_method):
 
     expected = qp.grad(circuit)(coeffs, t)
     assert np.allclose(qp.math.hstack(grad), qp.math.hstack(expected))
-
-
-if __name__ == "__main__":
-    pytest.main(["-x", __file__])
