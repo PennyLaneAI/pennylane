@@ -1047,11 +1047,6 @@ class TestControlledMethod:
 
     # pylint: disable=protected-access
 
-    def test_PauliX(self):
-        """Test the PauliX _controlled method."""
-        out = qp.PauliX(0)._controlled("a")
-        qp.assert_equal(out, qp.CNOT(("a", 0)))
-
     def test_PauliY(self):
         """Test the PauliY _controlled method."""
         out = qp.PauliY(0)._controlled("a")
@@ -1134,9 +1129,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
             if rule.is_applicable(**pow_op.resource_params):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
 

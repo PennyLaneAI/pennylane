@@ -138,10 +138,7 @@ class TestAdjointQfunc:
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
         assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_transform_prim
-        assert (
-            plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0].primitive
-            == qp.PauliX._primitive
-        )
+        assert_eqn_matches_op(plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0], qp.X)
 
         with qp.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)

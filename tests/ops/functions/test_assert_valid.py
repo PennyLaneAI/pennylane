@@ -305,7 +305,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():  # pylint: disable=signature-differs
+        def compute_eigvals(wires):  # pylint: disable=signature-differs
             return [-1, 1]
 
     with pytest.raises(

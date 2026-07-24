@@ -33,6 +33,7 @@ from pennylane.capture.primitives import (
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [
     pytest.mark.jax,
@@ -178,7 +179,7 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-4].primitive == qp.PauliX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-4], qp.X)
         assert jaxpr.eqns[-3].primitive == qp.PauliY._primitive
         assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
@@ -194,7 +195,7 @@ class TestDecomposeInterpreter:
         else:
             assert len(recwarn) == 0
 
-        assert transformed_jaxpr.eqns[-4].primitive == qp.PauliX._primitive
+        assert_eqn_matches_op(transformed_jaxpr.eqns[-4], qp.X)
         assert transformed_jaxpr.eqns[-3].primitive == qp.PauliY._primitive
         assert transformed_jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
@@ -242,7 +243,7 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-4].primitive == qp.PauliX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-4], qp.X)
         assert jaxpr.eqns[-3].primitive == qp.PauliY._primitive
         assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Prod._primitive
@@ -252,7 +253,7 @@ class TestDecomposeInterpreter:
         if decompose:
             assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
             assert transformed_jaxpr.eqns[-2].primitive == qp.PauliY._primitive
-            assert transformed_jaxpr.eqns[-1].primitive == qp.PauliX._primitive
+            assert_eqn_matches_op(transformed_jaxpr.eqns[-1], qp.X)
         else:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
@@ -391,14 +392,9 @@ class TestDecomposeInterpreter:
 
         # Else branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
-        expected_primitives = [
-            qp.PhaseShift._primitive,
-            qp.X._primitive,
-            qp.measurements.ExpectationMP._obs_primitive,
-        ]
-        assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        )
+        assert branch.eqns[0].primitive == qp.PhaseShift._primitive
+        assert_eqn_matches_op(branch.eqns[1], qp.X)
+        assert branch.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""

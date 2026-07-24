@@ -70,7 +70,7 @@ class TestEqualBasic:
         # op2 is an instance of op1's type, so dispatch reaches ``_equal_operator2``.
         assert isinstance(op2, DynOp)
         assert qp.equal(op1, op2) is False
-        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
             qp.assert_equal(op1, op2)
 
     def test_assert_equal_raises_for_unequal_ops(self):

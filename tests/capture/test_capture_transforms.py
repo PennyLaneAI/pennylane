@@ -26,11 +26,9 @@ jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable=wrong-import-position
 import pennylane as qp
-from pennylane.capture.primitives import (
-    qnode_prim,
-    transform_prim,
-)
+from pennylane.capture.primitives import qnode_prim, transform_prim
 from pennylane.transforms.core import transform
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -270,8 +268,8 @@ class TestCaptureTransforms:
         assert loop_jaxpr.eqns[0].primitive == qp.capture.primitives.for_loop_prim
 
         loop_body_jaxpr = loop_jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert loop_body_jaxpr.eqns[0].primitive == qp.X._primitive
-        assert loop_body_jaxpr.eqns[1].primitive == qp.X._primitive
+        assert_eqn_matches_op(loop_body_jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(loop_body_jaxpr.eqns[1], qp.X)
 
         assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive

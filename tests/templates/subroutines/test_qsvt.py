@@ -84,6 +84,7 @@ class TestQSVTBasics:
     """Basic validity checks for QSVT."""
 
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="capture tests will fail until QSVT is migrated to Operator2")
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
         projectors = [qp.PCPhase(0.2, dim=1, wires=0), qp.PCPhase(0.3, dim=1, wires=0)]

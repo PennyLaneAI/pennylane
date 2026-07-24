@@ -1959,7 +1959,7 @@ def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
 
     def f(a, b):
-        op1 = qp.X._primitive.impl(0, n_wires=1)
+        op1 = qp.X(0)
         op2 = qp.Y._primitive.impl(0, n_wires=1)
         op = qp.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qp.ops.LinearCombination)
