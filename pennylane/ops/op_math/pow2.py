@@ -373,27 +373,6 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 pow_involutory = make_pow_decomp_with_period(2)
 
 
-def _pow_rotation_resource(base=None, base_class=None, base_params=None, z=None, **__):
-    # Dual convention: the graph invokes this with the native ``Pow2`` arguments ``base=``/``z=``,
-    # while the legacy ``Pow`` wrapper (used by ``assert_valid``) invokes it with
-    # ``base_class``/``base_params``/``z``. In the latter case ``base_params`` carries the full set
-    # of (abstract) constructor arguments so the base can be reconstructed.
-    if base is None:
-        base = base_class(**base_params)
-    return {abstractify(base): 1}
-
-
-# pylint: disable=protected-access,unused-argument
-@register_resources(_pow_rotation_resource)
-def pow_rotation(*_, base, z, **__):
-    """Decompose the power of a rotation operator by multiplying the angle by the power.
-
-    This is the :class:`~.Operator2`-compatible counterpart of
-    :func:`~pennylane.decomposition.symbolic_decomposition.pow_rotation`.
-    """
-    qp.ops.functions.bind_new_parameters(base, (base.data[0] * z,))
-
-
 @list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
 

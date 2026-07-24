@@ -99,15 +99,22 @@ def cancel_adjoint(*params, wires, base):
     qp.apply(base.base)
 
 
-def _adjoint_rotation_resource(base_class, base_params):
+def _adjoint_rotation_resource(base=None, base_class=None, base_params=None, **__):
+    # Dual convention: ``Operator2`` symbolic wrappers (e.g. ``Adjoint2``) are invoked by the graph
+    # with the native ``base=`` argument, while legacy ``Adjoint`` wrappers are invoked with
+    # ``base_class``/``base_params``. ``_base_resource_rep`` handles both ``Operator1`` bases
+    # (represented by a ``CompressedResourceOp``) and ``Operator2`` bases (represented by an
+    # abstract instance).
+    if base is not None:
+        return {abstractify(base): 1}
     return {_base_resource_rep(base_class, base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(phi, wires, base):
+def adjoint_rotation(*_, base, **__):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    qp.ops.functions.bind_new_parameters(base, (-phi,))
+    qp.ops.functions.bind_new_parameters(base, (-base.data[0],))
 
 
 def is_integer(x):
@@ -193,15 +200,20 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 pow_involutory = make_pow_decomp_with_period(2)
 
 
-def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_rotation_resource(
+    base=None, base_class=None, base_params=None, z=None, **__
+):  # pylint: disable=unused-argument
+    # See ``_adjoint_rotation_resource`` for details on the dual calling convention.
+    if base is not None:
+        return {abstractify(base): 1}
     return {_base_resource_rep(base_class, base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(_pow_rotation_resource)
-def pow_rotation(phi, wires, base, z, **__):
+def pow_rotation(*_, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    qp.ops.functions.bind_new_parameters(base, (phi * z,))
+    qp.ops.functions.bind_new_parameters(base, (base.data[0] * z,))
 
 
 def _decomp_to_base_legacy_res(base_class, base_params, **__):

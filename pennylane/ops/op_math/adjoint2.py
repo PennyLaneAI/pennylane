@@ -250,24 +250,3 @@ def cancel_adjoint(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
-
-
-def _adjoint_rotation_resource(base=None, base_class=None, base_params=None, **__):
-    # Dual convention: the graph invokes this with the native ``Adjoint2`` argument ``base=``,
-    # while the legacy ``Adjoint`` wrapper (used by ``assert_valid``) invokes it with
-    # ``base_class``/``base_params``. In the latter case ``base_params`` carries the full set of
-    # (abstract) constructor arguments so the base can be reconstructed.
-    if base is None:
-        base = base_class(**base_params)
-    return {abstractify(base): 1}
-
-
-# pylint: disable=protected-access,unused-argument
-@register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(*_, base, **__):
-    """Decompose the adjoint of a rotation operator by inverting the angle.
-
-    This is the :class:`~.Operator2`-compatible counterpart of
-    :func:`~pennylane.decomposition.symbolic_decomposition.adjoint_rotation`.
-    """
-    qp.ops.functions.bind_new_parameters(base, (-base.data[0],))
