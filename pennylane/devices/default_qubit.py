@@ -608,7 +608,9 @@ class DefaultQubit(Device):
             )
 
         if execution_config.gradient_method in {"adjoint", "best"}:
-            return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
+            return execution_config.derivative_order == 1 and _supports_adjoint(
+                circuit, device_wires=self.wires, device_name=self.name
+            )
         return False
 
     @debug_logger

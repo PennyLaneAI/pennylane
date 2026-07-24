@@ -1092,6 +1092,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* QNodes now raise an informative error when ``adjoint`` differentiation is requested with
+  ``max_diff > 1``, preventing incomplete higher-order derivatives through classical
+  preprocessing. ``default.qubit`` also no longer advertises support for higher-order adjoint
+  derivatives.
+  [(#9904)](https://github.com/PennyLaneAI/pennylane/pull/9904)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
@@ -1203,6 +1209,7 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+David Bernal,
 Gabriel Bottrill,
 Astral Cai,
 Daniel Casota,

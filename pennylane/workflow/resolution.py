@@ -220,6 +220,16 @@ def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> Execut
     return replace(initial_config, **updated_values)
 
 
+def _validate_adjoint_derivative_order(config: ExecutionConfig) -> None:
+    """Raise an informative error for unsupported higher-order adjoint derivatives."""
+    if config.gradient_method == "adjoint" and config.derivative_order > 1:
+        raise QuantumFunctionError(
+            "The adjoint differentiation method does not support higher-order derivatives. "
+            "Set max_diff=1 or choose a differentiation method that supports higher-order "
+            "derivatives, such as 'backprop' or 'parameter-shift'."
+        )
+
+
 @debug_logger
 def _resolve_diff_method(
     initial_config: ExecutionConfig,
@@ -243,8 +253,11 @@ def _resolve_diff_method(
     if diff_method is None:
         return initial_config
 
+    _validate_adjoint_derivative_order(initial_config)
+
     if device.supports_derivatives(initial_config, circuit=tape):
         new_config = device.setup_execution_config(initial_config, tape)
+        _validate_adjoint_derivative_order(new_config)
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
