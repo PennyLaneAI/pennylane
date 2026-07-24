@@ -20,6 +20,7 @@ import copy
 import itertools
 import pickle
 from collections import defaultdict
+from functools import partial
 from string import ascii_lowercase
 
 import numpy as np
@@ -225,18 +226,35 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    if qp.capture.enabled():
+    with qp.queuing.AnnotatedQueue() as q:
+        rule(*args, **kwargs)
 
-        def decomposition(*rule_args):
-            rule(*rule_args, **kwargs)
+    tape = qp.tape.QuantumScript.from_queue(q)
 
-        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*args)
-        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *args)
-    else:
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*args, **kwargs)
+    # Structured capture can queue abstract operations while tracing a control-flow body rather
+    # than the concrete operations produced by executing that body. In that case, evaluate the
+    # captured program to obtain the decomposition operations. Keep the concrete queue for rules
+    # that use Python control flow over static values and therefore are not JAX-traceable.
+    has_abstract_ops = any(
+        qp.math.is_abstract(leaf) for queued_op in tape.operations for leaf in flatten(queued_op)[0]
+    )
+    if qp.capture.enabled() and has_abstract_ops:
+        import jax  # pylint: disable=import-outside-toplevel
 
-        tape = qp.tape.QuantumScript.from_queue(q)
+        if isinstance(op, Operator1):
+            decomposition = partial(rule, **op.hyperparameters)
+            capture_args = op.data
+            capture_kwargs = {"wires": op.wires}
+        else:
+            decomposition = partial(rule, **op.static_args, **op.compilable_args, **op.hybrid_args)
+            capture_args = ()
+            capture_kwargs = {**op.dynamic_args, **op.wire_args}
+
+        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
+            *capture_args, **capture_kwargs
+        )
+        flat_capture_args = jax.tree_util.tree_leaves((capture_args, capture_kwargs))
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
