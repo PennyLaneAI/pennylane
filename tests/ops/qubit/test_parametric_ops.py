@@ -202,6 +202,9 @@ class TestOperations:
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         qp.assert_equal(op_unflattened, op)
 
+        if isinstance(op, qp.MultiControlledX):
+            return  # The below test does not work for control_values, which is now pytree leaves
+
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
             assert qp.math.allclose(d1, d2 + 1.0)

@@ -132,8 +132,10 @@ class TemporaryAND(Operation):
             return f"TemporaryAND(wires={self.wires})"
         return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
 
-    def __init__(self, wires: WiresLike, control_values=(1, 1)):
+    def __init__(self, wires: WiresLike, control_values=None):
         wires = Wires(wires)
+        if control_values is None:
+            control_values = (1, 1)
         self.hyperparameters["control_values"] = tuple(control_values)
         super().__init__(wires=wires)
 
