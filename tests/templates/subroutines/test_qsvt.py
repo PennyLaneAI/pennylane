@@ -107,35 +107,33 @@ class TestQSVTBasics:
         for op1, op2 in zip(ops, decomp):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        ("UA", "projectors", "expected"),
-        [
-            (
-                qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.5, dim=2, wires=[0, 1])],
-                [
-                    qp.PCPhase(0.5, dim=2, wires=[0, 1]),
-                    qp.BlockEncode(np.array([[0.1, 0.2], [0.3, 0.4]]), wires=[0, 1]),
-                    qp.PCPhase(0.5, dim=2, wires=[0, 1]),
-                ],
-            ),
-            (
-                qp.BlockEncode([[0.3, 0.1], [0.2, 0.4]], wires=[0, 1]),
-                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.3, dim=2, wires=[0, 1])],
-                [
-                    qp.PCPhase(0.5, dim=2, wires=[0, 1]),
-                    qp.BlockEncode(np.array([[0.3, 0.1], [0.2, 0.4]]), wires=[0, 1]),
-                    qp.PCPhase(0.3, dim=2, wires=[0, 1]),
-                ],
-            ),
-            (
-                qp.Hadamard(wires=0),
-                [qp.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
-                [qp.RZ(-2.46, wires=[0]), qp.Hadamard(wires=0), qp.RZ(1.0, wires=[0])],
-            ),
-        ],
-    )
+    _decomposition_cases = [
+        (
+            qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+            [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.5, dim=2, wires=[0, 1])],
+            [
+                qp.PCPhase(0.5, dim=2, wires=[0, 1]),
+                qp.BlockEncode(np.array([[0.1, 0.2], [0.3, 0.4]]), wires=[0, 1]),
+                qp.PCPhase(0.5, dim=2, wires=[0, 1]),
+            ],
+        ),
+        (
+            qp.BlockEncode([[0.3, 0.1], [0.2, 0.4]], wires=[0, 1]),
+            [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.3, dim=2, wires=[0, 1])],
+            [
+                qp.PCPhase(0.5, dim=2, wires=[0, 1]),
+                qp.BlockEncode(np.array([[0.3, 0.1], [0.2, 0.4]]), wires=[0, 1]),
+                qp.PCPhase(0.3, dim=2, wires=[0, 1]),
+            ],
+        ),
+        (
+            qp.Hadamard(wires=0),
+            [qp.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+            [qp.RZ(-2.46, wires=[0]), qp.Hadamard(wires=0), qp.RZ(1.0, wires=[0])],
+        ),
+    ]
+
+    @pytest.mark.parametrize(("UA", "projectors", "expected"), _decomposition_cases)
     def test_decomposition_new(self, UA, projectors, expected):
         """Test the decomposition of the QSVT template."""
 
@@ -145,6 +143,22 @@ class TestQSVTBasics:
 
             for i, op in enumerate(expected):
                 assert op == q.queue[i]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(("UA", "projectors", "expected"), _decomposition_cases)
+    def test_decomposition_new_capture(self, UA, projectors, expected):
+        """Test the decomposition of the QSVT template."""
+
+        for rule in qp.list_decomps(qp.QSVT):
+
+            def circuit():
+                rule(UA=UA, projectors=projectors)  # pylint: disable=cell-var-from-loop
+
+            jaxpr = qp.capture.make_plxpr(circuit)()
+            tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+
+            for i, op in enumerate(expected):
+                qp.assert_equal(tape.operations[i], op)
 
     @pytest.mark.parametrize(
         ("UA", "projectors"),
@@ -688,7 +702,6 @@ class Testqsvt:
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
-
             qp.qsvt(A, poly, encoding_wires=encoding_wires, block_encoding=block_encoding)
 
     @pytest.mark.torch
@@ -789,7 +802,6 @@ class Testqsvt:
 
 
 class TestRootFindingSolver:
-
     @pytest.mark.parametrize(
         "P",
         [
