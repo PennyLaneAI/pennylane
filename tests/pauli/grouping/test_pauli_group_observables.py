@@ -19,13 +19,16 @@ import sys
 
 import numpy as np
 import pytest
+import rustworkx as rx
 
 import pennylane as qp
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as pnp
 from pennylane.pauli import are_identical_pauli_words, are_pauli_words_qwc
 from pennylane.pauli.grouping.group_observables import (
+    RX_STRATEGIES,
     PauliGroupingStrategy,
+    _adj_matrix_from_symplectic,
     compute_partition_indices,
     group_observables,
     items_partitions_from_idx_partitions,
@@ -381,6 +384,96 @@ def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
         if not any(are_identical_pauli_words(pauli, other) for other in partition_3):
             return False
     return True
+
+
+def _reference_adj_matrix(symplectic_matrix, grouping_type):
+    """Brute-force per-pair, per-qubit reference for the complement-graph adjacency."""
+    m = symplectic_matrix.shape[0]
+    n = symplectic_matrix.shape[1] // 2
+    x, z = symplectic_matrix[:, :n], symplectic_matrix[:, n:]
+    adj = np.zeros((m, m), dtype=bool)
+    for i in range(m):
+        for j in range(m):
+            parity = int(np.dot(x[i], z[j]) + np.dot(z[i], x[j])) % 2
+            both_occupied = ((x[i] + z[i]) > 0) & ((x[j] + z[j]) > 0)
+            qwc = not np.any(both_occupied & ((x[i] != x[j]) | (z[i] != z[j])))
+            if grouping_type == "qwc":
+                adj[i, j] = not qwc
+            elif grouping_type == "commuting":
+                adj[i, j] = parity == 1
+            else:
+                adj[i, j] = parity == 0
+    return adj
+
+
+def _random_symplectic_matrix(m, n, seed):
+    """Random m x 2n binary matrix, including all-identity and duplicate rows."""
+    rng = np.random.default_rng(seed)
+    symplectic = (rng.random((m, 2 * n)) < 0.3).astype(float)
+    symplectic[0] = 0.0  # identity row
+    if m > 1:
+        symplectic[-1] = symplectic[m // 2]  # duplicate row
+    return symplectic
+
+
+class TestBitPackedGrouping:
+    """Tests for the bit-packed symplectic implementation of adjacency and colouring."""
+
+    # qubit counts straddling the 64-bit word boundary exercise multi-word packing
+    @pytest.mark.parametrize("n_qubits", [1, 3, 63, 64, 65, 130])
+    @pytest.mark.parametrize("grouping_type", ["qwc", "commuting", "anticommuting"])
+    def test_adj_matrix_matches_bruteforce(self, n_qubits, grouping_type):
+        """The packed adjacency matrix equals a brute-force per-qubit computation."""
+        symplectic = _random_symplectic_matrix(17, n_qubits, seed=n_qubits)
+        adj = _adj_matrix_from_symplectic(symplectic, grouping_type)
+        assert np.array_equal(adj, _reference_adj_matrix(symplectic, grouping_type))
+
+    @pytest.mark.parametrize("seed", [0, 1, 2, 3])
+    @pytest.mark.parametrize("grouping_type", ["qwc", "commuting", "anticommuting"])
+    def test_lf_partitions_match_rustworkx(self, seed, grouping_type):
+        """The graph-free 'lf' colouring reproduces the rustworkx graph-based result."""
+        rng = np.random.default_rng(seed)
+        paulis = [PauliX, PauliY, PauliZ]
+        observables = []
+        for _ in range(25):
+            wires = rng.choice(6, size=rng.integers(1, 4), replace=False)
+            term = paulis[rng.integers(3)](int(wires[0]))
+            for w in wires[1:]:
+                term = term @ paulis[rng.integers(3)](int(w))
+            observables.append(term)
+
+        groupper = PauliGroupingStrategy(observables, grouping_type=grouping_type)
+        partitions = groupper.idx_partitions_from_graph()
+
+        # reference: greedy colouring of the explicitly constructed complement graph
+        colouring_dict = rx.graph_greedy_color(
+            groupper.complement_graph, strategy=RX_STRATEGIES["lf"]
+        )
+        expected = {}
+        for idx, colour in sorted(colouring_dict.items()):
+            expected.setdefault(colour, []).append(idx)
+        expected = tuple(tuple(indices) for indices in expected.values())
+
+        assert partitions == expected
+
+    @pytest.mark.parametrize("grouping_type", ["qwc", "commuting", "anticommuting"])
+    def test_lf_partitions_are_valid(self, grouping_type):
+        """All pairs within each partition satisfy the grouping relation."""
+        symplectic = _random_symplectic_matrix(40, 70, seed=7)
+        n = 70
+        wire_map = {i: i for i in range(n)}
+        # pylint: disable=import-outside-toplevel
+        from pennylane.pauli import binary_to_pauli
+
+        observables = [binary_to_pauli(row, wire_map=wire_map) for row in symplectic]
+        groupper = PauliGroupingStrategy(observables, grouping_type=grouping_type)
+        partitions = groupper.idx_partitions_from_graph()
+
+        adj = _reference_adj_matrix(symplectic, grouping_type)
+        for group in partitions:
+            for pos, i in enumerate(group):
+                for j in group[pos + 1 :]:
+                    assert not adj[i, j]
 
 
 class TestGroupObservables:

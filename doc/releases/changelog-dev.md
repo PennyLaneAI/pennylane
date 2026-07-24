@@ -486,6 +486,13 @@
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
+* Pauli-word measurement grouping (:func:`~.pauli.group_observables` and
+  :func:`~.pauli.compute_partition_indices`) now evaluates (qubit-wise) commutation on a
+  bit-packed symplectic representation, and the default ``"lf"`` strategy colours observables
+  without building the conflict graph. Peak memory drops from ``O(m^2 n)`` to ``O(m n)`` for
+  ``m`` observables on ``n`` qubits.
+  [(#9880)](https://github.com/PennyLaneAI/pennylane/pull/9880)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
