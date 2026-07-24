@@ -1598,7 +1598,6 @@ class MultiControlledX(Controlled2):
             work_wire_type=self.work_wire_type,
         )
 
-    # pylint: disable=unused-argument
     @staticmethod
     @override
     def compute_matrix(
@@ -1616,7 +1615,6 @@ class MultiControlledX(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable=unused-argument
     def compute_decomposition(
         wires: WiresLike,
         control_values: int | bool | Sequence[int | bool] | None = None,
@@ -1642,6 +1640,27 @@ class MultiControlledX(Controlled2):
             return _to_op_list(decompose_mcx_one_worker)(**arguments)
 
         return _to_op_list(decompose_mcx_with_no_worker)(**arguments)
+
+    @staticmethod
+    @override
+    def compute_eigvals(
+        wires: WiresLike,
+        control_values: int | bool | Sequence[int | bool] | None = None,
+        work_wires: WiresLike | None = None,
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
+        arguments = _setup_inputs_mcx(wires, control_values, work_wires, work_wire_type)
+        # The purpose of this elaborate process is so that when control values are present,
+        # the matrix reconstruction test (M = U_d^\dagger D U_d, where U_d is the matrix
+        # of the diagonalizing gates, and D is the diagonal matrix generated from the list
+        # of eigenvalues) still passes. Courtesy of Gemini 3.1 Pro
+        eigvals = np.ones(2 ** len(arguments["wires"]), dtype=float)
+        target_index = 0
+        for val in arguments["control_values"]:
+            target_index = (target_index << 1) | int(val)
+        target_index = (target_index << 1) | 1
+        eigvals[target_index] = -1.0
+        return eigvals
 
 
 def _setup_inputs_mcx(

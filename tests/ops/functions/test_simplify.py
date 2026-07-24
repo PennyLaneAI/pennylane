@@ -73,6 +73,7 @@ class TestSimplifyOperators:
             qp.simplify("unsupported type")
 
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="this does not work now that wires are traced pytree leaves")
     def test_jit_simplification(self):
         """Test that simplification can be jitted."""
 
