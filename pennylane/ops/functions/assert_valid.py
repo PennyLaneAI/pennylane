@@ -226,19 +226,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    with qp.queuing.AnnotatedQueue() as q:
-        rule(*args, **kwargs)
-
-    tape = qp.tape.QuantumScript.from_queue(q)
-
-    # Structured capture can queue abstract operations while tracing a control-flow body rather
-    # than the concrete operations produced by executing that body. In that case, evaluate the
-    # captured program to obtain the decomposition operations. Keep the concrete queue for rules
-    # that use Python control flow over static values and therefore are not JAX-traceable.
-    has_abstract_ops = any(
-        qp.math.is_abstract(leaf) for queued_op in tape.operations for leaf in flatten(queued_op)[0]
-    )
-    if qp.capture.enabled() and has_abstract_ops:
+    if qp.capture.enabled():
         import jax  # pylint: disable=import-outside-toplevel
 
         if isinstance(op, Operator1):
@@ -255,6 +243,11 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         )
         flat_capture_args = jax.tree_util.tree_leaves((capture_args, capture_kwargs))
         tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+    else:
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*args, **kwargs)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
