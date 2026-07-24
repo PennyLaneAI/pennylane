@@ -14,7 +14,7 @@
 
 """Placement types for backline heterogeneous compilation and execution."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from .functions import CoprocessorFunction
@@ -51,8 +51,8 @@ class Executor:
     """Whether the executor runs on a separate host reached over the network (cross-compiled and
     dispatched) rather than locally."""
 
-    init_args: dict | None = None
-    """Optional backend-specific initialization arguments."""
+    init_args: dict = field(default_factory=dict)
+    """Backend-specific initialization arguments; empty by default (never ``None``)."""
 
 
 @dataclass(frozen=True)
@@ -118,10 +118,10 @@ class Backline:
 
     transport: str | Transport
     """How bytes move between executors, by registry name (e.g. ``"rdma"``) or a
-    :class:`~.Transport`."""
+    :class:`~.Transport`. A name is resolved to a :class:`~.Transport` on construction."""
 
     def __post_init__(self):
         if not isinstance(self.coprocessors, tuple):
             object.__setattr__(self, "coprocessors", tuple(self.coprocessors))
         if isinstance(self.transport, str):
-            get_transport(self.transport)
+            object.__setattr__(self, "transport", get_transport(self.transport))

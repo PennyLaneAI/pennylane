@@ -18,10 +18,7 @@ A frontend device that carries a backline placement (consisting of controller, c
 heterogeneous compilation and execution. This device requires the Catalyst compiler.
 """
 
-from typing import Optional
-
-from pennylane.core.transforms.compile_pipeline import CompilePipeline
-from pennylane.devices import Device, ExecutionConfig
+from pennylane.devices import Device
 
 from .placement import Backline, Controller, Coprocessor
 
@@ -60,7 +57,8 @@ class HeterogeneousDevice(Device):
 
     def __init__(self, backline, shots=None):
         self._backline = backline
-        super().__init__(wires=backline.controller.device.wires, shots=shots)
+        self._device = backline.controller.device  # the real, compilable device
+        super().__init__(wires=self._device.wires, shots=shots)
 
     @property
     def backline(self):
@@ -82,13 +80,19 @@ class HeterogeneousDevice(Device):
         """tuple[Coprocessor, ...]: The coprocessor executors of the backline placement."""
         return self._backline.coprocessors
 
-    def preprocess(self, execution_config: Optional[ExecutionConfig] = None):
-        """Return the (empty) transform program and the unchanged execution config."""
-        if execution_config is None:
-            execution_config = ExecutionConfig()
-        return CompilePipeline(), execution_config
+    @property
+    def name(self):
+        return self._device.name
 
-    def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+    def preprocess(self, *args, **kwargs):
+        return self._device.preprocess(*args, **kwargs)
+
+    def __getattr__(self, item):
+        if item == "_device":
+            raise AttributeError(item)
+        return getattr(self._device, item)
+
+    def execute(self, circuits, execution_config=None):
         """Execution is handled by the Catalyst compiler; there is no Python execution path."""
         raise NotImplementedError(
             "HeterogeneousDevice has no Python execution path; execute it via a "
