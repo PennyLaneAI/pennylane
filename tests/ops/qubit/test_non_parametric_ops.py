@@ -1135,7 +1135,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
 
-            if rule.is_applicable(**pow_op.resource_params):
+            if rule.is_applicable(**pow_op.arguments):
 
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)

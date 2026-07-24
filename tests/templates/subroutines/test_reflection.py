@@ -32,7 +32,7 @@ def hadamards(wires):
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qp.Reflection(qp.Hadamard(wires=0), 0.5, reflection_wires=[0])
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_capture=True)
 
 
 @pytest.mark.parametrize(

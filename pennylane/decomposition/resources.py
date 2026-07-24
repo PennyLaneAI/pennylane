@@ -439,6 +439,12 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
     )
 
 
+def _adjoint(op: AbstractOperatorLike):
+    if isinstance(op, CompressedResourceOp):
+        return adjoint_resource_rep(op.op_type, op.params)
+    return qp.ops.op_math.Adjoint2(op)
+
+
 def change_op_basis_resource_rep(
     compute_op: type[Operator] | CompressedResourceOp,
     target_op: type[Operator] | CompressedResourceOp,
