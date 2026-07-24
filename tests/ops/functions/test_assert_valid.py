@@ -28,8 +28,14 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import (
+    _check_capture,
+    _check_eigendecomposition,
+    _check_pytree,
+    _test_decomposition_rule,
+)
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import DynOp
 
 
 class TestDecompositionErrors:
@@ -308,6 +314,29 @@ def test_bad_eigenvalues_order():
         assert_valid(BadEigenDecomp(0), skip_pickle=True)
 
 
+def test_eigendecomposition_with_different_wire_order():
+    """A valid eigendecomposition is compared using the operator's wire order."""
+
+    class ReorderedDiagonalizingGates(Operator):
+        num_wires = 2
+
+        @staticmethod
+        def compute_matrix():
+            x = np.array([[0, 1], [1, 0]])
+            asymmetric_x_basis_op = np.array([[2.5, -0.5], [-0.5, 2.5]])
+            return np.kron(x, asymmetric_x_basis_op)
+
+        @staticmethod
+        def compute_eigvals():
+            return np.array([2, 3, -2, -3])
+
+        @staticmethod
+        def compute_diagonalizing_gates(wires):
+            return [qp.H(wires[0]), qp.H(wires[1])]
+
+    _check_eigendecomposition(ReorderedDiagonalizingGates([0, 1]))
+
+
 class BadPickling0(Operator):
     def __init__(self, f, wires):
         super().__init__(wires)
@@ -430,6 +459,27 @@ class TestPytree:
 
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
             assert_valid(op, skip_pickle=True)
+
+    @pytest.mark.jax
+    def test_nested_operator2_data_check(self):
+        """A nested Operator2 does not disable validation of the outer Operator1 data order."""
+
+        class BadLeavesOrdering(qp.ops.op_math.SProd):
+            def _flatten(self):
+                return (self.base, self.scalar), tuple()
+
+            @classmethod
+            def _unflatten(cls, data, _):
+                return cls(data[1], data[0])
+
+        with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
+            _check_pytree(BadLeavesOrdering(2.0, DynOp(1.2, wires=0)))
+
+    @pytest.mark.jax
+    def test_nested_operator2_with_omitted_data(self):
+        """Nested parameters omitted intentionally from outer data do not fail validation."""
+        generator = qp.ops.LinearCombination([1.0], [DynOp(0.5, wires=0)])
+        _check_pytree(qp.ops.Evolution(generator, 0.2))
 
 
 @pytest.mark.jax

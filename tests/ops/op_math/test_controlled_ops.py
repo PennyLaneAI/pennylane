@@ -841,3 +841,8 @@ def test_CNOT_decomposition():
 
     with pytest.raises(qp.operation.DecompositionUndefinedError):
         qp.CNOT([0, 1]).decomposition()
+
+
+def test_CY_decomposition():
+    """The migrated ``CY`` uses its registered graph decomposition rule."""
+    assert qp.CY([0, 1]).decomposition() == [qp.CRY(np.pi, wires=[0, 1]), qp.S(0)]

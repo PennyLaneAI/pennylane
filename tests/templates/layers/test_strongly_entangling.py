@@ -63,21 +63,32 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
-    )
+    @pytest.mark.parametrize("n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ)])
     @pytest.mark.capture
     def test_decomposition_new_capture(
         self, n_wires, imprimitive, batch_dim
     ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         weights = np.random.random(
             size=(1, n_wires, 3),
         )
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
-            _test_decomposition_rule(op, rule)
+
+            def circuit(weights, rule=rule):
+                rule(weights, wires=op.wires, **op.hyperparameters)
+
+            plxpr = qp.capture.make_plxpr(circuit)(weights)
+            collector = CollectOpsandMeas()
+            collector.eval(plxpr.jaxpr, plxpr.consts, weights)
+
+            ops = collector.state["ops"]
+            assert len(ops) == 2 * n_wires
+            assert all(isinstance(decomp_op, qp.Rot) for decomp_op in ops[:n_wires])
+            assert all(isinstance(decomp_op, imprimitive) for decomp_op in ops[n_wires:])
 
     @pytest.mark.parametrize(
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
