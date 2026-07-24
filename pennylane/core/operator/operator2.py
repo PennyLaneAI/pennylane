@@ -208,7 +208,9 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
-        self._is_abstract = False
+        # NOTE: Use 'getattr' to not clobber '_is_abstract' if coming
+        # from '__abstract_init__'
+        self._is_abstract = getattr(self, "_is_abstract", False)
 
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
@@ -225,6 +227,7 @@ class Operator2(metaclass=OperatorMeta):
 
     def __abstract_init__(self, *args, **kwargs):
         """Constructor for canonicalization of abstract inputs."""
+        self._is_abstract = True
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         arguments = bound_args.arguments
@@ -1171,15 +1174,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2], [Wires([0, 1])], []), ('XY',))
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -1209,12 +1208,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         args = {}
 
@@ -1911,6 +1909,7 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
+
     return op_cls(**new_args)
 
 

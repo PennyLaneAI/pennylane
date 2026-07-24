@@ -47,7 +47,7 @@ from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -1725,9 +1725,9 @@ def _swap_to_cnot(wires, **__):
 
 def _swap_to_ppr_resource():
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
+        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
 
@@ -2099,8 +2099,8 @@ def _iswap_decomp(wires, **__):
 
 def _iswap_to_ppr_resource():
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
+        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
@@ -2315,8 +2315,8 @@ def _siswap_decomp(wires, **__):
 
 def _siswap_to_ppr_resource():
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
+        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 

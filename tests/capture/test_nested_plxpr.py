@@ -25,7 +25,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
+from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, operator_p
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from tests.capture.capture_utils import assert_eqn_matches_op
 
@@ -58,8 +58,9 @@ class TestAdjointQfunc:
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
 
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
-        assert nested_jaxpr.eqns[0].primitive == qp.PauliRot._primitive
-        assert nested_jaxpr.eqns[0].params == {"n_wires": 2, "pauli_word": "XY"}
+        assert nested_jaxpr.eqns[0].primitive == operator_p
+        assert nested_jaxpr.eqns[0].params["op_cls"] is qp.PauliRot
+        assert nested_jaxpr.eqns[0].params["pauli_word"][0] == ("XY",)
 
         assert plxpr.eqns[0].params["lazy"] is True
 

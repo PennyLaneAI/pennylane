@@ -225,9 +225,11 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    with qp.queuing.AnnotatedQueue() as q:
-        rule(*args, **kwargs)
-
+    # Need to pause program capture because Operator2's primitive doesn't queue operators
+    # when the impl is called, so operators do not get correctly queued.
+    with qp.capture.pause():
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*args, **kwargs)
     tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total

@@ -397,11 +397,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
 
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op = qp.PCPhase(1.2, dim=2, wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
+        ((1.2,), (Wires([0, 1]), (('dim', 2),)))
+        >>> qp.PCPhase._unflatten(*op._flatten())
+        PCPhase(1.2, wires=[0, 1])
 
 
     .. details::
@@ -1590,9 +1590,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
+        >>> op = qp.PCPhase(1.2, dim=2, wires=(0,1))
+        >>> qp.PCPhase._unflatten(*op._flatten())
+        PCPhase(1.2, wires=[0, 1])
 
         Operators that have trainable components that differ from their ``Operator.data`` must implement their own
         ``_flatten`` methods.
@@ -1625,9 +1625,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op = qp.PCPhase(1.2, dim=2, wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('dim', 2),)))
         >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> type(op)._unflatten(*op._flatten())
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])

@@ -1067,7 +1067,7 @@ def inspect_decomps(
     Decomposition 3 (name: _crx_to_ppr)
     0: ───────────╭RZX(-0.25)─┤
     1: ──RX(0.25)─╰RZX(-0.25)─┤
-    Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
+    Gate Count: {PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZX, wires=AbstractWires(2)): 1, PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=X, wires=AbstractWires(1)): 1}
 
     For each decomposition rule, the output includes its name, circuit diagram, gate
     count, and wire allocation (if any). Alternatively, you can inspect a single
