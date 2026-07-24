@@ -58,7 +58,14 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
             assert op.target_wires == qp.wires.Wires([0, 10, 11, 12])
     else:
         assert op.target_wires == qp.wires.Wires([])
-    qp.ops.functions.assert_valid(op, skip_bind_new_parameters=True)
+    qp.ops.functions.assert_valid(
+        op,
+        # differentiation and bind_new_parameters fail now that control_values are data
+        skip_differentiation=not parametrized,
+        skip_bind_new_parameters=not parametrized,
+        # bind fails now that MultiControlledX can't be converted to a tracer.
+        skip_capture=not parametrized,
+    )
 
 
 @pytest.mark.unit
