@@ -33,12 +33,8 @@ from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resour
 def _base_resource_rep(base_class, base_params):
     """Resource representation of ``base_class`` given its resource ``base_params``.
 
-    These legacy symbolic rules are also registered against some ``Operator2`` subclasses (e.g.
-    ``S``/``T``/``SX`` for :func:`~.make_pow_decomp_with_period`) and are exercised through the
-    legacy ``Pow``/``Adjoint`` wrappers by ``assert_valid``. ``Operator2`` subclasses are
-    represented by an abstract instance (constructed from their ``arguments``) rather than a
-    :class:`~.CompressedResourceOp`, so that they match the representation produced by
-    :func:`~.abstractify` for concrete operators.
+    This is added so that symbolic decompositions for both Operator1 and Operator2 can be
+    implemented using a unified API.
     """
     if issubclass(base_class, Operator2):
         return abstractify(base_class(**base_params))
@@ -100,7 +96,7 @@ def cancel_adjoint(*params, wires, base):
 
 
 def _adjoint_rotation_resource(base=None, base_class=None, base_params=None, **__):
-    # Dual convention: ``Operator2`` symbolic wrappers (e.g. ``Adjoint2``) are invoked by the graph
+    # ``Operator2`` symbolic wrappers (e.g. ``Adjoint2``) are invoked by the graph
     # with the native ``base=`` argument, while legacy ``Adjoint`` wrappers are invoked with
     # ``base_class``/``base_params``. ``_base_resource_rep`` handles both ``Operator1`` bases
     # (represented by a ``CompressedResourceOp``) and ``Operator2`` bases (represented by an
@@ -205,7 +201,11 @@ pow_involutory = make_pow_decomp_with_period(2)
 def _pow_rotation_resource(
     base=None, base_class=None, base_params=None, z=None, **__
 ):  # pylint: disable=unused-argument
-    # See ``_adjoint_rotation_resource`` for details on the dual calling convention.
+    # ``Operator2`` symbolic wrappers (e.g. ``Adjoint2``) are invoked by the graph
+    # with the native ``base=`` argument, while legacy ``Adjoint`` wrappers are invoked with
+    # ``base_class``/``base_params``. ``_base_resource_rep`` handles both ``Operator1`` bases
+    # (represented by a ``CompressedResourceOp``) and ``Operator2`` bases (represented by an
+    # abstract instance).
     if base is not None:
         return {abstractify(base): 1}
     return {_base_resource_rep(base_class, base_params): 1}
