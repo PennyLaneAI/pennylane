@@ -1580,10 +1580,12 @@ class MultiControlledX(Controlled2):
         )
 
     def __repr__(self):
-        return (
-            f"MultiControlledX(wires={self.wires}, "
-            f"control_values={self.control_values.tolist()})"
-        )
+        params = [f"wires={self.wires}"]
+        if isinstance(self.control_values, AbstractArray):
+            params.append(f"control_values={self.control_values}")
+        elif not all(self.control_values):
+            params.append(f"control_values={self.control_values.tolist()}")
+        return f"MultiControlledX({", ".join(params)})"
 
     @override
     def adjoint(self):
