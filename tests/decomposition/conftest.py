@@ -26,7 +26,8 @@ from pennylane.decomposition.decomposition_rule import DecompCollection
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
-    self_adjoint_legacy, self_adjoint,
+    self_adjoint,
+    self_adjoint_legacy,
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2

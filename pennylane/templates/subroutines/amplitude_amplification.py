@@ -31,8 +31,8 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
-from .reflection import Reflection
 from ...ops.op_math.adjoint2 import _adjoint_abstract
+from .reflection import Reflection
 
 
 def _get_fixed_point_angles(iters, p_min):

@@ -36,13 +36,14 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    pow_involutory,
     flip_zero_control,
+    pow_involutory,
     pow_rotation,
-    self_adjoint_legacy,
     self_adjoint,
+    self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -69,7 +70,6 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
-from pennylane.ops.op_math.controlled2 import Controlled2
 from .pow2 import pow_involutory as pow_involutory2
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -349,7 +349,7 @@ class CH(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -409,7 +409,7 @@ class CH(Controlled2):
         ]
 
 
-def _ch_to_ry_cz_ry_resources(wires: WiresLike=None):
+def _ch_to_ry_cz_ry_resources(wires: WiresLike = None):
     return {qp.RY: 2, qp.CZ: 1}
 
 
@@ -775,7 +775,7 @@ class CSWAP(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike=None):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -843,7 +843,7 @@ class CSWAP(Controlled2):
 
 
 # pylint: disable=unused-argument
-def _cswap_to_toffoli_resources(wires: WiresLike=None):
+def _cswap_to_toffoli_resources(wires: WiresLike = None):
     return {qp.CNOT: 2, qp.Toffoli: 1}
 
 
@@ -854,8 +854,15 @@ def _cswap(wires: WiresLike, **__):
     qp.CNOT([wires[2], wires[1]])
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_cswap(base: CSWAP, control, control_values, *_):
+    if len(control) == 1:
+        return ControlledOp2(CSWAP(base.wires), control, control_values)
+    return NotImplemented
+
+
 # pylint: disable=unused-argument
-def _cswap_to_ppr_resource(wires: WiresLike=None):
+def _cswap_to_ppr_resource(wires: WiresLike = None):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZYY"): 1,

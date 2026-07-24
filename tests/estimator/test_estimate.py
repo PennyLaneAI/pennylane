@@ -21,7 +21,6 @@ from collections import defaultdict
 import pytest
 
 import pennylane as qp
-from pennylane.typing import Wire
 from pennylane.estimator.compact_hamiltonian import VibrationalHamiltonian
 from pennylane.estimator.estimate import (
     _default_adjoint_decomp,
@@ -50,6 +49,7 @@ from pennylane.estimator.templates.subroutines import QFT
 from pennylane.estimator.templates.trotter import TrotterVibrational
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.typing import Wire
 
 # pylint: disable= no-self-use, arguments-differ
 
@@ -561,7 +561,7 @@ class TestEstimateResources:
         when processing a qfunc."""
 
         def my_circuit():
-            qp.RX(0.1,0)
+            qp.RX(0.1, 0)
             qp.PauliX(1)
 
         actual_resources = estimate(my_circuit, gate_set={"RX", "X"})()

@@ -332,8 +332,14 @@ class TestHybridQRAM:
                 and op.name.startswith("C(X")
                 or name == "CH"
                 and op.name.startswith("C(H")
-                or name == "2C(SWAP)"
-                and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
+                or name == "C(CSWAP)"
+                and op.name.startswith("C(CSWAP")
+                or name == "CSWAP"
+                and (op.name.startswith("CSWAP") or op.name.startswith("C(SWAP"))
+                or name == "C(SWAP)"
+                and op.name.startswith(
+                    "C(C(SWAP"
+                )  # specs now combines these into one C( with more control wires
                 or name == "CZ"
                 and op.name.startswith("C(Z")
             ):

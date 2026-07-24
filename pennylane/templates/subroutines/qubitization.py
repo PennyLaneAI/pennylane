@@ -22,9 +22,9 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import I, Prod, prod
-from pennylane.wires import Wires
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import Wire
+from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
 from .reflection import Reflection

@@ -29,7 +29,10 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import _base_resource_rep, _adjoint_base_resource_rep
+from pennylane.decomposition.symbolic_decomposition import (
+    _adjoint_base_resource_rep,
+    _base_resource_rep,
+)
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire

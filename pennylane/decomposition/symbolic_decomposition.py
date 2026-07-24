@@ -268,10 +268,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
 
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
-            _ctrl_abstract(
-                base_op_rep,
-                Wire[num_control_wires]
-            ): count
+            _ctrl_abstract(base_op_rep, Wire[num_control_wires]): count
             for base_op_rep, count in base_resources.gate_counts.items()
         }
         # None of the other gates in gate_counts will be X, because they are all
