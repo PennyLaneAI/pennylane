@@ -337,7 +337,7 @@ class Pow(ScalarSymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+        return [qp.math.cast(value, dtype="complex128")**self.z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

@@ -152,6 +152,17 @@ class SProd(ScalarSymbolicOp):
             return f"{self.scalar} * ({self.base})"
         return f"{self.scalar} * {self.base}"
 
+    # @handle_recursion_error
+    # def label(self, decimals=None, base_label=None, cache=None):
+    #     """The label produced for the SProd op."""
+    #     scalar_val = (
+    #         f"{self.scalar}"
+    #         if decimals is None
+    #         else format(math.toarray(self.scalar), f".{decimals}f")
+    #     )
+
+    #     return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
+    
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
         """The label produced for the SProd op."""

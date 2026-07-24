@@ -435,6 +435,17 @@ class TestProperties:
         with pytest.raises(AdjointUndefinedError, match="The adjoint of Pow operators"):
             _ = op.adjoint()
 
+    @pytest.mark.parametrize("z", [0.5])
+    def test_eigvals_fractional_power_negative_eigenvalue(self, z, power_method):
+        """Test pow method works for complex numbers"""
+        base = qp.PauliZ(0)
+        op = power_method(base=base, z=z) 
+        
+        eigvals = op.eigvals()
+        
+        """Expected eigenvalues for Z**0.5 are [1.0, 1.0j]"""
+        expected_eigvals = [1.0, 1j]
+        assert np.allclose(eigvals, expected_eigvals)
 
 class TestSimplify:
     """Test Pow simplify method and depth property."""
@@ -1025,3 +1036,4 @@ class TestIntegration:
 
         assert np.allclose(res, expected)
         assert np.allclose(res_grad, expected_grad)
+
