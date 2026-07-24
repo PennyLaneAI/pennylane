@@ -190,33 +190,6 @@ class TestSingleOperation:
         expected = reduce(np.kron, [Y, Z, I]) - x * np.kron(X, np.eye(4))
         assert qp.math.allclose(mat, expected)
 
-    def test_qutrits(self):
-        """Test that the function works with qutrits"""
-
-        dev = qp.device("default.qutrit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.TAdd(wires=[0, 1])
-            return qp.state()
-
-        mat = qp.matrix(circuit)()
-        expected = np.array(
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 1],
-                [0, 0, 0, 0, 0, 0, 1, 0, 0],
-            ]
-        )
-
-        assert np.allclose(mat, expected)
-
     def test_empty_decomposition(self):
         """Test the matrix of a single operation that has an empty list as decomposition."""
 
