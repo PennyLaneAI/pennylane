@@ -26,9 +26,10 @@ from pennylane.control_flow._resource_hints import (
 
 class TestResourceHintValidation:
     def test_validate_estimated_iterations(self):
-        assert validate_estimated_iterations(10) == 10
+        assert validate_estimated_iterations(10) == 10.0
+        assert validate_estimated_iterations(1.5) == 1.5
 
-    @pytest.mark.parametrize("value", [-1, 1.5, "10"])
+    @pytest.mark.parametrize("value", [-1, "10"])
     def test_validate_estimated_iterations_invalid(self, value):
         with pytest.raises((TypeError, ValueError)):
             validate_estimated_iterations(value)
@@ -74,6 +75,25 @@ def test_for_loop_hint_in_jaxpr():
     jaxpr = jax.make_jaxpr(loop)(0)
     assert len(jaxpr.eqns) == 1
     assert jaxpr.eqns[0].params["estimated_iterations"] == 10
+
+
+@pytest.mark.capture
+@pytest.mark.jax
+def test_for_loop_float_hint_in_jaxpr():
+    """Float estimated_iterations hints are preserved in the for_loop primitive."""
+    import jax
+
+    import pennylane as qp
+
+    qp.capture.enable()
+
+    @qp.for_loop(0, 10, 1, estimated_iterations=2.5)
+    def loop(_i, x):
+        return x + 1
+
+    jaxpr = jax.make_jaxpr(loop)(0)
+    assert len(jaxpr.eqns) == 1
+    assert jaxpr.eqns[0].params["estimated_iterations"] == 2.5
 
 
 @pytest.mark.capture

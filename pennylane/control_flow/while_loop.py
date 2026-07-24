@@ -57,7 +57,7 @@ def while_loop(
     cond_fn,
     allow_array_resizing: Literal["auto", True, False] = "auto",
     *,
-    estimated_iterations: int | None = None,
+    estimated_iterations: int | float | None = None,
 ):
     """A :func:`~.qjit` compatible while-loop for PennyLane programs. When
     used without :func:`~.qjit` or program capture, this function will fall back to a standard
@@ -89,7 +89,7 @@ def while_loop(
         cond_fn (Callable): the condition function in the while loop
         allow_array_resizing (Literal["auto", True, False]): How to handle arrays
             with dynamic shapes that change between iterations. Defaults to `"auto"`.
-        estimated_iterations (int): Optional hint for resource estimation when the loop
+        estimated_iterations (int | float): Optional hint for resource estimation when the loop
             trip count is dynamic. Indicates the expected number of iterations. Only used
             with :func:`~.qjit` and Catalyst's resource analysis.
 
@@ -324,7 +324,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         cond_fn: Callable,
         body_fn: Callable,
         allow_array_resizing: Literal["auto", True, False] = "auto",
-        estimated_iterations: int | None = None,
+        estimated_iterations: int | float | None = None,
     ):
         self.cond_fn: Callable = cond_fn
         self.body_fn: Callable = body_fn

@@ -209,6 +209,11 @@ class Expression:
         return self._data[()]
 
     def __mul__(self, other) -> "Expression":
+        if isinstance(other, float):
+            if not other.is_integer():
+                return NotImplemented
+            other = int(other)
+
         if not isinstance(other, (int, Expression)):
             return NotImplemented
 
@@ -232,6 +237,11 @@ class Expression:
         return self.__mul__(other)
 
     def __add__(self, other) -> "Expression":
+        if isinstance(other, float):
+            if not other.is_integer():
+                return NotImplemented
+            other = int(other)
+
         if not isinstance(other, (int, Expression)):
             return NotImplemented
 

@@ -63,7 +63,7 @@ def for_loop(
     step=1,
     *,
     allow_array_resizing: Literal["auto", True, False] = "auto",
-    estimated_iterations: int | None = None,
+    estimated_iterations: int | float | None = None,
 ):
     """for_loop([start, ]stop[, step])
     A :func:`~.qjit` compatible for-loop for PennyLane programs. When
@@ -115,7 +115,7 @@ def for_loop(
     Keyword Args:
         allow_array_resizing (Literal["auto", True, False]): How to handle arrays
             with dynamic shapes that change between iterations
-        estimated_iterations (int): Optional hint for resource estimation when the loop
+        estimated_iterations (int | float): Optional hint for resource estimation when the loop
             bounds are dynamic. Indicates the expected number of iterations. Only used
             with :func:`~.qjit` and Catalyst's resource analysis.
 
@@ -290,7 +290,7 @@ def for_loop(
             stop (int): (exclusive) upper bound of the iteration index
             step (int): increment applied to the iteration index at the end of each iteration
             allow_array_resizing (Literal["auto", True, False])
-            estimated_iterations (int | None): Optional resource-estimation hint
+            estimated_iterations (int | float | None): Optional resource-estimation hint
 
         Returns:
             Callable: a callable with the same signature as ``body_fn``
@@ -409,7 +409,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         body_fn,
         *,
         allow_array_resizing: Literal["auto", True, False] = "auto",
-        estimated_iterations: int | None = None,
+        estimated_iterations: int | float | None = None,
     ):
         self.start = start
         self.stop = stop
