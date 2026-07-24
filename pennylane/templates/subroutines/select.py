@@ -770,15 +770,16 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     counts = Counter()
 
     if num_ops == 2:
-        return {
-            _ctrl_abstract(
-                op_rep,
-                Wire[1],
-                Wire[num_work_wires],
-                num_zero_control_values=1 - i,
-            ): 1
-            for i, op_rep in enumerate(op_reps)
-        }
+        for i, op_rep in enumerate(op_reps):
+            counts[
+                _ctrl_abstract(
+                    op_rep,
+                    Wire[1],
+                    Wire[num_work_wires],
+                    num_zero_control_values=1 - i,
+                )
+            ] += 1
+        return dict(counts)
     if num_ops / 2 ** math.ceil_log2(num_ops) > 3 / 4:
         counts.update(
             {
