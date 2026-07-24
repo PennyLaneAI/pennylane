@@ -966,26 +966,6 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
-    def test_qutrit_eigvals(self):
-        """Test that the eigvals can be computed with qutrit observables."""
-
-        op1 = qp.GellMann(wires=0)
-        op2 = qp.GellMann(index=8, wires=1)
-
-        prod_op = qp.prod(op1, op2)
-        eigs = prod_op.eigvals()
-
-        mat_eigs = np.linalg.eigvals(prod_op.matrix())
-
-        sorted_eigs = np.sort(eigs)
-        sorted_mat_eigs = np.sort(mat_eigs)
-        assert qp.math.allclose(sorted_eigs, sorted_mat_eigs)
-
-        # pylint: disable=import-outside-top-level
-        from pennylane.ops.functions.assert_valid import _check_eigendecomposition
-
-        _check_eigendecomposition(prod_op)
-
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))

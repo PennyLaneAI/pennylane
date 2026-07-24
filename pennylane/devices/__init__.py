@@ -26,13 +26,10 @@ to verify and test quantum gradient computations.
     capabilities
     default_qubit
     default_mixed
-    default_qutrit
-    default_qutrit_mixed
     default_clifford
     default_tensor
     _legacy_device
     _qubit_device
-    _qutrit_device
     null_qubit
     reference_qubit
     tests
@@ -55,7 +52,6 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     default_tensor.DefaultTensor
     NullQubit
     ReferenceQubit
-    DefaultQutritMixed
     LegacyDeviceFacade
 
 Preprocessing Transforms
@@ -150,13 +146,6 @@ Qubit Mixed-State Simulation Tools
 .. currentmodule:: pennylane.devices.qubit_mixed
 .. automodule:: pennylane.devices.qubit_mixed
 
-
-Qutrit Mixed-State Simulation Tools
------------------------------------
-
-.. currentmodule:: pennylane.devices.qutrit_mixed
-.. automodule:: pennylane.devices.qutrit_mixed
-
 """
 
 from .tracker import Tracker
@@ -175,11 +164,8 @@ from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
 from .reference_qubit import ReferenceQubit
-from .default_qutrit import DefaultQutrit
-from .default_qutrit_mixed import DefaultQutritMixed
 from ._legacy_device import Device as LegacyDevice
 from ._qubit_device import QubitDevice
-from ._qutrit_device import QutritDevice
 
 
 # pylint: disable=undefined-variable

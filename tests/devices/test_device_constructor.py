@@ -31,12 +31,27 @@ class TestDeviceInit:
             qp.device("None", wires=0)
 
     def test_outdated_API(self, monkeypatch):
-        """Test that an exception is raised if plugin that targets an old API is loaded"""
+        """Test that an exception is raised if a plugin that targets an old API is loaded"""
+
+        class OutdatedDevice:  # pylint: disable=too-few-public-methods
+            """A fake plugin device requiring an unsatisfiable PennyLane version."""
+
+            pennylane_requires = "0.0.1"
+
+        class FakeEntryPoint:  # pylint: disable=too-few-public-methods
+            """A fake entry point whose ``load`` returns the outdated device."""
+
+            def load(self):
+                return OutdatedDevice
 
         with monkeypatch.context() as m:
-            m.setattr(qp.devices.device_constructor, "__version__", "0.0.1")
+            m.setattr(
+                qp.devices.device_constructor,
+                "plugin_devices",
+                {"outdated.device": FakeEntryPoint()},
+            )
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qp.device("default.qutrit", wires=0)
+                qp.device("outdated.device", wires=0)
 
     def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
         spied = mocker.spy(qp.devices, "__getattr__")

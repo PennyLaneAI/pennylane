@@ -13,7 +13,7 @@ on:
       - synchronize
       - ready_for_review
   workflow_call:
-  
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -79,7 +79,6 @@ jobs:
           --ignore=pennylane/workflow/interfaces/tensorflow.py
           --ignore=pennylane/devices/_legacy_device.py
           --ignore=pennylane/devices/_qubit_device.py
-          --ignore=pennylane/devices/_qutrit_device.py
           "
 
           TO_DO="
@@ -142,7 +141,7 @@ jobs:
 
           pytest doc ${IGNORE}
 
-        # NOTE: Only run if the file exists (invert result to ensure exit code 0). 
+        # NOTE: Only run if the file exists (invert result to ensure exit code 0).
         # This avoids CI breakage when RC wranches don't have the 'changelog-dev.md' file.
         # NOTE: Suppress pytest exit code 5 (No Tests Collected).
         # This avoids CI breakage when the changelog is reset after a RC
@@ -150,4 +149,4 @@ jobs:
       - name: Test `changelog-dev.md` file
         if: always()
         run: |
-          ! [ -f "doc/releases/changelog-dev.md" ] || pytest doc/releases/changelog-dev.md || [ $? -eq 5 ] 
+          ! [ -f "doc/releases/changelog-dev.md" ] || pytest doc/releases/changelog-dev.md || [ $? -eq 5 ]
