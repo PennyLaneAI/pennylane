@@ -1032,39 +1032,16 @@ def _is_single_qubit_special_unitary(op):
     return math.allclose(det, 1)
 
 
-def _decompose_pauli_x_based_no_control_values(op: Controlled):
-    """Decomposes a PauliX-based operation"""
-
-    if isinstance(op.base, qp.PauliX) and len(op.control_wires) == 1:
-        return [qp.CNOT(wires=op.wires)]
-
-    if isinstance(op.base, qp.PauliX) and len(op.control_wires) == 2:
-        return qp.Toffoli.compute_decomposition(wires=op.wires)
-
-    if isinstance(op.base, qp.CNOT) and len(op.control_wires) == 1:
-        return qp.Toffoli.compute_decomposition(wires=op.wires)
-
-    return qp.MultiControlledX.compute_decomposition(
-        wires=op.wires,
-        work_wires=op.work_wires,
-        work_wire_type=op.work_wire_type,
-    )
-
-
 # pylint: disable=too-many-return-statements
 def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     """Custom handling for decomposing a controlled operation"""
 
-    pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
     ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
 
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
         return custom_op_cls.compute_decomposition(*op.data, op.wires)
-    if isinstance(op.base, pauli_x_based_ctrl_ops):
-        # has some special case handling of its own for further decomposition
-        return _decompose_pauli_x_based_no_control_values(op)
 
     if isinstance(op.base, qp.GlobalPhase):
         # A singly-controlled global phase is the same as a phase shift on the control wire
@@ -1243,13 +1220,3 @@ def base_to_custom_ctrl_op():
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops
-
-
-@functools.lru_cache(maxsize=1)
-def _get_pauli_x_based_ops():
-    """Gets a list of pauli-x based operations
-
-    This is placed inside a function to avoid circular imports.
-
-    """
-    return qp.X, qp.CNOT, qp.Toffoli, qp.MultiControlledX

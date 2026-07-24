@@ -545,6 +545,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     def _bind_primitive(self):
         """Bind the operator primitive. ``ControlledOp2`` has to override the method of
         the base ``Operator2`` class so that we can "edit" the original primitive."""
+
         if not qp.capture.enabled():
             return
 

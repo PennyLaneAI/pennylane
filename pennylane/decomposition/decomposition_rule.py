@@ -263,9 +263,9 @@ def register_resources(
         For each operator class, the set of parameters that affects the type of gates and their
         number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
         For example, the number of gates in the decomposition for ``qp.MultiRZ`` changes based
-        on the number of wires it acts on, in contrast to the decomposition for ``qp.CNOT``:
+        on the number of wires it acts on, in contrast to the decomposition for ``qp.H``:
 
-        >>> qp.CNOT.resource_keys
+        >>> qp.H.resource_keys
         set()
         >>> qp.MultiRZ.resource_keys
         {'num_wires'}
@@ -356,6 +356,7 @@ def register_resources(
 
           import pennylane as qp
           from pennylane.allocation import allocate
+          from pennylane.typing import Wire
 
           qp.decomposition.enable_graph()
 

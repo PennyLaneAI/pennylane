@@ -861,26 +861,6 @@ class TestControlledDecompositions:
             qp.ControlledPhaseShift(-0.5, wires=[1, 2]),
         ]
 
-    def test_custom_controlled_op(self):
-        """Tests that a general controlled op can be decomposed into a custom op if applicable."""
-
-        op1 = qp.ops.Controlled(qp.X(0), control_wires=[1])
-        op2 = qp.ops.Controlled(qp.H(0), control_wires=[1])
-        graph = DecompositionGraph(
-            operations=[op1, op2],
-            gate_set={"CNOT", "CH"},
-        )
-        assert len(graph._graph.nodes()) == 34
-        assert len(graph._graph.edges()) == 51
-
-        # Verify the decompositions
-        solution = graph.solve()
-        with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-
-        assert q.queue == [qp.CNOT(wires=[1, 0]), qp.CH(wires=[1, 0])]
-
     def test_controlled_base_decomposition(self):
         """Tests applying control on the decomposition of the target operator."""
 
@@ -1097,13 +1077,13 @@ class TestSymbolicDecompositions:
         assert q.queue == []
         assert solution.resource_estimate(op2) == to_resources({})
 
-    @pytest.mark.parametrize("z,expected", [(0, []), (1, [qp.X(0)])])
+    @pytest.mark.parametrize("z,expected", [(0, []), (1, [qp.H(0)])])
     def test_trivial_powers(self, z, expected):
         """Tests trivial powers of 1 or 0."""
 
-        op = qp.pow(qp.X(0), z)
+        op = qp.pow(qp.H(0), z)
 
-        graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"Hadamard"})
         solution = graph.solve()
 
         rule_params = op.hyperparameters

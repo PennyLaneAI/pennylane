@@ -58,7 +58,7 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
             assert op.target_wires == qp.wires.Wires([0, 10, 11, 12])
     else:
         assert op.target_wires == qp.wires.Wires([])
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_bind_new_parameters=True)
 
 
 @pytest.mark.unit

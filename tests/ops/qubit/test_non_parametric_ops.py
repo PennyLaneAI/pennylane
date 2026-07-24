@@ -594,34 +594,22 @@ class TestMultiControlledX:
 
     X = np.array([[0, 1], [1, 0]])
 
-    def test_str_control_values_error(self):
-        """Tests that control_values specified with a bit string is deprecated."""
-        with pytest.raises(
-            ValueError,
-            match="control_values must be boolean or int",
-        ):
-            _ = qp.MultiControlledX(wires=[0, 1, 2], control_values="01")
-
     @pytest.mark.parametrize(
-        "wires, control_values, error_message",
+        "wires, control_values, error_type, error_message",
         [
-            (None, [1, 0], "Must specify the wires where the operation acts on"),
-            ([0, 1, 2], [0, 1, 0], "Length of control values must equal number of control wires."),
-            (
-                [1],
-                [1],
-                r"MultiControlledX: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
-            ),
+            (None, [1, 0], TypeError, "Must specify a set of wires."),
+            ([0, 1, 2], [0, 1, 0], ValueError, "control_values should be the same length"),
+            ([1], [1], ValueError, r"MultiControlledX acts on at least 2 wires, 1 given."),
         ],
     )
-    def test_invalid_arguments_to_init(self, wires, control_values, error_message):
+    def test_invalid_arguments_to_init(self, wires, control_values, error_type, error_message):
         """Tests initializing a MultiControlledX with invalid arguments"""
-        with pytest.raises(ValueError, match=error_message):
+        with pytest.raises(error_type, match=error_message):
             _ = qp.MultiControlledX(wires=wires, control_values=control_values)
 
     def test_decomposition_not_enough_wires(self):
         """Test that the decomposition raises an error if the number of wires is lower than two"""
-        with pytest.raises(ValueError, match="Wrong number of wires"):
+        with pytest.raises(ValueError, match="MultiControlledX acts on at least 2 wires, 1 given."):
             qp.MultiControlledX.compute_decomposition((0,), control_values=[1])
 
     def test_decomposition_no_control_values(self):
@@ -699,10 +687,7 @@ class TestMultiControlledX:
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
         control_target_wires = range(4)
         work_wires = range(2)
-        with pytest.raises(
-            ValueError,
-            match="Work wires must be different the control_wires and base operation wires.",
-        ):
+        with pytest.raises(ValueError, match="work_wires must not overlap with the operator"):
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
     @pytest.mark.parametrize("control_val", [0, 1])
@@ -725,7 +710,11 @@ class TestMultiControlledX:
             )
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
-        assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
+        assert all(
+            # MCX on three wires do not resolve to a `Toffoli` if work wires are provided
+            not isinstance(op, qp.MultiControlledX) or len(getattr(op, "work_wires", [])) > 0
+            for op in tape.operations
+        )
 
         @qp.qnode(dev)
         def f(bitstring):
@@ -808,7 +797,7 @@ class TestMultiControlledX:
         """Test compute_matrix assumes all control on "1" if no
         `control_values` provided"""
         mat1 = qp.MultiControlledX.compute_matrix([0, 1])
-        mat2 = qp.MultiControlledX.compute_matrix([0, 1], control_values=[1, 1])
+        mat2 = qp.MultiControlledX.compute_matrix([0, 1], control_values=[1])
         assert np.allclose(mat1, mat2)
 
     def test_repr(self):

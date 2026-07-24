@@ -26,16 +26,15 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qp
-from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
-    register_condition,
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
@@ -58,18 +57,15 @@ from .controlled import (
     custom_ctrl_dispatch,
 )
 from .decompositions.controlled_decompositions import (
+    augment_with_allocation,
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
-    decompose_mcx_many_borrowed_workers,
-    decompose_mcx_many_workers_explicit,
-    decompose_mcx_many_zeroed_workers,
-    decompose_mcx_one_borrowed_worker,
-    decompose_mcx_one_worker_explicit,
-    decompose_mcx_one_zeroed_worker,
-    decompose_mcx_two_borrowed_workers,
-    decompose_mcx_two_workers_explicit,
-    decompose_mcx_two_zeroed_workers,
+    decompose_mcx_many_workers,
+    decompose_mcx_one_worker,
+    decompose_mcx_two_controls_elbows,
+    decompose_mcx_two_workers,
     decompose_mcx_with_no_worker,
+    mcx_to_cnot_or_toffoli,
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
@@ -1551,10 +1547,8 @@ class MultiControlledX(Controlled2):
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         wires = Wires(wires)
-
         if len(wires) < 2:
             raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
-
         super().__init__(
             base=qp.X(wires[-1]),
             control_wires=wires[:-1],
@@ -1616,6 +1610,35 @@ class MultiControlledX(Controlled2):
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
         return block_diag(np.eye(padding_left), qp.X.compute_matrix(), np.eye(padding_right))
 
+    @staticmethod
+    @override
+    # pylint: disable=unused-argument
+    def compute_decomposition(
+        wires: WiresLike,
+        control_values: int | bool | Sequence[int | bool] | None = None,
+        work_wires: WiresLike | None = None,
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
+        """Chooses the best decomposition rule for MCX."""
+
+        arguments = _setup_inputs_mcx(wires, control_values, work_wires, work_wire_type)
+
+        if len(arguments["wires"]) <= 3:
+            return _to_op_list(mcx_to_cnot_or_toffoli)(**arguments)
+
+        n_ctrl_wires = len(arguments["wires"]) - 1
+
+        if len(arguments["work_wires"]) >= n_ctrl_wires - 2:
+            return _to_op_list(decompose_mcx_many_workers)(**arguments)
+
+        if len(arguments["work_wires"]) >= 2:
+            return _to_op_list(decompose_mcx_two_workers)(**arguments)
+
+        if len(arguments["work_wires"]) == 1:
+            return _to_op_list(decompose_mcx_one_worker)(**arguments)
+
+        return _to_op_list(decompose_mcx_with_no_worker)(**arguments)
+
 
 def _setup_inputs_mcx(
     wires: WiresLike,
@@ -1654,71 +1677,64 @@ def _setup_inputs_mcx(
     }
 
 
-def _mcx_to_cnot_or_toffoli_resource(wires, **_):
-    # The PauliX may be required to flip any non-zero controlled bits
-    # Each non-zero control value requires 2 PauliX gates to flip, but we count
-    # only one for each control wire as an average case estimate.
-    if len(wires) - 1 == 1:
-        return {qp.CNOT: 1, qp.X: 1}
-    return {qp.Toffoli: 1, qp.X: 2}
+def _to_op_list(rule):
+
+    def _inner(*args, **kwargs):
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*args, **kwargs)
+        if qp.queuing.QueuingManager.recording():
+            for op in q.queue:
+                qp.apply(op)
+        return q.queue
+
+    return _inner
 
 
-@register_condition(lambda wires, **_: len(wires) <= 3)
-@register_resources(_mcx_to_cnot_or_toffoli_resource, exact=False)
-def _mcx_to_cnot_or_toffoli(wires, control_values, **_):
-
-    # Case 1: Decompose to single CNOT
-    if len(wires) == 2:
-        qp.CNOT(wires=wires)
-        qp.cond(control_values[0], qp.X)(wires[1])
-        return
-
-    @qp.for_loop(0, len(wires) - 1)
-    def _x_flips(i):
-        qp.cond(math.logical_not(control_values[i]), qp.X)(wires[i])
-
-    _x_flips()  # pylint: disable=no-value-for-parameter
-    qp.Toffoli(wires=wires)
-    _x_flips()  # pylint: disable=no-value-for-parameter
+@list_decomps.register
+def _list_mcx_decomps(op: MultiControlledX):
+    if not op.work_wires:
+        return DecompCollection(_list_mcx_no_work_wire_decomps(op))
+    if len(op.wires) == 2:
+        return [mcx_to_cnot_or_toffoli]
+    if len(op.wires) == 3:
+        return [mcx_to_cnot_or_toffoli, decompose_mcx_two_controls_elbows]
+    return [
+        decompose_mcx_many_workers,
+        decompose_mcx_two_workers,
+        decompose_mcx_one_worker,
+        decompose_mcx_with_no_worker,
+    ]
 
 
-def _2cx_elbow_explicit_resources(**_):
-    return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(qp.Elbow): 1}
+def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
+    if len(op.wires) == 2:
+        return [mcx_to_cnot_or_toffoli]
+    if len(op.wires) == 3:
+        elbow_rule = augment_with_allocation(decompose_mcx_two_controls_elbows, 1, "zeroed")
+        return [mcx_to_cnot_or_toffoli, elbow_rule]
+    return [
+        augment_with_allocation(
+            decompose_mcx_many_workers,
+            len(op.control_wires) - 2,
+            "zeroed",
+            "many_zeroed_workers",
+        ),
+        augment_with_allocation(
+            decompose_mcx_many_workers,
+            len(op.control_wires) - 2,
+            "borrowed",
+            "many_borrowed_workers",
+        ),
+        augment_with_allocation(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+        augment_with_allocation(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+        augment_with_allocation(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+        augment_with_allocation(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+        decompose_mcx_with_no_worker,
+    ]
 
 
-def _2cx_elbow_explicit_condition(wires, work_wires, work_wire_type, **_):
-    num_control_wires = len(wires) - 1
-    return len(work_wires) >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
-
-
-@register_condition(_2cx_elbow_explicit_condition)
-@register_resources(_2cx_elbow_explicit_resources)
-def _2cx_elbow_explicit(wires, control_values, work_wires, **_):
-    elbow_wires = [wires[0], wires[1], work_wires[0]]
-    qp.Elbow(elbow_wires, control_values)
-    qp.CNOT([work_wires[0], wires[2]])
-    qp.adjoint(qp.Elbow)(elbow_wires, control_values)
-
-
-decompose_mcx_two_controls_elbows = flip_zero_control(_2cx_elbow_explicit)
-
-add_decomps(
-    MultiControlledX,
-    _mcx_to_cnot_or_toffoli,
-    decompose_mcx_many_workers_explicit,
-    decompose_mcx_many_borrowed_workers,
-    decompose_mcx_many_zeroed_workers,
-    decompose_mcx_two_workers_explicit,
-    decompose_mcx_two_borrowed_workers,
-    decompose_mcx_two_zeroed_workers,
-    decompose_mcx_one_worker_explicit,
-    decompose_mcx_one_borrowed_worker,
-    decompose_mcx_one_zeroed_worker,
-    decompose_mcx_with_no_worker,
-    decompose_mcx_two_controls_elbows,
-)
-add_decomps("Adjoint(MultiControlledX)", self_adjoint_legacy)
-add_decomps("Pow(MultiControlledX)", pow_involutory)
+add_decomps("Adjoint(MultiControlledX)", self_adjoint)
+add_decomps("Pow(MultiControlledX)", pow_involutory2)
 
 
 class CRX(ControlledOp):

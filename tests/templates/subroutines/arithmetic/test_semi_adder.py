@@ -161,10 +161,7 @@ class TestSemiAdder:
         """Tests that SemiAdder is decomposed properly."""
 
         for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(
-                qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
-                rule,
-            )
+            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
