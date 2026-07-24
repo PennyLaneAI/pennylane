@@ -83,7 +83,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
             qp.CRZ(phi, [0, 1])
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].gate_types
+        specs = qp.specs(circuit)()["resources"].quantum_operations
 
     The resulting circuit corresponds to the phase gradient decomposition
     of ``CRZ``, containing four fanouts corresponding to the binary representation

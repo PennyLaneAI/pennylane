@@ -265,7 +265,7 @@ class LegacyDeviceFacade(Device):
 
     @_debugger.setter
     def _debugger(self, new_debugger):
-        self._device._debugger = new_debugger
+        self._device._debugger = new_debugger  # pragma: no cover
 
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None

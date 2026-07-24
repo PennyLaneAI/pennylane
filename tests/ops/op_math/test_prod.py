@@ -1745,7 +1745,7 @@ class TestDecomposition:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
         [(3, 1), (3, 2), (4, 1), (5, 3)],

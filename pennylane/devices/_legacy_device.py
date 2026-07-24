@@ -334,8 +334,8 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         try:
             mapped_wires = wires.map(self.wire_map)
-        except WireError as e:
-            raise WireError(
+        except WireError as e:  # pragma: no cover
+            raise WireError(  # pragma: no cover
                 f"Did not find some of the wires {wires} on device with wires {self.wires}."
             ) from e
 
@@ -396,7 +396,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         results = []
         if self._shot_vector is not None:
             # The following warning assumes that QubitDevice.execute is stand-alone
-            warnings.warn(
+            warnings.warn(  # pragma: no cover
                 "Specifying a list of shots is only supported for "
                 "QubitDevice based devices. Falling back to executions using all shots in the shot list."
             )
@@ -427,7 +427,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                     results.append(list(self.probability(wires=obs.wires).values()))
 
                 elif isinstance(mp, StateMP):
-                    raise QuantumFunctionError("Returning the state is not supported")
+                    raise QuantumFunctionError(
+                        "Returning the state is not supported"
+                    )  # pragma: no cover
 
                 else:
                     raise QuantumFunctionError(
