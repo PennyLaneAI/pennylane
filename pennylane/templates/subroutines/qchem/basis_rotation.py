@@ -322,10 +322,6 @@ class BasisRotation(Operator2):
     def num_params(self):
         return 1
 
-    @property
-    def ndim_params(self):
-        return (2,)
-
     @staticmethod
     def compute_decomposition(
         unitary_matrix, wires, check=False
