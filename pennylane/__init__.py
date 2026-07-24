@@ -201,6 +201,17 @@ from pennylane.noise import NoiseModel
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
+# Imported after ``pennylane.devices`` because ``HeterogeneousDevice`` subclasses ``devices.Device``.
+from pennylane.backline import (
+    Backline,
+    Controller,
+    Coprocessor,
+    CoprocessorFunction,
+    Executor,
+    backline,
+    css_decoder,
+)
+
 from pennylane import spin
 
 from pennylane import liealg
