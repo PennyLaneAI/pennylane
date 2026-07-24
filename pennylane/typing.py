@@ -164,6 +164,7 @@ class AbstractArray:
 
     shape: tuple[int, ...] | EllipsisType
     dtype: np.dtype
+    _type_name: str | None = None
     shape_fixed: bool = field(init=False)
     _weak_type: bool = field(init=False)
 
@@ -333,6 +334,9 @@ class AbstractArray:
         args = f"{shape_repr}, {self.dtype.name}"
         if self._weak_type:
             args += ", weak_type=True"
+        if self._type_name:
+            shape = str(shape_repr).replace("(", "").replace(")", "")
+            return f"{self._type_name}" + (f"[{shape}]" if shape else "")
         return f"AbstractArray({args})"
 
     __str__ = __repr__
@@ -367,8 +371,9 @@ class _AbstractTypeFactory(AbstractArray):
     using an override of the __getitem__ method.
     """
 
-    def __init__(self, dtype):
-        super().__init__((), dtype)
+    def __init__(self, name, dtype):
+        self.name = name
+        super().__init__((), dtype, _type_name=self.name)
 
     def __getitem__(self, shape):
         """
@@ -394,10 +399,11 @@ class _AbstractTypeFactory(AbstractArray):
 
         res = AbstractArray(shape, self.dtype)
         object.__setattr__(res, "_weak_type", self._weak_type)
+        object.__setattr__(res, "_type_name", self.name)
         return res
 
 
-Int = _AbstractTypeFactory(int)
+Int = _AbstractTypeFactory("Int", int)
 """An :class:`~.AbstractArray` of ``dtype=int``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -411,7 +417,7 @@ AbstractArray((-1, 10), int64, weak_type=True)
 """
 
 
-Float = _AbstractTypeFactory(float)
+Float = _AbstractTypeFactory("Float", float)
 """An :class:`~.AbstractArray` of ``dtype=float``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -424,7 +430,7 @@ AbstractArray((-1, 10), float64, weak_type=True)
 
 """
 
-Bool = _AbstractTypeFactory(bool)
+Bool = _AbstractTypeFactory("Bool", bool)
 """An :class:`~.AbstractArray` of ``dtype=bool``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -438,7 +444,7 @@ AbstractArray((-1, 10), bool, weak_type=True)
 """
 
 
-Complex = _AbstractTypeFactory(complex)
+Complex = _AbstractTypeFactory("Complex", complex)
 """An :class:`~.AbstractArray` of ``dtype=complex``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
