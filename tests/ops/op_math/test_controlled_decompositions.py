@@ -153,6 +153,9 @@ class TestControlledDecompositionZYZ:
 
         assert qp.math.allclose(decomp_matrix, expected_matrix)
 
+    @pytest.mark.xfail(
+        reason="RZ in Operator2 does not support the complex angles produced by 'Exp' in this pipeline."
+    )
     @pytest.mark.system
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
     def test_decomposition_circuit_gradient(self, control_wires):

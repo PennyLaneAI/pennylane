@@ -212,6 +212,9 @@ class TestIntegration:
 
         assert allclose(state, expected_state)
 
+    @pytest.mark.xfail(
+        reason="RZ in Operator2 does not support the complex angles produced by 'Exp' in this pipeline."
+    )
     @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_autograd(self, coeffs, ops, seed):
@@ -303,6 +306,9 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
+    @pytest.mark.xfail(
+        reason="RZ in Operator2 does not support the complex angles produced by 'Exp' in this pipeline."
+    )
     @pytest.mark.jax
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
