@@ -20,6 +20,7 @@ import copy
 import itertools
 import pickle
 from collections import defaultdict
+from functools import partial
 from string import ascii_lowercase
 
 import numpy as np
@@ -225,10 +226,28 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    with qp.queuing.AnnotatedQueue() as q:
-        rule(*args, **kwargs)
+    if qp.capture.enabled():
+        import jax  # pylint: disable=import-outside-toplevel
 
-    tape = qp.tape.QuantumScript.from_queue(q)
+        if isinstance(op, Operator1):
+            decomposition = partial(rule, **op.hyperparameters)
+            capture_args = op.data
+            capture_kwargs = {"wires": op.wires}
+        else:
+            decomposition = partial(rule, **op.static_args, **op.compilable_args, **op.hybrid_args)
+            capture_args = ()
+            capture_kwargs = {**op.dynamic_args, **op.wire_args}
+
+        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
+            *capture_args, **capture_kwargs
+        )
+        flat_capture_args = jax.tree_util.tree_leaves((capture_args, capture_kwargs))
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+    else:
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*args, **kwargs)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:

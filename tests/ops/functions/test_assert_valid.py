@@ -30,6 +30,7 @@ from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import OneWireDynOp
 
 
 class TestDecompositionErrors:
@@ -211,6 +212,37 @@ class TestDecompositionErrors:
         op = MyOp([0, 1])
         with pytest.raises(AssertionError, match="Gate counts expected from"):
             _test_decomposition_rule(op, rule_wrong_ops)
+
+    @pytest.mark.capture
+    def test_new_decomposition_rule_capture(self):
+        """A captured decomposition is converted to a tape before validating its resources."""
+
+        class MyOp(Operator):
+            num_wires = 3
+
+        @qp.register_resources({qp.S: 3})
+        def rule(wires):  # pylint: disable=unused-argument
+            @qp.for_loop(3)
+            def loop(i):
+                qp.S(i)
+
+            loop()  # pylint: disable=no-value-for-parameter
+
+        _test_decomposition_rule(MyOp([0, 1, 2]), rule)
+
+    @pytest.mark.capture
+    def test_new_decomposition_rule_capture_operator2(self):
+        """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
+
+        @qp.register_resources({OneWireDynOp: 3})
+        def rule(phi, wires):  # pylint: disable=unused-argument
+            @qp.for_loop(3)
+            def loop(i):
+                OneWireDynOp(phi, wires=i)
+
+            loop()  # pylint: disable=no-value-for-parameter
+
+        _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
 
 
 class TestBadMatrix:
