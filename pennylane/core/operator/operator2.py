@@ -1178,7 +1178,7 @@ class Operator2(metaclass=OperatorMeta):
         >>> op._flatten()
         (([1.5], [Wires([0, 1])], []), ('XY',))
         >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.5, XY, wires=[0, 1])
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -1212,7 +1212,7 @@ class Operator2(metaclass=OperatorMeta):
         >>> op._flatten()
         (([1.5], [Wires([0, 1])], []), ('XY',))
         >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.5, XY, wires=[0, 1])
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         args = {}
 
