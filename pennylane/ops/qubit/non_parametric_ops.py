@@ -375,7 +375,7 @@ class PauliX(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
-        if isinstance(self.wires, AbstractWires):
+        if isinstance(self.wires, Wire):
             return "PauliX"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
@@ -500,7 +500,7 @@ Args:
 """
 
 
-def _paulix_to_rx_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _paulix_to_rx_resources(wires: Wire):  # pylint: disable=unused-argument
     return {qp.GlobalPhase: 1, qp.RX: 1}
 
 
@@ -632,7 +632,7 @@ class PauliY(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
-        if isinstance(self.wires, AbstractWires):
+        if isinstance(self.wires, Wire):
             return "PauliY"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
@@ -761,7 +761,7 @@ Args:
 """
 
 
-def _pauliy_to_ry_gp_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _pauliy_to_ry_gp_resources(wires: Wire):  # pylint: disable=unused-argument
     return {qp.GlobalPhase: 1, qp.RY: 1}
 
 
@@ -874,7 +874,7 @@ class PauliZ(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
-        if isinstance(self.wires, AbstractWires):
+        if isinstance(self.wires, Wire):
             return "PauliZ"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
@@ -1017,7 +1017,7 @@ Args:
 
 
 # pylint: disable=unused-argument
-def _pauliz_to_ps_resources(wires: AbstractWires):
+def _pauliz_to_ps_resources(wires: Wire):
     return {qp.PhaseShift: 1}
 
 
