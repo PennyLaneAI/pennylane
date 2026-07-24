@@ -312,9 +312,6 @@ class PauliRot(Operator2):
 
     grad_method = "A"
     grad_recipe = (None,)
-    parameter_frequencies = [(1,)]
-
-    resource_keys = {"pauli_word"}
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -351,9 +348,6 @@ class PauliRot(Operator2):
                 f"The Pauli word {pauli_word} has length {len(pauli_word)}, and "
                 f"{num_wires} wires were given {wires}."
             )
-
-    def __repr__(self) -> str:
-        return f"PauliRot({self.arguments["theta"]}, {self.arguments["pauli_word"]}, wires={self.wires})"
 
     def label(
         self,
@@ -392,11 +386,6 @@ class PauliRot(Operator2):
             op_label += param_string
 
         return op_label
-
-    @property
-    def resource_params(self) -> dict:
-        """Resource parameters for graph-based decompositions."""
-        return {"pauli_word": self.arguments["pauli_word"]}
 
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:

@@ -713,14 +713,6 @@ class TmpPauliRot(PauliRot):
     # Deactivate the matrix property of qp.PauliRot in order to force decomposition
     has_matrix = False
 
-    resource_keys = {
-        "pauli_word",
-    }
-
-    @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
-
     @staticmethod
     def compute_decomposition(
         theta: TensorLike,
@@ -752,11 +744,6 @@ class TmpPauliRot(PauliRot):
         if qp.math.isclose(theta, theta * 0) and not qp.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
-
-    def __repr__(self) -> str:
-        return (
-            f"TmpPauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires})"
-        )
 
 
 def _tmp_paulirot_decomp_resources(pauli_word: str, **__):
