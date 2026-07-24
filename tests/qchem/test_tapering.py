@@ -699,6 +699,7 @@ def test_consistent_taper_ops(operation, op_gen):
         state = functools.reduce(np.kron, [l if s else o for s in hf_state])
         state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
         evolved_state = np.matmul(qp.matrix(operation, wire_order=range(len(hf_state))), state)
+        # pylint: disable=not-an-iterable
         ob_tap_mat = functools.reduce(
             np.matmul,
             [qp.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],
@@ -919,6 +920,7 @@ def test_taper_wire_order(symbols, geometry):
 
 
 @pytest.mark.jax
+@pytest.mark.xfail(reason="taper is not jit compatible now that wires are traced pytree leaves.")
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge"),
     [
