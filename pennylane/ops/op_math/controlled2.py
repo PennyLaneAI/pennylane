@@ -160,7 +160,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if len(control_values) != len(control_wires):
             raise ValueError("control_values should be the same length as control_wires")
 
-        control_values = [bool(v) for v in control_values]
+        if isinstance(control_values, (list, tuple)):
+            control_values = qp.math.asarray([bool(v) for v in control_values])
 
         self._base = base
         self._control_wires = control_wires
@@ -198,12 +199,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             control_wires = abstractify(Wires(control_wires))
 
         # abstractify control values
-        if control_values is None:
+        if not isinstance(control_values, AbstractArray):
             control_values = Bool[len(control_wires)]
-        elif isinstance(control_values, (int, bool)):
-            control_values = Bool[1]
-        elif isinstance(control_values, (list, tuple, Wires)):
-            control_values = Bool[len(control_values)]
 
         # abstractify the base
         base = abstractify(base)
@@ -437,10 +434,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             if isinstance(simplified_base, qp.Identity):
                 return simplified_base
 
+            ctrl_values = qp.math.concatenate([self.control_values, self.base.control_values])
             return qp.ctrl(
                 simplified_base,
                 control=self.control_wires + self.base.control_wires,
-                control_values=self.control_values + self.base.control_values,
+                control_values=qp.math.array(ctrl_values, dtype="bool"),
                 work_wires=self.work_wires + self.base.work_wires,
                 work_wire_type=resolve_work_wire_type(
                     self.base.work_wires,
@@ -533,8 +531,10 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
             params.append(f"work_wires={self.work_wires}")
-        if self.control_values and not all(self.control_values):
+        if isinstance(self.control_values, AbstractArray):
             params.append(f"control_values={self.control_values}")
+        elif not all(self.control_values):
+            params.append(f"control_values={self.control_values.tolist()}")
         return f"Controlled({self.base}, {', '.join(params)})"
 
     @property

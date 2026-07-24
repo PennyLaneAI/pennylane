@@ -33,7 +33,7 @@ from pennylane.templates.core import (
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
 )
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Wire
 
 
 class TestInitialization:
@@ -218,13 +218,7 @@ def test_fallback_creating_resources_AbstractArray():
     expected = defaultdict(int)
     expected[qp.resource_rep(qp.PauliRot, pauli_word="Z")] = 3
 
-    r = qp.resource_rep(
-        qp.MultiControlledX,
-        num_control_wires=2,
-        num_zero_control_values=0,
-        num_work_wires=0,
-        work_wire_type="borrowed",
-    )
+    r = qp.MultiControlledX(Wire[3], work_wires=Wire[0])
     expected[r] = 1
     assert resources == expected
 
@@ -782,9 +776,8 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "CNOT"
-        assert rr.params["compute_op"].op_type == CNOT
+        assert isinstance(rr.params["compute_op"], CNOT)
+        assert rr.params["compute_op"].is_abstract
 
         assert isinstance(rr.params["target_op"], PauliX)
         assert rr.params["target_op"].is_abstract

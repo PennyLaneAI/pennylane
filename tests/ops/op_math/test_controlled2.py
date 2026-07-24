@@ -382,7 +382,7 @@ class TestControlledOp2:
         assert op.base == base
         assert op.wires == Wires([1, 2, 0])
         assert op.control_wires == Wires([1, 2])
-        assert op.control_values == [False, True]
+        assert op.control_values.tolist() == [False, True]
         assert op.target_wires == Wires([0])
         assert op.work_wires == Wires([3])
         assert op.work_wire_type == "zeroed"
@@ -431,7 +431,7 @@ class TestControlledOp2:
 
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1, 2])
-        assert op.control_values == [True, True]
+        assert op.control_values.tolist() == [True, True]
         assert op.work_wires == Wires([])
 
     def test_single_control_value(self):

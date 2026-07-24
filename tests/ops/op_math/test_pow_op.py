@@ -935,14 +935,6 @@ class TestOperationProperties:
         ):
             assert base.basis == op.basis
 
-    def test_control_wires(self, power_method):
-        """Test that the control wires of a Pow operator are the same as the control wires of the base op."""
-
-        base = qp.Toffoli(wires=(0, 1, 2))
-        op: Pow = power_method(base, 3.5)
-
-        assert base.control_wires == op.control_wires
-
 
 class TestIntegration:
     """Test the execution of power gates in a QNode."""

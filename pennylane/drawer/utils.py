@@ -241,7 +241,7 @@ def unwrap_controls(op):
         return control_wires, control_values, op
 
     control_wires = op.control_wires
-    control_values = op.control_values
+    control_values = list(op.control_values)
     base = op.base
 
     base_ctrl_wires, base_ctrl_values, base_base = unwrap_controls(base)

@@ -44,7 +44,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -248,11 +248,9 @@ def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_typ
     return {
         qp.H: 2,
         qp.RZ: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -476,11 +474,9 @@ def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_typ
         return {qp.CRY: 1}
     return {
         qp.RY: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -753,11 +749,9 @@ def _controlled_rz_resource(*_, num_control_wires, num_work_wires, work_wire_typ
         return {qp.CRZ: 1}
     return {
         qp.RZ: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -1226,11 +1220,9 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_ty
     return {
         qp.RZ: 3,
         qp.RY: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }

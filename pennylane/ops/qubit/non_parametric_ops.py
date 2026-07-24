@@ -1058,11 +1058,9 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, work_wire_typ
         return {qp.CCZ: 1}
     return {
         qp.H: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 1,
     }
@@ -1677,11 +1675,9 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, work_wire_
         return {qp.CSWAP: 1}
     return {
         qp.CNOT: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires + 1,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 2],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 1,
     }
