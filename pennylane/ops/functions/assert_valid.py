@@ -234,9 +234,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             capture_args = op.data
             capture_kwargs = {"wires": op.wires}
         else:
-            decomposition = partial(rule, **op.static_args, **op.compilable_args, **op.hybrid_args)
+            decomposition = partial(rule, **op.static_args, **op.compilable_args)
             capture_args = ()
-            capture_kwargs = {**op.dynamic_args, **op.wire_args}
+            capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
 
         plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
             *capture_args, **capture_kwargs
