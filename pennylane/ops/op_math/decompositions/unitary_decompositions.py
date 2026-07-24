@@ -1119,11 +1119,19 @@ def _cossin_decomposition(U, p):
 
         def cossin_decomposition(U, p):
             dtype = U.dtype
+            real_dtype = np.finfo(dtype).dtype
             U_flat = U.reshape(-1)
 
             def callback(U_flat):
-                return tuple(
-                    arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p)
+                u1, u2, theta, v1_dagg, v2_dagg = scipy_cossin_callback(np.asarray(U_flat), p)
+                return (
+                    u1.astype(dtype),
+                    u2.astype(dtype),
+                    # NOTE: According to https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cossin.html
+                    # theta is an array of real angles in radians.
+                    theta.astype(real_dtype),
+                    v1_dagg.astype(dtype),
+                    v2_dagg.astype(dtype),
                 )
 
             u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
@@ -1131,7 +1139,7 @@ def _cossin_decomposition(U, p):
                 result_shape_dtypes=(
                     jax.ShapeDtypeStruct((p, p), dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p,), dtype),
+                    jax.ShapeDtypeStruct((p,), real_dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
                 ),
