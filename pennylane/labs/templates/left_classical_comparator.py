@@ -131,9 +131,9 @@ class LeftClassicalComparator(Operation):
                 f"x_wires and target_wire must be disjoint, but share: {list(overlap)}. "
                 f"(x_wires={list(x_wires)}, target_wire={list(target_wire)})"
             )
-        if not math.is_abstract(L) and L >= 2 ** len(x_wires):
+        if not math.is_abstract(L) and not 0 <= L < 2 ** len(x_wires):
             raise ValueError(
-                f"L must be less than 2**len(x_wires). Got {L=} and {2**len(x_wires)=}"
+                f"L must be less than 2**len(x_wires) and non-negative. Got {L=} and {2**len(x_wires)=}"
             )
         self.hyperparameters["target_wire"] = target_wire
         self.hyperparameters["x_wires"] = x_wires
@@ -247,9 +247,10 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
     if comparator in ["<=", ">"]:
         L += 1
 
+    n = num_x_wires
     resources = {
-        Elbow: num_x_wires - 1,
-        CNOT: 0,
+        Elbow: n - 1,
+        CNOT: n - 1,
         X: 0,
     }
 
@@ -258,8 +259,19 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
         resources[X] += 2
         resources[CNOT] += 1
 
-    resources[CNOT] += num_x_wires - 1
-    resources[X] += 4 * (L.bit_count() - L & 1)
+    # X gates from the conditional negations inside the loop: 4 per set bit in
+    # positions ``1 .. n-1`` of ``L`` (each such iteration flips ``x[i]`` and
+    # ``w[i-1]`` before and after the Elbow).
+    mid_bits = (L & (2**n - 1)).bit_count() - bit_0
+    resources[X] += 4 * mid_bits
+
+    # Degenerate bound: the effective ``L`` equals ``2 ** n`` (only reachable for
+    # ``"<="`` / ``">"`` with the original ``L == 2 ** n - 1``). The low ``n``
+    # bits of ``L`` are all zero, so the core comparison computes the constant 0
+    # (``x < 0``); bit ``n`` of ``L`` is set exactly in this case and a single
+    # conditional ``X`` sets the correct "always true" result on the target wire.
+    if _get_specific_bit(L, n):
+        resources[X] += 1
 
     if comparator in [">", ">="]:
         resources[X] += 1
@@ -299,6 +311,14 @@ def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, 
         cond(bit, X)(wires=[x_wires[i]])
 
     _loop()  # pylint: disable=no-value-for-parameter
+
+    # Degenerate bound: when the effective ``L`` equals ``2 ** len(x_wires)`` its
+    # low ``n`` bits are all zero, so the bitwise core above computes the constant
+    # ``x < 0`` (always False) rather than the intended "always True". Bit ``n`` of
+    # ``L`` is set exactly in this case, so a single conditional ``X`` fixes the
+    # target wire.
+    bit_n = _get_specific_bit(L, len(x_wires))
+    cond(bit_n, X)(wires=[used_work_wires[len(x_wires) - 1]])
 
     cond(comparator.startswith(">"), _negate_output)()
 
