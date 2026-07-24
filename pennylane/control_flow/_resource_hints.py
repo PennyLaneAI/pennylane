@@ -22,10 +22,6 @@ ESTIMATED_PROBABILITIES_ATTR = "catalyst.estimated_probabilities"
 
 def validate_estimated_iterations(value: int) -> int:
     """Validate a loop trip-count hint for ``scf.for`` / ``scf.while``."""
-    if not isinstance(value, int):
-        raise TypeError(
-            f"'estimated_iterations' must be a non-negative integer, but got {type(value).__name__}."
-        )
     if value < 0:
         raise ValueError(f"'estimated_iterations' must be non-negative, but got {value}.")
     return value
