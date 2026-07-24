@@ -293,6 +293,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
+  register, `x_wires`, is smaller than the size of the second addend register, `y_wires`.
+  [(#9807)](https://github.com/PennyLaneAI/pennylane/pull/9807)
+
 * Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
