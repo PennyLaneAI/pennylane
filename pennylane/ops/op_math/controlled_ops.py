@@ -1587,10 +1587,11 @@ class MultiControlledX(Controlled2):
 
     def __repr__(self):
         params = [f"wires={self.wires}"]
-        if isinstance(self.control_values, AbstractArray):
-            params.append(f"control_values={self.control_values}")
-        elif not all(self.control_values):
-            params.append(f"control_values={self.control_values.tolist()}")
+        ctrl_values = self.control_values
+        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+            params.append(f"control_values={ctrl_values}")
+        elif not all(ctrl_values):
+            params.append(f"control_values={ctrl_values.tolist()}")
         return f"MultiControlledX({", ".join(params)})"
 
     @override
