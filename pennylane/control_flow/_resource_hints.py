@@ -1,0 +1,58 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Validation helpers for Catalyst resource-estimation hints on control flow."""
+
+from collections.abc import Sequence
+
+ESTIMATED_ITERATIONS_ATTR = "catalyst.estimated_iterations"
+ESTIMATED_PROBABILITY_ATTR = "catalyst.estimated_probability"
+ESTIMATED_PROBABILITIES_ATTR = "catalyst.estimated_probabilities"
+
+
+def validate_estimated_iterations(value: int) -> int:
+    """Validate a loop trip-count hint for ``scf.for`` / ``scf.while``."""
+    if not isinstance(value, int):
+        raise TypeError(
+            f"'estimated_iterations' must be a non-negative integer, but got {type(value).__name__}."
+        )
+    if value < 0:
+        raise ValueError(f"'estimated_iterations' must be non-negative, but got {value}.")
+    return value
+
+
+def validate_estimated_probability(value: float) -> float:
+    """Validate a branch probability hint for ``scf.if``."""
+    if not isinstance(value, (int, float)):
+        raise TypeError(
+            f"'estimated_probability' must be a float in [0, 1], but got {type(value).__name__}."
+        )
+    value = float(value)
+    if not 0.0 <= value <= 1.0:
+        raise ValueError(f"'estimated_probability' must be in [0, 1], but got {value}.")
+    return value
+
+
+def validate_estimated_probabilities(values: Sequence[float]) -> tuple[float, ...]:
+    """Validate branch probability hints for ``scf.index_switch``."""
+    if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
+        raise TypeError(
+            "'estimated_probabilities' must be a sequence of floats in [0, 1], "
+            f"but got {type(values).__name__}."
+        )
+    probs = tuple(validate_estimated_probability(v) for v in values)
+    if sum(probs) > 1.0 + 1e-10:
+        raise ValueError(
+            f"'estimated_probabilities' entries must sum to at most 1, but got {sum(probs)}."
+        )
+    return probs

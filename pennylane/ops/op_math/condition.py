@@ -24,6 +24,7 @@ from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.control_flow._resource_hints import validate_estimated_probability
 from pennylane.core.operator import Operation, Operator
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -201,10 +202,18 @@ class CondCallable:
     [2.25, -2, -0.5]
     """
 
-    def __init__(self, condition, true_fn, false_fn=None, elifs=()):
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        condition,
+        true_fn,
+        false_fn=None,
+        elifs=(),
+        estimated_probability: float | None = None,
+    ):
         self.preds = [condition]
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
+        self.estimated_probability = estimated_probability
 
         if (
             len(elifs) == 2
@@ -326,14 +335,20 @@ class CondCallable:
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
         flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
+        bind_kwargs = {
+            "jaxpr_branches": jaxpr_branches,
+            "consts_slices": consts_slices,
+            "args_slice": slice(end_const_ind, None),
+        }
+        if self.estimated_probability is not None:
+            bind_kwargs["estimated_probability"] = self.estimated_probability
+
         results = cond_prim.bind(
             *conditions,
             *consts,
             *abstract_shapes,
             *flat_args,
-            jaxpr_branches=jaxpr_branches,
-            consts_slices=consts_slices,
-            args_slice=slice(end_const_ind, None),
+            **bind_kwargs,
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
@@ -351,6 +366,8 @@ def cond(
     true_fn: Callable | None = None,
     false_fn: Callable | None = None,
     elifs: Sequence = (),
+    *,
+    estimated_probability: float | None = None,
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
@@ -397,6 +414,10 @@ def cond(
         elifs (Sequence(Tuple(bool, callable))): A sequence of (bool, elif_fn) clauses. Can only
             be used when decorated by :func:`~.qjit` or if the condition is not
             a mid-circuit measurement.
+        estimated_probability (float): Optional hint for resource estimation indicating the
+            expected probability that the condition is ``True`` (i.e. that the first branch is
+            taken). Only used with :func:`~.qjit` and Catalyst's resource analysis. Currently
+            supported for simple if-else conditionals without ``elif`` branches.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -624,14 +645,21 @@ def cond(
         np.float64(-0.3092...)
     """
 
+    if estimated_probability is not None:
+        if elifs:
+            raise ValueError(
+                "'estimated_probability' is not supported for conditionals with 'elif' branches."
+            )
+        estimated_probability = validate_estimated_probability(estimated_probability)
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
 
         if true_fn is None:
-            return ops_loader.cond(condition)
+            return ops_loader.cond(condition, estimated_probability=estimated_probability)
 
-        cond_func = ops_loader.cond(condition)(true_fn)
+        cond_func = ops_loader.cond(condition, estimated_probability=estimated_probability)(true_fn)
 
         # Optional 'elif' branches
         for cond_val, elif_fn in elifs:
@@ -647,9 +675,13 @@ def cond(
         # The condition is not a mid-circuit measurement. This will also work
         # when the condition is a mid-circuit measurement but qp.capture.enabled()
         if true_fn is None:
-            return lambda fn: CondCallable(condition, fn)
+            return lambda fn: CondCallable(
+                condition, fn, estimated_probability=estimated_probability
+            )
 
-        return CondCallable(condition, true_fn, false_fn, elifs)
+        return CondCallable(
+            condition, true_fn, false_fn, elifs, estimated_probability=estimated_probability
+        )
 
     if true_fn is None:
         raise TypeError(

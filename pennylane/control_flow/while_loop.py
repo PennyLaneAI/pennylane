@@ -30,6 +30,7 @@ from ._loop_abstract_axes import (
     promote_consts_to_inputs,
     validate_no_resizing_returns,
 )
+from ._resource_hints import validate_estimated_iterations
 
 
 def _to_bool_cond_fn(cond_fn):
@@ -52,7 +53,12 @@ def _body_consts_extracted_cond(cond_fn):
     return new_cond_fn
 
 
-def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
+def while_loop(
+    cond_fn,
+    allow_array_resizing: Literal["auto", True, False] = "auto",
+    *,
+    estimated_iterations: int | None = None,
+):
     """A :func:`~.qjit` compatible while-loop for PennyLane programs. When
     used without :func:`~.qjit` or program capture, this function will fall back to a standard
     Python while loop.
@@ -83,6 +89,9 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         cond_fn (Callable): the condition function in the while loop
         allow_array_resizing (Literal["auto", True, False]): How to handle arrays
             with dynamic shapes that change between iterations. Defaults to `"auto"`.
+        estimated_iterations (int): Optional hint for resource estimation when the loop
+            trip count is dynamic. Indicates the expected number of iterations. Only used
+            with :func:`~.qjit` and Catalyst's resource analysis.
 
     Returns:
         Callable: A wrapper around the while-loop function.
@@ -217,6 +226,8 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
                 return f(0, jnp.array([]))
 
     """
+    if estimated_iterations is not None:
+        estimated_iterations = validate_estimated_iterations(estimated_iterations)
 
     # if there is no active compiler, simply interpret the while loop
     # via the Python interpreter.
@@ -232,7 +243,12 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         Returns:
             Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
         """
-        return WhileLoopCallable(cond_fn, body_fn, allow_array_resizing=allow_array_resizing)
+        return WhileLoopCallable(
+            cond_fn,
+            body_fn,
+            allow_array_resizing=allow_array_resizing,
+            estimated_iterations=estimated_iterations,
+        )
 
     return _decorator
 
@@ -308,10 +324,12 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         cond_fn: Callable,
         body_fn: Callable,
         allow_array_resizing: Literal["auto", True, False] = "auto",
+        estimated_iterations: int | None = None,
     ):
         self.cond_fn: Callable = cond_fn
         self.body_fn: Callable = body_fn
         self.allow_array_resizing = allow_array_resizing
+        self.estimated_iterations = estimated_iterations
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -378,15 +396,21 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         cond_consts = slice(body_consts.stop, body_consts.stop + len(jaxpr_cond_fn.consts))
         args_slice = slice(cond_consts.stop, None)
 
+        bind_kwargs = {
+            "jaxpr_body_fn": jaxpr_body_fn.jaxpr,
+            "jaxpr_cond_fn": jaxpr_cond_fn.jaxpr,
+            "body_slice": body_consts,
+            "cond_slice": cond_consts,
+            "args_slice": args_slice,
+        }
+        if self.estimated_iterations is not None:
+            bind_kwargs["estimated_iterations"] = self.estimated_iterations
+
         results = while_loop_prim.bind(
             *jaxpr_body_fn.consts,
             *jaxpr_cond_fn.consts,
             *all_args,
-            jaxpr_body_fn=jaxpr_body_fn.jaxpr,
-            jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
-            body_slice=body_consts,
-            cond_slice=cond_consts,
-            args_slice=args_slice,
+            **bind_kwargs,
         )
 
         results = results[-out_tree.num_leaves :]
@@ -401,9 +425,12 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
-            return ops_loader.while_loop(self.cond_fn, allow_array_resizing=allow_array_resizing)(
-                self.body_fn
-            )(*init_state)
+            while_loop_kwargs = {"allow_array_resizing": allow_array_resizing}
+            if self.estimated_iterations is not None:
+                while_loop_kwargs["estimated_iterations"] = self.estimated_iterations
+            return ops_loader.while_loop(self.cond_fn, **while_loop_kwargs)(self.body_fn)(
+                *init_state
+            )
 
         if enabled():
             return self._call_capture_enabled(*init_state)

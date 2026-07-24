@@ -32,6 +32,7 @@ from ._loop_abstract_axes import (
     promote_consts_to_inputs,
     validate_no_resizing_returns,
 )
+from ._resource_hints import validate_estimated_iterations
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -57,7 +58,12 @@ def _is_reverse_iteration(start, stop, step):
 
 
 def for_loop(
-    start, stop=None, step=1, *, allow_array_resizing: Literal["auto", True, False] = "auto"
+    start,
+    stop=None,
+    step=1,
+    *,
+    allow_array_resizing: Literal["auto", True, False] = "auto",
+    estimated_iterations: int | None = None,
 ):
     """for_loop([start, ]stop[, step])
     A :func:`~.qjit` compatible for-loop for PennyLane programs. When
@@ -109,6 +115,9 @@ def for_loop(
     Keyword Args:
         allow_array_resizing (Literal["auto", True, False]): How to handle arrays
             with dynamic shapes that change between iterations
+        estimated_iterations (int): Optional hint for resource estimation when the loop
+            bounds are dynamic. Indicates the expected number of iterations. Only used
+            with :func:`~.qjit` and Catalyst's resource analysis.
 
     Returns:
         Callable[[int, ...], ...]: A wrapper around the loop body function.
@@ -261,6 +270,9 @@ def for_loop(
     if stop is None:
         start, stop = 0, start
 
+    if estimated_iterations is not None:
+        estimated_iterations = validate_estimated_iterations(estimated_iterations)
+
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpreter.
     def _decorator(body_fn):
@@ -278,12 +290,18 @@ def for_loop(
             stop (int): (exclusive) upper bound of the iteration index
             step (int): increment applied to the iteration index at the end of each iteration
             allow_array_resizing (Literal["auto", True, False])
+            estimated_iterations (int | None): Optional resource-estimation hint
 
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
         return ForLoopCallable(
-            start, stop, step, body_fn, allow_array_resizing=allow_array_resizing
+            start,
+            stop,
+            step,
+            body_fn,
+            allow_array_resizing=allow_array_resizing,
+            estimated_iterations=estimated_iterations,
         )
 
     return _decorator
@@ -391,12 +409,14 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         body_fn,
         *,
         allow_array_resizing: Literal["auto", True, False] = "auto",
+        estimated_iterations: int | None = None,
     ):
         self.start = start
         self.stop = stop
         self.step = step
         self.body_fn = body_fn
         self.allow_array_resizing = allow_array_resizing
+        self.estimated_iterations = estimated_iterations
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -502,6 +522,15 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         else:
             start, stop, step = self.start, self.stop, self.step
 
+        bind_kwargs = {
+            "jaxpr_body_fn": jaxpr_body_fn.jaxpr,
+            "consts_slice": consts_slice,
+            "args_slice": args_slice,
+            "abstract_shapes_slice": abstract_shapes_slice,
+        }
+        if self.estimated_iterations is not None:
+            bind_kwargs["estimated_iterations"] = self.estimated_iterations
+
         results = for_loop_prim.bind(
             start,
             stop,
@@ -509,10 +538,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             *jaxpr_body_fn.consts,
             *abstract_shapes,
             *flat_args,
-            jaxpr_body_fn=jaxpr_body_fn.jaxpr,
-            consts_slice=consts_slice,
-            args_slice=args_slice,
-            abstract_shapes_slice=abstract_shapes_slice,
+            **bind_kwargs,
         )
 
         results = results[-out_tree.num_leaves :]
@@ -527,9 +553,12 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             )
             compilers = AvailableCompilers.names_entrypoints
             ops_loader = compilers[active_jit]["ops"].load()
-            return ops_loader.for_loop(
-                self.start, self.stop, self.step, allow_array_resizing=allow_array_resizing
-            )(self.body_fn)(*init_state)
+            for_loop_kwargs = {"allow_array_resizing": allow_array_resizing}
+            if self.estimated_iterations is not None:
+                for_loop_kwargs["estimated_iterations"] = self.estimated_iterations
+            return ops_loader.for_loop(self.start, self.stop, self.step, **for_loop_kwargs)(
+                self.body_fn
+            )(*init_state)
 
         start_equals_stop = (
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start

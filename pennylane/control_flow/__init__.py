@@ -19,8 +19,10 @@ r"""
 
     ~for_loop
     ~while_loop
+    ~switch
 
 """
 
 from .for_loop import for_loop
+from .switch import switch
 from .while_loop import while_loop
