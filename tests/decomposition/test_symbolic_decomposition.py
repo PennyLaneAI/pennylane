@@ -341,9 +341,9 @@ class TestPowDecomposition:
     def test_non_integer_pow_not_applicable(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
 
-        op = qp.pow(qp.H(0), 0.5)
+        op = qp.pow(qp.I(0), 0.5)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
-        op = qp.pow(qp.H(0), -1)
+        op = qp.pow(qp.I(0), -1)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
 
     def test_non_integer_pow_not_applicable2(self):
