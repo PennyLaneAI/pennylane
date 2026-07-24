@@ -16,9 +16,10 @@ Contains the GQSP template.
 """
 
 import copy
+from typing import override
 
 from pennylane import capture, ops
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -32,7 +33,7 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
-class GQSP(Operation):
+class GQSP(Operator2):
     r"""
     Implements the generalized quantum signal processing (GQSP) circuit.
 
@@ -88,101 +89,38 @@ class GQSP(Operation):
         [0.03 -0.089j 0.387+0.198j]]
     """
 
-    grad_method = None
-
-    resource_keys = {"unitary", "num_iters"}
+    dynamic_argnames = ("angles",)
+    hybrid_argnames = ("unitary",)
+    wire_argnames = ("control",)
 
     def __init__(self, unitary, angles, control):
-        total_wires = Wires(control) + unitary.wires
-
-        self._hyperparameters = {"unitary": unitary, "control": control}
-
-        super().__init__(angles, *unitary.data, wires=total_wires)
+        super().__init__(unitary, angles, control)
 
     @property
-    def resource_params(self) -> dict:
-        return {
-            "unitary": self.hyperparameters["unitary"],
-            "num_iters": min(len(self.data[0][0]), len(self.data[0][1]), len(self.data[0][2])),
-        }
-
-    def _flatten(self):
-        return (self.data[0], self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        # Data contains (angles, derived_data_from_unitary, unitary)
-        return cls(angles=data[0], unitary=data[-1], control=metadata[0])
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, unitary, angles, control):
-        return super()._primitive_bind_call(unitary, angles, wires=control)
+    @override
+    def wires(self):
+        return self.arguments["control"] + self.arguments["unitary"].wires
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = ops.functions.map_wires(
-            new_op._hyperparameters["unitary"], wire_map
-        )
-        new_op._hyperparameters["control"] = tuple(
-            wire_map.get(w, w) for w in Wires(new_op._hyperparameters["control"])
+        new_op.arguments["unitary"] = ops.functions.map_wires(new_op.arguments["unitary"], wire_map)
+        new_op.arguments["control"] = tuple(
+            wire_map.get(w, w) for w in Wires(new_op.arguments["control"])
         )
 
         return new_op
 
-    @staticmethod
-    def compute_decomposition(*parameters, **hyperparameters):
-        r"""
-        Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
-
-        Args:
-            *parameters (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-
-        unitary = hyperparameters["unitary"]
-        control = hyperparameters["control"]
-
-        angles = parameters[0]
-
-        thetas, phis, lambds = angles[0], angles[1], angles[2]
-
-        op_list = []
-
-        # These four gates adapt PennyLane's qp.U3 to the chosen U3 format in the GQSP paper.
-        op_list.append(ops.X(control))
-        op_list.append(ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
-        op_list.append(ops.X(control))
-        op_list.append(ops.Z(control))
-
-        for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:], strict=True):
-
-            op_list.append(ops.ctrl(unitary, control=control, control_values=0))
-
-            op_list.append(ops.X(control))
-            op_list.append(ops.U3(2 * theta, phi, lamb, wires=control))
-            op_list.append(ops.X(control))
-            op_list.append(ops.Z(control))
-
-        return op_list
-
+    @override
     def queue(self, context=QueuingManager):
-        context.remove(self.hyperparameters["unitary"])
+        context.remove(self.arguments["unitary"])
         context.append(self)
         return self
 
 
-def _GQSP_resources(unitary, num_iters):
+def _GQSP_resources(unitary, angles, _):
+    num_iters = angles.shape[1]
     return {
         ops.X: 2 + 2 * (num_iters - 1),
         ops.U3: num_iters,
@@ -192,12 +130,7 @@ def _GQSP_resources(unitary, num_iters):
 
 
 @register_resources(_GQSP_resources)
-def _GQSP_decomposition(*parameters, **hyperparameters):
-    unitary = hyperparameters["unitary"]
-    control = hyperparameters["control"]
-
-    angles = parameters[0]
-
+def _GQSP_decomposition(unitary, angles, control):
     thetas, phis, lambds = angles[0], angles[1], angles[2]
 
     if has_jax and capture.enabled():
@@ -210,7 +143,6 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
     ops.Z(control)
 
     for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:], strict=True):
-
         ops.ctrl(unitary, control=control, control_values=[0])
 
         ops.X(control)
@@ -220,11 +152,3 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
 
 add_decomps(GQSP, _GQSP_decomposition)
-
-# pylint: disable=protected-access
-if GQSP._primitive is not None:
-
-    @GQSP._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        (unitary, angles), control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(GQSP, unitary, angles, control=control, **kwargs)
