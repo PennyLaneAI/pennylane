@@ -25,7 +25,6 @@ from .time_evolution import (
     TrotterProduct,
     trotterize,
 )
-from .interferometer import Interferometer
 from .permute import Permute
 from .qft import QFT
 from .qpe import QuantumPhaseEstimation
@@ -84,7 +83,6 @@ __all__ = [
     "TrotterProduct",
     "trotterize",
     "Incrementer",
-    "Interferometer",
     "IQP",
     "Permute",
     "QFT",

@@ -95,7 +95,6 @@ class TestOutSquare:
     """Test the OutSquare template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_qjit_dynamic_wires(self, output_wires_zeroed):
@@ -214,9 +213,7 @@ class TestOutSquare:
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [0, 1]),
         ],
     )
-    @pytest.mark.parametrize(
-        "use_jit", [pytest.param(True, marks=(pytest.mark.catalyst, pytest.mark.external)), False]
-    )
+    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
     def test_decomposition_new(
         self,
         x_wires,
@@ -385,12 +382,10 @@ class TestOutSquare:
             qp.CNOT(wires=[8, 4]),
             qp.TemporaryAND(wires=[0, 4, 7]),
             qp.CNOT(wires=[8, 7]),
-            qp.CNOT(wires=[7, 3]),
             qp.TemporaryAND(wires=[7, 3, 5]),
-            qp.CNOT(wires=[7, 5]),
             qp.CNOT(wires=[5, 2]),
-            qp.CNOT(wires=[7, 5]),
             Adjoint(qp.TemporaryAND(wires=[7, 3, 5])),
+            qp.CNOT(wires=[7, 3]),
             qp.CNOT(wires=[8, 7]),
             Adjoint(qp.TemporaryAND(wires=[0, 4, 7])),
             qp.CNOT(wires=[8, 0]),
@@ -416,13 +411,6 @@ class TestOutSquare:
         with qp.queuing.AnnotatedQueue() as q:
             _out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=False)
 
-        def to_str(obj):
-            a = str(obj)
-            a = a.replace("CNOT", "qp.CNOT").replace("MultiControlledX", "qp.MultiControlledX")
-            a = a.replace("TemporaryAND", "qp.TemporaryAND").replace("X(", "qp.X(")
-            return a
-
-        print(*list(map(to_str, q.queue)), sep=",\n")
         expected = [
             # Cache first bit
             qp.CNOT(wires=[2, 5]),

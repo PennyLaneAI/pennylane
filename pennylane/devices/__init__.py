@@ -13,8 +13,7 @@
 # limitations under the License.
 """
 This subpackage provides default devices for PennyLane, which do not need external plugins to be installed.
-The default devices provide basic built-in qubit
-and CV circuit simulators that can be used with PennyLane without the need for additional
+The default devices provide basic built-in qubit that can be used with PennyLane without the need for additional
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 
@@ -26,15 +25,11 @@ to verify and test quantum gradient computations.
 
     capabilities
     default_qubit
-    default_gaussian
     default_mixed
-    default_qutrit
-    default_qutrit_mixed
     default_clifford
     default_tensor
     _legacy_device
     _qubit_device
-    _qutrit_device
     null_qubit
     reference_qubit
     tests
@@ -57,7 +52,6 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     default_tensor.DefaultTensor
     NullQubit
     ReferenceQubit
-    DefaultQutritMixed
     LegacyDeviceFacade
 
 Preprocessing Transforms
@@ -152,13 +146,6 @@ Qubit Mixed-State Simulation Tools
 .. currentmodule:: pennylane.devices.qubit_mixed
 .. automodule:: pennylane.devices.qubit_mixed
 
-
-Qutrit Mixed-State Simulation Tools
------------------------------------
-
-.. currentmodule:: pennylane.devices.qutrit_mixed
-.. automodule:: pennylane.devices.qutrit_mixed
-
 """
 
 from .tracker import Tracker
@@ -173,16 +160,12 @@ from .legacy_facade import LegacyDeviceFacade
 # DefaultTensor is not imported here to avoid possible warnings
 # from quimb. Such warnings are due to a known issue with the cotengra package
 # when the latter is installed along with certain other packages.
-from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
 from .reference_qubit import ReferenceQubit
-from .default_qutrit import DefaultQutrit
-from .default_qutrit_mixed import DefaultQutritMixed
 from ._legacy_device import Device as LegacyDevice
 from ._qubit_device import QubitDevice
-from ._qutrit_device import QutritDevice
 
 
 # pylint: disable=undefined-variable

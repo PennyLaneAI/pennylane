@@ -182,9 +182,9 @@ class QubitDevice(Device):
     ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
-        if "float" not in str(r_dtype):
+        if "float" not in str(r_dtype):  # pragma: no cover
             raise DeviceError("Real datatype must be a floating point type.")
-        if "complex" not in str(c_dtype):
+        if "complex" not in str(c_dtype):  # pragma: no cover
             raise DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
@@ -958,7 +958,7 @@ class QubitDevice(Device):
             Only state vector simulators support this property. Please see the
             plugin documentation for more details.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.

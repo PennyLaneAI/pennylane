@@ -415,7 +415,7 @@ class TestOutMultiplier:
         wires = qp.OutMultiplier(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     def test_qjit_compatible(self):
         """Test that the template is compatible with the QJIT compiler."""
         x, y = 2, 3

@@ -131,7 +131,6 @@ Currently supported devices include:
 
 * ``default.qubit``: each snapshot saves the quantum state vector
 * ``default.mixed``: each snapshot saves the density matrix
-* ``default.gaussian``: each snapshot saves the covariance matrix and vector of means
 
 A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
 
