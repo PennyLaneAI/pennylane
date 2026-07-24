@@ -225,10 +225,18 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
-    with qp.queuing.AnnotatedQueue() as q:
-        rule(*args, **kwargs)
+    if qp.capture.enabled():
 
-    tape = qp.tape.QuantumScript.from_queue(q)
+        def decomposition(*rule_args):
+            rule(*rule_args, **kwargs)
+
+        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*args)
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *args)
+    else:
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*args, **kwargs)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:

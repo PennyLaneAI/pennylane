@@ -29,6 +29,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as npp
 from pennylane.core.operator import Operator
+from pennylane.core.operator.operator2 import Operator2
 from pennylane.drawer.label import LabelledOp
 from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
@@ -337,7 +338,9 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+
+        error_msg = "have different values" if issubclass(op1, Operator2) else "have different data"
+        with pytest.raises(AssertionError, match=error_msg):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
@@ -418,7 +421,12 @@ class TestEqual:
             is False
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        error_msg = (
+            "differ in trainability"
+            if issubclass(op1, Operator2)
+            else "have different trainability"
+        )
+        with pytest.raises(AssertionError, match=error_msg):
             assert_equal(
                 op1(param_qp, wires=wire),
                 op1(param_qp_1, wires=wire),
@@ -1333,7 +1341,7 @@ class TestEqual:
             is True
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+        with pytest.raises(AssertionError, match="have different interfaces"):
             assert_equal(
                 op1(pl_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
@@ -3183,7 +3191,6 @@ def test_select():
 
 # pylint: disable=unused-argument
 class TestCompareSubroutines:
-
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 

@@ -92,6 +92,10 @@ def _adjoint_rotation_resource(base_class, base_params):
 @register_resources(_adjoint_rotation_resource)
 def adjoint_rotation(phi, wires, base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
+    if isinstance(base, Operator2):
+        raise NotImplementedError(
+            "Please define a custom decomposition instead of relying on adjoint_rotation."
+        )
     qp.ops.functions.bind_new_parameters(base, (-phi,))
 
 

@@ -73,7 +73,6 @@ from tests.decomposition.conftest import to_resources
 
 
 class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
-
     resource_keys = {"key"}
 
     @property
@@ -196,7 +195,6 @@ class TestAdjointDecompositionRules:
             OneWireDynOp(phi, wires)
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(DynOp, custom_rule)
 
             op = qp.adjoint(DynOp(0.5, wires=0))
@@ -713,30 +711,30 @@ class TestControlledDecomposition:
                 control_values=[1, 1, 1, 0, 1],
                 work_wires=[8, 4],
             ),
-            qp.ops.Controlled(qp.RX(0.5, wires=0), control_wires=[6, 7], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RX(0.5, wires=0), control=[6, 7], work_wires=[8]),
+            qp.ctrl(
                 qp.Rot(0.5, 0.6, 0.7, wires=0),
-                control_wires=[6, 7],
+                control=[6, 7],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(qp.RZ(0.5, wires=[1]), control_wires=[6, 7, 0], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RZ(0.5, wires=[1]), control=[6, 7, 0], work_wires=[8]),
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[0, 1, 2, 3, 4, 5]),
-                control_wires=[6, 7],
+                control=[6, 7],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[1, 2, 3, 4, 5]),
-                control_wires=[6, 7, 0],
+                control=[6, 7, 0],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6, 7],
+                control=[6, 7],
                 work_wires=[8],
             ),
             qp.CCZ(wires=[6, 7, 0]),
-            qp.ops.Controlled(qp.Z(1), control_wires=[6, 7, 0], work_wires=[8]),
+            qp.ctrl(qp.Z(1), control=[6, 7, 0], work_wires=[8]),
             qp.X(6),
         ]
 
@@ -827,30 +825,30 @@ class TestControlledDecomposition:
                 control_values=[1, 1, 1, 1, 0, 1],
                 work_wires=[8, 4],
             ),
-            qp.ops.Controlled(qp.RX(0.5, wires=0), control_wires=[6, 7, 9], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RX(0.5, wires=0), control=[6, 7, 9], work_wires=[8]),
+            qp.ctrl(
                 qp.Rot(0.5, 0.6, 0.7, wires=0),
-                control_wires=[6, 7, 9],
+                control=[6, 7, 9],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(qp.RZ(0.5, wires=[1]), control_wires=[6, 7, 9, 0], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RZ(0.5, wires=[1]), control=[6, 7, 9, 0], work_wires=[8]),
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[0, 1, 2, 3, 4, 5]),
-                control_wires=[6, 7, 9],
+                control=[6, 7, 9],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[1, 2, 3, 4, 5]),
-                control_wires=[6, 7, 9, 0],
+                control=[6, 7, 9, 0],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6, 7, 9],
+                control=[6, 7, 9],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(qp.Z(0), control_wires=[6, 7, 9], work_wires=[8]),
-            qp.ops.Controlled(qp.Z(1), control_wires=[6, 7, 9, 0], work_wires=[8]),
+            qp.ctrl(qp.Z(0), control=[6, 7, 9], work_wires=[8]),
+            qp.ctrl(qp.Z(1), control=[6, 7, 9, 0], work_wires=[8]),
             qp.X(6),
             qp.X(9),
         ]
@@ -928,7 +926,6 @@ class TestControlledDecomposition:
         @qp.register_condition(_condition_fn)
         @qp.register_resources(_resource_fn)
         def _custom_decomp(phi, wires):
-
             @qp.for_loop(0, len(wires))
             def _loop(i):
                 OneWireDynOp(phi, wires[i])

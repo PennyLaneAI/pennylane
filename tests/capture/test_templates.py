@@ -33,6 +33,8 @@ jnp = jax.numpy
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
 
+from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-import-position
+
 
 def normalize_for_comparison(obj):
     """Normalize objects for comparison by converting tuples to lists recursively.
@@ -598,7 +600,8 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 5
         assert jaxpr.eqns[0].primitive == qp.Hadamard._primitive
-        assert jaxpr.eqns[-2].primitive == qp.RZ._primitive
+        assert jaxpr.eqns[-2].primitive == operator_p
+        assert jaxpr.eqns[-2].params["op_cls"] is qp.RZ
 
         eqn = jaxpr.eqns[-1]
         assert eqn.primitive == template._primitive
@@ -634,7 +637,8 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 9
         assert jaxpr.eqns[0].primitive == qp.Hadamard._primitive
         assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
-        assert jaxpr.eqns[-5].primitive == qp.RZ._primitive
+        assert jaxpr.eqns[-5].primitive == operator_p
+        assert jaxpr.eqns[-5].params["op_cls"] is qp.RZ
         assert jaxpr.eqns[-2].primitive == qp.RX._primitive
 
         eqn = jaxpr.eqns[-1]

@@ -49,7 +49,7 @@ class TestResources:
             Resources(
                 gate_counts={
                     CompressedResourceOp(qp.RX, {}): 2,
-                    CompressedResourceOp(qp.RZ, {}): -1,
+                    abstractify(qp.RZ): -1,
                 }
             )
 
@@ -67,7 +67,7 @@ class TestResources:
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 2, CompressedResourceOp(qp.RZ, {}): 1},
+            gate_counts={CompressedResourceOp(qp.RX, {}): 2, abstractify(qp.RZ): 1},
             weighted_cost=6.0,
         )
         resources2 = Resources(
@@ -79,7 +79,7 @@ class TestResources:
         assert resources.num_gates == 5
         assert resources.gate_counts == {
             CompressedResourceOp(qp.RX, {}): 3,
-            CompressedResourceOp(qp.RZ, {}): 1,
+            abstractify(qp.RZ): 1,
             CompressedResourceOp(qp.RY, {}): 1,
         }
         assert resources.weighted_cost == 8.0
@@ -88,7 +88,7 @@ class TestResources:
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 2, CompressedResourceOp(qp.RZ, {}): 1},
+            gate_counts={CompressedResourceOp(qp.RX, {}): 2, abstractify(qp.RZ): 1},
             weighted_cost=2.0,
         )
 
@@ -96,7 +96,7 @@ class TestResources:
         assert resources.num_gates == 6
         assert resources.gate_counts == {
             CompressedResourceOp(qp.RX, {}): 4,
-            CompressedResourceOp(qp.RZ, {}): 2,
+            abstractify(qp.RZ): 2,
         }
         assert resources.weighted_cost == 4
 
@@ -215,7 +215,7 @@ class TestCompressedResourceOp:
         assert op1 == op2
 
         op1 = CompressedResourceOp(qp.RX, {})
-        op2 = CompressedResourceOp(qp.RZ, {})
+        op2 = abstractify(qp.RZ)
         assert op1 != op2
 
         op1 = CompressedResourceOp(qp.MultiRZ, {"num_wires": 3})

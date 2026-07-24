@@ -41,7 +41,6 @@ class _DecompInGraphInfo(_DecompInfo):
         num_work_wires: int | None,
         solution: DecompGraphSolution,
     ) -> None:
-
         decomp_node = solution._graph[decomp_node_idx]
         assert isinstance(decomp_node, _DecompositionNode)
 
@@ -243,7 +242,6 @@ class DecompGraphInspector:
         return _DecompInGraphInfoCollection(rule_infos, show_not_applicable, chosen_idx)
 
     def _find_op_node(self, op: Operator, num_work_wires: int | None = 0) -> _OperatorNode | str:
-
         if isinstance(op, type) and issubclass(op, Operator):
             raise TypeError(
                 "The inspect_decomps function takes a concrete operator instance as its "
@@ -361,7 +359,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          |0>├─╰X─╰●─────────────╰X──┤
     First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
     Wire Allocations: {'zero': 1}
-    Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
+    Full Expansion Gates: {RZ: 60, CNOT: 36, GlobalPhase: 62, RY: 14, RX: 8, MidMeasure: 2}
     Weighted Cost: 120.0
     <BLANKLINE>
     Decomposition 1 (name: to_controlled_qubit_unitary)
@@ -373,9 +371,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     3: ─├●─├●────────├●─┤
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
-    First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-    Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
-    Weighted Cost: 196.0
+    First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+    Full Expansion Gates: {GlobalPhase: 75, RX: 19, MidMeasure: 4, RY: 16, RZ: 84, CNOT: 76}
+    Weighted Cost: 199.0
 
     For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
     whereas the "Full Expansion" refers to the circuit produced by decomposing the operator all the way
@@ -500,9 +498,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ─├●─├●────────├●─┤
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
-        First-Level Expansion Gates: {Controlled(RZ, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-        Full Expansion Gates: {GlobalPhase: 200, RX: 32, MidMeasure: 6, RY: 54, RZ: 170, CNOT: 96}
-        Weighted Cost: 358.0
+        First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4)): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+        Full Expansion Gates: {GlobalPhase: 204, RX: 36, MidMeasure: 6, RY: 54, RZ: 170, CNOT: 96}
+        Weighted Cost: 362.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
 
@@ -521,7 +519,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
         First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 14, RZ: 57, RX: 4, CNOT: 58}
+        Full Expansion Gates: {GlobalPhase: 43, RY: 12, RZ: 55, RX: 8, CNOT: 58}
         Weighted Cost: 133.0
         <BLANKLINE>
         Decomposition 2 (name: one_zeroed_worker)
@@ -593,6 +591,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Not applicable (provided operator instance does not meet all conditions for this rule).
 
         We can see that the chosen decomposition rule for the ``MultiControlledX`` uses two work
+
         wires. However, not every ``MultiControlledX`` in the circuit can be decomposed the same
         way. For example, notice that the chosen decomposition rule for the controlled ``MultiRZ``
         takes a work wire from the dynamic allocation budget, therefore, within the region of the
@@ -615,7 +614,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
         First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 14, RZ: 57, RX: 4, CNOT: 58}
+        Full Expansion Gates: {GlobalPhase: 43, RY: 12, RZ: 55, RX: 8, CNOT: 58}
         Weighted Cost: 133.0
         <BLANKLINE>
         CHOSEN: Decomposition 2 (name: one_zeroed_worker)
