@@ -535,7 +535,6 @@ def finite_diff(
         r0 = f0 or results[0]
 
         output_dims = []
-        # TODO: Update shape for CV variables
         for m in tape.measurements:
             if isinstance(m, ProbabilityMP):
                 output_dims.append(2 ** len(m.wires))

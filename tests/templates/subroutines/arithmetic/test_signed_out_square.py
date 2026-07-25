@@ -21,8 +21,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-
-# from pennylane.ops import Controlled
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 
@@ -92,7 +90,6 @@ class TestSignedOutSquare:
     """Test the SignedOutSquare template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_qjit_dynamic_wires(self, output_wires_zeroed):

@@ -64,37 +64,7 @@ analytic method of differentiation, it must satisfy an additional constraint:
 
 .. note::
 
-    These conditions are *not* sufficient for analytic differentiation. For example,
-    CV gates must also define a matrix representing their Heisenberg linear
-    transformation on the quadrature operators.
-
-CV Operation base classes
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Due to additional requirements, continuous-variable (CV) operations must subclass the
-:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`.
-
-Differentiation
-^^^^^^^^^^^^^^^
-
-To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to
-provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
-the operation given its list of parameters, namely:
-
-* For Gaussian CV Operations this method should return the matrix of the linear transformation carried out by the
-  operation on the vector of quadrature operators :math:`\mathbf{r}` for the given parameter
-  values.
-
-* For Gaussian CV Observables this method should return a real vector (first-order observables)
-  or symmetric matrix (second-order observables) of coefficients of the quadrature
-  operators :math:`\x` and :math:`\p`.
-
-PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` for single-mode operations and observables
-and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode operations and observables.
-
-.. note::
-    Non-Gaussian CV operations and observables are currently only supported via
-    the finite-difference method of gradient computation.
+    These conditions are *not* sufficient for analytic differentiation.
 
 Contents
 --------
@@ -111,16 +81,13 @@ Operator Types
 
     ~Operator
     ~Operation
-    ~CV
-    ~CVObservable
-    ~CVOperation
     ~Channel
     ~StatePrepBase
     ~Operator1
 
 .. currentmodule:: pennylane.core.operator
 
-.. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
+.. inheritance-diagram:: Operator Operation Channel StatePrepBase
     :parts: 1
 
 
@@ -185,7 +152,6 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 from .base import Operator, Operation, Operator1
 from .operator2 import Operator2, StatePrepBase2
 from .channel import Channel
-from .cv import CV, CVObservable, CVOperation
 from .state_prep import StatePrepBase
 from .utils import abstractify
 
@@ -194,9 +160,6 @@ __all__ = [
     "Operator2",
     "Operation",
     "Channel",
-    "CV",
-    "CVObservable",
-    "CVOperation",
     "StatePrepBase",
     "Operator1",
     "StatePrepBase2",

@@ -15,7 +15,7 @@
 
 import pytest
 
-from pennylane.resource import SpecsResources, SymbolicSpecsResources
+from pennylane.resource import PBCSpecsResources, SpecsResources
 from pennylane.resource.expression import Expression
 from pennylane.resource.mlir_specs import (
     _generate_display_name_for_symbolic_var,
@@ -153,12 +153,11 @@ class TestAnalysisPassConversion:
         var = _generate_display_name_for_symbolic_var("a", {})
 
         assert actual == [
-            SymbolicSpecsResources(
-                gate_types={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
-                gate_sizes={1: Expression({(var,): 2, (): 9})},
-                measurements={"expval(PauliZ)": 1},
+            SpecsResources(
+                counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
+                measurement_processes={"expval(PauliZ)": 1},
                 num_allocs=10,
-                depth=None,
+                circuit_depth=None,
             ),
         ]
 
@@ -209,24 +208,23 @@ class TestAnalysisPassConversion:
         actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
 
         assert actual == [
-            SymbolicSpecsResources(
-                gate_types={
+            SpecsResources(
+                counts={
                     "Hadamard": 3,
                     "PPM-w3": 1,
                     "PPR-pi/2-w3": 1,
                     "PauliX": Expression({(var,): 2}),
                     "PauliZ": 6,
                 },
-                gate_sizes={1: Expression({(var,): 2, (): 9}), 3: 2},
-                measurements={"expval(PauliZ)": Expression({(var,): 2, (): 1})},
+                measurement_processes={"expval(PauliZ)": Expression({(var,): 2, (): 1})},
                 num_allocs=10,
-                depth=None,
+                circuit_depth=None,
             ),
         ]
 
     def test_same_op_name_multiple_widths(self):
-        """A single op name at multiple qubit widths must accumulate in gate_types,
-        not overwrite. Regression for the 'Inconsistent gate counts' ValueError."""
+        """A single op name at multiple qubit widths must accumulate in counts,
+        not overwrite. Regression for the 'Inconsistent counts' ValueError."""
         actual = _get_resources_from_analysis_pass(
             {
                 "circuit": {
@@ -252,11 +250,10 @@ class TestAnalysisPassConversion:
 
         assert actual == [
             SpecsResources(
-                gate_types={"Hadamard": 2, "MultiControlledX": 12},
-                gate_sizes={1: 2, 2: 5, 3: 7},
-                measurements={},
+                counts={"Hadamard": 2, "MultiControlledX": 12},
+                measurement_processes={},
                 num_allocs=4,
-                depth=None,
+                circuit_depth=None,
             )
         ]
 
@@ -270,11 +267,10 @@ class TestAnalysisPassConversion:
             display_names=display_names,
         )
         assert fn_resources["dyn_for_loop_1"] == SpecsResources(
-            gate_types={"PauliX": 1},
-            gate_sizes={1: 1},
-            measurements={},
+            counts={"PauliX": 1},
+            measurement_processes={},
             num_allocs=0,
-            depth=None,
+            circuit_depth=None,
         )
 
         # This should should also resolve the recursive call to for_loop_1
@@ -286,23 +282,46 @@ class TestAnalysisPassConversion:
         )
 
         assert fn_resources["for_loop_1"] == SpecsResources(
-            gate_types={"PauliZ": 1},
-            gate_sizes={1: 1},
-            measurements={},
+            counts={"PauliZ": 1},
+            measurement_processes={},
             num_allocs=0,
-            depth=None,
+            circuit_depth=None,
         )
 
         assert len(display_names) == 1
         var_name = next(iter(display_names.values()))
 
         a = fn_resources["for_loop_2"]
-        b = SymbolicSpecsResources(
-            gate_types={"PauliZ": 3, "Hadamard": 1, "PauliX": Expression({(var_name,): 1})},
-            gate_sizes={1: Expression({(var_name,): 1, (): 4})},
-            measurements={},
+        b = SpecsResources(
+            counts={"PauliZ": 3, "Hadamard": 1, "PauliX": Expression({(var_name,): 1})},
+            measurement_processes={},
             num_allocs=0,
-            depth=None,
+            circuit_depth=None,
         )
 
         assert a == b
+
+    def test_extra_depth_info(self, example_loop_analysis_pass_result):
+        """Test that PBC depth information is correctly extracted from the analysis pass result."""
+        example_loop_analysis_pass_result["for_loop_2"]["depth"] = {
+            "any_commuting_depth": 5,
+            "qubit_disjoint_depth": 0,
+        }
+        example_loop_analysis_pass_result["for_loop_1"]["depth"] = {
+            "any_commuting_depth": 2,
+            "qubit_disjoint_depth": 3,
+        }
+
+        actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+
+        var = _generate_display_name_for_symbolic_var("a", {})
+
+        assert actual == [
+            PBCSpecsResources(
+                counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
+                measurement_processes={"expval(PauliZ)": 1},
+                num_allocs=10,
+                any_commuting_depth=22,
+                qubit_disjoint_depth=18,
+            ),
+        ]

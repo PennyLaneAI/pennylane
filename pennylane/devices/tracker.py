@@ -77,11 +77,11 @@ class Tracker:
     >>> import pprint
     >>> pprint.pprint(tracker.latest)
     {'executions': 1,
-     'resources': SpecsResources(gate_types={'RX': 1},
-                                 gate_sizes={1: 1},
-                                 measurements={'expval(PauliZ)': 1},
+     'resources': SpecsResources(counts={'RX': 1},
+                                 measurement_processes={'expval(PauliZ)': 1},
                                  num_allocs=1,
-                                 depth=1),
+                                 circuit_depth=1,
+                                 total_quantum_operations=1),
      'results': np.float64(0.12),
      'shots': 100,
      'simulations': 1}
@@ -90,13 +90,13 @@ class Tracker:
     >>> tracker.history['results']
     [np.float64(1.0), np.float64(-0.1), np.float64(0.12)]
     >>> print(tracker.history['resources'][0])
-    Wire allocations: 1
-    Total gates: 1
-    Gate counts:
-    - RX: 1
-    Measurements:
+    Quantum operations:
+    - Total: 1
+      - RX: 1
+    Measurement processes:
     - expval(PauliZ): 1
-    Depth: 1
+    Wire allocations: 1
+    Circuit Depth: 1
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
     forward pass and one batch of length two for the derivative of ``qp.RX``.
@@ -155,13 +155,13 @@ class Tracker:
         array(0.)
         >>> resources_lst = tracker.history['resources']
         >>> print(resources_lst[0])
-        Wire allocations: 1
-        Total gates: 1
-        Gate counts:
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 1
+          - RX: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: 1
+        Wire allocations: 1
+        Circuit Depth: 1
     """
 
     def __init__(self, dev=None, callback=None, persistent=False):
@@ -207,11 +207,11 @@ class Tracker:
          'batches': [1],
          'c': ['c'],
          'executions': [1],
-         'resources': [SpecsResources(gate_types={'RX': 1},
-                                      gate_sizes={1: 1},
-                                      measurements={'expval(PauliZ)': 1},
+         'resources': [SpecsResources(counts={'RX': 1},
+                                      measurement_processes={'expval(PauliZ)': 1},
                                       num_allocs=1,
-                                      depth=1)],
+                                      circuit_depth=1,
+                                      total_quantum_operations=1)],
          'results': [array(0.)],
          'shots': [10],
          'simulations': [1]}
