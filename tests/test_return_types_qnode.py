@@ -21,18 +21,12 @@ import pytest
 import pennylane as qp
 
 test_wires = [2, 3, 4]
-devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 def qubit_ansatz(x):
     qp.Hadamard(wires=[0])
     qp.CRX(x, wires=[0, 1])
-
-
-def qutrit_ansatz(x):
-    qp.THadamard(wires=[0])
-    mat = np.exp(1j * x) * np.eye(9)
-    qp.QutritUnitary(mat, wires=[0, 1])
 
 
 class TestIntegrationSingleReturn:
@@ -73,30 +67,25 @@ class TestIntegrationSingleReturn:
     def test_density_matrix(self, d_wires, device):
         """Return density matrix with default.qubit."""
         dev = qp.device(device, wires=4)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             return qp.density_matrix(wires=range(0, d_wires))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
-        dim = 3 if device == "default.qutrit" else 2
-        assert res.shape == (dim**d_wires, dim**d_wires)
+        assert res.shape == (2**d_wires, 2**d_wires)
         assert isinstance(res, (np.ndarray, np.float64))
 
     @pytest.mark.parametrize("device", devices)
     def test_expval(self, device):
         """Return a single expval."""
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
-            return qp.expval(
-                qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
-            )
+            qubit_ansatz(x)
+            return qp.expval(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -108,15 +97,11 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("shots", [[10, 10]])
     def test_expval_single_return_in_list(self, device, shots):
         """Test that the return shape is expected for a single expectation value in a list."""
-
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
-
-        obs = qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return [qp.expval(obs)]
+            qubit_ansatz(x)
+            return [qp.expval(qp.PauliZ(wires=1))]
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
@@ -127,11 +112,10 @@ class TestIntegrationSingleReturn:
     def test_var(self, device):
         """Return a single var."""
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
-            return qp.var(qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3))
+            qubit_ansatz(x)
+            return qp.var(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -142,9 +126,6 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("device", devices)
     def test_vn_entropy(self, device):
         """Return a single vn entropy."""
-        if device == "default.qutrit":
-            pytest.skip("DefaultQutrit does not support VnEntropy.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -177,9 +158,6 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
         """Return a single mutual information."""
-        if device == "default.qutrit":
-            pytest.skip("DefaultQutrit does not support MutualInfo.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -221,10 +199,8 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
-        if device in ("lightning.qubit", "default.qutrit"):
-            pytest.skip(
-                "Skip Lightning (wire reordering unsupported) and Qutrit (unsuported observables)."
-            )
+        if device == "lightning.qubit":
+            pytest.skip("Skip Lightning (wire reordering unsupported).")
         dev = qp.device(device, wires=3)
 
         def circuit(x):
@@ -240,31 +216,6 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2 ** len(wires),)
         assert isinstance(res, (np.ndarray, np.float64))
 
-    probs_data_qutrit = [
-        (qp.GellMann(0, 3), None),
-        (qp.THermitian(np.eye(9), wires=[1, 0]), None),
-        (None, [0]),
-        (None, [0, 1]),
-    ]
-
-    @pytest.mark.parametrize("op,wires", probs_data_qutrit)
-    def test_probs_qutrit(self, op, wires):
-        """Return a single prob."""
-        dev = qp.device("default.qutrit", wires=3)
-
-        def circuit(x):
-            qutrit_ansatz(x)
-            return qp.probs(op=op, wires=wires)
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        if wires is None:
-            wires = op.wires
-
-        assert res.shape == (3 ** len(wires),)
-        assert isinstance(res, (np.ndarray, np.float64))
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement",
@@ -272,22 +223,14 @@ class TestIntegrationSingleReturn:
             qp.sample(qp.PauliZ(0)),
             qp.sample(wires=[0]),
             qp.sample(wires=[0, 1]),
-            qp.sample(qp.GellMann(0, 3)),
         ],
     )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             return qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
@@ -298,7 +241,7 @@ class TestIntegrationSingleReturn:
         if measurement.wires.tolist() != [0, 1]:
             assert res.shape == (shots,) if measurement.obs else (shots, 1)
         else:
-            assert res.shape == (shots, 2) if device != "default.qutrit" else (shots, 3)
+            assert res.shape == (shots, 2)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
@@ -307,22 +250,14 @@ class TestIntegrationSingleReturn:
             qp.counts(qp.PauliZ(0)),
             qp.counts(wires=[0]),
             qp.counts(wires=[0, 1]),
-            qp.counts(qp.GellMann(0, 3)),
         ],
     )
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             return qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
@@ -980,7 +915,7 @@ class TestIntegrationSingleReturnJax:
 
 multi_return_wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 class TestIntegrationMultipleReturns:
@@ -993,17 +928,9 @@ class TestIntegrationMultipleReturns:
         """Return multiple expvals."""
         dev = qp.device(device, wires=2)
 
-        obs1 = (
-            qp.Projector([0], wires=0)
-            if device != "default.qutrit"
-            else qp.THermitian(np.eye(3), wires=0)
-        )
-        obs2 = qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
-
         def circuit(x):
-            func(x)
-            return qp.expval(obs1), qp.expval(obs2)
+            qubit_ansatz(x)
+            return qp.expval(qp.Projector([0], wires=0)), qp.expval(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1022,17 +949,9 @@ class TestIntegrationMultipleReturns:
         """Return multiple vars."""
         dev = qp.device(device, wires=2)
 
-        obs1 = (
-            qp.Projector([0], wires=0)
-            if device != "default.qutrit"
-            else qp.THermitian(np.eye(3), wires=0)
-        )
-        obs2 = qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
-
         def circuit(x):
-            func(x)
-            return qp.var(obs1), qp.var(obs2)
+            qubit_ansatz(x)
+            return qp.var(qp.Projector([0], wires=0)), qp.var(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1063,9 +982,6 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
         """Return multiple probs."""
-        if device == "default.qutrit":
-            pytest.skip("Separate test for DefaultQutrit.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -1090,53 +1006,12 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], (np.ndarray, np.float64))
         assert res[1].shape == (2 ** len(wires2),)
 
-    multi_probs_data_qutrit = [
-        (qp.GellMann(0, 3), None, qp.GellMann(1, 3), None),
-        (None, [0], qp.GellMann(1, 3), None),
-        (qp.GellMann(0, 3), None, None, [1]),
-        (qp.GellMann(1, 3), None, qp.GellMann(0, 3), None),
-        (None, [0], None, [0]),
-        (None, [0], None, [0, 1]),
-        (None, [0, 1], None, [0]),
-        (None, [0, 1], None, [0, 1]),
-    ]
-
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
-    def test_multiple_prob_qutrit(self, op1, op2, wires1, wires2):
-        """Return multiple probs."""
-        dev = qp.device("default.qutrit", wires=2)
-
-        def circuit(x):
-            qutrit_ansatz(x)
-            return qp.probs(op=op1, wires=wires1), qp.probs(op=op2, wires=wires2)
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-
-        if wires1 is None:
-            wires1 = op1.wires
-
-        if wires2 is None:
-            wires2 = op2.wires
-
-        assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == (3 ** len(wires1),)
-
-        assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == (3 ** len(wires2),)
-
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
-        if device == "default.qutrit":
-            pytest.skip("Different test for DefaultQutrit.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -1172,68 +1047,18 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[3], (np.ndarray, np.float64, float))
         assert qp.math.shape(res[3]) == ()
 
-    # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
-    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
-    def test_mix_meas_qutrit(self, op1, wires1, op2, wires2, wires3, wires4):
-        """Return multiple different measurements."""
-        pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
-
-        dev = qp.device("default.qutrit", wires=2)
-
-        def circuit(x):
-            qutrit_ansatz(x)
-            return (
-                qp.probs(op=op1, wires=wires1),
-                qp.var(qp.GellMann(wires3, 3)),
-                qp.probs(op=op2, wires=wires2),
-                qp.expval(qp.GellMann(wires4, 3)),
-            )
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        if wires1 is None:
-            wires1 = op1.wires
-
-        if wires2 is None:
-            wires2 = op2.wires
-
-        assert isinstance(res, tuple)
-        assert len(res) == 4
-
-        assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == (3 ** len(wires1),)
-
-        assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == ()
-
-        assert isinstance(res[2], (np.ndarray, np.float64))
-        assert res[2].shape == (3 ** len(wires2),)
-
-        assert isinstance(res[3], (np.ndarray, np.float64))
-        assert res[3].shape == ()
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement",
-        [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0]), qp.sample(qp.GellMann(0, 3))],
+        [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])],
     )
     def test_expval_sample(self, measurement, device, shots=100):
         """Test the expval and sample measurements together."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return qp.expval(obs), qp.apply(measurement)
+            qubit_ansatz(x)
+            return qp.expval(qp.PauliZ(1)), qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
@@ -1249,23 +1074,15 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement",
-        [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0]), qp.counts(qp.GellMann(0, 3))],
+        [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])],
     )
     def test_expval_counts(self, measurement, device, shots=100):
         """Test the expval and counts measurements together."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return qp.expval(obs), qp.apply(measurement)
+            qubit_ansatz(x)
+            return qp.expval(qp.PauliZ(1)), qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
@@ -1285,12 +1102,10 @@ class TestIntegrationMultipleReturns:
     def test_list_one_expval(self, wires, device):
         """Return a comprehension list of one expvals."""
         dev = qp.device(device, wires=wires)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(0) if device != "default.qutrit" else qp.GellMann(0, 3)
 
         def circuit(x):
-            func(x)
-            return [qp.expval(obs)]
+            qubit_ansatz(x)
+            return [qp.expval(qp.PauliZ(0))]
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1308,16 +1123,11 @@ class TestIntegrationMultipleReturns:
     def test_list_multiple_expval(self, wires, device, shot_vector):
         """Return a comprehension list of multiple expvals."""
         dev = qp.device(device, wires=wires)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ if device != "default.qutrit" else qp.GellMann
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             # pylint:disable=unexpected-keyword-arg
-            return [
-                qp.expval(obs(wires=i) if device != "default.qutrit" else obs(wires=i, index=3))
-                for i in range(0, wires)
-            ]
+            return [qp.expval(qp.PauliZ(wires=i)) for i in range(0, wires)]
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
@@ -1342,18 +1152,13 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("comp_basis_sampling", [qp.sample(), qp.counts()])
     def test_sample_counts_no_obs(self, device, comp_basis_sampling):
         """Measuring qp.sample()/qp.counts() works with other measurements even with the same wire being measured."""
-        if device == "default.qutrit":
-            pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
-
         shot_num = 1000
         num_wires = 2
         dev = qp.device(device, wires=num_wires)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return qp.apply(comp_basis_sampling), qp.expval(obs), qp.probs(wires=[0])
+            qubit_ansatz(x)
+            return qp.apply(comp_basis_sampling), qp.expval(qp.PauliZ(1)), qp.probs(wires=[0])
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shot_num)
         res = qnode(0.5)

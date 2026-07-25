@@ -34,7 +34,7 @@ from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
 from .out_multiplier import _add_plus_one, _c_add_sub
-from .semi_adder import SemiAdder, _semiadder_resources
+from .semi_adder import SemiAdder, _semi_adder_resources
 from .temporary_and import TemporaryAND
 
 
@@ -144,7 +144,7 @@ class OutSquare(Operation):
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:
 
-        >>> specs_false = qp.specs(circuit)(False)["resources"].gate_types
+        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
         >>> print(specs_false)
         {'BasisEmbedding': 1, 'CNOT': 8, 'C(SemiAdder)': 4}
 
@@ -152,7 +152,7 @@ class OutSquare(Operation):
         some :class:`~.TemporaryAND` gates and some of
         the other adders become smaller (depending on the register sizes):
 
-        >>> specs_true = qp.specs(circuit)(True)["resources"].gate_types
+        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations
         >>> print(specs_true)
         {'BasisEmbedding': 1, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
 
@@ -430,7 +430,7 @@ def _out_square_with_caddsub_resources(
     # SemiAdder of x_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
         size = min(m - i, n + 1) if output_wires_zeroed else m - i
-        adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=size)
+        adder_resources = _semi_adder_resources(num_x_wires=n, num_y_wires=size)
         for key, value in adder_resources.items():
             resources[key] += value
 
@@ -444,8 +444,9 @@ def _out_square_with_caddsub_resources(
         ] = 1
 
     # Add (2^n-1-x) + 1
+
     resources[X] += 6 + 2 * n
-    adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=m)
+    adder_resources = _semi_adder_resources(num_x_wires=n, num_y_wires=m)
     for key, value in adder_resources.items():
         resources[key] += value
 
