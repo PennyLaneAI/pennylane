@@ -112,9 +112,32 @@ DECOMP_PARAMS = [
 @pytest.mark.capture
 @pytest.mark.parametrize(("hamiltonian", "time"), DECOMP_PARAMS)
 def test_decomposition_new(hamiltonian, time):
+    """Capture produces only the resource-declared ``ApproxTimeEvolution`` operation."""
     op = qp.CommutingEvolution(hamiltonian, time)
     for rule in qp.list_decomps(qp.CommutingEvolution):
         _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.capture
+def test_captured_decomposition_does_not_add_hamiltonian_to_tape():
+    """The reconstructed Hamiltonian is consumed as an input, not collected separately."""
+    pytest.importorskip("jax")
+    assert qp.capture.enabled()
+    hamiltonian = qp.Hamiltonian([1.0, 2.0], [qp.X(0), qp.Y(0)])
+
+    rule = qp.list_decomps(qp.CommutingEvolution)["_commuting_evolution_decomposition"]
+
+    def decomposition(time):
+        rule(time, wires=hamiltonian.wires, hamiltonian=hamiltonian)
+
+    time = 0.5
+    plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(time)
+    tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, time)
+
+    expected = qp.ApproxTimeEvolution(hamiltonian, time, 1)
+
+    assert len(tape.operations) == 1
+    qp.assert_equal(tape[0], expected)
 
 
 def test_matrix():
