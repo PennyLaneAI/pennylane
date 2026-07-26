@@ -458,6 +458,10 @@ def _contains_abstract_wire(wires):
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
+    # TODO: Always use ``for_loop`` after migrating ``SignedOutMultiplier`` to Operator2,
+    # when its wire registers will be traced inputs to the decomposition rule. For the legacy
+    # operator, concrete registers remain tuple-backed ``Wires`` objects that cannot be indexed
+    # by the traced loop variable, so capture needs the Python-loop fallback below.
     if compiler.active() or (capture.enabled() and _contains_abstract_wire(input_reg)):
         input_reg = math.array(input_reg, like="jax")
 
