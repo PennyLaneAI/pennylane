@@ -223,7 +223,7 @@ class Pow2(SymbolicOp2):
     @override
     def compute_eigvals(base, z):
         base_eigvals = base.eigvals()
-        return [value**z for value in base_eigvals]
+        return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

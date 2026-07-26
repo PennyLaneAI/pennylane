@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -30,7 +30,7 @@ from pennylane.decomposition.decomposition_rule import (
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import CompressedResourceOp, Resources
+from pennylane.decomposition.resources import Resources
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
@@ -84,7 +84,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 1, abstractify(qp.CNOT): 4}
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -121,7 +121,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 1, abstractify(qp.CNOT): 4}
         )
 
     def test_decomposition_condition(self):
@@ -136,10 +136,7 @@ class TestDecompositionRule:
         assert rule_1.is_applicable(num_wires=3)
         assert not rule_1.is_applicable(num_wires=2)
         assert rule_1.compute_resources(num_wires=3) == Resources(
-            {
-                CompressedResourceOp(qp.H): 2,
-                CompressedResourceOp(qp.Toffoli): 1,
-            }
+            {abstractify(qp.H): 2, abstractify(qp.Toffoli): 1}
         )
 
         @register_condition(lambda num_wires: num_wires == 3)
@@ -151,10 +148,7 @@ class TestDecompositionRule:
         assert rule_2.is_applicable(num_wires=3)
         assert not rule_2.is_applicable(num_wires=2)
         assert rule_2.compute_resources(num_wires=3) == Resources(
-            {
-                CompressedResourceOp(qp.H): 2,
-                CompressedResourceOp(qp.Toffoli): 1,
-            }
+            {abstractify(qp.H): 2, abstractify(qp.Toffoli): 1}
         )
 
         def _resource_fn(**_):
@@ -169,10 +163,7 @@ class TestDecompositionRule:
         assert rule_3.is_applicable(num_wires=3)
         assert not rule_3.is_applicable(num_wires=2)
         assert rule_3.compute_resources(num_wires=3) == Resources(
-            {
-                CompressedResourceOp(qp.H): 2,
-                CompressedResourceOp(qp.Toffoli): 1,
-            }
+            {abstractify(qp.H): 2, abstractify(qp.Toffoli): 1}
         )
 
     @pytest.mark.parametrize("exact_resources", [False, True])
@@ -266,17 +257,15 @@ class TestDecompositionRule:
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        assert custom_decomp.compute_resources() == Resources(
-            gate_counts={CompressedResourceOp(DummyOp): 1}
-        )
+        assert custom_decomp.compute_resources() == Resources(gate_counts={abstractify(DummyOp): 1})
 
         def custom_decomp_2(*_, **__):
             raise NotImplementedError
 
-        custom_decomp_2 = register_resources({CompressedResourceOp(DummyOp): 1}, custom_decomp_2)
+        custom_decomp_2 = register_resources({abstractify(DummyOp): 1}, custom_decomp_2)
 
         assert custom_decomp_2.compute_resources() == Resources(
-            gate_counts={CompressedResourceOp(DummyOp): 1}
+            gate_counts={abstractify(DummyOp): 1}
         )
 
     @pytest.mark.parametrize(
@@ -430,7 +419,7 @@ class TestDecompositionRule:
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 500, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 500, abstractify(qp.CNOT): 4}
         )
         assert multi_rz_decomposition.exact_resources is exact_resources
 
@@ -440,7 +429,7 @@ class TestDecompositionRule:
         )
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
+            gate_counts={abstractify(qp.RZ): 1, abstractify(qp.CNOT): 4}
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
 
