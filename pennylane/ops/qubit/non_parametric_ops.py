@@ -49,7 +49,7 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -88,8 +88,6 @@ class Hadamard(Operator2):
         super().__init__(wires=wires)
 
     def __repr__(self) -> str:
-        if isinstance(self.wires, AbstractWires):
-            return "Hadamard"
         # Hadamard.name is still "Hadamard" but we want the repr to be just "H(0)"
         return f"H({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
 
@@ -106,9 +104,7 @@ class Hadamard(Operator2):
     @override
     @lru_cache
     # pylint: disable=arguments-differ,unused-argument
-    def compute_matrix(
-        wires: WiresLike = None,
-    ) -> np.ndarray:
+    def compute_matrix(wires: WiresLike = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
