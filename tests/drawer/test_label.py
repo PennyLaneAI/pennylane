@@ -25,7 +25,7 @@ from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp
 
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(Operator):
     pass
 
 

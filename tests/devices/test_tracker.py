@@ -16,8 +16,6 @@ Unit tests for the Tracker and constructor
 """
 
 import numpy as np
-
-# pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
 import pennylane as qp

@@ -401,7 +401,7 @@ class TestSample:
     def test_new_sample_with_operator_with_no_eigvals(self):
         """Test that calling process with an operator that has no eigvals defined raises an error."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             """Dummy operator with no eigenvalues defined."""
 
             num_wires = 1

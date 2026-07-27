@@ -15,7 +15,6 @@ r"""
 Contains the quantum-number-preserving GateFabric template.
 """
 
-# pylint: disable=too-many-arguments
 import numpy as np
 
 from pennylane import capture, math

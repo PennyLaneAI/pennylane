@@ -19,7 +19,7 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=no-self-use
 
 
 class TestSingleExcitation:

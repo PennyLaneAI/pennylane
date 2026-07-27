@@ -15,7 +15,7 @@
 previous location of pennylane.core.shots
 """
 
-from pennylane.core.shots import *  # pylint: disable=wildcard-import, unused-import, unused-wildcard-import # tach-ignore
+from pennylane.core.shots import *  # pylint: disable=wildcard-import, unused-wildcard-import # tach-ignore
 
 
 def add_shots(s1: Shots, s2: Shots) -> Shots:

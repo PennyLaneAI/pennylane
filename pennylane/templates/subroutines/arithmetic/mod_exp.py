@@ -119,7 +119,7 @@ class ModExp(Operation):
 
     def __init__(
         self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = ()
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         output_wires = Wires(output_wires)
         work_wires = Wires(() if work_wires is None else work_wires)

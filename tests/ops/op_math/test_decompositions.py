@@ -15,8 +15,6 @@
 Tests for the QubitUnitary decomposition transforms.
 """
 
-# pylint: disable=unused-variable,unused-argument
-
 from functools import reduce
 
 import numpy as np

@@ -40,7 +40,6 @@ class TestStandardValidityBasisState:
     @pytest.mark.jax
     def test_assert_valid(self):
         """Test standard validity."""
-        # pylint: disable=import-outside-toplevel
         state = np.array([0, 1])
         wires = qp.wires.Wires([0, 1])
         op = qp.BasisState(state, wires=wires)

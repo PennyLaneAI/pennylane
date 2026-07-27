@@ -601,7 +601,6 @@ class TestDecomposeTransformations:
     ):
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
-        # pylint: disable=too-many-arguments
         if not qp.decomposition.enabled_graph():
             pytest.skip("This test only is expected to work with the graph-based system.")
 
@@ -752,7 +751,6 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
-    # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )

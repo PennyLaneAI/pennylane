@@ -16,8 +16,6 @@ Tests for the Permute template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp

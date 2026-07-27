@@ -98,7 +98,6 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
-# pylint: disable=too-few-public-methods
 class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 

@@ -642,7 +642,6 @@ def _get_basis_and_eigenvalues(M):
     Returns eigenvalues and basis O such that :math:`D = O^T M O` is diagonal with
     sorted eigenvalues.
     """
-    # pylint: disable=protected-access
     # Use split_eigh to get a basis (ignoring its mixed eigenvalues)
     _, O = _real_imag_split_eigh(M, 1.0)
 

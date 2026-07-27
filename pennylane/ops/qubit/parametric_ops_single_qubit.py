@@ -1049,7 +1049,6 @@ class Rot(Operation):
 
     resource_keys = set()
 
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         phi: TensorLike,
@@ -1617,7 +1616,6 @@ class U3(Operation):
 
     resource_keys = set()
 
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         theta: TensorLike,

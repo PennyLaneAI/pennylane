@@ -20,7 +20,6 @@ from pennylane.ops import StatePrep
 from pennylane.ops.qubit.state_preparation import _state_prep_decomp
 
 
-# pylint: disable=too-many-arguments
 class AmplitudeEmbedding(StatePrep):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 

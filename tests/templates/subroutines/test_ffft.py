@@ -126,7 +126,7 @@ def test_raises(wires, error_type, error_msg):
 )
 def test_ffft_circuit(wires, expected_circuit):
     @qnode(device("default.qubit", wires=wires), shots=1)
-    def ffft_simple(wires):  # pylint: disable=redefined-outer-name
+    def ffft_simple(wires):
         FFFT(wires)
         return sample(wires=wires)
 

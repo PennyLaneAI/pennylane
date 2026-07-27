@@ -27,7 +27,7 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-branches, protected-access, too-many-statements
+# pylint: disable=too-many-branches, protected-access
 
 
 def _check_tape_validity(tape: QuantumScript):

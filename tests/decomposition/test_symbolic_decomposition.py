@@ -61,8 +61,6 @@ from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
 from pennylane.typing import Float, Wire
-
-# pylint: disable=no-name-in-module
 from tests.core.operator.operator2_utils import (
     DynOp,
     DynOpWithMatrix,
@@ -72,7 +70,7 @@ from tests.core.operator.operator2_utils import (
 from tests.decomposition.conftest import to_resources
 
 
-class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(qp.operation.Operator):
 
     resource_keys = {"key"}
 
@@ -491,7 +489,7 @@ class TestPowDecomposition:
         qp.assert_equal(op, pow(abstract_base, 2))
 
 
-class CustomMultiQubitOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class CustomMultiQubitOp(qp.operation.Operation):
     """A custom op."""
 
     resource_keys = {"num_wires"}

@@ -40,7 +40,6 @@ class TestResultInterface:
         assert qp.math.get_interface(res) == interface
 
 
-# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 

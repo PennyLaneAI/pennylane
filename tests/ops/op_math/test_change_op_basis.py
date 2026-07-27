@@ -20,7 +20,7 @@ from functools import partial
 
 import numpy as np
 
-# pylint:disable=protected-access, unused-argument
+# pylint:disable=unused-argument
 import pytest
 
 import pennylane as qp
@@ -228,7 +228,7 @@ def test_change_op_basis_capture():
     assert tape.operations == [qp.X(0), qp.Y(0), qp.X(0)]
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -237,7 +237,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:
     """Test the initialization."""
 
     def test_init_change_op_basis_op(self):
@@ -310,7 +310,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.has_diagonalizing_gates is False
 
 
-class TestProperties:  # pylint: disable=too-few-public-methods
+class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst", list(ops))

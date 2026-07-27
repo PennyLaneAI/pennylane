@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the the logging module"""
 
-# pylint: disable=import-outside-toplevel, protected-access, no-member
 import logging
 
 import pytest
@@ -49,7 +48,7 @@ class TestLogging:
         with caplog.at_level(logging.DEBUG):
 
             @qp.qnode(dev, diff_method=None)
-            def circuit():  # pylint: disable=unused-variable
+            def circuit():
                 qp.PauliX(wires=0)
                 return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(0))
 

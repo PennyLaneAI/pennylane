@@ -100,9 +100,7 @@ class SelectPauliRot(Operation):
 
     resource_keys = {"num_wires", "rot_axis"}
 
-    def __init__(
-        self, angles, control_wires, target_wire, rot_axis="Z"
-    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(self, angles, control_wires, target_wire, rot_axis="Z"):
 
         self.hyperparameters["control_wires"] = Wires(control_wires)
         self.hyperparameters["target_wire"] = Wires(target_wire)

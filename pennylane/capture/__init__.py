@@ -184,7 +184,6 @@ from .subroutine import subroutine
 from .symbolic_array import symbolic_array
 
 if TYPE_CHECKING:
-    # pylint: disable=import-outside-toplevel, unused-import
     # We only import these if type-checking because JAX is imported unconditionally, so they
     # cannot be imported at runtime without ModuleNotFoundErrors if JAX isn't installed
     from .base_interpreter import PlxprInterpreter, eval_jaxpr
@@ -192,7 +191,7 @@ if TYPE_CHECKING:
     from .primitives import AbstractMeasurement, AbstractOperator, qnode_prim
 
 
-# pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
+# pylint: disable=import-outside-toplevel
 def __getattr__(key):
     if key == "QpPrimitive":
         from .custom_primitives import QpPrimitive

@@ -95,7 +95,7 @@ class LeftClassicalComparator(Operation):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         target_wire = Wires(target_wire)
         x_wires = Wires(x_wires)
@@ -187,7 +187,7 @@ class LeftClassicalComparator(Operation):
     @staticmethod
     def compute_decomposition(
         x_wires, L, target_wire, work_wires, comparator
-    ):  # pylint: disable=arguments-differ, too-many-arguments
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:

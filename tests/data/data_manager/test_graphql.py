@@ -7,7 +7,6 @@ import pennylane.data.data_manager
 from pennylane.data.data_manager.graphql import GRAPHQL_URL
 
 
-# pylint: disable=protected-access
 class TestGetGraphql:
     """Tests for the ``get_graphql()`` function."""
 

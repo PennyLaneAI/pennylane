@@ -14,7 +14,6 @@
 
 """Unit tests for the `_resolve_execution_config` helper function in PennyLane."""
 
-# pylint: disable=redefined-outer-name
 import pytest
 
 import pennylane as qp
@@ -99,7 +98,6 @@ def test_jax_jit_interface():
     assert resolved_config.mcm_config == expected_mcm_config
 
 
-# pylint: disable=unused-argument
 def test_no_device_vjp_if_not_supported():
     """Test that an error is raised for device_vjp=True if the device does not support it."""
 

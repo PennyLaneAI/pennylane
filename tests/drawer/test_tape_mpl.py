@@ -563,7 +563,6 @@ class TestControlledGates:
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
         with qp.queuing.AnnotatedQueue() as q_tape:
-            # pylint:disable=no-member
             qubit_unitary = qp.QubitUnitary(qp.RX.compute_matrix(0), wires=4)
             qp.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 

@@ -1061,7 +1061,6 @@ class TestScipySparse:
             _sparse_matrix_power_bruteforce(A, 1.5)
 
 
-# pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
     """Test the Interface enum class"""
 

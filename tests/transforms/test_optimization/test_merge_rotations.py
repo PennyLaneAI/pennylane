@@ -15,9 +15,6 @@
 Unit tests for the optimization transform ``merge_rotations``.
 """
 
-# pylint: disable=too-many-arguments
-
-
 import pytest
 from utils import compare_operation_lists
 

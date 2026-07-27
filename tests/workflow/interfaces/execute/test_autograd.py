@@ -34,7 +34,6 @@ def get_device(device_name, seed):
     return qp.device(device_name, seed=seed)
 
 
-# pylint: disable=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
 
@@ -240,7 +239,7 @@ class TestAutogradExecuteIntegration:
             res = qp.jacobian(lambda x: qp.math.hstack(cost(x)))(a)
         else:
             res = qp.jacobian(cost)(a)
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -393,7 +392,7 @@ class TestAutogradExecuteIntegration:
         jac = qp.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
         if not shots.has_partitioned_shots:
-            assert jac.shape == (4, 2)  # pylint: disable=no-member
+            assert jac.shape == (4, 2)
 
         d1 = -np.sin(x) * np.cos(y)
         d2 = -np.cos(x) * np.sin(y)
@@ -785,7 +784,6 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""

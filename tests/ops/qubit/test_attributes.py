@@ -471,7 +471,7 @@ class TestSupportsBroadcasting:
         assert np.allclose(mat2, expected_mat)
 
 
-all_qubit_operators = sorted(qp.ops.qubit.__all__)  # pylint: disable=no-member
+all_qubit_operators = sorted(qp.ops.qubit.__all__)
 unitarily_generated_ops = sorted(list(has_unitary_generator))
 
 

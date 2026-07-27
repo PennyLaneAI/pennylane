@@ -23,8 +23,6 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
-# pylint: disable=unidiomatic-typecheck, cell-var-from-loop
-
 
 @pytest.mark.jax
 def test_standard_validity():

@@ -15,7 +15,6 @@
 Unit tests for the qp.generator transform
 """
 
-# pylint: disable=too-few-public-methods
 from functools import reduce
 from operator import matmul
 
@@ -157,7 +156,7 @@ class SparseOp(CustomOp):
 ###################################################################
 
 
-class TestValidation:  # pylint: disable=too-few-public-methods
+class TestValidation:
 
     def test_non_hermitian_generator(self):
         """Check that an error is raised if the generator

@@ -30,7 +30,7 @@ from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, OneWireDynOp
 
-# pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
+# pylint: disable=unused-argument
 
 
 class CustomBase(Operator2):

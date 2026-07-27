@@ -410,7 +410,7 @@ def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
 @register_resources(_controlled_semi_adder_resource)
 def _controlled_semi_adder(
     base, control_wires, control_values=None, work_wires=None, work_wire_type="borrowed", **_
-):  # pylint: disable=too-many-arguments
+):
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     using building block described in Figure 4.

@@ -37,7 +37,7 @@ from tests.core.operator.operator2_utils import (
 )
 from tests.decomposition.conftest import decompositions, to_resources
 
-# pylint: disable=protected-access,too-few-public-methods,useless-parent-delegation,unused-argument
+# pylint: disable=protected-access, unused-argument
 
 
 class CustomOp(Operation):

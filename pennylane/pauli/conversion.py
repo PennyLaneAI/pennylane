@@ -90,7 +90,7 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
     return num_qubits, wire_order
 
 
-def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
+def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.

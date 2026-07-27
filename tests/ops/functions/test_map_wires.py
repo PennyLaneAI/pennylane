@@ -53,7 +53,7 @@ class TestMapWiresOperators:
         op = build_op()
 
         m_op = qp.map_wires(op, wire_map=wire_map)
-        assert isinstance(m_op, qp.ops.Prod)  # pylint:disable=no-member
+        assert isinstance(m_op, qp.ops.Prod)
         assert m_op.data == mapped_op.data
         assert m_op.wires == mapped_op.wires
         assert m_op.arithmetic_depth == mapped_op.arithmetic_depth

@@ -20,7 +20,7 @@ from pickle import PicklingError
 
 import numpy as np
 
-# pylint: disable=too-few-public-methods, unused-argument
+# pylint: disable=unused-argument
 import pytest
 import scipy.sparse
 
@@ -299,7 +299,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():  # pylint: disable=signature-differs
+        def compute_eigvals():
             return [-1, 1]
 
     with pytest.raises(

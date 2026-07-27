@@ -16,7 +16,6 @@ Unit tests for the :func:`pennylane.template.layer` function.
 Integration tests should be placed into ``test_templates.py``.
 """
 
-# pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 import pytest
 
 import pennylane as qp

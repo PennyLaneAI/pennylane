@@ -75,7 +75,6 @@ class TestDefaultBitMap:
 
     def test_empty(self):
         """Test creating empty bit map"""
-        # pylint: disable=use-implicit-booleaness-not-comparison
         bit_map = default_bit_map([])
         assert bit_map == {}
 
@@ -255,7 +254,6 @@ class TestUnwrapControls:
         assert isinstance(base, expected_base_cls)
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 class TestCwireConnections:
     """Tests for the cwire_connections helper method."""
 

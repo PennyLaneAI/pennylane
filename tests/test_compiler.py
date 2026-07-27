@@ -15,7 +15,6 @@
 Unit tests for the compiler subpackage.
 """
 
-# pylint: disable=import-outside-toplevel
 from unittest.mock import patch
 
 import mcm_utils
@@ -35,7 +34,7 @@ pytestmark = pytest.mark.catalyst
 from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
 from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
 
-# pylint: disable=too-few-public-methods, too-many-public-methods
+# pylint: disable=too-few-public-methods
 
 
 @pytest.fixture
@@ -609,11 +608,11 @@ class TestCatalystControlFlow:
                 return (x + 1) ** 2
 
             @conditional.else_if(x < -2)
-            def conditional_elif():  # pylint: disable=unused-variable
+            def conditional_elif():
                 return x + 1
 
             @conditional.otherwise
-            def conditional_false_fn():  # pylint: disable=unused-variable
+            def conditional_false_fn():
                 return -(x + 1)
 
             return conditional()

@@ -51,7 +51,7 @@ from .symbolicop2 import SymbolicOp2
 # pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
 
-class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
+class Controlled2(SymbolicOp2, is_baseclass=True):
     """The base class for controlled operators.
 
     This class acts as a common interface for all operators that can be considered controlled
@@ -124,7 +124,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         return obj
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         base: Operator,
         control_wires: WiresLike,
@@ -180,7 +180,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         super().__init__(**self._init_args)
 
     @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+    def __abstract_init__(  # pylint: disable=arguments-differ
         self,
         base: Operator,
         control_wires: WiresLike | AbstractWires,
@@ -481,7 +481,7 @@ def _bool_array_to_int(arr: list[bool]):
 # There are a couple of reasons for defining this as a distinct subclass of Controlled2 instead
 # of having just a single Controlled2 class that serve both as a base class interface and a
 # concrete operator type. See the PR description of #9647 for more details.
-class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
+class ControlledOp2(Controlled2):
     """Represents a controlled version of an arbitrary base operator.
 
     Args:
@@ -514,7 +514,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
     # overridden with a different signature, we must override __init__ so that the signature
     # of the __init__ is correctly retrieved as the signature of the operator subclass.
-    def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
+    def __init__(
         self,
         base: Operator,
         control_wires: WiresLike,
@@ -787,7 +787,7 @@ def _ctrl_single_work_wire_resource(
     }
 
 
-# pylint: disable=protected-access,unused-argument
+# pylint: disable=unused-argument
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""

@@ -15,7 +15,6 @@
 Unit tests for the available conditional utitlities for noise models.
 """
 
-# pylint: disable = too-few-public-methods
 import pytest
 
 import pennylane as qp

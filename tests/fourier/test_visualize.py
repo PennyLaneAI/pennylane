@@ -15,7 +15,7 @@
 Unit tests for :mod:`fourier` visualization functions.
 """
 
-# pylint: disable=too-few-public-methods,too-many-arguments
+# pylint: disable=too-few-public-methods
 
 import pytest
 

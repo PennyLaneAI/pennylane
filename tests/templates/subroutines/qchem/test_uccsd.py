@@ -17,7 +17,7 @@ Tests for the UCCSD template.
 
 import numpy as np
 
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -289,9 +289,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats", test_data_decomposition_new)
     # Note: UCCSD is not capture compatible
-    def test_decomposition_new(
-        self, s_wires, d_wires, weights, n_repeats
-    ):  # pylint: disable=unused-argument
+    def test_decomposition_new(self, s_wires, d_wires, weights, n_repeats):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.UCCSD(
             weights,

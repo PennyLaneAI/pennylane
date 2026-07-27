@@ -21,7 +21,7 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=no-self-use
 
 
 class TestResourceQubitUnitary:

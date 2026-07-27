@@ -597,7 +597,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         to more explicitly force registration for a given type.
 
         """
-        return generic_apply_transform.register(arg)  # pylint: disable=no-member
+        return generic_apply_transform.register(arg)
 
     def __call__(self, *args, **kwargs):
         if not args and not kwargs:
@@ -730,7 +730,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         return qnode
 
 
-class BoundTransform:  # pylint: disable=too-many-instance-attributes
+class BoundTransform:
     """A transform with bound inputs.
 
     Args:
@@ -1014,7 +1014,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         consts_slice = slice(n_args, n_args + n_consts)
         targs_slice = slice(n_args + n_consts, None)
 
-        results = _create_transform_primitive().bind(  # pylint: disable=protected-access
+        results = _create_transform_primitive().bind(
             *flat_args,
             *jaxpr.consts,
             *targs,

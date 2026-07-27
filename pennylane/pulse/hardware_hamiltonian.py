@@ -311,7 +311,6 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     """
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         coeffs,

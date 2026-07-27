@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for matrix expand functions."""
 
-# pylint: disable=too-few-public-methods,too-many-public-methods
+# pylint: disable=too-many-public-methods
 from functools import reduce
 
 import numpy as np

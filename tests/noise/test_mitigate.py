@@ -15,7 +15,7 @@
 Tests for mitigation transforms.
 """
 
-# pylint:disable=no-self-use, unnecessary-lambda-assignment, protected-access
+# pylint:disable=no-self-use, protected-access
 import pytest
 from packaging import version
 
@@ -578,7 +578,6 @@ class TestDifferentiableZNE:
 
     def test_polyfit(self):
         """Testing the custom diffable _polyfit function"""
-        # pylint: disable=protected-access
         x = np.linspace(1, 4, 4)
         y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = _polyfit(x, y, 2)

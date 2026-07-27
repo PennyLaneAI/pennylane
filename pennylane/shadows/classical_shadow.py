@@ -13,7 +13,6 @@
 # limitations under the License.
 """Classical Shadows base class with processing functions"""
 
-# pylint: disable = too-many-arguments
 import warnings
 from collections.abc import Iterable
 from string import ascii_letters
@@ -343,7 +342,6 @@ class ClassicalShadow:
 
         return math.squeeze(results)
 
-    # pylint: disable=too-many-positional-arguments
     def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None):
         r"""Compute entropies from classical shadow measurements.
 

@@ -15,8 +15,6 @@
 This module contains the Clifford simulator using ``stim``.
 """
 
-# pylint: disable=no-member
-
 import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
@@ -641,7 +639,6 @@ class DefaultClifford(Device):
             ShadowExpvalMP: self._sample_expval_shadow,
         }
 
-    # pylint: disable=too-many-positional-arguments
     def _apply_snapshot(
         self,
         circuit: QuantumScript,
@@ -868,7 +865,6 @@ class DefaultClifford(Device):
         z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         return 2 ** (-self._measure_stabilizer_entropy(z_stabs, list(meas.wires), log_base=2))
 
-    # pylint: disable=protected-access
     @staticmethod
     def _measure_stabilizer_entropy(stabilizer, wires, log_base=None):
         r"""Computes the Rényi entanglement entropy using stabilizer information.

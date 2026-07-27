@@ -292,8 +292,6 @@ def expected_grad_multi2(x):
 class TestGradient:
     """Test the gradient of qp.math.fidelity"""
 
-    # pylint: disable=too-many-arguments
-
     cost_fns = [
         (cost_fn_single, expected_res_single, expected_grad_single),
         (cost_fn_multi1, expected_res_multi1, expected_grad_multi1),

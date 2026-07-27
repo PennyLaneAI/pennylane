@@ -200,7 +200,7 @@ class QROM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-    ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
+    ):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -554,9 +554,7 @@ def _qrom_decomposition_resources(
 
 
 @register_resources(_qrom_decomposition_resources)
-def _qrom_decomposition(
-    data, control_wires, target_wires, work_wires, clean, **__
-):  # pylint: disable=unused-argument, too-many-arguments
+def _qrom_decomposition(data, control_wires, target_wires, work_wires, clean, **__):
     if len(control_wires) == 0:
         BasisEmbedding(data[0, :], wires=target_wires)
 
@@ -723,9 +721,7 @@ def _count_tempAND_in_measurement_qrom(k):
     return k - 2
 
 
-def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
-    num_bitstrings=None, num_target_wires=None, base_params=None, **_
-):
+def _qrom_measurement_resources(num_bitstrings=None, num_target_wires=None, base_params=None, **_):
     """Resource estimate for the measurement-based QROM decomposition.
 
     Each TemporaryAND is uncomputed via _measurement_uncompute which produces:
@@ -786,7 +782,7 @@ def _qrom_measurement_condition(
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-many-branches
+def _qrom_measurement_decomposition(
     data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
 ):
     """QROM decomposition using measurement-based uncomputation.

@@ -33,8 +33,6 @@ from pennylane.ops.op_math.pow2 import Pow2
 from tests.core.operator.operator2_utils import DynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
 
-# pylint: disable=unused-argument,arguments-differ,useless-parent-delegation,too-few-public-methods
-
 
 class NoPowOp(Operator2):
     """A base operator whose ``pow`` always raises ``PowUndefinedError``."""

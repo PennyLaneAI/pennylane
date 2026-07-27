@@ -358,7 +358,6 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
 def _signed_out_square_resources(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> dict:
-    # pylint: disable=unused-argument
     n = num_x_wires
     m = num_output_wires
     resources = defaultdict(int)

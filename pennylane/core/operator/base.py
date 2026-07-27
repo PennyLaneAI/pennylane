@@ -15,7 +15,6 @@
 Defines the base class for Operator and Operation.
 """
 
-# pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
@@ -198,7 +197,6 @@ class _GiveOperatorMeta(ABCCaptureMeta):
         return super().__new__(mcs, name, new_bases, attrs)
 
 
-# pylint: disable=too-few-public-methods
 class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
     """A class for checking if a object specifying implements the old version of :class:`~.Operator`.
 

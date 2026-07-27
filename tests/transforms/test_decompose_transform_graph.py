@@ -71,7 +71,7 @@ def test_weights_affect_graph_decomposition():
     ]
 
 
-class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOp(Operation):
     resource_keys = set()
 
     @property
@@ -79,7 +79,7 @@ class CustomOp(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
+class AnotherOp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -89,7 +89,7 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOpDynamicWireDecomp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -118,7 +118,7 @@ def _decomp_without_work_wire(wires, **__):
     qp.Toffoli(wires=wires[::1])
 
 
-class LargeOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class LargeOpDynamicWireDecomp(Operation):
     """A larger custom operation."""
 
     resource_keys = set()
@@ -321,7 +321,7 @@ class TestDecomposeGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOpWithFallback(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOpWithFallback(Operation):
             """Dummy custom op."""
 
             resource_keys = set()

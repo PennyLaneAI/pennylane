@@ -238,7 +238,6 @@ def test_multi_returns():
 
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
-    # pylint:disable=not-an-iterable
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params

@@ -288,7 +288,6 @@ class grad:
         the arguments in ``argnums``.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, h=None, method=None):
         self._forward = None
         self._grad_fn = None
@@ -400,7 +399,7 @@ class grad:
         """This function is a replica of ``autograd.grad``, with the only
         difference being that it returns both the gradient *and* the forward pass
         value."""
-        vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
+        vjp, ans = _make_vjp(fun, x)
 
         if vspace(ans).size != 1:
             raise TypeError(
@@ -657,7 +656,6 @@ class jacobian:
 
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, method=None, h=None):
         self._func = func
         self._argnums = argnums

@@ -306,7 +306,7 @@ class OutMultiplier(Operation):
         mod,
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=arguments-differ, too-many-arguments, unused-argument
+    ):  # pylint: disable=arguments-differ, too-many-arguments
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -385,7 +385,7 @@ def _out_multiplier_with_qft(
     work_wires: WiresLike,
     output_wires_zeroed: bool,
     **_,
-):  # pylint: disable=too-many-arguments, unused-argument
+):  # pylint: disable=too-many-arguments
     OutMultiplier.compute_decomposition(
         x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
     )

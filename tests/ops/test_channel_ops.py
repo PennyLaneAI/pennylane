@@ -755,7 +755,6 @@ class TestPauliError:
     )
     def test_wrong_parameters(self, operators, p, wires, error, message):
         """Test wrong parametrizations of PauliError"""
-        # pylint: disable=too-many-arguments
         with pytest.raises(error, match=message):
             channel.PauliError(operators, p, wires=wires)
 
@@ -1011,7 +1010,6 @@ class TestThermalRelaxationError:
     def test_t2_le_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg
         for t2 <= t1 give correct Kraus matrices"""
-        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 
@@ -1067,7 +1065,6 @@ class TestThermalRelaxationError:
     def test_t2_g_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg
         for t2 > t1 give correct Kraus matrices"""
-        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 

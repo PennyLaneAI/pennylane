@@ -155,7 +155,6 @@ def test_controlled_enough_work_wires(
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
     gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
 
-    # pylint: disable=too-many-arguments
     @decompose(gate_set=gate_set, num_work_wires=0)
     @qnode(dev)
     def controlled_increment(wires, init_state, work_wires, control_wires, control_values):
@@ -196,7 +195,6 @@ def test_controlled_allocates_work_wires(
     num_alloc_wires = len(wires) + len(control_wires) - 1 - len(work_wires)
     gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
 
-    # pylint: disable=too-many-arguments
     @decompose(gate_set=gate_set, num_work_wires=num_alloc_wires)
     @qnode(device("default.qubit", wires=len(wires + work_wires + control_wires) + num_alloc_wires))
     def controlled_increment(wires, init_state, work_wires, control_wires, control_values):

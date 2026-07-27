@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
 
-# pylint: disable=too-many-public-methods,too-many-arguments,protected-access
+# pylint: disable=too-many-public-methods, protected-access
 
 import pickle
 from copy import copy, deepcopy
@@ -943,7 +943,7 @@ class TestPauliSentence:
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
                 assert ps_summand.scalar == op_summand.scalar
-                if isinstance(ps_summand.base, qp.ops.Prod):  # pylint: disable=no-member
+                if isinstance(ps_summand.base, qp.ops.Prod):
                     for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
                         _compare_ops(pw_factor, op_factor)
                 else:
@@ -1394,9 +1394,7 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types(
-        self, op1, op2, true_res, convert1, convert2
-    ):  # pylint: disable=too-many-positional-arguments
+    def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
@@ -1409,9 +1407,7 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_pauli_to_op])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types_with_ops(
-        self, op1, op2, true_res, convert1, convert2
-    ):  # pylint: disable=too-many-positional-arguments
+    def test_pauli_word_comm_different_types_with_ops(self, op1, op2, true_res, convert1, convert2):
         """Test native comm in between a PauliWord, PauliSentence and Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)

@@ -19,7 +19,7 @@ Tests are divided by number of parameters and wires different operators take.
 import itertools
 import re
 
-# pylint: disable=too-many-arguments, too-many-public-methods
+# pylint: disable=too-many-public-methods
 from copy import deepcopy
 from functools import partial
 
@@ -259,7 +259,6 @@ def test_assert_equal_unspecified():
         def __init__(self):
             pass
 
-    # pylint: disable=unused-argument
     @_equal_dispatch.register
     def _(op1: RandomType, op2, **_):
         """always returns false"""
@@ -695,7 +694,7 @@ class TestEqual:
         )
 
     @pytest.mark.all_interfaces
-    def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
+    def test_equal_op_remaining(self):
         """Test optional arguments are working"""
         # pylint: disable=too-many-statements
         wire = 0
@@ -1353,7 +1352,6 @@ class TestEqual:
     def test_equal_subclass_returns_false(self):
         """Test that a strict subclass is not equal to its parent operator."""
 
-        # pylint: disable=too-few-public-methods
         class MyPauliX(qp.X):
             pass
 
@@ -1368,7 +1366,6 @@ class TestEqual:
     def test_equal_identity_subclass_returns_false(self):
         """Test that a subclass of Identity is not equal to Identity itself."""
 
-        # pylint: disable=too-few-public-methods
         class MyIdentity(qp.Identity):
             pass
 
@@ -2017,7 +2014,6 @@ class TestSymbolicOpComparison:
             ):
                 assert_equal(op1, op2)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         ("wires1", "controls1", "wires2", "controls2", "res"),
         [
@@ -3069,7 +3065,6 @@ class TestHilbertSchmidt:
         assert qp.equal(op, other_op, check_interface=False, check_trainability=False) is True
 
 
-# pylint: disable=too-few-public-methods
 class DepthIncreaseOperator(Operator):
     """Dummy class which increases depth by one"""
 

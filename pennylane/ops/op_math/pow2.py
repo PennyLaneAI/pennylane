@@ -360,7 +360,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 
     @register_condition(_condition_fn)
     @register_resources(_resource_fn)
-    def _impl(base, z, **__):  # pylint: disable=unused-argument
+    def _impl(base, z, **__):
         z_mod_period = z % period
         if z_mod_period == 1:
             apply(base)

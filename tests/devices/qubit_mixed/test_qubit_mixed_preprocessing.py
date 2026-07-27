@@ -31,7 +31,6 @@ from pennylane.devices.default_mixed import (
 from pennylane.exceptions import DecompositionWarning, DeviceError
 
 
-# pylint: disable=protected-access
 def test_mid_circuit_measurement_preprocessing():
     """Test mid-circuit measurement preprocessing not supported with default.mixed device."""
     dev = DefaultMixed(wires=2)
@@ -71,7 +70,6 @@ class NoMatOp(qp.operation.Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when expected."""
 
@@ -95,7 +93,6 @@ def custom_decomps():
         yield
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 

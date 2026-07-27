@@ -17,7 +17,7 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=use-implicit-booleaness-not-comparison,no-self-use,too-many-arguments
+# pylint: disable=no-self-use
 
 
 class TestMultiRZ:

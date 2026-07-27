@@ -15,7 +15,7 @@
 Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 
-# pylint: disable=no-self-use,too-many-arguments,protected-access
+# pylint: disable=no-self-use
 
 import numpy as np
 import pytest
@@ -129,7 +129,6 @@ def circuit_measure_multiple_with_max_twice():
     )
 
 
-# pylint: disable=too-many-public-methods
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
 

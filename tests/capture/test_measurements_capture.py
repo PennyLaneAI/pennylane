@@ -280,7 +280,6 @@ def test_primitive_none_behavior():
     be created, but it just won't be captured into jaxpr.
     """
 
-    # pylint: disable=too-few-public-methods
     class MyMeasurement(qp.measurements.MeasurementProcess):
         pass
 
@@ -412,7 +411,6 @@ class TestExpvalVar:
     def test_capture_operator2(self, m_type, defined_outside):
         """Test that the expectation value of an observable can be captured."""
 
-        # pylint: disable=too-few-public-methods
         class PauliX(qp.core.Operator2):
             """Operator2 version of X."""
 

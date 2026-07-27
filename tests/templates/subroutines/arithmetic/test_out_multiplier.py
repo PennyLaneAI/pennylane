@@ -437,7 +437,6 @@ class TestOutMultiplier:
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         out = circuit()[0, :]
 
         assert np.allclose(2 ** np.arange(3, -1, -1) @ out, (x * y) % mod)

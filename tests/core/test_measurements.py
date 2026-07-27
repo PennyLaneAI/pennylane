@@ -44,7 +44,7 @@ from pennylane.measurements import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, unused-argument
+# pylint: disable=too-few-public-methods
 
 
 def test_measurements_module_getattr():
@@ -379,10 +379,10 @@ class TestProperties:
         m3 = qp.measure(1)
         m2.measurements[0]._hyperparameters["meas_uid"] = m0.measurements[0]._hyperparameters[
             "meas_uid"
-        ]  # pylint: disable=protected-access
+        ]
         m3.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
             "meas_uid"
-        ]  # pylint: disable=protected-access
+        ]
 
         wire_map = {"a": 0, "b": 1}
 
@@ -437,7 +437,6 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qp.math.sum(samples[..., self.wires])
 

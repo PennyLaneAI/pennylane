@@ -26,7 +26,7 @@ from pennylane.core.qscript import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
 
-_pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
+_pyzx_010 = Version(pyzx.__version__) >= Version("0.10")
 
 
 def test_import_pyzx_error(monkeypatch):

@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
 
-# pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
 from functools import partial
 
 import pytest
@@ -44,21 +43,18 @@ def grad_fn(tape, dev, fn=qp.gradients.param_shift, **kwargs):
     return fn(dev.execute(tapes))
 
 
-# pylint: disable=too-few-public-methods
 class RY_with_F(qp.RY):
     """Custom variant of qp.RY with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_with_F(qp.RX):
     """Custom variant of qp.RX with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_par_dep_recipe(qp.RX):
     """RX operation with a parameter-dependent grad recipe."""
 
@@ -559,9 +555,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
-    def test_Rot_gradient(
-        self, mocker, theta, shift, broadcast, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_Rot_gradient(self, mocker, theta, shift, broadcast, seed):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
 
@@ -871,9 +865,7 @@ class TestParameterShiftRule:
             assert np.allclose(res[1], expval_expected[1], atol=finite_diff_tol)
 
     @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qp.RY, 0), (qp.RX, RY_with_F, 1)])
-    def test_fallback_probs(
-        self, RX, RY, argnum, mocker, broadcast
-    ):  # pylint:disable=too-many-arguments
+    def test_fallback_probs(self, RX, RY, argnum, mocker, broadcast):
         """Test that fallback gradient functions are correctly used with probs"""
         spy = mocker.spy(qp.gradients, "finite_diff")
         dev = qp.device("default.qubit", wires=3)

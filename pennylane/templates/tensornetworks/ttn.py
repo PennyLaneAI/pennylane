@@ -15,8 +15,6 @@
 Contains the TTN template.
 """
 
-# pylint: disable=too-many-arguments
-
 import warnings
 
 import numpy as np

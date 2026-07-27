@@ -15,7 +15,7 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 
-# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
+# pylint: disable=import-outside-toplevel, no-self-use
 from copy import copy
 
 import pytest
@@ -682,9 +682,7 @@ class Testqsvt:
             (qp.Z(0) - qp.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
         ],
     )
-    def test_raise_error(
-        self, A, poly, block_encoding, encoding_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_raise_error(self, A, poly, block_encoding, encoding_wires, msg_match):
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):

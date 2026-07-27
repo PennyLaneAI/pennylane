@@ -16,7 +16,7 @@
 Tests the ``DecomposeInterpreter`` with the new graph-based decomposition system enabled.
 """
 
-# pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position, protected-access
+# pylint: disable=wrong-import-position
 
 from collections import defaultdict
 
@@ -40,7 +40,7 @@ pytestmark = [
 ]
 
 
-class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOpDynamicWireDecomp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -69,7 +69,7 @@ def _decomp_without_work_wire(wires, **__):
     qp.Toffoli(wires=wires[::1])
 
 
-class LargeOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class LargeOpDynamicWireDecomp(Operation):
     """A larger custom operation."""
 
     resource_keys = set()
@@ -115,7 +115,7 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operation):
             """Dummy custom op."""
 
             resource_keys = set()
@@ -274,7 +274,7 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_decompose_adjoint(self):
         """Tests that an adjoint operation is decomposed."""
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             resource_keys = set()
 
             @property
@@ -408,7 +408,7 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_decompose_with_mcm(self, m_type):
         """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):
             resource_keys = set()
 
             @property

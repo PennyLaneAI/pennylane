@@ -15,7 +15,6 @@
 Unit tests for generating basis set default parameters.
 """
 
-# pylint: disable=too-many-arguments
 import sys
 
 import pytest

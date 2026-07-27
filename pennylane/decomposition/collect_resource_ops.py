@@ -80,9 +80,7 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)
-def _adjoint_transform_prim(
-    self, *invals, jaxpr, lazy, n_consts
-):  # pylint: disable=unused-argument
+def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
     """Collect all operations in the base plxpr and create adjoint resource ops with them."""
     consts = invals[:n_consts]
     args = invals[n_consts:]

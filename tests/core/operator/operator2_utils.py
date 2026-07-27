@@ -12,8 +12,6 @@
 # limitations under the License.
 """Shared ``Operator2`` subclasses used across the ``tests/core/`` suite."""
 
-# pylint: disable=too-few-public-methods,useless-parent-delegation
-
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.typing import Float, Wire

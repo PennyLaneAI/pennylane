@@ -57,11 +57,9 @@ class DummyDevice(qp.devices.LegacyDevice):
     def reset(self):
         pass
 
-    # pylint: disable=unused-argument
     def apply(self, operation, wires, par):
         return 0.0
 
-    # pylint: disable=unused-argument
     def expval(self, observable, wires, par):
         return 0.0
 
@@ -79,7 +77,6 @@ class DeviceDerivatives(DummyDevice):
         return capabilities
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -800,7 +797,7 @@ class TestIntegration:
             circuit()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
 
@@ -992,7 +989,6 @@ class TestTapeExpansion:
 
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1031,7 +1027,6 @@ class TestTapeExpansion:
         not expanded"""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1068,7 +1063,6 @@ class TestTapeExpansion:
         expanded when applying the gradient transform, but not for execution."""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class PhaseShift(qp.PhaseShift):
             """custom phase shift."""
 

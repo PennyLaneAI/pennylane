@@ -37,8 +37,6 @@ from pennylane.transforms.dynamic_one_shot import (
     parse_native_mid_circuit_measurements,
 )
 
-# pylint: disable=too-few-public-methods, too-many-arguments
-
 
 def test_pass_name():
     """Makes sure that the pass_name is set correctly. Must match Catalyst pass name."""

@@ -15,7 +15,6 @@
 Unit tests for the eigvals transform
 """
 
-# pylint: disable=too-few-public-methods
 from functools import reduce
 
 import pytest

@@ -12,7 +12,7 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=redefined-outer-name,protected-access,too-few-public-methods
+# pylint: disable=protected-access, too-few-public-methods
 # TODO: [sc-120817] Add interface tests
 # TODO: [sc-120982] Add integration tests
 
@@ -309,7 +309,6 @@ class TestInitSubclass:
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": float}
 
-            # pylint: disable=useless-parent-delegation
             def __init__(self, phi, wires):
                 super().__init__(phi, wires)
 
@@ -335,7 +334,6 @@ class TestInitSubclass:
             wire_argnames = ()
 
             def __init__(self):
-                # pylint: disable=useless-parent-delegation
                 super().__init__()
 
         assert Op.has_fixed_sig is True
@@ -1356,7 +1354,7 @@ class TestDunderMethods:
             wire_argnames = ("wires",)
             arg_specs = {"wires": Wire[1]}
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
         op = Op(Wire[1])
@@ -1365,7 +1363,7 @@ class TestDunderMethods:
         class Op2(Operator2):
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
         op = Op2(Wire[1])
@@ -1567,7 +1565,6 @@ class TestLabel:
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
-            # pylint: disable=unused-argument
             def label(self, decimals=None, base_label=None, cache=None):
                 return "custom_label"
 
@@ -1790,7 +1787,6 @@ class TestHasRepresentations:
         """Test that ``has_matrix`` is True when ``matrix`` is overridden."""
 
         class WithMatrix(Operator2):
-            # pylint: disable=unused-argument
             def matrix(self, wire_order=None):
                 return np.eye(2)
 
@@ -1820,7 +1816,6 @@ class TestHasRepresentations:
         """Test that ``has_sparse_matrix`` is True when ``sparse_matrix`` is overridden."""
 
         class WithSparse(Operator2):
-            # pylint: disable=unused-argument
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2))
 
@@ -2402,7 +2397,6 @@ class TestStatePrepBase:
         class MyStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
-            # pylint: disable=useless-parent-delegation
             def __init__(self, wires):
                 super().__init__(wires)
 
@@ -2414,9 +2408,8 @@ class TestStatePrepBase:
         assert op.label(base_label="|x⟩") == "|x⟩"
 
     def test_interface_not_implemented(self):
-        """Tests that an error is raised if an interface isn't implemented."""
+        """Tests that an error is raised if an interface isn't implemented."""  # pylint: disable=abstract-method
 
-        # pylint: disable=useless-parent-delegation,abstract-method
         class BadStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
@@ -2426,7 +2419,7 @@ class TestStatePrepBase:
             # state_vector is not implemented!
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
-            BadStatePrep(0)  # pylint: disable=abstract-class-instantiated
+            BadStatePrep(0)
 
 
 class TestLegacyGradMethodProperty:

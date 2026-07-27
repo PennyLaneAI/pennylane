@@ -383,9 +383,7 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize(
         "gate_set", [[qp.Hadamard, qp.CNOT, qp.PauliX, qp.GlobalPhase, qp.RZ], None]
     )
-    def test_grover(
-        self, max_expansion, gate_set, wires, work_wires, autograph
-    ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
+    def test_grover(self, max_expansion, gate_set, wires, work_wires, autograph):
         """Test that Grover gives correct result after dynamic decomposition."""
 
         import jax

@@ -107,7 +107,6 @@ class TestGridOp:
 class TestGridIterator:
     """Tests for the GridIterator class."""
 
-    # pylint: disable = too-many-arguments
     @pytest.mark.parametrize(
         "x0, x1, y0, y1, num",
         [

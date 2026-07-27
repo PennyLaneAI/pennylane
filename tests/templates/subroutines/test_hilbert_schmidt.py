@@ -25,8 +25,6 @@ from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 
-# pylint: disable=expression-not-assigned
-
 
 # pylint: disable=protected-access
 @pytest.mark.jax

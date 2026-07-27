@@ -15,7 +15,7 @@
 
 import numpy as np
 
-# pylint: disable=protected-access,too-few-public-methods,unnecessary-lambda
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp

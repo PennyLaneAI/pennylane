@@ -25,7 +25,7 @@ from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
+# pylint: disable=unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
 

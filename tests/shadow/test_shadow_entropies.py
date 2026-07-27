@@ -14,7 +14,7 @@
 
 """Tests for shadow entropies"""
 
-# pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
+# pylint:disable=no-self-use, unpacking-non-sequence
 
 import pytest
 

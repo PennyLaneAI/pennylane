@@ -194,7 +194,7 @@ class TestSplitNonCommuting:
     ):
         """Tests that precomputed grouping of a single Hamiltonian is used."""
 
-        H.grouping_indices = grouping_indices  # pylint: disable=protected-access
+        H.grouping_indices = grouping_indices
         initial_tape = qp.tape.QuantumScript([qp.X(0)], [qp.expval(H)], shots=100)
         tapes, fn = split_non_commuting(initial_tape)
         assert len(tapes) == len(grouping_indices)
@@ -359,9 +359,7 @@ class TestSplitNonCommuting:
             ),
         ],
     )
-    def test_grouping_strategies(
-        self, obs, groups, results, expected_result, grouping_strategy
-    ):  # pylint: disable=too-many-arguments
+    def test_grouping_strategies(self, obs, groups, results, expected_result, grouping_strategy):
         """Tests wire-based grouping and qwc grouping."""
 
         initial_tape = qp.tape.QuantumScript(

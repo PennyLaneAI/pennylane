@@ -480,7 +480,6 @@ class XMidMeasure(ParametricMidMeasure):
         )
         return (), (self.wires, metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
@@ -544,7 +543,6 @@ class YMidMeasure(ParametricMidMeasure):
         )
         return (), (self.wires, metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,

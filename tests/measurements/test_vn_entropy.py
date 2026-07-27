@@ -23,7 +23,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-arguments, no-member
+# pylint: disable=no-member
 
 
 def expected_entropy_ising_xx(param):

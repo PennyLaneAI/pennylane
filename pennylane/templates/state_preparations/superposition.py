@@ -234,9 +234,7 @@ class Superposition(Operation):
 
     resource_keys = {"num_wires", "num_coeffs", "bases"}
 
-    def __init__(
-        self, coeffs, bases, wires, work_wire
-    ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
+    def __init__(self, coeffs, bases, wires, work_wire):
 
         if not all(
             all(qp.math.isclose(i, 0.0) or qp.math.isclose(i, 1.0) for i in b) for b in bases

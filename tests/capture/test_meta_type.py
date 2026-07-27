@@ -17,7 +17,6 @@ Unit tests for the CaptureMeta metaclass.
 
 from inspect import signature
 
-# pylint: disable=protected-access, undefined-variable
 import pytest
 
 from pennylane.capture.capture_meta import CaptureMeta

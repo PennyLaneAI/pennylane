@@ -277,7 +277,7 @@ class OutPoly(Operation):
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         r"""Initialize the OutPoly class"""
 
         registers_wires = [*input_registers, output_wires]
@@ -390,7 +390,7 @@ class OutPoly(Operation):
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=unused-argument, arguments-differ
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

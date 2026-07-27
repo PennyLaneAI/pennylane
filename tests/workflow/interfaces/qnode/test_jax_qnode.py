@@ -13,7 +13,7 @@
 # limitations under the License.
 """Integration tests for using the JAX-Python interface with a QNode"""
 
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
+# pylint: disable=too-many-arguments
 
 from itertools import product
 
@@ -213,7 +213,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "reversed-direct"
 
-        class MyU3(qp.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qp.U3):
 
             name = "MyU3"
 
@@ -794,7 +794,7 @@ class TestShotsIntegration:
 
         # execute with shots=100
         res = qp.set_shots(shots=100)(circuit)(a, b)
-        assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
+        assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
@@ -909,7 +909,6 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, dev_name, diff_method, grad_on_execution, device_vjp, seed):
         """Test that the gradient of chained QNodes works without error"""
-        # pylint:disable=too-few-public-methods
 
         class Template(qp.templates.StronglyEntanglingLayers):
             def decomposition(self):
@@ -1434,7 +1433,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):
             grad_method = None
 
             def decomposition(self):

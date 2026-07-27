@@ -655,7 +655,7 @@ class TestExpvalMeasurement:
         res = qp.shadow_expval(H, k=10)
 
         copied_res = copy.copy(res)
-        assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
+        assert type(copied_res) == type(res)
         assert copied_res._shortname == res._shortname  # pylint: disable=protected-access
         qp.assert_equal(copied_res.H, res.H)
         assert copied_res.k == res.k

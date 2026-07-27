@@ -376,7 +376,6 @@ class Select(Operation):
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, ops, control, work_wires=None, partial=False):
         control = Wires(control)
         work_wires = Wires(() if work_wires is None else work_wires)

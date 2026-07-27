@@ -78,7 +78,6 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         return new_op
 
 
-# pylint: disable=too-many-arguments
 @bind_new_parameters.register
 def bind_new_dynamic_arguments(
     op: Operator2,

@@ -27,8 +27,6 @@ from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=consider-using-generator
-
 
 # -----------------------------
 # Wires Data Structure
@@ -80,7 +78,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
+class BBQRAM(Operation):
     r"""Bucket-brigade QRAM with explicit bus routing using 3 wires per node. Bucket-brigade QRAM
     achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`, where :math:`N` is
     the size of the classical data register being queried. For more theoretical details on how this
@@ -201,7 +199,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         control_wires = Wires(control_wires)
 
         if isinstance(data, (list, tuple)):
@@ -328,7 +326,7 @@ def _leaf_ops_for_bit(wire_manager, data, n_k, j):
 
 
 @register_resources(_bucket_brigade_qram_resources, exact=False)
-def _bucket_brigade_qram_decomposition(data, wire_manager, **__):  # pylint: disable=unused-argument
+def _bucket_brigade_qram_decomposition(data, wire_manager, **__):
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
     n_k = len(control_wires)
@@ -474,7 +472,7 @@ class HybridQRAM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         k: int,  # define the select part size, remaining part is tree part
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         if isinstance(data, (list, tuple)):
             data = math.array(data)
@@ -725,9 +723,7 @@ def _block_tree_query_ops(
 
 
 @register_resources(_hybrid_qram_resources, exact=False)
-def _hybrid_qram_decomposition(
-    data, tree_wire_manager, select_wires, signal_wire, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+def _hybrid_qram_decomposition(data, tree_wire_manager, select_wires, signal_wire, **_):
     k = len(select_wires)
 
     signal = signal_wire[0]
@@ -874,7 +870,6 @@ class SelectOnlyQRAM(Operation):
         "num_target_wires",
     }
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         data: TensorLike | Sequence[str],
@@ -977,7 +972,7 @@ def _flip_controls(control_wires, control_vals):
 @register_resources(_select_only_qram_resources, exact=False)
 def _select_only_qram_decomposition(
     data, select_value, select_wires, control_wires, target_wires, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)

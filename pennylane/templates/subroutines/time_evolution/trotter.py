@@ -231,9 +231,7 @@ class TrotterProduct(Operation):
         # accepts no wires, so bypasses the wire processing.
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian=True
-    ):
+    def __init__(self, hamiltonian, time, n=1, order=1, check_hermitian=True):
         r"""Initialize the TrotterProduct class"""
 
         if order <= 0 or order != 1 and order % 2 != 0:
@@ -537,7 +535,6 @@ class TrotterizedQfunc(Operation):
 
     """
 
-    # pylint: disable = too-many-arguments
     def __init__(
         self,
         time,

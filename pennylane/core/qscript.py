@@ -970,7 +970,6 @@ class QuantumScript:
             self._specs = {"resources": resources, "shots": self.shots}
         return self._specs
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
         wire_order: Iterable[Hashable] | None = None,

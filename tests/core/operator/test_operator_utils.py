@@ -23,7 +23,7 @@ from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=useless-parent-delegation,too-few-public-methods
+# pylint: disable=too-few-public-methods
 
 
 class TestAbstractifyBasics:

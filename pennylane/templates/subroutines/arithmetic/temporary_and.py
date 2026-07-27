@@ -275,7 +275,7 @@ def _adjoint_temporary_and_resources(base_class=None, base_params=None):
 
 
 @register_resources(_adjoint_temporary_and_resources, exact=False)
-def _adjoint_temporary_and(wires: WiresLike, **kwargs):  # pylint: disable=unused-argument
+def _adjoint_temporary_and(wires: WiresLike, **kwargs):
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements as found in https://arxiv.org/abs/1805.03662."""
     cvals = kwargs["base"].hyperparameters["control_values"]
     ops.cond(math.logical_not(cvals[0]), ops.X)(wires[0])

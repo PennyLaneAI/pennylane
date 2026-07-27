@@ -28,7 +28,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= signature-differs, arguments-differ, too-many-arguments
+# pylint: disable= signature-differs, arguments-differ
 
 
 class UniformStatePrep(ResourceOperator):

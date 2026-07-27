@@ -56,8 +56,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
     except ImportError:  # pragma: no cover
         return None, None
 
-    # pylint: disable=redefined-outer-name, too-few-public-methods
-
+    # pylint: disable=redefined-outer-name
     class ControlTransformInterpreter(PlxprInterpreter):
         """Interpreter for replacing control transforms with individually controlled ops."""
 
@@ -925,7 +924,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             )
 
 
-def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=unused-argument
+def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:
     """Return a GateSet and a callable that returns True iff an operator is in the gate set."""
 
     if gate_set is None and enabled_graph():

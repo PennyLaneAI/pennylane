@@ -33,7 +33,7 @@ else:
     jax = None
 
 
-# pylint: disable=too-many-public-methods, too-many-positional-arguments
+# pylint: disable=too-many-public-methods
 class TestWires:
     """Tests for the ``Wires`` class."""
 
@@ -513,7 +513,6 @@ class TestWires:
             (Wires([]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4, 5]), Wires([1, 2, 3, 4, 5])),
         ],
     )
-    # pylint: disable=too-many-arguments
     def test_multiple_union(self, wire_a, wire_b, wire_c, wire_d, expected):
         """
         Test the union operation (|) with multiple Wires objects.

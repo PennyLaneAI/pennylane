@@ -74,7 +74,6 @@ def _assert_equal_ops(ops0, ops1, error_msg: str):
                 raise AssertionError(error_msg) from e
 
 
-# pylint: disable=too-many-branches
 def _check_decomposition(op, skip_wire_mapping):
     """Checks involving the decomposition."""
     if not op.has_decomposition:
@@ -84,7 +83,6 @@ def _check_decomposition(op, skip_wire_mapping):
             qp.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )()
-        # pylint: disable=expression-not-assigned
         _, args, kwargs = _get_decomp_args(op)
         _assert_error_raised(
             op.compute_decomposition,

@@ -17,7 +17,7 @@ r"""Resource operators for non parametric single qubit operations."""
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 
-# pylint: disable=arguments-differ, unused-argument
+# pylint: disable=unused-argument
 
 
 def hadamard_controlled_resource_decomp(

@@ -23,7 +23,7 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.templates.stateprep import AliasSampling, MPSPrep, QROMStatePreparation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=no-self-use
 
 
 class TestBasisStatePrep:

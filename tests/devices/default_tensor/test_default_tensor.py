@@ -682,7 +682,7 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
         """Test that decompositions requiring more work wires than available are discarded."""
 
         # Create a mock operation with different decomposition options
-        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operator):
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)

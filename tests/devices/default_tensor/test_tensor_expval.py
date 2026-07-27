@@ -29,7 +29,7 @@ quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
 
-# pylint: disable=too-many-arguments, redefined-outer-name
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(

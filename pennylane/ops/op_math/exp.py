@@ -211,7 +211,7 @@ class Exp(ScalarSymbolicOp, Operation):
         return (self.base, self.data[0]), ()
 
     @classmethod
-    def _unflatten(cls, data, metadata):  # pylint: disable=unused-argument
+    def _unflatten(cls, data, metadata):
         base, coeff = data
         return cls(base, coeff)
 
@@ -248,7 +248,6 @@ class Exp(ScalarSymbolicOp, Operation):
     def resource_params(self) -> dict:
         return {"base": self.base}
 
-    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     @queuing.QueuingManager.stop_recording()
     def has_decomposition(self):

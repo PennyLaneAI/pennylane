@@ -326,7 +326,6 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.

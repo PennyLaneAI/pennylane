@@ -30,7 +30,6 @@ from pennylane.gradients.pulse_gradient import (
 )
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.jax
 class TestSplitEvolOps:
     """Tests for the helper method _split_evol_ops that samples a splitting time and splits up
@@ -252,8 +251,6 @@ class TestSplitEvolTapes:
 class TestParshiftAndIntegrate:
     """Test the helper routine ``_parshift_and_integrate``. Most tests use uniform
     return types and parameters, so that we can test against simple tensor contractions."""
-
-    # pylint: disable=too-many-arguments
 
     @pytest.mark.parametrize("multi_term", [1, 4])
     @pytest.mark.parametrize("meas_shape", [(), (4,)])
@@ -829,7 +826,7 @@ class TestStochPulseGrad:
             ),
         ),
     )
-    def test_all_zero_grads(self, ops, arg, exp_shapes):  # pylint:disable=unused-argument
+    def test_all_zero_grads(self, ops, arg, exp_shapes):
         """Test that a zero gradient is returned when all trainable parameters are
         identified to have zero gradient in advance."""
         import jax
@@ -1307,7 +1304,7 @@ class TestStochPulseGrad:
         jax.clear_caches()
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_shots_attribute(self, shots):  # pylint:disable=unused-argument
+    def test_shots_attribute(self, shots):
         """Tests that the shots attribute is copied to the new tapes"""
         tape = qp.tape.QuantumTape([], [qp.expval(qp.PauliZ(0)), qp.probs([1, 2])], shots=shots)
         with pytest.warns(UserWarning, match="Attempted to compute the gradient of a tape with no"):

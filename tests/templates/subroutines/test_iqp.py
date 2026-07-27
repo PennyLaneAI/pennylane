@@ -85,7 +85,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
-def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
+def test_decomposition_new(weights, pattern, spin_sym, wires):
     op = IQP(weights, wires, pattern, spin_sym)
 
     for rule in list_decomps(IQP):
@@ -93,7 +93,7 @@ def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disabl
 
 
 @qnode(dev)
-def iqp_circuit(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
+def iqp_circuit(weights, pattern, spin_sym, wires):
     IQP(weights, wires, pattern, spin_sym)
     return probs(wires=wires)
 
@@ -124,9 +124,7 @@ def iqp_circuit(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-
         ),
     ],
 )
-def test_decomposition_contents(
-    weights, pattern, spin_sym, wires, expected_circuit
-):  # pylint: disable=too-many-arguments
+def test_decomposition_contents(weights, pattern, spin_sym, wires, expected_circuit):
     with queuing.AnnotatedQueue() as q:
         iqp_circuit(weights, pattern, spin_sym, wires)
 

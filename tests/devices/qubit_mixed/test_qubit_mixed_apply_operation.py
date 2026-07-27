@@ -128,7 +128,7 @@ def expand_matrices(op, num_q, batch_size=0):
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestOperation:  # pylint: disable=too-few-public-methods
+class TestOperation:
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     unbroadcasted_ops = [
@@ -382,7 +382,6 @@ class TestApplyGroverOperator:
 class TestApplyMultiControlledX:
     """Test that MultiControlledX is applied correctly to mixed states."""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize(
         "num_wires, interface, expected_method",
         [
@@ -420,7 +419,6 @@ class TestApplyMultiControlledX:
             assert not spy_einsum.called
             assert not spy_tensordot.called
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize("interface", ml_frameworks_list[2:])
     @pytest.mark.parametrize(
         "num_wires, expected_method",
@@ -612,7 +610,7 @@ class TestApplyChannel:
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestBroadcasting:
     """Tests that broadcasted operations are applied correctly."""
 
     broadcasted_ops = [
@@ -778,7 +776,6 @@ class TestSnapshot:
             expected_values = measure(qp.expval(qp.PauliZ(0)), initial_state, is_state_batched=True)
             assert math.allclose(debugger.snapshots[tag], expected_values)
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize(
         "measurement",
         [

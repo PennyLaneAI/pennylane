@@ -26,8 +26,6 @@ try:
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
-# pylint: disable=too-many-positional-arguments
-
 
 def _to_tuple(a):
     """Converts int or iterable to tuple"""

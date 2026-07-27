@@ -30,7 +30,7 @@ from pennylane.measurements import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, unused-argument, protected-access
+# pylint: disable=protected-access
 
 
 class NotValidMeasurement(MeasurementProcess):
@@ -171,7 +171,7 @@ class TestMeasurementTransform:
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {1000: 1}  # pylint:disable=protected-access
+        assert circuit() == {1000: 1}
 
     def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""

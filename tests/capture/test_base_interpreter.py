@@ -15,7 +15,7 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking,wrong-import-position
+# pylint: disable=protected-access, unbalanced-tuple-unpacking, wrong-import-position
 import pytest
 
 import pennylane as qp
@@ -55,7 +55,6 @@ class SimplifyInterpreter(PlxprInterpreter):
         return new_mp
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 def test_env_and_initialized():
     """Test that env is initialized at the start."""
 
@@ -353,7 +352,7 @@ def handle_add_3(self, x):  # pylint: disable=unused-argument
     return x + scalar
 
 
-#  pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods
 class TestHigherOrderPrimitiveRegistrations:
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_transform(self, lazy):

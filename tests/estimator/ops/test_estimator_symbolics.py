@@ -26,7 +26,7 @@ from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use, too-few-public-methods
+# pylint: disable=no-self-use
 
 
 class DummyOp(qre.ResourceOperator):

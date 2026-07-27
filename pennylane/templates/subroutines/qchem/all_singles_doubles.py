@@ -15,7 +15,7 @@ r"""
 Contains the AllSinglesDoubles template.
 """
 
-# pylint: disable=too-many-arguments,protected-access
+# pylint: disable=protected-access
 import copy
 from collections.abc import Sequence
 

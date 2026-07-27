@@ -50,11 +50,9 @@ class DummyDevice(qp.devices.LegacyDevice):
     def reset(self):
         pass
 
-    # pylint: disable=unused-argument
     def apply(self, operation, wires, par):
         return 0.0
 
-    # pylint: disable=unused-argument
     def expval(self, observable, wires, par):
         return 0.0
 
@@ -240,15 +238,9 @@ def test_preprocessing_program():
     config = facade.setup_execution_config(circuit=tape)
     program = facade.preprocess_transforms(config)
 
-    assert (
-        program[0].tape_transform == qp.defer_measurements.tape_transform
-    )  # pylint: disable=no-member
-    assert (
-        program[1].tape_transform == legacy_device_batch_transform.tape_transform
-    )  # pylint: disable=no-member
-    assert (
-        program[2].tape_transform == legacy_device_expand_fn.tape_transform
-    )  # pylint: disable=no-member
+    assert program[0].tape_transform == qp.defer_measurements.tape_transform
+    assert program[1].tape_transform == legacy_device_batch_transform.tape_transform
+    assert program[2].tape_transform == legacy_device_expand_fn.tape_transform
 
     m0 = qp.measure(0)
     tape = qp.tape.QuantumScript(

@@ -172,9 +172,7 @@ class TestQROM:
             ),
         ],
     )
-    def test_operation_result(
-        self, data, target_wires, control_wires, work_wires, clean
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, data, target_wires, control_wires, work_wires, clean):
         """Test the correctness of the QROM template output."""
         dev = qp.device("default.qubit")
 
@@ -340,11 +338,9 @@ class TestQROM:
             ),
             ([[1], [0], [0], [1]], [0, 1], [2], [], False),
             ([[1], [0], [0], [1]], [0, 1], [2], [3, 4], False),
-        ],  # pylint: disable=too-many-arguments
+        ],
     )
-    def test_decomposition_new(
-        self, data, control_wires, target_wires, work_wires, clean
-    ):  # pylint: disable=too-many-arguments
+    def test_decomposition_new(self, data, control_wires, target_wires, work_wires, clean):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.QROM(
             data,

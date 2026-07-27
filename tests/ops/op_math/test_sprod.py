@@ -262,7 +262,6 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=False`
         has `has_matrix=True` as well."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qp.RX):
             """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
@@ -275,7 +274,6 @@ class TestMscMethods:
     def test_has_diagonalizing_gates(self, value):
         """Test that SProd defers has_diagonalizing_gates to base operator."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -891,7 +889,7 @@ class TestSimplify:
         sprod_op = SProd(
             2, SProd(2, qp.RZ(1.32, wires=0)) + qp.Identity(wires=0) + qp.RX(1.9, wires=1)
         )
-        final_op = qp.ops.Sum(  # pylint:disable=no-member
+        final_op = qp.ops.Sum(
             SProd(4, qp.RZ(1.32, wires=0)),
             SProd(2, qp.Identity(wires=0)),
             SProd(2, qp.RX(1.9, wires=1)),

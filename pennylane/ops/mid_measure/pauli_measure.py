@@ -38,7 +38,6 @@ _VALID_PAULI_CHARS = "XYZ"
 class PauliMeasure(Operator):
     """A Pauli product measurement."""
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         pauli_word: str,

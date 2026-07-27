@@ -18,7 +18,7 @@ Tests for the transform implementing the deferred measurement principle.
 import math
 import re
 
-# pylint: disable=too-few-public-methods, too-many-arguments
+# pylint: disable=too-many-arguments
 from functools import partial
 
 import pytest
@@ -661,7 +661,6 @@ class TestQNode:
     def test_measure_with_tensor_obs(self, mid_measure_wire, tp_wires):
         """Test that the defer_measurements transform works well even with
         tensor observables in the tape."""
-        # pylint: disable=protected-access
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.measure(mid_measure_wire)

@@ -16,7 +16,7 @@
 Unit tests for the ParametrizedHamiltonian class
 """
 
-# pylint: disable=no-member, import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 import pytest
 
 import pennylane as qp

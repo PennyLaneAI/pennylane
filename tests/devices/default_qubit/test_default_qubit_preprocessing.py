@@ -50,13 +50,11 @@ class MatOp(qp.operation.Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class MyTemplate(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [
             qp.RX(self.data[0], self.wires[0]),
@@ -65,13 +63,11 @@ class MyTemplate(qp.operation.Operation):
         ]
 
 
-# pylint: disable=too-few-public-methods
 class CustomIsingXX(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [qp.IsingXX(self.data[0], self.wires)]
 
@@ -108,7 +104,6 @@ def custom_decomps():
         yield
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
@@ -119,17 +114,14 @@ class NoMatNoDecompOp(qp.operation.Operation):
         return False
 
 
-# pylint: disable=too-few-public-methods
 class HasDiagonalizingGatesOp(qp.operation.Operator):
-    """Dummy observable that has diagonalizing gates."""
+    """Dummy observable that has diagonalizing gates."""  # pylint: disable=no-self-argument
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method,no-self-argument
     @classproperty
     def has_diagonalizing_gates(cls):
         return True
 
 
-# pylint: disable=too-few-public-methods
 class CustomizedSparseOp(qp.operation.Operator):
     def __init__(self, wires):
         U = sp.sparse.eye(2 ** len(wires))

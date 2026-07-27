@@ -24,7 +24,7 @@ from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
 
-class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalar(ScalarSymbolicOp):
     """Temporary scalar symbolic op class."""
 
     _name = "TempScalar"
@@ -34,7 +34,7 @@ class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalarCopy(ScalarSymbolicOp):
     """Copy of temporary scalar symbolic op class."""
 
     _name = "TempScalarCopy"

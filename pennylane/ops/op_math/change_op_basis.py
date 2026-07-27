@@ -329,7 +329,6 @@ class ChangeOpBasis(CompositeOp):
         """
         return self[1].is_verified_hermitian
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -374,7 +373,6 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     return resources
 
 
-# pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
     queuing.apply(base.operands[2])

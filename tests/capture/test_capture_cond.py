@@ -15,7 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
+# pylint: disable=redefined-outer-name
 # pylint: disable=no-self-use,unbalanced-tuple-unpacking
 
 from functools import partial
@@ -931,7 +931,7 @@ class TestDynamicShapeValidation:
     def test_one_dynamic_shape_other_not(self):
         """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
 
-        def true_fn(n):  # pylint: disable=unused-argument
+        def true_fn(n):
             return jax.numpy.ones((2, n))
 
         def false_fn(n):

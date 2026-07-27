@@ -108,7 +108,7 @@ class TestDecomposition:
 
         assert list(qp.list_decomps(qp.BasisEmbedding)) == list(qp.list_decomps(qp.BasisState))
 
-        class _CustomOp(Operator):  # pylint: disable=too-few-public-methods
+        class _CustomOp(Operator):
             pass
 
         # we're constructing a decomposition rule which says that it produces a `BasisEmbedding`

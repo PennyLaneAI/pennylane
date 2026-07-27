@@ -24,7 +24,7 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,unused-argument
+# pylint: disable=arguments-differ
 
 
 class SingleQubitComparator(ResourceOperator):

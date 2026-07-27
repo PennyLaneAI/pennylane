@@ -309,7 +309,6 @@ class QubitUnitary(Operation):
     def has_matrix(self) -> bool:
         return not self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self) -> bool:
         # We are unable to decompose sparse matrices larger than 1 qubit.

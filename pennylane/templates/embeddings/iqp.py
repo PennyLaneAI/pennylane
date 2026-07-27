@@ -15,7 +15,6 @@ r"""
 Contains the IQPEmbedding template.
 """
 
-# pylint: disable=too-many-arguments
 import copy
 from itertools import combinations
 

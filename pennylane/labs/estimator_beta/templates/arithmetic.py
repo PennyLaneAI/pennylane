@@ -21,7 +21,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ,unused-argument,signature-differs,too-many-arguments
+# pylint: disable=arguments-differ, signature-differs
 
 
 class LabsPhaseAdder(ResourceOperator):

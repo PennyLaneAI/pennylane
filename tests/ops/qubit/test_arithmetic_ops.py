@@ -15,7 +15,6 @@
 Unit tests for the the arithmetic qubit operations
 """
 
-# pylint: disable=too-many-arguments
 import copy
 import itertools
 
@@ -469,7 +468,6 @@ class TestIntegerComparator:
         tape2 = qp.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qp.Identity) for op in tape2.operations)
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_power(self):
         """Test ``pow`` method."""
         op = qp.IntegerComparator(3, wires=[0, 1, 2, 3])

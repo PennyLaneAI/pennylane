@@ -903,7 +903,6 @@ class LabsQROM(ResourceOperator):
         num_wires = size_bitstring + ceil_log2(num_bitstrings)
         return CompressedResourceOp(cls, num_wires, params)
 
-    # pylint: disable=protected-access
     @classmethod
     def resource_decomp(
         cls,

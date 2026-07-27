@@ -18,7 +18,7 @@ LinearCombination class
 import itertools
 import numbers
 
-# pylint: disable=too-many-arguments,protected-access
+# pylint: disable=protected-access
 from copy import copy
 
 import pennylane as qp

@@ -16,7 +16,6 @@ Unit tests for functions needed for converting objects obtained from external li
 PennyLane object.
 """
 
-# pylint: disable=too-many-arguments,protected-access
 import sys
 
 import pytest

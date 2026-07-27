@@ -1490,7 +1490,7 @@ class MaximalMatches:  # pylint: disable=too-few-public-methods
                 self.max_match_list.append(Match(sorted(matches.match), matches.qubit))
 
 
-class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-methods
+class SubstitutionConfig:  # pylint: disable=too-few-public-methods
     """Class to store the configuration of a given match substitution, which circuit gates, template gates,
     qubits and predecessors of the match in the circuit.
     """

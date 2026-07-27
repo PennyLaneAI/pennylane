@@ -192,7 +192,6 @@ class TestSingleReturnExecute:
         (qp.Hermitian(herm, wires=[1, 0]), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device, interface, shots):
@@ -1238,7 +1237,6 @@ class TestDeviceNewUnits:
 
     def test_unsupported_observable_return_type_raise_error(self):
         """Check that an error is raised if the return type of an observable is unsupported"""
-        # pylint: disable=too-few-public-methods
 
         class DummyMeasurement(MeasurementProcess):
             _shortname = "SomeUnsupportedReturnType"

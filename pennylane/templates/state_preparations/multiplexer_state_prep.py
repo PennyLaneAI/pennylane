@@ -66,7 +66,6 @@ class MultiplexerStatePreparation(Operation):
 
     resource_keys = {"num_wires"}
 
-    # pylint: disable=too-many-positional-arguments, too-many-arguments
     def __init__(self, state_vector, wires):
 
         wires = Wires(wires)
@@ -121,9 +120,7 @@ def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
 
 
 @register_resources(_multiplexer_state_prep_decomposition_resources, exact=False)
-def _multiplexer_state_prep_decomposition(
-    state_vector, wires, **_
-):  # pylint: disable=arguments-differ
+def _multiplexer_state_prep_decomposition(state_vector, wires, **_):
     r"""
     Computes the decomposition operations for the given state vector.
 

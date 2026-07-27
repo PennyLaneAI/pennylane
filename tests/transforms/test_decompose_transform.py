@@ -27,7 +27,6 @@ from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
-# pylint: disable=too-few-public-methods
 
 pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
@@ -245,7 +244,7 @@ class TestDecompose:
     def test_decompose_with_mcm(self):
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):
             resource_keys = set()
 
             @property

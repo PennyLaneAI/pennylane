@@ -977,7 +977,6 @@ class TestIntegrationMultipleReturns:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1126,7 +1125,6 @@ class TestIntegrationMultipleReturns:
 
         def circuit(x):
             qubit_ansatz(x)
-            # pylint:disable=unexpected-keyword-arg
             return [qp.expval(qp.PauliZ(wires=i)) for i in range(0, wires)]
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shot_vector)
@@ -1245,7 +1243,6 @@ class TestIntegrationMultipleReturnsTensorflow:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1506,7 +1503,6 @@ class TestIntegrationMultipleReturnsTorch:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1768,7 +1764,6 @@ class TestIntegrationMultipleReturnJax:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):

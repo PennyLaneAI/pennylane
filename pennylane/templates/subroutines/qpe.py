@@ -15,7 +15,6 @@
 Contains the QuantumPhaseEstimation template.
 """
 
-# pylint: disable=arguments-differ
 import copy
 
 from pennylane import ops
@@ -291,7 +290,7 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
 
 
 @register_resources(_qpe_decomp_resource)
-def _qpe_decomp(*_, unitary, estimation_wires, **__):  # pylint: disable=unused-argument
+def _qpe_decomp(*_, unitary, estimation_wires, **__):
     for w in estimation_wires:
         ops.Hadamard(w)
     for i, w in enumerate(estimation_wires):

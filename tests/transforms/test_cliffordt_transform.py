@@ -501,7 +501,7 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        class SomethingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class SomethingOp(qp.operation.Operation):
             pass
 
         tape = qp.tape.QuantumScript([SomethingOp(wires=[0, 1, 2])])

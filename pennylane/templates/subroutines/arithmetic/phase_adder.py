@@ -137,7 +137,6 @@ class PhaseAdder(Operation):
 
     resource_keys = {"num_x_wires", "mod"}
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
 
         work_wire = Wires(() if work_wire is None else work_wire)

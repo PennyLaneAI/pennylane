@@ -14,7 +14,7 @@
 
 """Tests for the transform ``qp.transform.split_to_single_terms``"""
 
-# pylint: disable=import-outside-toplevel,unnecessary-lambda
+# pylint: disable=import-outside-toplevel
 
 import numpy as np
 import pytest
@@ -42,7 +42,6 @@ complex_obs_list = [
 ]
 
 
-# pylint: disable=too-few-public-methods
 class NoTermsDevice(qp.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 

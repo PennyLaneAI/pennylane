@@ -15,7 +15,7 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 
-# pylint: disable=eval-used, unused-argument
+# pylint: disable=eval-used
 
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -636,7 +636,6 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.operation.Operation):
             num_wires = 1
 

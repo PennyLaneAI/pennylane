@@ -15,8 +15,6 @@
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
 
-# pylint: disable=abstract-method,too-many-arguments
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -466,8 +464,6 @@ class TestSpsaGradient:
         class SpecialObservable(Operator):
             """SpecialObservable"""
 
-            # pylint:disable=too-few-public-methods
-
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
                 return []
@@ -475,7 +471,6 @@ class TestSpsaGradient:
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
-            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})

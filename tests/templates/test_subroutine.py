@@ -679,7 +679,6 @@ class TestGraphDecomposition:
         )
         assert rp["signature_key"] == key
 
-    # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
 
@@ -1052,7 +1051,6 @@ class TestGraphDecomposition:
             for i in range(params.shape[0]):
                 qp.RY(params[i], wires[i])
 
-        # pylint: disable=too-few-public-methods
         class SubroutineDemoOp(qp.operation.Operator):
 
             resource_keys = frozenset(())

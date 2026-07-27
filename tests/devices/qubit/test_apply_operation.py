@@ -75,7 +75,6 @@ def test_custom_operator_with_matrix():
         ]
     )
 
-    # pylint: disable=too-few-public-methods
     class CustomOp(Operation):
         """Custom Operation"""
 
@@ -992,7 +991,7 @@ class TestRXCalcGrad:
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestBroadcasting:
     """Tests that broadcasted operations are applied correctly."""
 
     # include operations both with batch_size==1 and batch_size>1
@@ -1198,7 +1197,6 @@ class TestApplyGroverOperator:
     )
     def test_dispatching(self, op_wires, state_wires, einsum_called, tensordot_called, mocker):
         """Test that apply_operation dispatches to einsum, tensordot and the kernel correctly."""
-        # pylint: disable=too-many-arguments
         state = np.random.random([2] * state_wires) + 1j * np.random.random([2] * state_wires)
 
         op = qp.GroverOperator(list(range(op_wires)))
@@ -1361,7 +1359,6 @@ class TestApplyGroverOperator:
 class TestMultiControlledXKernel:
     """Test the specialized kernel for MultiControlledX and its dispatching."""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "num_op_wires, num_state_wires, einsum_called, tdot_called",
         [
@@ -1520,7 +1517,6 @@ class TestLargeTFCornerCases:
         assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
 
 
-# pylint: disable=too-few-public-methods
 class TestConditionalsAndMidMeasure:
     """Test dispatching for mid-circuit measurements and conditionals."""
 

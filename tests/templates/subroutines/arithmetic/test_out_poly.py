@@ -87,7 +87,7 @@ class TestOutPoly:
     )
     def test_operation_result(
         self, polynomial_function, input_registers, output_wires, mod, work_wires
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test the correctness of the OutPoly template output."""
 
         x_wires, y_wires = input_registers
@@ -127,7 +127,7 @@ class TestOutPoly:
     )
     def test_operation_and_test_wires_error(
         self, input_registers, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test that proper errors are raised"""
         x_wires, y_wires = input_registers
 

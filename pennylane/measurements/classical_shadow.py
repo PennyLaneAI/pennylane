@@ -455,7 +455,6 @@ class ShadowExpvalMP(MeasurementTransform):
         self.k = k
         super().__init__()
 
-    # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(
         cls,
@@ -524,7 +523,7 @@ class ShadowExpvalMP(MeasurementTransform):
             wires=self.wires, seed=self.seed
         ).process_density_matrix_with_shots(state, wire_order, shots, rng=rng)
         # tach-ignore
-        from pennylane.shadows import (  # tach-ignore pylint: disable=import-outside-toplevel
+        from pennylane.shadows import (  # tach-ignore  # pylint: disable=import-outside-toplevel
             ClassicalShadow,
         )
 

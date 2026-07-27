@@ -661,8 +661,7 @@ class Operator2(metaclass=OperatorMeta):
 
     # ------------------------------------------------------------------------
     # ----------------------- Operator representations -----------------------
-    # ------------------------------------------------------------------------
-    # pylint: disable=unused-argument,comparison-with-callable,no-self-use
+    # ------------------------------------------------------------------------  # pylint: disable=no-self-use
 
     @staticmethod
     def compute_matrix(*args, **kwargs) -> TensorLike:
@@ -1618,7 +1617,6 @@ def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
 
 
 if has_jax:
-    # pylint: disable=import-outside-toplevel,ungrouped-imports
     from pennylane.capture.custom_primitives import QpPrimitive
 
     operator_p = QpPrimitive("operator")
@@ -1930,7 +1928,6 @@ class StatePrepBase2(Operator2, is_baseclass=True):
             array: A state vector for all wires in a circuit
         """
 
-    # pylint: disable=unused-argument
     def label(
         self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
     ) -> str:

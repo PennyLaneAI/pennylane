@@ -98,7 +98,7 @@ class LeftQuantumComparator(Operation):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         target_wire = Wires(target_wire)
         x_wires = Wires(x_wires)
@@ -174,7 +174,7 @@ class LeftQuantumComparator(Operation):
     @staticmethod
     def compute_decomposition(
         x_wires, y_wires, target_wire, work_wires, comparator
-    ):  # pylint: disable=arguments-differ, too-many-arguments
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -215,9 +215,7 @@ def _left_quantum_comparator_resources(num_y_wires, comparator):
 
 
 @register_resources(_left_quantum_comparator_resources, exact=True)
-def _left_quantum_comparator(
-    x_wires, y_wires, target_wire, work_wires, comparator, **_
-):  # pylint: disable=too-many-arguments
+def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparator, **_):
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]

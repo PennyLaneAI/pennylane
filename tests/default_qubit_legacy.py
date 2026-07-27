@@ -76,7 +76,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument, too-many-arguments, too-many-instance-attributes
+# pylint: disable=unused-argument, too-many-arguments
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -296,7 +296,6 @@ class DefaultQubitLegacy(QubitDevice):
         result = super().execute(circuit, **kwargs)
         return result
 
-    # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 

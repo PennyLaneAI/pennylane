@@ -1683,8 +1683,6 @@ class MultiControlledX(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
-
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed"
@@ -2637,7 +2635,6 @@ class CRot(ControlledOp):
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, phi, theta, omega, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
@@ -2655,7 +2652,6 @@ class CRot(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(*data, wires=metadata[0])
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(cls, phi, theta, omega, wires):
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))

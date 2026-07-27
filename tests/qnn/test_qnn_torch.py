@@ -512,7 +512,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("middle_dim", [2, 5, 8])
     def test_forward_broadcasting(
         self, get_circuit, output_dim, middle_dim, batch_size, n_qubits
-    ):  # pylint: disable=too-many-arguments,no-self-use
+    ):  # pylint: disable=no-self-use
         """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
         right shape by broadcasting. Also tests if gradients are still backpropagated correctly."""
         c, w = get_circuit
@@ -683,7 +683,7 @@ class TestTorchLayerIntegration:
     @pytest.mark.parametrize("batch_size", [2])
     def test_step_module(
         self, module, batch_size, n_qubits, output_dim, dtype
-    ):  # pylint: disable=redefined-outer-name,too-many-arguments,no-self-use
+    ):  # pylint: disable=redefined-outer-name, no-self-use
         """Test if a module that includes TorchLayers can perform one optimization step. This
         test checks that some of the parameters in the module are different after one step.
         The module is composed of two TorchLayers sandwiched between Linear neural network layers,
@@ -801,7 +801,7 @@ def test_vjp_is_unwrapped_for_param_shift():
 
     device = qp.device("default.qubit", wires=nqubits)
 
-    class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+    class DummyOp(qp.operation.Operation):
         """Dummy operation."""
 
         num_wires = 1

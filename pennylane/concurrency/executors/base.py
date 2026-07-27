@@ -185,7 +185,7 @@ class RemoteExec(abc.ABC):
     @staticmethod
     def _get_system_core_count():  # pragma: no cover
         if sys.version_info.minor >= 13:
-            return os.process_cpu_count()  # pylint: disable=no-member
+            return os.process_cpu_count()
         return os.cpu_count()
 
 

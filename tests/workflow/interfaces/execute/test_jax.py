@@ -203,7 +203,7 @@ class TestJaxExecuteIntegration:
 
         res = jax.jacobian(cost)(a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -344,9 +344,7 @@ class TestJaxExecuteIntegration:
 
         jac = jax.jacobian(cost)(params)
         assert isinstance(jac, jnp.ndarray)
-        assert (
-            jac.shape == (8, 2) if shots.has_partitioned_shots else (4, 2)
-        )  # pylint: disable=no-member
+        assert jac.shape == (8, 2) if shots.has_partitioned_shots else (4, 2)
 
         if shots.has_partitioned_shots:
             assert np.allclose(jac[1], 0, atol=atol_for_shots(shots))
@@ -733,7 +731,6 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""

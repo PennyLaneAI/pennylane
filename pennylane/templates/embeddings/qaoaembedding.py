@@ -24,9 +24,6 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.ops import RX, RY, RZ, H, MultiRZ, cond
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-arguments
-
-
 has_jax = True
 try:
     from jax import numpy as jnp

@@ -15,7 +15,7 @@
 
 import numpy as np
 
-# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring, too-many-positional-arguments, too-many-arguments
+# pylint: disable=no-self-use
 import pytest
 from scipy.linalg import sqrtm
 

@@ -25,7 +25,6 @@ from scipy.sparse import csr_matrix, eye, kron
 from pennylane import math
 
 
-# pylint: disable=too-many-branches
 def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="csr"):
     """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
@@ -334,7 +333,7 @@ def get_batch_size(tensor, expected_shape, expected_size):
         if ndim > len(expected_shape) or size > expected_size:
             return size // expected_size
 
-    except Exception as err:  # pragma: no cover, pylint:disable=broad-except
+    except Exception as err:  # pragma: no cover,  # pylint:disable=broad-except
         # This except clause covers the usage of tf.function
         if not math.is_abstract(tensor):
             raise err

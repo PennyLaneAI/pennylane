@@ -1701,7 +1701,7 @@ def test_no_adjoint_jacobian_errors():
     with pytest.raises(QuantumFunctionError, match="Parameter broadcasting is not supported"):
         dev.adjoint_jacobian(tape)
 
-    dev.shots = (10, 10)  # pylint: disable=attribute-defined-outside-init
+    dev.shots = (10, 10)
 
     tape2 = qp.tape.QuantumScript([qp.RX(0.1, 0)], [qp.expval(qp.Z(0))])
     with pytest.raises(QuantumFunctionError, match="Adjoint does not support shot vector"):

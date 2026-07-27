@@ -15,7 +15,7 @@
 Tests for capturing a qnode into jaxpr.
 """
 
-# pylint: disable=protected-access,wrong-import-position,ungrouped-imports,unbalanced-tuple-unpacking
+# pylint: disable=protected-access, wrong-import-position
 
 import pytest
 
@@ -437,7 +437,6 @@ class TestUserTransforms:
             qp.capture.enable()
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
-        # pylint: disable=protected-access
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
@@ -472,7 +471,6 @@ class TestUserTransforms:
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        # pylint: disable=protected-access
         assert qfunc_jaxpr.eqns[0].primitive == transform_prim
         assert qfunc_jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
 
@@ -506,7 +504,6 @@ class TestUserTransforms:
             qp.capture.enable()
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
-        # pylint: disable=protected-access
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
@@ -528,7 +525,6 @@ class TestDifferentiation:
     def test_error_backprop_unsupported(self):
         """Test an error is raised with backprop if the device does not support it."""
 
-        # pylint: disable=too-few-public-methods
         class DummyDev(qp.devices.Device):
 
             def execute(self, *_, **__):

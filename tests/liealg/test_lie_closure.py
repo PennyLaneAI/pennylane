@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure.py functionality"""
 
-# pylint: disable=too-few-public-methods, protected-access
-
 import numpy as np
 import pytest
 

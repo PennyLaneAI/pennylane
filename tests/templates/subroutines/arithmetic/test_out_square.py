@@ -155,9 +155,7 @@ class TestOutSquare:
             ),
         ],
     )
-    def test_wires_overlap_error(
-        self, x_wires, output_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_overlap_error(self, x_wires, output_wires, work_wires, msg_match):
         """Test an error is raised when some registers overlap."""
         with pytest.raises(ValueError, match=msg_match):
             OutSquare(x_wires, output_wires, work_wires)
@@ -181,9 +179,7 @@ class TestOutSquare:
             ([0], [3, 4, 5], [6], False, True),
         ],
     )
-    def test_work_wire_number(
-        self, x_wires, output_wires, work_wires, zeroed, should_raise
-    ):  # pylint: disable=too-many-arguments
+    def test_work_wire_number(self, x_wires, output_wires, work_wires, zeroed, should_raise):
         """Test an error is raised (only) when too few work wires are supplied."""
         if should_raise:
             msg_match = "OutSquare requires at least"

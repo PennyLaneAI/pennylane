@@ -331,7 +331,6 @@ class SubroutineOp(Operation):
         inputs = ", ".join(f"{key}={value}" for key, value in self._bound_args.arguments.items())
         return f"<{self.name}({inputs})>"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         subroutine: "Subroutine",

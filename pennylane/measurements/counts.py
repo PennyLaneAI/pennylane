@@ -52,7 +52,6 @@ class CountsMP(SampleMeasurement):
 
     _shortname = "counts"
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         obs: Operator | None = None,

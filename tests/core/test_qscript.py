@@ -27,7 +27,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 
-# pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
+# pylint: disable=protected-access
 
 
 def test_process_queue_error_if_not_operator_or_measurement():
@@ -44,7 +44,6 @@ def test_adjoint_deprecated():
         qs.adjoint()
 
 
-# pylint: disable=too-few-public-methods
 class Op2(Operator2):
     """A simple ``Operator2`` subclass for testing."""
 
@@ -273,7 +272,6 @@ class TestUpdate:
         assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
         assert QuantumScript([], []).hash == qs.hash and qs.hash != old_hash
 
-    # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
         """Tests the tape method get_operation."""
         ops = [

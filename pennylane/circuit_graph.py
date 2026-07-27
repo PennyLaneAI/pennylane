@@ -103,7 +103,7 @@ def _construct_graph_from_queue(queue, all_wires):
     return graph, inds_for_objs, nodes_on_wires
 
 
-# pylint: disable=too-many-instance-attributes, too-many-public-methods
+# pylint: disable=too-many-instance-attributes
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
 
@@ -123,7 +123,6 @@ class CircuitGraph:
             quantum circuit.
     """
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         ops: list[Operator | MeasurementProcess],

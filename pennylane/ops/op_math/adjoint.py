@@ -408,7 +408,6 @@ class Adjoint(SymbolicOp):
         base_matrix = self.base.sparse_matrix(wire_order=wire_order)
         return transpose(conj(base_matrix)).asformat(format=format)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return self.base.has_adjoint or self.base.has_decomposition

@@ -1324,7 +1324,7 @@ class TestCompilePipelineCall:
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             new_ops = list(tape.operations)
-            new_ops.pop(index)  # pylint:disable=protected-access
+            new_ops.pop(index)
             return (
                 qp.tape.QuantumScript(new_ops, tape.measurements, shots=tape.shots),
             ), single_null_postprocessing
@@ -1680,14 +1680,12 @@ class TestCompilePipelineCall:
 
         # Create a dummy device with a custom preprocess_transforms method
         class DummyDevice(qp.devices.Device):
-            def preprocess_transforms(
-                self, execution_config=None
-            ):  # pylint: disable=unused-argument
+            def preprocess_transforms(self, execution_config=None):
                 prog = CompilePipeline()
                 prog.add_transform(qp.defer_measurements)
                 return prog
 
-            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
+            def execute(self, circuits, execution_config=None):
                 return [0] * len(circuits)
 
         original_dev = DummyDevice()

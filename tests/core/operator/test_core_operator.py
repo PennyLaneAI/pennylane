@@ -38,8 +38,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
-# pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -350,7 +349,7 @@ class TestOperatorConstruction:
             num_wires = 1
 
         op = DummyOp(wires=0)
-        op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
+        op.name = "MyOp"
         assert op.name == "MyOp"
 
     def test_default_hyperparams(self):
@@ -827,7 +826,7 @@ class TestModificationMethods:
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
-        op._pauli_rep = qp.pauli.PauliSentence(  # pylint:disable=attribute-defined-outside-init
+        op._pauli_rep = qp.pauli.PauliSentence(
             {
                 qp.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,
                 qp.pauli.PauliWord({0: "Z", 1: "X", 2: "Y"}): 2.2,
@@ -1641,11 +1640,9 @@ class TestStatePrepBase:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        # pylint:disable=unused-argument,too-few-public-methods
         def state_vector(self, wire_order=None):
             return self.parameters[0]
 
-    # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_initial_state(self):
         """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
@@ -1656,8 +1653,6 @@ class TestStatePrepBase:
 
         class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
-
-            # pylint:disable=abstract-class-instantiated
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
@@ -2018,7 +2013,6 @@ def test_docstring_example_of_operator_class(tol):
     class FlipAndRotate(qp.operation.Operation):
         grad_method = "A"
 
-        # pylint: disable=too-many-arguments,too-many-positional-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
@@ -2082,7 +2076,7 @@ def test_custom_operator_is_jax_pytree():
     qp.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# pylint: disable=unused-import,no-name-in-module
+# pylint: disable=unused-import
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
 

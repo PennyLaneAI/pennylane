@@ -625,7 +625,6 @@ def _get_queue(op, system):
 class TestDecomposition:  # pylint: disable=too-few-public-methods
     """Tests that the template defines the correct decomposition."""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "system",
         ("decomp_method", "graph_decomp", pytest.param("capture", marks=pytest.mark.capture)),

@@ -341,9 +341,7 @@ class MPSPrep(Operation):
 
     resource_keys = {"bond_dimensions", "num_sites", "num_work_wires"}
 
-    def __init__(
-        self, mps, wires, work_wires=None, right_canonicalize=False
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False):
 
         _validate_mps_shape(mps)
 

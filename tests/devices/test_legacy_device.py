@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
 
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
+# pylint: disable=no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
 
 
 @pytest.fixture(scope="function")
@@ -987,9 +987,8 @@ class TestBatchExecution:
 
 
 class TestGrouping:
-    """Tests for the use_grouping option for devices."""
+    """Tests for the use_grouping option for devices."""  # pylint: disable=unused-argument, missing-class-docstring
 
-    # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
     class SomeDevice(qp.devices.LegacyDevice):
         name = ""
         short_name = ""

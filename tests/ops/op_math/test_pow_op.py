@@ -26,14 +26,12 @@ from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
-# pylint: disable=too-few-public-methods
 class TempOperator(qp.operation.Operator):
     """Dummy operator"""
 
     num_wires = 1
 
 
-# pylint: disable=unused-argument
 def pow_using_dunder_method(base, z):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
@@ -88,15 +86,14 @@ class TestConstructor:
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
-        # pylint: disable=too-few-public-methods
         class Temp(qp.operation.Operator):
             num_wires = 1
 
-            def pow(self, z):  # pylint: disable=unused-argument
+            def pow(self, z):
                 return [qp.S(0), qp.T(0)]
 
         new_op = qp.pow(Temp(0), 2, lazy=False)
-        assert isinstance(new_op, qp.ops.Prod)  # pylint:disable=no-member
+        assert isinstance(new_op, qp.ops.Prod)
         qp.assert_equal(new_op.operands[0], qp.S(0))
         qp.assert_equal(new_op.operands[1], qp.T(0))
 
@@ -206,7 +203,7 @@ class TestInitialization:
         """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=seed)
         shape = qp.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        params = rng.random(shape)  # pylint:disable=no-member
+        params = rng.random(shape)
 
         base = qp.StronglyEntanglingLayers(params, wires=[0, 1])
         op: Pow = power_method(base=base, z=2.67)
@@ -225,7 +222,6 @@ class TestInitialization:
         assert op.num_wires == 2
 
 
-# pylint: disable=too-many-public-methods
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qp.pow])
 class TestProperties:
     """Test Pow properties."""
@@ -441,7 +437,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        pow_op = Pow(base=qp.ops.Adjoint(qp.PauliX(0)), z=2)  # pylint:disable=no-member
+        pow_op = Pow(base=qp.ops.Adjoint(qp.PauliX(0)), z=2)
         assert pow_op.arithmetic_depth == 2
 
     def test_simplify_nested_pow_ops(self):

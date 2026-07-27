@@ -107,7 +107,7 @@ class TestResources:
         assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, S: 1}, weighted_cost=5.0>"
 
 
-class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class DummyOp(qp.operation.Operator):
     resource_keys = {"foo", "bar"}
 
 
@@ -176,7 +176,7 @@ class TestCompressedResourceOp:
     def test_hash_list_params(self):
         """Tests when the resource params contains a list."""
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             resource_keys = {"foo", "bar"}
 
             @property
@@ -285,7 +285,7 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             resource_keys = {}
 
             @property
@@ -506,7 +506,7 @@ class TestControlledResourceRep:
             ),
         ],
     )
-    def test_controlled_x_rep_for_x_base(  # pylint: disable=too-many-arguments
+    def test_controlled_x_rep_for_x_base(
         self, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, expected
     ):
         """Test that resources of controlled PauliX gates are mapped correctly"""

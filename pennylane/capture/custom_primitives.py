@@ -54,7 +54,7 @@ def _make_hashable(obj: Any) -> Any:
     return obj
 
 
-# pylint: disable=abstract-method,too-few-public-methods
+# pylint: disable=abstract-method
 class QpPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives and automatically makes parameters hashable for JAX 0.7.0+."""

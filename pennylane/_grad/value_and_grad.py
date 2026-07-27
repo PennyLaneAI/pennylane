@@ -28,7 +28,7 @@ from .grad import _args_and_argnums, _setup_h, _setup_method, _ShapedArray
 _has_jax = find_spec("jax") is not None
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 @lru_cache
 def _get_value_and_grad_prim():
     """Create a primitive for value and gradient computations."""

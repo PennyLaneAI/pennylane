@@ -317,7 +317,7 @@ class TestTransformExtension:
         @dummy_transform.register
         def _(
             tape: qp.tape.QuantumScript,
-        ):  # pylint: disable=redefined-outer-name, unused-argument
+        ):
             return (tape.copy(ops=tape.operations[:1]),), lambda x: x[0]
 
         input = qp.tape.QuantumScript([qp.X(0), qp.X(1), qp.X(2), qp.X(3), qp.X(4), qp.X(5)])
@@ -797,7 +797,6 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         """Test a device transform."""
 
         class DummyDev(qp.devices.Device):
-            # pylint: disable=unused-argument
             def preprocess_transforms(self, execution_config=None):
                 prog = qp.CompilePipeline()
                 prog.add_transform(qp.defer_measurements)
@@ -836,9 +835,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform."""
-        device = qp.devices.LegacyDeviceFacade(
-            DefaultQubitLegacy(wires=2)
-        )  # pylint: disable=redefined-outer-name
+        device = qp.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
 
         dispatched_transform = qp.transform(valid_transform)
         new_dev = dispatched_transform(device, index=0)
@@ -918,7 +915,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
 
             @qp.transform
-            def custom_transform(  # pylint:disable=unused-variable
+            def custom_transform(
                 tape: QuantumScript, index: int
             ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                 """A valid transform."""

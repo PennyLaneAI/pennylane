@@ -38,8 +38,6 @@ from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_po
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
-# pylint: disable=too-few-public-methods,useless-parent-delegation
-
 
 class CustomOp(Operator):
     pass
@@ -250,7 +248,7 @@ class TestDecompositionRule:
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = set()
 
         @register_resources({DummyOp: 1})
@@ -349,7 +347,7 @@ class TestDecompositionRule:
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = {"foo"}
 
         @register_resources({DummyOp: 1})
@@ -459,7 +457,7 @@ class TestDecompDictionary:
     def test_add_and_list_decomps(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class SomeOtherOp(Operator):  # pylint: disable=too-few-public-methods
+        class SomeOtherOp(Operator):
             pass
 
         assert not qp.decomposition.has_decomp(SomeOtherOp)
@@ -511,7 +509,7 @@ class TestDecompDictionary:
     def test_add_decomp_duplicate_names(self):
         """Tests that you cannot add decomposition rules with duplicate names."""
 
-        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operator):
             pass
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1})
@@ -636,7 +634,7 @@ class TestDecompDictionary:
                 "controlled(custom_rule2)",
             }
 
-            class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
+            class AnotherOp(DynOp):
                 has_matrix = True
                 name = "DynOp"
 
@@ -818,7 +816,7 @@ class TestDecompCollection:
         assert "custom3" in collection
 
 
-class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomParametrizedOp(Operator):
     """A custom parametrized op for testing."""
 
     resource_keys = {"num_wires"}

@@ -29,7 +29,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,super-init-not-called, signature-differs, too-many-arguments
+# pylint: disable=arguments-differ, super-init-not-called
 
 
 class GQSP(ResourceOperator):

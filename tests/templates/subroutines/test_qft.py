@@ -207,9 +207,7 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize(
         "gate_set", [[qp.Hadamard, qp.CNOT, qp.PhaseShift, qp.GlobalPhase], None]
     )
-    def test_qft(
-        self, max_expansion, gate_set, n_wires, wires, autograph
-    ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
+    def test_qft(self, max_expansion, gate_set, n_wires, wires, autograph):
         """Test that QFT gives correct result after dynamic decomposition."""
 
         import jax

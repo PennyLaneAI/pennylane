@@ -117,9 +117,7 @@ class Multiplier(Operation):
 
     resource_keys = {"num_x_wires", "mod", "num_work_wires"}
 
-    def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()):
 
         x_wires = Wires(x_wires)
         work_wires = Wires(() if work_wires is None else work_wires)

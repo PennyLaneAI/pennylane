@@ -1187,9 +1187,7 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
-def test_select_decomposition_new(
-    data, control_wires, target_wires, select_wires, select_value
-):  # pylint: disable=too-many-arguments
+def test_select_decomposition_new(data, control_wires, target_wires, select_wires, select_value):
     op = SelectOnlyQRAM(
         data,
         control_wires,

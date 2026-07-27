@@ -374,9 +374,7 @@ class TestMeasureFunctions:
     @pytest.mark.parametrize("plane", ["XY", "YZ", "XZ"])
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
-    def test_measure_arbitrary_basis(  # pylint: disable=too-many-arguments, too-many-positional-arguments
-        self, wire, angle, plane, reset, postselect
-    ):
+    def test_measure_arbitrary_basis(self, wire, angle, plane, reset, postselect):
         """Test that measure_arbitrary_basis queues the expected ParametricMidMeasure
         and returns a linked MeasurementValue"""
 
@@ -930,7 +928,7 @@ class TestWorkflows:
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_diagonalize_mcms_returns_parametrized_mcms(
         self, mcm_method, shots, angle, angle_type, use_jit
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
         by the QNode"""
 
