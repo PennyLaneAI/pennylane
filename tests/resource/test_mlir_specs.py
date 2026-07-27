@@ -325,3 +325,76 @@ class TestAnalysisPassConversion:
                 qubit_disjoint_depth=18,
             ),
         ]
+
+    def test_fractional_function_call_counts(self):
+        """Float trip-count hints from estimated_iterations must not be treated as symbolic."""
+        actual = _get_resources_from_analysis_pass(
+            {
+                "circuit": {
+                    "auto_qubit_management": False,
+                    "classical_instructions": {},
+                    "device_name": "NullQubit",
+                    "function_calls": {"for_loop_1": 2.5},
+                    "has_branches": False,
+                    "measurements": {},
+                    "num_alloc_qubits": 4,
+                    "num_arg_qubits": 0,
+                    "num_qubits": 4,
+                    "operations": {"Hadamard(1)": 1},
+                    "qnode": True,
+                    "var_function_calls": {},
+                },
+                "for_loop_1": {
+                    "classical_instructions": {},
+                    "device_name": "",
+                    "function_calls": {},
+                    "has_branches": False,
+                    "measurements": {},
+                    "num_alloc_qubits": 0,
+                    "num_arg_qubits": 0,
+                    "num_qubits": 0,
+                    "operations": {"RX(1)": 1, "CNOT(2)": 1},
+                    "qnode": False,
+                    "var_function_calls": {},
+                },
+            }
+        )
+
+        assert actual == [
+            SpecsResources(
+                counts={"CNOT": 2.5, "Hadamard": 1, "RX": 2.5},
+                measurement_processes={},
+                num_allocs=4,
+                circuit_depth=None,
+            )
+        ]
+
+    def test_fractional_operation_counts_from_branch_probabilities(self):
+        """Probabilistic branch weighting can produce fractional operation counts."""
+        actual = _get_resources_from_analysis_pass(
+            {
+                "circuit": {
+                    "auto_qubit_management": False,
+                    "classical_instructions": {},
+                    "device_name": "NullQubit",
+                    "function_calls": {},
+                    "has_branches": True,
+                    "measurements": {"probs()": 1},
+                    "num_alloc_qubits": 4,
+                    "num_arg_qubits": 0,
+                    "num_qubits": 4,
+                    "operations": {"RY(1)": 0.3, "RX(1)": 0.2},
+                    "qnode": True,
+                    "var_function_calls": {},
+                }
+            }
+        )
+
+        assert actual == [
+            SpecsResources(
+                counts={"RX": 0.2, "RY": 0.3},
+                measurement_processes={"probs()": 1},
+                num_allocs=4,
+                circuit_depth=None,
+            )
+        ]
