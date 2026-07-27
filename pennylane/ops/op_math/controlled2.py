@@ -161,7 +161,9 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             raise ValueError("control_values should be the same length as control_wires")
 
         if isinstance(control_values, (list, tuple)):
-            control_values = qp.math.asarray([bool(v) for v in control_values])
+            control_values = qp.math.asarray(control_values, like=control_values[0])
+
+        control_values = qp.math.cast(control_values, dtype=bool)
 
         self._base = base
         self._control_wires = control_wires

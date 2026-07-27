@@ -1684,7 +1684,9 @@ def _setup_inputs_mcx(
         control_values = [bool(control_values)]
     if len(control_values) != len(wires) - 1:
         raise ValueError("control_values should be the same length as control_wires")
-    control_values = [bool(v) for v in control_values]
+    if isinstance(control_values, (list, tuple)):
+        control_values = qp.math.asarray(control_values, like=control_values[0])
+    control_values = qp.math.cast(control_values, dtype=bool)
 
     # Validate work_wire_type
     accepted = ("zeroed", "borrowed")
