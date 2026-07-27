@@ -184,6 +184,14 @@ class QROM(Operation):
         returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
         initialized to zero.
 
+        .. note::
+
+            More ``control_wires`` than the minimum :math:`\lceil \log_2(m) \rceil` may be
+            provided. The extra wires are treated as the most-significant address bits: the data
+            is loaded only when they are all in :math:`|0\rangle`, and the operation acts as the
+            identity otherwise. This turns ``QROM`` into a *controlled* load gated by those extra
+            wires.
+
     """
 
     resource_keys = {
@@ -849,10 +857,24 @@ def _build_flag(extra_wires, work_wires):
         return extra_wires[0], work_wires
 
     anc_work, core_work = work_wires[: n_extra - 1], work_wires[n_extra - 1 :]
-    TemporaryAND([extra_wires[0], extra_wires[1], anc_work[0]], control_values=[0, 0])
-    for i in range(2, n_extra):
-        TemporaryAND([anc_work[i - 2], extra_wires[i], anc_work[i - 1]], control_values=[1, 0])
-    return anc_work[-1], core_work
+
+    # Each node is ``(wire, sat_value)``: the subtree rooted at ``wire`` reports "all extra wires
+    # zero" when ``wire == sat_value``. Raw extra wires are satisfied at 0; ancillas written by an
+    # ``AND`` are satisfied at 1. Combine nodes pairwise, level by level, into a balanced tree.
+    nodes = [(w, 0) for w in extra_wires]
+    anc_iter = iter(anc_work)
+    while len(nodes) > 1:
+        next_nodes = []
+        for i in range(0, len(nodes) - 1, 2):
+            (w0, v0), (w1, v1) = nodes[i], nodes[i + 1]
+            anc = next(anc_iter)
+            TemporaryAND([w0, w1, anc], control_values=[v0, v1])
+            next_nodes.append((anc, 1))
+        if len(nodes) % 2:  # carry the unpaired node up to the next level
+            next_nodes.append(nodes[-1])
+        nodes = next_nodes
+
+    return nodes[0][0], core_work
 
 
 @register_condition(_qrom_measurement_condition)
