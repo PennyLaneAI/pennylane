@@ -34,7 +34,9 @@ jnp = jax.numpy
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
 
-from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position, ungrouped-imports
+    operator_p,
+)
 
 
 def normalize_for_comparison(obj):
