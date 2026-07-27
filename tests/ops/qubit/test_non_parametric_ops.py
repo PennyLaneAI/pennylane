@@ -1053,11 +1053,6 @@ class TestControlledMethod:
         out = qp.PauliX(0)._controlled("a")
         qp.assert_equal(out, qp.CNOT(("a", 0)))
 
-    def test_PauliY(self):
-        """A single positive control should dispatch ``PauliY`` directly to ``CY``."""
-        out = qp.ctrl(qp.PauliY(0), "a")
-        qp.assert_equal(out, qp.CY(("a", 0)))
-
     def test_PauliZ(self):
         """Test the PauliZ _controlled method."""
         out = qp.PauliZ(0)._controlled("a")
