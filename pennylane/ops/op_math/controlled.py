@@ -299,7 +299,8 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
 def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
-    control = Wires(control)
+    if not isinstance(control, AbstractWires):
+        control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
     elif isinstance(control_values, tuple):
