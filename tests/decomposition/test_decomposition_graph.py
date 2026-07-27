@@ -870,8 +870,8 @@ class TestControlledDecompositions:
             operations=[op1, op2],
             gate_set={"CNOT", "CH"},
         )
-        assert len(graph._graph.nodes()) == 34
-        assert len(graph._graph.edges()) == 51
+        assert len(graph._graph.nodes()) == 35
+        assert len(graph._graph.edges()) == 55
 
         # Verify the decompositions
         solution = graph.solve()
@@ -1079,20 +1079,17 @@ class TestSymbolicDecompositions:
         # H**6 decomposes to nothing, so H isn't counted.
         assert len(graph._graph.edges()) == 7
 
-        rule_params = op.hyperparameters
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
+            solution.decomposition(op)(**op.arguments)
 
         assert q.queue == [qp.pow(qp.H(0), 6)]
         assert solution.resource_estimate(op) == to_resources({})
 
         op2 = qp.pow(qp.H(0), 6)
 
-        rule_params = op2.hyperparameters
-
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule_params)
+            solution.decomposition(op2)(**op.arguments)
 
         assert q.queue == []
         assert solution.resource_estimate(op2) == to_resources({})
