@@ -217,8 +217,6 @@ def _commuting_evolution_resources(words: tuple[PauliWord]):
 def _commuting_evolution_decomposition(
     time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
 ):  # pylint: disable=unused-argument
-    if capture.enabled() and isinstance(hamiltonian, Operator):
-        # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
     if capture.enabled() and isinstance(hamiltonian, Operator1):
         # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
         # ``ApproxTimeEvolution`` below, so it is not collected as a separate circuit operation.
