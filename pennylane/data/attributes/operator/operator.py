@@ -124,15 +124,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.BasisState,
                 qops.StatePrep,
                 qops.QubitDensityMatrix,
-                # pennylane/ops/qutrit/matrix_obs.py
-                qops.QutritUnitary,
-                # pennylane/ops/qutrit/non_parametric_ops.py
-                qops.TShift,
-                qops.TClock,
-                qops.TAdd,
-                qops.TSWAP,
-                # pennylane/ops/qutrit/observables.py
-                qops.THermitian,
                 # pennylane/ops/channel.py
                 qops.AmplitudeDamping,
                 qops.GeneralizedAmplitudeDamping,
