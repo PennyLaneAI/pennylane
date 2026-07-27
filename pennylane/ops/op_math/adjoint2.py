@@ -250,3 +250,15 @@ def cancel_adjoint(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
+
+
+def _adjoint_rotation_resource(base):
+    return {abstractify(base): 1}
+
+
+@register_resources(_adjoint_rotation_resource)
+def adjoint_rotation(base):
+    """Decompose the adjoint of a rotation operator by inverting the angle."""
+    # A rotation should only have 1 dynamic parameter
+    angle = tuple(base.dynamic_args.values())[0]
+    qp.ops.functions.bind_new_parameters(base, (-angle,))
