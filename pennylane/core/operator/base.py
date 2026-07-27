@@ -1429,7 +1429,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         """
         # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # For example, PauliX**2 = I, SX**4 = I.
         # Hence we define the non-negative integer cases here as a repeated list
         if z == 0:
             return []

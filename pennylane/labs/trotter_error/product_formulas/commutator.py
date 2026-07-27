@@ -261,7 +261,7 @@ class CommutatorNode(ASTNode):
         return self.left.leaves() + self.right.leaves()
 
 
-def _partitions_positive(m: int, n: int) -> Generator[tuple[int], None, None]:
+def _partitions_positive(m: int, n: int) -> Generator[tuple[int]]:
     """Yields tuples of m positive integers that sum to n."""
     if m <= 0 or n <= 0:
         return

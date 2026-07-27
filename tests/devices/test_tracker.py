@@ -221,11 +221,7 @@ def circuit():
 
 
 class TestDefaultTrackerIntegration:
-    """Tests integration behavior with 'default.gaussian'.
-
-    Integration with several `QubitDevice`-inherited devices are tested in the
-    device suite. Using `default.gaussian`, we test one that inherits from `Device`.
-    """
+    """Tests integration behavior with 'default.qubit'."""
 
     def test_single_execution_default(self, mocker):
         """Test correct behavior with single circuit execution"""
