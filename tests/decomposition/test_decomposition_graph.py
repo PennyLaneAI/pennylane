@@ -27,7 +27,7 @@ from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract, ControlledOp2
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
@@ -1123,7 +1123,7 @@ class TestSymbolicDecompositions:
             operations=[
                 qp.adjoint(qp.H(0)),
                 qp.pow(qp.H(1), 3),
-                qp.ops.Controlled(qp.H(0), control_wires=1),
+                ControlledOp2(qp.H(0), control_wires=1),
                 qp.adjoint(qp.RX(0.5, wires=0)),
             ],
             fixed_decomps={"Adjoint(RX)": my_adjoint_rx},
@@ -1132,19 +1132,19 @@ class TestSymbolicDecompositions:
 
         op1 = qp.adjoint(qp.H(0))
         op2 = qp.pow(qp.H(1), 3)
-        op3 = qp.ops.Controlled(qp.H(0), control_wires=1)
+        op3 = ControlledOp2(qp.H(0), control_wires=1)
         op4 = qp.adjoint(qp.RX(0.5, wires=0))
 
-        rule1_params = op1.hyperparameters
-        rule2_params = op2.hyperparameters
-        rule3_params = op3.hyperparameters
+        rule1_params = op1.arguments
+        rule2_params = op2.arguments
+        rule3_params = op3.arguments
         rule4_params = op4.hyperparameters
 
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
-            solution.decomposition(op3)(*op3.parameters, wires=op3.wires, **rule3_params)
+            solution.decomposition(op1)(**rule1_params)
+            solution.decomposition(op2)(**rule2_params)
+            solution.decomposition(op3)(**rule3_params)
             solution.decomposition(op4)(*op4.parameters, wires=op4.wires, **rule4_params)
 
         assert q.queue == [qp.H(0), qp.H(1), qp.CH(wires=[1, 0]), qp.RX(-0.5, wires=0)]
