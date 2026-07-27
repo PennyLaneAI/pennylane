@@ -1388,15 +1388,16 @@ class TestPauliYOperator2:
         The decomposition assertion verifies that decomposition now comes from registered graph
         rules rather than the legacy class-level ``compute_decomposition`` implementation.
         """
-        op = qp.Y("target")
+        wire = 0
+        op = qp.Y(wire)
 
         assert isinstance(op, Operator2)
-        assert op.arguments == {"wires": Wires(["target"])}
-        assert qp.math.allclose(qp.Y.compute_matrix(wires=["target"]), op.matrix())
+        assert op.arguments == {"wires": Wires([wire])}
+        assert qp.math.allclose(qp.Y.compute_matrix(wires=[wire]), op.matrix())
         assert qp.Y.compute_decomposition is Operator2.compute_decomposition
         assert op.decomposition() == [
-            qp.RY(np.pi, wires="target"),
-            qp.GlobalPhase(-np.pi / 2, wires="target"),
+            qp.RY(np.pi, wires=wire),
+            qp.GlobalPhase(-np.pi / 2, wires=wire),
         ]
 
     def test_abstract_contract(self):
