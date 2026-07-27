@@ -1106,11 +1106,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         def check_power(pow_op, repetitions):
             params, args, kwargs = _get_decomp_args(pow_op)
-            decomps = (
-                qp.list_decomps(pow_op)
-                if isinstance(pow_op, Operator2)
-                else qp.list_decomps(f"Pow({pow_op.base.name})")
-            )
+            decomps = qp.list_decomps(abstractify(pow_op))
             applicable_rules = [rule for rule in decomps if rule.is_applicable(**params)]
             assert applicable_rules
 
