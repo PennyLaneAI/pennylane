@@ -828,13 +828,16 @@
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Single qubit, non-parameteric operators are ported:
     - `~.S`, `~.T`, `~.SX`
-  - Multi-qubit, parametric operators are ported:
-    - `~.PauliRot`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+  - Multi-qubit, parametric operators are ported:
+    - `~.PauliRot`
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
+  - Templates are ported:
+    - `~.BasisRotation`
+  [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -921,6 +924,7 @@
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
+    [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
