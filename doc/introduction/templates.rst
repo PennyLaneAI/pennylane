@@ -88,10 +88,6 @@ state. In contrast to embeddings that can in principle be used anywhere in a cir
 state preparation is typically used as the first operation.
 
 .. gallery-item::
-    :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
-    :figure: _static/templates/state_preparations/basis_qutrit.png
-
-.. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
     :figure: _static/templates/state_preparations/mottonen.png
 
@@ -133,7 +129,7 @@ state preparation is typically used as the first operation.
 Arithmetic templates
 --------------------
 
-Quantum arithmetic templates enable in-place and out-place modular operations such 
+Quantum arithmetic templates enable in-place and out-place modular operations such
 as addition, multiplication and exponentiation.
 
 .. gallery-item::
