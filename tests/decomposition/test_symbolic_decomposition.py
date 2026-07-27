@@ -29,6 +29,7 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
+    _base_resource_rep,
     adjoint_rotation,
     cancel_adjoint,
     controlled_resource_rep,
@@ -79,6 +80,23 @@ class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     @property
     def resource_params(self):
         return {"key": 0}
+
+
+@pytest.mark.unit
+class TestBaseResourceRep:
+    """Tests the ``_base_resource_rep`` helper shared by the rotation decomposition rules."""
+
+    def test_operator1_base(self):
+        """An ``Operator1`` base is represented by a ``CompressedResourceOp``."""
+
+        assert _base_resource_rep(CustomOp, {"key": 0}) == resource_rep(CustomOp, key=0)
+
+    def test_operator2_base(self):
+        """An ``Operator2`` base is represented by an abstract instance."""
+
+        assert _base_resource_rep(OneWireDynOp, {"phi": 0.5, "wires": [0]}) == OneWireDynOp(
+            Float, wires=Wire
+        )
 
 
 @pytest.mark.unit
@@ -236,6 +254,27 @@ class TestAdjointDecompositionRules:
         assert adjoint_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
+
+    def test_adjoint_rotation_op2(self):
+        """Tests the adjoint_rotation decomposition with an ``Operator2`` base."""
+
+        op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
+        assert isinstance(op, Adjoint2)
+
+        with queuing.AnnotatedQueue() as q:
+            adjoint_rotation(**op.arguments)
+
+        assert q.queue == [OneWireDynOp(-0.5, wires=[0])]
+        assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
+            {OneWireDynOp(Float, wires=Wire[1]): 1}
+        )
+
+    def test_adjoint_rotation_legacy_wrapping_op2(self):
+        """Tests the adjoint_rotation resources when a legacy ``Adjoint`` wraps an ``Operator2``."""
+        res = adjoint_rotation.compute_resources(
+            base_class=OneWireDynOp, base_params={"phi": 0.5, "wires": [0]}
+        )
+        assert res == Resources({OneWireDynOp(Float, wires=Wire): 1})
 
     def test_self_adjoint_legacy(self):
         """Tests the self_adjoint decomposition."""
@@ -470,6 +509,26 @@ class TestPowDecomposition:
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
+
+    def test_pow_rotation_op2(self):
+        """Tests the pow_rotation decomposition with an ``Operator2`` base."""
+        op = pow(OneWireDynOp(0.3, wires=[0]), 2.5)
+        assert isinstance(op, Pow2)
+
+        with queuing.AnnotatedQueue() as q:
+            pow_rotation(**op.arguments)
+
+        assert q.queue == [OneWireDynOp(0.3 * 2.5, wires=[0])]
+        assert pow_rotation.compute_resources(**op.arguments) == Resources(
+            {OneWireDynOp(Float, wires=Wire[1]): 1}
+        )
+
+    def test_pow_rotation_legacy_wrapping_op2(self):
+        """Tests the pow_rotation resources when a legacy ``Pow`` wraps an ``Operator2``."""
+        res = pow_rotation.compute_resources(
+            base_class=OneWireDynOp, base_params={"phi": 0.3, "wires": [0]}, z=2.5
+        )
+        assert res == Resources({OneWireDynOp(Float, wires=Wire): 1})
 
     def test_pow_abstract2(self):
         """Tests _pow_abstract for both the resource-rep and operator branches."""

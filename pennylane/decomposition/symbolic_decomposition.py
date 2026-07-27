@@ -30,6 +30,17 @@ from .decomposition_rule import DecompositionRule, register_condition, register_
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
 
 
+def _base_resource_rep(base_class, base_params):
+    """Resource representation of ``base_class`` given its resource ``base_params``.
+
+    This is added so that symbolic decompositions for both Operator1 and Operator2 can be
+    implemented using a unified API.
+    """
+    if issubclass(base_class, Operator2):
+        return abstractify(base_class(**base_params))
+    return resource_rep(base_class, **base_params)
+
+
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the adjoint of a decomposition rule."""
 
@@ -84,15 +95,24 @@ def cancel_adjoint(*params, wires, base):
     qp.apply(base.base)
 
 
-def _adjoint_rotation_resource(base_class, base_params):
-    return {resource_rep(base_class, **base_params): 1}
+def _adjoint_rotation_resource(base=None, base_class=None, base_params=None, **__):
+    # ``Operator2`` symbolic wrappers (e.g. ``Adjoint2``) are invoked by the graph
+    # with the native ``base=`` argument, while legacy ``Adjoint`` wrappers are invoked with
+    # ``base_class``/``base_params``. ``_base_resource_rep`` handles both ``Operator1`` bases
+    # (represented by a ``CompressedResourceOp``) and ``Operator2`` bases (represented by an
+    # abstract instance).
+    if base is not None:
+        return {abstractify(base): 1}
+    return {_base_resource_rep(base_class, base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(phi, wires, base):
+def adjoint_rotation(*_, base, **__):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    qp.ops.functions.bind_new_parameters(base, (-phi,))
+    # A rotation should only have 1 dynamic parameter
+    angle = tuple(base.dynamic_args.values())[0] if isinstance(base, Operator2) else base.data[0]
+    qp.ops.functions.bind_new_parameters(base, (-angle,))
 
 
 def is_integer(x):
@@ -160,9 +180,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
-            if issubclass(base_class, Operator2):
-                return {abstractify(base_class(**base_params)): 1}
-            return {resource_rep(base_class, **base_params): 1}
+            return {_base_resource_rep(base_class, base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
     @register_condition(_condition_fn)
@@ -180,15 +198,26 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 pow_involutory = make_pow_decomp_with_period(2)
 
 
-def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
-    return {resource_rep(base_class, **base_params): 1}
+def _pow_rotation_resource(
+    base=None, base_class=None, base_params=None, z=None, **__
+):  # pylint: disable=unused-argument
+    # ``Operator2`` symbolic wrappers (e.g. ``Adjoint2``) are invoked by the graph
+    # with the native ``base=`` argument, while legacy ``Adjoint`` wrappers are invoked with
+    # ``base_class``/``base_params``. ``_base_resource_rep`` handles both ``Operator1`` bases
+    # (represented by a ``CompressedResourceOp``) and ``Operator2`` bases (represented by an
+    # abstract instance).
+    if base is not None:
+        return {abstractify(base): 1}
+    return {_base_resource_rep(base_class, base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
 @register_resources(_pow_rotation_resource)
-def pow_rotation(phi, wires, base, z, **__):
+def pow_rotation(*_, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    qp.ops.functions.bind_new_parameters(base, (phi * z,))
+    # A rotation should only have 1 dynamic parameter
+    angle = tuple(base.dynamic_args.values())[0] if isinstance(base, Operator2) else base.data[0]
+    qp.ops.functions.bind_new_parameters(base, (angle * z,))
 
 
 def _decomp_to_base_legacy_res(base_class, base_params, **__):
