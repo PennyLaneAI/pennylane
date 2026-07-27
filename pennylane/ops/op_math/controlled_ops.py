@@ -469,7 +469,6 @@ class CY(Controlled2):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     def __init__(self, wires: WiresLike):
-        wires = Wires(wires)
         super().__init__(qp.Y(wires[1:]), wires[:1])
 
     @override
