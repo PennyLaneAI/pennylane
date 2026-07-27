@@ -816,9 +816,6 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* The :func:`~.adjoint_rotation` and :func:`~.pow_rotation` symbolic decomposition rules have been updated to work with :class:`~.Operator2`.
-  [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
-
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
   [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
@@ -968,6 +965,7 @@
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
+    [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
