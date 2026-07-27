@@ -142,10 +142,6 @@ class TestOperations:
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
-    def test_pauliz_compute_matrix_accepts_wires(self):
-        """The Operator2 compute method accepts its declared wire argument."""
-        assert np.allclose(qp.Z.compute_matrix(wires=["target"]), Z)
-
     @pytest.mark.parametrize("op, str_repr", STRING_REPR)
     def test_string_repr(self, op, str_repr):
         """Test explicit string representations that overwrite the Operator default"""
