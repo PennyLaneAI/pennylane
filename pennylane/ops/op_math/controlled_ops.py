@@ -43,7 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
+from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -337,11 +337,8 @@ class CH(Controlled2):
         super().__init__(qp.H(wires[1:]), wires[:1])
 
     @override
-    def __abstract_init__(self, wires: WiresLike):
+    def __abstract_init__(self, wires: WiresLike):  # pylint: disable=unused-argument
         super().__abstract_init__(qp.H(Wire[1]), control_wires=Wire[1])
-
-    def __repr__(self):
-        return f"CH(wires={self.wires})"
 
     @override
     def adjoint(self):
@@ -349,7 +346,7 @@ class CH(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -380,36 +377,8 @@ class CH(Controlled2):
             ]
         )
 
-    @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
 
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CH.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CH.compute_decomposition([0, 1]))
-        [RY(-0.7853981633974483, wires=[1]), CZ(wires=[0, 1]), RY(0.7853981633974483, wires=[1])]
-
-        """
-        return [
-            qp.RY(-np.pi / 4, wires=wires[1]),
-            qp.CZ(wires=wires),
-            qp.RY(+np.pi / 4, wires=wires[1]),
-        ]
-
-
-def _ch_to_ry_cz_ry_resources(wires: WiresLike = None):
+def _ch_to_ry_cz_ry_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.CZ: 1}
 
 
@@ -422,7 +391,7 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 add_decomps(CH, _ch_to_ry_cz_ry)
 add_decomps("Adjoint(CH)", self_adjoint)
-add_decomps("Pow(CH)", pow_involutory)
+add_decomps("Pow(CH)", pow_involutory2)
 
 
 class CY(ControlledOp):
@@ -757,17 +726,12 @@ class CSWAP(Controlled2):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    name = "CSWAP"
-
     def __init__(self, wires: WiresLike):
         super().__init__(qp.SWAP(wires[1:]), wires[:1])
 
     @override
-    def __abstract_init__(self, wires: WiresLike):
+    def __abstract_init__(self, wires: WiresLike):  # pylint: disable=unused-argument
         super().__abstract_init__(qp.SWAP(Wire[2]), control_wires=Wire[1])
-
-    def __repr__(self):
-        return f"CSWAP(wires={self.wires})"
 
     @override
     def adjoint(self):
@@ -775,7 +739,7 @@ class CSWAP(Controlled2):
 
     @staticmethod
     @lru_cache
-    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -814,33 +778,6 @@ class CSWAP(Controlled2):
             ]
         )
 
-    @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CSWAP.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CSWAP.compute_decomposition((0,1,2)))
-        [CNOT(wires=[2, 1]), Toffoli(wires=[0, 1, 2]), CNOT(wires=[2, 1])]
-
-        """
-        return [
-            qp.CNOT([wires[2], wires[1]]),
-            qp.Toffoli(wires=[wires[0], wires[1], wires[2]]),
-            qp.CNOT([wires[2], wires[1]]),
-        ]
-
 
 # pylint: disable=unused-argument
 def _cswap_to_toffoli_resources(wires: WiresLike = None):
@@ -852,13 +789,6 @@ def _cswap(wires: WiresLike, **__):
     qp.CNOT([wires[2], wires[1]])
     qp.Toffoli(wires=[wires[0], wires[1], wires[2]])
     qp.CNOT([wires[2], wires[1]])
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_cswap(base: CSWAP, control, control_values, *_):
-    if len(control) == 1:
-        return ControlledOp2(CSWAP(base.wires), control, control_values)
-    return NotImplemented
 
 
 # pylint: disable=unused-argument

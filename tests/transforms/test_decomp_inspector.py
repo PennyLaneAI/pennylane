@@ -355,7 +355,7 @@ class TestInspectDecompGraph:
             1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤  
             2: ───────────╰MultiRZ(0.50)────────────┤  
             First-Level Expansion Gates: {Hadamard: 2, RX: 2, MultiRZ(num_wires=3): 1}
-            Missing Ops: {H}
+            Missing Ops: {Hadamard}
             """).strip()
 
         assert result._repr_markdown_() == dedent("""

@@ -1014,7 +1014,7 @@ class Operator2(metaclass=OperatorMeta):
         if not non_wire_args and len(self.wire_argnames) == 1:
             wire_arg = self.arguments[self.wire_argnames[0]]
             if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
-                return f"{self.name}({wire_arg[0]!r})"
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
 
         non_dyn_args = self.static_argnames + self.compilable_argnames + self.hybrid_argnames
 
@@ -1023,6 +1023,7 @@ class Operator2(metaclass=OperatorMeta):
             # Hybrid wire arguments.
             if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
+                leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 value = unflatten(leaves, tree)
 
             # Simplified repr for operators with only dynamic args

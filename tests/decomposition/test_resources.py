@@ -17,7 +17,6 @@
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator1
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
@@ -589,12 +588,8 @@ class TestControlledResourceRep:
         """Tests that the resource rep of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            rep = abstractify(op_type)
-            if issubclass(op_type, Operator1):
-                assert rep == CompressedResourceOp(op_type, {})
-            else:
-                assert rep == op_type(Wire[op_type.num_wires])
-
+            rep = resource_rep(op_type)
+            assert rep == CompressedResourceOp(op_type, {})
 
 
 @pytest.mark.unit
@@ -628,17 +623,14 @@ class TestSymbolicResourceRep:
         """Tests that the adjoint of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            rep = _adjoint_abstract(op_type)
-            if issubclass(op_type, Operator1):
-                assert rep == CompressedResourceOp(
-                    qp.ops.Adjoint,
-                    {
-                        "base_class": op_type,
-                        "base_params": {},
-                    },
-                )
-            else:
-                assert rep == qp.adjoint(op_type(Wire[op_type.num_wires]))
+            rep = qp.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
+            assert rep == CompressedResourceOp(
+                qp.ops.Adjoint,
+                {
+                    "base_class": op_type,
+                    "base_params": {},
+                },
+            )
 
     def test_pow_resource_rep(self):
         """Tests the pow_resource_rep utility function."""

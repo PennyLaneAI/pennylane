@@ -31,7 +31,6 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
-from ...ops.op_math.adjoint2 import _adjoint_abstract
 from .reflection import Reflection
 
 
@@ -231,7 +230,6 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
             resource_rep(
                 Reflection,
                 base_rep=abstractify(U),
-                adjoint_base_rep=_adjoint_abstract(U),
                 num_wires=len(U.wires),
                 num_reflection_wires=num_reflection_wires,
             )
@@ -244,7 +242,6 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
             resource_rep(
                 Reflection,
                 base_rep=abstractify(U),
-                adjoint_base_rep=_adjoint_abstract(U),
                 num_wires=len(U.wires),
                 num_reflection_wires=num_reflection_wires,
             )
