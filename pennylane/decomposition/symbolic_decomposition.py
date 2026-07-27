@@ -25,7 +25,7 @@ from pennylane import allocation, math
 from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
 
-from ..typing import Wire
+from pennylane.typing import Wire
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import (
     AbstractOperatorLike,
