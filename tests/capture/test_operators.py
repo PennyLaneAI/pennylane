@@ -520,7 +520,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -542,7 +542,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -563,7 +563,7 @@ class TestAbstractDunders:
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
 
-        assert jaxpr.eqns[0].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.Y)
 
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[1].invars[0].val == 2
