@@ -840,7 +840,9 @@ class Operator2(metaclass=OperatorMeta):
                     return False
                 if "compute_decomposition" in vars(klass):
                     return True
-            return False
+            # should always find Operator2 in the mro
+            # pragma: no cover
+            raise TypeError("This line should be impossible to hit. Something is wrong.")
 
         return (
             defines_compute_decomposition(cls)
