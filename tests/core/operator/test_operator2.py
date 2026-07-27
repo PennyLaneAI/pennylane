@@ -1347,7 +1347,7 @@ class TestDunderMethods:
                 super().__init__(wires=[Wires(w) for w in wires])
 
         op = Op(wires=[[0], 1, [2, 3]])
-        assert repr(op) == "Op(wires=[[0], [1], [2, 3]])"
+        assert repr(op) == "Op(wires=[Wires([0]), Wires([1]), Wires([2, 3])])"
 
     def test_str_with_abstract_and_fixed_sigs(self):
         """Tests that __str__ is simplified for abstract and fixed ops."""

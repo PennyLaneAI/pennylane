@@ -865,7 +865,7 @@ class TestControlledDecompositions:
         """Tests that a general controlled op can be decomposed into a custom op if applicable."""
 
         op1 = qp.ops.Controlled(qp.X(0), control_wires=[1])
-        op2 = qp.ops.Controlled(qp.H(0), control_wires=[1])
+        op2 = ControlledOp2(qp.H(0), control_wires=[1])
         graph = DecompositionGraph(
             operations=[op1, op2],
             gate_set={"CNOT", "CH"},
@@ -877,7 +877,7 @@ class TestControlledDecompositions:
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op2)(**op2.arguments)
 
         assert q.queue == [qp.CNOT(wires=[1, 0]), qp.CH(wires=[1, 0])]
 
