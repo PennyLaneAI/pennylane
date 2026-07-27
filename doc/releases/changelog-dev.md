@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* The control flow operators ``cond``, ``for_loop``, and ``while_loop`` now allow to pass 
+  resource hints about the estimated probability with which a branch will trigger and the
+  estimated number of loop iterations, respectively.
+  [(#9907)](https://github.com/PennyLaneAI/pennylane/pull/9907)
+  
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
