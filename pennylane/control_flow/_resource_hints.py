@@ -52,34 +52,26 @@ def validate_estimated_probabilities(values: Sequence[float]) -> tuple[float, ..
     """
     if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
         raise TypeError(
-            "'estimated_probabilities' must be a sequence of floats in [0, 1], "
+            "'estimated_probability' must be a float in [0, 1], "
             f"but got {type(values).__name__}."
         )
     probs = tuple(validate_estimated_probability(v) for v in values)
     if sum(probs) > 1.0 + 1e-10:
         raise ValueError(
-            f"'estimated_probabilities' entries must sum to at most 1, but got {sum(probs)}."
+            f"'estimated_probability' entries must sum to at most 1, but got {sum(probs)}."
         )
     return probs
 
 
-def normalize_estimated_probabilities(
-    value: float | Sequence[float] | None,
+def collect_estimated_probabilities(
+    branch_probs: Sequence[float | None],
 ) -> tuple[float, ...] | None:
-    """Normalize user-provided probability hint(s) to a validated tuple."""
-    if value is None:
+    """Collect per-branch probability hints into a validated tuple."""
+    if all(p is None for p in branch_probs):
         return None
-    if isinstance(value, (int, float)):
-        return validate_estimated_probabilities((float(value),))
-    return validate_estimated_probabilities(value)
-
-
-def validate_estimated_probabilities_count(
-    probs: tuple[float, ...], num_branches: int, *, arg_name: str = "estimated_probabilities"
-) -> None:
-    """Ensure there is one probability hint per non-default branch."""
-    if len(probs) != num_branches:
+    if any(p is None for p in branch_probs):
         raise ValueError(
-            f"'{arg_name}' must have one entry per non-default branch, but got "
-            f"{len(probs)} probabilities for {num_branches} branch(es)."
+            "'estimated_probability' must be provided for every non-default branch when "
+            "using resource-estimation hints."
         )
+    return validate_estimated_probabilities(branch_probs)

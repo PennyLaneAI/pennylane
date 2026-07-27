@@ -25,8 +25,8 @@ from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.control_flow._resource_hints import (
-    normalize_estimated_probabilities,
-    validate_estimated_probabilities_count,
+    collect_estimated_probabilities,
+    validate_estimated_probability,
 )
 from pennylane.core.operator import Operation, Operator
 from pennylane.exceptions import ConditionalTransformError
@@ -211,12 +211,12 @@ class CondCallable:
         true_fn,
         false_fn=None,
         elifs=(),
-        estimated_probabilities: float | Sequence[float] | None = None,
+        estimated_probability: float | None = None,
     ):
         self.preds = [condition]
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
-        self.estimated_probabilities = estimated_probabilities
+        self.branch_probabilities = [estimated_probability]
 
         if (
             len(elifs) == 2
@@ -229,13 +229,18 @@ class CondCallable:
             elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
+            self.branch_probabilities.extend([None] * len(elif_preds))
 
-    def else_if(self, pred):
+    def else_if(self, pred, *, estimated_probability: float | None = None):
         """Decorator that allows else-if functions to be registered with a corresponding
         boolean predicate.
 
         Args:
             pred (bool): The predicate that will determine if this branch is executed.
+            estimated_probability (float): Optional hint for :func:`~.specs` giving the
+                expected unconditional probability of this branch. If the probability is provided
+                for any non-default branch, it must be provided for every non-default branch.
+                Only used with :func:`~.qjit` and Catalyst's resource analysis.
 
         Returns:
             callable: decorator that is applied to the else-if function
@@ -244,6 +249,7 @@ class CondCallable:
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
+            self.branch_probabilities.append(estimated_probability)
             return self
 
         return decorator
@@ -337,10 +343,7 @@ class CondCallable:
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
-        if self.estimated_probabilities is not None:
-            probs = normalize_estimated_probabilities(self.estimated_probabilities)
-            validate_estimated_probabilities_count(probs, len(self.preds))
-            self.estimated_probabilities = probs
+        estimated_probabilities = collect_estimated_probabilities(self.branch_probabilities)
 
         flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
         bind_kwargs = {
@@ -348,8 +351,8 @@ class CondCallable:
             "consts_slices": consts_slices,
             "args_slice": slice(end_const_ind, None),
         }
-        if self.estimated_probabilities is not None:
-            bind_kwargs["estimated_probabilities"] = self.estimated_probabilities
+        if estimated_probabilities is not None:
+            bind_kwargs["estimated_probabilities"] = estimated_probabilities
 
         results = cond_prim.bind(
             *conditions,
@@ -375,7 +378,7 @@ def cond(
     false_fn: Callable | None = None,
     elifs: Sequence = (),
     *,
-    estimated_probabilities: float | Sequence[float] | None = None,
+    estimated_probability: float | None = None,
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
@@ -422,12 +425,11 @@ def cond(
         elifs (Sequence(Tuple(bool, callable))): A sequence of (bool, elif_fn) clauses. Can only
             be used when decorated by :func:`~.qjit` or if the condition is not
             a mid-circuit measurement.
-        estimated_probabilities (float | Sequence[float]): Optional hint(s) for resource
-            estimation. For a simple if-else, pass a single float (or a length-1 sequence)
-            giving the expected probability of the first branch. For if-elif-else chains,
-            pass one probability per non-default branch (in branch order); the default branch
-            probability is computed as the remaining mass. Only used with :func:`~.qjit` and
-            Catalyst's resource analysis.
+        estimated_probability (float): Optional hint for :func:`~.specs` giving the
+            expected probability of the first branch. For if-elif-else chains, also pass
+            ``estimated_probability`` to each :meth:`~.CondCallable.else_if` call; the default
+            branch probability is computed as the remaining mass. Only used with
+            :func:`~.qjit` and Catalyst's resource analysis.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -655,19 +657,17 @@ def cond(
         np.float64(-0.3092...)
     """
 
-    if estimated_probabilities is not None:
-        estimated_probabilities = normalize_estimated_probabilities(estimated_probabilities)
+    if estimated_probability is not None:
+        estimated_probability = validate_estimated_probability(estimated_probability)
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
 
         if true_fn is None:
-            return ops_loader.cond(condition, estimated_probabilities=estimated_probabilities)
+            return ops_loader.cond(condition, estimated_probability=estimated_probability)
 
-        cond_func = ops_loader.cond(condition, estimated_probabilities=estimated_probabilities)(
-            true_fn
-        )
+        cond_func = ops_loader.cond(condition, estimated_probability=estimated_probability)(true_fn)
 
         # Optional 'elif' branches
         for cond_val, elif_fn in elifs:
@@ -684,11 +684,11 @@ def cond(
         # when the condition is a mid-circuit measurement but qp.capture.enabled()
         if true_fn is None:
             return lambda fn: CondCallable(
-                condition, fn, estimated_probabilities=estimated_probabilities
+                condition, fn, estimated_probability=estimated_probability
             )
 
         return CondCallable(
-            condition, true_fn, false_fn, elifs, estimated_probabilities=estimated_probabilities
+            condition, true_fn, false_fn, elifs, estimated_probability=estimated_probability
         )
 
     if true_fn is None:
