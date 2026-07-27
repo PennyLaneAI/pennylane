@@ -186,6 +186,16 @@ def compile(
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
 
+    if basis_set is not None and len(basis_set) > 0:
+        # Membership checks use operation names (strings). Operator types/instances
+        # never match, so a non-empty basis_set of operators silently behaves like [].
+        non_string_gates = [gate for gate in basis_set if not isinstance(gate, str)]
+        if non_string_gates:
+            raise ValueError(
+                "basis_set must contain operation names as strings (e.g. 'RX'), "
+                f"not operator types or instances. Got: {non_string_gates}."
+            )
+
     # Expand the tape; this is done to unroll any templates that may be present,
     # as well as to decompose over a specified basis set
     # First, though, we have to stop whatever tape may be recording so that we

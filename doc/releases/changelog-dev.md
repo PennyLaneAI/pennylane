@@ -268,6 +268,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.compile` now raises a ``ValueError`` if a non-empty ``basis_set`` contains
+  operator types or instances instead of operation name strings.
+  [(#6132)](https://github.com/PennyLaneAI/pennylane/issues/6132)
+
 * Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
   register, `x_wires`, is smaller than the size of the second addend register, `y_wires`.
   [(#9807)](https://github.com/PennyLaneAI/pennylane/pull/9807)
