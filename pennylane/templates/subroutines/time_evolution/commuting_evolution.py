@@ -19,7 +19,7 @@ Contains the CommutingEvolution template.
 import copy
 
 from pennylane import capture, math
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator1
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.linear_combination import Hamiltonian
