@@ -229,6 +229,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     if qp.capture.enabled():
         import jax  # pylint: disable=import-outside-toplevel
 
+        # Match each operator model's capture boundary: legacy hyperparameters remain
+        # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
         if isinstance(op, Operator1):
             decomposition = partial(rule, **op.hyperparameters)
             capture_args = op.data
