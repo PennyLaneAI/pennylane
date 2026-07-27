@@ -50,7 +50,7 @@ from typing import Sequence
 
 from numpy.typing import ArrayLike
 
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, GanFermi
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
     GanCoeff,

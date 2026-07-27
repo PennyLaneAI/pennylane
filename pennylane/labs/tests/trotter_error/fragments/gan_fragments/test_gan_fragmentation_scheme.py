@@ -23,7 +23,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, GanFermi
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     GanConfig,
     _diagonal,

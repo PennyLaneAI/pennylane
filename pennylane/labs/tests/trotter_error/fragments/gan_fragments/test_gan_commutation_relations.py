@@ -1,19 +1,17 @@
-"""Pytest suite for GAN-fragment commutator identities.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
-Each test corresponds to one commutator identity from the reference notes and
-is parametrized over several matching-index inputs. Shared, deterministic
-setup (the ``GanConfig`` and the energy fragment) is provided through fixtures
-so the tests are order-independent.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 
-Index ranges used for parametrization
--------------------------------------
-Inferred from the edge generators and ``config`` (n_mol=3, n_met=6):
-  * molecular matching index reduces mod (n_mol + t - 1) = 3  -> s, k in {0, 1, 2}
-  * metal matching index uses    mod n_met = 6                -> s, k in {0..5}
-These were NOT verified against the source of ``_mol_matching`` /
-``_met_matching`` (repo unavailable at conversion time). If a parametrized
-case raises IndexError, narrow the corresponding range.
-"""
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests that the fragments returned by `gan_fragments` obey their expected commutation relations."""
 
 from collections import defaultdict
 from itertools import combinations
@@ -22,7 +20,7 @@ import numpy as np
 import pytest
 
 from pennylane.labs.trotter_error import GanConfig
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, GanFermi
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     _diagonal,
     _electron_repulsion,

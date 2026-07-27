@@ -15,7 +15,7 @@
 
 import pytest
 
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import (
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import (
     FermiOp,
     FermiSpace,
     FermiType,

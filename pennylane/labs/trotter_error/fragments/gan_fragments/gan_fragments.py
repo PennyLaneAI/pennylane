@@ -49,7 +49,7 @@ from typing import Sequence
 import numpy as np
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import GanFermi
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import GanFermi
 
 
 class FuncType(IntEnum):
