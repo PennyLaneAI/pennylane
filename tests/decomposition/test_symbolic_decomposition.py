@@ -267,13 +267,13 @@ class TestPowDecomposition:
     def test_merge_powers(self):
         """Test the decomposition rule for nested powers."""
 
-        op = qp.pow(qp.pow(qp.H(0), 3), 2)
+        op = qp.pow(qp.pow(qp.RX(0.1, 0), 3), 2)
         with qp.queuing.AnnotatedQueue() as q:
             merge_powers(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qp.pow(qp.H(0), 6)]
+        assert q.queue == [qp.pow(qp.RX(0.1, 0), 6)]
         assert merge_powers.compute_resources(**op.resource_params) == to_resources(
-            {pow_resource_rep(qp.H, {}, 6): 1}
+            {pow_resource_rep(qp.RX, {}, 6): 1}
         )
 
     def test_merge_powers2(self):
