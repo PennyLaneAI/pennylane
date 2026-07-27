@@ -35,7 +35,7 @@ from pennylane.ops.functions.assert_valid import (
     _test_decomposition_rule,
 )
 from pennylane.wires import Wires
-from tests.core.operator.operator2_utils import DynOp
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 
 class TestDecompositionErrors:
