@@ -156,16 +156,15 @@ class GanFermi:
 
         Repeatedly applies the fermionic anticommutation relations to bring the
         operators into a fixed canonical order, returning the result as a
-        :class:`GanFermiSentence` (a normal-ordered word may expand into several
-        words because of the :math:`\{a_i, a_i^\dagger\} = 1` contractions).
+        :class:`GanFermiSentence`.
 
-        The ordering pushes annihilation operators to the right of creation
-        operators; an annihilation/creation pair on the *same* mode and space
-        produces a contraction term (the word with that pair removed) plus a
-        sign flip, while a mismatched pair simply anticommutes with a sign flip.
-        Same-type operators are ordered by mode (and molecular before metallic),
-        each swap contributing a factor of :math:`-1`. Words containing a
-        repeated adjacent operator vanish and are dropped.
+        A word in canonical order satisfies the following conditions:
+
+        1. Creation operators are to the left of annihilation operators.
+        2. Operators on the metallic space are to the left of operators on the molecular space
+            (unless this violates condition 1).
+        3. Operators with a smaller mode index are to the left of operators with a larger mode index
+            (unless this violates conditions 1 or 2).
 
         Returns:
             GanFermiSentence: the normal-ordered form as a linear combination of
