@@ -2266,13 +2266,17 @@ class TestGraphDecomposition:
 
             @qp.register_resources({qp.RX: 1})
             def use_rx(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+                qp.RX(phi, wires=wires)
 
             qp.add_decomps(Op, use_rx)
 
             decomp = Op(0.5, wires=0).decomposition()
             assert len(decomp) == 1
             assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+            decomp2 = Op.compute_decomposition(0.5, wires=0)
+            assert len(decomp2) == 1
+            assert qp.equal(decomp2[0], qp.RX(0.5, wires=0))
 
     def test_rule_receives_full_argument_model(self):
         """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
