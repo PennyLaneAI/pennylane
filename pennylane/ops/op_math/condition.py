@@ -80,21 +80,22 @@ def _is_operator_type(fn):
     return isinstance(fn, type) and issubclass(fn, Operator)
 
 
-def _no_return(fn):
+def _format_and_validate_branch_fn(fn):
+    """Normalizes conditional branches to prevent quantum operators from being returned."""
+
+    # Format directly returned operators as a function with no return
     if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
 
-        def new_fn(*args, **kwargs):
+        def fn_with_no_return(*args, **kwargs):
             fn(*args, **kwargs)
 
-        return new_fn
-    return fn
+        return fn_with_no_return
 
-
-def _no_op2_returns(f):
+    # Standard branch functions should not return any Operator2
     import jax  # pylint: disable=import-outside-toplevel
 
-    def wrapped_f(*args, **kwargs):
-        output = f(*args, **kwargs)
+    def wrapped_fn(*args, **kwargs):
+        output = fn(*args, **kwargs)
         if any(
             isinstance(l, Operator2)
             for l in jax.tree.leaves(output, is_leaf=lambda obj: isinstance(obj, Operator2))
@@ -102,7 +103,7 @@ def _no_op2_returns(f):
             raise ValueError("Operator2 instances cannot be returned from conditional branches.")
         return output
 
-    return wrapped_f
+    return wrapped_fn
 
 
 def _empty_return_fn(*_, **__):
@@ -316,9 +317,9 @@ class CondCallable:
         for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
             # otherwise_fn does not have a pred
             is_otherwise = i == len(self.preds)
-            fn = _no_return(_fn)
-            if fn is not None:
-                fn = _no_op2_returns(fn)
+
+            # NOTE: Prevent quantum operators from being returned as data from branches
+            fn = _format_and_validate_branch_fn(_fn) if _fn is not None else None
 
             if i == 0:
                 flat_true_fn = FlatFn(fn)
