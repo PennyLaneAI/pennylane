@@ -800,10 +800,14 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        for decomp in qp.list_decomps(cls):
-            if decomp.is_applicable(*args, **kwargs):
+        with pause(), QueuingManager.stop_recording():
+            # creating dummy op means this works for adjoint and ctrl too.
+            op = cls(*args, **kwargs)
+        # note that this does not work for adjoint and ctrl
+        for decomp in qp.list_decomps(op):
+            if decomp.is_applicable(**op.arguments):
                 with AnnotatedQueue() as q:
-                    decomp(*args, **kwargs)
+                    decomp(**op.arguments)
                 if QueuingManager.recording():
                     # no need for copies if we just use queue method
                     _ = [op.queue() for op in q.queue]
