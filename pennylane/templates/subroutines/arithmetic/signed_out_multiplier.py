@@ -451,26 +451,18 @@ def _not_zeroed_signed_out_multiplier_resources(
     return resources
 
 
-def _contains_abstract_wire(wires):
-    """Whether a wire register or any of its elements is abstract."""
-    return math.is_abstract(wires) or any(math.is_abstract(wire) for wire in wires)
-
-
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
-    if compiler.active() or (capture.enabled() and _contains_abstract_wire(input_reg)):
+    if compiler.active() or capture.enabled():
         input_reg = math.array(input_reg, like="jax")
 
-        # Invert all bits
-        @for_loop(len(input_reg))
-        def invert(w):
-            # sign bit of 1 indicates a negative value
-            CNOT([aux_wire, input_reg[w]])
+    # Invert all bits
+    @for_loop(len(input_reg))
+    def invert(w):
+        # sign bit of 1 indicates a negative value
+        CNOT([aux_wire, input_reg[w]])
 
-        invert()  # pylint: disable=no-value-for-parameter
-    else:
-        for wire in input_reg:
-            CNOT([aux_wire, wire])
+    invert()  # pylint: disable=no-value-for-parameter
 
     # Add one
     Controlled(
@@ -510,9 +502,7 @@ def _signed_out_multiplier_decomposition_zeroed(
     **_,
 ):
     """Computes the decomposition of the operator as a product of other operators when the output wires are zeroed."""
-    if capture.enabled() and any(
-        _contains_abstract_wire(wires) for wires in (x_wires, y_wires, work_wires, output_wires)
-    ):
+    if capture.enabled():
         x_wires, y_wires, work_wires, output_wires = (
             math.array(x_wires, like="jax"),
             math.array(y_wires, like="jax"),
@@ -570,9 +560,7 @@ def _signed_out_multiplier_decomposition_not_zeroed(
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 
-    if capture.enabled() and any(
-        _contains_abstract_wire(wires) for wires in (x_wires, y_wires, work_wires, output_wires)
-    ):
+    if capture.enabled():
         x_wires, y_wires, work_wires, output_wires = (
             math.array(x_wires, like="jax"),
             math.array(y_wires, like="jax"),
@@ -586,7 +574,7 @@ def _signed_out_multiplier_decomposition_not_zeroed(
     # Temp output register for multiplication output
     mult_temp = work_wires[2 : len(output_wires) + 2]
 
-    if capture.enabled() and _contains_abstract_wire(work_wires):
+    if capture.enabled():
         signed_work_wires = work_wires[2 * len(output_wires) + 1 :]
         signed_work_wires = jnp.concatenate([jnp.atleast_1d(y_aux), signed_work_wires])
         signed_work_wires = jnp.concatenate([jnp.atleast_1d(x_aux), signed_work_wires])
