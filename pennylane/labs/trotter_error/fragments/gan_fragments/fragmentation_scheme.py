@@ -48,7 +48,7 @@ class GanConfig:  # pylint: disable=too-many-instance-attributes
         + \sum_{i,j\in\mathcal{M}} \hat{V}_{ij}(\vec{\boldsymbol{Q}})\,\hat{a}_i^\dagger \hat{a}_i \hat{a}_j^\dagger \hat{a}_j
         + \hat{U}_0(\vec{\boldsymbol{Q}}),
 
-    where :math:`\hat{P}_\kappa` is the momentum operator for the :math:`\kappa`th nuclear coordinate with mass :math:`m_\kappa`,
+    where :math:`\hat{P}_\kappa` is the momentum operator nuclear coordinate :math:`\kappa` with mass :math:`m_\kappa`, and
     :math:`\vec{\boldsymbol{Q}} = (\hat{Q}_0, \hat{Q}_1, \dots, \hat{Q}_{M-1})` denotes the position operators of the nuclear
     corrdinates, and :math:`U_0(\vec{\boldsymbol{Q}})` is a reference nuclear potential. :math:`\hat{U}_{ij}(\vec{\boldsymbol{Q}})`
     denotes the electron couplings, and :math:`\hat{V}_{ij}(\vec{\boldsymbol{Q}})` denotes the electron-electron repulsion.
@@ -58,7 +58,7 @@ class GanConfig:  # pylint: disable=too-many-instance-attributes
 
     .. math::
 
-        \hat{H}_{\mathrm{metal}) = \sum_{i \in \mathcal{B}} \epsilon_i \hat{a}^\dagger_i \hat{a}_i,
+        \hat{H}_{\mathrm{metal}} = \sum_{i \in \mathcal{B}} \epsilon_i \hat{a}^\dagger_i \hat{a}_i,
 
     where :math:`\mathcal{B}` denotes the set of metallic orbital indices with energies :math:`\epsilon_i`.
 
