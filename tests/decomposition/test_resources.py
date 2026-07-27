@@ -589,8 +589,12 @@ class TestControlledResourceRep:
         """Tests that the resource rep of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            rep = resource_rep(op_type)
-            assert rep == CompressedResourceOp(op_type, {})
+            rep = abstractify(op_type)
+            if issubclass(op_type, Operator1):
+                assert rep == CompressedResourceOp(op_type, {})
+            else:
+                assert rep == op_type(Wire[op_type.num_wires])
+
 
 
 @pytest.mark.unit
