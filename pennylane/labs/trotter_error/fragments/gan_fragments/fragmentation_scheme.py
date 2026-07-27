@@ -76,17 +76,24 @@ class GanConfig:  # pylint: disable=too-many-instance-attributes
         n_met (int): the number of metallic modes.
         n_mol (int): the number of molecular modes.
         couplings (Sequence[ArrayLike]): the molecular coupling tensors
-            :math:`U(\vec{\boldsymbol{Q}})`.
+            :math:`U(\vec{\boldsymbol{Q}})`. The ``i``th tensor has shape ``(n_mol, n_mol) + ((n_modes,) * i)``
+            and represents the tensor of coefficients for the order ``i`` terms. Optionally, a tensor of shape
+            ``(n_mol, n_mol, n_modes)`` may be given to represent only the diagonal terms.
         repulsion (Sequence[ArrayLike]): the electron repulsion tensors
-            :math:`V(\vec{\boldsymbol{Q}})`.
-        transfer (Sequence[ArrayLike]): the molecule--metal transfer
-            (hybridization) tensors :math:`W(\vec{\boldsymbol{Q}})`.
+            :math:`V(\vec{\boldsymbol{Q}})`. The ``i``th tensor has shape ``(n_mol, n_mol) + ((n_modes,) * i)``
+            and represents the tensor of coefficients for the order ``i`` terms. Optionally, a tensor of shape
+            ``(n_mol, n_mol, n_modes)`` may be given to represent only the diagonal terms.
+        transfer (Sequence[ArrayLike]): the molecule-metal transfer tensors :math:`W(\vec{\boldsymbol{Q}})`.
+            The ``i``th tensor represents the coefficients for the order ``i`` terms. Each tensor in the sequence
+            has order ``(n_mol, n_met)``.
         nuclear (Sequence[ArrayLike]): the nuclear reference energy tensors
-            :math:`U_0(\vec{\boldsymbol{Q}})`.
-        masses (ArrayLike): the nuclear mode masses :math:`m`, shape
+            :math:`U_0(\vec{\boldsymbol{Q}})`. The ``i``th tensor has shape ``(n_modes, ) * i`` and represents the
+            tensor of coefficients for the order ``i`` terms. Optionally, a tensor of shape ``(n_modes, )`` can be
+            given to represent only the diagonal terms.
+        masses (ArrayLike): the nuclear mode masses :math:`m` of shape
             ``(n_modes,)``.
         energies (ArrayLike): the metallic on-site energies
-            :math:`\epsilon`, shape ``(n_met,)``.
+            :math:`\epsilon` of shape ``(n_met,)``.
     """
 
     n_modes: int
