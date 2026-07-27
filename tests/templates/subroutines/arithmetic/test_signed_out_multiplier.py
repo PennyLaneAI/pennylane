@@ -154,7 +154,13 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
     ],
 )
 def test_decomposition_with_abstract_wires(rule_name, registers, expected_primitives):
-    """Test that decomposition rules support abstract wire registers."""
+    """Test the decomposition rules with every register passed as an abstract wire argument.
+
+    This separate test is needed while ``SignedOutMultiplier`` is a legacy operator because
+    ``_test_decomposition_rule`` closes over its register hyperparameters and traces only its
+    aggregate wires. Once ``SignedOutMultiplier`` is an Operator2, that helper will trace each
+    wire argument directly and this test will be redundant.
+    """
     jnp = pytest.importorskip("jax.numpy")
     rule = list_decomps(SignedOutMultiplier)[rule_name]
 

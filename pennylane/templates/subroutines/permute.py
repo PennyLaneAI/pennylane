@@ -261,6 +261,8 @@ def _permute_decomposition(wires, permutation):
     working_order = wires.tolist()
 
     if has_jax and capture.enabled():
+        # The swap index is traced inside ``cond``. JAX arrays support indexing with that
+        # tracer and the functional updates needed to carry the new order between branches.
         wires = jnp.array(wires)
         working_order = wires
 
