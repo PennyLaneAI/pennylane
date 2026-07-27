@@ -2020,8 +2020,8 @@ add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
 @register_resources(lambda **_: {qp.SISWAP: 1})
-def _pow_iswap_to_siswap(wires, **_):
-    qp.SISWAP(wires=wires)
+def _pow_iswap_to_siswap(base, z):
+    qp.SISWAP(wires=base.wires)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))

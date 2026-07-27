@@ -852,14 +852,6 @@ special_non_par_op_decomps = [
     (qp.PauliY, [], [0], [1], qp.CY, [qp.CRY(np.pi, wires=[1, 0]), qp.S(1)]),
     (qp.PauliZ, [], [1], [0], qp.CZ, [qp.ControlledPhaseShift(np.pi, wires=[0, 1])]),
     (
-        qp.Hadamard,
-        [],
-        [1],
-        [0],
-        qp.CH,
-        [qp.RY(-np.pi / 4, wires=1), qp.CZ(wires=[0, 1]), qp.RY(np.pi / 4, wires=1)],
-    ),
-    (
         qp.PauliZ,
         [],
         [0],
@@ -906,14 +898,6 @@ special_non_par_op_decomps = [
             qp.CNOT(wires=[0, 1]),
             qp.Hadamard(wires=[2]),
         ],
-    ),
-    (
-        qp.SWAP,
-        [],
-        [1, 2],
-        [0],
-        qp.CSWAP,
-        [qp.CNOT(wires=[2, 1]), qp.Toffoli(wires=[0, 1, 2]), qp.CNOT(wires=[2, 1])],
     ),
 ]
 
