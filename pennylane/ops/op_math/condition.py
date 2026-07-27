@@ -24,7 +24,7 @@ from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -88,6 +88,21 @@ def _no_return(fn):
 
         return new_fn
     return fn
+
+
+def _no_op2_returns(f):
+    import jax  # pylint: disable=import-outside-toplevel
+
+    def wrapped_f(*args, **kwargs):
+        output = f(*args, **kwargs)
+        if any(
+            isinstance(l, Operator2)
+            for l in jax.tree.leaves(output, is_leaf=lambda obj: isinstance(obj, Operator2))
+        ):
+            raise ValueError("Operator2 instances cannot be returned from conditional branches.")
+        return output
+
+    return wrapped_f
 
 
 def _empty_return_fn(*_, **__):
@@ -271,7 +286,6 @@ class CondCallable:
         return list(zip(self.preds[1:], self.branch_fns[1:], strict=True))
 
     def __call_capture_disabled(self, *args, **kwargs):
-
         # dequeue operators passed to args
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         for l in leaves:
@@ -302,7 +316,8 @@ class CondCallable:
         for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
             # otherwise_fn does not have a pred
             is_otherwise = i == len(self.preds)
-            fn = _no_return(_fn)
+            fn = _no_op2_returns(_no_return(_fn))
+
             if i == 0:
                 flat_true_fn = FlatFn(fn)
                 fn = flat_true_fn
@@ -822,7 +837,6 @@ def _get_cond_qfunc_prim():
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
             consts = all_args[const_slice]
             if isinstance(pred, qp.ops.MeasurementValue):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     out = qp.capture.eval_jaxpr(jaxpr, consts, *args)
                 if len(out) != 0:
