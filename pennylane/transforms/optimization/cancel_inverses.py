@@ -213,7 +213,7 @@ def cancel_inverses(
                 qp.RX(0.1, wires=0)
                 qp.Hadamard(wires=0)
                 qp.Hadamard(wires=0)
-                return qp.expval(qp.PauliZ(0))
+                return qp.expval(qp.PauliX(0))
 
         >>> print(qp.specs(circuit, level=1)())
         Device: lightning.qubit
@@ -225,7 +225,7 @@ def cancel_inverses(
         - Total: 1
           - RX: 1
         Measurement processes:
-        - expval(PauliZ): 1
+        - expval(PauliX): 1
         Wire allocations: 1
         Circuit Depth: Not computed
 

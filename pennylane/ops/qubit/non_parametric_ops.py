@@ -900,6 +900,7 @@ class PauliZ(Operator2):
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
+        """Basis of the operator."""
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
