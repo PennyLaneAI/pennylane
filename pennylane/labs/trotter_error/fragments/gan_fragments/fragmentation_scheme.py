@@ -33,8 +33,10 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
 
 @dataclass
 class GanConfig:  # pylint: disable=too-many-instance-attributes
-    r"""Dimensions and coefficient tensors defining a Generalized Anderson-Newns (GAN) Hamiltonian
-    as in `arXiv:2601.16264 <https://arxiv.org/abs/2601.16264>`. The GAN Hamiltonian is given by
+    r"""
+    Dimensions and coefficient tensors defining a Generalized Anderson-Newns (GAN) Hamiltonian.
+
+    The GAN Hamiltonian as defined in `arXiv:2601.16264 <https://arxiv.org/abs/2601.16264>`_ is given by
 
     .. math::
         \hat{H} = \hat{H}_{\mathrm{mol}} + \hat{H}_{\mathrm{metal}} + \hat{H}_{\mathrm{int}}.
