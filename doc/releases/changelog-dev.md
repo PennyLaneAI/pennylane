@@ -812,10 +812,12 @@
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Internal changes ⚙️</h3>
 
-* The :func:`~.adjoint_rotation` and :func:`~.pow_rotation` symbolic decomposition rules are updated to work with :class:`Operator2`.
+* The :func:`~.adjoint_rotation` and :func:`~.pow_rotation` symbolic decomposition rules have been updated to work with :class:`~.Operator2`.
+  [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
 
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
