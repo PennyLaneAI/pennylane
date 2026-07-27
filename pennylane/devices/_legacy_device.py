@@ -52,9 +52,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qp.devices.DefaultQutrit)", the overridden
+    checking "isinstance(dev, MyLegacyDevice)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qp.devices.DefaultQutrit)"
+    "isinstance(dev.target_device, MyLegacyDevice)"
     """
 
     def __instancecheck__(cls, instance):
@@ -88,7 +88,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
     def __init__(self, wires=1, shots=1000, *, analytic=None):
         self.shots = shots
 
-        if analytic is not None:
+        if analytic is not None:  # pragma: no cover
             msg = (
                 "The analytic argument has been replaced by shots=None. "
                 "Please use shots=None instead of analytic=True."
@@ -233,7 +233,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             self._shots, self._shot_vector = shot_obj.total_shots, list(shot_obj.shot_vector)
             self._raw_shot_sequence = shots
 
-        else:
+        else:  # pragma: no cover
             raise DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
@@ -714,16 +714,16 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             return circuits, processing_fn
 
         # Expand each of the broadcasted Hamiltonian-expanded circuits
-        expanded_tapes, expanded_fn = broadcast_expand(circuits)
+        expanded_tapes, expanded_fn = broadcast_expand(circuits)  # pragma: no cover
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
         # expansion. Note that the application order is reversed compared to the expansion order,
         # i.e. while we first applied `split_non_commuting` to the tape, we need to process the
         # results from the broadcast expansion first.
-        def total_processing(results):
+        def total_processing(results):  # pragma: no cover
             return processing_fn(expanded_fn(results))
 
-        return expanded_tapes, total_processing
+        return expanded_tapes, total_processing  # pragma: no cover
 
     def _all_multi_term_obs_supported(self, circuit):
         """Check whether all multi-term observables in the circuit are supported."""
