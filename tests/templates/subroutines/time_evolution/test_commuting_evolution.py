@@ -121,8 +121,6 @@ def test_decomposition_new(hamiltonian, time):
 @pytest.mark.capture
 def test_captured_decomposition_does_not_add_hamiltonian_to_tape():
     """The reconstructed Hamiltonian is consumed as an input, not collected separately."""
-    pytest.importorskip("jax")
-    assert qp.capture.enabled()
     hamiltonian = qp.Hamiltonian([1.0, 2.0], [qp.X(0), qp.Y(0)])
 
     rule = qp.list_decomps(qp.CommutingEvolution)["_commuting_evolution_decomposition"]
