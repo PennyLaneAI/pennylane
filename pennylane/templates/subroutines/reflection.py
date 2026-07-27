@@ -23,16 +23,7 @@ import numpy as np
 from pennylane import ops
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.decomposition.symbolic_decomposition import (
-    _adjoint_base_resource_rep,
-    _base_resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
@@ -120,7 +111,7 @@ class Reflection(Operation):
 
     grad_method = None
 
-    resource_keys = {"base_rep", "adjoint_base_rep", "num_wires", "num_reflection_wires"}
+    resource_keys = {"base_rep", "num_wires", "num_reflection_wires"}
 
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
@@ -157,7 +148,6 @@ class Reflection(Operation):
     def resource_params(self) -> dict:
         return {
             "base_rep": abstractify(self.hyperparameters["base"]),
-            "adjoint_base_rep": _adjoint_abstract(self.hyperparameters["base"]),
             "num_wires": len(self.wires),
             "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
         }
@@ -225,15 +215,13 @@ class Reflection(Operation):
         return decomp_ops
 
 
-def _reflection_decomposition_resources(
-    base_rep, adjoint_base_rep, num_wires, num_reflection_wires=None
-) -> dict:
+def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
     resources = {
         ops.GlobalPhase: 1,
-        adjoint_base_rep: 1,
+        _adjoint_abstract(base_rep): 1,
         ops.PauliX: 2,
     }
 
