@@ -23,7 +23,6 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     GanConfig,
     _diagonal,
@@ -35,6 +34,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme i
     _nuclear_reference,
     gan_fragments,
 )
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
     GanCoeff,

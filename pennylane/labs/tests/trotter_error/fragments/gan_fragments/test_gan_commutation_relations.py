@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 from pennylane.labs.trotter_error import GanConfig
-from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     _diagonal,
     _electron_repulsion,
@@ -29,6 +28,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme i
     _molecular_coupling,
     _molecule_metal_transfer,
 )
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     GanCoeff,
     GanFragment,
