@@ -316,7 +316,9 @@ class CondCallable:
         for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
             # otherwise_fn does not have a pred
             is_otherwise = i == len(self.preds)
-            fn = _no_op2_returns(_no_return(_fn))
+            fn = _no_return(_fn)
+            if fn is not None:
+                fn = _no_op2_returns(fn)
 
             if i == 0:
                 flat_true_fn = FlatFn(fn)
