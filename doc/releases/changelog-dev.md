@@ -835,6 +835,9 @@
   - Single qubit, parameteric operators are ported:
     - `~.RZ`, `~.CRZ`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
+  - Templates are ported:
+    - `~.BasisRotation`
+  [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
