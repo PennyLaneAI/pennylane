@@ -241,7 +241,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
             *capture_args, **capture_kwargs
         )
-        flat_capture_args = jax.tree_util.tree_leaves((capture_args, capture_kwargs))
+        flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
         tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
     else:
         with qp.queuing.AnnotatedQueue() as q:
