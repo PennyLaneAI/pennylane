@@ -11,35 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Construction of GAN Hamiltonian fragments from coefficient arrays.
-
-This module turns a user-supplied description of a GAN Hamiltonian --- the
-mode counts and the coefficient tensors collected in a :class:`GanConfig` ---
-into a list of :class:`~.GanFragment` objects suitable for Trotter-error
-analysis. The fragmentation groups the Hamiltonian's terms so that the
-fragments can be exponentiated and recombined in a product formula.
-
-The fragments produced by :func:`gan_fragments` are:
-
-* a single *diagonal* fragment (on-site molecular couplings, electron repulsion,
-  and the nuclear reference energy),
-* one *molecular matching* fragment per molecular matching index, grouping
-  hopping terms between molecular modes into commuting edge sets,
-* one *metallic matching* fragment per metallic matching index, grouping
-  molecule--metal transfer (hybridization) terms,
-* a single *kinetic* fragment (nuclear kinetic energy and metallic on-site
-  energies).
-
-The matching construction is a graph-edge-colouring style decomposition: each
-matching index selects a set of disjoint mode pairs (edges) whose corresponding
-hopping terms mutually commute and can therefore live in the same fragment.
-
-The private ``_molecular_coupling``, ``_electron_repulsion``,
-``_molecule_metal_transfer``, and ``_nuclear_reference`` helpers translate the
-coefficient tensors into :class:`~.GanCoeff` polynomials in the nuclear
-position/momentum functions; each supports both a "full" tensor (a distinct
-coefficient per mode tuple) and a "diagonal" tensor (one coefficient per mode).
-"""
+r"""Construction of GAN Hamiltonian fragments from coefficient arrays."""
 
 from __future__ import annotations
 
@@ -61,26 +33,56 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
 
 @dataclass
 class GanConfig:  # pylint: disable=too-many-instance-attributes
-    r"""Dimensions and coefficient tensors defining a GAN Hamiltonian.
+    r"""Dimensions and coefficient tensors defining a Generalized Anderson-Newns (GAN) Hamiltonian
+    as in `arXiv:2601.16264 <https://arxiv.org/abs/2601.16264>`. The GAN Hamiltonian is given by
 
-    Collects everything needed to build the GAN fragments. The coefficient
-    sequences are indexed by polynomial order in the nuclear coordinates: entry
-    ``order`` holds the rank-``order`` tensor of expansion coefficients (so,
-    e.g., ``couplings[0]`` is the constant term, ``couplings[1]`` the linear
-    term, and so on).
+    .. math::
+        \hat{H} = \hat{H}_{\mathrm{mol}} + \hat{H}_{\mathrm{metal}} + \hat{H}_{\mathrm{int}}.
+
+    The molecular Hamiltonian :math:`H_{\mathrm{mol}}` is given by
+
+    .. math::
+
+        \hat{H}_{\mathrm{mol}} = \sum_{\kappa=0}^{M-1} \frac{\hat{P}_\kappa^2}{2m_\kappa}
+        + \sum_{i,j\in\mathcal{M}} \hat{U}_{ij}(\vec{\boldsymbol{Q}})\,\hat{a}_i^\dagger \hat{a}_j
+        + \sum_{i,j\in\mathcal{M}} \hat{V}_{ij}(\vec{\boldsymbol{Q}})\,\hat{a}_i^\dagger \hat{a}_i \hat{a}_j^\dagger \hat{a}_j
+        + \hat{U}_0(\vec{\boldsymbol{Q}}),
+
+    where :math:`\hat{P}_\kappa` is the momentum operator for the :math:`\kappa`th nuclear coordinate with mass :math:`m_\kappa`,
+    :math:`\vec{\boldsymbol{Q}} = (\hat{Q}_0, \hat{Q}_1, \dots, \hat{Q}_{M-1})` denotes the position operators of the nuclear
+    corrdinates, and :math:`U_0(\vec{\boldsymbol{Q}})` is a reference nuclear potential. :math:`\hat{U}_{ij}(\vec{\boldsymbol{Q}})`
+    denotes the electron couplings, and :math:`\hat{V}_{ij}(\vec{\boldsymbol{Q}})` denotes the electron-electron repulsion.
+    :math:`\mathcal{M}` denotes the set of electron basis indices of the molecule.
+
+    The metal system :math:`\hat{H}_{\mathrm{metal}}` is given by
+
+    .. math::
+
+        \hat{H}_{\mathrm{metal}) = \sum_{i \in \mathcal{B}} \epsilon_i \hat{a}^\dagger_i \hat{a}_i,
+
+    where :math:`\mathcal{B}` denotes the set of metallic orbital indices with energies :math:`\epsilon_i`.
+
+    The molecule-metal interaction :math:`\hat{H}_{\mathrm{int}}` is given by
+
+    .. math::
+
+        \hat{H}_{\mathrm{int}} = \sum_{i \in \mathcal{M}} \sum_{j \in \mathcal{B}} \hat{W}_{ij}(\vec{\boldsymbol{Q}})
+            \left( \hat{a}^\dagger_i \hat{a}_j + \hat{a}^\dagger_j \hat{a}_i \right),
+
+    where :math:`\hat{W}_{ij}(\vec{\boldsymbol{Q}})` modulates the molecule-metal electron transfer.
 
     Args:
         n_modes (int): the number of nuclear (vibrational) modes.
         n_met (int): the number of metallic modes.
         n_mol (int): the number of molecular modes.
         couplings (Sequence[ArrayLike]): the molecular coupling tensors
-            :math:`U`, per polynomial order.
+            :math:`U(\vec{\boldsymbol{Q}})`.
         repulsion (Sequence[ArrayLike]): the electron repulsion tensors
-            :math:`V`, per polynomial order.
+            :math:`V(\vec{\boldsymbol{Q}})`.
         transfer (Sequence[ArrayLike]): the molecule--metal transfer
-            (hybridization) tensors :math:`W`, per polynomial order.
+            (hybridization) tensors :math:`W(\vec{\boldsymbol{Q}})`.
         nuclear (Sequence[ArrayLike]): the nuclear reference energy tensors
-            :math:`U_0`, per polynomial order.
+            :math:`U_0(\vec{\boldsymbol{Q}})`.
         masses (ArrayLike): the nuclear mode masses :math:`m`, shape
             ``(n_modes,)``.
         energies (ArrayLike): the metallic on-site energies
