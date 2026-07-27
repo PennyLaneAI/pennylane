@@ -36,21 +36,29 @@ class SuperpositionTHC(Operation):
 
     This template prepares the state used by the ``SELECT``/``PREPARE`` pair in THC
     qubitization given the THC rank :math:`M` and the number of spin orbitals :math:`N`.
-    It produces the state:
+    A single round of amplitude amplification is used to produce the state:
 
     .. math::
 
         \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle \;\mapsto\;
-        \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}} \lvert \mu \rangle \lvert \nu \rangle \lvert \text{flag} \rangle ,
+        \sqrt{p}\, \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}}
+        \lvert \mu \rangle \lvert \nu \rangle \lvert 1 \rangle
+        \;+\; \sqrt{1 - p}\, \lvert \phi \rangle \lvert 0 \rangle ,
 
-    where :math:`\lvert \text{flag} \rangle` is the success flag qubit ``work_wires[6]``, and a
-    valid pair is prepared when it is :math:`\lvert 1 \rangle`. The valid index set
-    :math:`\mathcal{S}` is
+    where the last qubit is the success flag ``work_wires[6]``. The desired uniform
+    superposition over the valid index set :math:`\mathcal{S}` is the component flagged by
+    :math:`\lvert 1 \rangle`, while :math:`\lvert \phi \rangle` is a leftover (garbage) state
+    flagged by :math:`\lvert 0 \rangle`. The success probability :math:`p` equals :math:`1`
+    whenever :math:`d \geq 2^{2n} / 4` (the valid pairs make up at least a quarter of the
+    :math:`2^{2n}` index combinations), in which case the single amplification round prepares
+    the exact uniform superposition. When :math:`d < 2^{2n} / 4` the single round cannot reach
+    unit probability, so a weight :math:`1 - p` is left in the :math:`\lvert 0 \rangle`-flagged
+    garbage subspace. The valid index set :math:`\mathcal{S}` is
 
     .. math::
 
-       \mathcal{S} = \{ (\mu, \nu) \mid 0\leq \mu \le \nu < M \} \;\cup\;
-       \{ (\mu, M) \mid 0\leq \mu < N/2 \}
+       \mathcal{S} = \{ (\mu, \nu) \mid 0 \leq \mu \le \nu < M \} \;\cup\;
+       \{ (\mu, M) \mid 0 \leq \mu < N/2 \}
 
     and :math:`d = N/2 + M(M+1)/2` is its size.
 
@@ -62,8 +70,9 @@ class SuperpositionTHC(Operation):
         Every work wire is returned to the zero state, except:
 
         - ``work_wires[0]``: the amplitude amplification auxiliary wire. Its final cleaning
-          rotation is omitted, so it is left in an arbitrary state and is not a flag.
-        - ``work_wires[3]``: flag, true if the system is in the state :math:`|\eta = M\rangle`.
+          rotation is omitted, so it is left in an arbitrary state and is not a flag. This state
+          is intended to be uncomputed by the adjoint of ``SuperpositionTHC``.
+        - ``work_wires[3]``: flag, true if the system is in the state :math:`\lvert \eta = M \rangle`.
         - ``work_wires[6]``: flag, true if the superposition has been prepared correctly.
 
     Args:
@@ -439,11 +448,11 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # Fig. 3 has a typo; these X gates must be added.
-    for wire in mu_wires + nu_wires + work_wires[0:1]:
+    for wire in mu_wires + nu_wires + work_wires[:1]:
         X(wires=wire)
     GlobalPhase(np.pi)
     Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
-    for wire in mu_wires + nu_wires + work_wires[0:1]:
+    for wire in mu_wires + nu_wires + work_wires[:1]:
         X(wires=wire)
 
     for wire in mu_wires + nu_wires:

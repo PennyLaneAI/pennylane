@@ -204,6 +204,55 @@ class TestSuperpositionTHC:
         assert np.allclose(state, np.abs(state)), "Phase error: negative components detected"
 
     @pytest.mark.parametrize(
+        ("M", "N", "n"),
+        [
+            (1, 2, 2),  # frac < 1/4: partial success
+            (2, 4, 3),  # frac < 1/4: partial success
+            (1, 4, 3),  # frac < 1/4: partial success
+            (2, 4, 4),  # frac < 1/4: partial success
+            (4, 8, 3),  # frac < 1/4: partial success (close to 1)
+            (5, 2, 3),  # frac == 1/4: exact preparation
+            (7, 4, 3),  # frac > 1/4: exact preparation
+            (15, 2, 4),  # frac > 1/4: exact preparation
+        ],
+    )
+    def test_success_probability(self, M, N, n):
+        r"""The measured probability of the success flag matches the value predicted
+        by a single round of amplitude amplification.
+
+        With ``frac = d / 2 ** (2 * n)`` the fraction of valid index pairs and
+        ``theta = arcsin(sqrt(frac))``, one amplification round yields amplitude
+        ``sin(3 * theta)`` on the flagged subspace, so
+
+        * ``P(success) = frac * (3 - 4 * frac) ** 2`` when ``frac < 1 / 4``, and
+        * ``P(success) = 1`` when ``frac >= 1 / 4`` (the state is prepared exactly).
+
+        Testing this bounds the quality of the prepared state: whenever the valid
+        pairs make up at least a quarter of the ``2 ** (2 * n)`` index combinations,
+        the preparation is exact.
+        """
+        mu_wires, nu_wires, work_wires = _wire_layout(n)
+        success_flag = work_wires[6]
+        dev = qp.device("lightning.qubit", wires=2 * n + len(work_wires))
+
+        @qp.qnode(dev)
+        def circuit():
+            SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
+            return qp.probs(wires=[success_flag])
+
+        p_success = float(np.asarray(circuit())[1])
+
+        d = N // 2 + M * (M + 1) // 2
+        frac = d / 2 ** (2 * n)
+        expected = 1.0 if frac >= 0.25 else frac * (3 - 4 * frac) ** 2
+
+        assert np.isclose(p_success, expected)
+
+        # For the physically relevant regime the preparation is exact.
+        if frac >= 0.25:
+            assert np.isclose(p_success, 1.0)
+
+    @pytest.mark.parametrize(
         ("M", "N", "mu_wires", "nu_wires", "work_wires", "msg_match"),
         [
             (
