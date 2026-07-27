@@ -11,15 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the fermionic algebra primitives in ``fermi.py``.
-
-Covers FermiOp factories, GanFermi (normal ordering, the zero test, products,
-hashing/equality), and GanFermiSentence arithmetic. Several GanFermiSentence tests
-target previously-identified bugs (``__mul__`` raising ``KeyError`` and
-``__add__`` / ``__matmul__`` returning bare dicts instead of GanFermiSentences);
-those tests are written against the *correct* behavior, so they fail on the
-unfixed implementation and pass once it is corrected.
-"""
+"""Tests for the fermionic algebra primitives in ``fermi.py``."""
 
 import pytest
 
@@ -33,7 +25,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import (
 
 
 def test_fermiop_factories_set_type_space_mode():
-    """Test that the FermiSpace is set correctly"""
+    """Test that the FermiOp constructors correctly set the FermiSpace"""
     cm = FermiOp.creation_mol(2)
     assert cm.op_type == FermiType.CREATION
     assert cm.space == FermiSpace.MOLECULAR
