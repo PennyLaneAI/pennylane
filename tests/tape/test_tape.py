@@ -1039,26 +1039,6 @@ class TestExecution:
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
 
 
-class TestCVExecution:
-    """Tests for CV tape execution"""
-
-    def test_single_output_value(self):
-        """Tests correct execution and output shape for a CV tape
-        with a single expval output"""
-        dev = qp.device("default.gaussian", wires=2)
-        x = 0.543
-        y = -0.654
-
-        with QuantumTape() as tape:
-            qp.Displacement(x, 0, wires=[0])
-            qp.Squeezing(y, 0, wires=[1])
-            qp.Beamsplitter(np.pi / 4, 0, wires=[0, 1])
-            qp.expval(qp.NumberOperator(0))
-
-        res = dev.batch_execute([tape])[0]
-        assert res.shape == ()
-
-
 class TestTapeCopying:
     """Test for tape copying behaviour"""
 

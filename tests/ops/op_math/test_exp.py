@@ -729,7 +729,6 @@ class TestIntegration:
         assert qp.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_catalyst_qnode(self):
         """Test with Catalyst interface"""
 

@@ -287,7 +287,7 @@ class TestTemporaryAND:
         assert qp.math.allclose(circuit(), jit_circuit())
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 1), (True, False)])
     def test_jax_qjit_control_values(self, cvals):
         """Tests that TemporaryAND works with jax and jit"""

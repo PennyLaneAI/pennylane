@@ -175,7 +175,6 @@ def test_differentiability_tensorflow():
 
 
 @pytest.mark.catalyst
-@pytest.mark.external
 def test_catalyst_integration():
     """Test that combine_global_phases works with catalyst."""
 

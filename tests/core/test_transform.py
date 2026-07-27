@@ -340,7 +340,6 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_error_on_qjit(self):
         """Test that an error is raised on when applying a transform to a qjit object."""
 

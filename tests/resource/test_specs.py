@@ -199,7 +199,6 @@ class TestSpecsTransform:
         assert resources.total_quantum_operations == 4
         assert resources.depth == 4
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     @pytest.mark.parametrize("level", [0, "device"])
     def test_qjit_partial(self, level):
@@ -219,7 +218,6 @@ class TestSpecsTransform:
         assert resources.counts == {"RX": 1, "RY": 1, "RZ": 1}
         assert resources.total_quantum_operations == 3
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     def test_qjit_partial_all_levels(self):
         """Test all-level specs for a partial-wrapped Catalyst jitted QNode."""

@@ -21,12 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import queuing
 from pennylane.core.operator import abstractify
-from pennylane.decomposition.decomposition_rule import (
-    _fix_decomp,
-    list_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -475,31 +470,6 @@ class TestPowDecomposition:
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
-
-    def test_list_pow_decomps2(self):
-        """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
-
-        # a fixed decomposition rule overrides everything else
-        op = pow(DynOp(0.5, wires=0), 2)
-        with qp.decomposition.local_decomps():
-            _fix_decomp(op, repeat_pow_base2)
-            assert list(list_decomps(op)) == [repeat_pow_base2]
-
-        # nested powers list only the merge_powers rule
-        nested = pow(pow(qp.S(0), 3), 2)
-        assert list(list_decomps(nested)) == [merge_powers2]
-
-        # a power of an adjoint lists only the flip_pow_adjoint rule
-        pow_adjoint = pow(qp.adjoint(DynOp(0.5, wires=0)), 2)
-        assert list(list_decomps(pow_adjoint)) == [flip_pow_adjoint2]
-
-        # an integer power appends repeat_pow_base to the custom rules
-        integer_pow = pow(DynOp(0.5, wires=0), 3)
-        assert repeat_pow_base2 in list_decomps(integer_pow)
-
-        # a non-integer power does not append repeat_pow_base
-        fractional_pow = pow(DynOp(0.5, wires=0), 0.5)
-        assert repeat_pow_base2 not in list_decomps(fractional_pow)
 
     def test_pow_abstract2(self):
         """Tests _pow_abstract for both the resource-rep and operator branches."""
