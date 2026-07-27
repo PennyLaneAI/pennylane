@@ -159,7 +159,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     """
 
     if (active_jit := compiler.active_compiler()) and not (
-            isinstance(op, Operator2) and op.is_abstract
+        isinstance(op, Operator2) and op.is_abstract
     ):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()

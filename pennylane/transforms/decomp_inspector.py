@@ -107,7 +107,8 @@ class _DecompInGraphInfo(_DecompInfo):
     def _missing_ops(self) -> str:
         """Report on any unsolved ops required for this decomposition rule."""
         unsolved_ops = self._unsolved_ops()
-        return f"Missing Ops: {unsolved_ops}" if unsolved_ops else ""
+        unsolved_ops_str = ", ".join(f"{op}" for op in unsolved_ops)
+        return f"Missing Ops: {{{unsolved_ops_str}}}" if unsolved_ops else ""
 
     @property
     def _missing_ops_md(self) -> str:

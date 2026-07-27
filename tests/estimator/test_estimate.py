@@ -49,7 +49,6 @@ from pennylane.estimator.templates.subroutines import QFT
 from pennylane.estimator.templates.trotter import TrotterVibrational
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
-from pennylane.typing import Wire
 
 # pylint: disable= no-self-use, arguments-differ
 
