@@ -322,67 +322,6 @@ class BasisRotation(Operator2):
     def num_params(self):
         return 1
 
-    @staticmethod
-    def compute_decomposition(
-        unitary_matrix, wires, check=False
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.BasisRotation.decomposition`.
-
-        Args:
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            unitary_matrix (array): matrix specifying the basis transformation
-            check (bool): test unitarity of the provided `unitary_matrix`
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-        """
-
-        if check:
-            if not math.is_abstract(unitary_matrix) and not math.allclose(
-                unitary_matrix @ math.conj(unitary_matrix).T,
-                math.eye(len(unitary_matrix), dtype=complex),
-                atol=1e-4,
-            ):
-                raise ValueError("The provided transformation matrix should be unitary.")
-
-        if len(wires) < 2:
-            raise ValueError(f"This template requires at least two wires, got {len(wires)}")
-
-        op_list = []
-
-        if math.is_real_obj_or_close(unitary_matrix):
-
-            angle, mat = _adjust_determinant(unitary_matrix)
-
-            if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
-                op_list.append(PhaseShift(angle, wires=wires[0]))
-
-            _, givens_list = math.decomposition.givens_decomposition(mat)
-            for grot_mat, (i, j) in givens_list:
-                theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
-                op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
-            return op_list
-
-        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
-
-        for idx, phase in enumerate(phase_list):
-            op_list.append(PhaseShift(math.angle(phase), wires=wires[idx]))
-
-        for grot_mat, (i, j) in givens_list:
-            theta = math.arccos(math.real(grot_mat[1, 1]))
-            phi = math.angle(grot_mat[0, 0])
-
-            op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
-
-            if math.is_abstract(phi) or not math.isclose(phi, phi * 0.0):
-                op_list.append(PhaseShift(phi, wires=wires[i]))
-
-        return op_list
-
 
 # pylint: disable=unused-argument
 def _basis_rotation_decomp_resources(unitary_matrix, wires, check=False):
