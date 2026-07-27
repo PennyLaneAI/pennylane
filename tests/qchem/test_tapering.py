@@ -938,7 +938,12 @@ def test_taper_wire_order(symbols, geometry):
     ],
 )
 def test_taper_jax_jit(symbols, geometry, charge):
-    r"""Test that an observable can be tapred within a jax-jit workflow."""
+    r"""Test that an observable can be tapered within a jax-jit workflow.
+
+    The supported contract is a static operator structure with traced numerical
+    coefficients. Passing a whole operator as a traced jax.jit argument makes its
+    wire labels abstract, which tapering rejects with a deliberate error.
+    """
 
     import jax
 
@@ -950,10 +955,19 @@ def test_taper_jax_jit(symbols, geometry, charge):
     paulix_sector = tuple(optimal_sector(hamiltonian, generators, molecule.n_electrons))
 
     tapered_ham1 = qp.simplify(qp.taper(hamiltonian, generators, paulixops, paulix_sector))
-    tapered_ham2 = qp.simplify(
-        jax.jit(qp.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
-    )
+
+    coeffs, ops = hamiltonian.terms()
+
+    @jax.jit
+    def taper_coefficients(coeffs):
+        h = qp.dot(coeffs, ops)
+        return qp.taper(h, generators, paulixops, paulix_sector)
+
+    tapered_ham2 = qp.simplify(taper_coefficients(jax.numpy.array(coeffs)))
 
     assert qp.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"
     assert qp.math.get_deep_interface(tapered_ham2.terms()[0]) == "jax"
     qp.assert_equal(tapered_ham1, tapered_ham2)
+
+    with pytest.raises(ValueError, match="wire labels are abstract"):
+        jax.jit(qp.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
