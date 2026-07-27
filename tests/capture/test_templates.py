@@ -26,7 +26,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
