@@ -155,7 +155,6 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
 )
 def test_decomposition_with_abstract_wires(rule_name, registers, expected_primitives):
     """Test that decomposition rules support abstract wire registers."""
-    jnp = pytest.importorskip("jax.numpy")
     rule = list_decomps(SignedOutMultiplier)[rule_name]
 
     def decomposition(x_wires, y_wires, output_wires, work_wires):
