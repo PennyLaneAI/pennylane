@@ -121,7 +121,7 @@ class TestInspectDecompGraph:
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
             First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {GlobalPhase: 88, RZ: 136, CNOT: 160, RY: 28, RX: 8}
+            Full Expansion Gates: {GlobalPhase: 88, RZ: 144, CNOT: 160, RY: 28}
             Weighted Cost: 332.0
             """).strip()
 
@@ -158,9 +158,8 @@ class TestInspectDecompGraph:
             | :--- | :--- |
             | CNOT | 160 |
             | GlobalPhase | 88 |
-            | RX | 8 |
             | RY | 28 |
-            | RZ | 136 |
+            | RZ | 144 |
             | **Weighted Cost** | 332.0 |
             </details>
             """).strip()
