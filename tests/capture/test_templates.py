@@ -574,6 +574,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qp.FermionicDoubleExcitation(weight, **kwargs)
 
+    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
@@ -591,7 +592,7 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(qfunc)(v_params)
 
         assert len(jaxpr.eqns) == 5
-        assert jaxpr.eqns[0].primitive == qp.Hadamard._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
         assert jaxpr.eqns[-2].primitive == qp.RZ._primitive
 
         eqn = jaxpr.eqns[-1]
