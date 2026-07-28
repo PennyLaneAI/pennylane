@@ -2193,7 +2193,7 @@ class CRZ(ControlledOp):
         return CRZ(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(theta):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2202,7 +2202,7 @@ class CRZ(ControlledOp):
         .. seealso:: :meth:`~.CRZ.matrix`
 
         Args:
-            phi (tensor_like or float): rotation angle
+            theta (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -2216,9 +2216,9 @@ class CRZ(ControlledOp):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
         if (
-            qp.math.get_interface(phi) == "tensorflow"
+            qp.math.get_interface(theta) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
+            p = qp.math.exp(-0.5j * qp.math.cast_like(theta, 1j))
             if qp.math.ndim(p) == 0:
                 return qp.math.diag([1, 1, p, qp.math.conj(p)])
 
@@ -2226,8 +2226,8 @@ class CRZ(ControlledOp):
             diags = stack_last([ones, ones, p, qp.math.conj(p)])
             return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
-        signs = qp.math.array([0, 0, 1, -1], like=phi)
-        arg = -0.5j * phi
+        signs = qp.math.array([0, 0, 1, -1], like=theta)
+        arg = -0.5j * theta
 
         if qp.math.ndim(arg) == 0:
             return qp.math.diag(qp.math.exp(arg * signs))
