@@ -175,7 +175,7 @@ class ControlledQubitUnitary(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=too-many-arguments,unused-argument,too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
         cls,
@@ -362,7 +362,7 @@ class CH(ControlledOp):
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix():
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -392,7 +392,7 @@ class CH(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
 
 
@@ -473,7 +473,6 @@ class CY(Controlled2):
         super().__init__(qp.Y(wires[1:]), wires[:1])
 
     @override
-    # pylint: disable=unused-argument
     def __abstract_init__(self, wires: WiresLike):
         # `wires` is abstract here and carries no information beyond its fixed
         # size of 2, which always splits into one control and one target wire.
@@ -484,7 +483,6 @@ class CY(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -515,7 +513,7 @@ class CY(Controlled2):
         )
 
 
-def _cy_to_cry_s_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _cy_to_cry_s_resources(wires: AbstractWires):
     return {qp.CRY: 1, qp.S: 1}
 
 
@@ -525,7 +523,7 @@ def _cy(wires: WiresLike, **__):
     qp.S(wires=wires[0])
 
 
-def _cy_to_ppr_resource(wires: AbstractWires):  # pylint: disable=unused-argument
+def _cy_to_ppr_resource(wires: AbstractWires):
     return {
         resource_rep(qp.PauliRot, pauli_word="Y"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -611,7 +609,7 @@ class CZ(ControlledOp):
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix():
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -636,7 +634,7 @@ class CZ(ControlledOp):
         return qp.CCZ(wires=wire + self.wires)
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires):
         return [qp.ControlledPhaseShift(np.pi, wires=wires)]
 
 
@@ -759,7 +757,7 @@ class CSWAP(ControlledOp):
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix():
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -796,7 +794,7 @@ class CSWAP(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -964,7 +962,7 @@ class CCZ(ControlledOp):
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix():
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1174,7 +1172,6 @@ class CNOT(Controlled2):
     @staticmethod
     @lru_cache
     @override
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1314,7 +1311,6 @@ class Toffoli(Controlled2):
         super().__init__(qp.X(wires[2]), wires[:2])
 
     @override
-    # pylint: disable=too-many-arguments,arguments-differ
     def __abstract_init__(self, wires: WiresLike):
         super().__abstract_init__(qp.X(Wire[1]), Wire[2])
 
@@ -1325,7 +1321,7 @@ class Toffoli(Controlled2):
     @staticmethod
     @lru_cache
     @override
-    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1524,7 +1520,7 @@ class MultiControlledX(Controlled2):
         )
 
     @override
-    def __abstract_init__(  # pylint: disable=arguments-differ
+    def __abstract_init__(
         self,
         wires: WiresLike | AbstractWires,
         control_values: int | bool | Sequence[int | bool] | AbstractArray | None = None,
@@ -1784,7 +1780,7 @@ class CRX(ControlledOp):
         return CRX(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2000,7 +1996,7 @@ class CRY(ControlledOp):
         return CRY(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2166,6 +2162,7 @@ class CRZ(ControlledOp):
     resource_keys = set()
 
     name = "CRZ"
+
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires):
@@ -2196,7 +2193,7 @@ class CRZ(ControlledOp):
         return CRZ(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(phi):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2205,7 +2202,7 @@ class CRZ(ControlledOp):
         .. seealso:: :meth:`~.CRZ.matrix`
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -2219,9 +2216,9 @@ class CRZ(ControlledOp):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(theta, 1j))
+            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
             if qp.math.ndim(p) == 0:
                 return qp.math.diag([1, 1, p, qp.math.conj(p)])
 
@@ -2229,8 +2226,8 @@ class CRZ(ControlledOp):
             diags = stack_last([ones, ones, p, qp.math.conj(p)])
             return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
-        signs = qp.math.array([0, 0, 1, -1], like=theta)
-        arg = -0.5j * theta
+        signs = qp.math.array([0, 0, 1, -1], like=phi)
+        arg = -0.5j * phi
 
         if qp.math.ndim(arg) == 0:
             return qp.math.diag(qp.math.exp(arg * signs))
@@ -2678,7 +2675,7 @@ class ControlledPhaseShift(ControlledOp):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi, **_):  # pylint: disable=arguments-differ
+    def compute_eigvals(phi, **_):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2722,7 +2719,7 @@ class ControlledPhaseShift(ControlledOp):
         return self.compute_eigvals(*self.parameters)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(phi, wires):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
