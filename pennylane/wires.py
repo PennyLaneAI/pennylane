@@ -64,7 +64,7 @@ def _process(wires):
     if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
-    if math.get_interface(wires) == "numpy" and hasattr(wires, "tolist"):
+    if math.get_interface(wires) == "numpy" and hasattr(wires, "tolist") and wires.ndim == 0:
         wires = wires.tolist()
 
     try:
