@@ -1359,7 +1359,7 @@ class TestDunderMethods:
             def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
-        op = Op(Wire[1])
+        op = Op(Wire)
         assert str(op) == "Op"
 
         class Op2(Operator2):
@@ -1368,8 +1368,8 @@ class TestDunderMethods:
             def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
-        op = Op2(Wire[1])
-        assert str(op) == "Op2(wires=AbstractWires(1))"
+        op = Op2(Wire)
+        assert str(op) == "Op2(wires=Wire)"
 
     def test_copy(self):
         """Test that shallow copies of operators are created correctly."""
