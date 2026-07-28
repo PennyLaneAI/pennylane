@@ -1052,7 +1052,8 @@ class Operator2(metaclass=OperatorMeta):
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             ser_leaves = tuple(
-                l if isinstance(l, (Operator2, Wires)) else _canonicalize_dynamic(l) for l in leaves
+                l if isinstance(l, (AbstractWires, Operator2, Wires)) else _canonicalize_dynamic(l)
+                for l in leaves
             )
             serialized_hybrid.append((ser_leaves, tree))
 
