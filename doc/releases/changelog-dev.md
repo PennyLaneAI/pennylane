@@ -829,13 +829,14 @@
   [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - Single qubit, non-parameteric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`
+  - Non-parametric operators are ported:
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
+  [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   - Single qubit, parameteric operators are ported:
     - `~.RZ`, `~.CRZ`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
