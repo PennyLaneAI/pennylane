@@ -15,7 +15,7 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# pylint: disable = wrong-import-position, wrong-import-order, ungrouped-imports
+# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports
 
 from functools import partial
 
@@ -45,7 +45,7 @@ from jax import make_jaxpr
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
-from tests.capture.capture_utils import extract_all_primitives
+from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -332,7 +332,7 @@ class TestIntegration:
         assert adjoint_transform.primitive.name == "adjoint_transform"
         jaxpr_inside_adjoint = adjoint_transform.params["jaxpr"]
         assert len(jaxpr_inside_adjoint.eqns) == 1
-        assert jaxpr_inside_adjoint.eqns[0].primitive.name == "PauliX"
+        assert_eqn_matches_op(jaxpr_inside_adjoint.eqns[0], qp.X)
 
     def test_adjoint_no_argument(self):
         """Test that passing no argument to qp.adjoint raises an error."""
@@ -421,7 +421,7 @@ class TestIntegration:
         assert ctrl_transform.primitive.name == "ctrl_transform"
         jaxpr_inside_ctrl = ctrl_transform.params["jaxpr"]
         assert len(jaxpr_inside_ctrl.eqns) == 1
-        assert jaxpr_inside_ctrl.eqns[0].primitive.name == "PauliX"
+        assert_eqn_matches_op(jaxpr_inside_ctrl.eqns[0], qp.X)
 
     def test_ctrl_no_argument(self):
         """Test that passing no argument to qp.ctrl raises an error."""
