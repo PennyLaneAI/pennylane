@@ -394,7 +394,6 @@ def _trotter_step_second_order(_, time, fragments, registers, mode_registers, aq
     precision = len(registers["phase gradient"])
     all_coeffs, bilinear_indices, diag_keys = _preprocess_data(time, fragments)
     all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
-    print(all_constant, all_linear, all_quadratic, all_bilinear)
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
     n_modes = fragments[0].modes
 
@@ -734,7 +733,10 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
 
     # Split registers into mode and non-mode registers. The former are turned into an array for
     # dynamic-index access.
-    mode_registers = qp.math.array([registers[f"mode {i}"] for i in range(n_modes)], like="jax")
+    mode_registers = np.array([registers[f"mode {i}"] for i in range(n_modes)])
+    if qp.compiler.active():
+        mode_registers = qp.math.array(mode_registers, like="jax")
+
     registers = {key: wires for key, wires in registers.items() if not key.startswith("mode ")}
 
     if aqft_order is None:
