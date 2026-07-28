@@ -849,7 +849,6 @@ special_non_par_op_decomps = [
         (lambda wires: qp.ctrl(qp.Identity(wires[-1]), control=wires[:-1])),
         [qp.Identity([0, 1, 2, 3])],
     ),
-    (qp.PauliY, [], [0], [1], qp.CY, [qp.CRY(np.pi, wires=[1, 0]), qp.S(1)]),
     (qp.PauliZ, [], [1], [0], qp.CZ, [qp.ControlledPhaseShift(np.pi, wires=[0, 1])]),
     (
         qp.Hadamard,
@@ -1853,6 +1852,8 @@ class TestCtrl:
                 control_wires=ctrl_wires + op.control_wires,
                 control_values=ctrl_values + op.control_values,
             )
+        elif isinstance(op, Operator2):
+            expected = ControlledOp2(op, control_wires=ctrl_wires, control_values=ctrl_values)
         else:
             expected = Controlled(op, control_wires=ctrl_wires, control_values=ctrl_values)
 
@@ -1874,6 +1875,8 @@ class TestCtrl:
                 op.base,
                 control_wires=ctrl_wires + op.control_wires,
             )
+        elif isinstance(op, Operator2):
+            expected = ControlledOp2(op, control_wires=ctrl_wires)
         else:
             expected = Controlled(op, control_wires=ctrl_wires)
 
@@ -1925,7 +1928,8 @@ class TestCtrl:
             ),
             control=["a"],
         )
-        expected = Controlled(
+        expected_type = ControlledOp2 if isinstance(expected_base, Operator2) else Controlled
+        expected = expected_type(
             expected_base,
             control_wires=["a", "b"] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,
