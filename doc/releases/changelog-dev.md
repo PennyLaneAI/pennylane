@@ -269,6 +269,7 @@
 <h3>Improvements 🛠</h3>
 
 * `assert_valid` now checks the fine grained work wire spec.
+  [(#9919)](https://github.com/PennyLaneAI/pennylane/pull/9919)
 
 * Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
   register, `x_wires`, is smaller than the size of the second addend register, `y_wires`.
