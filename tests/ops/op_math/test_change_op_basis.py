@@ -15,12 +15,12 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
+# pylint:disable=protected-access, unused-argument
+
 import re
 from functools import partial
 
 import numpy as np
-
-# pylint:disable=protected-access, unused-argument
 import pytest
 
 import pennylane as qp
@@ -33,6 +33,7 @@ from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
+from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
@@ -123,7 +124,8 @@ def test_change_op_basis_callables_capture_with_none():
 
     assert jaxpr.eqns[-1].primitive.name == "adjoint_transform"
     assert jaxpr.eqns[-1].params["jaxpr"].eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-2].primitive.name == "PauliX"
+
+    assert_eqn_matches_op(jaxpr.eqns[-2], qp.X)
     assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
 
 
@@ -196,7 +198,7 @@ def test_change_op_basis_callables_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert_eqn_matches_op(jaxpr.eqns[-3], qp.X)
     assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
 
 
