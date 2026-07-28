@@ -123,6 +123,14 @@ def test_standard_validity_out_multiplier():
     qp.ops.functions.assert_valid(op)
 
 
+def test_map_wires_preserves_output_wires_zeroed():
+    """Test that wire mapping preserves the output register state metadata."""
+    op = OutMultiplier([0], [1], [2, 3], output_wires_zeroed=True)
+    mapped_op = op.map_wires({0: 4, 1: 5, 2: 6, 3: 7})
+
+    assert mapped_op.hyperparameters["output_wires_zeroed"] is True
+
+
 def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False):
     """Test the correctness of a decomposition rule for an ``OutMultiplier`` op."""
     x_wires, y_wires, output_wires, work_wires = all_wires
