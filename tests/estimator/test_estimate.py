@@ -560,15 +560,15 @@ class TestEstimateResources:
         when processing a qfunc."""
 
         def my_circuit():
-            qp.RX(0.1, 0)
+            DummyHadamard(0)
             qp.PauliX(1)
 
-        actual_resources = estimate(my_circuit, gate_set={"RX", "X"})()
+        actual_resources = estimate(my_circuit, gate_set={"DummyHadamard", "X"})()
 
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(RX): 1,
+                resource_rep(DummyHadamard): 1,
                 resource_rep(X): 1,
             },
         )
