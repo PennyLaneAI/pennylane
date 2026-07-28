@@ -152,9 +152,7 @@ class TestDecomposition:
             [1, 2, 3],
             4,
             [[2, 1], [1, 3]],
-            marks=pytest.mark.xfail(
-                reason="Batched features not supported with Operator2 at the moment."
-            ),
+            marks=pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited."),
         ),
     ]
 
