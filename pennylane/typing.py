@@ -544,7 +544,7 @@ class _AbstractWireTypeFactory(AbstractWires):
 
     def __init__(self, name):
         self.name = name
-        super().__init__(1)
+        super().__init__(1, _type_name=name)
 
     def __getitem__(self, shape):
         """

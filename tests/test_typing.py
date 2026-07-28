@@ -487,13 +487,16 @@ def test_custom_abstract_type_factory_repr(type_cls, expected_name, shape, expec
         assert repr(obj) == expected_name
 
 
-@pytest.mark.parametrize("num_wires", [-1, 1, 4])
+@pytest.mark.parametrize("num_wires", [-1, 1, 4, None])
 def test_custom_abstract_wire_factory_repr(num_wires):
     """Tests that our types have readable reprs."""
 
-    obj = Wire[num_wires]
-
-    assert repr(obj) == f"Wire[{num_wires}]"
+    if num_wires:
+        obj = Wire[num_wires]
+        assert repr(obj) == f"Wire[{num_wires}]"
+    else:
+        obj = Wire
+        assert repr(obj) == "Wire[1]"
 
 
 class TestAbstractWires:
