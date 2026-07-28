@@ -826,7 +826,7 @@
   [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - Non-parameteric operators are ported:
+  - Non-parametric operators are ported:
     - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
