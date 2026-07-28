@@ -73,6 +73,32 @@ class TestCompile:
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
+    def test_compile_basis_set_string_names_ok(self):
+        """Test that a basis_set of operation name strings is accepted."""
+        tape = qp.tape.QuantumScript([qp.Hadamard(0), qp.RX(0.5, 0)])
+        [transformed_tape], _ = compile(tape, basis_set=["CNOT", "RX", "Hadamard"], pipeline=[])
+        assert [op.name for op in transformed_tape.operations] == ["Hadamard", "RX"]
+
+    @pytest.mark.parametrize("basis_set", [[], (), {}])
+    def test_compile_empty_basis_set_accepted(self, basis_set):
+        """Test that an empty basis_set is accepted without raising."""
+        tape = qp.tape.QuantumScript([qp.Hadamard(0)])
+        compile(tape, basis_set=basis_set, pipeline=[])
+
+    @pytest.mark.parametrize(
+        "basis_set",
+        [
+            [qp.RX, qp.Hadamard],
+            [qp.RX(0.1, 0)],
+            ["RX", qp.CNOT],
+        ],
+    )
+    def test_compile_basis_set_operators_raise(self, basis_set):
+        """Test that operator types/instances in basis_set raise ValueError."""
+        tape = qp.tape.QuantumScript([qp.Hadamard(0)])
+        with pytest.raises(ValueError, match="basis_set must contain operation names as strings"):
+            compile(tape, basis_set=basis_set, pipeline=[])
+
     def test_compile_mixed_tape_qfunc_transform(self):
         """Test that we can interchange tape and qfunc transforms."""
 
