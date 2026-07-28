@@ -268,6 +268,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Sorts the gate counts in the display of resources produced from decompositions.
+  [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
+
 * Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
   register, `x_wires`, is smaller than the size of the second addend register, `y_wires`.
   [(#9807)](https://github.com/PennyLaneAI/pennylane/pull/9807)
@@ -828,11 +831,12 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Single qubit, non-parameteric operators are ported:
-    - `~.S`, `~.T`, `~.SX`
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+  [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   - Templates are ported:
     - `~.BasisRotation`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
