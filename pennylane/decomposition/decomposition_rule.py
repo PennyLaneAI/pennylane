@@ -1052,17 +1052,17 @@ def inspect_decomps(
     Decomposition 0 (name: _crx_to_rx_cz)
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
-    Gate Count: {RX: 2, CZ: 2}
+    Gate Count: {CZ: 2, RX: 2}
     <BLANKLINE>
     Decomposition 1 (name: _crx_to_rz_ry)
     0: ─────────────────────╭●────────────╭●────────────┤
     1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
-    Gate Count: {RZ: 2, RY: 2, CNOT: 2}
+    Gate Count: {CNOT: 2, RY: 2, RZ: 2}
     <BLANKLINE>
     Decomposition 2 (name: _crx_to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
-    Gate Count: {Hadamard: 2, CRZ: 1}
+    Gate Count: {CRZ: 1, Hadamard: 2}
     <BLANKLINE>
     Decomposition 3 (name: _crx_to_ppr)
     0: ───────────╭RZX(-0.25)─┤
@@ -1077,7 +1077,7 @@ def inspect_decomps(
     Decomposition 0 (name: _crx_to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
-    Gate Count: {Hadamard: 2, CRZ: 1}
+    Gate Count: {CRZ: 1, Hadamard: 2}
 
     Or use this tool to inspect a custom decomposition rule:
 
