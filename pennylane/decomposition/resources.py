@@ -495,7 +495,6 @@ def custom_ctrl_op_to_base():
         qp.Toffoli: qp.X,
         qp.CZ: qp.Z,
         qp.CCZ: qp.Z,
-        qp.CY: qp.Y,
         qp.CSWAP: qp.SWAP,
         qp.CH: qp.H,
         qp.CRX: qp.RX,
