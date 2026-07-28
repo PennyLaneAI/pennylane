@@ -13,9 +13,8 @@
 # limitations under the License.
 """Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
 
-import numpy as np
-
 # pylint: disable=no-self-use
+import numpy as np
 import pytest
 from scipy.linalg import sqrtm
 

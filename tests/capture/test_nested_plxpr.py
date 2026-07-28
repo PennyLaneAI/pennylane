@@ -15,7 +15,7 @@
 Tests for capturing nested plxpr.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, wrong-import-position
 import pytest
 
 import pennylane as qp
@@ -24,7 +24,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from tests.capture.capture_utils import assert_eqn_matches_op

@@ -15,7 +15,7 @@
 This submodule tests transforms with program capture
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, wrong-import-position
 
 import pytest
 
@@ -24,7 +24,6 @@ from pennylane.core.transforms import CompilePipeline
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# pylint: disable=wrong-import-position
 import pennylane as qp
 from pennylane.capture.primitives import (
     qnode_prim,

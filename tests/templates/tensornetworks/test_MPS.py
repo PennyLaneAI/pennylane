@@ -15,9 +15,8 @@
 Tests for the MPS template.
 """
 
-import numpy as np
-
 # pylint: disable=too-many-arguments
+import numpy as np
 import pytest
 
 import pennylane as qp

@@ -16,10 +16,9 @@ Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
 
+# pylint: disable=too-many-public-methods
 import itertools
 import re
-
-# pylint: disable=too-many-public-methods
 from copy import deepcopy
 from functools import partial
 

@@ -14,14 +14,13 @@
 The former location of pennylane/core/operator.
 """
 
+# pylint: disable=unused-import
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import *  # pylint: disable=wildcard-import, unused-wildcard-import # tach-ignore
 from pennylane.core.operator.base import (  # pylint: disable=unused-import # tach-ignore
     _UNSET_BATCH_SIZE,
 )
-
-# pylint: disable=unused-import
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,

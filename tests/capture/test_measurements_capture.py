@@ -15,9 +15,8 @@
 Tests for capturing measurements.
 """
 
+# pylint: disable=protected-access, wrong-import-position
 import numpy as np
-
-# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp
@@ -38,7 +37,6 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractMeasurement, operator_p
 from tests.capture.capture_utils import assert_eqn_matches_op
 

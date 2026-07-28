@@ -17,12 +17,11 @@ multiple types of operations should exist in this file. Type-specific tests shou
 the more specific file.
 """
 
+# pylint: disable=too-few-public-methods
 import pytest
 from gate_data import I
 
 import pennylane as qp
-
-# pylint: disable=too-few-public-methods
 from pennylane.exceptions import PennyLaneDeprecationWarning
 
 

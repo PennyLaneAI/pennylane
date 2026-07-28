@@ -13,10 +13,9 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
+# pylint: disable=protected-access,import-outside-toplevel,unnecessary-lambda,wrong-import-order
 from importlib import import_module
 
-# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as np
 import scipy as sp

@@ -15,9 +15,9 @@
 Unit tests for the metric tensor transform.
 """
 
+# pylint: disable=too-many-arguments, not-callable, too-many-statements, too-many-positional-arguments
 import importlib
 
-# pylint: disable=too-many-arguments, not-callable, too-many-statements, too-many-positional-arguments
 import pytest
 from scipy.linalg import block_diag
 

@@ -15,6 +15,7 @@
 Tests for the make_plxpr function for capturing functions as jaxpr.
 """
 
+# pylint: disable=wrong-import-position, wrong-import-order
 from unittest.mock import call
 
 import numpy as np
@@ -28,9 +29,9 @@ pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
 from jax import numpy as jnp
 
+# pylint: disable=ungrouped-imports
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from tests.capture.capture_utils import extract_all_primitives
 

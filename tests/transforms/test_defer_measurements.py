@@ -15,10 +15,9 @@
 Tests for the transform implementing the deferred measurement principle.
 """
 
+# pylint: disable=too-many-arguments
 import math
 import re
-
-# pylint: disable=too-many-arguments
 from functools import partial
 
 import pytest

@@ -13,11 +13,10 @@
 # limitations under the License.
 """Tests for pennylane/labs/dla/involutions.py functionality"""
 
+# pylint: disable=no-self-use
 from functools import partial
 
 import numpy as np
-
-# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qp

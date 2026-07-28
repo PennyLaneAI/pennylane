@@ -14,6 +14,7 @@
 Tests for symbolic_array
 """
 
+# pylint: disable=wrong-import-position
 import numpy as np
 import pytest
 
@@ -23,7 +24,6 @@ pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import symbolic_array_prim
 
 

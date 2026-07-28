@@ -15,10 +15,9 @@
 Integration tests for the capture of PennyLane templates into plxpr.
 """
 
+# pylint: disable=protected-access
 import inspect
 from itertools import combinations
-
-# pylint: disable=protected-access
 from typing import Any
 
 import numpy as np

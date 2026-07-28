@@ -15,9 +15,8 @@
 Integration tests for the capture of pennylane operations into jaxpr.
 """
 
-import numpy as np
-
 # pylint: disable=protected-access
+import numpy as np
 import pytest
 
 import pennylane as qp

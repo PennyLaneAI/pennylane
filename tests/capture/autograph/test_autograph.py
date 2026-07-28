@@ -41,7 +41,6 @@ jax = pytest.importorskip("jax")
 from jax import make_jaxpr
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position
 # pylint: disable=ungrouped-imports
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError

@@ -15,7 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name, no-self-use, unbalanced-tuple-unpacking
+# pylint: disable=redefined-outer-name, no-self-use, unbalanced-tuple-unpacking, wrong-import-position
 
 from functools import partial
 
@@ -31,7 +31,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
 from tests.capture.capture_utils import (
     extract_all_primitives,

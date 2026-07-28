@@ -14,9 +14,8 @@
 
 """Tests for the decomposition rule qp.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp"""
 
-import numpy as np
-
 # pylint: disable=no-value-for-parameter
+import numpy as np
 import pytest
 
 import pennylane as qp

@@ -16,9 +16,8 @@ Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
 
-import warnings
-
 # pylint: disable=not-callable
+import warnings
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace

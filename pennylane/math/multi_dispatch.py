@@ -13,12 +13,11 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 
-# pylint: disable=import-outside-toplevel,too-many-return-statements
+# pylint: disable=import-outside-toplevel,too-many-return-statements,wrong-import-order
 import functools
 from collections.abc import Sequence
 from operator import attrgetter
 
-# pylint: disable=wrong-import-order
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np

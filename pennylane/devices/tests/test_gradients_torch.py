@@ -13,9 +13,8 @@
 # limitations under the License.
 """Tests trainable circuits using the Torch interface."""
 
+# pylint: disable=no-self-use, no-member
 import numpy as np
-
-# pylint:disable=no-self-use,no-member
 import pytest
 
 import pennylane as qp

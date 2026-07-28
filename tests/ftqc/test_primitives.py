@@ -13,11 +13,11 @@
 # limitations under the License.
 """Unit tests for the custom capture primitives for the ftqc module"""
 
+# pylint: disable=wrong-import-position
 import pytest
 
 pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.ftqc.primitives import measure_in_basis_prim
 

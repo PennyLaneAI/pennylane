@@ -13,9 +13,8 @@
 # limitations under the License.
 """Tests that a device gives the same output as the default device."""
 
-import numpy as np
-
 # pylint: disable=no-self-use
+import numpy as np
 import pytest
 from flaky import flaky
 

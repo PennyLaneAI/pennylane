@@ -15,7 +15,7 @@
 Tests for capturing for while loops into jaxpr.
 """
 
-# pylint: disable=unbalanced-tuple-unpacking
+# pylint: disable=unbalanced-tuple-unpacking, wrong-import-position
 
 import numpy as np
 import pytest
@@ -28,8 +28,6 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
-
-# pylint: disable=wrong-import-position
 from tests.capture.capture_utils import extract_all_primitives
 
 

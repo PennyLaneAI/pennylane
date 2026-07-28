@@ -655,7 +655,6 @@ class PauliY(Operator2):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                # pylint: disable=unsubscriptable-object
                 {qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0}
             )
         return self._pauli_rep
@@ -667,7 +666,7 @@ class PauliY(Operator2):
         """String representation."""
         # PauliY.name is still "PauliY" but we want the repr to be just "Y"
         if isinstance(self.wires, Wires):
-            return f"Y({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+            return f"Y({self.wires[0]!r})"
         return f"Y(wires={self.wires})"
 
     def label(

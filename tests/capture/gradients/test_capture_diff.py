@@ -15,6 +15,7 @@
 Tests for capturing differentiation into jaxpr.
 """
 
+# pylint: disable=wrong-import-position
 import pytest
 
 import pennylane as qp
@@ -23,7 +24,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import jacobian_prim, qnode_prim
 
 jnp = jax.numpy

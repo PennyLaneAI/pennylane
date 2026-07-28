@@ -13,9 +13,9 @@
 # limitations under the License.
 """Adaptive optimizer"""
 
+# pylint: disable=not-callable
 import copy
 
-# pylint: disable=not-callable
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane._grad import grad

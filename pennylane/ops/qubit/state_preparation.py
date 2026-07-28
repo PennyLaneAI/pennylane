@@ -16,9 +16,8 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 
+# pylint: disable=too-many-branches, arguments-differ
 from importlib.util import find_spec
-
-# pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
 import numpy as np

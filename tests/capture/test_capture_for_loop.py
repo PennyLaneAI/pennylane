@@ -15,7 +15,7 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use, unbalanced-tuple-unpacking
+# pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use, unbalanced-tuple-unpacking, wrong-import-position
 
 import numpy as np
 import pytest
@@ -28,7 +28,6 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import for_loop_prim
 from tests.capture.capture_utils import extract_all_primitives
 

@@ -15,12 +15,11 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+# pylint: disable=unused-argument
 import string
 from pickle import PicklingError
 
 import numpy as np
-
-# pylint: disable=unused-argument
 import pytest
 import scipy.sparse
 

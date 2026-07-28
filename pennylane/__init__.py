@@ -16,6 +16,7 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
+# pylint: disable=wrong-import-order
 import warnings
 
 from pennylane import exceptions
@@ -190,7 +191,6 @@ from pennylane.io import (
     to_bloq,
 )
 
-# pylint:disable=wrong-import-order
 from pennylane import logging  # pylint:disable=wrong-import-order
 
 from pennylane import data
@@ -209,7 +209,6 @@ from pennylane import qnn
 
 from pennylane import estimator
 
-# pylint:disable=wrong-import-order
 from importlib.metadata import version as _metadata_version
 
 from importlib.util import find_spec as _find_spec

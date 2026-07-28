@@ -13,9 +13,8 @@
 # limitations under the License.
 """Simulate a quantum script."""
 
-import logging
-
 # pylint: disable=protected-access
+import logging
 from collections import Counter
 from functools import partial, singledispatch
 

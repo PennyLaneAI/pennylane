@@ -14,12 +14,12 @@
 
 """Test autograph support for standard Python item assignment with JAX Arrays."""
 
+# pylint: disable=wrong-import-position
 import pytest
 
 pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 
-# pylint: disable = wrong-import-position
 import jax.numpy as jnp
 from jax import make_jaxpr
 from jax.core import eval_jaxpr

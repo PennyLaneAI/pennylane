@@ -15,11 +15,10 @@
 Tests for the jacobian product calculator classes.
 """
 
+# pylint: disable=protected-access
 from functools import partial
 
 import numpy as np
-
-# pylint: disable=protected-access
 import pytest
 from cachetools import LRUCache
 from param_shift_dev import ParamShiftDerivativesDevice

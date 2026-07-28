@@ -14,9 +14,8 @@
 
 """Tests for ``labs.transforms.make_crz_to_phase_gradient_decomp``"""
 
-import numpy as np
-
 # pylint: disable=no-value-for-parameter, disable=too-many-arguments
+import numpy as np
 import pytest
 
 import pennylane as qp

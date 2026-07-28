@@ -17,9 +17,8 @@ This module contains functions and classes to create a
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
 
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 import collections
-
-# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import warnings
 
