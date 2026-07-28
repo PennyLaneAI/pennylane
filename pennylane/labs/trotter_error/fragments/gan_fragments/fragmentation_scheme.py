@@ -98,15 +98,32 @@ class GanConfig:  # pylint: disable=too-many-instance-attributes
             :math:`\epsilon` of shape ``(n_met,)``.
     """
 
-    n_modes: int
-    n_met: int
-    n_mol: int
-    couplings: Sequence[ArrayLike]  ## U
-    repulsion: Sequence[ArrayLike]  ## V
-    transfer: Sequence[ArrayLike]  ## W
-    nuclear: Sequence[ArrayLike]  ## U0
-    masses: ArrayLike  ## m
-    energies: ArrayLike  ## epsilon
+    #: Number of nuclear modes
+    n_modes: int = None
+
+    #: Number of metallic modes
+    n_met: int = None
+
+    #: Number of molecular modes
+    n_mol: int = None
+
+    #: Molecular coupling tensors
+    couplings: Sequence[ArrayLike] = None
+
+    #: Electron-electron repulsion tensors
+    repulsion: Sequence[ArrayLike] = None
+
+    #: Metal-molecular transfer tensors
+    transfer: Sequence[ArrayLike] = None
+
+    #: Nuclear reference tensors
+    nuclear: Sequence[ArrayLike] = None
+
+    #: Nuclear mode massses
+    masses: ArrayLike = None
+
+    #: Metallic on-site energies
+    energies: ArrayLike = None
 
 
 def gan_fragments(config: GanConfig) -> list[GanFragment]:
