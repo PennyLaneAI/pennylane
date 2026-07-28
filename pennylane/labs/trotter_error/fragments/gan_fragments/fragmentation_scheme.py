@@ -127,12 +127,44 @@ class GanConfig:  # pylint: disable=too-many-instance-attributes
 
 
 def gan_fragments(config: GanConfig) -> list[GanFragment]:
-    """Construct the fragments of a GAN Hamiltonian from its configuration.
+    r"""Construct the fragments of a GAN Hamiltonian from its configuration.
+    See Section III of `arXiv:2601.16264 <https://arxiv.org/abs/2601.16264>`_ and
+    :class:`~.pennylane.labs.trotter_error.GanConfig` for more details.
 
-    Validates the shapes of every coefficient tensor in ``config`` against the
-    declared mode counts, then assembles the fragment list: the diagonal
-    fragment, the molecular matching fragments, the metallic matching fragments,
-    and the kinetic fragment (in that order).
+    This function returns a list of ``n_mol + n_met + 1`` fragments when ``n_mol`` is even, or
+    ``n_mol + n_met + 2`` fragments when ``n_mol`` is odd. The variables ``n_mol`` and ``n_met``
+    are defined in .
+
+    The first fragment in the list is given by
+
+    .. math::
+
+        \hat{F}_0 = \sum_{i \in \mathcal{M}} \hat{g}_{ii}(\vec{\boldsymbol{Q}})\, \hat{a}_i^\dagger \hat{a}_i + 
+        \sum_{i,j \in \mathcal{M}} \hat{V}_{ij}(\vec{\boldsymbol{Q}})\, \hat{a}_i^\dagger \hat{a}_i \hat{a}_j^\dagger \hat{a}_j + 
+        \hat{U}_0(\vec{\boldsymbol{Q}}),
+
+    where
+
+    .. math:: 
+
+        \hat{g}_{ij}(\vec{\boldsymbol{Q}}) = \begin{cases} \hat{U}_{ij}(\vec{\boldsymbol{Q}}), & i \in \mathcal{M},\ j \in \mathcal{M}, \\ 
+        \hat{W}_{ij}(\vec{\boldsymbol{Q}}), & i \in \mathcal{M},\ j \in \mathcal{B}. \end{cases}.
+
+    The last fragment in the list is given by
+
+    .. math::
+
+        \hat{F}_{\mathcal{N}-1} = \sum_{\kappa=0}^{M-1} \frac{\hat{P}_\kappa^2}{2 m_\kappa} + 
+        \sum_{i \in \mathcal{B}} \epsilon_i\, \hat{a}_i^\dagger \hat{a}_i.
+
+    The remaining fragments are given by
+
+    .. math::
+
+        \begin{aligned}
+        \sum_{s=1}^{\mathcal{N}-2} \hat{F}_s &= \sum_{s=1}^{\mathcal{N}-2} \sum_{(i,j) \in \mathcal{F}_s} \hat{g}_{ij}(\vec{\boldsymbol{Q}}) \left( \hat{a}_i^\dagger \hat{a}_j + \hat{a}_j^\dagger \hat{a}_i \right) \\
+        &= \sum_{\substack{i \in \mathcal{M} \\ j \in \mathcal{M} \cup \mathcal{B} \\ i \neq j}} \hat{g}_{ij}(\vec{\boldsymbol{Q}}) \left( \hat{a}_i^\dagger \hat{a}_j + \hat{a}_j^\dagger \hat{a}_i \right).
+        \end{aligned}
 
     Args:
         config (GanConfig): the dimensions and coefficient tensors of the

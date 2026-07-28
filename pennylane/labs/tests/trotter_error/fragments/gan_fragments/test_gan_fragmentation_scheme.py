@@ -11,12 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the fragment-construction logic in ``fragmentation_scheme.py``.
-
-Covers the GanConfig-driven ``gan_fragments`` entry point (fragment count,
-types, and shape/type validation) and the private builders that translate
-coefficient tensors into GanCoeff polynomials and matching fragments.
-"""
+"""Tests for ``fragmentation_scheme.py``."""
 
 from itertools import product
 
