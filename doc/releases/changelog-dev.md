@@ -296,15 +296,15 @@
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
   >>> qp.typing.Bool[4]
-  AbstractArray((4,), bool, weak_type=True)
+  Bool[4]
   >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
   True
   >>> qp.typing.Complex[-1, 2]
-  AbstractArray((-1, 2), complex128, weak_type=True)
+  Complex[-1, 2]
   >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
   True
   >>> qp.typing.Wire[2]
-  AbstractWires(2)
+  Wire[2]
 
   ```
 

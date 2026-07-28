@@ -335,7 +335,10 @@ class AbstractArray:
         if self._weak_type:
             args += ", weak_type=True"
         if self._type_name:
-            shape = str(shape_repr).replace("(", "").replace(")", "")
+            if isinstance(self.shape, tuple):
+                shape = ", ".join(map(str, self.shape))
+            else:
+                shape = str(shape_repr)
             return f"{self._type_name}" + (f"[{shape}]" if shape else "")
         return f"AbstractArray({args})"
 
@@ -469,6 +472,7 @@ class AbstractWires:
 
     num_wires: int
     shape_fixed: bool = field(init=False)
+    _type_name: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.num_wires, int):
@@ -518,6 +522,8 @@ class AbstractWires:
         return AbstractWires(self.num_wires + other.num_wires)
 
     def __repr__(self):
+        if self._type_name:
+            return f"{self._type_name}[{self.num_wires}]"
         return f"AbstractWires({self.num_wires})"
 
     __str__ = __repr__
@@ -536,7 +542,8 @@ class _AbstractWireTypeFactory(AbstractWires):
     using an override of the __getitem__ method.
     """
 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         super().__init__(1)
 
     def __getitem__(self, shape):
@@ -554,10 +561,12 @@ class _AbstractWireTypeFactory(AbstractWires):
 
         if not isinstance(shape, int):
             raise TypeError("_AbstractWireTypeFactory's can only be subscripted with integers.")
-        return AbstractWires(shape)
+        res = AbstractWires(shape)
+        object.__setattr__(res, "_type_name", self.name)
+        return res
 
 
-Wire = _AbstractWireTypeFactory()
+Wire = _AbstractWireTypeFactory(name="Wire")
 """An :class:`~.AbstractWires` subclass. On it's own, it corresponds to a single wire, but
 can be indexed to create :class:`~.AbstractWires` with a fixed or dynamic wire count.
 
