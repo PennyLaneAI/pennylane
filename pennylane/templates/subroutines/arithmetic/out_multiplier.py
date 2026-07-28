@@ -290,6 +290,7 @@ class OutMultiplier(Operation):
             new_dict["output_wires"],
             self.hyperparameters["mod"],
             new_dict["work_wires"],
+            self.hyperparameters["output_wires_zeroed"],
         )
 
     def decomposition(self):
