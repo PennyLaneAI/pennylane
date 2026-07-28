@@ -544,18 +544,21 @@ def _validate_registers_and_fragments(registers, fragments):
     all_n_modes = [f.modes for f in fragments]
     if any(n != all_n_states[0] for n in all_n_states[1:]):
         raise ValueError(
-            f"Expected all vibronic fragments to have the same number of elecronic states, but got {all_n_states}."
+            "Expected all vibronic fragments to have the same number of elecronic states, "
+            f"but got {all_n_states}."
         )
     if any(n != all_n_modes[0] for n in all_n_modes[1:]):
         raise ValueError(
-            f"Expected all vibronic fragments to have the same number of vibrational modes, but got {all_n_modes}."
+            "Expected all vibronic fragments to have the same number of vibrational modes, "
+            f"but got {all_n_modes}."
         )
     for frag in fragments[:-1]:
         expected_op_types = {(), ("Q",), ("Q", "Q")}
         op_types = set(frag.get_coefficients().values())
         if not op_types.issubset(expected_op_types):
             raise ValueError(
-                f"Expected all but last fragment to contain position terms of at most second order, but got {op_types}"
+                "Expected all but last fragment to contain position terms of at most second order, "
+                f"but got {op_types}"
             )
     op_types = set(fragments[-1].get_coefficients().values())
     if not op_types.issubset({("P", "P")}):
@@ -570,11 +573,13 @@ def _validate_registers_and_fragments(registers, fragments):
     expected_register_names |= {f"mode {i}" for i in range(n_modes)}
     if not isinstance(registers, dict):
         raise ValueError(
-            f"Expected `registers` to be a dictionary, got {registers} of type {type(registers).__name__}."
+            f"Expected `registers` to be a dictionary, got {registers} of type "
+            f"{type(registers).__name__}."
         )
     if set(registers) != expected_register_names:
         raise ValueError(
-            f"Expected the keys in `registers` to be {expected_register_names}, got {list(registers.keys())}."
+            f"Expected the keys in `registers` to be {expected_register_names}, "
+            f"but got {list(registers.keys())}."
         )
 
     b = len(registers["coefficients"])
@@ -584,25 +589,29 @@ def _validate_registers_and_fragments(registers, fragments):
 
     if len(registers["electronic"]) != n:
         raise ValueError(
-            f"Expected {n} qubits for {n_states} electronic states, but got {len(registers['electronic'])=}."
+            f"Expected {n} qubits for {n_states} electronic states, but got "
+            f"{len(registers['electronic'])=}."
         )
     if len(registers["cache"]) < 2 * k:
         raise ValueError(
-            f"Expected at least {2*k} cache qubits for {k} qubits per vibrational mode, but got {len(registers['cache'])=}."
+            f"Expected at least {2*k} cache qubits for {k} qubits per vibrational mode, "
+            f"but got {len(registers['cache'])=}."
         )
-    assert len(registers["phase gradient"]) >= b
     if len(registers["phase gradient"]) < b:
         raise ValueError(
-            f"Expected the 'phase gradient' register to have at least as many qubits as the 'coefficients' register ({b} qubits), but got {len(registers['phase gradient'])=}."
+            "Expected the 'phase gradient' register to have at least as many qubits as the "
+            f"'coefficients' register ({b} qubits), but got {len(registers['phase gradient'])=}."
         )
     if len(registers["work"]) < needed_work_wires:
         raise ValueError(
-            f"Expected at least {needed_work_wires} work qubits, but only got {len(registers['work'])}."
+            f"Expected at least {needed_work_wires} work qubits, "
+            f"but got {len(registers['work'])}."
         )
     vibr_sizes = [len(registers[f"mode {i}"]) for i in range(n_modes)]
     if any(size != vibr_sizes[0] for size in vibr_sizes[1:]):
         raise ValueError(
-            f"Expected all vibrational mode registers to have the same size, but got sizes {vibr_sizes}."
+            "Expected all vibrational mode registers to have the same size, "
+            "but got sizes {vibr_sizes}."
         )
 
 
@@ -707,8 +716,11 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
 
     """
     _validate_registers_and_fragments(registers, fragments)
+    if num_trotter_steps <= 0 or not isinstance(num_trotter_steps, int):
+        raise ValueError(
+            f"The number of Trotter steps should be a positive integer, but got {num_trotter_steps}"
+        )
 
-    assert num_trotter_steps > 0
     trotter_time_step = evolution_time / num_trotter_steps
 
     n_modes = fragments[0].modes
