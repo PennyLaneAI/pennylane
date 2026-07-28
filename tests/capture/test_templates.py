@@ -1103,17 +1103,9 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.QROM._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+        assert_eqn_matches_op(eqn, qp.QROM)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.QROM(**kwargs))
 
     @pytest.mark.xfail(reason="QROMStatePreparation uses array in metadata, [sc-104808]")
     def test_qrom_state_prep(self):
@@ -1794,7 +1786,7 @@ unsupported_templates = [
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
 ]
-migrated_templates = [qp.BasisRotation]
+migrated_templates = [qp.BasisRotation, qp.QROM]
 
 
 @pytest.mark.parametrize("template", modified_templates)
