@@ -381,6 +381,7 @@ def _pow_rotation_resource(base, z):  # pylint: disable=unused-argument
 def pow_rotation(base, z):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     # A rotation should only have 1 dynamic parameter
+    assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (angle * z,))
 

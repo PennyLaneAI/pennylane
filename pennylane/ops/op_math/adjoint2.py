@@ -260,5 +260,6 @@ def _adjoint_rotation_resource(base):
 def adjoint_rotation(base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     # A rotation should only have 1 dynamic parameter
+    assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (-angle,))
