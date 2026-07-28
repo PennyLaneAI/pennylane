@@ -249,6 +249,44 @@ class TestDecompositionErrors:
 
         _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
 
+    @pytest.mark.parametrize(
+        ("name", "state", "restored"),
+        [
+            ("burnable", "zero", True),
+            ("garbage", "zero", True),
+            ("borrowed", "zero", True),
+            #
+            ("zeroed", "zero", False),
+            ("borrowed", "zero", False),
+            ("garbage", "zero", False),
+            #
+            ("zeroed", "any", True),
+            ("burnable", "any", True),
+            ("garbage", "any", True),
+            #
+            ("zeroed", "any", False),
+            ("burnable", "any", False),
+            ("borrowed", "any", False),
+        ],
+    )
+    def test_bad_work_wire_spec(self, name, state, restored):
+        """Test that _test_decomposition_rule validates the work_wires."""
+
+        class DummyOp(qp.core.Operator2):
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        @qp.register_resources({qp.X: 1, qp.Y: 1}, work_wires={name: 2})
+        def rule(wires):
+            with qp.allocate(1, state=state, restored=restored) as _wires:
+                qp.X(_wires[0])
+            with qp.allocate(1, state=state, restored=restored) as _wires:
+                qp.Y(_wires[0])
+
+        with pytest.raises(AssertionError, match="Mismatch in work wire spec."):
+            _test_decomposition_rule(DummyOp(0), rule)
+
 
 class TestBadMatrix:
     """Tests involving matrix validation."""
