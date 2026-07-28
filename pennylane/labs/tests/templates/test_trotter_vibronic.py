@@ -217,7 +217,6 @@ class TestFragmentReadout:
         """Test that extracting coefficients with ``fragment_to_dense`` and converting them
         back to a nested dictionary structure yields the identity mapping."""
         fragment = random_vibronic_fragment(n_states, n_modes, [op_type], seed)
-        print(fragment)
         dense_coeffs = fragment_to_dense(fragment, op_type)
         degree = len(op_type)
         assert isinstance(dense_coeffs, np.ndarray)

@@ -25,7 +25,7 @@ from .half_signed_out_multiplier import half_signed_out_multiplier
 
 
 def fragment_to_dense(fragment: RealspaceMatrix, op_type: tuple[str]):
-    """Test helper function that converts the coefficients for a specific operator type
+    """Helper function that converts the coefficients for a specific operator type
     (e.g. ``("P", "P")`` or ``("Q",)``) of a vibronic fragment into a dense matrix. The output
     shape depends on the order of the operator type, i.e., the length of ``op_type``.
 
@@ -100,7 +100,6 @@ def get_position_coefficients(fragment: RealspaceMatrix):
 
 def get_momentum_coefficients(fragment: RealspaceMatrix):
     """Get the coefficients for a given momentum fragment.
-    Also validates that the terms in the fragment are limited to expected terms.
 
     Args:
         fragment (RealspaceMatrix): fragment of which to read the coefficients
@@ -383,7 +382,7 @@ def _trotter_step_second_order(_, time, fragments, registers, mode_registers, aq
     as follows:
     - the (first-Trotter-order) kinetic evolution is put in the middle, wrapped by the
       second-Trotter-order position fragment evolutions.
-    - Within each position fragment evolution, we only have contributions in the same (electronict)
+    - Within each position fragment evolution, we only have contributions in the same (electronic)
       basis, so their ordering does not have any impact on the circuit. We first iterate over the
       degrees, including linear, quadratic, and bilinear terms (this iteration is not in form
       of a ``for_loop``). Within each of those three terms, we iterate over the modes (linear,
@@ -525,7 +524,7 @@ def _trotter_step_second_order(_, time, fragments, registers, mode_registers, aq
                 qp.OutMultiplier(**mult_wires)
                 qp.adjoint(qp.SignedOutSquare(**square_wires, output_wires_zeroed=True))
                 qp.adjoint(qp.AQFT)(order=aqft_order, wires=mode_registers[k])
-                qp.BasisState(bitstring, registers["coefficients"])
+                qp.adjoint(qp.BasisState)(bitstring, registers["coefficients"])
 
             qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
@@ -538,26 +537,73 @@ def _trotter_step_second_order(_, time, fragments, registers, mode_registers, aq
     qp.for_loop(len(fragments) - 2, -1, -1)(position_fragments)()
 
 
-def _validate_registers(registers, fragments):
-    """Validate wire register sizes for vibronic algorithm. See documentation of
-    ``trotter_vibronic`` for details on the expected sizes."""
-    n_states = fragments[0].states
-    n_modes = fragments[0].modes
+def _validate_registers_and_fragments(registers, fragments):
+    """Validate wire register sizes and fragment structure for vibronic algorithm. See
+    documentation of ``trotter_vibronic`` for details on the expected register sizes."""
+    all_n_states = [f.states for f in fragments]
+    all_n_modes = [f.modes for f in fragments]
+    if any(n != all_n_states[0] for n in all_n_states[1:]):
+        raise ValueError(
+            f"Expected all vibronic fragments to have the same number of elecronic states, but got {all_n_states}."
+        )
+    if any(n != all_n_modes[0] for n in all_n_modes[1:]):
+        raise ValueError(
+            f"Expected all vibronic fragments to have the same number of vibrational modes, but got {all_n_modes}."
+        )
+    for frag in fragments[:-1]:
+        expected_op_types = {(), ("Q",), ("Q", "Q")}
+        op_types = set(frag.get_coefficients().values())
+        if not op_types.issubset(expected_op_types):
+            raise ValueError(
+                f"Expected all but last fragment to contain position terms of at most second order, but got {op_types}"
+            )
+    op_types = set(fragments[-1].get_coefficients().values())
+    if not op_types.issubset({("P", "P")}):
+        raise ValueError(
+            f"Expected the last fragment to contain kinetic terms only, but got {op_types}"
+        )
+
+    n_states = all_n_states[0]
+    n_modes = all_n_modes[0]
 
     expected_register_names = {"electronic", "cache", "coefficients", "phase gradient", "work"}
     expected_register_names |= {f"mode {i}" for i in range(n_modes)}
-    assert isinstance(registers, dict)
-    assert set(registers) == expected_register_names
+    if not isinstance(registers, dict):
+        raise ValueError(
+            f"Expected `registers` to be a dictionary, got {registers} of type {type(registers).__name__}."
+        )
+    if set(registers) != expected_register_names:
+        raise ValueError(
+            f"Expected the keys in `registers` to be {expected_register_names}, got {list(registers.keys())}."
+        )
 
     b = len(registers["coefficients"])
     k = len(registers["mode 0"])
     n = qp.math.ceil_log2(n_states)
+    needed_work_wires = max(n - 1, 2 * k, 2 * b + 2)
 
-    assert len(registers["electronic"]) == n
-    assert len(registers["cache"]) >= 2 * k
+    if len(registers["electronic"]) != n:
+        raise ValueError(
+            f"Expected {n} qubits for {n_states} electronic states, but got {len(registers['electronic'])=}."
+        )
+    if len(registers["cache"]) < 2 * k:
+        raise ValueError(
+            f"Expected at least {2*k} cache qubits for {k} qubits per vibrational mode, but got {len(registers['cache'])=}."
+        )
     assert len(registers["phase gradient"]) >= b
-    assert len(registers["work"]) >= max(n - 1, 2 * k, 2 * b + 2)
-    assert all(len(registers[f"mode {i}"]) == k for i in range(1, n_modes))
+    if len(registers["phase gradient"]) < b:
+        raise ValueError(
+            f"Expected the 'phase gradient' register to have at least as many qubits as the 'coefficients' register ({b} qubits), but got {len(registers['phase gradient'])=}."
+        )
+    if len(registers["work"]) < needed_work_wires:
+        raise ValueError(
+            f"Expected at least {needed_work_wires} work qubits, but only got {len(registers['work'])}."
+        )
+    vibr_sizes = [len(registers[f"mode {i}"]) for i in range(n_modes)]
+    if any(size != vibr_sizes[0] for size in vibr_sizes[1:]):
+        raise ValueError(
+            f"Expected all vibrational mode registers to have the same size, but got sizes {vibr_sizes}."
+        )
 
 
 def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aqft_order):
@@ -660,13 +706,16 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
         qubit overhead and minimizes the non-Clifford gate count.
 
     """
-    _validate_registers(registers, fragments)
+    _validate_registers_and_fragments(registers, fragments)
 
     assert num_trotter_steps > 0
     trotter_time_step = evolution_time / num_trotter_steps
 
     n_modes = fragments[0].modes
-    mode_registers = qp.math.array([registers.pop(f"mode {i}") for i in range(n_modes)], like="jax")
+    # Split registers into mode and non-mode registers. The former are turned into an array for
+    # dynamic-index access.
+    mode_registers = qp.math.array([registers[f"mode {i}"] for i in range(n_modes)], like="jax")
+    registers = {key: wires for key, wires in registers.items() if not key.startswith("mode ")}
 
     if aqft_order is None:
         aqft_order = mode_registers.shape[1] - 1
