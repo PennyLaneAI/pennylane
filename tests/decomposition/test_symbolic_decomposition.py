@@ -284,7 +284,9 @@ class TestPowDecomposition:
             merge_powers2(**op.arguments)
 
         assert q.queue == [pow(qp.S(0), 6)]
-        assert merge_powers2.compute_resources(**op.arguments) == to_resources({qp.S(Wire[1]) ** 6: 1})
+        assert merge_powers2.compute_resources(**op.arguments) == to_resources(
+            {qp.S(Wire[1]) ** 6: 1}
+        )
 
     def test_repeat_pow_base(self):
         """Tests repeating the same op z number of times."""

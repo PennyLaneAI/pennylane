@@ -179,7 +179,11 @@ class TestDynamicDecomposition:
         outer_loop_eqn = outer_loop.params["jaxpr_body_fn"].eqns
         swap_loop_eqn = swap_loop.params["jaxpr_body_fn"].eqns
 
-        hadamards = [eqn for eqn in outer_loop_eqn if "op_cls" in eqn.params and eqn.params["op_cls"] == qp.Hadamard]
+        hadamards = [
+            eqn
+            for eqn in outer_loop_eqn
+            if "op_cls" in eqn.params and eqn.params["op_cls"] == qp.Hadamard
+        ]
         assert len(hadamards) == 1
 
         cphaseshift_loop = [eqn for eqn in outer_loop_eqn if eqn.primitive == for_loop_prim]

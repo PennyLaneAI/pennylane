@@ -667,7 +667,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
         Not applicable (provided operator instance does not meet all conditions for this rule).
 
-        """
+    """
 
     if not enabled_graph():
         raise ValueError(
