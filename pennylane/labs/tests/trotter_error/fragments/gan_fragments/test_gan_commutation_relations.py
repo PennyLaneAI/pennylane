@@ -156,8 +156,12 @@ def _expected_mol_mol(s, k, config):
             g_ij = _molecular_coupling(i[1], j[1], config)
             g_mn = _molecular_coupling(m[1], n[1], config)
 
-            fermi1 = GanFermiWord([GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_mol(n[1])])
-            fermi2 = GanFermiWord([GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_mol(i[1])])
+            fermi1 = GanFermiWord(
+                [GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_mol(n[1])]
+            )
+            fermi2 = GanFermiWord(
+                [GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_mol(i[1])]
+            )
 
             terms[fermi1] += g_ij @ g_mn
             terms[fermi2] -= g_ij @ g_mn
@@ -198,17 +202,33 @@ def _expected_met_met(s, k, config):
             g_mn = _molecule_metal_transfer(mol_index, met_index, config)
 
             if i[0] == "mol" and n[0] == "mol":
-                fermi1 = GanFermiWord([GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_mol(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_mol(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_mol(i[1])]
+                )
             elif i[0] == "mol" and n[0] == "met":
-                fermi1 = GanFermiWord([GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_met(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_met(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_mol(i[1])]
+                )
             elif i[0] == "met" and n[0] == "mol":
-                fermi1 = GanFermiWord([GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_mol(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_mol(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_met(i[1])]
+                )
             elif i[0] == "met" and n[0] == "met":
-                fermi1 = GanFermiWord([GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_met(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_met(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_met(i[1])]
+                )
             else:
                 raise ValueError(f"Unexpected spaces: {i[0]}, {i[1]}.")
 
@@ -248,17 +268,33 @@ def _expected_mol_met(s, k, config):
             g_mn = _molecule_metal_transfer(mol_index, met_index, config)
 
             if i[0] == "mol" and n[0] == "mol":
-                fermi1 = GanFermiWord([GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_mol(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_mol(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_mol(i[1])]
+                )
             elif i[0] == "mol" and n[0] == "met":
-                fermi1 = GanFermiWord([GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_met(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_mol(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_mol(i[1]), GanFermiOp.annihilation_met(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_mol(i[1])]
+                )
             elif i[0] == "met" and n[0] == "mol":
-                fermi1 = GanFermiWord([GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_mol(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_mol(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_mol(n[1]), GanFermiOp.annihilation_met(i[1])]
+                )
             elif i[0] == "met" and n[0] == "met":
-                fermi1 = GanFermiWord([GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_met(n[1])])
-                fermi2 = GanFermiWord([GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_met(i[1])])
+                fermi1 = GanFermiWord(
+                    [GanFermiOp.creation_met(i[1]), GanFermiOp.annihilation_met(n[1])]
+                )
+                fermi2 = GanFermiWord(
+                    [GanFermiOp.creation_met(n[1]), GanFermiOp.annihilation_met(i[1])]
+                )
             else:
                 raise ValueError(f"Unexpected spaces {i[0]}, {i[1]}.")
 
