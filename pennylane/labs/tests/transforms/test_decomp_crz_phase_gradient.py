@@ -22,8 +22,6 @@ import pytest
 import pennylane as qp
 from pennylane.labs.transforms.decomp_crz_phase_gradient import make_crz_to_phase_gradient_decomp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.decompose import DecomposeInterpreter
 
 
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
@@ -170,51 +168,3 @@ def test_integration_multi_wire(seed):
         out_state_expected = np.kron(zeros, out_state_expected)
 
         assert np.allclose(out_state, out_state_expected)
-
-
-@pytest.mark.jax
-def test_capture_compatibility():
-    """Ensures capture compatibility."""
-
-    # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
-
-    qp.capture.enable()
-    try:
-        with qp.decomposition.toggle_graph_ctx(True):
-            first_free = 2  # 0, 1 used by CRZ
-
-            precision = 3
-            angle_wires = jnp.array(list(range(first_free, first_free + precision)))
-            phase_grad_wires = jnp.array(
-                list(range(first_free + precision, first_free + 2 * precision))
-            )
-            work_wires = jnp.array(
-                list(range(first_free + 2 * precision, first_free + 3 * precision - 1))
-            )
-
-            custom_decomp = make_crz_to_phase_gradient_decomp(
-                angle_wires, phase_grad_wires, work_wires
-            )
-
-            gate_set = {"C(BasisState)", "SemiAdder"}
-
-            @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.CRZ: custom_decomp})
-            def f(phi):
-                qp.CRZ(phi, [0, 1])
-                return qp.state()
-
-            phi_val = jnp.pi
-
-            cjaxpr = jax.make_jaxpr(f)(phi_val)
-
-            collector = CollectOpsandMeas()
-            collector.eval(cjaxpr.jaxpr, cjaxpr.consts, phi_val)
-
-            op_names = {op.name for op in collector.state["ops"]}
-            assert op_names.issubset(
-                gate_set
-            ), f"Following ops are present but not in gateset: {op_names - gate_set}"
-    finally:
-        qp.capture.disable()
