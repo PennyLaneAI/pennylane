@@ -271,6 +271,9 @@
 * `assert_valid` now checks the fine grained work wire spec.
   [(#9919)](https://github.com/PennyLaneAI/pennylane/pull/9919)
 
+* Sorts the gate counts in the display of resources produced from decompositions.
+  [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
+
 * Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
   register, `x_wires`, is smaller than the size of the second addend register, `y_wires`.
   [(#9807)](https://github.com/PennyLaneAI/pennylane/pull/9807)
