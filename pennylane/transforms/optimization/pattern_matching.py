@@ -669,7 +669,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
     """
 
     def __init__(
-        # pylint: disable=too-many-arguments
         self,
         circuit_dag,
         pattern_dag,

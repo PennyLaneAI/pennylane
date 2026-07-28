@@ -15,7 +15,7 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
+# pylint: disable=wrong-import-position, wrong-import-order
 from functools import partial
 
 import numpy as np
@@ -42,7 +42,10 @@ from jax import make_jaxpr
 
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import cond_prim, for_loop_prim
+from pennylane.capture.primitives import (  # pylint: disable=ungrouped-imports
+    cond_prim,
+    for_loop_prim,
+)
 from pennylane.exceptions import AutoGraphError
 from tests.capture.capture_utils import extract_all_primitives
 

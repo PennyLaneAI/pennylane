@@ -13,7 +13,6 @@
 # limitations under the License.
 """Differentiable quantum functions"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 import functools
 import itertools
 from string import ascii_letters

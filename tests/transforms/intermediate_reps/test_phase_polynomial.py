@@ -65,6 +65,7 @@ class TestPhasePolynomial:
     def test_computation(self, circ, res):
         """Test phase_polynomial computes the correct parity matrix, parity table and angles"""
 
+        # pylint: disable=unbalanced-tuple-unpacking
         pmat, ptab, angles = phase_polynomial(circ, wire_order=range(4))
         pmat_true, ptab_true, angles_true = res
 
@@ -78,6 +79,7 @@ class TestPhasePolynomial:
 
         (circ1_abcd,), _ = qp.map_wires(circ1, dict(enumerate(wire_order_abcd)))
 
+        # pylint: disable=unbalanced-tuple-unpacking
         pmat, ptab, angles = phase_polynomial(circ1_abcd, wire_order=["a", "b", "c", "d"])
 
         assert np.allclose(pmat, pmat1)
@@ -96,6 +98,7 @@ class TestPhasePolynomial:
 
         tape = qp.tape.make_qscript(qfunc)(0.5, 0.3)
 
+        # pylint: disable=unbalanced-tuple-unpacking
         pmat, ptab, angles = phase_polynomial(qfunc, wire_order=range(3))(0.5, 0.3)
         pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
 
@@ -117,6 +120,7 @@ class TestPhasePolynomial:
 
         tape = qp.workflow.construct_tape(qnode)(0.5, 0.3)
 
+        # pylint: disable=unbalanced-tuple-unpacking
         pmat, ptab, angles = phase_polynomial(qnode, wire_order=range(3))(0.5, 0.3)
         pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
 

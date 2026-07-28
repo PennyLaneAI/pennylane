@@ -25,7 +25,6 @@ from pennylane.core.operator import Channel
 from pennylane.wires import Wires, WiresLike
 
 #: Small epsilon added to sqrt to prevent floating-point errors during qubit channel normalization.
-# pylint: disable=too-many-arguments
 _SQRT_STABILITY_EPS = 1e-14
 
 
@@ -797,9 +796,7 @@ class QubitChannel(Channel):
         return (self.data,), (self.wires, ())
 
     @classmethod
-    def _primitive_bind_call(
-        cls, K_list, wires: WiresLike
-    ):  # pylint: disable=arguments-differ, unused-argument
+    def _primitive_bind_call(cls, K_list, wires: WiresLike):  # pylint: disable=arguments-differ
         wires = Wires(wires)
         return super()._primitive_bind_call(*K_list, wires=wires)
 

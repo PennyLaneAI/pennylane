@@ -13,7 +13,6 @@
 # limitations under the License.
 """Utility functions related to the construction of the taylor form Hamiltonian."""
 
-# pylint: disable=too-many-arguments
 import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory

@@ -36,7 +36,6 @@ def _get_abstract_measurement():
         raise ImportError("Jax is required for plxpr.")  # pragma: no cover
 
     class AbstractMeasurement(jax.core.AbstractValue):
-        # pylint: disable=missing-function-docstring
         """An abstract measurement.
 
         Args:

@@ -15,7 +15,7 @@
 """PyTests for the AutoGraph source-to-source transformation feature for
 converting if/else statements to qp.cond."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+# pylint: disable=wrong-import-order, wrong-import-position
 import pytest
 
 import pennylane as qp
@@ -28,7 +28,10 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
-from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.capture.autograph.transformer import (  # pylint: disable=ungrouped-imports
+    TRANSFORMER,
+    run_autograph,
+)
 from pennylane.capture.primitives import cond_prim
 from pennylane.exceptions import AutoGraphError
 from tests.capture.capture_utils import extract_all_primitives
@@ -194,7 +197,7 @@ class TestConditionals:
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-        assert res(5) == 25  # pylint: disable=singleton-comparison
+        assert res(5) == 25
         assert res(2) == 8
 
     def test_multiple_return(self):
@@ -252,7 +255,7 @@ class TestConditionals:
                 return n**2
 
             @cond_fn.otherwise
-            def else_fn():  # pylint: disable=unused-variable
+            def else_fn():
                 return n
 
             return cond_fn()
@@ -268,7 +271,7 @@ class TestConditionals:
         branch.
         """
 
-        def circuit(val):  # pylint: disable=using-constant-test
+        def circuit(val):
             if val:
                 res = measure(wires=0)
 
@@ -282,7 +285,7 @@ class TestConditionals:
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
 
-        def circuit(val1, val2):  # pylint: disable=using-constant-test
+        def circuit(val1, val2):
             if val1:
                 res = 1
             elif val2:

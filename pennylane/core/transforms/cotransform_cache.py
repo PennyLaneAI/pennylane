@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=import-outside-toplevel, unused-argument
 """
 This submodule contains the CotransformCache for handling the classical cotransform part of a transform.
 """

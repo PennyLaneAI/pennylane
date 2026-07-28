@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
-# pylint: disable=too-many-public-methods
-
 import math
 from functools import reduce
 
@@ -41,7 +39,6 @@ INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
 
 
-# pylint: disable=too-few-public-methods
 class CustomOneQubitOperation(qp.operation.Operation):
     num_wires = 1
 
@@ -50,7 +47,6 @@ class CustomOneQubitOperation(qp.operation.Operation):
         return qp.math.conj(qp.math.transpose(qp.S.compute_matrix()))
 
 
-# pylint: disable=too-few-public-methods
 class CustomTwoQubitOperation(qp.operation.Operation):
     num_wires = 2
 
@@ -629,7 +625,7 @@ class TestCliffordCompile:
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
+    # pylint: disable=protected-access, import-outside-toplevel
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
 
@@ -683,7 +679,7 @@ class TestCliffordCached:
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
+    # pylint: disable=protected-access, import-outside-toplevel
     def test_cached_with_rtol(self):
         """Test that caches are correctly identified as compatible or
         incompatible with a relative threshold for epsilon."""

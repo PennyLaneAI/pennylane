@@ -52,7 +52,6 @@ from .symbolicop2 import SymbolicOp2
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):
-    # pylint: disable=arguments-differ, invalid-overridden-method
     """The base class for controlled operators.
 
     This class acts as a common interface for all operators that can be considered controlled

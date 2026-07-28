@@ -42,7 +42,7 @@ mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name,abstract-method
+# pylint: disable=no-self-use, redefined-outer-name, invalid-name
 
 
 @pytest.fixture(scope="function")
@@ -306,7 +306,6 @@ class TestObservables:
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = "SomeUnsupportedReturnType"
 
@@ -727,7 +726,6 @@ class TestVar:
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
 
-        # pylint: disable=too-few-public-methods
         class MyObs(qp.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
@@ -1003,7 +1001,6 @@ class TestEstimateProb:
 class TestMarginalProb:
     """Test the marginal_prob method"""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "wires, inactive_wires",
         [
@@ -1068,7 +1065,6 @@ class TestMarginalProb:
         ),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned(
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
@@ -1079,7 +1075,7 @@ class TestMarginalProb:
         res = dev.marginal_prob(probs, wires=wires)
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
-    # pylint: disable=too-many-arguments, unused-argument
+    # pylint: disable=unused-argument
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned_wires_none(
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol

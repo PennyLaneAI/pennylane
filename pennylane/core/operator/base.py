@@ -73,7 +73,6 @@ def _get_abstract_operator() -> type:
     import jax  # pylint: disable=import-outside-toplevel
 
     class AbstractOperator(jax.core.AbstractValue):
-        # pylint: disable=missing-function-docstring
         """An operator captured into plxpr."""
 
         # pylint: disable=missing-function-docstring
@@ -253,8 +252,6 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
     @classmethod
     def __subclasshook__(cls, subclass):
         return getattr(subclass, "_operator_version", None) == 1
-
-    # pylint: disable=comparison-with-callable, no-self-argument
 
 
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):

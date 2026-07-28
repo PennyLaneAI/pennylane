@@ -350,7 +350,7 @@ class GridOp:
         to an element being :math:`a = a_0 + a_1 / \sqrt{2}`.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         a: tuple[int, int],
         b: tuple[int, int],
@@ -714,7 +714,7 @@ class GridIterator:
             if e1.contains(x1, y1) and e2.contains(x2, y2):
                 yield solution
 
-    def solve_upright_problem(  # pylint: disable=too-many-arguments, too-many-branches
+    def solve_upright_problem(  # pylint: disable=too-many-branches
         self,
         state: EllipseState,
         bbox1: tuple[float],

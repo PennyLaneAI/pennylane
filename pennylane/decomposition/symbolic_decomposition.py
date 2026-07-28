@@ -14,7 +14,6 @@
 
 """This module contains special logic of decomposing symbolic operations."""
 
-# pylint: disable=unused-argument
 from __future__ import annotations
 
 from textwrap import dedent

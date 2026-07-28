@@ -92,7 +92,7 @@ def test_map_wires():
 class TestProperties:
     """Test the properties of the symbolic op."""
 
-    def test_data(self):  # pylint: disable=too-few-public-methods
+    def test_data(self):
         """Test that the data property for symbolic ops is read-only."""
         x = np.array(1.234)
 

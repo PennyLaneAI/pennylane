@@ -28,7 +28,7 @@ from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
+# pylint: disable=protected-access,no-self-use,unused-argument,arguments-differ,no-member,comparison-with-itself,signature-differs
 
 
 class DummyX(ResourceOperator):
@@ -394,7 +394,7 @@ class TestResourceOperator:
 
     def test_equality_false(self):
         """Test that the __eq__ method returns False if the input operator is not ResourceOperator."""
-        assert not qre_ops.X() == qp.X(0)
+        assert qre_ops.X() != qp.X(0)
 
     ops_to_queue = [
         Hadamard(wires=[0]),

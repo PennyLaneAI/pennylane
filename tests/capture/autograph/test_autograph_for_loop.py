@@ -14,7 +14,7 @@
 
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports, too-many-public-methods
+# pylint: disable=wrong-import-order, wrong-import-position, too-many-public-methods
 from unittest import mock
 
 import numpy as np
@@ -33,7 +33,10 @@ from jax import numpy as jnp
 from jax.core import eval_jaxpr
 from malt.operators import py_builtins as ag_py_builtins
 
-from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
+from pennylane.capture.autograph.ag_primitives import (  # pylint: disable=ungrouped-imports
+    PEnumerate,
+    PRange,
+)
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from tests.capture.capture_utils import extract_all_primitives
@@ -454,7 +457,7 @@ class TestForLoops:
         assert np.allclose(result, [2, 5])
 
     @pytest.mark.xfail(reason="currently unsupported, but we may find a way to do so in the future")
-    def test_iteration_element_access_no_init(self):  # pylint: disable=undefined-loop-variable
+    def test_iteration_element_access_no_init(self):
         """Test that access to the iteration index/elements is possible after the loop executed
         even without prior initialization."""
 

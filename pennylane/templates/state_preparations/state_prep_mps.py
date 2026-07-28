@@ -398,7 +398,7 @@ class MPSPrep(Operation):
     @classmethod
     def _primitive_bind_call(
         cls, mps, wires, work_wires=None, right_canonicalize=False
-    ):  # pylint: disable=arguments-differ, too-many-arguments
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(
             *mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )

@@ -49,9 +49,7 @@ def _create_transform_primitive():
     transform_prim.prim_type = "transform"
 
     @transform_prim.def_impl
-    def _impl(
-        *all_args, inner_jaxpr, args_slice, consts_slice, **_
-    ):  # pylint: disable=too-many-arguments, unused-argument
+    def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, **_):
         args = all_args[slice(*args_slice)]
         consts = all_args[slice(*consts_slice)]
         return capture.eval_jaxpr(inner_jaxpr, consts, *args)
@@ -465,7 +463,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
-    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         tape_transform: Callable | None = None,
         pass_name: None | str = None,

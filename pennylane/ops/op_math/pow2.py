@@ -78,7 +78,7 @@ class Pow2(SymbolicOp2):
 
     """
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method
+    # pylint: disable=invalid-overridden-method
 
     z: int | float
 
@@ -310,7 +310,7 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
 
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
 @register_resources(lambda base, z: {abstractify(base): z})
-def repeat_pow_base(base, z):  # pylint: disable=protected-access, unused-argument
+def repeat_pow_base(base, z):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
@@ -322,7 +322,7 @@ def repeat_pow_base(base, z):  # pylint: disable=protected-access, unused-argume
 
 
 @register_resources(lambda base, z: {abstractify(base.base): z * base.z})
-def merge_powers(base, z):  # pylint: disable=protected-access, unused-argument
+def merge_powers(base, z):
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
 
@@ -333,7 +333,7 @@ def _flip_pow_adjoint_resource(base, z):
 
 
 @register_resources(_flip_pow_adjoint_resource)
-def flip_pow_adjoint(base, z, **__):  # pylint: disable=protected-access, unused-argument
+def flip_pow_adjoint(base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     adjoint(qp.pow(base.base, z))
