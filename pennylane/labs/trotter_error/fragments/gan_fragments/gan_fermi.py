@@ -15,7 +15,7 @@ r"""Fermionic algebra primitives for the GAN Hamiltonian.
 
 This module provides the building blocks for the electronic (fermionic) part of
 the GAN Hamiltonian: individual creation and annihilation operators
-(:class:`FermiOp`), ordered products of them (:class:`GanFermiWord`), and linear
+(:class:`GanFermiOp`), ordered products of them (:class:`GanFermiWord`), and linear
 combinations of such products (:class:`GanFermiSentence`).
 
 The operators act on two distinct single-particle spaces --- molecular
@@ -58,7 +58,7 @@ class FermiSpace(Enum):
 
 
 @dataclass(frozen=True)
-class FermiOp:
+class GanFermiOp:
     """A single fermionic creation or annihilation operator.
 
     An operator is fully specified by its type (creation or annihilation), the
@@ -84,9 +84,9 @@ class FermiOp:
             mode (int): the molecular mode index.
 
         Returns:
-            FermiOp: a creation operator on the molecular space.
+            GanFermiOp: a creation operator on the molecular space.
         """
-        return FermiOp(op_type=FermiType.CREATION, space=FermiSpace.MOLECULAR, mode=mode)
+        return GanFermiOp(op_type=FermiType.CREATION, space=FermiSpace.MOLECULAR, mode=mode)
 
     @staticmethod
     def annihilation_mol(mode):
@@ -96,9 +96,9 @@ class FermiOp:
             mode (int): the molecular mode index.
 
         Returns:
-            FermiOp: an annihilation operator on the molecular space.
+            GanFermiOp: an annihilation operator on the molecular space.
         """
-        return FermiOp(op_type=FermiType.ANNIHILATION, space=FermiSpace.MOLECULAR, mode=mode)
+        return GanFermiOp(op_type=FermiType.ANNIHILATION, space=FermiSpace.MOLECULAR, mode=mode)
 
     @staticmethod
     def creation_met(mode):
@@ -108,9 +108,9 @@ class FermiOp:
             mode (int): the metallic mode index.
 
         Returns:
-            FermiOp: a creation operator on the metallic space.
+            GanFermiOp: a creation operator on the metallic space.
         """
-        return FermiOp(op_type=FermiType.CREATION, space=FermiSpace.METALLIC, mode=mode)
+        return GanFermiOp(op_type=FermiType.CREATION, space=FermiSpace.METALLIC, mode=mode)
 
     @staticmethod
     def annihilation_met(mode):
@@ -120,9 +120,9 @@ class FermiOp:
             mode (int): the metallic mode index.
 
         Returns:
-            FermiOp: an annihilation operator on the metallic space.
+            GanFermiOp: an annihilation operator on the metallic space.
         """
-        return FermiOp(op_type=FermiType.ANNIHILATION, space=FermiSpace.METALLIC, mode=mode)
+        return GanFermiOp(op_type=FermiType.ANNIHILATION, space=FermiSpace.METALLIC, mode=mode)
 
     def __repr__(self):
         symbol = "+" if self.op_type == FermiType.CREATION else "-"
@@ -139,16 +139,16 @@ class GanFermiWord:
     """An ordered product of fermionic operators.
 
     A ``GanFermiWord`` represents a single monomial in the fermionic operators,
-    i.e. an ordered product :math:`o_0 o_1 \\cdots o_{n-1}` of :class:`FermiOp`
+    i.e. an ordered product :math:`o_0 o_1 \\cdots o_{n-1}` of :class:`GanFermiOp`
     factors. The empty product is the identity (see :meth:`identity`). Words are
     hashable (by their ordered operators) so they can serve as dictionary keys,
     e.g. as the fermionic part of a :class:`~.GanFragment` term.
 
     Args:
-        ops (Sequence[FermiOp]): the ordered operators making up the word.
+        ops (Sequence[GanFermiOp]): the ordered operators making up the word.
     """
 
-    def __init__(self, ops: Sequence[FermiOp]):
+    def __init__(self, ops: Sequence[GanFermiOp]):
         self.ops = list(ops)
 
     def normal_order(self) -> GanFermiSentence:
@@ -257,13 +257,13 @@ class GanFermiWord:
 
         Args:
             i (int): the position to overwrite.
-            val (FermiOp): the replacement operator.
+            val (GanFermiOp): the replacement operator.
 
         Raises:
-            TypeError: if ``val`` is not a :class:`FermiOp`.
+            TypeError: if ``val`` is not a :class:`GanFermiOp`.
         """
-        if not isinstance(val, FermiOp):
-            raise TypeError(f"GanFermis must contain FermiOps, got {type(val)}.")
+        if not isinstance(val, GanFermiOp):
+            raise TypeError(f"GanFermis must contain GanFermiOps, got {type(val)}.")
 
         self.ops[i] = val
 

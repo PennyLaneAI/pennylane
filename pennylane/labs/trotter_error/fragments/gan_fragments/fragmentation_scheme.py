@@ -22,7 +22,7 @@ from typing import Sequence
 
 from numpy.typing import ArrayLike
 
-from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermiWord
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import GanFermiOp, GanFermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
     GanBosonic,
@@ -215,17 +215,17 @@ def _diagonal(config: GanConfig) -> GanFragment:
 
     for i in range(config.n_mol):
         gan_coeff = _molecular_coupling(i, i, config)
-        fermi = GanFermiWord([FermiOp.creation_mol(i), FermiOp.annihilation_mol(i)])
+        fermi = GanFermiWord([GanFermiOp.creation_mol(i), GanFermiOp.annihilation_mol(i)])
         terms[fermi] += gan_coeff
 
     for i, j in product(range(config.n_mol), repeat=2):
         gan_coeff = _electron_repulsion(i, j, config)
         fermi = GanFermiWord(
             [
-                FermiOp.creation_mol(i),
-                FermiOp.annihilation_mol(i),
-                FermiOp.creation_mol(j),
-                FermiOp.annihilation_mol(j),
+                GanFermiOp.creation_mol(i),
+                GanFermiOp.annihilation_mol(i),
+                GanFermiOp.creation_mol(j),
+                GanFermiOp.annihilation_mol(j),
             ]
         )
         terms[fermi] += gan_coeff
@@ -261,7 +261,7 @@ def _kinetic(config: GanConfig) -> GanFragment:
     for i, energy in enumerate(config.energies):
         monomial = GanMonomial.identity()
         coeff = GanBosonic({monomial: energy})
-        fermi = GanFermiWord([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
+        fermi = GanFermiWord([GanFermiOp.creation_met(i), GanFermiOp.annihilation_met(i)])
         terms[fermi] += coeff
 
     return GanFragment(terms)
@@ -300,8 +300,8 @@ def _mol_matching(s: int, config: GanConfig) -> GanFragment:
     terms = defaultdict(GanBosonic.identity)
     for i, j in edges:
         gan_coeff = _molecular_coupling(i, j, config)
-        fermi1 = GanFermiWord([FermiOp.creation_mol(i), FermiOp.annihilation_mol(j)])
-        fermi2 = GanFermiWord([FermiOp.creation_mol(j), FermiOp.annihilation_mol(i)])
+        fermi1 = GanFermiWord([GanFermiOp.creation_mol(i), GanFermiOp.annihilation_mol(j)])
+        fermi2 = GanFermiWord([GanFermiOp.creation_mol(j), GanFermiOp.annihilation_mol(i)])
         terms[fermi1] += gan_coeff
         terms[fermi2] += gan_coeff
 
@@ -334,8 +334,8 @@ def _met_matching(s: int, config: GanConfig):
     terms = defaultdict(GanBosonic.identity)
     for i, j in edges:
         gan_coeff = _molecule_metal_transfer(i, j, config)
-        fermi1 = GanFermiWord([FermiOp.creation_mol(i), FermiOp.annihilation_met(j)])
-        fermi2 = GanFermiWord([FermiOp.creation_met(j), FermiOp.annihilation_mol(i)])
+        fermi1 = GanFermiWord([GanFermiOp.creation_mol(i), GanFermiOp.annihilation_met(j)])
+        fermi2 = GanFermiWord([GanFermiOp.creation_met(j), GanFermiOp.annihilation_mol(i)])
         terms[fermi1] += gan_coeff
         terms[fermi2] += gan_coeff
 

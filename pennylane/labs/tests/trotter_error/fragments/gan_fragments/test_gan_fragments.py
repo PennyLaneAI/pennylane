@@ -17,7 +17,7 @@ import math
 
 import pytest
 
-from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermiWord
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import GanFermiOp, GanFermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
     FuncType,
@@ -147,12 +147,12 @@ def test_gancoeff_norm():
 
 def _num_op(mode=0):
     """A fermionic number-operator c^dag_mol(mode) a_mol(mode)."""
-    return GanFermiWord([FermiOp.creation_mol(mode), FermiOp.annihilation_mol(mode)])
+    return GanFermiWord([GanFermiOp.creation_mol(mode), GanFermiOp.annihilation_mol(mode)])
 
 
 def test_fragment_prunes_zero_fermi_and_zero_coeff():
     """ "Test GanFragment drops negligible terms"""
-    c0 = FermiOp.creation_mol(0)
+    c0 = GanFermiOp.creation_mol(0)
     # zero fermionic word (c_0 c_0) -> dropped
     frag = GanFragment({GanFermiWord([c0, c0]): GanBosonic({_mono(0): 1.0})})
     assert frag.fragment == {}

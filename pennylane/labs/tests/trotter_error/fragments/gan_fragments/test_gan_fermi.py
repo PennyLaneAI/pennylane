@@ -16,7 +16,7 @@
 import pytest
 
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import (
-    FermiOp,
+    GanFermiOp,
     FermiSpace,
     FermiType,
     GanFermiSentence,
@@ -25,44 +25,44 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import (
 
 
 def test_fermiop_factories_set_type_space_mode():
-    """Test that the FermiOp constructors correctly set the FermiSpace"""
-    cm = FermiOp.creation_mol(2)
+    """Test that the GanFermiOp constructors correctly set the FermiSpace"""
+    cm = GanFermiOp.creation_mol(2)
     assert cm.op_type == FermiType.CREATION
     assert cm.space == FermiSpace.MOLECULAR
     assert cm.mode == 2
 
-    am = FermiOp.annihilation_mol(3)
+    am = GanFermiOp.annihilation_mol(3)
     assert am.op_type == FermiType.ANNIHILATION
     assert am.space == FermiSpace.MOLECULAR
 
-    ck = FermiOp.creation_met(1)
+    ck = GanFermiOp.creation_met(1)
     assert ck.op_type == FermiType.CREATION
     assert ck.space == FermiSpace.METALLIC
 
-    ak = FermiOp.annihilation_met(0)
+    ak = GanFermiOp.annihilation_met(0)
     assert ak.op_type == FermiType.ANNIHILATION
     assert ak.space == FermiSpace.METALLIC
 
 
 def test_fermiop_is_frozen_and_hashable():
-    """Test FermiOp is hashable"""
-    op = FermiOp.creation_mol(0)
-    assert hash(op) == hash(FermiOp.creation_mol(0))
+    """Test GanFermiOp is hashable"""
+    op = GanFermiOp.creation_mol(0)
+    assert hash(op) == hash(GanFermiOp.creation_mol(0))
     with pytest.raises(Exception):
         op.mode = 5
 
 
 def test_fermiop_equality():
     """Test equality operator"""
-    assert FermiOp.creation_mol(0) == FermiOp.creation_mol(0)
-    assert FermiOp.creation_mol(0) != FermiOp.annihilation_mol(0)
-    assert FermiOp.creation_mol(0) != FermiOp.creation_met(0)
-    assert FermiOp.creation_mol(0) != FermiOp.creation_mol(1)
+    assert GanFermiOp.creation_mol(0) == GanFermiOp.creation_mol(0)
+    assert GanFermiOp.creation_mol(0) != GanFermiOp.annihilation_mol(0)
+    assert GanFermiOp.creation_mol(0) != GanFermiOp.creation_met(0)
+    assert GanFermiOp.creation_mol(0) != GanFermiOp.creation_mol(1)
 
 
 def test_word_getitem_and_equality_and_hash():
     """Test that GanFermiWord can be built from its components"""
-    c0, a0 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(0)
+    c0, a0 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(0)
     w = GanFermiWord([c0, a0])
     assert w[0] == c0
     assert w[1] == a0
@@ -72,16 +72,16 @@ def test_word_getitem_and_equality_and_hash():
 
 def test_word_setitem_type_checked():
     """Test setitem"""
-    w = GanFermiWord([FermiOp.creation_mol(0)])
-    w[0] = FermiOp.annihilation_mol(1)
-    assert w[0] == FermiOp.annihilation_mol(1)
+    w = GanFermiWord([GanFermiOp.creation_mol(0)])
+    w[0] = GanFermiOp.annihilation_mol(1)
+    assert w[0] == GanFermiOp.annihilation_mol(1)
     with pytest.raises(TypeError):
         w[0] = "not an op"
 
 
 def test_word_matmul_concatenates():
     """Test matmul operation"""
-    c0, a1 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(1)
+    c0, a1 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(1)
     prod = GanFermiWord([c0]) @ GanFermiWord([a1])
     assert prod == GanFermiWord([c0, a1])
     with pytest.raises(TypeError):
@@ -95,7 +95,7 @@ def test_identity_word_is_empty():
 
 def test_is_zero_on_repeated_adjacent_operator():
     """Test is_zero"""
-    c0 = FermiOp.creation_mol(0)
+    c0 = GanFermiOp.creation_mol(0)
     assert GanFermiWord([c0, c0]).is_zero()  # c_0 c_0 = 0
     assert not GanFermiWord([c0]).is_zero()
     assert not GanFermiWord.identity().is_zero()  # empty word is the identity, not zero
@@ -103,14 +103,14 @@ def test_is_zero_on_repeated_adjacent_operator():
     # Currently, the is_zero method only looks for consecutive creation operators on the same mode,
     # which leaves some operators equivalent to zero found. This test verifies that such a zero is correctly
     # not flagged as zero
-    a1 = FermiOp.annihilation_mol(1)
+    a1 = GanFermiOp.annihilation_mol(1)
     assert not GanFermiWord([c0, a1, c0]).is_zero()
 
 
 def test_normal_order_same_mode_contraction():
     """Test normal order on same mode"""
     # a_0 c_0 = 1 - c_0 a_0  (since {a_0, c_0} = 1)
-    c0, a0 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(0)
+    c0, a0 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(0)
     result = GanFermiWord([a0, c0]).normal_order()
     expected = GanFermiSentence(
         {
@@ -123,7 +123,7 @@ def test_normal_order_same_mode_contraction():
 
 def test_normal_order_already_ordered_is_fixed_point():
     """Test normal_order on normal ordered string"""
-    c0, a0 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(0)
+    c0, a0 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(0)
     result = GanFermiWord([c0, a0]).normal_order()
     assert result == GanFermiSentence({GanFermiWord([c0, a0]): 1.0})
 
@@ -131,7 +131,7 @@ def test_normal_order_already_ordered_is_fixed_point():
 def test_normal_order_distinct_mode_anticommute_sign():
     """Test normal order on different modes"""
     # a_0 c_1 = - c_1 a_0  (different modes, no contraction)
-    a0, c1 = FermiOp.annihilation_mol(0), FermiOp.creation_mol(1)
+    a0, c1 = GanFermiOp.annihilation_mol(0), GanFermiOp.creation_mol(1)
     result = GanFermiWord([a0, c1]).normal_order()
     expected = GanFermiSentence({GanFermiWord([c1, a0]): -1.0})
     assert result == expected
@@ -140,14 +140,14 @@ def test_normal_order_distinct_mode_anticommute_sign():
 def test_normal_order_swapping_equal_creation_modes_gives_zero():
     """Test normal order on cancellation"""
     # c_0 c_0 vanishes
-    c0 = FermiOp.creation_mol(0)
+    c0 = GanFermiOp.creation_mol(0)
     result = GanFermiWord([c0, c0]).normal_order()
     assert result == GanFermiSentence({})
 
 
 def test_word_add_word_returns_sentence():
     """Test word addition"""
-    c0, a0 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(0)
+    c0, a0 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(0)
     s = GanFermiWord([c0]) + GanFermiWord([a0])
     assert isinstance(s, GanFermiSentence)
     assert s == GanFermiSentence({GanFermiWord([c0]): 1, GanFermiWord([a0]): 1})
@@ -155,7 +155,7 @@ def test_word_add_word_returns_sentence():
 
 def test_word_add_float_adds_identity_term():
     """Test addition between word and float"""
-    c0 = FermiOp.creation_mol(0)
+    c0 = GanFermiOp.creation_mol(0)
     s = GanFermiWord([c0]) + 2.0
     assert isinstance(s, GanFermiSentence)
     assert s == GanFermiSentence({GanFermiWord([c0]): 1, GanFermiWord.identity(): 2.0})
@@ -164,12 +164,12 @@ def test_word_add_float_adds_identity_term():
 def test_word_add_bad_type_raises():
     """Test word addition raises error"""
     with pytest.raises(TypeError):
-        _ = GanFermiWord([FermiOp.creation_mol(0)]) + "x"
+        _ = GanFermiWord([GanFermiOp.creation_mol(0)]) + "x"
 
 
 def test_word_scalar_mul_returns_sentence():
     """Test word scalar multiplication"""
-    c0 = FermiOp.creation_mol(0)
+    c0 = GanFermiOp.creation_mol(0)
     s = GanFermiWord([c0]) * 3.0
     assert isinstance(s, GanFermiSentence)
     assert s == GanFermiSentence({GanFermiWord([c0]): 3.0})
@@ -177,7 +177,7 @@ def test_word_scalar_mul_returns_sentence():
 
 def test_sentence_scalar_mul_scales_and_returns_sentence():
     """Test sentence scalar multiplication"""
-    c0, a0 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(0)
+    c0, a0 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(0)
     s = GanFermiSentence({GanFermiWord([c0]): 1.0, GanFermiWord([a0]): 2.0})
     scaled = s * 2.0
     assert isinstance(scaled, GanFermiSentence)
@@ -186,7 +186,7 @@ def test_sentence_scalar_mul_scales_and_returns_sentence():
 
 def test_sentence_add_word_returns_sentence():
     """Test sentence/word addition"""
-    c0, a0 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(0)
+    c0, a0 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(0)
     s = GanFermiSentence({GanFermiWord([c0]): 1.0})
     out = s + GanFermiWord([a0])
     assert isinstance(out, GanFermiSentence)
@@ -195,7 +195,7 @@ def test_sentence_add_word_returns_sentence():
 
 def test_sentence_add_sentence_returns_sentence():
     """Test sentence/sentence addition"""
-    c0, a0 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(0)
+    c0, a0 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(0)
     s1 = GanFermiSentence({GanFermiWord([c0]): 1.0})
     s2 = GanFermiSentence({GanFermiWord([c0]): 2.0, GanFermiWord([a0]): 1.0})
     out = s1 + s2
@@ -205,7 +205,7 @@ def test_sentence_add_sentence_returns_sentence():
 
 def test_sentence_add_float_returns_sentence():
     """Test sentence/float addition"""
-    c0 = FermiOp.creation_mol(0)
+    c0 = GanFermiOp.creation_mol(0)
     s = GanFermiSentence({GanFermiWord([c0]): 1.0})
     out = s + 5.0
     assert isinstance(out, GanFermiSentence)
@@ -214,14 +214,14 @@ def test_sentence_add_float_returns_sentence():
 
 def test_sentence_add_bad_type_raises():
     """Test sentence addition raises error"""
-    s = GanFermiSentence({GanFermiWord([FermiOp.creation_mol(0)]): 1.0})
+    s = GanFermiSentence({GanFermiWord([GanFermiOp.creation_mol(0)]): 1.0})
     with pytest.raises(TypeError):
         _ = s + "x"
 
 
 def test_sentence_matmul_word_returns_sentence():
     """Test sentence/word matmul"""
-    c0, a1 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(1)
+    c0, a1 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(1)
     s = GanFermiSentence({GanFermiWord([c0]): 2.0})
     out = s @ GanFermiWord([a1])
     assert isinstance(out, GanFermiSentence)
@@ -230,7 +230,7 @@ def test_sentence_matmul_word_returns_sentence():
 
 def test_sentence_matmul_sentence_multiplies_coeffs_and_returns_sentence():
     """Test sentence/sentence matmul"""
-    c0, a1 = FermiOp.creation_mol(0), FermiOp.annihilation_mol(1)
+    c0, a1 = GanFermiOp.creation_mol(0), GanFermiOp.annihilation_mol(1)
     s1 = GanFermiSentence({GanFermiWord([c0]): 2.0})
     s2 = GanFermiSentence({GanFermiWord([a1]): 3.0})
     out = s1 @ s2
@@ -240,6 +240,6 @@ def test_sentence_matmul_sentence_multiplies_coeffs_and_returns_sentence():
 
 def test_sentence_matmul_bad_type_raises():
     """Test sentence matmul raises error"""
-    s = GanFermiSentence({GanFermiWord([FermiOp.creation_mol(0)]): 1.0})
+    s = GanFermiSentence({GanFermiWord([GanFermiOp.creation_mol(0)]): 1.0})
     with pytest.raises(TypeError):
         _ = s @ 5

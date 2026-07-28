@@ -29,7 +29,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme i
     _nuclear_reference,
     gan_fragments,
 )
-from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermiWord
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import GanFermiOp, GanFermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
     GanBosonic,
@@ -192,7 +192,7 @@ def test_kinetic_has_metallic_number_terms(config):
     """Test that kinetic term contains the correct number of terms"""
     frag = _kinetic(config)
     for i in range(config.n_met):
-        num = GanFermiWord([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
+        num = GanFermiWord([GanFermiOp.creation_met(i), GanFermiOp.annihilation_met(i)])
         assert num in frag.fragment
 
 
