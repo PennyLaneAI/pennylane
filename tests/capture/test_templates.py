@@ -26,12 +26,14 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from pennylane.capture.primitives import operator_p
 from pennylane.core import Operator2
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
+
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import operator_p
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
