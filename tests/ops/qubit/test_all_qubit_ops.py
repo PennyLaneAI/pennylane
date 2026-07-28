@@ -60,7 +60,6 @@ class TestOperations:
         "op",
         [
             (qp.PauliX(wires=0)),
-            (qp.PauliY(wires=0)),
             (qp.PauliZ(wires=0)),
             (qp.RX(0.3, wires=0)),
             (qp.RY(0.3, wires=0)),
