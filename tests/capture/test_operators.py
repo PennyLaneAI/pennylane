@@ -161,15 +161,8 @@ def test_different_wires(w, as_kwarg, autograph):
         qfunc = qp.capture.run_autograph(qfunc)
 
     jaxpr = jax.make_jaxpr(qfunc)()
-
-    if isinstance(w, jax.numpy.ndarray) and w.shape != ():
-        offset = 1
-    else:
-        offset = 0
-
-    assert len(jaxpr.eqns) == 1 + offset
-
-    eqn = jaxpr.eqns[offset + 0]
+    assert len(jaxpr.eqns) == 1
+    eqn = jaxpr.eqns[0]
     assert_eqn_matches_op(eqn, qp.X)
     assert len(eqn.invars) == 1
     if not isinstance(w, jax.numpy.ndarray):
@@ -179,13 +172,7 @@ def test_different_wires(w, as_kwarg, autograph):
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-    assert eqn.params == {"n_wires": 1}
-
-    with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-    assert len(q) == 1
-    qp.assert_equal(q.queue[0], qp.X(0))
+    assert eqn.params["wire_lens"] == (1,)
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))

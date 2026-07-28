@@ -573,7 +573,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             # need to insert the new control wires before the old ones, and do the same
             # for control values too.
             control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
-            control_values = self.control_values + eqns[0].invars[-n_ctrls:]
+            control_values = self.control_values.tolist() + eqns[0].invars[-n_ctrls:]
             invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
 
         params["n_ctrls"] += len(self.control_wires)
