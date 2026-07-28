@@ -119,7 +119,7 @@ class GQSP(Operator2):
         return self
 
 
-def _GQSP_resources(unitary, angles, _):
+def _GQSP_resources(unitary, angles, **_):
     num_iters = angles.shape[1]
     return {
         ops.X: 2 + 2 * (num_iters - 1),

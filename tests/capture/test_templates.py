@@ -26,6 +26,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.capture.primitives import operator_p
+from pennylane.core import Operator2
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
@@ -1620,14 +1622,17 @@ class TestModifiedTemplates:
 
         rx_eqn = jaxpr.eqns[0]
         assert rx_eqn.primitive == qp.RX._primitive
-        gqps_eqn = jaxpr.eqns[1]
-        assert gqps_eqn.primitive == qp.GQSP._primitive
-        assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
-        assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
-        assert gqps_eqn.invars[2].val == 0  # Control wire
-        assert gqps_eqn.params["n_wires"] == 1
-        assert len(gqps_eqn.outvars) == 1
-        assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
+        gqsp_eqn = jaxpr.eqns[1]
+        assert gqsp_eqn.primitive is operator_p
+        assert gqsp_eqn.params["op_cls"] is qp.GQSP
+        # Dynamic args first, then wires, then hybrid args, so first arg will be the angles,
+        # then the control wire, then therotation angle of the RX
+        assert gqsp_eqn.invars[0] == jaxpr.jaxpr.invars[1]
+        assert gqsp_eqn.invars[1].val == 0  # Control wire
+        assert gqsp_eqn.invars[2] == jaxpr.jaxpr.invars[0]
+        assert gqsp_eqn.params["n_wires"] == 1
+        assert len(gqsp_eqn.outvars) == 1
+        assert isinstance(gqsp_eqn.outvars[0], jax.core.DropVar)
 
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, unitary.data, angles)
@@ -1807,7 +1812,9 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
-    if template == qp.templates.SubroutineOp:
+    if template == qp.templates.SubroutineOp or (
+        isinstance(template, type) and issubclass(template, Operator2)
+    ):
         return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
