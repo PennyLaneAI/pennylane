@@ -243,6 +243,8 @@ from .utils import (
     enable_graph,
     disable_graph,
     enabled_graph,
+    register_signature,
+    signature_registry,
     toggle_graph_ctx,
 )
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution

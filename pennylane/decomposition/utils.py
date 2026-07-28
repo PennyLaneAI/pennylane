@@ -17,10 +17,13 @@ This module implements utility functions for the decomposition module.
 """
 
 import re
+from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
+from typing import Any
 
+from pennylane.core import Operator2
 from pennylane.core.operator import Operator, Operator1, abstractify
 
 OP_NAME_ALIASES = {
@@ -144,3 +147,21 @@ def toggle_graph_decomposition():
 
 
 enable_graph, disable_graph, enabled_graph, toggle_graph_ctx = toggle_graph_decomposition()
+
+
+def _init_signature_registration():
+
+    _registry = defaultdict(list)
+
+    def register(op: type[Operator2], **kwargs) -> None:
+        spec = dict(op.arg_specs)
+        spec.update(**kwargs)
+        _registry[op].append(spec)
+
+    def registry() -> dict[type[Operator2], list[dict[str, Any]]]:
+        return dict(_registry)
+
+    return register, registry
+
+
+register_signature, signature_registry = _init_signature_registration()
