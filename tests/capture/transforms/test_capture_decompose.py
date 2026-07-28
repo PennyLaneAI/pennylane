@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
 
-# pylint:disable=protected-access,unused-argument, wrong-import-position
+# pylint:disable=protected-access,unused-argument,wrong-import-position
 
 import pytest
 
@@ -28,6 +28,7 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
+    operator_p,
     qnode_prim,
     while_loop_prim,
 )
@@ -180,7 +181,7 @@ class TestDecomposeInterpreter:
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
         assert_eqn_matches_op(jaxpr.eqns[-4], qp.X)
-        assert jaxpr.eqns[-3].primitive == qp.PauliY._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-3], qp.PauliY)
         assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
@@ -196,8 +197,7 @@ class TestDecomposeInterpreter:
             assert len(recwarn) == 0
 
         assert_eqn_matches_op(transformed_jaxpr.eqns[-4], qp.X)
-        assert transformed_jaxpr.eqns[-3].primitive == qp.PauliY._primitive
-        assert transformed_jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
+        assert_eqn_matches_op(transformed_jaxpr.eqns[-2], qp.PauliY)
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -244,7 +244,7 @@ class TestDecomposeInterpreter:
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
         assert_eqn_matches_op(jaxpr.eqns[-4], qp.X)
-        assert jaxpr.eqns[-3].primitive == qp.PauliY._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-3], qp.Y)
         assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Prod._primitive
 
@@ -252,11 +252,13 @@ class TestDecomposeInterpreter:
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
             assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
-            assert transformed_jaxpr.eqns[-2].primitive == qp.PauliY._primitive
             assert_eqn_matches_op(transformed_jaxpr.eqns[-1], qp.X)
+            assert_eqn_matches_op(transformed_jaxpr.eqns[-2], qp.Y)
         else:
-            for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
-                assert orig_eqn.primitive == transformed_eqn.primitive
+            assert transformed_jaxpr.eqns[-4].primitive == qp.PauliX._primitive
+            assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
+            assert_eqn_matches_op(transformed_jaxpr.eqns[-2], qp.PauliY)
+            assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Prod._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
     def test_decompose_ctrl(self, decompose):
@@ -383,12 +385,13 @@ class TestDecomposeInterpreter:
         expected_primitives = [
             qp.RY._primitive,
             qp.GlobalPhase._primitive,
-            qp.Y._primitive,
+            operator_p,
             qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
         )
+        assert branch.eqns[2].params["op_cls"] is qp.Y
 
         # Else branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]

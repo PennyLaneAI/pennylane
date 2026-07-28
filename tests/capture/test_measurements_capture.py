@@ -15,9 +15,8 @@
 Tests for capturing measurements.
 """
 
-import numpy as np
-
 # pylint: disable=protected-access
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -508,7 +507,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
         assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[2], qp.Y)
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
         assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[3].outvars[0]
         assert jaxpr.eqns[4].primitive == m_type._obs_primitive
