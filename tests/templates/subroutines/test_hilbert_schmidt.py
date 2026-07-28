@@ -34,7 +34,7 @@ from pennylane.transforms import decompose
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
 
-    U = (qp.Hadamard("a"), qp.Identity("b"))
+    U = (qp.Identity("a"), qp.Identity("b"))
     V = (qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=1))
 
     op = op_type(V, U)
