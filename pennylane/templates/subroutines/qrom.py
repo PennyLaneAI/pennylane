@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import compiler, math
 from pennylane import ops as qp_ops
-from pennylane.core.operator import Operation
+from pennylane.core.operator import abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -36,11 +36,12 @@ from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Int, Wire, AbstractArray
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
 from .select import Select
+from pennylane.core import Operator2
 
 
 def _multi_swap(wires1, wires2):
@@ -98,7 +99,7 @@ def _swap_ops(control_wires, depth, swap_wires, target_wires):
             qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
 
 
-class QROM(Operation):
+class QROM(Operator2):
     r"""Applies the QROM operator.
 
     This operator encodes bitstrings associated with indexes:
@@ -185,13 +186,11 @@ class QROM(Operation):
 
     """
 
-    resource_keys = {
-        "num_bitstrings",
-        "num_control_wires",
-        "num_target_wires",
-        "num_work_wires",
-        "clean",
-    }
+    dynamic_argnames = ("data",)
+    wire_argnames = ("control_wires", "target_wires", "work_wires")
+    compilable_argnames = ("clean",)
+
+    arg_specs = {"data": Int[-1, -1], "control_wires": Wire[-1], "target_wires": Wire[-1], "work_wires": Wire[-1]}
 
     def __init__(
         self,
@@ -212,11 +211,6 @@ class QROM(Operation):
             data = math.array(data)
 
         work_wires = Wires(() if work_wires is None else work_wires)
-
-        self.hyperparameters["control_wires"] = control_wires
-        self.hyperparameters["target_wires"] = target_wires
-        self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["clean"] = clean
 
         _wires_are_traced = any(
             math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
@@ -245,34 +239,24 @@ class QROM(Operation):
         if data[0].shape[0] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
-        all_wires = target_wires + control_wires + work_wires
-        super().__init__(data, wires=all_wires)
+        super().__init__(data, control_wires, target_wires, work_wires)
 
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(self.data), metadata
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_bitstrings": self.data[0].shape[0],
-            "num_control_wires": len(self.hyperparameters["control_wires"]),
-            "num_target_wires": len(self.hyperparameters["target_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "clean": self.hyperparameters["clean"],
-        }
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(*data, **hyperparams_dict)
+    def __abstract_init__(
+        self,
+        data: TensorLike | Sequence[str],
+        control_wires: WiresLike,
+        target_wires: WiresLike,
+        work_wires: WiresLike,
+        clean=True,
+    ):
+        super().__abstract_init__(AbstractArray(shape=data.shape, dtype=np.int64), control_wires=Wire[len(control_wires)], target_wires=Wire[len(target_wires)], work_wires=Wire[len(work_wires)], clean=clean)
 
     def __repr__(self):
         return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
 
     def map_wires(self, wire_map: dict):
         new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
+            key: [wire_map.get(w, w) for w in getattr(self, key)]
             for key in ["target_wires", "control_wires", "work_wires"]
         }
 
@@ -383,38 +367,14 @@ class QROM(Operation):
 
         return decomp_ops
 
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
-    @property
-    def control_wires(self):
-        """The control wires."""
-        return self.hyperparameters["control_wires"]
-
-    @property
-    def target_wires(self):
-        """The wires where the bitstring is loaded."""
-        return self.hyperparameters["target_wires"]
-
-    @property
-    def work_wires(self):
-        """The wires where the index is specified."""
-        return self.hyperparameters["work_wires"]
-
     @property
     def wires(self):
         """All wires involved in the operation."""
         return (
-            self.hyperparameters["control_wires"]
-            + self.hyperparameters["target_wires"]
-            + self.hyperparameters["work_wires"]
+            self.control_wires
+            + self.target_wires
+            + self.work_wires
         )
-
-    @property
-    def clean(self):
-        """Boolean to select the version of QROM."""
-        return self.hyperparameters["clean"]
 
 
 def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, num_work_wires, **_):
@@ -460,8 +420,10 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
 
 
 def _qrom_decomposition_resources(
-    num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
+    data, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=too-many-branches
+
+    num_bitstrings, num_control_wires, num_target_wires, num_work_wires = len(data), len(control_wires), len(target_wires), len(work_wires)
 
     num_work_wires_select = _calculate_n_select_work_wires(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires
