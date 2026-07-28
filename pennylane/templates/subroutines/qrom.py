@@ -763,9 +763,9 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     # When called for Adjoint(QROM), extract params from the base operator
     if base is not None:
         data = base.data[0]
-        control_wires = base.hyperparameters["control_wires"]
-        target_wires = base.hyperparameters["target_wires"]
-        work_wires = base.hyperparameters["work_wires"]
+        control_wires = base.control_wires
+        target_wires = base.target_wires
+        work_wires = base.work_wires
 
     # Bitstrings are manipulated with integer bitwise operations (np.bitwise_xor)
     # below, but callers may pass float data (e.g. QROM(np.eye(b), ...)). Cast to
