@@ -64,6 +64,9 @@ def _process(wires):
     if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
+    elif hasattr(wires, "tolist"):
+        wires = wires.tolist()
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
