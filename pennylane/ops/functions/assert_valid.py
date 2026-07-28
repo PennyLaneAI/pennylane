@@ -218,14 +218,14 @@ def _assert_counts_match(counts_0, counts_1):
 def _update_work_wires_dict(op, work_wires):
     if op.state.value == "zero":
         if op.restored:
-            work_wires["zeroed"] += 1
+            work_wires["zeroed"] += len(op.wires)
         else:
-            work_wires["burnable"] += 1
+            work_wires["burnable"] += len(op.wires)
     elif op.state.value == "any":
         if op.restored:
-            work_wires["borrowed"] += 1
+            work_wires["borrowed"] += len(op.wires)
         else:
-            work_wires["garbage"] += 1
+            work_wires["garbage"] += len(op.wires)
 
 
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):

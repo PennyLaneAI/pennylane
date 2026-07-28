@@ -277,9 +277,9 @@ class TestDecompositionErrors:
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
-        @qp.register_resources({qp.X: 1, qp.Y: 1}, work_wires={name: 2})
+        @qp.register_resources({qp.X: 1, qp.Y: 1}, work_wires={name: 3})
         def rule(wires):
-            with qp.allocate(1, state=state, restored=restored) as _wires:
+            with qp.allocate(2, state=state, restored=restored) as _wires:
                 qp.X(_wires[0])
             with qp.allocate(1, state=state, restored=restored) as _wires:
                 qp.Y(_wires[0])
