@@ -343,9 +343,8 @@ class QuantumMonteCarlo(Operation):
     resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
 
     @classmethod
-    def _primitive_bind_call(
-        cls, probs, func, target_wires, estimation_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires):
         # handle target wires and estimation wires
         return cls._primitive.bind(
             probs,
@@ -419,9 +418,8 @@ class QuantumMonteCarlo(Operation):
         return 3
 
     @staticmethod
-    def compute_decomposition(
-        A, R, Q, wires, estimation_wires, target_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(A, R, Q, wires, estimation_wires, target_wires):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -474,9 +472,8 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_res
 
 
 @register_resources(_quantum_monte_carlo_resources)
-def _quantum_monte_carlo_decomposition(
-    A, R, Q, wires, estimation_wires, target_wires
-):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _quantum_monte_carlo_decomposition(A, R, Q, wires, estimation_wires, target_wires):
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
     QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)

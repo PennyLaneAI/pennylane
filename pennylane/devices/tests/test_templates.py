@@ -775,7 +775,8 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         """Test the TwoLocalSwapNetwork template."""
         dev = device(3)
 
-        def acquaintances(index, wires, param=None):  # pylint:disable=unused-argument
+        # pylint: disable=unused-argument
+        def acquaintances(index, wires, param=None):
             return qp.CNOT(index)
 
         @qp.qnode(dev, shots=shots)

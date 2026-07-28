@@ -979,9 +979,8 @@ def _single_control_zyz(phi, theta, omega, wires):
     ops.cond(_not_zero(omega - phi), ops.RZ)((omega - phi) / 2, wires=wires[-1])
 
 
-def _multi_control_zyz(
-    phi, theta, omega, wires, work_wires, work_wire_type
-):  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A

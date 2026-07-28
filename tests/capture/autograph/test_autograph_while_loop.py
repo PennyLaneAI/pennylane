@@ -27,10 +27,8 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
-from pennylane.capture.autograph.transformer import (  # pylint: disable=ungrouped-imports
-    TRANSFORMER,
-    run_autograph,
-)
+# pylint: disable=ungrouped-imports
+from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from pennylane.exceptions import AutoGraphError
 from tests.capture.capture_utils import extract_all_primitives

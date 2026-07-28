@@ -290,15 +290,8 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights,
-        wires,
-        s_wires,
-        d_wires,
-        k,
-        init_state,
-        delta_sz=None,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable=arguments-differ, unused-argument
+    def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -382,7 +375,7 @@ def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
 
 
 @register_resources(_kupccgsd_resources)
-def _kupccgsd_decomposition(
+def _kupccgsd_decomposition(  # pylint: disable=too-many-arguments, unused-argument
     weights: list,
     wires: WiresLike,
     s_wires: list,
@@ -390,7 +383,7 @@ def _kupccgsd_decomposition(
     k: int,
     init_state: tuple[int],
     delta_sz: int = None,
-):  # pylint: disable=too-many-arguments, unused-argument
+):
     BasisEmbedding(init_state, wires=wires)
 
     @for_loop(k)

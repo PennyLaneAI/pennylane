@@ -93,9 +93,8 @@ class CompositeOp(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
-    def __init__(
-        self, *operands: Operator, _pauli_rep=None
-    ):  # pylint: disable=super-init-not-called
+    # pylint: disable=super-init-not-called
+    def __init__(self, *operands: Operator, _pauli_rep=None):
         self._name = self.__class__.__name__
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")

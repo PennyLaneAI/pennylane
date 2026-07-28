@@ -511,9 +511,10 @@ def test_load_except(monkeypatch, tmp_path):
     "attributes, dest_exists, called_partial",
     [(["x"], True, True), (["x"], False, True), (None, True, True), (None, False, False)],
 )
+# pylint: disable=too-many-arguments
 def test_download_dataset_full_or_partial(
     download_full, download_partial, attributes, dest_exists, force, called_partial
-):  # pylint: disable=too-many-arguments
+):
     """Test that _download_dataset calls ``_download_partial()`` if ``attributes`` is not None,
     or the dataset already exists at ``dest``, and that it only calls ``_download_full()`` if
     the dataset does not exist at ``dest`` and ``attributes`` is None.

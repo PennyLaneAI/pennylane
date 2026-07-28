@@ -917,10 +917,12 @@ class TestControlledDecomposition:
     def test_make_controlled_decomp2(self):
         """Tests the controlled decomp wrapper for ControlledOp2."""
 
-        def _condition_fn(phi, wires):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def _condition_fn(phi, wires):
             return len(wires) > 2
 
-        def _resource_fn(phi, wires):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def _resource_fn(phi, wires):
             return {OneWireDynOp: len(wires), qp.CNOT: len(wires) - 1}
 
         @qp.register_condition(_condition_fn)

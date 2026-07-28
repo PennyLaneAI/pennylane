@@ -980,7 +980,8 @@ def svd(tensor, like=None, **kwargs):
     return svd(tensor, **kwargs)
 
 
-def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _flat_autograd_norm(tensor, **kwargs):
     """Helper function for computing the norm of an autograd tensor when the order or axes are not
     specified. This is used for differentiability."""
     x = np.ravel(tensor)

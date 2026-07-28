@@ -161,7 +161,8 @@ class TestFolderMapView:
             ),
         ],
     )
-    def test_find(self, foldermap, kwds, expect):  # pylint: disable=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+    def test_find(self, foldermap, kwds, expect):
         """Test that the ``find()`` method returns the expected results
         for a range of arguments."""
 

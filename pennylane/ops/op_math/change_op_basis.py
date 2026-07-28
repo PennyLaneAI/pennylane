@@ -383,6 +383,7 @@ def _adjoint_change_op_basis_decomp(*_, base, **__):
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
 
 
+# pylint: disable=unused-argument, too-many-arguments
 def _controlled_change_op_basis_resources(
     *_,
     num_control_wires,
@@ -392,7 +393,7 @@ def _controlled_change_op_basis_resources(
     base_class,
     base_params,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[

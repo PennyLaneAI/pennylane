@@ -34,6 +34,7 @@ from pennylane.labs.estimator_beta.wires_manager.base_classes import (
 from pennylane.wires import Wires
 
 
+# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
 def _estimate_auxiliary_wires(
     list_actions: Iterable[GateCount | Allocate | Deallocate],
     scalar: int = 1,
@@ -41,7 +42,7 @@ def _estimate_auxiliary_wires(
     config: LabsResourceConfig | None = None,
     num_available_any_state_aux: int = 0,
     num_active_qubits: int = 0,
-):  # pylint: disable=too-many-arguments,too-many-branches,too-many-statements
+):
     """A recursive function that tracks auxiliary qubits via three quantities over the course of the workflow.
     It tracks the maximum number of qubits allocated, the maximum number of qubits deallocated and the total
     number of allocated qubits that weren't restored to the zero state by the end of the workflow.

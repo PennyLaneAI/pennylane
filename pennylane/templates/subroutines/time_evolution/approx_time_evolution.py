@@ -174,9 +174,8 @@ class ApproxTimeEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(*coeffs_and_time, wires, hamiltonian, n):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -251,9 +250,9 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
 
 
 @register_resources(_approx_time_evolution_resources)
-def _approx_time_evolution_decomposition(
+def _approx_time_evolution_decomposition(  # pylint: disable=unused-argument
     *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
-):  # pylint: disable=unused-argument
+):
     time = coeffs_and_time[-1]
 
     @for_loop(n)

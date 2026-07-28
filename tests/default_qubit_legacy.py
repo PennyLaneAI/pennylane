@@ -379,7 +379,8 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _apply_global_phase(self, state, operation: qp.GlobalPhase):  # pylint: disable=no-self-use
+    # pylint: disable=no-self-use
+    def _apply_global_phase(self, state, operation: qp.GlobalPhase):
         """Applies a :class:`~.GlobalPhase` operation to the state."""
         return qp.math.exp(-1j * operation.data[0]) * state
 
@@ -701,7 +702,8 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._real(res)
 
-    def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
+    # pylint: disable=no-self-use
+    def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
 
         Args:

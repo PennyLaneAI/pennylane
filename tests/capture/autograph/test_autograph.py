@@ -42,10 +42,8 @@ from jax import make_jaxpr
 
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import (  # pylint: disable=ungrouped-imports
-    cond_prim,
-    for_loop_prim,
-)
+# pylint: disable=ungrouped-imports
+from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
 from tests.capture.capture_utils import extract_all_primitives
 

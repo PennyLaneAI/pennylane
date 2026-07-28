@@ -292,6 +292,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         selector_ids, _ = qp.select_sos_rows(v_bits)
         return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": num_wires}
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         coefficients,
@@ -302,7 +303,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         qrom_work_wires,
         mcx_cache_wires,
         indices,
-    ):  # pylint: disable=too-many-arguments
+    ):
         super().__init__(coefficients, wires, indices)
         self.hyperparameters["enumeration_wires"] = Wires(enumeration_wires)
         self.hyperparameters["identification_wires"] = Wires(identification_wires)

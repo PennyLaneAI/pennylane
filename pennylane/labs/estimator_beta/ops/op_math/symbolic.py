@@ -30,12 +30,8 @@ from pennylane.wires import Wires
 # pylint: disable=arguments-differ
 
 
-def _generate_name(
-    qfunc,
-    include_params: Iterable[str] | None = None,
-    *args,
-    **kwargs,
-):  # pylint: disable=keyword-arg-before-vararg
+# pylint: disable=keyword-arg-before-vararg
+def _generate_name(qfunc, include_params: Iterable[str] | None = None, *args, **kwargs):
     r"""Make a string representing the name of a function from its signature.
 
     Args:
@@ -251,9 +247,10 @@ class ResourceQfunc(ResourceOperator):
 
     resource_keys = {"name", "num_wires", "cmpr_ops"}
 
+    # pylint: disable=super-init-not-called
     def __init__(
         self, name_, resource_decomp_fn_, *resource_args, num_wires_=None, **resource_kwargs
-    ):  # pylint: disable=super-init-not-called
+    ):
         self.name = name_
 
         with QueuingManager.stop_recording():

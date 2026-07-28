@@ -229,7 +229,7 @@ class TestSemiAdder:
         ],
     )
     @pytest.mark.parametrize("split_work_wires", [True, False])
-    def test_controlled_decomposition(
+    def test_controlled_decomposition(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         y_wires,
@@ -239,7 +239,7 @@ class TestSemiAdder:
         y_value,
         control_values,
         split_work_wires,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test correctness of C(SemiAdder) decomposition"""
 
         dev = qp.device("default.qubit")

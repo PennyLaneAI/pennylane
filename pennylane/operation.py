@@ -20,7 +20,9 @@ from pennylane.core.operator import *  # pylint: disable=wildcard-import, unused
 from pennylane.core.operator.base import (  # pylint: disable=unused-import # tach-ignore
     _UNSET_BATCH_SIZE,
 )
-from pennylane.exceptions import (  # pylint: disable=unused-import
+
+# pylint: disable=unused-import
+from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
     DiagGatesUndefinedError,

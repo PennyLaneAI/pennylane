@@ -541,6 +541,7 @@ def _(
     )
 
 
+# pylint: disable=too-many-arguments
 def _molecular_hamiltonian(
     symbols=None,
     coordinates=None,
@@ -559,7 +560,7 @@ def _molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e12,
-):  # pylint: disable=too-many-arguments
+):
     r"""Generate the qubit Hamiltonian of a molecule."""
 
     method = method.strip().lower()

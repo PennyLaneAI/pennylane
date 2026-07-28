@@ -65,9 +65,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z):
         """Test the correctness of the OutAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -141,9 +140,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)

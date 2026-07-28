@@ -520,9 +520,8 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
-    def test_decomposition_new(
-        self, hamiltonian, hamiltonian_index, order
-    ):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
         for rule in qp.list_decomps(qp.TrotterProduct):
@@ -1075,7 +1074,8 @@ class TestTrotterizedQfuncInitialization:
         """Test that an error is raised if the named kwargs for the qfunc match the
         names of the kwargs of the TrotterizedQfunc class."""
 
-        def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
+        # pylint: disable=unused-argument
+        def my_dummy_qfunc(time, wires, **kwargs):
             qp.RZ(time, wires[0])
 
         for special_key in ["n", "order", "qfunc", "reverse"]:

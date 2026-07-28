@@ -164,7 +164,7 @@ class MPS(Operation):
     """
 
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-differ
         cls,
         wires,
         n_block_wires,
@@ -173,7 +173,7 @@ class MPS(Operation):
         template_weights=None,
         offset=None,
         **kwargs,
-    ):  # pylint: disable=arguments-differ
+    ):
         return super()._primitive_bind_call(
             wires=wires,
             n_block_wires=n_block_wires,
@@ -230,9 +230,8 @@ class MPS(Operation):
         return 0 if self._weights is None else 1
 
     @staticmethod
-    def compute_decomposition(
-        weights=None, wires=None, ind_gates=None, block=None, **kwargs
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(weights=None, wires=None, ind_gates=None, block=None, **kwargs):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

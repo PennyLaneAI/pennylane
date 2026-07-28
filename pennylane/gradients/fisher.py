@@ -398,7 +398,8 @@ def quantum_fisher(
 
     res = adjoint_metric_tensor(tape, *args, **kwargs)
 
-    def processing_fn_multiply(r):  # pylint: disable=function-redefined
+    # pylint: disable=function-redefined
+    def processing_fn_multiply(r):
         r = math.stack(r)
         return 4 * r
 

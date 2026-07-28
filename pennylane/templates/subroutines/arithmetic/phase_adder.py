@@ -211,9 +211,8 @@ class PhaseAdder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        k, x_wires: WiresLike, mod, work_wire: WiresLike
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(k, x_wires: WiresLike, mod, work_wire: WiresLike):
         r"""Representation of the operator as a product of other operators.
 
         Args:

@@ -363,8 +363,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
-    def compute_eigvals(base, control_wires, **_):
+    def compute_eigvals(base, control_wires, **_):  # pylint: disable=arguments-differ
         base_eigvals = base.eigvals()
         num_target_wires = len(base.wires)
         num_control_wires = len(control_wires)
@@ -374,8 +373,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=invalid-overridden-method,arguments-differ
         return self.base.has_adjoint
 
     @override
@@ -404,20 +402,17 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=invalid-overridden-method,arguments-differ
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
-    def compute_diagonalizing_gates(base, **_):
+    def compute_diagonalizing_gates(base, **_):  # pylint: disable=arguments-differ
         return base.diagonalizing_gates()
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=invalid-overridden-method,arguments-differ
         return self.base.has_generator
 
     @override

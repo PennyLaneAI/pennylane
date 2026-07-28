@@ -43,9 +43,8 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
     """
 
-    def compute_grad(
-        self, objective_fn, args, kwargs, grad_fn=None
-    ):  # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed
+    def compute_grad(self, objective_fn, args, kwargs, grad_fn=None):
         r"""Compute the gradient of the objective function at the shifted point :math:`(x -
         m\times\text{accumulation})` and return it along with the objective function forward pass
         (if available).

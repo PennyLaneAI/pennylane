@@ -148,9 +148,8 @@ def calculate_xi_decomposition(hamiltonian):
     return dEs, mus, times, projs
 
 
-def construct_sgn_circuit(  # pylint: disable=too-many-arguments
-    hamiltonian, tape, mus, times, phis, controls
-):
+# pylint: disable=too-many-arguments
+def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
     """
     Takes a tape with state prep and ansatz and constructs the individual tapes
     approximating/estimating the individual terms of your decomposition

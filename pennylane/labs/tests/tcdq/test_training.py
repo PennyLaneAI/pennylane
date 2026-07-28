@@ -27,7 +27,8 @@ jaxopt = pytest.importorskip("jaxopt")
 def quadratic_problem():
     """Return a small convex optimization problem with a known optimum."""
 
-    def loss_fn(params, target, key=None):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def loss_fn(params, target, key=None):
         diff = params - target
         return jnp.sum(diff**2)
 
@@ -125,7 +126,8 @@ def test_loss_signature_variations():
     """The trainer should accept losses both with and without a ``key`` argument."""
     params = jnp.array([1.0])
 
-    def loss_with_key(params, key):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def loss_with_key(params, key):
         return jnp.sum(params**2)
 
     def loss_no_key(params):

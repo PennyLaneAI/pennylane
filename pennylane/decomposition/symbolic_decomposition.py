@@ -33,10 +33,12 @@ from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resour
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the adjoint of a decomposition rule."""
 
-    def _condition_fn(base_class, base_params):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def _condition_fn(base_class, base_params):
         return base_decomposition.is_applicable(**base_params)
 
-    def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def _resource_fn(base_class, base_params):
 
         # pylint: disable=import-outside-toplevel
         from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -114,7 +116,8 @@ def repeat_pow_base(*params, wires, base, z, **__):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _merge_powers_resource(base_class, base_params, z):
     return {
         pow_resource_rep(
             base_params["base_class"],
@@ -131,7 +134,8 @@ def merge_powers(*params, wires, base, z, **__):
     qp.pow(base.base, z * base.z)
 
 
-def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _flip_pow_adjoint_resource(base_class, base_params, z):
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     return {
@@ -152,7 +156,8 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
 def make_pow_decomp_with_period(period) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
-    def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def _condition_fn(base_class, base_params, z):
         return math.shape(z) == () and z % period != z
 
     def _resource_fn(base_class, base_params, z):
@@ -180,7 +185,8 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 pow_involutory = make_pow_decomp_with_period(2)
 
 
-def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _pow_rotation_resource(base_class, base_params, z):
     return {resource_rep(base_class, **base_params): 1}
 
 
@@ -331,6 +337,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
     return _impl
 
 
+# pylint: disable=too-many-arguments
 def _flip_control_adjoint_resource(
     base_class,
     base_params,
@@ -338,7 +345,7 @@ def _flip_control_adjoint_resource(
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-):  # pylint: disable=too-many-arguments
+):
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(

@@ -59,7 +59,8 @@ def _mt_cjac_tdot(mt, c):
     return math.tensordot(c, math.tensordot(mt, c, axes=[[-1], [0]]), axes=[[0], [0]])
 
 
-def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _contract_metric_tensor_with_cjac(mt, cjac, tape):
     """Execute the contraction of pre-computed classical Jacobian(s)
     and the metric tensor of a tape in order to obtain the hybrid
     metric tensor of a QNode.
@@ -113,7 +114,7 @@ def _expand_metric_tensor(
     device_wires=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=unused-argument,too-many-arguments
+    # pylint: disable=too-many-arguments
 
     if not allow_nonunitary and approx is None:
         [new_tape], postprocessing = decompose(
@@ -137,7 +138,8 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def metric_tensor(
     tape: QuantumScript,
     argnum=None,
     approx=None,
@@ -474,7 +476,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return mt_fn
 
 
-def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too-many-statements
+# pylint: disable=too-many-statements
+def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
     r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
@@ -698,9 +701,8 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(
-    tape, argnum, allow_nonunitary, aux_wire, device_wires
-):  # pylint: disable=too-many-statements
+# pylint: disable=too-many-statements
+def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.

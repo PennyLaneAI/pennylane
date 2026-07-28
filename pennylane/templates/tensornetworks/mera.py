@@ -177,9 +177,9 @@ class MERA(Operation):
         return 1
 
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-differ
         cls, wires, n_block_wires, block, n_params_block, template_weights=None
-    ):  # pylint: disable=arguments-differ
+    ):
         return super()._primitive_bind_call(
             wires=wires,
             n_block_wires=n_block_wires,

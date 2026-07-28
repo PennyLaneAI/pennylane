@@ -45,7 +45,8 @@ class TestGenerateName:
     def test_no_include_params(self, args, kwargs):
         """Test that the bare function name is returned when no params are included."""
 
-        def my_func(arg1, arg2, kwarg1="a"):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def my_func(arg1, arg2, kwarg1="a"):
             return
 
         assert _generate_name(my_func, None, *args, **kwargs) == "my_func"
@@ -62,7 +63,8 @@ class TestGenerateName:
     def test_include_params_positional_and_keyword(self, args, kwargs):
         """Test that selected positional and keyword params are formatted into the name."""
 
-        def my_func(arg1, arg2, kwarg1="a"):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def my_func(arg1, arg2, kwarg1="a"):
             return
 
         name = _generate_name(
@@ -76,7 +78,8 @@ class TestGenerateName:
     def test_kwargs_edge_case(self):
         """Test that the parameters and hyperparameters are properly bound"""
 
-        def f(a, *args, k="kd"):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def f(a, *args, k="kd"):
             return a, k
 
         name1 = _generate_name(f, ["k"], 1, 2)

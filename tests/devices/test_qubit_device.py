@@ -1227,7 +1227,8 @@ class TestNativeMidCircuitMeasurements:
         dev.operations.add("MidMeasureMP")
         pm_propagated = False
 
-        def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def new_apply(*args, **kwargs):
             nonlocal pm_propagated
             pm_propagated = kwargs.get("postselect_mode", -1) == postselect_mode
 

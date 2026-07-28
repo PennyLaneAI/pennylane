@@ -229,9 +229,8 @@ class QAOAEmbedding(Operation):
         return (1, 2)
 
     @staticmethod
-    def compute_decomposition(
-        features, weights, wires, local_field
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(features, weights, wires, local_field):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -266,7 +266,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(  # pylint: disable = too-many-positional-arguments
+def decompose(  # pylint: disable=too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[Operator], bool],
     stopping_condition_shots: Callable[[Operator], bool] | None = None,

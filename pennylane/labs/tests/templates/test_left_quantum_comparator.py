@@ -48,9 +48,8 @@ class TestLeftQuantumComparator:
             ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5),
         ],
     )
-    def test_operation_result(
-        self, comparator, x_wires, y_wires, target_wire, work_wires, x, y
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
+    def test_operation_result(self, comparator, x_wires, y_wires, target_wire, work_wires, x, y):
         """Test the correctness of the LeftComparator template output."""
 
         @qp.qjit
@@ -145,9 +144,8 @@ class TestLeftQuantumComparator:
             ),
         ],
     )
-    def test_wires_error(
-        self, target_wire, x_wires, y_wires, work_wires, comparator, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
+    def test_wires_error(self, target_wire, x_wires, y_wires, work_wires, comparator, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.labs.templates.LeftQuantumComparator(
@@ -164,9 +162,8 @@ class TestLeftQuantumComparator:
         ],
     )
     @pytest.mark.parametrize("seed", [42, 123])
-    def test_no_phase_errors(  # pylint: disable=too-many-arguments
-        self, x_wires, y_wires, target_wire, work_wires, comparator, seed
-    ):
+    # pylint: disable=too-many-arguments
+    def test_no_phase_errors(self, x_wires, y_wires, target_wire, work_wires, comparator, seed):
         """Verify the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""

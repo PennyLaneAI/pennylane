@@ -396,9 +396,8 @@ class MPSPrep(Operation):
         )
 
     @classmethod
-    def _primitive_bind_call(
-        cls, mps, wires, work_wires=None, right_canonicalize=False
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def _primitive_bind_call(cls, mps, wires, work_wires=None, right_canonicalize=False):
         return super()._primitive_bind_call(
             *mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )
@@ -412,9 +411,8 @@ class MPSPrep(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(
-        mps, wires, work_wires, right_canonicalize=False
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(mps, wires, work_wires, right_canonicalize=False):
         r"""Representation of the operator as a product of other operators.
         The decomposition follows Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
@@ -503,15 +501,13 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
         return type.__call__(MPSPrep, mps, wires=wires, **kwargs)
 
 
-def _mps_prep_decomposition_resources(
-    bond_dimensions, num_sites, num_work_wires
-):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _mps_prep_decomposition_resources(bond_dimensions, num_sites, num_work_wires):
     return {resource_rep(qp.QubitUnitary, num_wires=1 + num_work_wires): num_sites}
 
 
-def _work_wires_bond_dimension_condition(
-    bond_dimensions, num_sites, num_work_wires
-):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _work_wires_bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):
     max_bond_dimension = max(bond_dimensions[:-1])
 
     return (

@@ -33,10 +33,8 @@ from jax import numpy as jnp
 from jax.core import eval_jaxpr
 from malt.operators import py_builtins as ag_py_builtins
 
-from pennylane.capture.autograph.ag_primitives import (  # pylint: disable=ungrouped-imports
-    PEnumerate,
-    PRange,
-)
+# pylint: disable=ungrouped-imports
+from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from tests.capture.capture_utils import extract_all_primitives

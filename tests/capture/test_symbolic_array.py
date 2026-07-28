@@ -23,9 +23,8 @@ pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    symbolic_array_prim,
-)
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import symbolic_array_prim
 
 
 def test_error_without_capture():

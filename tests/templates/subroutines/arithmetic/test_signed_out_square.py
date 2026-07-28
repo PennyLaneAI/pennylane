@@ -252,7 +252,7 @@ class TestSignedOutSquare:
         ],
     )
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
-    def test_decomposition_new(
+    def test_decomposition_new(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         output_wires,
@@ -260,7 +260,7 @@ class TestSignedOutSquare:
         output_wires_zeroed,
         use_jit,
         seed,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system."""
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):

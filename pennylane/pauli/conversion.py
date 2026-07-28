@@ -289,7 +289,8 @@ def _fast_walsh_hadamard_transform(vec: np.ndarray) -> np.ndarray:
     return vec
 
 
-def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,too-many-branches
+# pylint: disable=too-many-statements,too-many-branches
+def _generalized_pauli_decompose_sparse(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[TensorLike, list]:
     r"""Sparse SciPy implementation of the generalized Pauli decomposition.

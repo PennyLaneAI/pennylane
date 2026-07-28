@@ -356,7 +356,8 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
 
-            def func(_, num=None):  # pylint: disable=unused-argument
+            # pylint: disable=unused-argument
+            def func(_, num=None):
                 res = math.convert_like(np.zeros([num_params]), dy)
                 multi = len(tape.measurements) > 1
                 if multi:

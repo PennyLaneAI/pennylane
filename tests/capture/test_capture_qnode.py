@@ -676,8 +676,7 @@ class TestQNodeVmapIntegration:
         dev = qp.device("default.qubit", wires=1)
 
         @qp.qnode(dev)
-        # pylint: disable=unused-argument
-        def circuit(x):
+        def circuit(x):  # pylint: disable=unused-argument
             return qp.sample()
 
         x = jnp.array([1.0, 2.0, 3.0])

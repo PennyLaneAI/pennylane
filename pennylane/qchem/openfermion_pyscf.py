@@ -653,6 +653,7 @@ def dipole_of(
     return dip
 
 
+# pylint: disable=too-many-arguments
 def meanfield(
     symbols,
     coordinates,
@@ -662,7 +663,7 @@ def meanfield(
     basis="sto-3g",
     package="pyscf",
     outpath=".",
-):  # pylint: disable=too-many-arguments
+):
     r"""Generates a file from which the mean field electronic structure
     of the molecule can be retrieved.
 

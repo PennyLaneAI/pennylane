@@ -323,9 +323,8 @@ class BasisRotation(Operator2):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        unitary_matrix, wires, check=False
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(unitary_matrix, wires, check=False):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

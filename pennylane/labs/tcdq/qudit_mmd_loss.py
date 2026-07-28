@@ -115,7 +115,8 @@ def _complete_marginal_probs(d: int, t: float) -> jnp.ndarray:
     return p / jnp.sum(p)
 
 
-def _sample_fourier_indices(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _sample_fourier_indices(
     key: ArrayLike,
     n_ops: int,
     n_qudits: int,
@@ -273,7 +274,8 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
         "graph_type",
     ],
 )
-def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _compute_qudit_loss_for_bandwidth(
     bandwidth: float,
     obs_key: jnp.ndarray,
     eval_key: jnp.ndarray,

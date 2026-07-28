@@ -859,9 +859,10 @@ class TestIntegration:
             (qp.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
         ],
     )
+    # pylint: disable=too-many-arguments
     def test_defer_meas_if_mcm_unsupported(
         self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""

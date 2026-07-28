@@ -1272,7 +1272,8 @@ class S(Operator2):
         )
 
 
-def _s_phaseshift_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _s_phaseshift_resources(wires: WiresLike = None):
     return {qp.PhaseShift: 1}
 
 
@@ -1415,7 +1416,8 @@ class T(Operator2):
         )
 
 
-def _t_phaseshift_resources(wires=None):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _t_phaseshift_resources(wires=None):
     return {qp.PhaseShift: 1}
 
 
@@ -1539,7 +1541,8 @@ class SX(Operator2):
         return super().pow(z_mod4)
 
 
-def _sx_to_rx_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
+# pylint: disable=unused-argument
+def _sx_to_rx_resources(wires: WiresLike = None):
     return {qp.RX: 1, qp.GlobalPhase: 1}
 
 

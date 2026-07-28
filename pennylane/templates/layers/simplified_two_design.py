@@ -145,9 +145,8 @@ class SimplifiedTwoDesign(Operation):
         return {"num_wires": len(self.wires), "n_layers": math.shape(self.parameters[1])[0]}
 
     @staticmethod
-    def compute_decomposition(
-        initial_layer_weights, weights, wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(initial_layer_weights, weights, wires):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

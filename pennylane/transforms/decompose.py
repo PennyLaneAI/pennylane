@@ -83,6 +83,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
         when program capture is enabled.
         """
 
+        # pylint: disable=too-many-arguments
         def __init__(
             self,
             *,
@@ -94,7 +95,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             fixed_decomps=None,
             alt_decomps=None,
             strict=True,
-        ):  # pylint: disable=too-many-arguments
+        ):
             self.max_expansion = max_expansion
             self._current_depth = 0
 
@@ -351,7 +352,7 @@ DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
 @transform
-def decompose(
+def decompose(  # pylint: disable=too-many-arguments
     tape,
     *,
     gate_set=None,
@@ -362,7 +363,7 @@ def decompose(
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
     strict: bool = True,
-):  # pylint: disable=too-many-arguments
+):
     """Decomposes a quantum circuit into a user-specified gate set.
 
     .. note::
@@ -798,7 +799,8 @@ def decompose(
     return (tape,), null_postprocessing
 
 
-def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
+# pylint: disable=too-many-arguments,too-many-branches
+def _operator_decomposition_gen(
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,
@@ -987,7 +989,8 @@ def _resolve_gate_set(
     return gate_set, _stopping_condition
 
 
-def _construct_and_solve_decomp_graph(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _construct_and_solve_decomp_graph(
     operations,
     target_gates,
     num_work_wires,

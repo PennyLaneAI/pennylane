@@ -363,7 +363,8 @@ class TestQROM:
         class SpyRule(DecompositionRule):
             """Wraps a DecompositionRule, tracking __call__ invocations."""
 
-            def __init__(self, original):  # pylint: disable=super-init-not-called
+            # pylint: disable=super-init-not-called
+            def __init__(self, original):
                 self._original = original
                 self.call_count = 0
 

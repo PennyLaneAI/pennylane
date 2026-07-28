@@ -255,9 +255,8 @@ class TestOutMultiplier:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
@@ -350,9 +349,10 @@ class TestOutMultiplier:
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
+    # pylint: disable=too-many-arguments
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system
         with output_wires_zeroed=True."""
         op = qp.OutMultiplier(
@@ -396,9 +396,10 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8, 2, 4, 7, 9], None, [11, 12, 13, 14, 15, 16, 17], [0, 1, 2]),
         ],
     )
+    # pylint: disable=too-many-arguments
     def test_decomposition_new_non_zero_output_wires(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system
         with output_wires_zeroed=False (default)."""
         op = qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)

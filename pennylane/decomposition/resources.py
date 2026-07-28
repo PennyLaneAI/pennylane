@@ -332,7 +332,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     return CompressedResourceOp(op_type, params)
 
 
-def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def controlled_resource_rep(
     base_class: type[Operator],
     base_params: dict,
     num_control_wires: int,
@@ -524,7 +525,8 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
     return "zeroed"
 
 
-def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def _controlled_qubit_unitary_rep(
     base_class,
     base_params,
     num_control_wires,
@@ -561,7 +563,8 @@ def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-ma
     )
 
 
-def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def _controlled_x_rep(
     base_class,
     base_params,
     num_control_wires,

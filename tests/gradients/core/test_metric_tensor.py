@@ -1035,7 +1035,8 @@ class TestFullMetricTensor:
         pytest.importorskip("catalyst")
         jax = pytest.importorskip("jax")
 
-        def ansatz(params, wires=None):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def ansatz(params, wires=None):
             qp.RX(params[0], 0)
             qp.RX(params[1], 1)
             qp.CNOT((0, 1))

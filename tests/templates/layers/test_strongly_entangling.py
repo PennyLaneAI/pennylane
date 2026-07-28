@@ -67,9 +67,8 @@ class TestDecomposition:
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
     @pytest.mark.capture
-    def test_decomposition_new_capture(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def test_decomposition_new_capture(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(
             size=(1, n_wires, 3),
@@ -82,9 +81,8 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
-    def test_decomposition_new(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def test_decomposition_new(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(
             size=(1, n_wires, 3),
@@ -251,9 +249,9 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, 5, None])
     @pytest.mark.parametrize("gate_set", [[qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.GlobalPhase], None])
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_strongly_entangling_state(
+    def test_strongly_entangling_state(  # pylint: disable=too-many-arguments
         self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
-    ):  # pylint:disable=too-many-arguments
+    ):
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
 
         import jax

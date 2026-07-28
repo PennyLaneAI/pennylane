@@ -69,7 +69,7 @@ class AmplitudeDamping(Channel):
         super().__init__(gamma, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(gamma):  # pylint: disable=arguments-differ
         """Kraus matrices representing the AmplitudeDamping channel.
 
         Args:
@@ -151,7 +151,7 @@ class GeneralizedAmplitudeDamping(Channel):
         super().__init__(gamma, p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(gamma, p):  # pylint: disable=arguments-differ
         """Kraus matrices representing the GeneralizedAmplitudeDamping channel.
 
         Args:
@@ -234,7 +234,7 @@ class PhaseDamping(Channel):
         super().__init__(gamma, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(gamma):  # pylint: disable=arguments-differ
         """Kraus matrices representing the PhaseDamping channel.
 
         Args:
@@ -321,7 +321,7 @@ class DepolarizingChannel(Channel):
         super().__init__(p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p):  # pylint: disable=arguments-differ
         r"""Kraus matrices representing the depolarizing channel.
 
         Args:
@@ -403,7 +403,7 @@ class BitFlip(Channel):
         super().__init__(p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p):  # pylint: disable=arguments-differ
         """Kraus matrices representing the BitFlip channel.
 
         Args:
@@ -487,7 +487,7 @@ class ResetError(Channel):
         super().__init__(p0, p1, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p_0, p_1):  # pylint: disable=arguments-differ
         """Kraus matrices representing the ResetError channel.
 
         Args:
@@ -634,7 +634,7 @@ class PauliError(Channel):
         return PauliError(hyperparameters_dict["operators"], data[0], wires=metadata[0])
 
     @staticmethod
-    def compute_kraus_matrices(p, operators):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p, operators):  # pylint: disable=arguments-differ
         """Kraus matrices representing the PauliError channel.
 
         Args:
@@ -719,7 +719,7 @@ class PhaseFlip(Channel):
         super().__init__(p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p):  # pylint: disable=arguments-differ
         """Kraus matrices representing the PhaseFlip channel.
 
         Args:
@@ -801,7 +801,7 @@ class QubitChannel(Channel):
         return super()._primitive_bind_call(*K_list, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(*kraus_matrices):  # pylint: disable=arguments-differ
         """Kraus matrices representing the QubitChannel channel.
 
         Args:
@@ -919,7 +919,7 @@ class ThermalRelaxationError(Channel):
         super().__init__(pe, t1, t2, tg, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(pe, t1, t2, tg):  # pylint: disable=arguments-differ
         """Kraus matrices representing the ThermalRelaxationError channel.
 
         Args:

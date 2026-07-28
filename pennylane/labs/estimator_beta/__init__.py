@@ -283,9 +283,8 @@ def _(op: qp.MottonenStatePreparation):
 
 @_map_to_resource_op.register
 def _(op: qp.SumOfSlatersPrep):
-    from pennylane.templates.state_preparations.sum_of_slaters import (  # pylint: disable=import-outside-toplevel
-        select_sos_rows,
-    )
+    # pylint: disable=import-outside-toplevel
+    from pennylane.templates.state_preparations.sum_of_slaters import select_sos_rows
 
     indices = op.hyperparameters["indices"]
     n = len(op.wires)

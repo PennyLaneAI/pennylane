@@ -551,6 +551,7 @@ def build_qudit_expval_func(
     else:
         defaults = None
 
+    # pylint: disable=too-many-arguments
     def qudit_expval_batched(
         gates_params: ArrayLike,
         phase_fn_params: ArrayLike | None = None,
@@ -560,9 +561,7 @@ def build_qudit_expval_func(
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
         return_mean_y_sq: bool = False,
-    ) -> (
-        tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
-    ):  # pylint: disable=too-many-arguments
+    ) -> tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         """Compute batched expectation values for the configured circuit.
 
         Args:

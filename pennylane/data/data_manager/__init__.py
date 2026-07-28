@@ -64,7 +64,8 @@ def _get_data_struct():
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 
 
-def _download_partial(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _download_partial(
     s3_url: str,
     dest: Path,
     attributes: Iterable[str] | None,
@@ -128,7 +129,8 @@ def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: progress
                 f.write(block)
 
 
-def _download_dataset(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _download_dataset(
     dataset_url: str,
     dest: Path,
     attributes: Iterable[str] | None,
@@ -159,7 +161,8 @@ def _download_dataset(  # pylint: disable=too-many-arguments
         _download_full(dataset_url, dest=dest, block_size=block_size, pbar_task=pbar_task)
 
 
-def _download_datasets(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _download_datasets(
     data_name: str,
     folder_path: Path,
     dataset_urls: list[str],
@@ -235,7 +238,8 @@ def _validate_attributes(data_name: str, attributes: Iterable[str]):
     raise ValueError(f"{values_err}. Valid attributes are: {valid_attributes}")
 
 
-def load(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def load(
     data_name: str,
     attributes: Iterable[str] | None = None,
     folder_path: Path = Path("./datasets/"),

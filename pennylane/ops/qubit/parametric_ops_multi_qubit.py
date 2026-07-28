@@ -178,9 +178,8 @@ class MultiRZ(Operation):
         return math.exp(math.outer(-0.5j * theta, eigs))
 
     @staticmethod
-    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
-        theta: TensorLike, wires: WiresLike, **kwargs
-    ) -> list[Operator]:
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(theta: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -960,9 +959,8 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values,
     }
 
 
-def _ctrl_phase_shift(
-    phi, target_wire, subspace, control_wires, control_values, work_wires
-):  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values, work_wires):
     r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
     target qubit/wire.
 

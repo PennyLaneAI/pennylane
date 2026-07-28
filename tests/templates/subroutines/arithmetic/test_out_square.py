@@ -210,7 +210,7 @@ class TestOutSquare:
         ],
     )
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
-    def test_decomposition_new(
+    def test_decomposition_new(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         output_wires,
@@ -219,7 +219,7 @@ class TestOutSquare:
         applicable_rules,
         use_jit,
         seed,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system."""
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for j, rule in enumerate(qp.list_decomps(OutSquare)):

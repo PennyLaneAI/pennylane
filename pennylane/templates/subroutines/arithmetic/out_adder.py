@@ -246,9 +246,8 @@ class OutAdder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        x_wires, y_wires, output_wires, mod, work_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires):
         r"""Representation of the operator as a product of other operators.
 
         Args:

@@ -185,9 +185,8 @@ class LeftClassicalComparator(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        x_wires, L, target_wire, work_wires, comparator
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(x_wires, L, target_wire, work_wires, comparator):
         r"""Representation of the operator as a product of other operators.
 
         Args:

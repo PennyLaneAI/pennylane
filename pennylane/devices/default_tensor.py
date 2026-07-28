@@ -785,7 +785,8 @@ class DefaultTensor(Device):
         obs = measurementprocess.obs
         return expval_core(obs, self)
 
-    def state(self, measurementprocess: MeasurementProcess):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def state(self, measurementprocess: MeasurementProcess):
         """Returns the state vector."""
         return self._quimb_circuit.psi.to_dense().ravel()
 

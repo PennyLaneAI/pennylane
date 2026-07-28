@@ -266,9 +266,8 @@ class Pow(ScalarSymbolicOp):
         return self.base.has_sparse_matrix and isinstance(self.z, int)
 
     @staticmethod
-    def compute_sparse_matrix(
-        *params, base=None, z=0, format="csr"
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_sparse_matrix(*params, base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
             return (base_matrix**z).asformat(format)

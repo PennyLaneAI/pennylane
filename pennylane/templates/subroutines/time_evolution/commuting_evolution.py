@@ -173,9 +173,8 @@ class CommutingEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        time, *_, wires, hamiltonian, **__
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(time, *_, wires, hamiltonian, **__):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -212,9 +211,9 @@ def _commuting_evolution_resources(words: tuple[PauliWord]):
 
 
 @register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(
+def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
     time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
-):  # pylint: disable=unused-argument
+):
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 

@@ -342,7 +342,8 @@ def flip_pow_adjoint(base, z, **__):
 def make_pow_decomp_with_period(period) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
-    def _condition_fn(base, z):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def _condition_fn(base, z):
         return math.shape(z) == () and z % period != z
 
     def _resource_fn(base, z):

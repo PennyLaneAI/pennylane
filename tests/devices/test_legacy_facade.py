@@ -139,10 +139,12 @@ def test_shot_distribution(execution_config):
     class DummyJacobianDevice(DummyDevice):
         _capabilities = {"provides_jacobian": True}
 
-        def new_gradient(self, circuit):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def new_gradient(self, circuit):
             return 0
 
-        def jacobian(self, circuit):  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        def jacobian(self, circuit):
             return 1
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())

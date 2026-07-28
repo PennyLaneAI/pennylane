@@ -604,9 +604,8 @@ def _bits(value: int, length: int) -> list[int]:
     return [(value >> (length - 1 - i)) & 1 for i in range(length)]
 
 
-def _tree_leaf_ops_for_bit_block_ctrl(
-    data, j, block_index, tree_wire_manager, n_tree, signal
-):  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _tree_leaf_ops_for_bit_block_ctrl(data, j, block_index, tree_wire_manager, n_tree, signal):
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
     # For each leaf index p of the tree (n_tree bits)
@@ -685,9 +684,8 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
             ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
 
-def _block_tree_query_ops(
-    data, block_index, tree_wire_manager, n_tree, k, signal
-):  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def _block_tree_query_ops(data, block_index, tree_wire_manager, n_tree, k, signal):
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
     # 1) address loading for the tree (controlled on signal)

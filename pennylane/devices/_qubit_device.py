@@ -573,9 +573,8 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def statistics(
-        self, circuit: QuantumScript, shot_range=None, bin_size=None
-    ):  # pylint: disable=too-many-statements
+    # pylint: disable=too-many-statements
+    def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and

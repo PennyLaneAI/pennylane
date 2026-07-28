@@ -281,9 +281,8 @@ class UCCSD(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, s_wires, d_wires, init_state, n_repeats
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def compute_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -132,7 +132,8 @@ class CustomizedSparseOp(qp.operation.Operator):
     def has_matrix(self) -> bool:
         return False
 
-    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument, arguments-differ
+    # pylint: disable=unused-argument, arguments-differ
+    def compute_sparse_matrix(self, U):
         return sp.sparse.eye(2 ** len(self.wires))
 
 

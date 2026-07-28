@@ -522,12 +522,12 @@ def _up_to_last_layer(
 
 
 @register_resources(_hilbert_schmidt_resources)
-def _hilbert_schmidt_decomposition(
+def _hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):  # pylint: disable=unused-argument
+):
     _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
 
     @for_loop(min(len(first_range), len(second_range)))
@@ -544,12 +544,12 @@ def _hilbert_schmidt_decomposition(
 
 
 @register_resources(_local_hilbert_schmidt_resources)
-def _local_hilbert_schmidt_decomposition(
+def _local_hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):  # pylint: disable=unused-argument
+):
     n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
 
     CNOT(wires=[wires[0], wires[n_wires // 2]])
