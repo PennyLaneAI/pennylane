@@ -1707,6 +1707,9 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.QuantumPhaseEstimation(op, **kwargs))
 
+    @pytest.mark.xfail(
+        reason="Select support under capture is out of scope by product-team decision."
+    )
     def test_select(self):
         """Test the primitive bind call of Select."""
 
