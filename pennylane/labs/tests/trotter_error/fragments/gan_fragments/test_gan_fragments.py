@@ -21,7 +21,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import Fermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
     FuncType,
-    GanCoeff,
+    GanBosonic,
     GanFragment,
     GanMonomial,
 )
@@ -91,57 +91,57 @@ def _mono(mode=0):
 
 def test_gancoeff_drops_negligible_terms():
     """Test that gancoeff drops negligible terms"""
-    c = GanCoeff({_mono(0): 1e-12})
+    c = GanBosonic({_mono(0): 1e-12})
     assert c.is_zero()
-    c2 = GanCoeff({_mono(0): 1.0})
+    c2 = GanBosonic({_mono(0): 1.0})
     assert not c2.is_zero()
 
 
 def test_gancoeff_identity_is_empty_and_zero():
     """Test the gancoeff identity operator"""
-    ident = GanCoeff.identity()
+    ident = GanBosonic.identity()
     assert ident.monomials == {}
     assert ident.is_zero()
 
 
 def test_gancoeff_add_combines_like_monomials():
     """Test that like monomials are combined"""
-    c = GanCoeff({_mono(0): 1.0}) + GanCoeff({_mono(0): 2.0, _mono(1): 1.0})
-    assert c == GanCoeff({_mono(0): 3.0, _mono(1): 1.0})
+    c = GanBosonic({_mono(0): 1.0}) + GanBosonic({_mono(0): 2.0, _mono(1): 1.0})
+    assert c == GanBosonic({_mono(0): 3.0, _mono(1): 1.0})
 
 
 def test_gancoeff_sub():
     """Test gancoeff subtraction"""
-    c = GanCoeff({_mono(0): 3.0}) - GanCoeff({_mono(0): 1.0})
-    assert c == GanCoeff({_mono(0): 2.0})
+    c = GanBosonic({_mono(0): 3.0}) - GanBosonic({_mono(0): 1.0})
+    assert c == GanBosonic({_mono(0): 2.0})
 
 
 def test_gancoeff_scalar_mul_both_sides():
     """Test gancoeff scalar multiplication"""
-    c = GanCoeff({_mono(0): 2.0})
-    assert (3.0 * c) == GanCoeff({_mono(0): 6.0})
-    assert (c * 3.0) == GanCoeff({_mono(0): 6.0})
+    c = GanBosonic({_mono(0): 2.0})
+    assert (3.0 * c) == GanBosonic({_mono(0): 6.0})
+    assert (c * 3.0) == GanBosonic({_mono(0): 6.0})
 
 
 def test_gancoeff_matmul_multiplies_monomials_and_coeffs():
     """Test gancoeff matmul"""
-    c = GanCoeff({_mono(0): 2.0}) @ GanCoeff({_mono(1): 3.0})
+    c = GanBosonic({_mono(0): 2.0}) @ GanBosonic({_mono(1): 3.0})
     expected_mono = (_mono(0) @ _mono(1)).normal_order()
-    assert c == GanCoeff({expected_mono: 6.0})
+    assert c == GanBosonic({expected_mono: 6.0})
 
 
 def test_gancoeff_equality_uses_isclose():
     """Test that isclose is used"""
-    c1 = GanCoeff({_mono(0): 1.0})
-    c2 = GanCoeff({_mono(0): 1.0 + 1e-12})
+    c1 = GanBosonic({_mono(0): 1.0})
+    c2 = GanBosonic({_mono(0): 1.0 + 1e-12})
     assert c1 == c2
-    assert GanCoeff({_mono(0): 1.0}) != GanCoeff({_mono(1): 1.0})
+    assert GanBosonic({_mono(0): 1.0}) != GanBosonic({_mono(1): 1.0})
 
 
 def test_gancoeff_norm():
     """Test the gancoeff norm method"""
     g = 8
-    c = GanCoeff({_mono(0): 2.0})
+    c = GanBosonic({_mono(0): 2.0})
     assert c.norm(g) == pytest.approx(2.0 * _mono(0).norm(g))
 
 
@@ -154,50 +154,50 @@ def test_fragment_prunes_zero_fermi_and_zero_coeff():
     """ "Test GanFragment drops negligible terms"""
     c0 = FermiOp.creation_mol(0)
     # zero fermionic word (c_0 c_0) -> dropped
-    frag = GanFragment({GanFermi([c0, c0]): GanCoeff({_mono(0): 1.0})})
+    frag = GanFragment({GanFermi([c0, c0]): GanBosonic({_mono(0): 1.0})})
     assert frag.fragment == {}
     # zero coefficient -> dropped
-    frag2 = GanFragment({_num_op(0): GanCoeff.identity()})
+    frag2 = GanFragment({_num_op(0): GanBosonic.identity()})
     assert frag2.fragment == {}
 
 
 def test_fragment_add_combines_terms():
     """Test GanFragment combines like terms"""
-    f1 = GanFragment({_num_op(0): GanCoeff({_mono(0): 1.0})})
-    f2 = GanFragment({_num_op(0): GanCoeff({_mono(0): 2.0})})
+    f1 = GanFragment({_num_op(0): GanBosonic({_mono(0): 1.0})})
+    f2 = GanFragment({_num_op(0): GanBosonic({_mono(0): 2.0})})
     out = f1 + f2
-    assert out == GanFragment({_num_op(0): GanCoeff({_mono(0): 3.0})})
+    assert out == GanFragment({_num_op(0): GanBosonic({_mono(0): 3.0})})
 
 
 def test_fragment_sub():
     """Test GanFragment subtraction"""
-    f1 = GanFragment({_num_op(0): GanCoeff({_mono(0): 3.0})})
-    f2 = GanFragment({_num_op(0): GanCoeff({_mono(0): 1.0})})
-    assert (f1 - f2) == GanFragment({_num_op(0): GanCoeff({_mono(0): 2.0})})
+    f1 = GanFragment({_num_op(0): GanBosonic({_mono(0): 3.0})})
+    f2 = GanFragment({_num_op(0): GanBosonic({_mono(0): 1.0})})
+    assert (f1 - f2) == GanFragment({_num_op(0): GanBosonic({_mono(0): 2.0})})
 
 
 def test_fragment_scalar_mul_both_sides():
     """Test GanFragment scalar multiplication"""
-    f = GanFragment({_num_op(0): GanCoeff({_mono(0): 2.0})})
-    expected = GanFragment({_num_op(0): GanCoeff({_mono(0): 6.0})})
+    f = GanFragment({_num_op(0): GanBosonic({_mono(0): 2.0})})
+    expected = GanFragment({_num_op(0): GanBosonic({_mono(0): 6.0})})
     assert (f * 3) == expected
     assert (3 * f) == expected
 
 
 def test_fragment_equality():
     """Test GanFragment equality"""
-    f1 = GanFragment({_num_op(0): GanCoeff({_mono(0): 1.0})})
-    f2 = GanFragment({_num_op(0): GanCoeff({_mono(0): 1.0})})
+    f1 = GanFragment({_num_op(0): GanBosonic({_mono(0): 1.0})})
+    f2 = GanFragment({_num_op(0): GanBosonic({_mono(0): 1.0})})
     assert f1 == f2
-    f3 = GanFragment({_num_op(1): GanCoeff({_mono(0): 1.0})})
+    f3 = GanFragment({_num_op(1): GanBosonic({_mono(0): 1.0})})
     assert f1 != f3
 
 
 def test_fragment_matmul_number_operator_is_idempotent():
     """Test number operator is idempotent"""
-    f = GanFragment({_num_op(0): GanCoeff({GanMonomial.identity(): 1.0})})
+    f = GanFragment({_num_op(0): GanBosonic({GanMonomial.identity(): 1.0})})
     prod = f @ f
-    expected = GanFragment({_num_op(0): GanCoeff({GanMonomial.identity(): 1.0})})
+    expected = GanFragment({_num_op(0): GanBosonic({GanMonomial.identity(): 1.0})})
 
     print(prod)
     print(expected)
@@ -210,11 +210,11 @@ def test_fragment_norm_sums_coeff_norms():
     g = 8
     f = GanFragment(
         {
-            _num_op(0): GanCoeff({_mono(0): 2.0}),
-            _num_op(1): GanCoeff({_mono(1): 3.0}),
+            _num_op(0): GanBosonic({_mono(0): 2.0}),
+            _num_op(1): GanBosonic({_mono(1): 3.0}),
         }
     )
-    expected = GanCoeff({_mono(0): 2.0}).norm(g) + GanCoeff({_mono(1): 3.0}).norm(g)
+    expected = GanBosonic({_mono(0): 2.0}).norm(g) + GanBosonic({_mono(1): 3.0}).norm(g)
     assert f.norm(g) == pytest.approx(expected)
 
 

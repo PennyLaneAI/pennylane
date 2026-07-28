@@ -13,23 +13,16 @@
 # limitations under the License.
 r"""Operator classes for the GAN Hamiltonian and its fragments.
 
-This module defines the data structures that represent a GAN Hamiltonian (or a
-fragment of one) so it can be consumed by the Trotter-error machinery. The GAN
-Hamiltonian mixes a fermionic (electronic) part with bosonic (nuclear)
-vibrational degrees of freedom, so an operator is stored as a mapping from a
-fermionic string to a coefficient that is itself a polynomial in the nuclear
-position/momentum functions.
-
 The class hierarchy is built bottom-up:
 
 * :class:`FuncSymbol` --- a single nuclear function (a power of a position or
   momentum on one mode, or the identity).
 * :class:`GanMonomial` --- an ordered product of :class:`FuncSymbol` factors,
   with a canonical normal ordering.
-* :class:`GanCoeff` --- a linear combination of monomials; this plays the role
+* :class:`GanBosonic` --- a linear combination of monomials; this plays the role
   of a (operator-valued) scalar multiplying a fermionic string.
 * :class:`GanFragment` --- a :class:`~.Fragment` represented as a mapping from
-  :class:`~.GanFermi` to :class:`GanCoeff`, i.e. the full GAN operator.
+  :class:`~.GanFermi` to :class:`GanBosonic`, i.e. the full GAN operator.
 
 Each class exposes a :meth:`norm` method returning an upper bound on the
 spectral norm (used for Trotter-error bounds), and the arithmetic dunder methods
@@ -240,10 +233,10 @@ class GanMonomial:
         return math.prod(abs(func.norm(gridpoints)) for func in self.funcs)
 
 
-class GanCoeff:
+class GanBosonic:
     """A linear combination of :class:`GanMonomial` objects.
 
-    A ``GanCoeff`` acts as an (operator-valued) coefficient multiplying a
+    A ``GanBosonic`` acts as an (operator-valued) coefficient multiplying a
     fermionic string in a :class:`GanFragment`: it is a polynomial in the
     nuclear position/momentum functions. Monomials with coefficient below a
     small tolerance are dropped at construction so the representation stays
@@ -259,28 +252,28 @@ class GanCoeff:
             monomial: coeff for monomial, coeff in monomials.items() if abs(coeff) > 1e-08
         }
 
-    def __add__(self, other: GanCoeff):
+    def __add__(self, other: GanBosonic):
         """Add two coefficients by summing shared monomials.
 
         Args:
-            other (GanCoeff): the coefficient to add.
+            other (GanBosonic): the coefficient to add.
 
         Returns:
-            GanCoeff: the summed coefficient.
+            GanBosonic: the summed coefficient.
         """
         combined = Counter(self.monomials)
         combined.update(other.monomials)
 
-        return GanCoeff(combined)
+        return GanBosonic(combined)
 
-    def __sub__(self, other: GanCoeff):
+    def __sub__(self, other: GanBosonic):
         """Subtract ``other`` from this coefficient.
 
         Args:
-            other (GanCoeff): the coefficient to subtract.
+            other (GanBosonic): the coefficient to subtract.
 
         Returns:
-            GanCoeff: the difference.
+            GanBosonic: the difference.
         """
         return self + (-1) * other
 
@@ -291,9 +284,9 @@ class GanCoeff:
             scalar (float): the scalar multiplier.
 
         Returns:
-            GanCoeff: the scaled coefficient.
+            GanBosonic: the scaled coefficient.
         """
-        return GanCoeff(
+        return GanBosonic(
             {
                 key: scalar * value
                 for key, value in self.monomials.items()
@@ -303,17 +296,17 @@ class GanCoeff:
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other: GanCoeff):
+    def __matmul__(self, other: GanBosonic):
         """Multiply two coefficients (polynomial product).
 
         Distributes over all monomial pairs, multiplying the monomials (with
         normal ordering, via a cached product) and their scalar coefficients.
 
         Args:
-            other (GanCoeff): the right operand.
+            other (GanBosonic): the right operand.
 
         Returns:
-            GanCoeff: the product coefficient.
+            GanBosonic: the product coefficient.
         """
         d = {}
 
@@ -323,7 +316,7 @@ class GanCoeff:
                 coeff = l_value * r_value
                 d[new_key] = d.get(new_key, 0) + coeff
 
-        return GanCoeff(d)
+        return GanBosonic(d)
 
     @staticmethod
     def identity():
@@ -332,9 +325,9 @@ class GanCoeff:
         Used as the ``defaultdict`` factory when accumulating fragment terms.
 
         Returns:
-            GanCoeff: a coefficient with no monomials.
+            GanBosonic: a coefficient with no monomials.
         """
-        return GanCoeff({})
+        return GanBosonic({})
 
     def is_zero(self):
         """Whether the coefficient has no surviving monomials.
@@ -377,16 +370,16 @@ class GanFragment(Fragment):
 
     Implements the :class:`~.Fragment` interface required by the Trotter-error
     module. The operator is stored as a dictionary from :class:`~.GanFermi` to
-    :class:`GanCoeff`, i.e. each fermionic string carries a nuclear-function
+    :class:`GanBosonic`, i.e. each fermionic string carries a nuclear-function
     polynomial coefficient. Terms whose fermionic string vanishes or whose
     coefficient is zero are dropped at construction.
 
     Args:
-        fragment (dict[GanFermi, GanCoeff]): the fermionic-string-to-coefficient
+        fragment (dict[GanFermi, GanBosonic]): the fermionic-string-to-coefficient
             mapping defining the operator.
     """
 
-    def __init__(self, fragment: dict[GanFermi, GanCoeff]):
+    def __init__(self, fragment: dict[GanFermi, GanBosonic]):
         self.fragment = {
             fermi: coeff
             for fermi, coeff in fragment.items()
@@ -402,7 +395,7 @@ class GanFragment(Fragment):
         Returns:
             GanFragment: the summed fragment.
         """
-        d = defaultdict(lambda: GanCoeff({}))
+        d = defaultdict(lambda: GanBosonic({}))
 
         for key, value in self.fragment.items():
             d[key] += value
@@ -455,7 +448,7 @@ class GanFragment(Fragment):
         Returns:
             GanFragment: the product fragment.
         """
-        d = defaultdict(GanCoeff.identity)
+        d = defaultdict(GanBosonic.identity)
 
         for l_key, l_value in self.fragment.items():
             for r_key, r_value in other.fragment.items():

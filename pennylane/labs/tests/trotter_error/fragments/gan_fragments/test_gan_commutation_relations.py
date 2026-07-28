@@ -30,7 +30,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme i
 )
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
-    GanCoeff,
+    GanBosonic,
     GanFragment,
     GanMonomial,
 )
@@ -92,10 +92,10 @@ def fixture_config():
 @pytest.fixture(name="feps")
 def fixture_feps(config):
     """The energy (epsilon) fragment F_eps = sum_i eps_i c_i^dag c_i (metal)."""
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for i, energy in enumerate(config.energies):
         monomial = GanMonomial.identity()
-        coeff = GanCoeff({monomial: energy})
+        coeff = GanBosonic({monomial: energy})
         fermi = GanFermi([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
         terms[fermi] += coeff
     return GanFragment(terms)
@@ -133,7 +133,7 @@ def _met_edges(s: int, config: GanConfig):
 
 def _expected_mol_mol(s, k, config):
     """Returns the expected evaluation of [F_s, F_k] where s and k are in the mol space"""
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for e1 in _mol_edges(s, config):
         for e2 in _mol_edges(k, config):
             e1 = set(e1)
@@ -166,7 +166,7 @@ def _expected_mol_mol(s, k, config):
 
 def _expected_met_met(s, k, config):
     """Returns the expected evluation of [F_s, F_k] where s and k are in the met space"""
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for e1 in _met_edges(s, config):
         for e2 in _met_edges(k, config):
 
@@ -219,7 +219,7 @@ def _expected_met_met(s, k, config):
 
 def _expected_mol_met(s, k, config):
     """Returns the expected evaluation of [F_s, F_k] where s is in the mol space and k is in the met space"""
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for e1 in _mol_edges(s, config):
         for e2 in _met_edges(k, config):
 
@@ -269,7 +269,7 @@ def _expected_mol_met(s, k, config):
 
 def _expected_feps_met(s, config):
     """Returns the expected evaluation of [F_eps, F_s] where s is in the met space"""
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for i, a in _met_edges(s, config):
 
         met_index = i[1] if i[0] == "met" else a[1]
@@ -295,7 +295,7 @@ def _expected_f0_mol(s, config):
     comm = CommutatorNode(SymbolNode("F0"), SymbolNode("Fs"))
     comm = comm.eval({"F0": F0, "Fs": Fs})
 
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for r in range(config.n_mol):
         for i, j in _mol_edges(s, config):
 
@@ -384,7 +384,7 @@ def _expected_f0_mol(s, config):
 def _expected_f0_met(s, config):
     """Returns the expected evaluation of [F_0, F_s] where s is in the met space"""
 
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for r in range(config.n_mol):
         for i, a in _met_edges(s, config):
 

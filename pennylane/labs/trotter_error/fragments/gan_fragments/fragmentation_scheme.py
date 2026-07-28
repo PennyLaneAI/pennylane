@@ -25,7 +25,7 @@ from numpy.typing import ArrayLike
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
-    GanCoeff,
+    GanBosonic,
     GanFragment,
     GanMonomial,
 )
@@ -211,7 +211,7 @@ def _diagonal(config: GanConfig) -> GanFragment:
     Returns:
         GanFragment: the diagonal fragment.
     """
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
 
     for i in range(config.n_mol):
         gan_coeff = _molecular_coupling(i, i, config)
@@ -249,18 +249,18 @@ def _kinetic(config: GanConfig) -> GanFragment:
     Returns:
         GanFragment: the kinetic fragment.
     """
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
 
     for i, mass in enumerate(config.masses):
         func = FuncSymbol.momentum(i)
         monomial = GanMonomial([func])
-        coeff = GanCoeff({monomial: 1 / (2 * mass)})
+        coeff = GanBosonic({monomial: 1 / (2 * mass)})
         fermi = GanFermi.identity()
         terms[fermi] += coeff
 
     for i, energy in enumerate(config.energies):
         monomial = GanMonomial.identity()
-        coeff = GanCoeff({monomial: energy})
+        coeff = GanBosonic({monomial: energy})
         fermi = GanFermi([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
         terms[fermi] += coeff
 
@@ -297,7 +297,7 @@ def _mol_matching(s: int, config: GanConfig) -> GanFragment:
     if t == 0:
         edges.add((s, config.n_mol - 1))
 
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for i, j in edges:
         gan_coeff = _molecular_coupling(i, j, config)
         fermi1 = GanFermi([FermiOp.creation_mol(i), FermiOp.annihilation_mol(j)])
@@ -331,7 +331,7 @@ def _met_matching(s: int, config: GanConfig):
         v = (i + s) % config.n_met
         edges.add((u, v))
 
-    terms = defaultdict(GanCoeff.identity)
+    terms = defaultdict(GanBosonic.identity)
     for i, j in edges:
         gan_coeff = _molecule_metal_transfer(i, j, config)
         fermi1 = GanFermi([FermiOp.creation_mol(i), FermiOp.annihilation_met(j)])
@@ -342,7 +342,7 @@ def _met_matching(s: int, config: GanConfig):
     return GanFragment(terms)
 
 
-def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanCoeff:
+def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanBosonic:
     r"""Return the molecular coupling coefficient :math:`U_{ij}` as a polynomial.
 
     Builds the nuclear-function polynomial multiplying the molecular term on
@@ -357,7 +357,7 @@ def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanCoeff:
         config (GanConfig): the Hamiltonian configuration.
 
     Returns:
-        GanCoeff: the coupling coefficient as a linear combination of monomials.
+        GanBosonic: the coupling coefficient as a linear combination of monomials.
     """
     monomials = defaultdict(float)
 
@@ -378,10 +378,10 @@ def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanCoeff:
                 coeff = tensor[i, j, mode]
                 monomials[monomial] += coeff
 
-    return GanCoeff(monomials)
+    return GanBosonic(monomials)
 
 
-def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanCoeff:
+def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanBosonic:
     r"""Return the electron repulsion coefficient :math:`V_{ij}` as a polynomial.
 
     Builds the nuclear-function polynomial multiplying the repulsion term on
@@ -395,7 +395,7 @@ def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanCoeff:
         config (GanConfig): the Hamiltonian configuration.
 
     Returns:
-        GanCoeff: the repulsion coefficient as a linear combination of monomials.
+        GanBosonic: the repulsion coefficient as a linear combination of monomials.
     """
     monomials = defaultdict(float)
 
@@ -416,10 +416,10 @@ def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanCoeff:
                 coeff = tensor[i, j, mode]
                 monomials[monomial] += coeff
 
-    return GanCoeff(monomials)
+    return GanBosonic(monomials)
 
 
-def _molecule_metal_transfer(i: int, j: int, config: GanConfig) -> GanCoeff:
+def _molecule_metal_transfer(i: int, j: int, config: GanConfig) -> GanBosonic:
     r"""Return the molecule--metal transfer coefficient :math:`W_{ij}` as a polynomial.
 
     Builds the nuclear-function polynomial multiplying the hybridization term
@@ -434,7 +434,7 @@ def _molecule_metal_transfer(i: int, j: int, config: GanConfig) -> GanCoeff:
         config (GanConfig): the Hamiltonian configuration.
 
     Returns:
-        GanCoeff: the transfer coefficient as a linear combination of monomials.
+        GanBosonic: the transfer coefficient as a linear combination of monomials.
     """
     trans_mode = config.n_modes - 1
     monomials = defaultdict(float)
@@ -447,10 +447,10 @@ def _molecule_metal_transfer(i: int, j: int, config: GanConfig) -> GanCoeff:
         monomial = GanMonomial([FuncSymbol.position(trans_mode, order)])
         monomials[monomial] += tensor[i, j]
 
-    return GanCoeff(monomials)
+    return GanBosonic(monomials)
 
 
-def _nuclear_reference(config: GanConfig) -> GanCoeff:
+def _nuclear_reference(config: GanConfig) -> GanBosonic:
     r"""Return the nuclear reference energy :math:`U_0` as a polynomial.
 
     Builds the mode-only nuclear-function polynomial (no fermionic dependence)
@@ -461,7 +461,7 @@ def _nuclear_reference(config: GanConfig) -> GanCoeff:
         config (GanConfig): the Hamiltonian configuration.
 
     Returns:
-        GanCoeff: the nuclear reference coefficient as a linear combination of
+        GanBosonic: the nuclear reference coefficient as a linear combination of
         monomials.
     """
     monomials = defaultdict(float)
@@ -482,7 +482,7 @@ def _nuclear_reference(config: GanConfig) -> GanCoeff:
                 coeff = tensor[mode]
                 monomials[monomial] += coeff
 
-    return GanCoeff(monomials)
+    return GanBosonic(monomials)
 
 
 def _validate_fragments(config: GanConfig):

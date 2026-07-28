@@ -32,7 +32,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme i
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
-    GanCoeff,
+    GanBosonic,
     GanFragment,
     GanMonomial,
 )
@@ -167,7 +167,7 @@ def test_molecular_coupling_matches_manual_sum(config):
             for mode in range(config.n_modes):
                 mono = GanMonomial([FuncSymbol.position(mode, order)])
                 monomials[mono] = monomials.get(mono, 0.0) + tensor[i, j, mode]
-    expected = GanCoeff(monomials)
+    expected = GanBosonic(monomials)
 
     assert coeff == expected
 
@@ -199,4 +199,4 @@ def test_kinetic_has_metallic_number_terms(config):
 def test_nuclear_reference_returns_gancoeff(config):
     """Test return type of nuclear reference"""
     coeff = _nuclear_reference(config)
-    assert isinstance(coeff, GanCoeff)
+    assert isinstance(coeff, GanBosonic)
