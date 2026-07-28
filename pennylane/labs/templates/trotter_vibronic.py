@@ -544,7 +544,7 @@ def _validate_registers_and_fragments(registers, fragments):
     all_n_modes = [f.modes for f in fragments]
     if any(n != all_n_states[0] for n in all_n_states[1:]):
         raise ValueError(
-            "Expected all vibronic fragments to have the same number of elecronic states, "
+            "Expected all vibronic fragments to have the same number of electronic states, "
             f"but got {all_n_states}."
         )
     if any(n != all_n_modes[0] for n in all_n_modes[1:]):
