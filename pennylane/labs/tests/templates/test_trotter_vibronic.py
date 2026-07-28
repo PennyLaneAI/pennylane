@@ -227,7 +227,7 @@ def _vibronic_fragment_list(n_states=2, n_modes=2, seed=42):
 
 
 def _make_registers(n_states, n_modes, k=2, b=4, wire_offset=0):
-    """Build a register dict that satisfies ``_validate_registers_and_fragments``."""
+    """Build a register dict that satisfies ``_validate_registers``."""
     n = qp.math.ceil_log2(n_states)
     needed_work = max(n - 1, 2 * k, 2 * b + 2)
     sizes = {
@@ -557,6 +557,29 @@ class TestValidateRegisters:
             _validate_registers(registers, n_modes=n_modes, n_states=n_states)
 
 
+def test_load_coefficients():
+    """Test that incremental bitstrings are computed and a QROM is queued."""
+    precision = 3
+    coefficients = np.array([0.1, 0.2])
+    prev_bitstrings = np.zeros((len(coefficients), precision), dtype=int)
+    qrom_wires = {
+        "control_wires": [0, 1],
+        "target_wires": [2, 3, 4],
+        "work_wires": [5],
+    }
+
+    with qp.queuing.AnnotatedQueue() as q:
+        new_bitstrings = load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires)
+
+    expected_new = qp.math.binary_decimals(coefficients, precision, unit=2 * np.pi)
+    expected_change = (prev_bitstrings + expected_new) % 2
+    assert np.allclose(new_bitstrings, expected_new)
+    assert len(q.queue) == 1
+    queued_op = q.queue[0]
+    assert isinstance(queued_op, qp.QROM)
+    assert np.allclose(queued_op.data[0], expected_change)
+
+
 class TestTrotterVibronic:
     """Tests for ``trotter_vibronic`` validation and side effects."""
 
@@ -566,25 +589,3 @@ class TestTrotterVibronic:
         registers = _make_registers(fragments[0].states, fragments[0].modes)
         with pytest.raises(ValueError, match="positive integer"):
             trotter_vibronic(1.0, 0, fragments, registers, aqft_order=1)
-
-    def test_load_coefficients_behaviour(self):
-        """Test that incremental bitstrings are computed and a QROM is queued."""
-        precision = 3
-        coefficients = np.array([0.1, 0.2])
-        prev_bitstrings = np.zeros((len(coefficients), precision), dtype=int)
-        qrom_wires = {
-            "control_wires": [0, 1],
-            "target_wires": [2, 3, 4],
-            "work_wires": [5],
-        }
-
-        with qp.queuing.AnnotatedQueue() as q:
-            new_bitstrings = load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires)
-
-        expected_new = qp.math.binary_decimals(coefficients, precision, unit=2 * np.pi)
-        expected_change = (prev_bitstrings + expected_new) % 2
-        assert np.allclose(new_bitstrings, expected_new)
-        assert len(q.queue) == 1
-        queued_op = q.queue[0]
-        assert isinstance(queued_op, qp.QROM)
-        assert np.allclose(queued_op.data[0], expected_change)

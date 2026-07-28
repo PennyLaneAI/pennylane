@@ -541,6 +541,8 @@ def _validate_fragments(fragments: list):
     """Validate wire fragment structure for vibronic algorithm. We expect at least one
     potential and one kinetic fragment, the latter being in the last position of the
     fragments sequence."""
+    if len(fragments) < 2:
+        raise ValueError("Expected at least one potential and one kinetic fragment.")
     all_n_states = [f.states for f in fragments]
     all_n_modes = [f.modes for f in fragments]
     if any(n != all_n_states[0] for n in all_n_states[1:]):
@@ -553,8 +555,6 @@ def _validate_fragments(fragments: list):
             "Expected all vibronic fragments to have the same number of vibrational modes, "
             f"but got {all_n_modes}."
         )
-    if len(fragments) < 2:
-        raise ValueError("Expected at least one potential and one kinetic fragment.")
 
     for frag in fragments[:-1]:
         expected_op_types = {(), ("Q",), ("Q", "Q")}
