@@ -567,7 +567,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values.
         if n_ctrls == 0:
-            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
+            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values.tolist()
         else:
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
             # need to insert the new control wires before the old ones, and do the same

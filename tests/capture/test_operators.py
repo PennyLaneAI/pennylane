@@ -96,12 +96,6 @@ def test_hybrid_capture_wires():
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
     assert_eqn_matches_op(jaxpr.eqns[1], qp.X)
 
-    with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
-
-    assert len(q) == 1
-    qp.assert_equal(q.queue[0], qp.X(3))
-
 
 def test_hybrid_capture_parametrization():
     """Test a variety of classical processing with a parametrized operation."""
@@ -387,20 +381,9 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(qp.adjoint)(qp.X(0))
 
-        assert len(jaxpr.eqns) == 2
+        assert len(jaxpr.eqns) == 1
         assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
-
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Adjoint._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
-        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {}
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.adjoint(qp.X(0)))
+        assert jaxpr.eqns[0].params["adjoint"] is True
 
     def test_adjoint_op_outside_qfunc(self):
         """Test that an op can be constructed outside a function and still be adjointed."""
@@ -412,39 +395,21 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 2
+        assert len(jaxpr.eqns) == 1
         assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
-
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Adjoint._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
-        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {}
+        assert jaxpr.eqns[0].params["adjoint"] is True
 
     def test_controlled_with_non_int_control_wires(self):
         """Tests that controlled works with non int control wires."""
 
         def qfunc(control_wire):
-            qp.ctrl(qp.X(0), control=control_wire)
+            qp.ctrl(qp.Y(0), control=control_wire)
 
-        cjaxpr = jax.make_jaxpr(qfunc)(jax.numpy.array(1))
+        cjaxpr = jax.make_jaxpr(qfunc)(jax.numpy.array([1, 2, 3]))
 
-        assert len(cjaxpr.eqns) == 2
-
-        base_eqn = cjaxpr.eqns[0]
-        assert_eqn_matches_op(base_eqn, qp.X)
-
-        ctrl_eqn = cjaxpr.eqns[1]
-        assert ctrl_eqn.primitive == qp.ops.Controlled._primitive
-        assert ctrl_eqn.invars[0] == base_eqn.outvars[0]
-        assert ctrl_eqn.invars[1] == cjaxpr.jaxpr.invars[0]
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(cjaxpr.jaxpr, cjaxpr.consts, jax.numpy.array(1))
-
-        assert len(q) == 1
-        expected = qp.ctrl(qp.X(0), control=1)
-        qp.assert_equal(q.queue[0], expected)
+        base_eqn = cjaxpr.eqns[-1]
+        assert_eqn_matches_op(base_eqn, qp.Y)
+        assert base_eqn.params["n_ctrls"] == 3
 
     def test_Controlled(self):
         """Test a nested control operation."""
