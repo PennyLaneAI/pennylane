@@ -110,10 +110,6 @@ class SymbolicOp(Operator):
         """The trainable parameters"""
         return self.base.data
 
-    @data.setter
-    def data(self, new_data):
-        self.base.data = new_data
-
     @property
     def num_params(self):
         return self.base.num_params
@@ -214,11 +210,6 @@ class ScalarSymbolicOp(SymbolicOp):
     @handle_recursion_error
     def data(self):
         return (self.scalar, *self.base.data)
-
-    @data.setter
-    def data(self, new_data):
-        self.scalar = new_data[0]
-        self.base.data = new_data[1:]
 
     @property
     @handle_recursion_error

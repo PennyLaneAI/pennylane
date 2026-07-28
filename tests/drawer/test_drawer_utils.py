@@ -193,7 +193,7 @@ class TestUnwrapControls:
     @pytest.mark.parametrize(
         "op,expected_control_wires,expected_control_values,expected_base_cls",
         [
-            (qp.X(wires="a"), Wires([]), None, qp.X),
+            (qp.X(wires="a"), Wires([]), [], qp.X),
             (qp.CNOT(wires=["a", "b"]), Wires("a"), [True], qp.X),
             (qp.ctrl(qp.X(wires="b"), control="a"), Wires("a"), [True], qp.X),
             (

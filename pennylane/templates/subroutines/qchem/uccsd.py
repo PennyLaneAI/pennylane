@@ -330,11 +330,7 @@ class UCCSD(Operation):
 
 
 def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
-    resources = Counter(
-        {
-            resource_rep(BasisState, num_wires=num_wires): 1,
-        }
-    )
+    resources = Counter({resource_rep(BasisState, num_wires=num_wires): 1})
 
     for _ in range(n_repeats):
         for w1, w2 in num_d_wires:

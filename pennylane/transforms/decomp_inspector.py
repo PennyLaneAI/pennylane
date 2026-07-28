@@ -16,15 +16,14 @@
 
 from collections.abc import Sequence
 from functools import partial
+from typing import override
 
-from typing_extensions import override
-
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
 from pennylane.decomposition.decomposition_rule import _DecompInfo, _DecompInfoCollection
-from pennylane.decomposition.resources import resource_rep
+from pennylane.decomposition.resources import _gate_count_dict_to_str
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -80,7 +79,7 @@ class _DecompInGraphInfo(_DecompInfo):
         if not self._is_reachable:
             return super()._gate_counts_and_allocations
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
-        gate_counts = gate_set_resource.gate_counts
+        gate_counts = _gate_count_dict_to_str(gate_set_resource.gate_counts)
         weighted_cost = gate_set_resource.weighted_cost
         return (
             super()._gate_counts_and_allocations
@@ -126,11 +125,13 @@ class _DecompInGraphInfo(_DecompInfo):
     @override
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        estimated_str = _gate_count_dict_to_str(estimated_count)
         if estimated_count == actual_count:
-            return f"First-Level Expansion Gates: {estimated_count}"
+            return f"First-Level Expansion Gates: {estimated_str}"
+        actual_str = _gate_count_dict_to_str(actual_count)
         return (
-            f"Estimated First-Level Expansion Gates: {estimated_count}\n"
-            f"Actual First-Level Expansion Gates: {actual_count}"
+            f"Estimated First-Level Expansion Gates: {estimated_str}\n"
+            f"Actual First-Level Expansion Gates: {actual_str}"
         )
 
     @override
@@ -249,7 +250,7 @@ class DecompGraphInspector:
                 "first argument, not an operator type."
             )
 
-        op_rep = resource_rep(op.__class__, **op.resource_params)
+        op_rep = abstractify(op)
         if op_rep not in self._decomp_graph._op_to_op_nodes:
             return (
                 "This operator is not found in the decomposition graph! This typically "
@@ -358,9 +359,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ───────├●─│──────────────├●────┤
     5: ───────├●─│──────────────├●────┤
          |0>├─╰X─╰●─────────────╰X──┤
-    First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+    First-Level Expansion Gates: {Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
     Wire Allocations: {'zero': 1}
-    Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
+    Full Expansion Gates: {CNOT: 34, GlobalPhase: 64, MidMeasure: 2, RX: 8, RY: 18, RZ: 58}
     Weighted Cost: 120.0
     <BLANKLINE>
     Decomposition 1 (name: to_controlled_qubit_unitary)
@@ -373,7 +374,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
     First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-    Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
+    Full Expansion Gates: {CNOT: 72, GlobalPhase: 76, MidMeasure: 4, RX: 16, RY: 24, RZ: 80}
     Weighted Cost: 196.0
 
     For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
@@ -398,7 +399,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     1: ─├●─│─────────├●─┤
     2: ─╰●─╰●────────╰●─┤
     First-Level Expansion Gates: {CRZ: 1, Toffoli: 2}
-    Full Expansion Gates: {RZ: 20, CNOT: 14, GlobalPhase: 18, RY: 4}
+    Full Expansion Gates: {CNOT: 14, GlobalPhase: 18, RY: 4, RZ: 20}
     Weighted Cost: 38.0
 
     This can be useful to find out why a circuit cannot be decomposed:
@@ -420,7 +421,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     0: ──H────────╭MultiRZ(0.50)──H─────────┤
     1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤
     2: ───────────╰MultiRZ(0.50)────────────┤
-    First-Level Expansion Gates: {Hadamard: 2, RX: 2, MultiRZ(num_wires=3): 1}
+    First-Level Expansion Gates: {Hadamard: 2, MultiRZ(num_wires=3): 1, RX: 2}
     Missing Ops: {Hadamard}
 
     The message suggests that the ``PauliRot`` could not be decomposed because the graph was unable
@@ -429,12 +430,12 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     >>> inspector.inspect_decomps(qp.Hadamard(0))
     Decomposition 0 (name: _hadamard_to_rz_ry)
     0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤
-    First-Level Expansion Gates: {RZ: 1, RY: 1, GlobalPhase: 1}
+    First-Level Expansion Gates: {GlobalPhase: 1, RY: 1, RZ: 1}
     Missing Ops: {GlobalPhase}
     <BLANKLINE>
     Decomposition 1 (name: _hadamard_to_rz_rx)
     0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤
-    First-Level Expansion Gates: {RZ: 2, RX: 1, GlobalPhase: 1}
+    First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
     Missing Ops: {GlobalPhase}
 
     Now it's finally clear that the reason why ``PauliRot`` could not be decomposed was that
@@ -452,7 +453,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         2: ───────│──╭●───│────┤
         3: ───────│──├X───│────┤
              |0>├─╰⊕─╰●──⊕╯──┤
-        Gate Count: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
+        Gate Count: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
         Wire Allocations: {'zero': 1}
 
         These rules can only be selected if there are enough unused wires left on the device
@@ -484,9 +485,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────├●─│──────────────├●────┤
         6: ───────├●─│──────────────├●────┤
              |0>├─╰X─╰●─────────────╰X──┤
-        First-Level Expansion Gates: {MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+        First-Level Expansion Gates: {Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {RZ: 94, CNOT: 58, GlobalPhase: 104, RY: 26, RX: 12, MidMeasure: 2}
+        Full Expansion Gates: {CNOT: 58, GlobalPhase: 104, MidMeasure: 2, RX: 12, RY: 26, RZ: 94}
         Weighted Cost: 192.0
         <BLANKLINE>
         Decomposition 1 (name: to_controlled_qubit_unitary)
@@ -500,7 +501,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
         First-Level Expansion Gates: {Controlled(RZ, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-        Full Expansion Gates: {GlobalPhase: 200, RX: 32, MidMeasure: 6, RY: 54, RZ: 170, CNOT: 96}
+        Full Expansion Gates: {CNOT: 96, GlobalPhase: 200, MidMeasure: 6, RX: 32, RY: 54, RZ: 170}
         Weighted Cost: 358.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
@@ -519,8 +520,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 14, RZ: 57, RX: 4, CNOT: 58}
+        First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, QubitUnitary(num_wires=1): 2}
+        Full Expansion Gates: {CNOT: 58, GlobalPhase: 43, RX: 4, RY: 14, RZ: 57}
         Weighted Cost: 133.0
         <BLANKLINE>
         Decomposition 2 (name: one_zeroed_worker)
@@ -530,9 +531,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────│──╰●────│─────╰●───│────┤
         6: ───────│────────├X─────────│────┤
              |0>├─╰⊕───────╰●────────⊕╯──┤
-        First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
+        First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 2, TemporaryAND: 1, Toffoli: 3}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
+        Full Expansion Gates: {CNOT: 22, GlobalPhase: 43, MidMeasure: 1, RX: 6, RY: 11, RZ: 37}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
@@ -542,9 +543,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
         6: ────│────────├X───────│────────├X───────┤
              ├─╰X───────╰●───────╰X───────╰●──┤
-        First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
+        First-Level Expansion Gates: {PauliX: 4, Toffoli: 8}
         Wire Allocations: {'any': 1}
-        Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
+        Full Expansion Gates: {CNOT: 48, GlobalPhase: 76, RX: 4, RY: 16, RZ: 72}
         Weighted Cost: 140.0
         <BLANKLINE>
         Decomposition 4 (name: one_explicit_worker)
@@ -567,9 +568,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ───────│──│──├X───│───│────┤
              |0>├─│──├⊕─╰●──⊕┤───│──┤
              |0>├─╰⊕─╰●─────●╯──⊕╯──┤
-        First-Level Expansion Gates: {TemporaryAND: 2, Adjoint(TemporaryAND): 2, Toffoli: 1}
+        First-Level Expansion Gates: {Adjoint(TemporaryAND): 2, TemporaryAND: 2, Toffoli: 1}
         Wire Allocations: {'zero': 2}
-        Full Expansion Gates: {GlobalPhase: 37, RX: 8, MidMeasure: 2, RY: 12, RZ: 29, CNOT: 14}
+        Full Expansion Gates: {CNOT: 14, GlobalPhase: 37, MidMeasure: 2, RX: 8, RY: 12, RZ: 29}
         Weighted Cost: 65.0
         <BLANKLINE>
         Decomposition 9 (name: many_borrowed_workers)
@@ -582,7 +583,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
              ├────╰●─╰X─╰●────╰●─╰X─╰●──┤
         First-Level Expansion Gates: {Toffoli: 8}
         Wire Allocations: {'any': 2}
-        Full Expansion Gates: {CNOT: 48, GlobalPhase: 72, RZ: 72, RY: 16}
+        Full Expansion Gates: {CNOT: 48, GlobalPhase: 72, RY: 16, RZ: 72}
         Weighted Cost: 136.0
         <BLANKLINE>
         Decomposition 10 (name: many_explicit_workers)
@@ -613,8 +614,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 14, RZ: 57, RX: 4, CNOT: 58}
+        First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, QubitUnitary(num_wires=1): 2}
+        Full Expansion Gates: {CNOT: 58, GlobalPhase: 43, RX: 4, RY: 14, RZ: 57}
         Weighted Cost: 133.0
         <BLANKLINE>
         CHOSEN: Decomposition 2 (name: one_zeroed_worker)
@@ -624,9 +625,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────│──╰●────│─────╰●───│────┤
         6: ───────│────────├X─────────│────┤
              |0>├─╰⊕───────╰●────────⊕╯──┤
-        First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
+        First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 2, TemporaryAND: 1, Toffoli: 3}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
+        Full Expansion Gates: {CNOT: 22, GlobalPhase: 43, MidMeasure: 1, RX: 6, RY: 11, RZ: 37}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
@@ -636,9 +637,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
         6: ────│────────├X───────│────────├X───────┤
              ├─╰X───────╰●───────╰X───────╰●──┤
-        First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
+        First-Level Expansion Gates: {PauliX: 4, Toffoli: 8}
         Wire Allocations: {'any': 1}
-        Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
+        Full Expansion Gates: {CNOT: 48, GlobalPhase: 76, RX: 4, RY: 16, RZ: 72}
         Weighted Cost: 140.0
         <BLANKLINE>
         Decomposition 4 (name: one_explicit_worker)

@@ -205,6 +205,7 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
 
     # Remove base operator from the queue.
     qp.QueuingManager.remove(op)
+    _ = pop_op_eqns((op,))
 
     if (
         custom_op := custom_ctrl_dispatch(
@@ -218,7 +219,6 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
         return custom_op
 
     if isinstance(op, Controlled2):
-        _ = pop_op_eqns((op,))
         work_wire_type = resolve_work_wire_type(
             op.work_wires,
             op.work_wire_type,
@@ -812,9 +812,9 @@ class Controlled(SymbolicOp):
     # Methods ##########################################
 
     def __repr__(self):
-        params = [f"control_wires={self.control_wires.tolist()}"]
+        params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
-            params.append(f"work_wires={self.work_wires.tolist()}")
+            params.append(f"work_wires={self.work_wires}")
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"

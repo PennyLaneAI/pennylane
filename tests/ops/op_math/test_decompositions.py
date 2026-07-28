@@ -1233,7 +1233,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
     @pytest.mark.jax
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_two_qubit_decomposition_2_cnots_qjit(self):
         """Test that two_qubit_decomposition does not raise TracerArrayConversionError
         under qjit. Regression test for #9016."""

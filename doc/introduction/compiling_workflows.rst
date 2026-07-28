@@ -15,8 +15,6 @@ The best supported and default compiler is the `Catalyst hybrid compiler
 quantum-classical workflow, including any optimization loops. This maximizes
 performance and enables running the entire workflow on accelerator devices.
 
-In addition, PennyLane also supports compiling restricted programs via CUDA Quantum; see the CUDA Quantum section below for more details.
-
 Installing compilers
 --------------------
 
@@ -124,47 +122,6 @@ Note that AutoGraph results in additional restrictions, in particular whenever
 global state is involved.
 Please refer to the :doc:`AutoGraph guide<catalyst:dev/autograph>` for a
 complete discussion of the supported and unsupported use-cases.
-
-CUDA Quantum
-------------
-
-The PennyLane :func:`.qjit` decorator  can also be used to compile programs
-using `CUDA Quantum <https://pennylane.ai/qml/glossary/what-is-cuda-quantum/>`__,
-a hybrid compiler toolchain by NVIDIA.
-
-First, Catalyst and CUDA Quantum need to be installed:
-
-.. code-block:: bash
-
-    pip install pennylane-catalyst cuda_quantum
-
-Then, simply specify ``compiler="cuda_quantum"`` in the ``@qjit``
-decorator:
-
-.. code-block:: python
-
-    dev = qp.device("softwareq.qpp", wires=2)
-
-    @qp.qjit(compiler="cuda_quantum")
-    @qp.qnode(dev)
-    def circuit(x):
-        qp.RX(x[0], wires=0)
-        qp.RY(x[1], wires=1)
-        qp.CNOT(wires=[0, 1])
-        return qp.expval(qp.Y(0))
-
->>> circuit(jnp.array([0.5, 1.4]))
--0.47244976756708373
-
-The following devices are available when compiling with CUDA Quantum:
-
-* ``softwareq.qpp``: a modern C++ statevector simulator
-* ``nvidia.custatevec``: The NVIDIA CuStateVec GPU simulator (with support for multi-gpu)
-* ``nvidia.cutensornet``: The NVIDIA CuTensorNet GPU simulator (with support for matrix product state)
-
-Note that CUDA Quantum compilation currently does not have feature parity with Catalyst compilation;
-in particular, AutoGraph, control flow, differentiation, and various measurement statistics (such as
-probabilities and variance) are not yet supported.
 
 Additional resources
 --------------------

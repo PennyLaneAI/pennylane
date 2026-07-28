@@ -22,14 +22,12 @@ function execution. Subsequent calls to the compiled function will execute
 the previously-compiled binary, resulting in significant
 performance improvements.
 
-Currently, PennyLane supports the
+PennyLane uses the
 `Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
-and the CUDA Quantum compiler
-with the :func:`~.qjit` decorator. A significant benefit of Catalyst
-is the ability to preserve complex control flow around quantum
-operations — such as if statements and for loops, and including measurement
-feedback — during compilation, while continuing to support end-to-end
-autodifferentiation.
+by default with the :func:`~.qjit` decorator. A significant benefit of Catalyst
+is the ability to preserve complex control flow around quantum operations — such
+as if statements and for loops, and including measurement feedback — during
+compilation, while continuing to support end-to-end autodifferentiation.
 
 .. note::
 
@@ -80,9 +78,9 @@ The compiler module provides the infrastructure to integrate external
 hybrid quantum-classical compilers with PennyLane, but does not provide
 a built-in compiler.
 
-Currently, only the `Catalyst <https://github.com/pennylaneai/catalyst>`__
-hybrid compiler and CUDA Quantum compiler toolchains are supported with PennyLane,
-however there are plans to incorporate additional compilers in the near future.
+The default and best-supported compiler is the
+`Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler. Other compiler
+packages can integrate with PennyLane through the experimental compiler API described below.
 
 .. note::
 

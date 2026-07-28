@@ -92,10 +92,6 @@ class Evolution(Exp):
     def data(self):
         return self._data
 
-    @data.setter
-    def data(self, new_data):
-        self._data = new_data
-
     @property
     def param(self):
         """A real coefficient with ``1j`` factored out."""

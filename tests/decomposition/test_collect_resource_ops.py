@@ -19,6 +19,10 @@
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -48,8 +52,8 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 4
         assert ops == {
-            qp.resource_rep(qp.RX),
-            qp.resource_rep(qp.CNOT),
+            abstractify(qp.RX),
+            abstractify(qp.CNOT),
             qp.resource_rep(qp.MultiRZ, num_wires=2),
             qp.resource_rep(qp.MultiRZ, num_wires=3),
         }
@@ -84,7 +88,7 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 5
         assert ops == {
-            qp.resource_rep(qp.RX),
+            abstractify(qp.RX),
             qp.resource_rep(qp.MultiRZ, num_wires=3),
             qp.resource_rep(CustomOp, x=0),
             qp.resource_rep(CustomOp, x=0.5),
@@ -110,8 +114,8 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 3
         assert ops == {
-            qp.decomposition.controlled_resource_rep(qp.X, {}, 1, 0, 0),
-            qp.decomposition.controlled_resource_rep(qp.RX, {}, 1, 0, 0),
+            _ctrl_abstract(qp.X, Wire[1]),
+            _ctrl_abstract(qp.RX, Wire[1]),
             qp.decomposition.controlled_resource_rep(qp.MultiRZ, {"num_wires": 3}, 1, 0, 0),
         }
 
@@ -134,8 +138,8 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 3
         assert ops == {
-            qp.decomposition.adjoint_resource_rep(qp.X, {}),
-            qp.decomposition.adjoint_resource_rep(qp.RX, {}),
+            _adjoint_abstract(qp.X),
+            _adjoint_abstract(qp.RX),
             qp.decomposition.adjoint_resource_rep(qp.MultiRZ, {"num_wires": 3}),
         }
 
@@ -162,9 +166,9 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 5
         assert ops == {
-            qp.resource_rep(qp.CRX),
-            qp.resource_rep(qp.CRZ),
-            qp.resource_rep(qp.RX),
-            qp.resource_rep(qp.RY),
-            qp.resource_rep(qp.RZ),
+            abstractify(qp.CRX),
+            abstractify(qp.CRZ),
+            abstractify(qp.RX),
+            abstractify(qp.RY),
+            abstractify(qp.RZ),
         }

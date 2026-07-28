@@ -11,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Estimate graph-kernel MMD losses for qudit circuits on ``Z_d^n``.
+"""Maximum Mean Discrepancy (MMD) loss for qudit IQP circuits.
 
-If you set aside the quantum terminology, this module implements a
-randomized feature-matching loss over discrete vectors:
+This module extends :mod:`~pennylane.labs.tcdq.mmd_loss` from qubits to
+qudits. It compares the circuit output to a dataset by sampling observables,
+estimating their moments, and combining those estimates into an unbiased MMD
+loss.
 
-1. Sample Fourier index vectors from a graph-kernel distribution.
-2. Use the qudit expectation estimator to get model moments for those
-    indices.
-3. Compute the matching empirical moments directly from the dataset.
-4. Combine the data-data, data-model, and model-model terms into an
-    unbiased MMD estimate.
+For qudits, the kernel is defined from a graph on one qudit level set. The
+available choices are the cycle graph :math:`C_d` and the complete graph
+:math:`K_d`.
 
-The public entry point is ``build_qudit_mmd_loss``. See ``notes.md`` §5 for
-the derivation and Appendix A for the notation-to-code glossary.
+For the mathematical construction, see
+`Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
 """
 
 from collections.abc import Callable, Sequence
@@ -40,36 +39,60 @@ from .qudit_expval_functions import QuditCircuitConfig, build_qudit_expval_func
 
 @dataclass(frozen=True)
 class QuditMMDConfig:
-    """Configuration for the graph-kernel MMD estimator.
+    r"""Hyperparameters for the qudit graph-kernel MMD loss.
 
-    See ``notes.md`` §5.2 for the spectral sampling distributions.
+    The MMD measures how well the circuit output matches a target dataset of
+    dit-strings. In the qudit setting, the kernel comes from heat diffusion on
+    a graph over the local levels of one qudit, applied independently to each
+    visible wire.
 
     Args:
-        bandwidth: Heat-kernel diffusion time ``t`` or a sequence of diffusion
-            times.  Larger values emphasize lower graph frequencies.
-        n_ops: Number of Fourier index vectors ``|L|`` sampled per bandwidth.
-        graph_type: Single-site graph for the heat-kernel spectrum.
-            ``"cycle"`` means ``C_d`` and ``"complete"`` means ``K_d``.
-        wires: Optional subset of qudit indices to include in the loss. If
-            ``None``, use all qudits.
-        sqrt_loss: If ``True``, return ``sqrt(abs(MMD^2))`` instead of
-            ``MMD^2``.
-        return_per_bandwidth: If ``True``, return one loss value per bandwidth
-            instead of averaging across bandwidths.
+        bandwidth (float | Sequence[float]): The bandwidth :math:`\sigma^2` of the kernel. If a sequence is provided,
+            the loss is evaluated for each value and then averaged, unless
+            ``return_per_bandwidth=True``.
+        n_ops (int): Number of sampled observables per bandwidth. Larger
+            values reduce estimator variance.
+        graph_type (str): Graph whose spectrum defines the kernel.
+            ``"cycle"`` is usually the better default when neighbouring qudit
+            levels have a natural notion of closeness. ``"complete"`` treats
+            all distinct levels symmetrically. Defaults to ``"cycle"``.
+        wires (Sequence[int] | None): Subset of qudit indices to include in
+            the loss. If ``None`` (default), all qudits are used.
+        sqrt_loss (bool): If ``True``, return ``sqrt(|MMD²|)`` instead of
+            ``MMD²``. Defaults to ``False``.
+        return_per_bandwidth (bool): If ``True``, return a list of
+            per-bandwidth loss values instead of their scalar average.
+            Defaults to ``False``.
+
+    **Example**
+
+    >>> from pennylane.labs.tcdq import QuditMMDConfig
+    >>> config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
     """
 
-    bandwidth: float | Sequence[float]
-    n_ops: int
+    #: Width of the graph heat kernel (scalar or sequence for multi-bandwidth).
+    bandwidth: float | Sequence[float] = None
+    #: Number of sampled observables per bandwidth.
+    n_ops: int = None
+    #: Graph whose spectrum defines the kernel (``"cycle"`` or ``"complete"``).
     graph_type: str = "cycle"
+    #: Subset of qudit indices to include, or ``None`` for all qudits.
     wires: Sequence[int] | None = None
+    #: If ``True``, return ``sqrt(|MMD²|)`` instead of ``MMD²``.
     sqrt_loss: bool = False
+    #: If ``True``, return per-bandwidth losses instead of their average.
     return_per_bandwidth: bool = False
 
 
 def _cycle_marginal_probs(d: int, t: float) -> jnp.ndarray:
-    """Return the cycle-graph spectral sampling distribution (see ``notes.md`` §5.2).
+    """Return the per-site sampling distribution for the cycle-graph heat kernel.
 
-    ``P_1(k) ∝ exp(-4 t sin²(π k / d))``.
+    The probability of sampling index :math:`k` on a single qudit is
+    proportional to :math:`\\exp(-4t \\sin^2(\\pi k / d))`, which are the
+    eigenvalues of the heat kernel on the cycle graph :math:`C_d`.
+
+    For the derivation, see
+    `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
     k = jnp.arange(d)
     log_p = -4.0 * t * jnp.sin(jnp.pi * k / d) ** 2
@@ -78,10 +101,14 @@ def _cycle_marginal_probs(d: int, t: float) -> jnp.ndarray:
 
 
 def _complete_marginal_probs(d: int, t: float) -> jnp.ndarray:
-    """Return the complete-graph spectral sampling distribution (see ``notes.md`` §5.2).
+    """Return the per-site sampling distribution for the complete-graph heat kernel.
 
-    ``P_1(0) = π_0``, ``P_1(k≠0) = (1 − π_0)/(d − 1)`` with
-    ``π_0 = 1 / (1 + (d − 1) exp(−td))``.
+    The complete graph :math:`K_d` has only two distinct eigenvalues,
+    yielding a binary distribution: index 0 has elevated probability and all
+    other indices share the remaining mass equally.
+
+    For the derivation, see
+    `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
     log_unnorm = jnp.zeros(d).at[1:].set(-t * d)
     p = jnp.exp(log_unnorm)
@@ -97,15 +124,15 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments
     graph_type: str,
     wire_tuple: tuple[int, ...],
 ) -> jnp.ndarray:
-    """Sample a batch of Fourier index vectors from the graph-kernel spectrum.
+    """Sample Fourier index vectors from the graph-kernel spectral distribution.
 
-    Draws ``n_ops`` vectors ``l ~ P(l) = ∏_i P_1(l_i)`` from the product
-    distribution defined by the chosen heat kernel (see ``notes.md`` §5.2).
-    Components outside ``wire_tuple`` are zero-filled.
+    Draws ``n_ops`` vectors from the product distribution
+    :math:`P(\\mathbf{l}) = \\prod_i P_1(l_i)` where :math:`P_1` is defined
+    by the chosen heat kernel. Positions outside ``wire_tuple`` are zero.
 
     Returns:
         Integer array of shape ``(n_ops, n_qudits)`` with entries in
-        ``{0, ..., d - 1}``. Coordinates outside ``wire_tuple`` are zero.
+        :math:`\\{0, \\ldots, d-1\\}`.
     """
     if graph_type == "cycle":
         marginal = _cycle_marginal_probs(d, bandwidth)
@@ -127,44 +154,38 @@ def _empirical_fourier_moments(
     X_data: jnp.ndarray,
     d: int,
 ) -> jnp.ndarray:
-    """Return the data-side empirical Fourier moment for each sampled observable.
+    """Compute the empirical Fourier moment for each sampled observable from the dataset.
 
-    Computes ``μ̂_p(l) = (1/m) Σ_i ω^{l·x_i}`` for each row ``l`` of
-    ``L_visible``.  See ``notes.md`` §5.3 (PP term).
+    For each Fourier index vector :math:`\\mathbf{l}`, computes
+    :math:`\\hat{\\mu}_p(\\mathbf{l}) = \\frac{1}{m} \\sum_i \\omega^{\\mathbf{l} \\cdot \\mathbf{x}_i}`
+    where :math:`\\omega = e^{2\\pi i / d}`.
 
     Args:
-        L_visible: Integer array of shape ``(n_obs, n_visible)`` whose rows are
-            the sampled Fourier index vectors restricted to the visible wires.
-        X_data: Integer array of shape ``(m, n_visible)`` containing dataset
-            samples on the same visible wires.
+        L_visible: Integer array of shape ``(n_obs, n_visible)`` — the Fourier
+            index vectors restricted to the visible wires.
+        X_data: Integer array of shape ``(m, n_visible)`` — target dataset
+            samples on the visible wires.
         d: Qudit dimension.
 
     Returns:
-        Complex array of shape ``(n_obs,)`` with one empirical moment per
-        sampled observable.
+        Complex array of shape ``(n_obs,)``.
     """
     inner = L_visible.astype(jnp.float64) @ X_data.astype(jnp.float64).T
     return jnp.mean(jnp.exp(2j * jnp.pi * inner / d), axis=1)
 
 
 def _pp_term(mu_p_hat: jnp.ndarray, m: int) -> jnp.ndarray:
-    """Return the unbiased data–data U-statistic ``PP(l)`` (see ``notes.md`` §5.3).
+    """Compute the unbiased data–data U-statistic contribution to the MMD.
 
-    Removes the diagonal self-pairs from ``|μ̂_p(l)|²``:
-
-        ``PP(l) = (m |μ̂_p(l)|² − 1) / (m − 1)``.
-
-    The subtraction is ``1`` because ``|f_p(l, x_i)|² = 1`` for all data
-    samples.
+    Removes the diagonal self-pairs from :math:`|\\hat{\\mu}_p|^2`:
+    :math:`PP(l) = (m |\\hat{\\mu}_p(l)|^2 - 1) / (m - 1)`.
 
     Args:
-        mu_p_hat: Complex array of shape ``(n_obs,)`` containing the empirical
-            mean for each sampled observable over the dataset.
+        mu_p_hat: Complex array of shape ``(n_obs,)`` — empirical data moments.
         m: Number of samples in the dataset.
 
     Returns:
-        Real array of shape ``(n_obs,)`` containing one unbiased data-data term
-        per sampled observable.
+        Real array of shape ``(n_obs,)``.
     """
     return (m * jnp.abs(mu_p_hat) ** 2 - 1.0) / (m - 1)
 
@@ -174,28 +195,23 @@ def _qq_term(
     mean_y_sq: jnp.ndarray,
     s: int,
 ) -> jnp.ndarray:
-    """Return the unbiased model–model U-statistic ``QQ(l)`` (see ``notes.md`` §5.3).
+    """Compute the unbiased model–model U-statistic contribution to the MMD.
 
-    Removes the diagonal self-pairs from ``|μ̂_q(l)|²``:
+    Removes the diagonal self-pairs from :math:`|\\hat{\\mu}_q|^2`:
+    :math:`QQ(l) = (s |\\hat{\\mu}_q(l)|^2 - \\overline{|y|^2}(l)) / (s - 1)`.
 
-        ``QQ(l) = (s |μ̂_q(l)|² − mean_y_sq(l)) / (s − 1)``.
-
-    Unlike the data term, per-sample values may not have unit modulus
-    (especially with non-trivial input states), so the diagonal correction
-    uses ``mean_y_sq`` rather than the constant ``1``.
-
-    Gradients are stopped through ``mean_y_sq``.
+    Gradients are stopped through ``mean_y_sq`` (it is treated as a constant
+    for differentiation purposes).
 
     Args:
-        mu_q_hat: Complex array of shape ``(n_obs,)`` containing the estimated
-            mean for each sampled observable over the circuit Monte Carlo batch.
-        mean_y_sq: Real array of shape ``(n_obs,)`` containing the mean squared
-            magnitude of the raw circuit sample values.
-        s: Number of Monte Carlo circuit samples.
+        mu_q_hat: Complex array of shape ``(n_obs,)`` — circuit-side Monte
+            Carlo moment estimates.
+        mean_y_sq: Real array of shape ``(n_obs,)`` — mean squared magnitude
+            of the per-sample integrand values.
+        s: Number of circuit samples.
 
     Returns:
-        Real array of shape ``(n_obs,)`` containing one unbiased model-model
-        term per sampled observable.
+        Real array of shape ``(n_obs,)``.
     """
     mean_y_sq = jax.lax.stop_gradient(mean_y_sq)
     return (s * jnp.abs(mu_q_hat) ** 2 - mean_y_sq) / (s - 1)
@@ -205,20 +221,18 @@ def _pq_cross_term(
     mu_p_hat: jnp.ndarray,
     mu_q_hat: jnp.ndarray,
 ) -> jnp.ndarray:
-    """Return the data–model cross term ``PQ(l)`` (see ``notes.md`` §5.3).
+    """Compute the data–model cross term of the MMD.
 
-    ``PQ(l) = 2 Re(μ̂_p(l)* μ̂_q(l))``.  No diagonal correction is needed
-    because the data and circuit batches are independent.
+    :math:`PQ(l) = 2 \\operatorname{Re}(\\hat{\\mu}_p(l)^* \\hat{\\mu}_q(l))`.
+    No diagonal correction is needed because the data and circuit samples are
+    independent.
 
     Args:
-        mu_p_hat: Complex array of shape ``(n_obs,)`` containing the empirical
-            data-side moments.
-        mu_q_hat: Complex array of shape ``(n_obs,)`` containing the model-side
-            Monte Carlo moment estimates.
+        mu_p_hat: Complex array of shape ``(n_obs,)`` — data-side moments.
+        mu_q_hat: Complex array of shape ``(n_obs,)`` — model-side moments.
 
     Returns:
-        Real array of shape ``(n_obs,)`` containing one data-model cross term
-        per sampled observable.
+        Real array of shape ``(n_obs,)``.
     """
     return 2.0 * jnp.real(jnp.conj(mu_p_hat) * mu_q_hat)
 
@@ -233,7 +247,7 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     n_samples: int,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
-    """Combine PP, PQ, and QQ into the unbiased MMD² estimator (see ``notes.md`` §5.3)."""
+    """Combine PP, PQ, and QQ terms into the unbiased MMD² estimator."""
     m = X_data.shape[0]
 
     mu_p_hat = _empirical_fourier_moments(L_visible, X_data, d)
@@ -276,7 +290,7 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     expval_func: Callable,
     graph_type: str,
 ) -> jnp.ndarray:
-    """Estimate one unbiased MMD loss value for a fixed bandwidth (see ``notes.md`` §5)."""
+    """Estimate one unbiased MMD loss value for a single bandwidth setting."""
     l_obs = _sample_fourier_indices(obs_key, n_ops, n_qudits, d, bandwidth, graph_type, wire_tuple)
     m_obs = jnp.zeros_like(l_obs)
 
@@ -300,35 +314,38 @@ def build_qudit_mmd_loss(
     circuit_config: QuditCircuitConfig,
     mmd_config: QuditMMDConfig,
 ) -> Callable:
-    """Build a reusable qudit MMD loss function from circuit and loss configs.
+    """Build a reusable loss function that computes the qudit graph-kernel MMD.
 
-    At a high level, the returned callable draws a random batch of
-    Fourier-like observables, estimates those moments for the circuit,
-    computes the same moments from ``target_data``, and averages the PP, PQ,
-    and QQ contributions of the unbiased MMD estimator.
-
-    See ``notes.md`` §5 for the theoretical background and Appendix A for
-    notation.
+    The returned callable measures the distance between the qudit circuit's
+    output distribution and an empirical target dataset of dit-strings using
+    the Maximum Mean Discrepancy (MMD) with a graph-based kernel.
 
     Args:
-        circuit_config: Configuration for the underlying qudit expectation-value
-            estimator.
-        mmd_config: Configuration for the graph-kernel MMD estimator.
+        circuit_config (QuditCircuitConfig): Qudit circuit description
+            specifying gate structure, qudit dimension, and sample
+            count. See :class:`~pennylane.labs.tcdq.QuditCircuitConfig`.
+        mmd_config (QuditMMDConfig): MMD hyperparameters including the
+            bandwidth, number of observables, and graph type. See
+            :class:`QuditMMDConfig`.
 
     Returns:
-        Callable with signature ``loss_fn(params, target_data, key=None)``.
-        The callable returns either a scalar average across bandwidths or a
-        list of per-bandwidth values when
-        ``mmd_config.return_per_bandwidth`` is true.
+        Callable: A function with signature
+        ``loss_fn(params, target_data, key=None)`` that returns either a
+        scalar MMD² estimate (averaged across bandwidths) or a list of
+        per-bandwidth values when ``mmd_config.return_per_bandwidth=True``.
 
     Raises:
-        ValueError: If ``n_samples <= 1``.
-        ValueError: If ``n_ops < 1``.
-        ValueError: If ``bandwidth`` is empty.
-        ValueError: If ``wires`` contains duplicates or out-of-range indices.
+        ValueError: If ``circuit_config.n_samples <= 1``.
+        ValueError: If ``mmd_config.n_ops < 1``.
+        ValueError: If ``mmd_config.bandwidth`` is empty.
+        ValueError: If ``mmd_config.wires`` contains duplicates or indices
+            outside ``[0, n_qudits)``.
 
     **Example**
 
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import QuditCircuitConfig, QuditMMDConfig, build_qudit_mmd_loss
     >>> circuit_config = QuditCircuitConfig(
     ...     d=3,
     ...     n_qudits=2,
@@ -343,6 +360,11 @@ def build_qudit_mmd_loss(
     >>> loss = loss_fn(params, target_data, key=jax.random.PRNGKey(123))
     >>> loss.shape
     ()
+
+    .. seealso::
+
+        :func:`~pennylane.labs.tcdq.build_qudit_expval_func`,
+        `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
     n_samples = circuit_config.n_samples
     if n_samples <= 1:
@@ -393,10 +415,9 @@ def build_qudit_mmd_loss(
 
         The input ``target_data`` is interpreted as samples from the empirical
         data distribution on the visible wires. For each requested bandwidth,
-        this function samples a fresh batch of Fourier observables, estimates
-        the corresponding model moments from the circuit, computes the matching
-        empirical data moments directly from ``target_data``, and returns the
-        resulting unbiased MMD estimate.
+        this function samples a fresh batch of observables, estimates the
+        corresponding circuit moments, computes the matching empirical moments
+        from ``target_data``, and returns the resulting unbiased MMD estimate.
 
         If multiple bandwidths are configured, each bandwidth gets its own
         independent observable batch and circuit-evaluation randomness.

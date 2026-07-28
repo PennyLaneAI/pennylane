@@ -267,7 +267,7 @@ class TestControlledProperties:
         }
 
     def test_data(self):
-        """Test that the base data can be get and set through Controlled class."""
+        """Test that Controlled data is read-only."""
 
         x = pnp.array(1.234)
 
@@ -276,15 +276,10 @@ class TestControlledProperties:
 
         assert op.data == (x,)
 
-        x_new = (pnp.array(2.3454),)
-        op.data = x_new
-        assert op.data == (x_new,)
-        assert base.data == (x_new,)
-
-        x_new2 = (pnp.array(3.456),)
-        base.data = x_new2
-        assert op.data == (x_new2,)
-        assert op.parameters == [x_new2]
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'ControlledOp' object has no setter"
+        ):
+            setattr(op, "data", (pnp.array(2.3454),))
 
     @pytest.mark.parametrize(
         "val, arr", ((4, [1, 0, 0]), (6, [1, 1, 0]), (1, [0, 0, 1]), (5, [1, 0, 1]))
@@ -474,7 +469,9 @@ class TestControlledMiscMethods:
         assert copied_op.control_values == op.control_values
         assert copied_op.data == (param1,)
 
-        copied_op.data = (6.54,)
+        copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+        assert copied_op.data == (6.54,)
         assert op.data == (param1,)
 
     def test_label(self):
@@ -852,7 +849,6 @@ special_non_par_op_decomps = [
         (lambda wires: qp.ctrl(qp.Identity(wires[-1]), control=wires[:-1])),
         [qp.Identity([0, 1, 2, 3])],
     ),
-    (qp.PauliY, [], [0], [1], qp.CY, [qp.CRY(np.pi, wires=[1, 0]), qp.S(1)]),
     (qp.PauliZ, [], [1], [0], qp.CZ, [qp.ControlledPhaseShift(np.pi, wires=[0, 1])]),
     (
         qp.Hadamard,
@@ -1097,7 +1093,7 @@ class TestDecomposition:
                 OpWithDecomposition(0.123, wires=[0, 1]),
                 [
                     qp.CH(wires=[2, 0]),
-                    Controlled(qp.S(wires=1), control_wires=2),
+                    ctrl(qp.S(wires=1), control=2),
                     qp.CRX(0.123, wires=[2, 0]),
                 ],
             ),
@@ -1856,6 +1852,8 @@ class TestCtrl:
                 control_wires=ctrl_wires + op.control_wires,
                 control_values=ctrl_values + op.control_values,
             )
+        elif isinstance(op, Operator2):
+            expected = ControlledOp2(op, control_wires=ctrl_wires, control_values=ctrl_values)
         else:
             expected = Controlled(op, control_wires=ctrl_wires, control_values=ctrl_values)
 
@@ -1877,6 +1875,8 @@ class TestCtrl:
                 op.base,
                 control_wires=ctrl_wires + op.control_wires,
             )
+        elif isinstance(op, Operator2):
+            expected = ControlledOp2(op, control_wires=ctrl_wires)
         else:
             expected = Controlled(op, control_wires=ctrl_wires)
 
@@ -1897,9 +1897,9 @@ class TestCtrl:
 
         assert len(q) == 1
         assert q.queue[0] is op
-        expected = Controlled(
+        expected = ctrl(
             qp.S(wires=[0]),
-            control_wires=[3, 2, 1],
+            control=[3, 2, 1],
             control_values=[1, 0, 1],
         )
         assert op == expected
@@ -1928,7 +1928,8 @@ class TestCtrl:
             ),
             control=["a"],
         )
-        expected = Controlled(
+        expected_type = ControlledOp2 if isinstance(expected_base, Operator2) else Controlled
+        expected = expected_type(
             expected_base,
             control_wires=["a", "b"] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,
@@ -2108,7 +2109,6 @@ class TestCtrl:
         """Tests that custom controlled dispatchers work for `Operator2`."""
 
         class CustomOp(Operator2):
-
             def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 

@@ -20,7 +20,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal
+from typing import Literal, override
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -29,7 +29,6 @@ import pennylane as qp
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
@@ -41,8 +40,11 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     pow_rotation,
     self_adjoint,
+    self_adjoint_legacy,
 )
-from pennylane.typing import TensorLike
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -51,6 +53,7 @@ from .controlled import (
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
 )
+from .controlled2 import Controlled2
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
@@ -182,7 +185,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type="borrowed",
     ):
-
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
@@ -202,7 +204,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: str | None = "borrowed",
     ):
-
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
@@ -349,7 +350,7 @@ class CH(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"CH(wires={self.wires.tolist()})"
+        return f"CH(wires={self.wires})"
 
     def adjoint(self):
         return CH(self.wires)
@@ -430,11 +431,11 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
-add_decomps("Adjoint(CH)", self_adjoint)
+add_decomps("Adjoint(CH)", self_adjoint_legacy)
 add_decomps("Pow(CH)", pow_involutory)
 
 
-class CY(ControlledOp):
+class CY(Controlled2):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -456,6 +457,8 @@ class CY(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    arg_specs = {"wires": Wire[2]}
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -465,40 +468,23 @@ class CY(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    def __init__(self, wires: WiresLike):
+        super().__init__(qp.Y(wires[1:]), wires[:1])
 
-    name = "CY"
-
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
-    def __init__(self, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.Y, wires=wires[1:])
-        super().__init__(base, wires[:1])
-
-    def __repr__(self):
-        return f"CY(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    @override
+    # pylint: disable=unused-argument
+    def __abstract_init__(self, wires: WiresLike):
+        # `wires` is abstract here and carries no information beyond its fixed
+        # size of 2, which always splits into one control and one target wire.
+        super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
 
     def adjoint(self):
         return CY(self.wires)
 
     @staticmethod
-    @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    @override
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -527,32 +513,8 @@ class CY(ControlledOp):
             ]
         )
 
-    @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
 
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CY.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
-
-        """
-        return [qp.CRY(np.pi, wires=wires), qp.S(wires=wires[0])]
-
-
-def _cy_to_cry_s_resources():
+def _cy_to_cry_s_resources(wires: AbstractWires):  # pylint: disable=unused-argument
     return {qp.CRY: 1, qp.S: 1}
 
 
@@ -562,7 +524,7 @@ def _cy(wires: WiresLike, **__):
     qp.S(wires=wires[0])
 
 
-def _cy_to_ppr_resource():
+def _cy_to_ppr_resource(wires: AbstractWires):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="Y"): 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 1,
@@ -581,7 +543,7 @@ def _cy_to_ppr(wires: WiresLike, **_):
 
 add_decomps(CY, _cy, _cy_to_ppr)
 add_decomps("Adjoint(CY)", self_adjoint)
-add_decomps("Pow(CY)", pow_involutory)
+add_decomps("Pow(CY)", pow_involutory2)
 
 
 class CZ(ControlledOp):
@@ -637,7 +599,7 @@ class CZ(ControlledOp):
         super().__init__(base, wires[:1])
 
     def __repr__(self):
-        return f"CZ(wires={self.wires.tolist()})"
+        return f"CZ(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -721,7 +683,7 @@ def _cz_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
-add_decomps("Adjoint(CZ)", self_adjoint)
+add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
@@ -785,7 +747,7 @@ class CSWAP(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"CSWAP(wires={self.wires.tolist()})"
+        return f"CSWAP(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -897,7 +859,7 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
-add_decomps("Adjoint(CSWAP)", self_adjoint)
+add_decomps("Adjoint(CSWAP)", self_adjoint_legacy)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
@@ -990,7 +952,7 @@ class CCZ(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"CCZ(wires={self.wires.tolist()})"
+        return f"CCZ(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -1097,7 +1059,7 @@ class CCZ(ControlledOp):
 def _ccz_resources():
     return {
         qp.CNOT: 6,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(qp.T): 3,
         qp.T: 4,
         qp.Hadamard: 2,
     }
@@ -1134,7 +1096,7 @@ def _ccz_to_toffoli(wires: WiresLike, **__):
 
 
 add_decomps(CCZ, _ccz, _ccz_to_toffoli)
-add_decomps("Adjoint(CCZ)", self_adjoint)
+add_decomps("Adjoint(CCZ)", self_adjoint_legacy)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
@@ -1246,7 +1208,7 @@ class CNOT(ControlledOp):
         return {}
 
     def __repr__(self):
-        return f"CNOT(wires={self.wires.tolist()})"
+        return f"CNOT(wires={self.wires})"
 
     @staticmethod
     @lru_cache
@@ -1316,7 +1278,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
-add_decomps("Adjoint(CNOT)", self_adjoint)
+add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
@@ -1406,7 +1368,7 @@ class Toffoli(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"Toffoli(wires={self.wires.tolist()})"
+        return f"Toffoli(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -1541,7 +1503,7 @@ def _toffoli_resources():
         qp.Hadamard: 2,
         qp.CNOT: 6,
         qp.T: 4,
-        qp.decomposition.adjoint_resource_rep(qp.T, {}): 3,
+        _adjoint_abstract(qp.T): 3,
     }
 
 
@@ -1588,12 +1550,12 @@ def _toffoli_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
-add_decomps("Adjoint(Toffoli)", self_adjoint)
+add_decomps("Adjoint(Toffoli)", self_adjoint_legacy)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 def _toffoli_elbow_resources():
-    return {change_op_basis_resource_rep(resource_rep(qp.Elbow), qp.CNOT): 1}
+    return {change_op_basis_resource_rep(qp.Elbow, qp.CNOT): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
@@ -1748,9 +1710,7 @@ class MultiControlledX(ControlledOp):
         )
 
     def __repr__(self):
-        return (
-            f"MultiControlledX(wires={self.wires.tolist()}, control_values={self.control_values})"
-        )
+        return f"MultiControlledX(wires={self.wires}, control_values={self.control_values})"
 
     @property
     def wires(self):
@@ -1910,7 +1870,7 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
 
 
 def _2cx_elbow_explicit_resources(**__):
-    return {qp.Elbow: 1, qp.CNOT: 1, adjoint_resource_rep(qp.Elbow): 1}
+    return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(qp.Elbow): 1}
 
 
 def _2cx_elbow_explicit_condition(num_control_wires, work_wire_type, num_work_wires, **__):
@@ -1943,7 +1903,7 @@ add_decomps(
     decompose_mcx_with_no_worker,
     decompose_mcx_two_controls_elbows,
 )
-add_decomps("Adjoint(MultiControlledX)", self_adjoint)
+add_decomps("Adjoint(MultiControlledX)", self_adjoint_legacy)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
@@ -2006,7 +1966,7 @@ class CRX(ControlledOp):
         super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
-        return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
+        return f"CRX({self.data[0]}, wires={self.wires})"
 
     def _flatten(self):
         return self.data, (self.wires,)
@@ -2222,7 +2182,7 @@ class CRY(ControlledOp):
         super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
-        return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
+        return f"CRY({self.data[0]}, wires={self.wires}))"
 
     def _flatten(self):
         return self.data, (self.wires,)

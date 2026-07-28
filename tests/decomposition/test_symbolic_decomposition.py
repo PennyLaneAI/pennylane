@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import queuing
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import (
     Resources,
@@ -42,16 +43,23 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
+    self_adjoint_legacy,
     to_controlled_qubit_unitary,
 )
-from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
 from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.controlled2 import to_controlled_unitary
+from pennylane.ops.op_math.pow import pow
+from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
+from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
+from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
 from pennylane.typing import Float, Wire
 
 # pylint: disable=no-name-in-module
@@ -169,10 +177,10 @@ class TestAdjointDecompositionRules:
 
         assert rule.compute_resources(**op.resource_params) == Resources(
             {
-                adjoint_resource_rep(qp.T): 1,
-                adjoint_resource_rep(qp.CNOT): 2,
-                adjoint_resource_rep(qp.RX): 1,
-                adjoint_resource_rep(qp.H): 1,
+                _adjoint_abstract(qp.T): 1,
+                _adjoint_abstract(qp.CNOT): 2,
+                _adjoint_abstract(qp.RX): 1,
+                _adjoint_abstract(qp.H): 1,
             }
         )
 
@@ -200,9 +208,9 @@ class TestAdjointDecompositionRules:
 
         assert rule.compute_resources(**op.arguments) == to_resources(
             {
-                adjoint_resource_rep(qp.T, {}): 1,
-                adjoint_resource_rep(qp.RX, {}): 1,
-                adjoint_resource_rep(qp.H, {}): 1,
+                _adjoint_abstract(qp.T): 1,
+                _adjoint_abstract(qp.RX): 1,
+                _adjoint_abstract(qp.H): 1,
                 Adjoint2(OneWireDynOp(Float, Wire[1])): 1,
             }
         )
@@ -229,17 +237,27 @@ class TestAdjointDecompositionRules:
             {resource_rep(CustomOp, key=0): 1}
         )
 
-    def test_self_adjoint(self):
+    def test_self_adjoint_legacy(self):
         """Tests the self_adjoint decomposition."""
 
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
         with queuing.AnnotatedQueue() as q:
-            self_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+            self_adjoint_legacy(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [CustomOp(0.5, wires=[0, 1, 2])]
-        assert self_adjoint.compute_resources(**op.resource_params) == Resources(
+        assert self_adjoint_legacy.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
+
+    def test_self_adjoint(self):
+        """Tests the self_adjoint decomposition."""
+
+        op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
+        with queuing.AnnotatedQueue() as q:
+            self_adjoint(**op.arguments)
+
+        assert q.queue == [OneWireDynOp(0.5, wires=[0])]
+        assert self_adjoint.compute_resources(**op.arguments) == to_resources({OneWireDynOp: 1})
 
 
 @pytest.mark.unit
@@ -258,6 +276,16 @@ class TestPowDecomposition:
             {pow_resource_rep(qp.H, {}, 6): 1}
         )
 
+    def test_merge_powers2(self):
+        """Test the decomposition rule for nested powers."""
+
+        op = pow(pow(qp.S(0), 3), 2)
+        with qp.queuing.AnnotatedQueue() as q:
+            merge_powers2(**op.arguments)
+
+        assert q.queue == [pow(qp.S(0), 6)]
+        assert merge_powers2.compute_resources(**op.arguments) == to_resources({qp.S(Wire[1]): 6})
+
     def test_repeat_pow_base(self):
         """Tests repeating the same op z number of times."""
 
@@ -267,6 +295,16 @@ class TestPowDecomposition:
 
         assert q.queue == [qp.H(0), qp.H(0), qp.H(0)]
         assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qp.H: 3})
+
+    def test_repeat_pow_base2(self):
+        """Tests repeating the same op z number of times."""
+
+        op = pow(qp.S(0), 3)
+        with qp.queuing.AnnotatedQueue() as q:
+            repeat_pow_base2(**op.arguments)
+
+        assert q.queue == [qp.S(0), qp.S(0), qp.S(0)]
+        assert repeat_pow_base2.compute_resources(**op.arguments) == to_resources({qp.S: 3})
 
     @pytest.mark.capture
     def test_repeat_pow_base_capture(self):
@@ -284,6 +322,22 @@ class TestPowDecomposition:
         collector.eval(plxpr.jaxpr, plxpr.consts)
         assert collector.state["ops"] == [qp.H(0), qp.H(0), qp.H(0)]
 
+    @pytest.mark.capture
+    def test_repeat_pow_base_capture2(self):
+        """Tests that the general pow decomposition works with capture."""
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        op = pow(qp.S(0), 3)
+
+        def circuit():
+            repeat_pow_base2(**op.arguments)
+
+        plxpr = qp.capture.make_plxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        assert collector.state["ops"] == [qp.S(0), qp.S(0), qp.S(0)]
+
     def test_non_integer_pow_not_applicable(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
 
@@ -291,6 +345,14 @@ class TestPowDecomposition:
         assert not repeat_pow_base.is_applicable(**op.resource_params)
         op = qp.pow(qp.H(0), -1)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
+
+    def test_non_integer_pow_not_applicable2(self):
+        """Tests that is_applicable returns False when z isn't a positive integer."""
+
+        op = pow(qp.S(0), 0.5)
+        assert not repeat_pow_base2.is_applicable(**op.arguments)
+        op = pow(qp.S(0), -1)
+        assert not repeat_pow_base2.is_applicable(**op.arguments)
 
     def test_flip_pow_adjoint(self):
         """Tests the flip_pow_adjoint decomposition."""
@@ -306,6 +368,23 @@ class TestPowDecomposition:
                 adjoint_resource_rep(
                     qp.ops.Pow,
                     {"base_class": CustomOp, "base_params": {"key": 0}, "z": 2},
+                ): 1
+            }
+        )
+
+    def test_flip_pow_adjoint2(self):
+        """Tests the flip_pow_adjoint decomposition."""
+
+        op = pow(qp.adjoint(DynOp(0.5, wires=[0, 1, 2])), 2)
+
+        with queuing.AnnotatedQueue() as q:
+            flip_pow_adjoint2(**op.arguments)
+
+        assert q.queue == [qp.adjoint(pow(DynOp(0.5, wires=[0, 1, 2]), 2))]
+        assert flip_pow_adjoint2.compute_resources(**op.arguments) == Resources(
+            {
+                _adjoint_abstract(
+                    Pow2(DynOp(0.5, wires=[0, 1, 2]), 2),
                 ): 1
             }
         )
@@ -345,6 +424,41 @@ class TestPowDecomposition:
 
         assert not pow_involutory.is_applicable(CustomOp, {}, z=0.5)
 
+    def test_pow_involutory2(self):
+        """Tests the pow_involutory decomposition."""
+
+        op1 = pow(DynOp(0.5, wires=[0, 1, 2]), 1)
+        op2 = pow(DynOp(0.5, wires=[0, 1, 2]), 2)
+        op3 = pow(DynOp(0.6, wires=[0, 1, 2]), 3)
+        op4 = pow(DynOp(0.6, wires=[0, 1, 2]), 4)
+        op5 = pow(DynOp(0.7, wires=[0, 1, 2]), 4.5)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            pow_involutory2(**op1.arguments)
+            pow_involutory2(**op2.arguments)
+            pow_involutory2(**op3.arguments)
+            pow_involutory2(**op4.arguments)
+            pow_involutory2(**op5.arguments)
+
+        assert q.queue == [
+            DynOp(0.5, wires=[0, 1, 2]),
+            DynOp(0.6, wires=[0, 1, 2]),
+            pow(DynOp(0.7, wires=[0, 1, 2]), 0.5),
+        ]
+        assert pow_involutory2.compute_resources(**op1.arguments) == Resources(
+            {DynOp(Float, wires=Wire[3]): 1}
+        )
+        assert pow_involutory2.compute_resources(**op3.arguments) == Resources(
+            {DynOp(Float, wires=Wire[3]): 1}
+        )
+        assert pow_involutory2.compute_resources(**op2.arguments) == Resources()
+        assert pow_involutory2.compute_resources(**op4.arguments) == Resources()
+        assert pow_involutory2.compute_resources(**op5.arguments) == Resources(
+            {_pow_abstract(DynOp(Float, wires=Wire[3]), 0.5): 1}
+        )
+
+        assert not pow_involutory2.is_applicable(DynOp(0.5, wires=[0, 1, 2]), z=0.5)
+
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
 
@@ -356,6 +470,25 @@ class TestPowDecomposition:
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
+
+    def test_pow_abstract2(self):
+        """Tests _pow_abstract for both the resource-rep and operator branches."""
+
+        # a resource representation abstractifies to a CompressedResourceOp and yields
+        # a pow_resource_rep
+        assert _pow_abstract(resource_rep(qp.H), 2) == pow_resource_rep(qp.H, {}, 2)
+
+        # a legacy operator type is also abstractified into a CompressedResourceOp
+        assert _pow_abstract(qp.H, 3) == pow_resource_rep(qp.H, {}, 3)
+
+        # the default exponent is 1
+        assert _pow_abstract(resource_rep(qp.H)) == pow_resource_rep(qp.H, {}, 1)
+
+        # an (abstract) Operator2 yields a Pow2
+        abstract_base = DynOp(Float, wires=Wire[3])
+        op = _pow_abstract(abstract_base, 2)
+        assert isinstance(op, Pow2)
+        qp.assert_equal(op, pow(abstract_base, 2))
 
 
 class CustomMultiQubitOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
@@ -461,7 +594,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.CNOT): 1,
+                abstractify(qp.CNOT): 1,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,
@@ -483,11 +616,9 @@ class TestControlledDecomposition:
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1,
-                qp.resource_rep(qp.CRX): 1,
-                qp.resource_rep(qp.CRot): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RZ, {}, num_control_wires=2, num_work_wires=1
-                ): 1,
+                abstractify(qp.CRX): 1,
+                abstractify(qp.CRot): 1,
+                _ctrl_abstract(qp.RZ, Wire[2], Wire[1]): 1,
                 qp.decomposition.controlled_resource_rep(
                     qp.MultiRZ,
                     {"num_wires": 6},
@@ -506,8 +637,8 @@ class TestControlledDecomposition:
                     num_control_wires=1,
                     num_work_wires=1,
                 ): 1,
-                qp.resource_rep(qp.CZ): 1,
-                qp.resource_rep(qp.CCZ): 1,
+                abstractify(qp.CZ): 1,
+                abstractify(qp.CCZ): 1,
             }
         )
 
@@ -615,7 +746,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.X): 2,
+                abstractify(qp.X): 2,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,
@@ -644,15 +775,9 @@ class TestControlledDecomposition:
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RX, {}, num_control_wires=2, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Rot, {}, num_control_wires=2, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RZ, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
+                _ctrl_abstract(qp.RX, Wire[2], Wire[1]): 1,
+                _ctrl_abstract(qp.Rot, Wire[2], Wire[1]): 1,
+                _ctrl_abstract(qp.RZ, Wire[3], Wire[1]): 1,
                 qp.decomposition.controlled_resource_rep(
                     qp.MultiRZ,
                     {"num_wires": 6},
@@ -671,10 +796,8 @@ class TestControlledDecomposition:
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qp.resource_rep(qp.CCZ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
+                abstractify(qp.CCZ): 1,
+                _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
             }
         )
 
@@ -738,7 +861,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.X): 4,
+                abstractify(qp.X): 4,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=3,
@@ -767,15 +890,9 @@ class TestControlledDecomposition:
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RX, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Rot, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.RZ, {}, num_control_wires=4, num_work_wires=1
-                ): 1,
+                _ctrl_abstract(qp.RX, Wire[3], Wire[1]): 1,
+                _ctrl_abstract(qp.Rot, Wire[3], Wire[1]): 1,
+                _ctrl_abstract(qp.RZ, Wire[4], Wire[1]): 1,
                 qp.decomposition.controlled_resource_rep(
                     qp.MultiRZ,
                     {"num_wires": 6},
@@ -794,12 +911,8 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=3, num_work_wires=1
-                ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.Z, {}, num_control_wires=4, num_work_wires=1
-                ): 1,
+                _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
+                _ctrl_abstract(qp.Z, Wire[4], Wire[1]): 1,
             }
         )
 
@@ -1018,7 +1131,7 @@ class TestControlledDecomposition:
             {
                 qp.X: 3,
                 ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1]): 1,
-                controlled_resource_rep(qp.X, {}, num_control_wires=3): 2,
+                _ctrl_abstract(qp.X, Wire[3]): 2,
             }
         )
 

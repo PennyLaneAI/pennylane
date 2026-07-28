@@ -290,8 +290,8 @@ if AllSinglesDoubles._primitive is not None:
 def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
     return {
         resource_rep(BasisState, num_wires=num_wires): 1,
-        resource_rep(DoubleExcitation): num_doubles,
-        resource_rep(SingleExcitation): num_singles,
+        DoubleExcitation: num_doubles,
+        SingleExcitation: num_singles,
     }
 
 

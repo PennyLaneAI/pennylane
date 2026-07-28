@@ -22,13 +22,10 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -176,7 +173,7 @@ class AQFT(Operation):
         **Example:**
 
         >>> qp.AQFT.compute_decomposition((0, 1, 2), order=1)
-        [H(0), ControlledPhaseShift(1.57..., wires=Wires([1, 0])), H(1), ControlledPhaseShift(1.57..., wires=Wires([2, 1])), H(2), SWAP(wires=[0, 2])]
+        [H(0), ControlledPhaseShift(1.57..., wires=[1, 0]), H(1), ControlledPhaseShift(1.57..., wires=[2, 1]), H(2), SWAP(wires=[0, 2])]
 
         """
         n_wires = len(wires)
@@ -206,21 +203,12 @@ class AQFT(Operation):
 
 
 def _AQFT_resources(num_wires, order):
-    resources = {}
-
-    resources[resource_rep(Hadamard)] = num_wires
-
-    resources[
-        controlled_resource_rep(
-            PhaseShift,
-            {},
-            num_control_wires=1,
-        )
-    ] = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
-
-    resources[resource_rep(SWAP)] = num_wires // 2
-
-    return dict(resources)
+    num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
+    return {
+        Hadamard: num_wires,
+        _ctrl_abstract(PhaseShift, Wire[1]): num_ctrl_ps,
+        SWAP: num_wires // 2,
+    }
 
 
 @register_resources(_AQFT_resources)

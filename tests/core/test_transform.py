@@ -37,7 +37,7 @@ with QuantumTape() as tape_circuit:
     qp.expval(qp.PauliZ(wires=0))
 
 
-def qfunc_circuit(a: qp.typing.TensorLike):
+def qfunc_circuit(a: TensorLike):
     """Qfunc circuit/"""
     qp.Hadamard(wires=0)
     qp.CNOT(wires=[0, 1])
@@ -340,7 +340,6 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_error_on_qjit(self):
         """Test that an error is raised on when applying a transform to a qjit object."""
 

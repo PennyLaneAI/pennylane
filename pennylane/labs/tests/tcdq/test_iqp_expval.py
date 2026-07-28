@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests for the IQP expectation value calculator.
-"""
+"""Regression tests for the qubit IQP expectation-value estimator."""
 
 import numpy as np
 import pytest
@@ -30,7 +28,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 def _prepare_obs_batch(obs_strings):
-    """Refactor helper: Normalize obs_strings into a batch integer array and count qubits."""
+    """Normalize observable labels into integer-coded batches."""
     base_map = {"I": 0, "X": 1, "Y": 2, "Z": 3}
 
     if isinstance(obs_strings[0], str) and len(obs_strings[0]) == 1 and obs_strings[0] in base_map:
@@ -42,7 +40,7 @@ def _prepare_obs_batch(obs_strings):
 
 
 def _prepare_pennylane_state(n_qubits, init_state_spec):
-    """Check init_state_spec and build dense complex state vector."""
+    """Build a dense statevector for the PennyLane reference circuit."""
     state = np.zeros(2**n_qubits, dtype=complex)
 
     if init_state_spec is None:
@@ -69,7 +67,7 @@ def _prepare_pennylane_state(n_qubits, init_state_spec):
 
 
 def _prepare_jax_state(init_state_spec):
-    """Convert spec into JAX state elements (X) and amplitudes (P)."""
+    """Convert the optional initial-state specification into JAX arrays."""
     if init_state_spec is None:
         return None, None
 
@@ -84,7 +82,7 @@ def _prepare_jax_state(init_state_spec):
 
 
 def _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch_ints, init_state):
-    """Run the PennyLane default.qubit simulation for the batch of observables."""
+    """Evaluate the PennyLane reference circuit for each observable in a batch."""
     exact_vals = []
     for obs in obs_batch_ints:
         circuit = iqp_circuit_pl(generators_pl, params_pl, obs, init_state)
@@ -93,7 +91,7 @@ def _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch_ints, init_s
 
 
 def iqp_circuit_pl(generators, params, obs_ints, init_state):
-    """Creates a PennyLane QNode for the IQP circuit using integer observables."""
+    """Build a PennyLane reference circuit for one integer-encoded observable."""
     n_qubits = len(obs_ints)
 
     expval_ops = []

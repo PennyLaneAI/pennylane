@@ -326,17 +326,12 @@ class GateFabric(Operation):
 
 
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
-    resources = {
+    rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
+    return {
         resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(DoubleExcitation): n_layers * len_wire_pattern,
+        DoubleExcitation: n_layers * len_wire_pattern,
+        OrbitalRotation: rotation_count,
     }
-
-    if include_pi:
-        resources[resource_rep(OrbitalRotation)] = 2 * n_layers * len_wire_pattern
-    else:
-        resources[resource_rep(OrbitalRotation)] = n_layers * len_wire_pattern
-
-    return resources
 
 
 @register_resources(_gate_fabric_resources)

@@ -19,7 +19,7 @@ TODO: [sc-120453] Fill docstring
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -41,6 +41,7 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -59,6 +60,13 @@ if TYPE_CHECKING:
 has_jax = find_spec("jax") is not None
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
+
+
+class GradMethod(StrEnum):
+    """Supported gradient methods."""
+
+    ANALYTIC = "A"
+    FINITE_DIFF = "F"
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -205,7 +213,7 @@ class Operator2(metaclass=OperatorMeta):
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
-        self._wires = None
+        self._wires = Wires([])
         _init_wires(self)
         _init_arg_types(self)
 
@@ -337,6 +345,11 @@ class Operator2(metaclass=OperatorMeta):
         return self._ndim_params
 
     @property
+    def num_params(self):
+        """Number of trainable parameters."""
+        return len(self.ndim_params)
+
+    @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
@@ -389,6 +402,43 @@ class Operator2(metaclass=OperatorMeta):
     # control_wires).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
+
+    _grad_recipe = None
+    """Legacy Operator compatibility default for parameter-shift recipes."""
+
+    @property
+    def grad_recipe(self):
+        """Compute 'grad_recipe' lazily."""
+        if self._grad_recipe is None:
+            return [None] * self.num_params
+        return self._grad_recipe
+
+    @grad_recipe.setter
+    def grad_recipe(self, recipe):
+        self._grad_recipe = recipe
+
+    @property
+    def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation using the parameter-shift method.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients import parameter_frequencies
+
+        if self.num_params == 0:
+            return None
+        if self.grad_recipe != [None] * self.num_params:
+            return GradMethod.ANALYTIC
+        try:
+            _ = parameter_frequencies(self)
+            return GradMethod.ANALYTIC
+        except ParameterFrequenciesUndefinedError:
+            return GradMethod.FINITE_DIFF
 
     @property
     def data(self) -> tuple:
@@ -512,10 +562,10 @@ class Operator2(metaclass=OperatorMeta):
         ...         return [MyClass(self.phi*z, self.wires)]
         ...
         >>> MyClass(0.5, 0).pow(2)
-        [MyClass(phi=1.0, wires=[0])]
+        [MyClass(1.0, wires=[0])]
         """
         # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # For example, PauliX**2 = I, SX**4 = I.
         # Hence we define the non-negative integer cases here as a repeated list
         if z == 0:
             return []
@@ -568,7 +618,7 @@ class Operator2(metaclass=OperatorMeta):
         ...
         >>> op = MyClass(0.5, wires=0).adjoint()
         >>> op
-        MyClass(phi=0.5, wires=[0])
+        MyClass(0.5, wires=[0])
         """
         raise AdjointUndefinedError
 
@@ -953,25 +1003,40 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
-        inputs = []
+        # NOTE: Handle special case for single wire non-parameteric
+        # operators like 'repr(qp.X(wires=0)) = X(0)'
+        non_wire_args = (
+            self.dynamic_argnames
+            + self.static_argnames
+            + self.compilable_argnames
+            + self.hybrid_argnames
+        )
+        if not non_wire_args and len(self.wire_argnames) == 1:
+            wire_arg = self.arguments[self.wire_argnames[0]]
+            if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
+                return f"{self.name}({wire_arg.tolist()[0]!r})"
 
+        non_dyn_args = self.static_argnames + self.compilable_argnames + self.hybrid_argnames
+
+        inputs = []
         for key, value in self.arguments.items():
-            # Non-wire arguments
-            if key not in self.wire_argnames:
-                res = value
-            # Non-hybrid wire arguments
-            elif key not in self.hybrid_argnames:
-                res = value.tolist() if isinstance(value, Wires) else value
-            # Hybrid wire arguments
-            else:
+            # Hybrid wire arguments.
+            if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
-                res = unflatten(leaves, tree)
+                value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={res}")
+            # Simplified repr for operators with only dynamic args
+            is_dyn = key in self.dynamic_argnames and not non_dyn_args
+            inputs.append(f"{value}" if is_dyn else f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
+
+    def __str__(self) -> str:
+        if self.is_abstract and self.has_fixed_sig:
+            return self.name
+        return repr(self)
 
     def __hash__(self) -> int:
         serialized_dynamic = tuple(
@@ -1232,14 +1297,12 @@ class Operator2(metaclass=OperatorMeta):
                 wire_lens.append(len(value))
 
         hybrid_lens, hybrid_trees = [], []
+        forward_mask = []
         for name in self.hybrid_argnames:
-            # Partial flattening to extract operators used as data so their
-            # equations can be deleted from the jaxpr.
-            op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
-            _ = pop_op_eqns(filter(_is_op, op_leaves))
-
-            # Full flattening to feed the operator's dynamic data to the primitive.
-            leaves, tree = flatten(self.arguments[name])
+            leaves, tree, mask = _process_bind_hybrid_arg(
+                self.arguments[name], is_wire_arg=name in self.wire_argnames
+            )
+            forward_mask.extend(mask)
             pos_args.extend(leaves)
             hybrid_lens.append(len(leaves))
             hybrid_trees.append(tree)
@@ -1257,6 +1320,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            forward_mask=forward_mask,
             n_ctrls=0,
             adjoint=False,
             **static_args,
@@ -1560,7 +1624,7 @@ if has_jax:
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,unused-argument
     @operator_p.def_impl
     def _op_impl(
         *all_args,
@@ -1568,6 +1632,7 @@ if has_jax:
         wire_lens,
         hybrid_lens,
         hybrid_trees,
+        forward_mask,
         n_ctrls=0,
         adjoint=False,
         **static_args,
@@ -1583,9 +1648,12 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete impl.
-                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
+                # TODO: impl is being used here for reconstruction while the interpreter itself is
+                # under JAX tracing. Need to separate this logic from such scenario. For now,
+                # we can use the fact that wires are always integers and cast them to int.
+                args[name] = Wires(
+                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
+                )
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
@@ -1647,6 +1715,37 @@ def pop_op_eqns(ops: Iterable):
             op.tracer = None
 
     return old_eqns
+
+
+def _op_arg_forward_mask(op: Operator2) -> list[bool]:
+    """Build ``forward_mask`` entries for an operator argument."""
+    op_leaves, _ = flatten(op, is_leaf=_is_wires)
+    hybrid_mask = []
+    for op_leaf in op_leaves:
+        if isinstance(op_leaf, Wires):
+            hybrid_mask.extend([False] * len(op_leaf))
+        else:
+            hybrid_mask.append(True)
+    return hybrid_mask
+
+
+def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
+    """Process a hybrid argument for binding an operator primitive."""
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
+    _ = pop_op_eqns(filter(_is_op, partial_leaves))
+
+    leaves, tree = flatten(hybrid_val)
+    if is_wire_arg:
+        return leaves, tree, [False] * len(leaves)
+
+    hybrid_mask: list[bool] = []
+    for partial_leaf in partial_leaves:
+        if isinstance(partial_leaf, Operator2):
+            hybrid_mask.extend(_op_arg_forward_mask(partial_leaf))
+        else:
+            hybrid_mask.append(False)
+
+    return leaves, tree, hybrid_mask
 
 
 # -----------------------------------------------------------------------------
