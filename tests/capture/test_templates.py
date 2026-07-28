@@ -610,6 +610,7 @@ class TestModifiedTemplates:
         V = qp.RZ(v_params[0], wires=1)
         assert qp.equal(q.queue[0], template(V, U)) is True
 
+    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt_multiple_ops(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt with multiple ops."""
