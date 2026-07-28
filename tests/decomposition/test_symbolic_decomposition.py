@@ -81,6 +81,11 @@ class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         return {"key": 0}
 
 
+class DummyHadamard(qp.operation.Operator):
+    resource_keys = set({})
+    num_wires = 1
+
+
 @pytest.mark.unit
 class TestAdjointDecompositionRules:
     """Tests the decomposition rules defined for the adjoint of operations."""
@@ -267,13 +272,13 @@ class TestPowDecomposition:
     def test_merge_powers(self):
         """Test the decomposition rule for nested powers."""
 
-        op = qp.pow(qp.pow(qp.RX(0.1, 0), 3), 2)
+        op = qp.pow(qp.pow(DummyHadamard(0), 3), 2)
         with qp.queuing.AnnotatedQueue() as q:
             merge_powers(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qp.pow(qp.RX(0.1, 0), 6)]
+        assert q.queue == [qp.pow(DummyHadamard(0), 6)]
         assert merge_powers.compute_resources(**op.resource_params) == to_resources(
-            {pow_resource_rep(qp.RX, {}, 6): 1}
+            {pow_resource_rep(DummyHadamard, {}, 6): 1}
         )
 
     def test_merge_powers2(self):
@@ -291,12 +296,12 @@ class TestPowDecomposition:
     def test_repeat_pow_base(self):
         """Tests repeating the same op z number of times."""
 
-        op = qp.pow(qp.RX(0.1, 0), 3)
+        op = qp.pow(DummyHadamard(0), 3)
         with qp.queuing.AnnotatedQueue() as q:
             repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qp.RX(0.1, 0), qp.RX(0.1, 0), qp.RX(0.1, 0)]
-        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qp.RX: 3})
+        assert q.queue == [DummyHadamard(0), DummyHadamard(0), DummyHadamard(0)]
+        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({DummyHadamard: 3})
 
     def test_repeat_pow_base2(self):
         """Tests repeating the same op z number of times."""
@@ -343,9 +348,9 @@ class TestPowDecomposition:
     def test_non_integer_pow_not_applicable(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
 
-        op = qp.pow(qp.I(0), 0.5)
+        op = qp.pow(DummyHadamard(0), 0.5)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
-        op = qp.pow(qp.I(0), -1)
+        op = qp.pow(DummyHadamard(0), -1)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
 
     def test_non_integer_pow_not_applicable2(self):
@@ -478,13 +483,13 @@ class TestPowDecomposition:
 
         # a resource representation abstractifies to a CompressedResourceOp and yields
         # a pow_resource_rep
-        assert _pow_abstract(resource_rep(qp.RX), 2) == pow_resource_rep(qp.RX, {}, 2)
+        assert _pow_abstract(resource_rep(DummyHadamard), 2) == pow_resource_rep(DummyHadamard, {}, 2)
 
         # a legacy operator type is also abstractified into a CompressedResourceOp
-        assert _pow_abstract(qp.RX, 3) == pow_resource_rep(qp.RX, {}, 3)
+        assert _pow_abstract(DummyHadamard, 3) == pow_resource_rep(DummyHadamard, {}, 3)
 
         # the default exponent is 1
-        assert _pow_abstract(resource_rep(qp.RX)) == pow_resource_rep(qp.RX, {}, 1)
+        assert _pow_abstract(resource_rep(DummyHadamard)) == pow_resource_rep(DummyHadamard, {}, 1)
 
         # an (abstract) Operator2 yields a Pow2
         abstract_base = DynOp(Float, wires=Wire[3])
