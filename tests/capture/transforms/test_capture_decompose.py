@@ -197,6 +197,7 @@ class TestDecomposeInterpreter:
             assert len(recwarn) == 0
 
         assert_eqn_matches_op(transformed_jaxpr.eqns[-4], qp.X)
+        assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
         assert_eqn_matches_op(transformed_jaxpr.eqns[-2], qp.PauliY)
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
@@ -244,7 +245,7 @@ class TestDecomposeInterpreter:
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
         assert_eqn_matches_op(jaxpr.eqns[-4], qp.X)
-        assert_eqn_matches_op(jaxpr.eqns[-3], qp.Y)
+        assert_eqn_matches_op(jaxpr.eqns[-3], qp.PauliY)
         assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qp.ops.Prod._primitive
 
@@ -252,8 +253,8 @@ class TestDecomposeInterpreter:
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
             assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive
+            assert_eqn_matches_op(transformed_jaxpr.eqns[-2], qp.PauliY)
             assert_eqn_matches_op(transformed_jaxpr.eqns[-1], qp.X)
-            assert_eqn_matches_op(transformed_jaxpr.eqns[-2], qp.Y)
         else:
             assert transformed_jaxpr.eqns[-4].primitive == qp.PauliX._primitive
             assert transformed_jaxpr.eqns[-3].primitive == qp.PauliZ._primitive

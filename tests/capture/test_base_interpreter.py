@@ -528,7 +528,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 1
-        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)  # no adjoint of x
 
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""

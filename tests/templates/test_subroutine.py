@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for Subroutine and SubroutineOp"""
 
+# pylint: disable=unused-argument
+
 import inspect
 from collections import Counter, defaultdict
 from functools import partial
@@ -23,8 +25,6 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
-
-# pylint: disable=unused-argument
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (

@@ -314,6 +314,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
+# pylint: disable=arguments-differ,unused-argument
 class PauliX(Operator2):
     r"""
     The Pauli X operator
@@ -387,7 +388,6 @@ class PauliX(Operator2):
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -411,13 +411,11 @@ class PauliX(Operator2):
     @staticmethod
     @lru_cache
     @override
-    # pylint: disable=arguments-differ,unused-argument
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
         return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike | None = None) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
