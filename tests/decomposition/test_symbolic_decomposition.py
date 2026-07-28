@@ -81,6 +81,7 @@ class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         return {"key": 0}
 
 
+# pylint: disable=too-few-public-methods
 class DummyHadamard(qp.operation.Operator):
     resource_keys = set({})
     num_wires = 1
