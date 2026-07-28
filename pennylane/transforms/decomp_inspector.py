@@ -372,7 +372,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
     First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-    Full Expansion Gates: {CNOT: 76, GlobalPhase: 75, MidMeasure: 4, RX: 16, RY: 16, RZ: 84}
+    Full Expansion Gates: {CNOT: 76, GlobalPhase: 75, MidMeasure: 4, RX: 19, RY: 16, RZ: 84}
     Weighted Cost: 199.0
 
     For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
@@ -520,7 +520,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
         First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
         Full Expansion Gates: {CNOT: 58, GlobalPhase: 43, RX: 8, RY: 12, RZ: 55}
-
         Weighted Cost: 133.0
         <BLANKLINE>
         Decomposition 2 (name: one_zeroed_worker)
@@ -616,7 +615,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
         First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
         Full Expansion Gates: {CNOT: 58, GlobalPhase: 43, RX: 8, RY: 12, RZ: 55}
-
         Weighted Cost: 133.0
         <BLANKLINE>
         CHOSEN: Decomposition 2 (name: one_zeroed_worker)
