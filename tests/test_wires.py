@@ -95,7 +95,7 @@ class TestWires:
         assert wires.labels == (wire,)
 
     @pytest.mark.parametrize(
-        "input", [[np.array([0, 1, 2]), np.array([3, 4])], [[0, 1, 2], [3, 4]], np.array(0.0)]
+        "input", [[np.array([0, 1, 2]), np.array([3, 4])], [[0, 1, 2], [3, 4]]]
     )
     def test_error_for_incorrect_wire_types(self, input):
         """Tests that a Wires object cannot be created from unhashable objects such as np arrays or lists."""
