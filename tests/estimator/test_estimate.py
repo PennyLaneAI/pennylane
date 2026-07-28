@@ -560,15 +560,15 @@ class TestEstimateResources:
         when processing a qfunc."""
 
         def my_circuit():
-            qp.Hadamard(0)
+            DummyHadamard(0)
             qp.PauliX(1)
 
-        actual_resources = estimate(my_circuit, gate_set={"Hadamard", "X"})()
+        actual_resources = estimate(my_circuit, gate_set={"DummyHadamard", "X"})()
 
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(Hadamard): 1,
+                resource_rep(DummyHadamard): 1,
                 resource_rep(X): 1,
             },
         )
@@ -757,17 +757,16 @@ class TestEstimateResources:
     def test_custom_pow_decomposition(self):
         """Test that a custom pow decomposition can be set and used."""
 
-        # pylint: disable=unused-argument
-        def custom_pow_RZ(pow_z, target_resource_params):
-            return [GateCount(resource_rep(Hadamard), count=2)]
+        def custom_pow_RZ(pow_z, target_resource_params):  # pylint: disable=unused-argument
+            return [GateCount(resource_rep(DummyHadamard), count=2)]
 
         rc = ResourceConfig()
         rc.set_decomp(RZ, custom_pow_RZ, decomp_type="pow")
 
-        res = estimate(Pow(RZ(0.1, wires=0), pow_z=3), config=rc)
-        pl_res = estimate(qp.pow(qp.RZ(0.1, wires=0)), config=rc)
+        res = estimate(Pow(RZ(0.1, wires=0), pow_z=3), config=rc, gate_set={"DummyHadamard"})
+        pl_res = estimate(qp.pow(qp.RZ(0.1, wires=0)), config=rc, gate_set={"DummyHadamard"})
 
-        expected_gates = defaultdict(int, {resource_rep(Hadamard): 2})
+        expected_gates = defaultdict(int, {resource_rep(DummyHadamard): 2})
         expected_resources = Resources(
             zeroed_wires=0, any_state_wires=0, algo_wires=1, gate_types=expected_gates
         )
