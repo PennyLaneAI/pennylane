@@ -19,7 +19,7 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qp
-from pennylane import compiler, control_flow, math, ops
+from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
@@ -472,6 +472,10 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **_):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
+
+    if compiler.active() and not capture.enabled():
+        wires = math.array(wires, like="jax")
+        work_wires = math.array(work_wires, like="jax")
 
     target_wire, control_wires = wires[-1], wires[:-1]
     num_work_wires = len(control_wires) - 2
