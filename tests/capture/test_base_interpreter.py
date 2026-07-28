@@ -189,7 +189,10 @@ def test_controlled_operator_handling(op_class, args, kwargs):
         return qp.expval(qp.Z(0))
 
     jaxpr = jax.make_jaxpr(f)()
-    assert jaxpr.eqns[0].primitive == op_class._primitive
+    if op_class._operator_version == 2:
+        assert_eqn_matches_op(jaxpr.eqns[0], op_class)
+    else:
+        assert jaxpr.eqns[0].primitive == op_class._primitive
 
 
 def test_measurement_handling():
@@ -525,7 +528,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 1
-        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)  # no adjoint of x
 
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""

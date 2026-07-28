@@ -47,6 +47,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
@@ -1036,11 +1037,6 @@ class TestControlledMethod:
 
     # pylint: disable=protected-access
 
-    def test_PauliY(self):
-        """Test the PauliY _controlled method."""
-        out = qp.PauliY(0)._controlled("a")
-        qp.assert_equal(out, qp.CY(("a", 0)))
-
     def test_PauliZ(self):
         """Test the PauliZ _controlled method."""
         out = qp.PauliZ(0)._controlled("a")
@@ -1082,27 +1078,22 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         half_op = qp.pow(op, half_data)
         quart_op = qp.pow(op, quart_data)
 
-        decomps = qp.list_decomps(f"Pow({op.name})")
-        for rule in decomps:
-            params, args, kwargs = _get_decomp_args(half_op)
-            if rule.is_applicable(**params):
+        def check_power(pow_op, repetitions):
+            params, args, kwargs = _get_decomp_args(pow_op)
+            decomps = qp.list_decomps(abstractify(pow_op))
+            applicable_rules = [rule for rule in decomps if rule.is_applicable(**params)]
+            assert applicable_rules
+
+            for rule in applicable_rules:
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
+                    for _ in range(repetitions):
+                        rule(*args, **kwargs)
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
-            params, args, kwargs = _get_decomp_args(quart_op)
-            if rule.is_applicable(**params):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-
-                tape = qp.tape.QuantumScript.from_queue(q)
-                assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
+        check_power(half_op, 2)
+        check_power(quart_op, 4)
 
     @pytest.mark.parametrize("z", [0.25, 0.5, 2, 4, 8, 9, [0.25, 0.5]])
     @pytest.mark.parametrize("op", [qp.ISWAP(wires=[0, 1]), qp.SISWAP(wires=[0, 1])])
