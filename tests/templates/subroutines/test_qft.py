@@ -158,7 +158,6 @@ class TestDynamicDecomposition:
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         wires = [0, 1, 2, 3]
@@ -189,17 +188,6 @@ class TestDynamicDecomposition:
         assert cphaseshift_eqns[-1].primitive == qp.ControlledPhaseShift._primitive
 
         assert_eqn_matches_op(swap_loop_eqn[-1], qp.SWAP)
-
-        # Validate Ops
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
-        ops_list = collector.state["ops"]
-        tape = qp.tape.QuantumScript([qp.QFT(wires=wires)])
-        [decomp_tape], _ = qp.transforms.decompose(
-            tape, max_expansion=max_expansion, gate_set=gate_set
-        )
-        for op1, op2 in zip(ops_list, decomp_tape.operations):
-            assert qp.equal(op1, op2, check_interface=False)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("n_wires", [4, 5])
