@@ -523,6 +523,8 @@ class AbstractWires:
 
     def __repr__(self):
         if self._type_name:
+            if self.num_wires == 1:
+                return self._type_name
             return f"{self._type_name}[{self.num_wires}]"
         return f"AbstractWires({self.num_wires})"
 

@@ -496,7 +496,7 @@ def test_custom_abstract_wire_factory_repr(num_wires):
         assert repr(obj) == f"Wire[{num_wires}]"
     else:
         obj = Wire
-        assert repr(obj) == "Wire[1]"
+        assert repr(obj) == "Wire"
 
 
 class TestAbstractWires:
