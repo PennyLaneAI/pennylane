@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
 """
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
@@ -26,6 +25,7 @@ from pennylane.core.operator import Channel
 from pennylane.wires import Wires, WiresLike
 
 #: Small epsilon added to sqrt to prevent floating-point errors during qubit channel normalization.
+# pylint: disable=too-many-arguments
 _SQRT_STABILITY_EPS = 1e-14
 
 
@@ -796,9 +796,10 @@ class QubitChannel(Channel):
     def _flatten(self):
         return (self.data,), (self.wires, ())
 
-    # pylint: disable=arguments-differ, unused-argument
     @classmethod
-    def _primitive_bind_call(cls, K_list, wires: WiresLike):
+    def _primitive_bind_call(
+        cls, K_list, wires: WiresLike
+    ):  # pylint: disable=arguments-differ, unused-argument
         wires = Wires(wires)
         return super()._primitive_bind_call(*K_list, wires=wires)
 

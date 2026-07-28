@@ -376,6 +376,7 @@ class TestFromBloq:
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestToBloqDecomposition:
+    # pylint: disable=redefined-outer-name
     """Test ToBloq and to_bloq with the decomposition call_graph mode.
 
     These tests verify that operators are correctly wrapped or mapped to Qualtran Bloqs

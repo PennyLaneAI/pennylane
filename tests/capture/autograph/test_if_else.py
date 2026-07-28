@@ -16,7 +16,6 @@
 converting if/else statements to qp.cond."""
 
 # pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
-
 import pytest
 
 import pennylane as qp
@@ -195,8 +194,7 @@ class TestConditionals:
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-        # pylint: disable=singleton-comparison
-        assert res(5) == 25
+        assert res(5) == 25  # pylint: disable=singleton-comparison
         assert res(2) == 8
 
     def test_multiple_return(self):
@@ -253,9 +251,8 @@ class TestConditionals:
             def cond_fn():
                 return n**2
 
-            # pylint: disable=unused-variable
             @cond_fn.otherwise
-            def else_fn():
+            def else_fn():  # pylint: disable=unused-variable
                 return n
 
             return cond_fn()
@@ -270,9 +267,8 @@ class TestConditionals:
         """Test that an exception is raised when the true branch defines a value without an else
         branch.
         """
-        # pylint: disable=using-constant-test
 
-        def circuit(val):
+        def circuit(val):  # pylint: disable=using-constant-test
             if val:
                 res = measure(wires=0)
 
@@ -285,9 +281,8 @@ class TestConditionals:
 
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
-        # pylint: disable=using-constant-test
 
-        def circuit(val1, val2):
+        def circuit(val1, val2):  # pylint: disable=using-constant-test
             if val1:
                 res = 1
             elif val2:

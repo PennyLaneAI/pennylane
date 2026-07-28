@@ -135,9 +135,7 @@ class CommutationDAGNode:
         reachable (bool): Attribute used to check reachability by pairwise commutation.
     """
 
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-arguments
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-many-instance-attributes, too-many-arguments, too-few-public-methods
 
     __slots__ = [
         "op",

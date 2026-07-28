@@ -59,8 +59,7 @@ JAX 0.7.x only has ``DynamicJaxprTrace`` — the ``StagingJaxprTrace`` from olde
 JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 """
 
-# pylint: disable=too-many-arguments
-# pylint: disable=protected-access,possibly-used-before-assignment
+# pylint: disable=too-many-arguments, protected-access, possibly-used-before-assignment
 
 has_jax = True
 try:

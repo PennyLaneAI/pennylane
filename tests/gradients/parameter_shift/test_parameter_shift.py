@@ -1314,8 +1314,7 @@ class TestParamShiftUsingBroadcasting:
 
 
 # The first of the pylint disable is for cost1 through cost6
-# pylint: disable=no-self-argument, not-an-iterable
-# pylint: disable=too-many-public-methods
+# pylint: disable=no-self-argument, not-an-iterable, too-many-public-methods
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
 

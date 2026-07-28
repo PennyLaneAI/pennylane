@@ -669,7 +669,15 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
     """
 
     def __init__(
-        self, circuit_dag, pattern_dag, node_id_c, node_id_p, wires, control_wires, target_wires
+        # pylint: disable=too-many-arguments
+        self,
+        circuit_dag,
+        pattern_dag,
+        node_id_c,
+        node_id_p,
+        wires,
+        control_wires,
+        target_wires,
     ):
         """
         Create the ForwardMatch class.

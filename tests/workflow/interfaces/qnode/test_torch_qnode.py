@@ -13,8 +13,7 @@
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
 
-# pylint: disable=too-many-arguments, no-member, comparison-with-callable
-# pylint: disable=unnecessary-lambda-assignment, use-dict-literal
+# pylint: disable=too-many-arguments, no-member, comparison-with-callable, unnecessary-lambda-assignment, use-dict-literal
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice

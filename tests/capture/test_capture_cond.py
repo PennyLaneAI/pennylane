@@ -15,8 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name
-# pylint: disable=no-self-use,unbalanced-tuple-unpacking
+# pylint: disable=redefined-outer-name, no-self-use, unbalanced-tuple-unpacking
 
 from functools import partial
 

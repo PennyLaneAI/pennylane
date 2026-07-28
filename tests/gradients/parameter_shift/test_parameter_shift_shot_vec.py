@@ -497,8 +497,7 @@ class TestParamShift:
 
 
 # The first line of pylint disable is for cost1 through cost6
-# pylint: disable=no-self-argument, not-an-iterable
-# pylint: disable=too-many-public-methods
+# pylint: disable=no-self-argument, not-an-iterable, too-many-public-methods
 @pytest.mark.slow
 @pytest.mark.parametrize("broadcast", [False, True])
 class TestParameterShiftRule:
@@ -1945,7 +1944,9 @@ class TestParameterShiftRule:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupporingSpecialObservable(DefaultQubitLegacy):
+        class DeviceSupporingSpecialObservable(
+            DefaultQubitLegacy
+        ):  # pylint: disable=too-few-public-methods
             """A custom device that supports the above SpecialObservable."""
 
             name = "Device supporting SpecialObservable"

@@ -15,7 +15,6 @@
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
 # pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports, too-many-public-methods
-
 from unittest import mock
 
 import numpy as np
@@ -454,9 +453,8 @@ class TestForLoops:
 
         assert np.allclose(result, [2, 5])
 
-    # pylint: disable=undefined-loop-variable
     @pytest.mark.xfail(reason="currently unsupported, but we may find a way to do so in the future")
-    def test_iteration_element_access_no_init(self):
+    def test_iteration_element_access_no_init(self):  # pylint: disable=undefined-loop-variable
         """Test that access to the iteration index/elements is possible after the loop executed
         even without prior initialization."""
 

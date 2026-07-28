@@ -289,6 +289,7 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
 
 
 class Adjoint(SymbolicOp):
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     """
     The Adjoint of an operator.
 
@@ -399,7 +400,6 @@ class Adjoint(SymbolicOp):
         base_matrix = self.base.matrix(wire_order=wire_order)
         return moveaxis(conj(base_matrix), -2, -1)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
@@ -422,7 +422,6 @@ class Adjoint(SymbolicOp):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
         return conj(self.base.eigvals())
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
@@ -430,7 +429,6 @@ class Adjoint(SymbolicOp):
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
         return True
@@ -446,6 +444,7 @@ class Adjoint(SymbolicOp):
 
 
 class AdjointOperation(Adjoint, Operation):
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
 
@@ -489,16 +488,14 @@ class AdjointOperation(Adjoint, Operation):
     def grad_method(self):
         return self.base.grad_method
 
-    # pylint: disable=missing-function-docstring
     @property
-    def grad_recipe(self):
+    def grad_recipe(self):  # pylint: disable=missing-function-docstring
         return self.base.grad_recipe
 
     @property
     def parameter_frequencies(self):
         return self.base.parameter_frequencies
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
         return self.base.has_generator

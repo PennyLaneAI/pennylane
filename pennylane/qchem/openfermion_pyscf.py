@@ -13,8 +13,7 @@
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``."""
 
-# pylint: disable=too-many-arguments,unused-variable
-# pylint: disable=consider-using-generator
+# pylint: disable=too-many-arguments, unused-variable, consider-using-generator
 import os
 
 import numpy as np

@@ -29,8 +29,7 @@ wrap_arrays(_random.__dict__, globals())
 
 if Version(np_version) in SpecifierSet(">=0.17.0"):
 
-    # pylint: disable=too-few-public-methods
-    # pylint: disable=missing-class-docstring
+    # pylint: disable=too-few-public-methods, missing-class-docstring
     class Generator(_random.Generator):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)

@@ -13,8 +13,7 @@
 # limitations under the License.
 """Tests for capturing Pauli product measurements."""
 
-# pylint: disable=wrong-import-order,wrong-import-position,ungrouped-imports
-
+# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 import pytest
 
 import pennylane as qp

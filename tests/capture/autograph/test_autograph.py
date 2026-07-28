@@ -15,8 +15,7 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# pylint: disable = wrong-import-position, wrong-import-order, ungrouped-imports
-
+# pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
 from functools import partial
 
 import numpy as np

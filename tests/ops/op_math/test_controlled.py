@@ -52,9 +52,7 @@ from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
 
-# pylint: disable=protected-access
-# pylint: disable=expression-not-assigned
-# pylint: disable=too-many-arguments
+# pylint: disable=protected-access, expression-not-assigned, too-many-arguments
 
 
 def equal_list(lhs, rhs):

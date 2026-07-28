@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=unused-argument
 """
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
@@ -139,8 +140,7 @@ def httpserver_listen_address():
     return ("localhost", 8888)
 
 
-# pylint:disable=unused-argument
-# pylint:disable=dangerous-default-value
+# pylint: disable=unused-argument, dangerous-default-value
 def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json"}):
     """Return mocked get response depending on json content."""
     resp = MagicMock(ok=True)

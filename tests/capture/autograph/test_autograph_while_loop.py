@@ -15,7 +15,6 @@
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
 # pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
-
 import pytest
 
 import pennylane as qp

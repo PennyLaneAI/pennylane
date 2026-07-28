@@ -395,9 +395,10 @@ class MPSPrep(Operation):
             self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
         )
 
-    # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
-    def _primitive_bind_call(cls, mps, wires, work_wires=None, right_canonicalize=False):
+    def _primitive_bind_call(
+        cls, mps, wires, work_wires=None, right_canonicalize=False
+    ):  # pylint: disable=arguments-differ, too-many-arguments
         return super()._primitive_bind_call(
             *mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )

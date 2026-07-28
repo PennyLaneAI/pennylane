@@ -78,6 +78,8 @@ class Pow2(SymbolicOp2):
 
     """
 
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+
     z: int | float
 
     wire_argnames = ()
@@ -125,7 +127,6 @@ class Pow2(SymbolicOp2):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
     def has_sparse_matrix(self) -> bool:
@@ -148,7 +149,6 @@ class Pow2(SymbolicOp2):
             return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
     def has_decomposition(self):
@@ -225,7 +225,6 @@ class Pow2(SymbolicOp2):
         base_eigvals = base.eigvals()
         return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
     def has_generator(self):
@@ -250,7 +249,6 @@ class Pow2(SymbolicOp2):
     def pow(self, z):
         return [Pow2(base=self.base, z=self.z * z)]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
     def has_adjoint(self):
@@ -310,23 +308,21 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
     return qp.pow(op, z)
 
 
-# pylint: disable=protected-access,unused-argument
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
 @register_resources(lambda base, z: {abstractify(base): z})
-def repeat_pow_base(base, z):
+def repeat_pow_base(base, z):  # pylint: disable=protected-access, unused-argument
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
     @qp.for_loop(0, z)
-    def _loop(i):
+    def _loop(i):  # pylint: disable=unused-argument
         qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(lambda base, z: {abstractify(base.base): z * base.z})
-def merge_powers(base, z):
+def merge_powers(base, z):  # pylint: disable=protected-access, unused-argument
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
 
@@ -336,9 +332,8 @@ def _flip_pow_adjoint_resource(base, z):
     return {qp.adjoint(Pow2(base.base, z=z)): 1}
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(_flip_pow_adjoint_resource)
-def flip_pow_adjoint(base, z, **__):
+def flip_pow_adjoint(base, z, **__):  # pylint: disable=protected-access, unused-argument
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     adjoint(qp.pow(base.base, z))

@@ -128,9 +128,7 @@ class QNSPSAOptimizer:
     Step 50: cost = -0.9984
     """
 
-    # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
     def __init__(
         self,
         stepsize=1e-3,

@@ -480,8 +480,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
     return new_qfunc
 
 
-# pylint: disable=too-many-arguments, too-many-public-methods
-class Controlled(SymbolicOp):
+class Controlled(SymbolicOp):  # pylint: disable=too-many-arguments, too-many-public-methods
     r"""Symbolic operator denoting a controlled operator.
 
     Args:
@@ -618,8 +617,7 @@ class Controlled(SymbolicOp):
             return True
         return NotImplemented
 
-    # pylint: disable=unused-argument
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         """
             Choose the concrete class to allocate for a controlled operator.
 
@@ -637,9 +635,8 @@ class Controlled(SymbolicOp):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
-    # pylint: disable=arguments-differ, too-many-positional-arguments
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-differ, too-many-positional-arguments
         cls,
         base,
         control_wires,
@@ -659,8 +656,7 @@ class Controlled(SymbolicOp):
             work_wire_type=work_wire_type,
         )
 
-    # pylint: disable=too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-positional-arguments
         self,
         base,
         control_wires: WiresLike,
@@ -1139,8 +1135,7 @@ class ControlledOp(Controlled, Operation):
         # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
-    # pylint: disable=too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-positional-arguments
         self,
         base,
         control_wires,
