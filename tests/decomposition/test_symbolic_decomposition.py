@@ -302,7 +302,9 @@ class TestPowDecomposition:
             repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [DummyHadamard(0), DummyHadamard(0), DummyHadamard(0)]
-        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({DummyHadamard: 3})
+        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources(
+            {DummyHadamard: 3}
+        )
 
     def test_repeat_pow_base2(self):
         """Tests repeating the same op z number of times."""
@@ -484,7 +486,9 @@ class TestPowDecomposition:
 
         # a resource representation abstractifies to a CompressedResourceOp and yields
         # a pow_resource_rep
-        assert _pow_abstract(resource_rep(DummyHadamard), 2) == pow_resource_rep(DummyHadamard, {}, 2)
+        assert _pow_abstract(resource_rep(DummyHadamard), 2) == pow_resource_rep(
+            DummyHadamard, {}, 2
+        )
 
         # a legacy operator type is also abstractified into a CompressedResourceOp
         assert _pow_abstract(DummyHadamard, 3) == pow_resource_rep(DummyHadamard, {}, 3)
