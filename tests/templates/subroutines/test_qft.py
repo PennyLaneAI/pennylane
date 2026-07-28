@@ -21,6 +21,7 @@ from gate_data import QFT
 
 import pennylane as qp
 from pennylane.capture import run_autograph
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 
 @pytest.mark.jax
@@ -179,7 +180,7 @@ class TestDynamicDecomposition:
         outer_loop_eqn = outer_loop.params["jaxpr_body_fn"].eqns
         swap_loop_eqn = swap_loop.params["jaxpr_body_fn"].eqns
 
-        hadamards = [eqn for eqn in outer_loop_eqn if eqn.primitive == qp.Hadamard._primitive]
+        hadamards = [eqn for eqn in outer_loop_eqn if "op_cls" in eqn.params and eqn.params["op_cls"] == qp.Hadamard]
         assert len(hadamards) == 1
 
         cphaseshift_loop = [eqn for eqn in outer_loop_eqn if eqn.primitive == for_loop_prim]
@@ -187,7 +188,7 @@ class TestDynamicDecomposition:
         cphaseshift_eqns = cphaseshift_loop[0].params["jaxpr_body_fn"].eqns
         assert cphaseshift_eqns[-1].primitive == qp.ControlledPhaseShift._primitive
 
-        assert swap_loop_eqn[-1].primitive == qp.SWAP._primitive
+        assert_eqn_matches_op(swap_loop_eqn[-1], qp.SWAP)
 
         # Validate Ops
         collector = CollectOpsandMeas()
