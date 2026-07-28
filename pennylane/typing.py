@@ -374,7 +374,7 @@ class _AbstractTypeFactory(AbstractArray):
     using an override of the __getitem__ method.
     """
 
-    def __init__(self, name, dtype):
+    def __init__(self, dtype, name: str | None = None):
         self.name = name
         super().__init__((), dtype, _type_name=self.name)
 
@@ -406,7 +406,7 @@ class _AbstractTypeFactory(AbstractArray):
         return res
 
 
-Int = _AbstractTypeFactory("Int", int)
+Int = _AbstractTypeFactory(int, name="Int")
 """An :class:`~.AbstractArray` of ``dtype=int``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -420,7 +420,7 @@ AbstractArray((-1, 10), int64, weak_type=True)
 """
 
 
-Float = _AbstractTypeFactory("Float", float)
+Float = _AbstractTypeFactory(float, name="Float")
 """An :class:`~.AbstractArray` of ``dtype=float``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -433,7 +433,7 @@ AbstractArray((-1, 10), float64, weak_type=True)
 
 """
 
-Bool = _AbstractTypeFactory("Bool", bool)
+Bool = _AbstractTypeFactory(bool, name="Bool")
 """An :class:`~.AbstractArray` of ``dtype=bool``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -447,7 +447,7 @@ AbstractArray((-1, 10), bool, weak_type=True)
 """
 
 
-Complex = _AbstractTypeFactory("Complex", complex)
+Complex = _AbstractTypeFactory(complex, name="Complex")
 """An :class:`~.AbstractArray` of ``dtype=complex``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -544,7 +544,7 @@ class _AbstractWireTypeFactory(AbstractWires):
     using an override of the __getitem__ method.
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str | None = None):
         self.name = name
         super().__init__(1, _type_name=name)
 

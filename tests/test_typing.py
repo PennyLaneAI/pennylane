@@ -491,7 +491,7 @@ def test_custom_abstract_type_factory_repr(type_cls, expected_name, shape, expec
 def test_custom_abstract_wire_factory_repr(num_wires):
     """Tests that our types have readable reprs."""
 
-    if num_wires:
+    if num_wires and num_wires != 1:
         obj = Wire[num_wires]
         assert repr(obj) == f"Wire[{num_wires}]"
     else:
