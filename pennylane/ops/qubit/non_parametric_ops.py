@@ -278,7 +278,7 @@ def _hadamard_ppm_resources():
     return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
 
 
-@qp.register_resources(_hadamard_ppm_resources, work_wires={"zeroed": 1})
+@qp.register_resources(_hadamard_ppm_resources, work_wires={"burnable": 1})
 def _hadamard_ppm(wires, **__):
     with qp.allocate(1, state="zero", restored=False) as work_wires:
         qp.Z(wires)

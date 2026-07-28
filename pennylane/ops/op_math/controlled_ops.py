@@ -564,7 +564,7 @@ def _cy_lattice_surgery_ppm_resources():
     return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.Y: 1, qp.GlobalPhase: 1}
 
 
-@qp.register_resources(_cy_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+@qp.register_resources(_cy_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
 def _cy_lattice_surgery_ppm(wires: WiresLike, **__):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Y)
 
@@ -703,7 +703,7 @@ def _cz_lattice_surgery_ppm_resources():
     return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3, qp.GlobalPhase: 1}
 
 
-@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
 def _cz_lattice_surgery_ppm(wires: WiresLike, **__):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Z)
 
@@ -1295,7 +1295,7 @@ def _cnot_lattice_surgery_ppm_resources():
     return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1, qp.GlobalPhase: 1}
 
 
-@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"zeroed": 1})
+@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
 def _cnot_lattice_surgery_ppm(wires: WiresLike, **__):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.X)
 
