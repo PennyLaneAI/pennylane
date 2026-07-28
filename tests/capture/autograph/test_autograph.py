@@ -316,7 +316,8 @@ class TestIntegration:
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
-        assert inner_jaxpr.eqns[1].primitive.name == "Adjoint"
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)
+        assert inner_jaxpr.eqns[0].params["adjoint"] is True
 
     def test_adjoint_of_operator_type(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
@@ -396,15 +397,16 @@ class TestIntegration:
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
 
-        @qp.qnode(qp.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=4))
         def circ():
             qp.H(0)
-            qp.ctrl(qp.X(1), control=0)
+            qp.ctrl(qp.Y(1), control=[2, 3])
             return qp.state()
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
-        assert inner_jaxpr.eqns[2].primitive.name == "Controlled"
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.Y)
+        assert inner_jaxpr.eqns[1].params["n_ctrls"] == 2
 
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""

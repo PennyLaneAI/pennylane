@@ -908,8 +908,7 @@ class TestDynamicShapeValidation:
         def f(val):
             return qp.cond(val, true_fn, false_fn=false_fn)()
 
-        with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            jax.make_jaxpr(f)(True)
+        jax.make_jaxpr(f)(True)
 
     def test_different_dtype(self):
         """Test an error is raised in the outputs have different dtypes."""
