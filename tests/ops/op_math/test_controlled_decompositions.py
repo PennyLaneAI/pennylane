@@ -1158,6 +1158,7 @@ class TestMCXDecomposition:
             "Adjoint(S)",
             "Adjoint(T)",
             "RZ",
+            "Hadamard",
             "GlobalPhase",
         }
 
