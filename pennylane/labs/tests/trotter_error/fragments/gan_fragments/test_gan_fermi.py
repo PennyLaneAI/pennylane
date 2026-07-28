@@ -100,7 +100,9 @@ def test_is_zero_on_repeated_adjacent_operator():
     assert not GanFermiWord([c0]).is_zero()
     assert not GanFermiWord.identity().is_zero()  # empty word is the identity, not zero
 
-    # repeated but non-adjacent is NOT flagged zero by this (syntactic) check
+    # Currently, the is_zero method only looks for consecutive creation operators on the same mode,
+    # which leaves some operators equivalent to zero found. This test verifies that such a zero is correctly
+    # not flagged as zero
     a1 = FermiOp.annihilation_mol(1)
     assert not GanFermiWord([c0, a1, c0]).is_zero()
 

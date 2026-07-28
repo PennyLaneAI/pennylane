@@ -132,7 +132,7 @@ def _met_edges(s: int, config: GanConfig):
 
 
 def _expected_mol_mol(s, k, config):
-    """Returns the expected evaluation of [F_s, F_k] where s and k are in the mol space"""
+    """Returns the expected evaluation of [F_s, F_k] where s and k are molecular orbitals"""
     terms = defaultdict(GanBosonic.identity)
     for e1 in _mol_edges(s, config):
         for e2 in _mol_edges(k, config):
@@ -165,7 +165,7 @@ def _expected_mol_mol(s, k, config):
 
 
 def _expected_met_met(s, k, config):
-    """Returns the expected evluation of [F_s, F_k] where s and k are in the met space"""
+    """Returns the expected evluation of [F_s, F_k] where s and k are metallic orbitals"""
     terms = defaultdict(GanBosonic.identity)
     for e1 in _met_edges(s, config):
         for e2 in _met_edges(k, config):
@@ -218,7 +218,7 @@ def _expected_met_met(s, k, config):
 
 
 def _expected_mol_met(s, k, config):
-    """Returns the expected evaluation of [F_s, F_k] where s is in the mol space and k is in the met space"""
+    """Returns the expected evaluation of [F_s, F_k] where s is a molecular orbital and k is a metallic orbital"""
     terms = defaultdict(GanBosonic.identity)
     for e1 in _mol_edges(s, config):
         for e2 in _met_edges(k, config):
@@ -268,7 +268,7 @@ def _expected_mol_met(s, k, config):
 
 
 def _expected_feps_met(s, config):
-    """Returns the expected evaluation of [F_eps, F_s] where s is in the met space"""
+    """Returns the expected evaluation of [F_eps, F_s] where s is a metallic orbital"""
     terms = defaultdict(GanBosonic.identity)
     for i, a in _met_edges(s, config):
 
@@ -292,7 +292,7 @@ def _expected_feps_met(s, config):
 
 
 def _expected_f0_mol(s, config):
-    """Returns the expected evaluation of [F_0, F_s] where s is in the mol space"""
+    """Returns the expected evaluation of [F_0, F_s] where s is a molecular orbital"""
     F0 = _diagonal(config)
     Fs = _mol_matching(s, config)
 
@@ -386,7 +386,7 @@ def _expected_f0_mol(s, config):
 
 
 def _expected_f0_met(s, config):
-    """Returns the expected evaluation of [F_0, F_s] where s is in the met space"""
+    """Returns the expected evaluation of [F_0, F_s] where s is a metallic orbital"""
 
     terms = defaultdict(GanBosonic.identity)
     for r in range(config.n_mol):
@@ -473,7 +473,7 @@ def _expected_f0_met(s, config):
 
 @pytest.mark.parametrize("s, k", [(0, 1), (1, 2), (2, 0), (0, 2), (1, 0)])
 def test_commutator_mol_mol(s, k, config):
-    """Test [F_s, F_k] evaluates correctly where s and k are in the mol space"""
+    """Test [F_s, F_k] evaluates correctly where s and k are molecular orbitals"""
     Fs = _mol_matching(s, config)
     Fk = _mol_matching(k, config)
 
@@ -488,7 +488,7 @@ def test_commutator_mol_mol(s, k, config):
 
 @pytest.mark.parametrize("s, k", [(0, 1), (1, 3), (2, 5), (0, 3), (4, 2)])
 def test_commutator_met_met(s, k, config):
-    """Test [F_s, F_k] evaluates correctly where s and k are in the met space"""
+    """Test [F_s, F_k] evaluates correctly where s and k are metallic orbitals"""
     Fs = _met_matching(s, config)
     Fk = _met_matching(k, config)
 
@@ -503,7 +503,7 @@ def test_commutator_met_met(s, k, config):
 
 @pytest.mark.parametrize("s, k", [(0, 1), (1, 2), (2, 4), (0, 5), (1, 0)])
 def test_commutator_mol_met(s, k, config):
-    """Test [F_s, F_k] evaluates correclty where s is in the mol space and k is in the met space"""
+    """Test [F_s, F_k] evaluates correclty where s is a molecular orbital and k is a metallic orbital"""
     Fs = _mol_matching(s, config)
     Fk = _met_matching(k, config)
 
@@ -531,7 +531,7 @@ def test_commutator_feps_f0_vanishes(config, feps):
 
 @pytest.mark.parametrize("s", [0, 1, 2, 3, 4, 5])
 def test_commutator_feps_met(s, config, feps):
-    """Test [F_eps, F_s] evaluates correclty where s is in the met space"""
+    """Test [F_eps, F_s] evaluates correclty where s is a metallic orbital"""
     Fs = _met_matching(s, config)
 
     comm = CommutatorNode(SymbolNode("Feps"), SymbolNode("Fs"))
@@ -545,7 +545,7 @@ def test_commutator_feps_met(s, config, feps):
 
 @pytest.mark.parametrize("s", [0, 1, 2])
 def test_commutator_f0_mol(s, config):
-    """Test [F_0, F_s] evaluates correctly where s is in the mol space"""
+    """Test [F_0, F_s] evaluates correctly where s is a molecular orbital"""
     F0 = _diagonal(config)
     Fs = _mol_matching(s, config)
 
@@ -560,7 +560,7 @@ def test_commutator_f0_mol(s, config):
 
 @pytest.mark.parametrize("s", [0, 1, 2, 3, 4, 5])
 def test_commutator_f0_met(s, config):
-    """Test [F_0, F_s] evaluates correctly where s is in the met space"""
+    """Test [F_0, F_s] evaluates correctly where s is a metallic orbital"""
     F0 = _diagonal(config)
     Fs = _met_matching(s, config)
 
