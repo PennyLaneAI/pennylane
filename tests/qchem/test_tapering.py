@@ -920,7 +920,6 @@ def test_taper_wire_order(symbols, geometry):
 
 
 @pytest.mark.jax
-@pytest.mark.xfail(reason="taper is not jit compatible now that wires are traced pytree leaves.")
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge"),
     [
