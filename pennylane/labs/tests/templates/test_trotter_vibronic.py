@@ -432,7 +432,7 @@ class TestTrotterVibronic:
 @pytest.mark.catalyst
 def test_catalyst_legacy_frontend(seed):
     """Test for compiling and running the template with qjit."""
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel,no-value-for-parameter
 
     from catalyst.device.decomposition import catalyst_decompose
 
