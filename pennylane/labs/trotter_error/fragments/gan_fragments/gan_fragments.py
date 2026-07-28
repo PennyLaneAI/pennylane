@@ -22,11 +22,7 @@ The class hierarchy is built bottom-up:
 * :class:`GanBosonic` --- a linear combination of monomials; this plays the role
   of a (operator-valued) scalar multiplying a fermionic string.
 * :class:`GanFragment` --- a :class:`~.Fragment` represented as a mapping from
-  :class:`~.GanFermi` to :class:`GanBosonic`, i.e. the full GAN operator.
-
-Each class exposes a :meth:`norm` method returning an upper bound on the
-spectral norm (used for Trotter-error bounds), and the arithmetic dunder methods
-needed to add and multiply operators.
+  :class:`~.GanFermiWord` to :class:`GanBosonic`, i.e. the full GAN operator.
 """
 
 from __future__ import annotations
@@ -42,7 +38,7 @@ from typing import Sequence
 import numpy as np
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import GanFermi
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import GanFermiWord
 
 
 class FuncType(IntEnum):
@@ -369,17 +365,17 @@ class GanFragment(Fragment):
     """A GAN Hamiltonian (or fragment) as a mapping of fermionic strings to coefficients.
 
     Implements the :class:`~.Fragment` interface required by the Trotter-error
-    module. The operator is stored as a dictionary from :class:`~.GanFermi` to
+    module. The operator is stored as a dictionary from :class:`~.GanFermiWord` to
     :class:`GanBosonic`, i.e. each fermionic string carries a nuclear-function
     polynomial coefficient. Terms whose fermionic string vanishes or whose
     coefficient is zero are dropped at construction.
 
     Args:
-        fragment (dict[GanFermi, GanBosonic]): the fermionic-string-to-coefficient
+        fragment (dict[GanFermiWord, GanBosonic]): the fermionic-string-to-coefficient
             mapping defining the operator.
     """
 
-    def __init__(self, fragment: dict[GanFermi, GanBosonic]):
+    def __init__(self, fragment: dict[GanFermiWord, GanBosonic]):
         self.fragment = {
             fermi: coeff
             for fermi, coeff in fragment.items()

@@ -29,7 +29,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme i
     _nuclear_reference,
     gan_fragments,
 )
-from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermi
+from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fermi import FermiOp, GanFermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     FuncSymbol,
     GanBosonic,
@@ -185,14 +185,14 @@ def test_molecule_metal_transfer_constant_term(config):
 def test_diagonal_contains_identity_nuclear_reference(config):
     """Test that the diagonal contains the nuclear reference"""
     frag = _diagonal(config)
-    assert GanFermi.identity() in frag.fragment
+    assert GanFermiWord.identity() in frag.fragment
 
 
 def test_kinetic_has_metallic_number_terms(config):
     """Test that kinetic term contains the correct number of terms"""
     frag = _kinetic(config)
     for i in range(config.n_met):
-        num = GanFermi([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
+        num = GanFermiWord([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
         assert num in frag.fragment
 
 
