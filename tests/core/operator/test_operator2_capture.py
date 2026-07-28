@@ -12,7 +12,7 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking
+# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-position
 
 import pytest
 from operator2_utils import (
@@ -30,6 +30,7 @@ import pennylane as qp
 from pennylane import apply
 
 jax = pytest.importorskip("jax")
+from pennylane.capture import PlxprInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -318,6 +319,20 @@ class TestHybridCapture:
 
 class TestReconstruction:
     """Tests that evaluating a captured jaxpr reconstructs the operator."""
+
+    def test_interpreter_rebinds_with_traced_wires(self):
+        """Test that interpreting an Operator2 equation rebinds its primitive."""
+        captured = jax.make_jaxpr(lambda wire: DynOp(0.5, wires=wire).tracer)(0)
+
+        def interpret(wire):
+            [op] = PlxprInterpreter().eval(captured.jaxpr, captured.consts, wire)
+            return op
+
+        interpreted = jax.make_jaxpr(interpret)(0)
+
+        assert len(interpreted.eqns) == 1
+        assert interpreted.eqns[0].primitive is operator_p
+        assert interpreted.eqns[0].params["op_cls"] is DynOp
 
     def test_simple_roundtrip(self):
         """Test that a simple operator round-trips through capture and evaluation."""

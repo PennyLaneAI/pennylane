@@ -21,7 +21,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator1, abstractify
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -85,6 +85,12 @@ def _operator_to_name(op: Operator):
 @to_name.register
 def _str_to_name(op: str):
     return translate_op_alias(op)
+
+
+def _get_decomp_args(op: Operator):
+    if isinstance(op, Operator1):
+        return op.resource_params, op.data, {"wires": op.wires, **op.hyperparameters}
+    return abstractify(op).arguments, (), op.arguments
 
 
 def toggle_graph_decomposition():

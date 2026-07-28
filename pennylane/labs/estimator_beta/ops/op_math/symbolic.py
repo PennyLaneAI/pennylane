@@ -13,9 +13,9 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 
+from collections.abc import Callable, Iterable
 from functools import wraps
 from inspect import signature
-from typing import Callable, Iterable
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.core.operator import Operator
