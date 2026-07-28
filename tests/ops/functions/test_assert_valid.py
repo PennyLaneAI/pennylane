@@ -28,8 +28,14 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import (
+    _check_capture,
+    _check_eigendecomposition,
+    _check_pytree,
+    _test_decomposition_rule,
+)
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 
 class TestDecompositionErrors:
@@ -233,6 +239,37 @@ class TestDecompositionErrors:
         _test_decomposition_rule(op, rule)
         spy.assert_not_called()
 
+    @pytest.mark.capture
+    def test_new_decomposition_rule_capture(self):
+        """A captured decomposition is converted to a tape before validating its resources."""
+
+        class MyOp(Operator):
+            num_wires = 3
+
+        @qp.register_resources({qp.S: 3})
+        def rule(wires):  # pylint: disable=unused-argument
+            @qp.for_loop(3)
+            def loop(i):
+                qp.S(i)
+
+            loop()  # pylint: disable=no-value-for-parameter
+
+        _test_decomposition_rule(MyOp([0, 1, 2]), rule)
+
+    @pytest.mark.capture
+    def test_new_decomposition_rule_capture_operator2(self):
+        """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
+
+        @qp.register_resources({OneWireDynOp: 3})
+        def rule(phi, wires):  # pylint: disable=unused-argument
+            @qp.for_loop(3)
+            def loop(i):
+                OneWireDynOp(phi, wires=i)
+
+            loop()  # pylint: disable=no-value-for-parameter
+
+        _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
+
 
 class TestBadMatrix:
     """Tests involving matrix validation."""
@@ -320,13 +357,36 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():
+        def compute_eigvals():  # pylint: disable=signature-differs
             return [-1, 1]
 
     with pytest.raises(
         AssertionError, match=r"eigenvalues and diagonalizing gates must be able to"
     ):
         assert_valid(BadEigenDecomp(0), skip_pickle=True)
+
+
+def test_eigendecomposition_with_different_wire_order():
+    """A valid eigendecomposition is compared using the operator's wire order."""
+
+    class ReorderedDiagonalizingGates(Operator):
+        num_wires = 2
+
+        @staticmethod
+        def compute_matrix():
+            x = np.array([[0, 1], [1, 0]])
+            asymmetric_x_basis_op = np.array([[2.5, -0.5], [-0.5, 2.5]])
+            return np.kron(x, asymmetric_x_basis_op)
+
+        @staticmethod
+        def compute_eigvals():
+            return np.array([2, 3, -2, -3])
+
+        @staticmethod
+        def compute_diagonalizing_gates(wires):
+            return [qp.H(wires[0]), qp.H(wires[1])]
+
+    _check_eigendecomposition(ReorderedDiagonalizingGates([0, 1]))
 
 
 class BadPickling0(Operator):
@@ -452,6 +512,27 @@ class TestPytree:
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
             assert_valid(op, skip_pickle=True)
 
+    @pytest.mark.jax
+    def test_nested_operator2_data_check(self):
+        """A nested Operator2 does not disable validation of the outer Operator1 data order."""
+
+        class BadLeavesOrdering(qp.ops.op_math.SProd):
+            def _flatten(self):
+                return (self.base, self.scalar), tuple()
+
+            @classmethod
+            def _unflatten(cls, data, _):
+                return cls(data[1], data[0])
+
+        with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
+            _check_pytree(BadLeavesOrdering(2.0, DynOp(1.2, wires=0)))
+
+    @pytest.mark.jax
+    def test_nested_operator2_with_omitted_data(self):
+        """Nested parameters omitted intentionally from outer data do not fail validation."""
+        generator = qp.ops.LinearCombination([1.0], [DynOp(0.5, wires=0)])
+        _check_pytree(qp.ops.Evolution(generator, 0.2))
+
 
 @pytest.mark.jax
 def test_bad_capture():
@@ -496,7 +577,7 @@ class SingleRZ(Operator2):
 
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
-    ndim_params = ((),)
+    ndim_params = (0,)
 
     def __init__(self, phi, wires):
         assert isinstance(wires, int) or len(wires) == 1
@@ -771,9 +852,6 @@ def create_op_instance(c, str_wires=False):
 @pytest.mark.parametrize("str_wires", (True, False))
 def test_generated_list_of_ops(class_to_validate, str_wires):
     """Test every auto-generated operator instance."""
-    if class_to_validate.__module__[14:20] == "qutrit":
-        pytest.xfail(reason="qutrit ops fail matrix validation")
-
     if class_to_validate.__module__[10:14] == "ftqc":
         pytest.skip(reason="skip tests for ftqc ops")
 

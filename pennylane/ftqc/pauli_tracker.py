@@ -263,7 +263,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: list):
         for wire in op.wires:
             _wires_used[wire] += 1
 
-        gate_offset = 4 if op.num_wires == 1 else 13
+        gate_offset = 4 if len(op.wires) == 1 else 13
         ms = mid_meas[mid_meas_offset : mid_meas_offset + gate_offset]
         by_op = []
         if isinstance(op, (S, H)):

@@ -216,12 +216,12 @@ def test_representation():
 
     base_op = RX2(0.5, wires=1)
     op = qp.adjoint(base_op)
-    assert repr(op) == "Adjoint(RX2(theta=0.5, wires=[1]))"
+    assert repr(op) == "Adjoint(RX2(0.5, wires=[1]))"
     assert op.label() == "RX2†"
     assert op.name == "Adjoint(RX2)"
 
     nested_op = qp.adjoint(op)
-    assert repr(nested_op) == "Adjoint(Adjoint(RX2(theta=0.5, wires=[1])))"
+    assert repr(nested_op) == "Adjoint(Adjoint(RX2(0.5, wires=[1])))"
     assert nested_op.label() == "(RX2†)†"
     assert nested_op.name == "Adjoint(Adjoint(RX2))"
 

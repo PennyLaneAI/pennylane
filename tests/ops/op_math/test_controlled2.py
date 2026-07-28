@@ -23,6 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.operation import abstractify
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
@@ -30,6 +31,37 @@ from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, OneWireDynOp
 
 # pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
+
+
+class CustomBase(Operator2):
+    """A custom base op."""
+
+    arg_specs = {"wires": Wire[1]}
+
+    def __init__(self, wires):
+        super().__init__(wires)
+
+    @override
+    def pow(self, z):
+        if z % 2:
+            return [CustomBase(self.wires)]
+        return []
+
+
+class CustomControlled(Controlled2):
+    """A custom controlled op based on CustomBase."""
+
+    arg_specs = {"wires": Wire[2]}
+
+    def __init__(self, wires):
+        super().__init__(CustomBase(wires[1]), wires[0])
+
+
+@custom_ctrl_dispatch.register
+def _(base: CustomBase, control, control_values, work_wires, work_wire_type):
+    if len(control) == 1:
+        return CustomControlled(control + base.wires)
+    return NotImplemented
 
 
 class TestControlled2:
@@ -71,37 +103,33 @@ class TestControlled2:
     def test_custom_pow_override(self):
         """Tests the override of the custom `pow` method."""
 
-        class CustomBase(Operator2):
-            """A custom base op."""
-
-            arg_specs = {"wires": Wire[1]}
-
-            def __init__(self, wires):
-                super().__init__(wires)
-
-            @override
-            def pow(self, z):
-                if z % 2:
-                    return [CustomBase(self.wires)]
-                return []
-
-        class CustomControlled(Controlled2):
-            """A custom controlled op based on CustomBase."""
-
-            arg_specs = {"wires": Wire[2]}
-
-            def __init__(self, wires):
-                super().__init__(CustomBase(wires[1]), wires[0])
-
-        @custom_ctrl_dispatch.register
-        def _(base: CustomBase, control, control_values, work_wires, work_wire_type):
-            if len(control) == 1:
-                return CustomControlled(control + base.wires)
-            return NotImplemented
-
         op = CustomControlled([0, 1])
         assert op.pow(2) == []
         assert op.pow(5) == [CustomControlled([0, 1])]
+
+    def test_queuing(self):
+        """Tests that the base op is properly dequeued."""
+
+        with qp.queuing.AnnotatedQueue() as q:
+            CustomControlled([0, 1])
+
+        assert q.queue == [CustomControlled([0, 1])]
+
+    @pytest.mark.capture
+    def test_capture(self):
+        """Tests that the base operator is removed from the jaxpr."""
+
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        from tests.capture.capture_utils import assert_eqn_matches_op
+
+        def circuit():
+            CustomControlled([0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert len(jaxpr.eqns) == 1
+        assert_eqn_matches_op(jaxpr.eqns[0], CustomControlled)
 
     def test_parametric_custom_controlled_op(self):
         """Tests parametric op that inherits from Controlled2."""
@@ -412,6 +440,18 @@ class TestControlledOp2:
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1], control_values=0)
         assert op.control_values == [False]
+
+    def test_comparison(self):
+        """Tests comparing the equality of controlled operators."""
+
+        base = DynOp(0.5, wires=[0, 1])
+        op = qp.ctrl(base, control=[2, 3], control_values=[0, 1])
+        op2 = qp.ctrl(base, control=[3, 2], control_values=[1, 0])
+        qp.assert_equal(op, op2)
+
+        op2 = qp.ctrl(base, control=[3, 2], control_values=[0, 1])
+        assert not qp.equal(op, op2)
+        assert abstractify(op) == abstractify(op2)
 
     def test_invalid_arguments(self):
         """Tests that the correct error is raised from invalid init arguments."""

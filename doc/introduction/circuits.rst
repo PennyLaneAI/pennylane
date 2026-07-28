@@ -98,11 +98,6 @@ the available options that can be passed to the device loader.
     `plugin <https://docs.pennylane.ai/projects/lightning-gpu/en/latest/index.html>`_,
     which is a fast state-vector simulator offloading to the NVIDIA cuQuantum SDK for GPU accelerated circuit simulation.
 
-.. note::
-
-    For details on saving device configurations, please visit the
-    :doc:`configurations page</introduction/configuration>`.
-
 Device options
 ^^^^^^^^^^^^^^
 

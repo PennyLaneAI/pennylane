@@ -18,9 +18,9 @@ Contains the CommutingEvolution template.
 # pylint: disable-msg=too-many-arguments
 import copy
 
-from pennylane import math
-from pennylane.core.operator import Operation
-from pennylane.core.queuing import QueuingManager
+from pennylane import capture, math
+from pennylane.core.operator import Operation, Operator1
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
@@ -217,6 +217,10 @@ def _commuting_evolution_resources(words: tuple[PauliWord]):
 def _commuting_evolution_decomposition(
     time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
 ):  # pylint: disable=unused-argument
+    if capture.enabled() and isinstance(hamiltonian, Operator1):
+        # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
+        # ``ApproxTimeEvolution`` below, so it is not collected as a separate circuit operation.
+        hamiltonian = apply(hamiltonian)
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 
