@@ -394,6 +394,7 @@ def _trotter_step_second_order(_, time, fragments, registers, mode_registers, aq
     precision = len(registers["phase gradient"])
     all_coeffs, bilinear_indices, diag_keys = _preprocess_data(time, fragments)
     all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
+    print(all_constant, all_linear, all_quadratic, all_bilinear)
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
     n_modes = fragments[0].modes
 
@@ -462,7 +463,7 @@ def _trotter_step_second_order(_, time, fragments, registers, mode_registers, aq
 
             return qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
-        @qp.for_loop(len(bilinear_indices))
+        @qp.for_loop(bilinear_indices.shape[1])
         def bilinear_terms(k, prev_bitstrings):
             """Run a single bilinear time evolution sub-fragment for mode pair ``bilinear_indices[k]``.
             The currently encoded bitstrings on the coefficients register are provided in

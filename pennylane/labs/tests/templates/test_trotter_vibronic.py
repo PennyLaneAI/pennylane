@@ -20,6 +20,7 @@ import pennylane as qp
 from pennylane.labs.templates.trotter_vibronic import (
     _extract_registers,
     _preprocess_data,
+    _trotter_step_second_order,
     _validate_fragments,
     _validate_registers,
     diagonalize_vibronic_mat,
@@ -30,6 +31,9 @@ from pennylane.labs.templates.trotter_vibronic import (
     load_coefficients,
     trotter_vibronic,
 )
+from pennylane.ops.qubit.state_preparation import BasisState
+from pennylane.templates.subroutines import AQFT, QROM, SemiAdder
+from pennylane.templates.subroutines.arithmetic import OutMultiplier, SignedOutMultiplier, SignedOutSquare
 from pennylane.labs.trotter_error.fragments import vibronic_fragments
 from pennylane.labs.trotter_error.realspace import (
     RealspaceCoeffs,
@@ -237,7 +241,7 @@ def _make_registers(n_states, n_modes, k=2, b=4, wire_offset=0):
         "cache": 2 * k,
         "coefficients": b,
         "___": 3,
-        "phase gradient": b + 1,
+        "phase gradient": b,
         "work": needed_work,
     }
     sizes |= {f"mode {i}": k for i in range(n_modes)}
@@ -246,7 +250,6 @@ def _make_registers(n_states, n_modes, k=2, b=4, wire_offset=0):
     registers.pop("__")
     registers.pop("___")
     return registers
-
 
 class TestFragmentReadout:
     """Tests for helper functions that extract information from fragments."""
@@ -589,3 +592,175 @@ class TestTrotterVibronic:
         registers = _make_registers(fragments[0].states, fragments[0].modes)
         with pytest.raises(ValueError, match="positive integer"):
             trotter_vibronic(1.0, 0, fragments, registers, aqft_order=1)
+
+    def test_accepts_valid_inputs_at_zero_time(self):
+        """Test that valid fragments and registers queue a circuit at ``t=0``."""
+        fragments = _vibronic_fragment_list(n_states=2, n_modes=3, seed=0)
+        registers = _make_registers(2, 3, k=2, b=3)
+        queue = _queue_trotter_vibronic(fragments, registers, evolution_time=0.0, num_steps=1)
+        assert queue
+
+
+def _two_fragment_list(n_states, n_modes, position_op_types, seed=0):
+    """Build a valid position + kinetic fragment pair for isolated term tests."""
+    position = random_vibronic_fragment(n_states, n_modes, position_op_types, seed=seed)
+    kinetic = random_vibronic_fragment(n_states, n_modes, [("P", "P")], seed=seed + 100)
+    return [position, kinetic]
+
+
+def _bilinear_position_fragment(n_states, n_modes, seed=0):
+    """Build a position fragment with off-diagonal bilinear coefficients only."""
+    rng = np.random.default_rng(seed)
+    elec_ids = _random_vibronic_elec_ids(n_states, rng)
+    tensor = np.zeros((n_modes, n_modes))
+    if n_modes >= 2:
+        tensor[0, 1] = rng.random()
+    op = RealspaceOperator(n_modes, ("Q", "Q"), RealspaceCoeffs(tensor, "label"))
+    blocks = {}
+    for elec_idx in elec_ids:
+        blocks[elec_idx] = blocks[elec_idx[::-1]] = RealspaceSum(n_modes, [op])
+    return RealspaceMatrix(n_states, n_modes, blocks)
+
+
+def _queue_trotter_step(fragments, registers, time, aqft_order=1):
+    """Queue a single second-order Trotter step and return the operation list."""
+    n_modes = fragments[0].modes
+    mode_registers = [list(registers[f"mode {i}"]) for i in range(n_modes)]
+    non_mode = {key: list(wires) for key, wires in registers.items() if not key.startswith("mode ")}
+    with qp.queuing.AnnotatedQueue() as q:
+        _trotter_step_second_order(0, time, fragments, non_mode, mode_registers, aqft_order)
+    return q.queue
+
+
+def _queue_trotter_vibronic(fragments, registers, evolution_time, num_steps=1, aqft_order=1):
+    """Queue ``trotter_vibronic`` and return the operation list."""
+    with qp.queuing.AnnotatedQueue() as q:
+        trotter_vibronic(evolution_time, num_steps, fragments, registers, aqft_order)
+    return q.queue
+
+
+def _count_ops(queue, *op_types):
+    """Count queued operations whose type is in ``op_types``."""
+    return sum(int(isinstance(op, op_types)) for op in queue)
+
+
+_ARITHMETIC_OPS = (
+    SemiAdder,
+    OutMultiplier,
+    SignedOutSquare,
+    SignedOutMultiplier,
+    BasisState, # kind of arithmetic: bitwise XOR
+)
+
+
+class TestTrotterVibronicQueuing:
+    """Tests for the queued operators of ``trotter_vibronic``, without numerical simulation."""
+
+    def test_zero_evolution_time_skips_arithmetic_ops(self):
+        """Test that ``t=0`` skips custom arithmetic while still queuing diagonalization."""
+        fragments = _vibronic_fragment_list(n_states=2, n_modes=3, seed=1)
+        registers = _make_registers(2, 3, k=2, b=3)
+        queue = _queue_trotter_vibronic(fragments, registers, evolution_time=0.0, num_steps=1)
+
+        assert _count_ops(queue, *_ARITHMETIC_OPS) == 0
+        assert _count_ops(queue, AQFT) == 0
+        # Only have diagonalization, and a (redundant/trivial) data unloading QROM, in the circuit
+        assert all(isinstance(op, (qp.H, qp.CNOT, qp.QROM)) for op in queue)
+
+    def test_num_trotter_steps_scales_step_count_at_zero_time(self):
+        """Test that increasing ``num_trotter_steps`` scales the queued circuit size at ``t=0``."""
+        fragments = _vibronic_fragment_list(n_states=2, n_modes=2, seed=2)
+        registers = _make_registers(2, 2, k=2, b=3)
+
+        queue_one = _queue_trotter_vibronic(fragments, registers, evolution_time=0.0, num_steps=1)
+        queue_two = _queue_trotter_vibronic(fragments, registers, evolution_time=0.0, num_steps=2)
+
+        assert len(queue_two) == 2 * len(queue_one)
+
+    def test_constant_term_queues_semi_adder(self):
+        """Test that constant position terms queue ``SemiAdder`` operations."""
+        fragments = _two_fragment_list(2, 2, position_op_types=[()], seed=3)
+        registers = _make_registers(2, 2, k=2, b=3)
+        queue = _queue_trotter_step(fragments, registers, time=0.1)
+
+        assert _count_ops(queue, SemiAdder) > 0
+
+    def test_linear_term_skips_semi_adder(self):
+        """Test that linear position terms do not queue ``SemiAdder`` operations."""
+        fragments = _two_fragment_list(2, 2, [("Q",)], seed=4)
+        registers = _make_registers(2, 2, k=2, b=3)
+        queue = _queue_trotter_step(fragments, registers, time=0.1)
+
+        assert _count_ops(queue, SemiAdder) == 0
+        assert _count_ops(queue, QROM) > 0
+
+    def test_quadratic_term_queues_more_signed_out_squares(self):
+        """Test that quadratic position terms queue additional ``SignedOutSquare`` operations."""
+        registers = _make_registers(2, 2, k=2, b=3)
+        linear_queue = _queue_trotter_step(
+            _two_fragment_list(2, 2, [("Q",)], seed=5), registers, time=0.1
+        )
+        quadratic_queue = _queue_trotter_step(
+            _two_fragment_list(2, 2, [("Q", "Q")], seed=6), registers, time=0.1
+        )
+
+        assert _count_ops(quadratic_queue, SignedOutSquare) > _count_ops(
+            linear_queue, SignedOutSquare
+        )
+
+    def test_kinetic_term_queues_basis_state_and_aqft(self):
+        """Test that kinetic evolution queues ``BasisState`` and ``AQFT`` for ``t>0``."""
+        fragments = _vibronic_fragment_list(n_states=2, n_modes=2, seed=7)
+        registers = _make_registers(2, 2, k=2, b=3)
+
+        queue_t0 = _queue_trotter_step(fragments, registers, time=0.0)
+        queue_t1 = _queue_trotter_step(fragments, registers, time=0.1)
+
+        assert _count_ops(queue_t0, BasisState, AQFT) == 0
+        assert _count_ops(queue_t1, BasisState) > 0
+        assert _count_ops(queue_t1, AQFT) > 0
+
+    def test_bilinear_term_queues_signed_out_multiplier(self):
+        """Test that bilinear position terms queue ``SignedOutMultiplier`` operations."""
+        fragments = [
+            _bilinear_position_fragment(2, 3, seed=8),
+            random_vibronic_fragment(2, 3, [("P", "P")], seed=108),
+        ]
+        registers = _make_registers(2, 3, k=2, b=3)
+        queue = _queue_trotter_step(fragments, registers, time=0.1)
+
+        assert _count_ops(queue, SignedOutMultiplier) > 0
+
+
+@pytest.mark.xfail(reason="adjoint decomposition rules are traced such that all (hyper)parameters become dynamic, which the rules themselves do not support.")
+@pytest.mark.catalyst
+def test_catalyst_legacy_frontend():
+    """Test that ``trotter_vibronic`` runs under qjit with the legacy Catalyst frontend."""
+    from catalyst.device.decomposition import catalyst_decompose
+
+    fragments = _vibronic_fragment_list(n_states=2, n_modes=2, seed=9)
+    registers = _make_registers(2, 2, k=2, b=3)
+    num_wires = max(w for reg in registers.values() for w in reg) + 1
+
+    with qp.decomposition.toggle_graph_ctx(True):
+        target_gates = {
+            "Hadamard",
+            "QROM",
+            "CNOT",
+            "ForLoop",
+            "Cond",
+            "HybridAdjoint",
+            "TemporaryAND",
+            "Adjoint(TemporaryAND)",
+            "AQFT",
+            "X",
+        }
+
+        @qp.qjit
+        @catalyst_decompose(capabilities=None, target_gates=target_gates)
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        def trotter_circuit():
+            trotter_vibronic(1.0, 2, fragments, registers, aqft_order=1)
+            return qp.expval(qp.Z(0))
+
+        assert np.isfinite(trotter_circuit())
