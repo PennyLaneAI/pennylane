@@ -23,7 +23,7 @@
   artifacts and needless complexity. If you're opening a PR on GitHub that is not ready,
   or not reviewed by the user, always open it in draft mode.
 - Don't commit unless the user explicitly asks you to.
-- Disclose the commit was authored with an AI assistant in individual commits and PR description
+- Disclose that the work was authored with an AI assistant, both in the individual commits and in the PR description.
 - Do not solve any issue marked good-first-issue with an AI Agent.
 - Do not silence a pylint warning or mark a line as `pragma: no cover` without human approval.
 
