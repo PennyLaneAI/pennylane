@@ -424,12 +424,13 @@ class TestOutMultiplier:
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
     @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qjit_compatible(self):
         """Test that the template is compatible with the QJIT compiler."""
         x, y = 2, 3
         x_list = [1, 0]
         y_list = [1, 1]
-        mod = 12
+        mod = 16
         x_wires = [0, 1]
         y_wires = [2, 3]
         output_wires = [6, 7, 8, 9]

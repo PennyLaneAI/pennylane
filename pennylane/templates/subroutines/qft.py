@@ -19,7 +19,7 @@ import functools
 
 import numpy as np
 
-from pennylane import math
+from pennylane import compiler, math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
@@ -151,7 +151,7 @@ def _qft_decomposition_resources(wires: AbstractWires):
 def _qft_decomposition(wires: AbstractWires):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
-    if enabled():
+    if compiler.active() or enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
