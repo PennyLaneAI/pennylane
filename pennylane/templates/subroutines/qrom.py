@@ -265,7 +265,7 @@ class QROM(Operator2):
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return self.control_wires + self.target_wires + self.work_wires  # pylint: disable=no-member
+        return self.control_wires + self.target_wires + self.work_wires
 
 
 def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, num_work_wires, **_):
