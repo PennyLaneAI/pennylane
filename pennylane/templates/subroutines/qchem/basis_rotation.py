@@ -291,7 +291,6 @@ class BasisRotation(Operator2):
     """
 
     dynamic_argnames = ("unitary_matrix",)
-    wires_argnames = ("wires",)
     compilable_argnames = ("check",)
 
     arg_specs = {"unitary_matrix": Complex[-1, -1], "wires": Wire[-1]}

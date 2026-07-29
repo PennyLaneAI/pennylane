@@ -24,7 +24,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import X, Z, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -70,9 +70,8 @@ class FlipSign(Operator2):
 
     """
 
-    wires_argnames = ("wires",)
     compilable_argnames = ("state",)
-    arg_specs = {"wires": Wire[-1]}
+    arg_specs = {"state": Int[-1], "wires": Wire[-1]}
     wire_sizes = (None,)
 
     @staticmethod
