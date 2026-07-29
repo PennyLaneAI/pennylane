@@ -21,6 +21,10 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+<<<<<<< HEAD
+=======
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+>>>>>>> 5acf947b4b (more moving)
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,

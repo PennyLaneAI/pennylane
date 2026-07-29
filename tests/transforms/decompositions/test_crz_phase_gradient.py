@@ -25,6 +25,7 @@ import pytest
 
 import pennylane as qp
 <<<<<<< HEAD
+<<<<<<< HEAD
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
@@ -34,6 +35,12 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 >>>>>>> 1918ebdab4 (fix)
+=======
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.decompose import DecomposeInterpreter
+from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
+>>>>>>> 5acf947b4b (more moving)
 
 
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
@@ -95,7 +102,6 @@ def test_as_fixed_decomps(phi, p):
     with qp.decomposition.toggle_graph_ctx(
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
-
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -156,7 +162,6 @@ def test_as_alt_decomps(phi, p):
     with qp.decomposition.toggle_graph_ctx(
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
-
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
