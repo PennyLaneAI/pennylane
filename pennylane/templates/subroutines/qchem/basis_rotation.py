@@ -317,10 +317,6 @@ class BasisRotation(Operator2):
 
         super().__init__(unitary_matrix, wires=wires)
 
-    @property
-    def num_params(self):
-        return 1
-
     @staticmethod
     def compute_decomposition(
         unitary_matrix, wires, check=False

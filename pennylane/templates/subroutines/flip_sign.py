@@ -24,7 +24,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import X, Z, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Int, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -40,8 +40,8 @@ class FlipSign(Operator2):
     where :math:`n` is the basis state (argument ``state``) to flip and :math:`m` is the input.
 
     Args:
-        state (Sequence[int] or array[int] or int): binary array or integer value representing
-            the state on which to flip the sign
+        state (Sequence[int] or array[int] or int): integer or binary sequence representing
+            the basis state whose sign is to be flipped
         wires (array[int] or int): wires that the template acts on
 
     **Example**
@@ -49,7 +49,7 @@ class FlipSign(Operator2):
     This template changes the sign of the basis state passed as an argument. In this example,
     when passing the element ``[1, 0]``, we will change the sign of the state :math:`|10\rangle`
     on two qubits. We could alternatively pass the integer ``2`` and get the same result since
-    its binary representation on two bits is ``[1, 0]``.
+    its two-bit binary representation is ``[1, 0]``.
 
     .. code-block:: python
 
@@ -71,7 +71,7 @@ class FlipSign(Operator2):
     """
 
     compilable_argnames = ("state",)
-    arg_specs = {"state": Int[-1], "wires": Wire[-1]}
+    arg_specs = {"wires": Wire[-1]}
     wire_sizes = (None,)
 
     @staticmethod
@@ -83,15 +83,13 @@ class FlipSign(Operator2):
                     "The given basis state must be a non-negative integer smaller "
                     f"than {2**num_wires}, but got {state}."
                 )
-            state = tuple(map(int, math.int_to_binary(state, num_wires)))
-        else:
-            if num_wires != len(state):
-                raise ValueError(
-                    "The basis state and wires must have equal length, "
-                    f"but got {len(state)} and {num_wires}."
-                )
-            state = tuple(state)
-        return state
+            return tuple(map(int, math.int_to_binary(state, num_wires)))
+        if num_wires != len(state):
+            raise ValueError(
+                "The basis state and wires must have equal length, "
+                f"but got {len(state)} and {num_wires}."
+            )
+        return tuple(state)
 
     def __init__(self, state, wires):
         wires = Wires(wires)
@@ -104,37 +102,6 @@ class FlipSign(Operator2):
     def __abstract_init__(self, state, wires):  # pylint: disable=arguments-differ
         state = self._canonicalize_state(state, len(wires))
         super().__abstract_init__(state, wires)
-
-    @property
-    def num_params(self):
-        return 0
-
-    @staticmethod
-    def compute_decomposition(state, wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator
-
-        .. seealso:: :meth:`~.FlipSign.decomposition`.
-
-        Args:
-            state (Sequence[int] or array[int] or int): binary array or integer value representing
-                the state on which to flip the sign
-            wires (array[int] or int): wires that the template acts on
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-        """
-
-        op_list = []
-
-        if state[-1] == 0:
-            op_list.append(X(wires[-1]))
-
-        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=state[:-1]))
-
-        if state[-1] == 0:
-            op_list.append(X(wires[-1]))
-
-        return op_list
 
 
 def _flip_sign_resources(state: tuple[int], wires: WiresLike):
