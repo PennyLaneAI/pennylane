@@ -37,7 +37,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
-    flip_zero_control,
     pow_involutory,
     self_adjoint,
     self_adjoint_legacy,

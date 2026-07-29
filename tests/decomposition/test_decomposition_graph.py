@@ -27,7 +27,7 @@ from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import ControlledOp2,_ctrl_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
