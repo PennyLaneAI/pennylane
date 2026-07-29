@@ -269,6 +269,18 @@ def test_assert_equal_unspecified():
         assert_equal(RandomType(), RandomType())
 
 
+def _equal_data_mismatch_pattern(op_type):
+    if issubclass(op_type, Operator2):
+        return r"op1 and op2 have different values for"
+    return "op1 and op2 have different data."
+
+
+def _equal_wire_mismatch_pattern(op_type):
+    if issubclass(op_type, Operator2):
+        return r"op1 and op2 have different wires for"
+    return "op1 and op2 have different wires."
+
+
 class TestEqual:
     def test_identity_equal(self):
         """Test that comparing two Identities always returns True regardless of wires"""
@@ -337,7 +349,7 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+        with pytest.raises(AssertionError, match=_equal_data_mismatch_pattern(op1)):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
@@ -354,7 +366,7 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(AssertionError, match=_equal_wire_mismatch_pattern(op1)):
             assert_equal(
                 test_operator,
                 test_operator_diff_wire,
