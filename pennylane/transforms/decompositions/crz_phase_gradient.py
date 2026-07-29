@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
 from pennylane.ops import Prod
 
-from .decomp_rz_phase_gradient import validate_phase_gradient_wires
+from .rz_phase_gradient import validate_phase_gradient_wires
 
 
 def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):

@@ -28,7 +28,7 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
-from .decomp_rz_phase_gradient import validate_phase_gradient_wires
+from .rz_phase_gradient import validate_phase_gradient_wires
 
 
 # pylint: disable=too-many-arguments
@@ -245,9 +245,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     @qp.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
-
         if len(control_wires) == 0:
-
             match rot_axis:
                 case "X":
                     qp.RX(angles[0], target_wire)
