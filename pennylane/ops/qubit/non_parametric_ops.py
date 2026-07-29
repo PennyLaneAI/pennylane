@@ -247,7 +247,8 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qp.GlobalPhase(-np.pi / 2)
 
 
-def _hadamard_ppm_resources():
+# pylint: disable=unused-argument
+def _hadamard_ppm_resources(wires: WiresLike):
     return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
 
 
