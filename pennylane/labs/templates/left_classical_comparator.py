@@ -133,15 +133,14 @@ class LeftClassicalComparator(Operation):
                 f"x_wires and target_wire must be disjoint, but share: {list(overlap)}. "
                 f"(x_wires={list(x_wires)}, target_wire={list(target_wire)})"
             )
-        # The effective comparison value (``L`` for ``"<"``/``">="`` and ``L + 1`` for
-        # ``"<="``/``">"``) may be as large as ``2 ** n``, the degenerate "always True"
-        # bound where ``x < 2 ** n`` holds for every representable ``x``. ``comparator``
-        # has already been validated above, so this branch is exhaustive.
+        # The comparators ``"<"`` and ``">="`` accept the degenerate bound ``L == 2 ** n``
+        # (``x < 2 ** n`` is statically True for every representable ``x``); ``"<="`` / ``">"``
+        # add one internally, so their largest allowed input stays ``2 ** n - 1``.
         max_L = 2 ** len(x_wires) if comparator in ["<", ">="] else 2 ** len(x_wires) - 1
         if not math.is_abstract(L) and not 0 <= L <= max_L:
             raise ValueError(
-                f"L must be non-negative and at most {max_L} for comparator '{comparator}'. "
-                f"Got {L=} with {len(x_wires)=}."
+                f"L must be less than or equal to {max_L} and non-negative for comparator "
+                f"'{comparator}'. Got {L=} and {2 ** len(x_wires)=}."
             )
         self.hyperparameters["target_wire"] = target_wire
         self.hyperparameters["x_wires"] = x_wires
@@ -257,10 +256,11 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
 
     n = num_x_wires
 
-    # Degenerate bound: the effective ``L`` equals ``2 ** n``, so ``x < 2 ** n`` is
-    # statically ``True`` for every representable ``x``. We know this classically, so
-    # the circuit is just a single ``X`` writing the constant result onto the target
-    # wire (no elbows, no work wires); the ``> / >=`` negation flips it back to ``False``.
+    # Concrete-``L`` fast path (resource params are always concrete, so this Python branch is
+    # safe): the effective ``L`` equals ``2 ** n``, so ``x < 2 ** n`` is statically ``True``
+    # for every representable ``x``. The decomposition then emits a single ``X`` writing the
+    # constant result onto the target wire (no elbows, no work wires); the ``> / >=`` negation
+    # flips it back to ``False``.
     if L == 2**n:
         resources = {Elbow: 0, CNOT: 0, X: 1}
         if comparator in [">", ">="]:
@@ -293,7 +293,6 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
 @register_resources(_left_classical_comparator_resources, exact=True)
 def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]
-    n = len(x_wires)
 
     def _negate_output():
         X(wires=target_wire)
@@ -301,14 +300,16 @@ def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, 
     if comparator in ["<=", ">"]:
         L += 1
 
-    used_work_wires = Wires.all_wires([work_wires[: n - 1], target_wire])
+    used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
-    # Degenerate bound: when the effective ``L`` equals ``2 ** n`` the inequality
-    # ``x < 2 ** n`` is statically ``True`` for every representable ``x``. Since ``L``
-    # is a classical constant we know this at construction time, so we emit a single
-    # ``X`` writing the constant result directly onto the target wire rather than
-    # running the elbow-based comparator on the (all-zero) bits of ``L``.
-    if L == 2**n:
+    # Concrete-``L`` fast path: when ``L`` is a known Python integer equal to ``2 ** n`` the
+    # inequality ``x < 2 ** n`` is statically ``True`` for every representable ``x``, so we
+    # emit a single ``X`` writing the constant result onto the target wire instead of running
+    # the elbow-based comparator on the (all-zero) low bits of ``L``. This is guarded by
+    # ``is_abstract`` so it is skipped under qjit/capture, where ``L`` is a traced value that
+    # cannot be branched on in Python; there the general construction below is used, whose
+    # trailing conditional ``X`` (controlled on bit ``n`` of ``L``) handles this bound.
+    if not math.is_abstract(L) and L == 2 ** len(x_wires):
         X(wires=target_wire)
         cond(comparator.startswith(">"), _negate_output)()
         return
@@ -322,7 +323,7 @@ def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, 
         x_wires = math.array(x_wires, like="jax")
         used_work_wires = math.array(used_work_wires, like="jax")
 
-    @for_loop(1, n)
+    @for_loop(1, len(x_wires))
     def _loop(i):
         bit = _get_specific_bit(L, i)
         cond(bit, X)(wires=[x_wires[i]])
@@ -333,6 +334,14 @@ def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, 
         cond(bit, X)(wires=[x_wires[i]])
 
     _loop()  # pylint: disable=no-value-for-parameter
+
+    # Degenerate bound: when the effective ``L`` equals ``2 ** len(x_wires)`` its
+    # low ``n`` bits are all zero, so the bitwise core above computes the constant
+    # ``x < 0`` (always False) rather than the intended "always True". Bit ``n`` of
+    # ``L`` is set exactly in this case, so a single conditional ``X`` fixes the
+    # target wire.
+    bit_n = _get_specific_bit(L, len(x_wires))
+    cond(bit_n, X)(wires=[used_work_wires[len(x_wires) - 1]])
 
     cond(comparator.startswith(">"), _negate_output)()
 

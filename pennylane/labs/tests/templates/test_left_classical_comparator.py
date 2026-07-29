@@ -44,7 +44,7 @@ def test_standard_validity_left_comparator():
 class TestLeftClassicalComparator:
     """Test LeftClassicalComparator template."""
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
