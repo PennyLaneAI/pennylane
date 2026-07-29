@@ -44,7 +44,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.typing import Complex, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -1292,7 +1292,7 @@ class U1(Operator2):
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Complex, "wires": Wire[1]}
+    arg_specs = {"phi": Float, "wires": Wire[1]}
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -1441,7 +1441,7 @@ class U2(Operator2):
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi", "delta")
-    arg_specs = {"phi": Complex, "delta": Complex, "wires": Wire[1]}
+    arg_specs = {"phi": Float, "delta": Float, "wires": Wire[1]}
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
@@ -1616,7 +1616,7 @@ class U3(Operator2):
 
     wire_sizes = (1,)
     dynamic_argnames = ("theta", "phi", "delta")
-    arg_specs = {"theta": Complex, "phi": Complex, "delta": Complex, "wires": Wire[1]}
+    arg_specs = {"theta": Float, "phi": Float, "delta": Float, "wires": Wire[1]}
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]

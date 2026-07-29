@@ -1449,6 +1449,16 @@ def _init_arg_types(op: Operator2) -> None:
             # expected shape but the actual dtype
             actual_dtype = argval_dtype
             if not exp_type.is_compatible_with(AbstractArray(exp_type.shape, actual_dtype)):
+                # Scalar real parameters may receive complex dtypes from holomorphic AD (e.g. JAX).
+                if (
+                    exp_type.ndim == 0
+                    and np.issubdtype(exp_type.dtype, np.floating)
+                    and np.issubdtype(np.dtype(actual_dtype), np.complexfloating)
+                    and exp_type.is_compatible_with(
+                        AbstractArray(exp_type.shape, np.dtype(np.float64))
+                    )
+                ):
+                    continue
                 raise ValueError(
                     f"Parameter '{name}' does not match the operator's expected 'arg_specs' dtype. "
                     f"Expected {exp_type.dtype} but received {actual_dtype}."
