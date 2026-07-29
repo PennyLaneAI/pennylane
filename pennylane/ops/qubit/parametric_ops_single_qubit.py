@@ -44,7 +44,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -1284,10 +1284,15 @@ class U1(Operator2):
     """
 
     num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[1]}
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -1299,7 +1304,8 @@ class U1(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1427,10 +1433,15 @@ class U2(Operator2):
     """
 
     num_wires = 1
+    num_params = 2
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi", "delta")
-    arg_specs = {"phi": Float, "delta": Float, "wires": Wire[1]}
+    arg_specs = {"phi": Complex, "delta": Complex, "wires": Wire[1]}
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
@@ -1439,7 +1450,8 @@ class U2(Operator2):
         super().__init__(phi, delta, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike, delta: TensorLike) -> TensorLike:
+    # pylint: disable=unused-argument
+    def compute_matrix(phi: TensorLike, delta: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1596,10 +1608,15 @@ class U3(Operator2):
     """
 
     num_wires = 1
+    num_params = 3
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     wire_sizes = (1,)
     dynamic_argnames = ("theta", "phi", "delta")
-    arg_specs = {"theta": Float, "phi": Float, "delta": Float, "wires": Wire[1]}
+    arg_specs = {"theta": Complex, "phi": Complex, "delta": Complex, "wires": Wire[1]}
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
@@ -1614,7 +1631,10 @@ class U3(Operator2):
         super().__init__(theta, phi, delta, wires=wires)
 
     @staticmethod
-    def compute_matrix(theta: TensorLike, phi: TensorLike, delta: TensorLike) -> TensorLike:
+    # pylint: disable=unused-argument
+    def compute_matrix(
+        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike = None
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
