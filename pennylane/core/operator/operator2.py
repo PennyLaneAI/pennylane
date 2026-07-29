@@ -803,7 +803,6 @@ class Operator2(metaclass=OperatorMeta):
         with pause(), QueuingManager.stop_recording():
             # creating dummy op means this works for adjoint and ctrl too.
             op = cls(*args, **kwargs)
-        # note that this does not work for adjoint and ctrl
         for decomp in qp.list_decomps(op):
             if decomp.is_applicable(**op.arguments):
                 with AnnotatedQueue() as q:
