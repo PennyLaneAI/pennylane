@@ -842,7 +842,7 @@
     - `~.BasisRotation`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
     - `~.FlipSign`
-  [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
+  [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
