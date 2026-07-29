@@ -25,7 +25,7 @@
 - Don't commit unless the user explicitly asks you to.
 - Disclose the commit was authored with an AI assistant in individual commits and PR description
 - Do not solve any issue marked good-first-issue with an AI Agent.
-- Do not silence a pylint warning without human approval.
+- Do not silence a pylint warning or mark a line as `pragma: no cover` without human approval.
 
 # Behavioral Constraint: Absolute Objectivity
 
