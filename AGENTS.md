@@ -6,6 +6,7 @@
 2. If found, run commands through its executables (for example, `.venv/bin/python` and `.venv/bin/pre-commit`) or activate it.
 3. Only report that no virtual environment exists after the shell check fails.
 
+
 # AI Policy
 
 <!-- Inspired by pytorch/CLAUDE.md-->
@@ -24,39 +25,53 @@
 - Don't commit unless the user explicitly asks you to.
 - Disclose the commit was authored with an AI assistant in individual commits and PR description
 - Do not solve any issue marked good-first-issue with an AI Agent.
+- Do not silence a pylint warning without human approval.
 
-# Linting and formatting
+# Behavioral Constraint: Absolute Objectivity
 
-Run linters/formatters on changed files, preferring pre-commit so scope and
-config match CI:
-- Staged files: `pre-commit run`
-- Specific files: `pre-commit run --files <path> ...`
-- Vs. a base branch: `pre-commit run --from-ref <base> --to-ref HEAD`
-
-Config lives in `pyproject.toml` (`black`, `isort`, line length 100) and the
-`.pylintrc` files (`.pylintrc` source, `tests/.pylintrc` tests,
-`pennylane/labs/.pylintrc` labs). Don't hand-fix line wrapping — run `black`.
-
-### Behavioral Constraint: Absolute Objectivity
 Do not flatter the user or validate premises with canned agreeability ("You're absolutely right!"). Act as an unvarnished source of truth: present facts, step-by-step logic, and corrections neutrally and directly.
 
 # Testing
+<!-- Place testing before linting, so testing runs before linting -->
 
 Tests use `pytest` and live under `tests/`.
 Run only the tests relevant to your change rather than the whole suite unless requested to.
 
 New functionality and bug fixes require accompanying tests.
 
+Docstring/code-example tests are collected by Sybil (see `conftest.py`); run them
+by pointing pytest at the source file, e.g. `pytest pennylane/path/to/file.py`.
+
+# Linting and formatting
+
+<!--don't use pre-commit run as that fails in a sandboxed shell.-->
+Run the configured tools directly on changed files. Run pylint first, then run
+formatting (black, isort) once at the end.
+
+<!--Order is important, as we dont want changes required for pylint to force black to rerun-->
+<!--`--persistent=n` avoids writing a stats cache which a sandboxed shell can't access.-->
+- Lint: `pylint -rn -sn --persistent=n --rcfile=.pylintrc <path> ...` for files
+  under `pennylane/` (use `--rcfile=tests/.pylintrc` for files under `tests/` or
+  `pennylane/labs/tests/`)
+- Format: `black --config ./pyproject.toml <path> ...`
+- Sort imports (only `pennylane/` and `tests/` files): `isort --settings-path ./pyproject.toml <path> ...`
+- Module boundaries (repo-wide, no per-file mode): `tach check`
+
+Config lives in `pyproject.toml` (`black`, `isort`, line length 100) and the
+`.pylintrc` files (`.pylintrc` source, `tests/.pylintrc` tests,
+`pennylane/labs/.pylintrc` labs).
+
 # Changelog
 
 Add a bullet to `doc/releases/changelog-dev.md` under the appropriate section,
-ending with the PR link `[(#XXXX)](...)`.
+ending with the PR link on the next line `  [(#XXXX)](...)`.
 
 # Module architecture
 
 `tach.toml` enforces a layered architecture (ui/tertiary/auxiliary/core) and
 forbids circular dependencies. Don't add cross-layer or circular imports;
-`pennylane.labs` and `pennylane.ftqc` are restricted. `tach` runs in pre-commit.
+`pennylane.labs` and `pennylane.ftqc` are restricted. Run `tach check` to
+verify.
 
 # New files
 
