@@ -37,6 +37,3 @@ Custom decomposition rules
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
-from .decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
-from .decomp_crz_phase_gradient import make_crz_to_phase_gradient_decomp
-from .decomp_selectpaulirot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
