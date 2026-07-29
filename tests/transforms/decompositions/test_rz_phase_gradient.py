@@ -22,9 +22,12 @@ import pytest
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 >>>>>>> 5acf947b4b (more moving)
+=======
+>>>>>>> d378cc45a5 (fix)
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
@@ -76,6 +79,7 @@ def test_valid_decomp(phi, p):
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
+<<<<<<< HEAD
     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -85,6 +89,14 @@ def test_as_fixed_decomps(phi, p):
         "phase_grad_wires": phase_grad_wires,
         "work_wires": work_wires,
     }
+=======
+    with qp.decomposition.toggle_graph_ctx(
+        True
+    ):  # safe alternative to avoid enabling graph globally on the labs test runner
+        angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+        phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+        work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+>>>>>>> d378cc45a5 (fix)
 
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
@@ -106,6 +118,7 @@ def test_as_fixed_decomps(phi, p):
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_rz_to_phase_gradient_decomp works`` as
     expected as an alternative decomposition and yields the correct resources"""
+<<<<<<< HEAD
     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -115,6 +128,14 @@ def test_as_alt_decomps(phi, p):
         "phase_grad_wires": phase_grad_wires,
         "work_wires": work_wires,
     }
+=======
+    with qp.decomposition.toggle_graph_ctx(
+        True
+    ):  # safe alternative to avoid enabling graph globally on the labs test runner
+        angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+        phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+        work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+>>>>>>> d378cc45a5 (fix)
 
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
@@ -189,7 +210,10 @@ def test_integration_multi_wire(seed):
     assert np.allclose(out_state, out_state_expected)
 
 
+<<<<<<< HEAD
 @pytest.mark.usefixtures("enable_graph_decomposition")
+=======
+>>>>>>> d378cc45a5 (fix)
 @pytest.mark.capture
 def test_capture_compatibility():
     """Ensures capture compatibility."""
@@ -199,6 +223,14 @@ def test_capture_compatibility():
     import jax.numpy as jnp
 
     from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+<<<<<<< HEAD
+=======
+
+    qp.capture.enable()
+    try:
+        with qp.decomposition.toggle_graph_ctx(True):
+            first_free = 1  # 0 used by RZ
+>>>>>>> d378cc45a5 (fix)
 
     first_free = 1  # 0 used by RZ
 
