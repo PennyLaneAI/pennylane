@@ -188,7 +188,7 @@ def _init_signature_registration():
 
         .. seealso:: :func:`pennylane.decomposition.signature_registry`
         """
-        spec = dict(op.arg_specs)
+        spec = dict(op.arg_specs or {})
         spec.update(**kwargs)
 
         if any(op.hybrid_argnames or op.static_argnames):
@@ -241,14 +241,14 @@ def _init_signature_registration():
 
         _registry[op] += (spec,)
 
-    def registry() -> dict[type[Operator2], tuple[dict[str, Any]], ...]:
+    def registry() -> dict[type[Operator2], tuple[dict[str, Any], ...]]:
         r"""Return the operator signatures registered with :func:`~.register_signature`.
 
         Returns:
-            dict[type[~.Operator2], list[dict[str, Any]]]: a mapping from each registered
-            operator class to the list of signatures registered for it. Each signature is
-            a dictionary mapping argument names to their abstract type (for dynamic and
-            wire arguments) or value (for compilable static arguments).
+            dict[type[~.Operator2], tuple[dict[str, Any], ...]]: a mapping from each
+            registered operator class to the tuple of signatures registered for it. Each
+            signature is a dictionary mapping argument names to their abstract type (for
+            dynamic and wire arguments) or value (for compilable static arguments).
 
         .. seealso:: :func:`pennylane.decomposition.register_signature`
         """
