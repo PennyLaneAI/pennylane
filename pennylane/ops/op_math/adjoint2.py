@@ -35,6 +35,7 @@ from pennylane.decomposition.resources import (
     CompressedResourceOp,
     adjoint_resource_rep,
 )
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 
 from .symbolicop2 import SymbolicOp2
 
@@ -184,6 +185,10 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
     # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = list_decomps.dispatch(object)(abs_op)
 
+    # Shortcut that ignores general rules if an operator is self-adjoint
+    if self_adjoint in custom_rules:
+        return custom_rules
+
     # Decomposition rules populated by applying adjoint on the base decomp rules
     wrapped_rules = DecompCollection(
         [
@@ -250,3 +255,16 @@ def cancel_adjoint(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
+
+
+def _adjoint_rotation_resource(base):
+    return {abstractify(base): 1}
+
+
+@register_resources(_adjoint_rotation_resource)
+def adjoint_rotation(base):
+    """Decompose the adjoint of a rotation operator by inverting the angle."""
+    # A rotation should only have 1 dynamic parameter
+    assert len(base.dynamic_argnames) == 1
+    angle = tuple(base.dynamic_args.values())[0]
+    qp.ops.functions.bind_new_parameters(base, (-angle,))
