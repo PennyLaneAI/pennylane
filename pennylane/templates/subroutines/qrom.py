@@ -244,7 +244,7 @@ class QROM(Operator2):
         if data[0].shape[0] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
-        super().__init__(data, control_wires, target_wires, work_wires)
+        super().__init__(data, control_wires, target_wires, work_wires, clean)
 
     def __abstract_init__(
         self,
