@@ -22,7 +22,6 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
-from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
 from pennylane.typing import Wire
 
@@ -134,13 +133,6 @@ def merge_powers(*params, wires, base, z, **__):
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
-    if issubclass(target_class, Operator2):
-        # pylint: disable=import-outside-toplevel
-        from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-        from pennylane.ops.op_math.pow2 import _pow_abstract
-
-        target = abstractify(target_class(**target_params))
-        return {_adjoint_abstract(_pow_abstract(target, z)): 1}
     return {
         adjoint_resource_rep(
             qp.ops.Pow, {"base_class": target_class, "base_params": target_params, "z": z}
@@ -167,8 +159,6 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
-            if issubclass(base_class, Operator2):
-                return {abstractify(base_class(**base_params)): 1}
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
@@ -199,8 +189,6 @@ def pow_rotation(phi, wires, base, z, **__):
 
 
 def _decomp_to_base_legacy_res(base_class, base_params, **__):
-    if issubclass(base_class, Operator2):
-        return {abstractify(base_class(**base_params)): 1}
     return {resource_rep(base_class, **base_params): 1}
 
 
@@ -350,19 +338,6 @@ def _flip_control_adjoint_resource(
 ):  # pylint: disable=too-many-arguments
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
-    if issubclass(target_class, Operator2):
-        # pylint: disable=import-outside-toplevel
-        from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-        from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-
-        inner = _ctrl_abstract(
-            abstractify(target_class(**target_params)),
-            Wire[num_control_wires],
-            work_wires=Wire[num_work_wires],
-            work_wire_type=work_wire_type,
-            num_zero_control_values=num_zero_control_values,
-        )
-        return {_adjoint_abstract(inner): 1}
     inner_rep = controlled_resource_rep(
         base_class=target_class,
         base_params=target_params,
