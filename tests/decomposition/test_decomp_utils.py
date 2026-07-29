@@ -119,7 +119,7 @@ class TestSignatureRegistration:
         )
 
         register_signature(CompilableDynOp, word="ZZ")
-        assert signature_registry()[CompilableDynOp][-1] == (
+        assert signature_registry()[CompilableDynOp] == (
             {**CompilableDynOp.arg_specs, "word": "XY"},
             {**CompilableDynOp.arg_specs, "word": "ZZ"},
         )
