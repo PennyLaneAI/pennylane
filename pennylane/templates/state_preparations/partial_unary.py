@@ -706,7 +706,13 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
 
     qrom_reps = {
-        p: qp.QROM(data=Int[p, p], control_wires=Wire[n_subspace], target_wires=Wire[p], work_wires=Wire[n_subspace - 1], clean=True)
+        p: qp.QROM(
+            data=Int[p, p],
+            control_wires=Wire[n_subspace],
+            target_wires=Wire[p],
+            work_wires=Wire[n_subspace - 1],
+            clean=True,
+        )
         for p in range(1, main_pui_batch_size + 1)
     }
 
