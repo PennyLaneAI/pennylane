@@ -95,6 +95,7 @@ class MultiplexerStatePreparation(Operator2):
         return q.queue
 
 
+# pylint: disable=unused-argument
 def _multiplexer_state_prep_decomposition_resources(state_vector, wires) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
     resources = dict.fromkeys(

@@ -840,7 +840,9 @@
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   - Templates are ported:
     - `~.BasisRotation`
+    - `~.MultiplexerStatePreparation`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.

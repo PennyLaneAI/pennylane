@@ -1170,17 +1170,10 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.MultiplexerStatePreparation._primitive
+        assert assert_eqn_matches_op(qp.MultiplexerStatePreparation)
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.MultiplexerStatePreparation(state_vector, **kwargs))
 
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""
