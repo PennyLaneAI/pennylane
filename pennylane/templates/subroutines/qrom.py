@@ -262,9 +262,6 @@ class QROM(Operator2):
             clean=clean,
         )
 
-    def __repr__(self):
-        # pylint: disable=no-member
-        return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
 
     def map_wires(self, wire_map: dict):
         new_dict = {
