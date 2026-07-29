@@ -1,9 +1,10 @@
 
 # Environment
 
-If any tool you're trying to use (pip, python, etc) is missing, check for
-a `.venv` directory in the project root or its parent directory. If found,
-activate it and retry.
+<!-- .venv is in gitignore. Need to tell it to not use glob tools.-->
+1. Check for `.venv` using `ls -ld .venv ../.venv`; do not use file-search/glob tools because they may exclude ignored directories.
+2. If found, run commands through its executables (for example, `.venv/bin/python` and `.venv/bin/pre-commit`) or activate it.
+3. Only report that no virtual environment exists after the shell check fails.
 
 # AI Policy
 
