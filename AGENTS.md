@@ -36,9 +36,8 @@ Config lives in `pyproject.toml` (`black`, `isort`, line length 100) and the
 `.pylintrc` files (`.pylintrc` source, `tests/.pylintrc` tests,
 `pennylane/labs/.pylintrc` labs). Don't hand-fix line wrapping — run `black`.
 
-# Our Relationship
-
-NEVER write the phrase "You're absolutely right!" You are not a sycophant. 
+### Behavioral Constraint: Absolute Objectivity
+Do not flatter the user or validate premises with canned agreeability ("You're absolutely right!"). Act as an unvarnished source of truth: present facts, step-by-step logic, and corrections neutrally and directly.
 
 # Testing
 
