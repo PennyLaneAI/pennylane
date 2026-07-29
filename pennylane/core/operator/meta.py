@@ -81,13 +81,12 @@ class OperatorMeta(ABCMeta):
         # indicating it is incorrectly being used as a dynamic argument.
         if enabled():
             for name in cls.static_argnames + cls.compilable_argnames:
-                if name in arguments:
-                    leaves, _ = flatten(arguments[name])
-                    if any(is_abstract(l) for l in leaves):
-                        raise ValueError(
-                            f"Argument '{name}' of operator '{cls.__name__}' must be a concrete, "
-                            f"compile-time constant. A dynamic/traced variable was provided instead. "
-                        )
+                leaves, _ = flatten(arguments[name])
+                if any(is_abstract(l) for l in leaves):
+                    raise ValueError(
+                        f"Argument '{name}' of operator '{cls.__name__}' must be a concrete, "
+                        f"compile-time constant. A dynamic/traced variable was provided instead. "
+                    )
 
         if any(
             _contains_abstract_type(arguments[name])
