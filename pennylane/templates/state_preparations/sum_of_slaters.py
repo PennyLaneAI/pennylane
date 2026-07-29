@@ -984,7 +984,13 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
 
     # Step 2 in paper (p.7)
     resources[
-        qp.QROM(data=Int[num_entries, num_wires], control_wires=Wire[d], target_wires=Wire[num_wires], work_wires=Wire[d - 1], clean=True)
+        qp.QROM(
+            data=Int[num_entries, num_wires],
+            control_wires=Wire[d],
+            target_wires=Wire[num_wires],
+            work_wires=Wire[d - 1],
+            clean=True,
+        )
     ] += 1
 
     if not identity_encoding:
