@@ -268,6 +268,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Sorts the gate counts in the display of resources produced from decompositions.
+  [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
+
 * Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
   register, `x_wires`, is smaller than the size of the second addend register, `y_wires`.
   [(#9807)](https://github.com/PennyLaneAI/pennylane/pull/9807)
@@ -639,7 +642,7 @@
 * Added an optional parameter ``phase_fn`` to ``QuditCircuitConfig`` which enables the inclusion of
   a phase layer with trainable weights to a qudit IQP circuit.
   [(#9826)][https://github.com/PennyLaneAI/pennylane/pull/9826]
-  
+
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
 
@@ -657,7 +660,7 @@
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
 
-* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`,
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
   `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
@@ -812,6 +815,7 @@
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -826,13 +830,14 @@
   [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - Single qubit, non-parameteric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`
+  - Non-parametric operators are ported:
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
+  [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   - Templates are ported:
     - `~.BasisRotation`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
@@ -949,6 +954,7 @@
     [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
     [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
+    [(#9908)](https://github.com/PennyLaneAI/pennylane/pull/9908)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -965,6 +971,7 @@
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
+    [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.

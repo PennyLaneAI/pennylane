@@ -251,9 +251,9 @@ class TestDecompositions:
         op = qp.Hadamard(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 4
 
-        assert res[0].name == "PhaseShift"
+        assert res[0].name == "RZ"
 
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
@@ -262,9 +262,11 @@ class TestDecompositions:
         assert res[1].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
-        assert res[2].name == "PhaseShift"
+        assert res[2].name == "RZ"
         assert res[2].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
+
+        assert res[3].name == "GlobalPhase"
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -1060,25 +1062,10 @@ class TestControlledMethod:
         out = qp.ctrl(qp.PauliZ(0), "a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
 
-    @pytest.mark.parametrize(("control", "expected_type"), [(0, qp.CZ), (Wire[2], qp.CCZ)])
-    def test_PauliZ_abstract_control(self, control, expected_type):
-        """Abstract Z controls bridge to compressed legacy CZ and CCZ resources."""
-        assert qp.ctrl(qp.Z(Wire[1]), control) == qp.resource_rep(expected_type)
-
-    def test_Hadamard(self):
-        """Test the Hadamard _controlled method."""
-        out = qp.Hadamard(0)._controlled("a")
-        qp.assert_equal(out, qp.CH(("a", 0)))
-
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
         out = qp.CNOT((0, 1))._controlled("a")
         qp.assert_equal(out, qp.Toffoli(("a", 0, 1)))
-
-    def test_SWAP(self):
-        """Test the SWAP _controlled method."""
-        out = qp.SWAP((0, 1))._controlled("a")
-        qp.assert_equal(out, qp.CSWAP(("a", 0, 1)))
 
     def test_Barrier(self):
         """Tests the _controlled behavior of Barrier."""
@@ -1133,10 +1120,10 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
 
-            if rule.is_applicable(**pow_op.resource_params):
+            if rule.is_applicable(**pow_op.arguments):
 
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
+                    rule(**pow_op.arguments)
 
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.

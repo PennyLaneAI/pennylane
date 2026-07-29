@@ -170,7 +170,8 @@ def _combine_dict(dict1: dict, dict2: dict):
 
 
 def _gate_count_dict_to_str(gate_counts):
-    inner = ", ".join(f"{op}: {count}" for op, count in gate_counts.items())
+    str_op = ((str(op), count) for op, count in gate_counts.items())
+    inner = ", ".join(f"{op}: {count}" for op, count in sorted(str_op))
     return f"{{{inner}}}"
 
 
@@ -493,8 +494,8 @@ def custom_ctrl_op_to_base():
     return {
         qp.CNOT: qp.X,
         qp.Toffoli: qp.X,
-        qp.CSWAP: qp.SWAP,
-        qp.CH: qp.H,
+        qp.CZ: qp.Z,
+        qp.CCZ: qp.Z,
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
         qp.CRZ: qp.RZ,
