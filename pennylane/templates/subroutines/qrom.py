@@ -627,14 +627,21 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
 
 
 def _qrom_measurement_condition(
-    num_bitstrings=None, num_control_wires=None, num_work_wires=None, base_params=None, **_
+    data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
 ):  # pylint: disable=unused-argument
+
+    if base is not None:
+        num_bitstrings = len(base.data)
+        num_work_wires = len(base.work_wires)
+    else:
+        num_bitstrings, num_control_wires, num_work_wires = (
+            len(data),
+            len(control_wires),
+            len(work_wires),
+        )
 
     if not compiler.active():
         return False
-    if base_params is not None:
-        num_bitstrings = base_params["num_bitstrings"]
-        num_work_wires = base_params["num_work_wires"]
 
     n_input = max(1, ceil_log2(num_bitstrings))
     if num_bitstrings <= 2:

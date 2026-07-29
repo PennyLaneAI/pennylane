@@ -34,6 +34,7 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_measurement_resources,
 )
 from pennylane.templates.subroutines.select import _select_decomp_unary
+from pennylane.typing import Int, Wire
 
 clifford_t_measure = {
     qp.H,
@@ -540,38 +541,24 @@ class TestMeasurementQROM:
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
-        assert (
-            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
-            is False
-        )
+        assert _qrom_measurement_condition(Int[8, 3], Wire[2], Wire[3], Wire[3]) is False
 
     def test_condition_with_compiler(self, mocker):
         """Test the condition logic when a compiler is active."""
         mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
 
         # Small tables (<= 2 bitstrings) are always applicable.
-        assert (
-            _qrom_measurement_condition(num_bitstrings=2, num_work_wires=0, num_control_wires=1)
-            is True
-        )
+        assert _qrom_measurement_condition(Int[2, 1], Wire[1], Wire[1], Wire[0]) is True
         # Enough work wires: applicable.
-        assert (
-            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
-            is True
-        )
+        assert _qrom_measurement_condition(Int[8, 2], Wire[3], Wire[2], Wire[2]) is True
         # Too few work wires: not applicable.
-        assert (
-            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=0, num_control_wires=3)
-            is False
-        )
-        # Parameters extracted from ``base_params`` (Adjoint path).
+        assert _qrom_measurement_condition(Int[8, 3], Wire[3], Wire[3], Wire[0]) is False
+        # Parameters extracted from ``base`` (Adjoint path).
         assert (
             _qrom_measurement_condition(
-                base_params={
-                    "num_bitstrings": 8,
-                    "num_work_wires": 2,
-                    "num_control_wires": 3,
-                }
+                base=qp.QROM(
+                    Int[8, 3], work_wires=Wire[2], control_wires=Wire[3], target_wires=Wire[3]
+                ),
             )
             is True
         )
