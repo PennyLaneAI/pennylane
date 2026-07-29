@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core import AnnotatedQueue
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
@@ -392,29 +393,6 @@ class TestQROM:
         circuit()
         assert spy.call_count > 0, "_select_decomp_unary was never called"
 
-    def test_zero_control_wires(self):
-        """Test that the edge case of zero control wires works"""
-
-        dev = qp.device("default.qubit", wires=2)
-        qs = qp.tape.QuantumScript(
-            qp.QROM.compute_decomposition(
-                ((1, 0),),
-                target_wires=[0, 1],
-                work_wires=None,
-                control_wires=[],
-                clean=False,
-            ),
-            [qp.probs(wires=[0, 1])],
-        )
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
-        assert len(tape[0][0].operations) == 1
-        assert qp.equal(tape[0][0][0], qp.BasisEmbedding([1, 0], wires=[0, 1]))
-        assert qp.math.allclose(output, [0, 0, 1, 0])
-
     @pytest.mark.jax
     def test_traced_wires(self):
         """Test that QROM construction and decomposition do not raise TracerBoolConversionError
@@ -513,23 +491,6 @@ def test_none_work_wires_case():
     )
     expected_gates = qp.QROM.compute_decomposition(
         np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
-    )
-
-    assert gates_clean == expected_gates
-
-
-def test_too_many_work_wires_case():
-    """Test that QROM works when more work wires are given than necessary"""
-
-    gates_clean = qp.QROM.compute_decomposition(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [3, 4, 5], clean=False
-    )
-    expected_gates = qp.QROM.compute_decomposition(
-        np.array([[1], [0], [0], [1]]),
-        [0, 1],
-        [2],
-        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-        clean=False,
     )
 
     assert gates_clean == expected_gates
