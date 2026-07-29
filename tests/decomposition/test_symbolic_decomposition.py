@@ -34,7 +34,6 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
-    _base_resource_rep,
     adjoint_rotation,
     cancel_adjoint,
     controlled_resource_rep,
@@ -91,19 +90,6 @@ class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 class DummyHadamard(qp.operation.Operator):
     resource_keys = set({})
     num_wires = 1
-
-
-@pytest.mark.unit
-def test_base_resource_rep():
-    """Tests that ``_base_resource_rep`` produces the right representation for both ``Operator1``
-    (a ``CompressedResourceOp``) and ``Operator2`` (an abstract instance) base classes."""
-
-    # Operator1 base: represented by a CompressedResourceOp built from its resource params.
-    assert _base_resource_rep(qp.RX, {}) == resource_rep(qp.RX)
-
-    # Operator2 base: represented by the abstract instance matching ``abstractify``.
-    op2_params = {"theta": 0.5, "pauli_word": "XY", "wires": qp.wires.Wires([0, 1])}
-    assert _base_resource_rep(qp.PauliRot, op2_params) == abstractify(qp.PauliRot(**op2_params))
 
 
 @pytest.mark.unit

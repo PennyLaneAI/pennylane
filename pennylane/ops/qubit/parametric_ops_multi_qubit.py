@@ -35,7 +35,9 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -612,8 +614,8 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
-add_decomps("Adjoint(PauliRot)", adjoint_rotation)
-add_decomps("Pow(PauliRot)", pow_rotation)
+add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
+add_decomps("Pow(PauliRot)", pow_rotation2)
 
 
 class PCPhase(Operation):

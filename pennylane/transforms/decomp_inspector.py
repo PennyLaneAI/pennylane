@@ -521,8 +521,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 12, RZ: 59, RX: 4, CNOT: 58}
+        First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, QubitUnitary(num_wires=1): 2}
+        Full Expansion Gates: {CNOT: 58, GlobalPhase: 43, RX: 4, RY: 12, RZ: 59}
         Weighted Cost: 133.0
         <BLANKLINE>
         Decomposition 2 (name: one_zeroed_worker)
@@ -615,8 +615,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        First-Level Expansion Gates: {Hadamard: 2, QubitUnitary(num_wires=1): 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
-        Full Expansion Gates: {GlobalPhase: 43, RY: 12, RZ: 59, RX: 4, CNOT: 58}
+        First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, Controlled(GlobalPhase, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(num_control_wires=2, num_work_wires=2, num_zero_control_values=0, work_wire_type=borrowed): 4, QubitUnitary(num_wires=1): 2}
+        Full Expansion Gates: {CNOT: 58, GlobalPhase: 43, RX: 4, RY: 12, RZ: 59}
         Weighted Cost: 133.0
         <BLANKLINE>
         CHOSEN: Decomposition 2 (name: one_zeroed_worker)
