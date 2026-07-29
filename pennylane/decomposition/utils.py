@@ -21,10 +21,12 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
+from numbers import Number
 from typing import Any
 
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator, Operator1, abstractify
+from pennylane.typing import AbstractArray, AbstractWires
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -151,14 +153,106 @@ enable_graph, disable_graph, enabled_graph, toggle_graph_ctx = toggle_graph_deco
 
 def _init_signature_registration():
 
-    _registry = defaultdict(list)
+    _registry = defaultdict(tuple)
 
     def register(op: type[Operator2], **kwargs) -> None:
+        r"""Register a possible signature for an operator.
+
+        A *signature* records the abstract type of every argument of an operator (its
+        dynamic parameters and wires), along with the values of any compilable static
+        arguments. Registered signatures are collected in :func:`~.signature_registry`
+        and are used to determine ahead of time which decomposition rules can be
+        precompiled, improving the performance of decomposition passes in
+        :func:`~.qjit`-compiled workflows.
+
+        Operators with a fixed signature (i.e., ``op.has_fixed_sig`` is ``True``) are
+        registered automatically when the class is defined. This function can be called
+        directly to register additional signatures, for example the same operator with
+        different fixed wire counts or static argument values.
+
+        Args:
+            op (type[~.Operator2]): the operator class to register a signature for.
+
+        Keyword Args:
+            **kwargs: the type or value of each argument, overriding the corresponding
+                entry in ``op.arg_specs``. Together, ``op.arg_specs`` and these keyword
+                arguments must specify every argument of ``op``. Dynamic arguments must be
+                given an abstract numeric type (a subclass of ``numbers.Number`` or an
+                :class:`~.AbstractArray`) and wire arguments an :class:`~.AbstractWires`,
+                each with a fixed shape.
+
+        Raises:
+            ValueError: if ``op`` has hybrid or non-compilable static arguments, if the
+                resulting signature does not cover every argument of ``op``, or if a
+                dynamic or wire argument is not given a fixed-shape abstract type.
+
+        .. seealso:: :func:`pennylane.decomposition.signature_registry`
+        """
         spec = dict(op.arg_specs)
         spec.update(**kwargs)
-        _registry[op].append(spec)
 
-    def registry() -> dict[type[Operator2], list[dict[str, Any]]]:
+        if any(op.hybrid_argnames or op.static_argnames):
+            # Precompiling decomposition rules will require UID generation for operators
+            # with hybrid/non-compilable static arguments. But, the UID is Python session
+            # dependent, and precompilation happens in a different Python session.
+            raise ValueError(
+                "Signatures cannot be registered for operators that contain hybrid or "
+                "non-compilable static arguments."
+            )
+
+        # pylint: disable=protected-access
+        if set(spec.keys()) != set(op._sig.parameters.keys()):
+            raise ValueError(
+                "Signatures being registered must cover all operator arguments. Expected "
+                f"{tuple(op._sig.parameters.keys())} but got {tuple(spec.keys())}."
+            )
+
+        for dname in op.dynamic_argnames:
+            aval = spec[dname]
+            if not (
+                (isinstance(aval, type) and issubclass(aval, Number))
+                or isinstance(aval, AbstractArray)
+            ):
+                raise ValueError(
+                    f"Expected an abstract type for '{dname}' when registering a signature "
+                    f"for {op.__name__}."
+                )
+            aval = abstractify(aval)
+            if not aval.shape_fixed:
+                raise ValueError(
+                    "Signatures can only be registered if dynamic data has fixed shapes, "
+                    f"but got shape {aval.shape} for '{op.__name__}.{dname}'."
+                )
+
+            spec[dname] = aval
+
+        for wname in op.wire_argnames:
+            aval = spec[wname]
+            if not isinstance(aval, AbstractWires):
+                raise ValueError(
+                    f"Expected an abstract type for '{wname}' when registering a signature "
+                    f"for {op.__name__}."
+                )
+            if not aval.shape_fixed:
+                raise ValueError(
+                    "Signatures can only be registered if all wire arguments have fixed shapes, "
+                    f"but got shape {aval.shape} for '{op.__name__}.{wname}'."
+                )
+
+        _registry[op] += (spec,)
+
+    def registry() -> dict[type[Operator2], tuple[dict[str, Any]], ...]:
+        r"""Return the operator signatures registered with :func:`~.register_signature`.
+
+        Returns:
+            dict[type[~.Operator2], list[dict[str, Any]]]: a mapping from each registered
+            operator class to the list of signatures registered for it. Each signature is
+            a dictionary mapping argument names to their abstract type (for dynamic and
+            wire arguments) or value (for compilable static arguments).
+
+        .. seealso:: :func:`pennylane.decomposition.register_signature`
+        """
+        # Create a copy so mutation doesn't affect the registry
         return dict(_registry)
 
     return register, registry
