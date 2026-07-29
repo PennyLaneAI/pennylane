@@ -634,9 +634,8 @@ def _qrom_measurement_condition(
         num_bitstrings = len(base.data)
         num_work_wires = len(base.work_wires)
     else:
-        num_bitstrings, num_control_wires, num_work_wires = (
+        num_bitstrings, num_work_wires = (
             len(data),
-            len(control_wires),
             len(work_wires),
         )
 
