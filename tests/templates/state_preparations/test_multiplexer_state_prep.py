@@ -45,10 +45,6 @@ class TestMultiplexerStatePreparation:
                 np.array([1.0, 0, 0]),
                 "State vector must be of length",
             ),
-            (
-                np.array([1.0, 1, 0, 0]),
-                "State vector must have",
-            ),
         ],
     )
     def test_MultiplexerStatePrep_error(self, state, msg_match):

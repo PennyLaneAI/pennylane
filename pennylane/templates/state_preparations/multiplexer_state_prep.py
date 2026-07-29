@@ -76,13 +76,6 @@ class MultiplexerStatePreparation(Operation):
                 f"State vector must be of length {2 ** len(wires)}; got length {n_amplitudes}."
             )
 
-        if not math.is_abstract(state_vector):
-            norm = math.linalg.norm(state_vector)
-            if not math.allclose(norm, 1.0, atol=1e-3):
-                raise ValueError(
-                    f"State vector must have norm 1.0; the input state vector has norm {norm}"
-                )
-
         self.state_vector = state_vector
         super().__init__(state_vector, wires=wires)
 
