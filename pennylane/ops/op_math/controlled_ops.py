@@ -487,7 +487,8 @@ def _cy(wires: WiresLike, **__):
     qp.S(wires=wires[0])
 
 
-def _pauli_ctrl_pauli_ppr_resources(pauli0, pauli1):
+# pylint: disable=unused-argument
+def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
     resources = defaultdict(int)
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
@@ -654,7 +655,7 @@ def _cz_to_cnot(wires: WiresLike, **__):
     qp.H(wires=wires[1])
 
 
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=Z))
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, wires=None, pauli0=Z, pauli1=Z))
 def _cz_to_ppr(wires: AbstractWires, **_):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Z)
 
@@ -1207,7 +1208,7 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qp.H(wires[1])
 
 
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=X))
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, wires=None, pauli0=Z, pauli1=X))
 def _cnot_to_ppr(wires: AbstractWires, **_):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.X)
 
