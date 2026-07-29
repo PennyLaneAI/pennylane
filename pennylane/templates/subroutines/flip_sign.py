@@ -15,13 +15,17 @@ r"""
 Contains the FlipSign template.
 """
 
+from collections.abc import Sequence
+
+import numpy as np
+
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import X, Z, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 
 class FlipSign(Operator2):
@@ -33,17 +37,19 @@ class FlipSign(Operator2):
 
     FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`,
 
-    where n is the basis state to flip and m is the input.
+    where :math:`n` is the basis state (argument ``state``) to flip and :math:`m` is the input.
 
     Args:
-        n (array[int] or int): binary array or integer value representing the state on which to flip the sign
+        state (Sequence[int] or array[int] or int): binary array or integer value representing
+            the state on which to flip the sign
         wires (array[int] or int): wires that the template acts on
 
     **Example**
 
-    This template changes the sign of the basis state passed as an argument.
-    In this example, when passing the element ``[1, 0]``, we will change the sign of the state :math:`|10\rangle`.
-    We could alternatively pass the integer ``2`` and get the same result since its binary representation is ``[1, 0]``.
+    This template changes the sign of the basis state passed as an argument. In this example,
+    when passing the element ``[1, 0]``, we will change the sign of the state :math:`|10\rangle`
+    on two qubits. We could alternatively pass the integer ``2`` and get the same result since
+    its binary representation on two bits is ``[1, 0]``.
 
     .. code-block:: python
 
@@ -65,43 +71,55 @@ class FlipSign(Operator2):
     """
 
     wires_argnames = ("wires",)
-    compilable_argnames = ("n",)
+    compilable_argnames = ("state",)
     arg_specs = {"wires": Wire[-1]}
     wire_sizes = (None,)
 
-    def __init__(self, n: int, wires):  # TODO: DO we rename n->state?
+    @staticmethod
+    def _canonicalize_state(state: int | Sequence[int] | np.ndarray, num_wires: int) -> tuple[int]:
+        """Canonicalize the input state into a tuple of integers."""
+        if isinstance(state, int):
+            if not 0 <= state < 2**num_wires:
+                raise ValueError(
+                    "The given basis state must be a non-negative integer smaller "
+                    f"than {2**num_wires}, but got {state}."
+                )
+            state = tuple(map(int, math.int_to_binary(state, num_wires)))
+        else:
+            if num_wires != len(state):
+                raise ValueError(
+                    "The basis state and wires must have equal length, "
+                    f"but got {len(state)} and {num_wires}."
+                )
+            state = tuple(state)
+        return state
+
+    def __init__(self, state, wires):
         wires = Wires(wires)
         num_wires = len(wires)
         if num_wires == 0:
             raise ValueError("At least one wire is required.")
+        state = self._canonicalize_state(state, num_wires)
+        super().__init__(state, wires)
 
-        if isinstance(n, int):
-            if not 0 <= n < 2**num_wires:
-                raise ValueError(
-                    "The given basis state must be a non-negative integer smaller "
-                    f"than {2**num_wires}, but got {n}."
-                )
-            n = tuple(map(int, math.int_to_binary(n, num_wires)))
-        else:
-            if num_wires != len(n):
-                raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
-            n = tuple(n)
-
-        super().__init__(n, wires)
+    def __abstract_init__(self, state, wires):  # pylint: disable=arguments-differ
+        state = self._canonicalize_state(state, len(wires))
+        super().__abstract_init__(state, wires)
 
     @property
     def num_params(self):
         return 0
 
     @staticmethod
-    def compute_decomposition(n, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(state, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator
 
         .. seealso:: :meth:`~.FlipSign.decomposition`.
 
         Args:
-            n (tuple[int]): binary array vector representing the state to flip the sign on
-            wires (WiresLike): wires that the operator acts on
+            state (Sequence[int] or array[int] or int): binary array or integer value representing
+                the state on which to flip the sign
+            wires (array[int] or int): wires that the template acts on
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -109,35 +127,35 @@ class FlipSign(Operator2):
 
         op_list = []
 
-        if n[-1] == 0:
+        if state[-1] == 0:
             op_list.append(X(wires[-1]))
 
-        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=n[:-1]))
+        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=state[:-1]))
 
-        if n[-1] == 0:
+        if state[-1] == 0:
             op_list.append(X(wires[-1]))
 
         return op_list
 
 
-def _flip_sign_resources(n, wires):
+def _flip_sign_resources(state: tuple[int], wires: WiresLike):
     num_wires = len(wires)
     num_ctrl_wires = num_wires - 1
-    num_zeros = num_ctrl_wires - sum(n[:-1])
+    num_zeros = num_ctrl_wires - sum(state[:-1])
     res = {_ctrl_abstract(Z, Wire[num_ctrl_wires], num_zero_control_values=num_zeros): 1}
-    if n[-1] == 0:
+    if state[-1] == 0:
         res[X] = 2
     return res
 
 
 @register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(n, wires):
-    if n[-1] == 0:
+def _flip_sign_decomposition(state: tuple[int], wires: WiresLike):
+    if state[-1] == 0:
         X(wires[-1])
 
-    ctrl(Z(wires[-1]), control=wires[:-1], control_values=n[:-1])
+    ctrl(Z(wires[-1]), control=wires[:-1], control_values=state[:-1])
 
-    if n[-1] == 0:
+    if state[-1] == 0:
         X(wires[-1])
 
 
