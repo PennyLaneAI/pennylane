@@ -192,6 +192,8 @@ def pow_rotation(phi, wires, base, z, **__):
 
 
 def _decomp_to_base_legacy_res(base_class, base_params, **__):
+    if issubclass(base_class, Operator2):
+        return {abstractify(base_class(**base_params)): 1}
     return {resource_rep(base_class, **base_params): 1}
 
 
@@ -360,9 +362,9 @@ def flip_control_adjoint(
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
     qp.adjoint(
-        qp.ctrl(
+        qp.ops.Controlled(
             base.base,
-            control=wires[: len(control_wires)],
+            control_wires=wires[: len(control_wires)],
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,

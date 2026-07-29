@@ -1401,7 +1401,7 @@ def _u1_phaseshift(phi, wires):
 add_decomps(U1, _u1_phaseshift)
 
 
-@register_resources(lambda **__: {U1: 1})
+@register_resources(lambda **__: {abstractify(U1): 1})
 def _adjoint_u1(base=None, phi=None, wires=None, **__):
     if base is not None:
         phi = base.dynamic_args["phi"]
@@ -1412,7 +1412,7 @@ def _adjoint_u1(base=None, phi=None, wires=None, **__):
 add_decomps("Adjoint(U1)", _adjoint_u1)
 
 
-@register_resources(lambda **__: {U1: 1})
+@register_resources(lambda **__: {abstractify(U1): 1})
 def _pow_u1(base=None, phi=None, wires=None, z=None, **__):
     if base is not None:
         phi = base.dynamic_args["phi"]
@@ -1587,7 +1587,7 @@ def _u2_phaseshift_rot(phi, delta, wires):
 add_decomps(U2, _u2_phaseshift_rot)
 
 
-@register_resources(lambda **__: {U2: 1})
+@register_resources(lambda **__: {abstractify(U2): 1})
 def _adjoint_u2(base=None, phi=None, delta=None, wires=None, **__):
     if base is not None:
         phi = base.dynamic_args["phi"]
@@ -1803,7 +1803,7 @@ def _u3_phaseshift_rot(theta, phi, delta, wires):
 add_decomps(U3, _u3_phaseshift_rot)
 
 
-@register_resources(lambda **__: {U3: 1})
+@register_resources(lambda **__: {abstractify(U3): 1})
 def _adjoint_u3(base=None, theta=None, phi=None, delta=None, wires=None, **__):
     if base is not None:
         theta = base.dynamic_args["theta"]

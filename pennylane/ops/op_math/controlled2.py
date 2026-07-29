@@ -698,9 +698,9 @@ def flip_control_adjoint(
     and taking the adjoint of the control."""
     control = wires[: len(control_wires)] if wires is not None else control_wires
     qp.adjoint(
-        qp.ctrl(
+        ControlledOp2(
             base.base,
-            control=control,
+            control_wires=control,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
