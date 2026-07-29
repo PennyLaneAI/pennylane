@@ -37,7 +37,6 @@ from pennylane.transforms.decompose import DecomposeInterpreter
 >>>>>>> 1918ebdab4 (fix)
 =======
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 >>>>>>> 5acf947b4b (more moving)
@@ -302,8 +301,12 @@ def test_integration_multi_wire(seed):
         assert np.allclose(out_state, out_state_expected)
 
 
+<<<<<<< HEAD
 @pytest.mark.jax
 >>>>>>> 1918ebdab4 (fix)
+=======
+@pytest.mark.capture
+>>>>>>> b8bc5d3d01 (fix?)
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
@@ -311,6 +314,7 @@ def test_capture_compatibility():
     import jax
     import jax.numpy as jnp
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -342,6 +346,10 @@ def test_capture_compatibility():
         gate_set
     ), f"Following ops are present but not in gateset: {op_names - gate_set}"
 =======
+=======
+    from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+>>>>>>> b8bc5d3d01 (fix?)
     qp.capture.enable()
     try:
         with qp.decomposition.toggle_graph_ctx(True):
