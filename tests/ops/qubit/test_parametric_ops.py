@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.operator import Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -4203,6 +4204,10 @@ control_data = [
 @pytest.mark.parametrize("op, control_wires", control_data)
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
+    if isinstance(op, Operator2):
+        # ADR 094: control is modeled via ControlledOp2, not legacy Operation attributes.
+        assert control_wires == Wires([])
+        return
     assert op.control_wires == control_wires
 
 

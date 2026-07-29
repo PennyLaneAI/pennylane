@@ -314,14 +314,6 @@ class Operator2(metaclass=OperatorMeta):
         return self._wires
 
     @property
-    def control_wires(self) -> Wires:
-        r"""Control wires of the operator.
-
-        For operations that are not controlled, this is an empty ``Wires`` object.
-        """
-        return Wires([])
-
-    @property
     def batch_size(self) -> int | None:
         """Batch size of the operator if it is used with broadcasted parameters.
 
