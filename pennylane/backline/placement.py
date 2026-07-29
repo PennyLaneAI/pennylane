@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Placement types for backline heterogeneous compilation and execution."""
+"""Placement types and node constructors for backline heterogeneous compilation and execution."""
 
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -23,41 +23,55 @@ from .transports import Transport, get_transport
 if TYPE_CHECKING:
     from pennylane.devices import Device
 
+@dataclass(frozen=True)
+class ExecutorSpec:
+    """Declarative executor configuration, realized by the compiler backend.
+    """
+
+    options: dict = field(default_factory=dict)
+    """Backend-specific executor options, passed verbatim to the compiler's executor builder."""
+
 
 @dataclass(frozen=True, kw_only=True)
-class Executor:
+class Node:
     """A node in a backline fabric, including its name and connection information.
 
     Base class for :class:`Controller` and :class:`Coprocessor`. It carries information to determine whether the node's code needs to be cross-compiled and dispatched to a remote host or run
-    locally. Executors are assembled into a device with :func:`~pennylane.backline`.
+    locally. Nodes are assembled into a device with :func:`~pennylane.backline`.
 
     See the Attributes section to learn more about the available options.
     """
 
     name: str | None = None
-    """The backend executor device this executor maps to, e.g. ``"gpu-libibverbs"`` or
+    """The backend device this node maps to, e.g. ``"gpu-libibverbs"`` or
     ``"cpu-libibverbs"``. Defaults to ``None``."""
 
     addr: str | None = None
-    """Host address of the executor. Required for remote executors; may be ``None`` for local ones."""
+    """Host address of the node. Required for remote nodes; may be ``None`` for local ones."""
 
     port: str | None = None
-    """Port the executor is reached on."""
+    """Port the node is reached on."""
 
     triple: str | None = None
-    """Cross-compilation target triple for the executor's code."""
+    """Cross-compilation target triple for the node's code."""
 
     remote: bool = True
-    """Whether the executor runs on a separate host reached over the network (cross-compiled and
+    """Whether the node runs on a separate host reached over the network (cross-compiled and
     dispatched) rather than locally."""
+
+    executor: object | None = None
+    """The executor this node runs on. Either a launched executor (e.g. a ``catalyst.Executor``,
+    duck-typed: exposes ``address`` and ``triple``) or an :class:`ExecutorSpec` the compiler realizes
+    into one. When realized, its ``address``/``triple`` drive the node's cross-compile and remote
+    dispatch; ``addr``/``port`` remain the data-plane endpoint. Defaults to ``None``."""
 
     init_args: dict = field(default_factory=dict)
     """Backend-specific initialization arguments; empty by default (never ``None``)."""
 
 
 @dataclass(frozen=True)
-class Controller(Executor):
-    """The executor that controls the QPU and initiates data transfers.
+class Controller(Node):
+    """The node that controls the QPU and initiates data transfers.
 
     The controller runs the qnode and is the data-initiator during a decoding step: it sends
     syndromes to the coprocessors and receives corrections back. Pass it to
@@ -66,7 +80,7 @@ class Controller(Executor):
     Args:
         device (Device | None): The PennyLane device the controller executes (e.g. ``qp.device("lightning.qubit")``). Defaults to ``None``, which uses a ``null.qubit`` device.
 
-    See the Attributes section for the connection options inherited from :class:`Executor`.
+    See the Attributes section for the connection options inherited from :class:`Node`.
     """
 
     device: "Device | None" = None
@@ -80,8 +94,8 @@ class Controller(Executor):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Coprocessor(Executor):
-    """The executor that runs a coprocessor function per received message.
+class Coprocessor(Node):
+    """The node that runs a coprocessor function per received message.
 
     A coprocessor receives messages from the controller (e.g., syndromes). The ``coprocessor_fn`` is
     used to process the message, and sends the result back (e.g., corrections). Depending on the
@@ -125,3 +139,27 @@ class Backline:
             object.__setattr__(self, "coprocessors", tuple(self.coprocessors))
         if isinstance(self.transport, str):
             object.__setattr__(self, "transport", get_transport(self.transport))
+
+
+def controller(*, device=None, name=None, addr=None, port=None, remote=True, triple=None,
+               init_args=None, **executor_kwargs):
+    """Construct a :class:`Controller`, recording its executor for the compiler to launch.
+
+    Returns:
+        Controller: The controller node carrying its executor spec.
+    """
+    executor = ExecutorSpec(executor_kwargs) if executor_kwargs else None
+    return Controller(device=device, name=name, addr=addr, port=port, remote=remote,
+                      triple=triple, init_args=init_args or {}, executor=executor)
+
+
+def coprocessor(*, coprocessor_fn, name=None, addr=None, port=None, remote=True, triple=None,
+                init_args=None, **executor_kwargs):
+    """Construct a :class:`Coprocessor`, recording its executor for the compiler to launch.
+    
+    Returns:
+        Coprocessor: The coprocessor node carrying its executor spec.
+    """
+    executor = ExecutorSpec(executor_kwargs) if executor_kwargs else None
+    return Coprocessor(coprocessor_fn=coprocessor_fn, name=name, addr=addr, port=port,
+                       remote=remote, triple=triple, init_args=init_args or {}, executor=executor)

@@ -55,17 +55,17 @@ A backline device is built with :func:`~pennylane.backline` from a
     def circuit():
         # To be updated
 
-Executors
-~~~~~~~~~
+Nodes
+~~~~~
 
-An executor is a node in the backline fabric. An executor can be a Controller (where the QNode is executed, and issues messages), or a Coprocessor (where the messages are processed and returned).
+A node is a participant in the backline fabric. A node can be a Controller (where the QNode is executed, and issues messages), or a Coprocessor (where the messages are processed and returned).
 
 .. autosummary::
     :toctree: api
 
     ~Controller
     ~Coprocessor
-    ~Executor
+    ~Node
 
 Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,13 +117,24 @@ lives in the compiled runtime.
 
 from .device import HeterogeneousDevice, backline
 from .functions import CoprocessorFunction, css_decoder
-from .placement import Backline, Controller, Coprocessor, Executor
+from .placement import (
+    Backline,
+    Controller,
+    Coprocessor,
+    ExecutorSpec,
+    Node,
+    controller,
+    coprocessor,
+)
 from .transports import Transport, get_transport, register_transport
 
 __all__ = [
-    "Executor",
+    "Node",
     "Controller",
     "Coprocessor",
+    "controller",
+    "coprocessor",
+    "ExecutorSpec",
     "Backline",
     "backline",
     "HeterogeneousDevice",

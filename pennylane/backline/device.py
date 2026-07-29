@@ -59,6 +59,7 @@ class HeterogeneousDevice(Device):
         self._backline = backline
         self._device = backline.controller.device  # the real, compilable device
         super().__init__(wires=self._device.wires, shots=shots)
+        self.config_filepath = self._device.config_filepath
 
     @property
     def backline(self):

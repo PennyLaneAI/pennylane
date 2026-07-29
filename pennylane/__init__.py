@@ -207,8 +207,10 @@ from pennylane.backline import (
     Controller,
     Coprocessor,
     CoprocessorFunction,
-    Executor,
+    Node,
     backline,
+    controller,
+    coprocessor,
     css_decoder,
 )
 
