@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.core import AnnotatedQueue
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure

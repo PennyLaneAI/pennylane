@@ -24,7 +24,7 @@ import numpy as np
 from pennylane import compiler, math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operator2
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
