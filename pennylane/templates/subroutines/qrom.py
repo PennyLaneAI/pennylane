@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import compiler, math
 from pennylane import ops as qp_ops
+from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
@@ -36,12 +37,11 @@ from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import TensorLike, Int, Wire, AbstractArray
+from pennylane.typing import AbstractArray, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
 from .select import Select
-from pennylane.core import Operator2
 
 
 def _multi_swap(wires1, wires2):
@@ -190,7 +190,12 @@ class QROM(Operator2):
     wire_argnames = ("control_wires", "target_wires", "work_wires")
     compilable_argnames = ("clean",)
 
-    arg_specs = {"data": Int[-1, -1], "control_wires": Wire[-1], "target_wires": Wire[-1], "work_wires": Wire[-1]}
+    arg_specs = {
+        "data": Int[-1, -1],
+        "control_wires": Wire[-1],
+        "target_wires": Wire[-1],
+        "work_wires": Wire[-1],
+    }
 
     def __init__(
         self,
@@ -249,7 +254,13 @@ class QROM(Operator2):
         work_wires: WiresLike,
         clean=True,
     ):
-        super().__abstract_init__(AbstractArray(shape=data.shape, dtype=np.int64), control_wires=Wire[len(control_wires)], target_wires=Wire[len(target_wires)], work_wires=Wire[len(work_wires)], clean=clean)
+        super().__abstract_init__(
+            AbstractArray(shape=data.shape, dtype=np.int64),
+            control_wires=Wire[len(control_wires)],
+            target_wires=Wire[len(target_wires)],
+            work_wires=Wire[len(work_wires)],
+            clean=clean,
+        )
 
     def __repr__(self):
         return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
@@ -370,11 +381,7 @@ class QROM(Operator2):
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return (
-            self.control_wires
-            + self.target_wires
-            + self.work_wires
-        )
+        return self.control_wires + self.target_wires + self.work_wires
 
 
 def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, num_work_wires, **_):
@@ -423,7 +430,12 @@ def _qrom_decomposition_resources(
     data, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=too-many-branches
 
-    num_bitstrings, num_control_wires, num_target_wires, num_work_wires = len(data), len(control_wires), len(target_wires), len(work_wires)
+    num_bitstrings, num_control_wires, num_target_wires, num_work_wires = (
+        len(data),
+        len(control_wires),
+        len(target_wires),
+        len(work_wires),
+    )
 
     num_work_wires_select = _calculate_n_select_work_wires(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires

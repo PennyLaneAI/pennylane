@@ -21,6 +21,7 @@ import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import controlled_resource_rep
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires
 
 _U64 = np.uint64
@@ -705,14 +706,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
 
     qrom_reps = {
-        p: qp.resource_rep(
-            qp.QROM,
-            num_bitstrings=p,
-            num_control_wires=n_subspace,
-            num_target_wires=p,
-            num_work_wires=n_subspace - 1,
-            clean=True,
-        )
+        p: qp.QROM(Int[p, p], Wire[n_subspace], Wire[p], Wire[n_subspace - 1], True)
         for p in range(1, main_pui_batch_size + 1)
     }
 
@@ -780,7 +774,12 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             k_start, k = data
             qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            qp.QROM(np.eye(b, dtype=np.int64), subspace_wires, nonsubspace_wires[:b], work_wires[: n_subspace - 1])
+            qp.QROM(
+                np.eye(b, dtype=np.int64),
+                subspace_wires,
+                nonsubspace_wires[:b],
+                work_wires[: n_subspace - 1],
+            )
             qp.BasisState(k_start, subspace_wires)
             continue
         if _type == "Fanout":
