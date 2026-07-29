@@ -201,15 +201,6 @@ def _make_hashable(d):
     return d
 
 
-def _flatten_base_for_resource_rep(base_class, base_params=None):
-    """Flatten a base operator for ``CompressedResourceOp`` without calling ``resource_rep`` on Operator2."""
-    base_params = base_params or {}
-    if issubclass(base_class, Operator2):
-        return base_class, base_params
-    base_rep = resource_rep(base_class, **base_params)
-    return base_rep.op_type, base_rep.params
-
-
 def _validate_resource_rep(op_type, params):
     """Validates the resource representation of an operator."""
 
@@ -220,20 +211,19 @@ def _validate_resource_rep(op_type, params):
         raise TypeError(
             f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
         )
-    resource_keys = op_type.resource_keys
 
-    unexpected_arguments = set(params.keys()) - resource_keys
+    unexpected_arguments = set(params.keys()) - op_type.resource_keys
     if unexpected_arguments:
         raise TypeError(
             f"Unexpected keyword arguments for resource_rep({op_type.__name__}): "
-            f"{list(unexpected_arguments)}). Expected: {list(resource_keys)}"
+            f"{list(unexpected_arguments)}). Expected: {list(op_type.resource_keys)}"
         )
 
-    missing_arguments = resource_keys - set(params.keys())
+    missing_arguments = op_type.resource_keys - set(params.keys())
     if missing_arguments:
         raise TypeError(
             f"Missing keyword arguments for resource_rep({op_type.__name__}): "
-            f"{list(missing_arguments)}. Expected: {list(resource_keys)}"
+            f"{list(missing_arguments)}. Expected: {list(op_type.resource_keys)}"
         )
 
 
@@ -335,9 +325,9 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     if op_type is qp.ops.ControlledOp:
         op_type = qp.ops.Controlled
     if op_type is qp.ops.Controlled:
-        params["base_class"], params["base_params"] = _flatten_base_for_resource_rep(
-            params["base_class"], params["base_params"]
-        )
+        base_rep = resource_rep(params["base_class"], **params["base_params"])
+        params["base_class"] = base_rep.op_type
+        params["base_params"] = base_rep.params
     if op_type is qp.BasisEmbedding:
         op_type = qp.BasisState
     return CompressedResourceOp(op_type, params)
@@ -368,17 +358,11 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
 
     """
 
+    _validate_resource_rep(base_class, base_params)
+
     # Normalize base class aliases (e.g., BasisEmbedding -> BasisState)
     if base_class is qp.BasisEmbedding:
         base_class = qp.BasisState
-
-    custom_controlled_map = qp.ops.op_math.controlled.base_to_custom_ctrl_op()
-    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
-    if num_zero_control_values == 0 and custom_ctrl:
-        return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
-
-    if not issubclass(base_class, Operator2):
-        _validate_resource_rep(base_class, base_params)
 
     # Flattens nested controlled structures.
     if base_class in (qp.ops.Controlled, qp.ops.ControlledOp):
@@ -393,6 +377,11 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
             num_work_wires=num_work_wires,
             work_wire_type=work_wire_type,
         )
+
+    custom_controlled_map = qp.ops.op_math.controlled.base_to_custom_ctrl_op()
+    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
+    if num_zero_control_values == 0 and custom_ctrl:
+        return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
 
     # When the base class is a custom controlled op, update the base to the base of the op.
     # For example, when the base class is `CRX`, use `RX` as the new base class.
@@ -444,10 +433,10 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
 
     """
     base_params = base_params or {}
-    base_class, base_params = _flatten_base_for_resource_rep(base_class, base_params)
+    base_resource_rep = resource_rep(base_class, **base_params)  # flattens any nested structures
     return CompressedResourceOp(
         qp.ops.Adjoint,
-        {"base_class": base_class, "base_params": base_params},
+        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
     )
 
 
@@ -491,10 +480,10 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    base_class, base_params = _flatten_base_for_resource_rep(base_class, base_params)
+    base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
         qp.ops.Pow,
-        {"base_class": base_class, "base_params": base_params, "z": z},
+        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},
     )
 
 
