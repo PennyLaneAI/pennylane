@@ -18,3 +18,4 @@ from .crz_phase_gradient import make_crz_to_phase_gradient_decomp
 from .gridsynth import gridsynth
 from .rz_phase_gradient import make_rz_to_phase_gradient_decomp, validate_phase_gradient_wires
 from .select_pauli_rot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
+from .crz_phase_gradient import make_crz_to_phase_gradient_decomp
