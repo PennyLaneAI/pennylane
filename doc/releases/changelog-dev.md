@@ -819,8 +819,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Adds an `AGENTS.md` file.
-  [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929/)
+* Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
+  [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
