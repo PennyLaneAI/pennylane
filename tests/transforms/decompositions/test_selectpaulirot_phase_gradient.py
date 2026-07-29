@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
@@ -204,12 +203,14 @@ def test_integration_multi_wire(seed):
         assert np.allclose(out_state, out_state_expected)
 
 
-@pytest.mark.jax
+@pytest.mark.capture
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
     # pylint: disable=import-outside-toplevel
     import jax
+
+    from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
     qp.capture.enable()
     try:
