@@ -1361,13 +1361,13 @@ class U1(Operator2):
         return [PhaseShift(phi, wires=wires)]
 
     def adjoint(self) -> "U1":
-        return U1(-self.data[0], wires=self.wires)
+        return U1(-self.dynamic_args["phi"], wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [U1(self.data[0] * z, wires=self.wires)]
+        return [U1(self.dynamic_args["phi"] * z, wires=self.wires)]
 
     def simplify(self) -> "U1":
-        phi = self.data[0] % (2 * np.pi)
+        phi = self.dynamic_args["phi"] % (2 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
@@ -1509,7 +1509,8 @@ class U2(Operator2):
         ]
 
     def adjoint(self) -> "U2":
-        phi, delta = self.parameters
+        phi = self.dynamic_args["phi"]
+        delta = self.dynamic_args["delta"]
         new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
         new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
         return U2(new_phi, new_delta, wires=self.wires)
@@ -1518,7 +1519,8 @@ class U2(Operator2):
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
-        phi, delta = (p % (2 * np.pi) for p in self.data)
+        phi = self.dynamic_args["phi"] % (2 * np.pi)
+        delta = self.dynamic_args["delta"] % (2 * np.pi)
 
         if _can_replace(delta, 0) and _can_replace(phi, 0):
             return RY(np.pi / 2, wires=wires)
@@ -1699,7 +1701,9 @@ class U3(Operator2):
         ]
 
     def adjoint(self) -> "U3":
-        theta, phi, delta = self.parameters
+        theta = self.dynamic_args["theta"]
+        phi = self.dynamic_args["phi"]
+        delta = self.dynamic_args["delta"]
         new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
         new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
         return U3(theta, new_phi, new_delta, wires=self.wires)
@@ -1713,10 +1717,9 @@ class U3(Operator2):
 
         """
         wires = self.wires
-        params = self.parameters
-
-        p0 = params[0] % (4 * np.pi)
-        p1, p2 = (p % (2 * np.pi) for p in params[1:])
+        p0 = self.dynamic_args["theta"] % (4 * np.pi)
+        p1 = self.dynamic_args["phi"] % (2 * np.pi)
+        p2 = self.dynamic_args["delta"] % (2 * np.pi)
 
         if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
             return qp.Identity(wires=wires)
