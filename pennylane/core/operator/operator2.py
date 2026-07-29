@@ -1366,10 +1366,7 @@ class Operator2(metaclass=OperatorMeta):
         register_pytree(cls, cls._flatten, cls._unflatten)
 
         if cls.has_fixed_sig:
-            # pylint: disable=import-outside-toplevel
-            from pennylane.decomposition import register_signature
-
-            register_signature(cls)
+            qp.decomposition.register_signature(cls)
 
 
 # ---------------------------------------------------------------------------------
