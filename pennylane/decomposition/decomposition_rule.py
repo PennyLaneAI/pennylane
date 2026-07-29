@@ -901,7 +901,8 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
         """The circuit drawing of this decomposition rule."""
         _, args, kwargs = _get_decomp_args(self._op)
         assert self._conditions_met and self._enough_work_wires
-        return qp.draw(self._rule)(*args, **kwargs)
+        drawing = qp.draw(self._rule)(*args, **kwargs)
+        return "\n".join(line.rstrip() for line in drawing.splitlines())
 
     @property
     def _name(self) -> str:
