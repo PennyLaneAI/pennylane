@@ -15,16 +15,16 @@ r"""
 Contains the FlipSign template.
 """
 
-from functools import reduce
-
-from pennylane.core.operator import Operation
+from pennylane import math
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import X, Z, cond, ctrl
+from pennylane.ops import X, Z, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
+from pennylane.wires import Wires
 
 
-class FlipSign(Operation):
+class FlipSign(Operator2):
     r"""Flips the sign of a given basis state.
 
     This template performs the following operation:
@@ -64,118 +64,81 @@ class FlipSign(Operation):
 
     """
 
-    resource_keys = {"num_wires", "arr_bin"}
+    wires_argnames = ("wires",)
+    compilable_argnames = ("n",)
+    arg_specs = {"wires": Wire[-1]}
+    wire_sizes = (None,)
 
-    def _flatten(self):
-        hyperparameters = (("n", tuple(self.hyperparameters["arr_bin"])),)
-        return tuple(), (self.wires, hyperparameters)
-
-    def __repr__(self):
-        return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires})"
-
-    def __init__(self, n, wires):
-        if not isinstance(wires, int) and len(wires) == 0:
-            raise ValueError("At least one valid wire is required.")
-
-        if isinstance(wires, int):
-            wires = [wires]
+    def __init__(self, n: int, wires):  # TODO: DO we rename n->state?
+        wires = Wires(wires)
+        num_wires = len(wires)
+        if num_wires == 0:
+            raise ValueError("At least one wire is required.")
 
         if isinstance(n, int):
-            if n < 0:
-                raise ValueError("The given basis state cannot be a negative integer number.")
-            n = self.to_list(n, len(wires))
+            if not 0 <= n < 2**num_wires:
+                raise ValueError(
+                    "The given basis state must be a non-negative integer smaller "
+                    f"than {2**num_wires}, but got {n}."
+                )
+            n = tuple(map(int, math.int_to_binary(n, num_wires)))
+        else:
+            if num_wires != len(n):
+                raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
+            n = tuple(n)
 
-        n = tuple(n)
-
-        if len(wires) != len(n):
-            raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
-
-        self._hyperparameters = {"arr_bin": n}
-        super().__init__(wires=wires)
-
-    @property
-    def resource_params(self):
-        return {
-            "num_wires": len(self.wires),
-            "arr_bin": self.hyperparameters["arr_bin"],
-        }
-
-    @staticmethod
-    def to_list(n, n_wires):
-        r"""Convert the given basis state from integer number into list of bits.
-
-        Args:
-            n (int): basis state as integer number
-            n_wires (int): number of wires
-
-        Raises:
-            ValueError: "Cannot encode basis state ``n`` on ``n_wires`` wires."
-
-        Returns:
-            list[int]: basis state as list of bits
-        """
-        if n >= 2**n_wires:
-            raise ValueError(f"Cannot encode basis state {n} on {n_wires} wires.")
-
-        b_str = f"{n:b}".zfill(n_wires)
-        bin_list = [int(i) for i in b_str]
-        return bin_list
+        super().__init__(n, wires)
 
     @property
     def num_params(self):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, arr_bin):  # pylint: disable=arguments-differ
+    def compute_decomposition(n, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator
 
         .. seealso:: :meth:`~.FlipSign.decomposition`.
 
         Args:
-            wires (array[int]): wires that the operator acts on
-            arr_bin (array[int]): binary array vector representing the state to flip the sign
-
-        Raises:
-            ValueError: "Wires length and flipping state length does not match, they must be equal length "
+            n (tuple[int]): binary array vector representing the state to flip the sign on
+            wires (WiresLike): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[.Operator]: decomposition of the operator
         """
 
         op_list = []
 
-        if arr_bin[-1] == 0:
+        if n[-1] == 0:
             op_list.append(X(wires[-1]))
 
-        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
+        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=n[:-1]))
 
-        if arr_bin[-1] == 0:
+        if n[-1] == 0:
             op_list.append(X(wires[-1]))
 
         return op_list
 
 
-def _flip_sign_resources(num_wires, arr_bin):
-    res = {
-        _ctrl_abstract(
-            Z,
-            Wire[num_wires - 1],
-            num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), arr_bin[:-1], 0),
-        ): 1
-    }
-    if arr_bin[-1] == 0:
+def _flip_sign_resources(n, wires):
+    num_wires = len(wires)
+    num_ctrl_wires = num_wires - 1
+    num_zeros = num_ctrl_wires - sum(n[:-1])
+    res = {_ctrl_abstract(Z, Wire[num_ctrl_wires], num_zero_control_values=num_zeros): 1}
+    if n[-1] == 0:
         res[X] = 2
-
     return res
 
 
 @register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(wires, arr_bin):
-    cond(arr_bin[-1] == 0, X)(wires[-1])
+def _flip_sign_decomposition(n, wires):
+    if n[-1] == 0:
+        X(wires[-1])
 
-    ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
+    ctrl(Z(wires[-1]), control=wires[:-1], control_values=n[:-1])
 
-    cond(arr_bin[-1] == 0, X)(wires[-1])
+    if n[-1] == 0:
+        X(wires[-1])
 
 
 add_decomps(FlipSign, _flip_sign_decomposition)

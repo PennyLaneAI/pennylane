@@ -208,8 +208,6 @@ unmodified_templates_cases = [
         ),
     ),
     (qp.FermionicSingleExcitation, (0.421,), {"wires": [0, 3, 2]}),
-    (qp.FlipSign, (7,), {"wires": [0, 3, 2]}),
-    (qp.FlipSign, (np.array([1, 0, 0]), [0, 1, 2]), {}),
     (
         qp.kUpCCGSD,
         (jnp.ones((1, 6)), [0, 1, 2, 3]),
@@ -339,6 +337,7 @@ tested_modified_templates = [
     qp.QROMStatePreparation,
     qp.MultiplexerStatePreparation,
     qp.SelectPauliRot,
+    qp.FlipSign,
 ]
 
 
@@ -1778,6 +1777,27 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Superposition(**kwargs))
 
+    @pytest.mark.parametrize("n, wires", [(7, [0, 3, 2]), (np.array([1, 0, 0]), [0, 1, 2])])
+    def test_flip_sign(self, n, wires):
+        """Test the primitive bind call of BasisRotation."""
+
+        def qfunc(wires):
+            qp.FlipSign(n, wires)
+
+        # Validate inputs
+        qfunc(wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.FlipSign)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
 
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
@@ -1802,7 +1822,7 @@ unsupported_templates = [
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
 ]
-migrated_templates = [qp.BasisRotation]
+migrated_templates = [qp.BasisRotation, qp.FlipSign]
 
 
 @pytest.mark.parametrize("template", modified_templates)
@@ -1813,6 +1833,14 @@ def test_templates_are_modified(template):
     if template == qp.templates.SubroutineOp or template in migrated_templates:
         return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
+
+
+def test_migrated_templates_have_custom_test():
+    """As templates migrated to Operator2 are considered to be modified in the previous test,
+    we make sure that all templates marked as migrated actually are recognized as modified
+    in `modified_templates`. Together with the test below, this also ensures that there is a
+    dedicated custom test for all migrated templates."""
+    assert set(migrated_templates).issubset(set(modified_templates))
 
 
 def test_all_modified_templates_are_tested():

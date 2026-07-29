@@ -35,7 +35,7 @@ def test_standard_checks():
 def test_repr():
     """Test the repr for a flip sign operator."""
     op = qp.FlipSign([0, 1], wires=("a", "b"))
-    expected = "FlipSign((0, 1), wires=['a', 'b'])"
+    expected = "FlipSign(n=(0, 1), wires=['a', 'b'])"
     assert repr(op) == expected
 
 
@@ -43,7 +43,7 @@ class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 
     @pytest.mark.parametrize(
-        ("n, wires"),
+        "n, wires",
         [
             (0, 0),
             (1, 3),
@@ -80,7 +80,7 @@ class TestFlipSign:
         assert all(signs_are_correct)
 
     @pytest.mark.parametrize(
-        ("n, wires"),
+        "n, wires",
         [
             (0, 0),
             (1, 3),
@@ -95,67 +95,40 @@ class TestFlipSign:
         op = qp.FlipSign(n, wires=wires)
         assert op.wires == Wires(wires)
 
-    @pytest.mark.parametrize(
-        ("n, wires"),
-        [
-            (-1, 0),
-        ],
-    )
-    def test_invalid_state_error(self, n, wires):
-        """Assert error raised when given negative basic state"""
-        with pytest.raises(
-            ValueError, match="The given basis state cannot be a negative integer number."
-        ):
-            qp.FlipSign(n, wires=wires)
+    @pytest.mark.parametrize("n, num_wires", [(-1, 1), (16, 4)])
+    def test_invalid_state_error(self, n, num_wires):
+        """Assert error raised when given negative or too large basis state"""
+        with pytest.raises(ValueError, match="The given basis state must be a non-negative integ"):
+            qp.FlipSign(n, wires=list(range(num_wires)))
 
     @pytest.mark.parametrize(
-        ("n, wires"),
-        [
-            (2, 1),
-            (5, 2),
-            (3, [1]),
-        ],
-    )
-    def test_number_wires_error(self, n, wires):
-        """Assert error raised when given basis state length is less than number of wires"""
-        num_wires = 1 if isinstance(wires, int) else len(wires)
-
-        with pytest.raises(
-            ValueError, match=f"Cannot encode basis state {n} on {num_wires} wires."
-        ):
-            qp.FlipSign(n, wires=wires)
-
-    @pytest.mark.parametrize(
-        ("n, wires"),
+        "n, wires",
         [
             ([0, 1], [2]),
             ([1, 0, 0], [0, 1]),
-            ([1, 0, 1, 1], [0, 2, 3]),
+            ((1, 0, 1, 1), [0, 2, 3]),
         ],
     )
     def test_length_not_match_error(self, n, wires):
         """Assert error raised when length of basis state and wires length does not match"""
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                f"The basis state {tuple(n)} and wires {wires} must be of equal length."
-            ),
+            match=re.escape(f"The basis state {n} and wires {wires} must be of equal length."),
         ):
-            qp.FlipSign(n, wires=wires)
+            qp.FlipSign(n, wires)
 
     @pytest.mark.parametrize(
-        ("n, wires"),
+        "n, wires",
         [
             ([1, 0], []),
             (2, []),
             (3, ()),
-            (1, ""),
-            (2, ""),
+            (1, {}),
         ],
     )
     def test_wire_empty_error(self, n, wires):
         """Assert error raised when given empty wires"""
-        with pytest.raises(ValueError, match="At least one valid wire is required."):
+        with pytest.raises(ValueError, match="At least one wire is required."):
             qp.FlipSign(n, wires=wires)
 
     @pytest.mark.jax
@@ -179,7 +152,7 @@ class TestFlipSign:
         assert qp.math.allclose(res, jit_res)
 
     @pytest.mark.parametrize(
-        ("n, wires"),
+        "n, wires",
         [
             (0, 0),
             (1, 3),
@@ -199,7 +172,7 @@ class TestFlipSign:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
-        ("n, wires"),
+        "n, wires",
         [
             (0, 0),
             (1, 3),
