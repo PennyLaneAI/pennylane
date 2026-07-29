@@ -1361,13 +1361,13 @@ class U1(Operator2):
         return [PhaseShift(phi, wires=wires)]
 
     def adjoint(self) -> "U1":
-        return U1(-self.phi, wires=self.wires)  # pylint: disable=no-member
+        return U1(-self.data[0], wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [U1(self.phi * z, wires=self.wires)]  # pylint: disable=no-member
+        return [U1(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "U1":
-        phi = self.phi % (2 * np.pi)  # pylint: disable=no-member
+        phi = self.data[0] % (2 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
@@ -1518,7 +1518,7 @@ class U2(Operator2):
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
-        phi, delta = (p % (2 * np.pi) for p in (self.phi, self.delta))  # pylint: disable=no-member
+        phi, delta = (p % (2 * np.pi) for p in self.data)
 
         if _can_replace(delta, 0) and _can_replace(phi, 0):
             return RY(np.pi / 2, wires=wires)

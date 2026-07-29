@@ -24,10 +24,6 @@ timer.dat
 tmp/*
 benchmark/revisions/
 *venv*/
-# Root-level venv from `python -m venv .` in the repo (use conda envs instead)
-/pyvenv.cfg
-/bin/
-/lib/
 config.toml
 .envrc
 qml_debug.log
