@@ -207,23 +207,27 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qp.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if not isinstance(op_type.resource_keys, Set):
+    if getattr(op_type, "_operator_version", None) == 2:
+        resource_keys = getattr(op_type, "resource_keys", set())
+    elif not isinstance(op_type.resource_keys, Set):
         raise TypeError(
             f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
         )
+    else:
+        resource_keys = op_type.resource_keys
 
-    unexpected_arguments = set(params.keys()) - op_type.resource_keys
+    unexpected_arguments = set(params.keys()) - resource_keys
     if unexpected_arguments:
         raise TypeError(
             f"Unexpected keyword arguments for resource_rep({op_type.__name__}): "
-            f"{list(unexpected_arguments)}). Expected: {list(op_type.resource_keys)}"
+            f"{list(unexpected_arguments)}). Expected: {list(resource_keys)}"
         )
 
-    missing_arguments = op_type.resource_keys - set(params.keys())
+    missing_arguments = resource_keys - set(params.keys())
     if missing_arguments:
         raise TypeError(
             f"Missing keyword arguments for resource_rep({op_type.__name__}): "
-            f"{list(missing_arguments)}. Expected: {list(op_type.resource_keys)}"
+            f"{list(missing_arguments)}. Expected: {list(resource_keys)}"
         )
 
 

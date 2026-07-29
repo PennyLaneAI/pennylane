@@ -1381,8 +1381,15 @@ class U1(Operator2):
         return U1(phi, wires=self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_u1(base: U1, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.ControlledPhaseShift(base.dynamic_args["phi"], wires=control + base.wires)
+    return NotImplemented
+
+
 # pylint: disable=unused-argument
-def _u1_phaseshift_resources(phi, wires):
+def _u1_phaseshift_resources(**__):
     return {PhaseShift: 1}
 
 

@@ -1243,6 +1243,7 @@ def base_to_custom_ctrl_op():
         (qp.RZ, 1): qp.CRZ,
         (qp.Rot, 1): qp.CRot,
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
+        (qp.U1, 1): qp.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops
 
