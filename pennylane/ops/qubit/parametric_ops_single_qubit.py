@@ -44,8 +44,10 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -752,21 +754,9 @@ def _rz_to_ppr(phi, wires, **_):
     qp.PauliRot(phi, "Z", wires=wires)
 
 
-# pylint: disable=unused-argument
-@register_resources(lambda base=None: {RZ: 1})
-def _adjoint_rz(base):
-    qp.ops.functions.bind_new_parameters(base, (-base.phi,))
-
-
-# pylint: disable=unused-argument
-@register_resources(lambda base, z: {RZ: 1})
-def _pow_rz(base, z):
-    qp.ops.functions.bind_new_parameters(base, (base.phi * z,))
-
-
 add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
-add_decomps("Adjoint(RZ)", _adjoint_rz)
-add_decomps("Pow(RZ)", _pow_rz)
+add_decomps("Adjoint(RZ)", adjoint_rotation2)
+add_decomps("Pow(RZ)", pow_rotation2)
 
 
 def _controlled_rz_resource(base, control_wires, control_values, work_wires, work_wire_type):

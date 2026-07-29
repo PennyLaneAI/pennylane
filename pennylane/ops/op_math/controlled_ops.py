@@ -43,8 +43,10 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import AbstractWires, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -2428,21 +2430,9 @@ def _crz_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "ZZ", wires=wires)
 
 
-# pylint: disable=unused-argument
-@register_resources(lambda base=None: {CRZ: 1})
-def _adjoint_crz(base):
-    qp.ops.functions.bind_new_parameters(base, (-base.phi,))
-
-
-# pylint: disable=unused-argument
-@register_resources(lambda base, z: {CRZ: 1})
-def _pow_crz(base, z):
-    qp.ops.functions.bind_new_parameters(base, (base.phi * z,))
-
-
 add_decomps(CRZ, _crz, _crz_to_ppr)
-add_decomps("Adjoint(CRZ)", _adjoint_crz)
-add_decomps("Pow(CRZ)", _pow_crz)
+add_decomps("Adjoint(CRZ)", adjoint_rotation2)
+add_decomps("Pow(CRZ)", pow_rotation2)
 
 
 class CRot(ControlledOp):
