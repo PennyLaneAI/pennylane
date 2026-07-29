@@ -22,13 +22,14 @@ import numpy as np
 from pennylane import math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
+from pennylane.typing import AbstractWires
 from pennylane.wires import Wires, WiresLike
 
 
-class QFT(Operation):
+class QFT(Operator2):
     r"""QFT(wires)
     Apply a quantum Fourier transform (QFT).
 
@@ -126,81 +127,19 @@ class QFT(Operation):
         array([[1, 1, 1, 0]])
     """
 
-    grad_method = None
-    resource_keys = {"num_wires"}
-
     def __init__(self, wires: WiresLike):
         wires = Wires(wires)
-        self.hyperparameters["num_wires"] = len(wires)
-        super().__init__(wires=wires)
-
-    def _flatten(self):
-        return tuple(), (self.wires, tuple())
-
-    @property
-    def num_params(self):
-        return 0
-
-    def decomposition(self):
-        return self.compute_decomposition(wires=self.wires)
+        # self.hyperparameters["num_wires"] = len(wires)
+        super().__init__(wires)
 
     @staticmethod
     @functools.lru_cache
-    def compute_matrix(num_wires):  # pylint: disable=arguments-differ
-        return np.fft.ifft(np.eye(2**num_wires), norm="ortho")
-
-    @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
+    def compute_matrix(wires):  # pylint: disable=arguments-differ
+        return np.fft.ifft(np.eye(2 ** len(wires)), norm="ortho")
 
 
-        .. seealso:: :meth:`~.QFT.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> qp.QFT.compute_decomposition(wires=(0,1,2))
-        [H(0),
-         ControlledPhaseShift(1.5707963267948966, wires=[1, 0]),
-         ControlledPhaseShift(0.7853981633974483, wires=[2, 0]),
-         H(1),
-         ControlledPhaseShift(1.5707963267948966, wires=[2, 1]),
-         H(2),
-         SWAP(wires=[0, 2])]
-
-        """
-        wires = Wires(wires)
-        num_wires = len(wires)
-
-        shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
-
-        shift_len = len(shifts)
-        decomp_ops = []
-        for i, wire in enumerate(wires):
-            decomp_ops.append(Hadamard(wire))
-
-            for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :], strict=True):
-                op = ControlledPhaseShift(shift, wires=[control_wire, wire])
-                decomp_ops.append(op)
-
-        for i in range(num_wires // 2):
-            decomp_ops.append(SWAP(wires=[wires[i], wires[num_wires - i - 1]]))
-
-        return decomp_ops
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
-
-def _qft_decomposition_resources(num_wires):
+def _qft_decomposition_resources(wires: AbstractWires):
+    num_wires = len(wires)
     return {
         Hadamard: num_wires,
         SWAP: num_wires // 2,
@@ -208,10 +147,9 @@ def _qft_decomposition_resources(num_wires):
     }
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike, num_wires, **__):
-
+def _qft_decomposition(wires: AbstractWires):
+    num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
     if enabled():
         shifts = math.array(shifts, like="jax")
@@ -229,15 +167,15 @@ def _qft_decomposition(wires: WiresLike, num_wires, **__):
             def cphaseshift_loop(j):
                 ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
 
-            cphaseshift_loop()
+            cphaseshift_loop()  # pylint: disable=no-value-for-parameter
 
-    outer_loop()
+    outer_loop()  # pylint: disable=no-value-for-parameter
 
     @for_loop(num_wires // 2)
     def swaps(i):
         SWAP(wires=[wires[i], wires[num_wires - i - 1]])
 
-    swaps()
+    swaps()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(QFT, _qft_decomposition)
