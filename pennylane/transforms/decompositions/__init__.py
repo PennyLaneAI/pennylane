@@ -14,7 +14,7 @@
 r"""This module contains decompositions for quantum circuits."""
 
 from .clifford_t_transform import clifford_t_decomposition
+from .crz_phase_gradient import make_crz_to_phase_gradient_decomp
+from .rz_phase_gradient import make_rz_to_phase_gradient_decomp
+from .selectpaulirot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
 from .gridsynth import gridsynth
-from .decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
-from .decomp_crz_phase_gradient import make_crz_to_phase_gradient_decomp
-from .decomp_selectpaulirot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
