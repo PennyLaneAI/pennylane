@@ -185,8 +185,6 @@ unmodified_templates_cases = [
     (qp.AQFT, (1, [0, 1, 2]), {}),
     (qp.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qp.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
-    (qp.QFT, ([0, 1],), {}),
-    (qp.QFT, (), {"wires": [0, 1]}),
     (qp.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qp.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
     pytest.param(
@@ -339,6 +337,7 @@ tested_modified_templates = [
     qp.QROMStatePreparation,
     qp.MultiplexerStatePreparation,
     qp.SelectPauliRot,
+    qp.QFT,
 ]
 
 
@@ -1778,6 +1777,28 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Superposition(**kwargs))
 
+    def test_qft(self):
+        """Test the primitive bind call of QFT."""
+
+        wires = [0, 5]
+
+        def qfunc(wires):
+            qp.QFT(wires)
+
+        # Validate inputs
+        qfunc(wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.QFT)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
 
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
@@ -1802,7 +1823,7 @@ unsupported_templates = [
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
 ]
-migrated_templates = [qp.BasisRotation]
+migrated_templates = [qp.BasisRotation, qp.QFT]
 
 
 @pytest.mark.parametrize("template", modified_templates)
