@@ -22,6 +22,7 @@ from inspect import Signature, signature
 from numbers import Number
 
 from pennylane.capture import enabled
+from pennylane.math import is_abstract
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 
@@ -72,13 +73,27 @@ class OperatorMeta(ABCMeta):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
-
         bound = cls._sig.bind(*args, **kwargs)
         bound.apply_defaults()
         arguments: dict = bound.arguments
-        target_args = cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
 
-        if any(_contains_abstract_type(arguments[name]) for name in target_args):
+        # NOTE: Detect if static / compilable argument received a tracer
+        # indicating it is incorrectly being used as a dynamic argument.
+        if enabled():
+            hashable_args = cls.static_argnames + cls.compilable_argnames
+            for name in hashable_args:
+                if name in arguments:
+                    leaves, _ = flatten(arguments[name])
+                    if any(is_abstract(l) for l in leaves):
+                        raise ValueError(
+                            f"Argument '{name}' of operator '{cls.__name__}' must be a concrete, "
+                            f"compile-time constant. A dynamic/traced variable was provided instead. "
+                        )
+
+        if any(
+            _contains_abstract_type(arguments[name])
+            for name in cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
+        ):
             obj = cls.__new__(cls, *bound.args, **bound.kwargs)
             obj.__abstract_init__(*bound.args, **bound.kwargs)
             return obj

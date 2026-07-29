@@ -14,7 +14,7 @@
 
 import numpy as np
 import pytest
-from operator2_utils import DynOp, FullOp, MultiWireOp, TwoDynOp
+from operator2_utils import CompilableOp, DynOp, FullOp, MultiWireOp, StaticOp, TwoDynOp
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
@@ -40,6 +40,23 @@ def test_child_constructor_runs_when_concrete():
     # __init__ is hit so phi is doubled
     assert op.phi == 4.0
     assert op.wires == Wires(0)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("op", (StaticOp, CompilableOp))
+def test_static_compilable_arg_validation(op):
+    """Tests that an error is raised if dynamic arguments are fed to static / compilable arguments."""
+
+    import jax
+
+    def f(a):
+        op(a, 0)
+
+    error_msg = (
+        rf"Argument '.*' of operator '{op.__name__}' must be a concrete, compile-time constant\."
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        _ = jax.make_jaxpr(f)(0.5)
 
 
 class TestOperatorAbstractInputs:
