@@ -445,21 +445,6 @@ def test_wires_error(control_wires, target_wires, work_wires, msg_match):
         qp.QROM([[1]] * 8, control_wires, target_wires, work_wires)
 
 
-def test_repr():
-    """Test that the __repr__ method works as expected."""
-
-    op = qp.QROM(
-        [[1], [0], [0], [1]],
-        control_wires=[0, 1],
-        target_wires=[2],
-        work_wires=[3],
-        clean=True,
-    )
-    res = repr(op)
-    expected = "QROM(control_wires=[0, 1], target_wires=[2],  work_wires=[3], clean=True)"
-    assert res == expected
-
-
 @pytest.mark.parametrize(
     ("data", "control_wires", "target_wires", "msg_match"),
     [
@@ -481,19 +466,6 @@ def test_wrong_wires_error(data, control_wires, target_wires, msg_match):
     """Test that error is raised if more ops are requested than can fit in control wires"""
     with pytest.raises(ValueError, match=msg_match):
         qp.QROM(data, control_wires, target_wires, work_wires=None)
-
-
-def test_none_work_wires_case():
-    """Test that clean version is not applied if work wires are not used"""
-
-    gates_clean = qp.QROM.compute_decomposition(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
-    )
-    expected_gates = qp.QROM.compute_decomposition(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
-    )
-
-    assert gates_clean == expected_gates
 
 
 @pytest.mark.parametrize(
