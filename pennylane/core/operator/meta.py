@@ -80,8 +80,7 @@ class OperatorMeta(ABCMeta):
         # NOTE: Detect if static / compilable argument received a tracer
         # indicating it is incorrectly being used as a dynamic argument.
         if enabled():
-            hashable_args = cls.static_argnames + cls.compilable_argnames
-            for name in hashable_args:
+            for name in cls.static_argnames + cls.compilable_argnames:
                 if name in arguments:
                     leaves, _ = flatten(arguments[name])
                     if any(is_abstract(l) for l in leaves):
