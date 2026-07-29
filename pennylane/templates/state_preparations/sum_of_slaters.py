@@ -23,7 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Bool, Int, Wire
+from pennylane.typing import Int, Wire
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.

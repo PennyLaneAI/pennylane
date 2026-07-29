@@ -356,7 +356,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_qrom(self, all_wires, expected):
         """Test adding the first operation to array of strings"""
         num_wires = sum(len(w) for w in all_wires)
-        op = qp.QROM(np.ones((2 ** len(all_wires[0]), len(all_wires[1])), dtype=np.int64), *all_wires)
+        op = qp.QROM(
+            np.ones((2 ** len(all_wires[0]), len(all_wires[1])), dtype=np.int64), *all_wires
+        )
         _wire_map = {i: i for i in range(num_wires)}
         config = _Config(
             wire_map=_wire_map, bit_map=default_bit_map, num_op_layers=num_wires, cur_layer=1

@@ -245,6 +245,7 @@ class QROM(Operator2):
 
         super().__init__(data, control_wires, target_wires, work_wires, clean)
 
+    # pylint: disable=arguments-differ
     def __abstract_init__(
         self,
         data: TensorLike | Sequence[str],
@@ -262,6 +263,7 @@ class QROM(Operator2):
         )
 
     def __repr__(self):
+        # pylint: disable=no-member
         return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
 
     def map_wires(self, wire_map: dict):
@@ -275,7 +277,7 @@ class QROM(Operator2):
             new_dict["control_wires"],
             new_dict["target_wires"],
             new_dict["work_wires"],
-            self.clean,
+            self.clean,  # pylint: disable=no-member
         )
 
     def __copy__(self):
@@ -292,10 +294,10 @@ class QROM(Operator2):
 
         return self.compute_decomposition(
             self.data[0],
-            control_wires=self.control_wires,
-            target_wires=self.target_wires,
-            work_wires=self.work_wires,
-            clean=self.clean,
+            control_wires=self.control_wires,  # pylint: disable=no-member
+            target_wires=self.target_wires,  # pylint: disable=no-member
+            work_wires=self.work_wires,  # pylint: disable=no-member
+            clean=self.clean,  # pylint: disable=no-member
         )
 
     @staticmethod
@@ -380,7 +382,7 @@ class QROM(Operator2):
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return self.control_wires + self.target_wires + self.work_wires
+        return self.control_wires + self.target_wires + self.work_wires  # pylint: disable=no-member
 
 
 def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, num_work_wires, **_):
