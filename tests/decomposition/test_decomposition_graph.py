@@ -1083,9 +1083,8 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"Hadamard"})
         solution = graph.solve()
 
-        rule_params = op.hyperparameters
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
+            solution.decomposition(op)(**op.arguments)
 
         assert q.queue == expected
 
