@@ -85,6 +85,9 @@ class TestMultiplexerStatePreparation:
 
         assert np.allclose(state, output, atol=1e-5)
 
+    @pytest.mark.xfail(
+        reason="This PR have to be merged first: https://github.com/PennyLaneAI/pennylane/pull/9910"
+    )
     def test_decomposition(self):
         """Test that the correct gates are added in the decomposition"""
         wires = range(2)
