@@ -25,7 +25,7 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.math import expand_matrix
 from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire, Float
 from pennylane.wires import Wires
 
 
@@ -148,7 +148,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
 
     for gate in pattern:
         for gen in gate:
-            resources[resource_rep(MultiRZ, num_wires=len(gen))] += 1
+            resources[MultiRZ(Float, Wire[len(gen)])] += 1
 
     return resources
 
