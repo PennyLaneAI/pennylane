@@ -877,7 +877,7 @@ class PauliZ(Operator2):
         """String representation."""
         # PauliZ.name is still "PauliZ" but we want the repr to be just "Z"
         if isinstance(self.wires, Wires):
-            return f"Z({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+            return f"Z({self.wires[0]!r})"
         return f"Z(wires={self.wires})"
 
     def label(
