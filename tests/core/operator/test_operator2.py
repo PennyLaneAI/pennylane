@@ -1059,6 +1059,11 @@ class TestHash:
         op = DynOp(0.5, wires=0)
         assert isinstance(hash(op), int)
 
+    def test_op_is_hashable_with_abstract_wires(self):
+        """Test that ``Operator2`` is hashable when the wires are `AbstractWires`."""
+        op = DynOp(0.5, wires=AbstractWires(1))
+        assert isinstance(hash(op), int)
+
     def test_op_can_be_dict_key(self):
         """Test that an ``Operator2`` instance can be used as a dict key."""
         op = DynOp(0.5, wires=0)
