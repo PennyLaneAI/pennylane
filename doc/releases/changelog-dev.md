@@ -416,6 +416,7 @@
 * Added a decomposition of :class:`~.QROM` using `qp.pauli_measure` operators. This decomposition reduces
   the PPM count in the compilation pipeline.
   [(#9531)](https://github.com/PennyLaneAI/pennylane/pull/9531)
+  [(#9853)](https://github.com/PennyLaneAI/pennylane/pull/9853)
 
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
@@ -659,6 +660,7 @@
 
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
+  [(#9931)](https://github.com/PennyLaneAI/pennylane/pull/9931)
 
 * Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`,
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
@@ -908,6 +910,7 @@
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
   [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
+  [(#9927)](https://github.com/PennyLaneAI/pennylane/pull/9927)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
