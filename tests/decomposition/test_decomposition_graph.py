@@ -1074,13 +1074,13 @@ class TestSymbolicDecompositions:
         assert q.queue == []
         assert solution.resource_estimate(op2) == to_resources({})
 
-    @pytest.mark.parametrize("z,expected", [(0, []), (1, [qp.H(0)])])
+    @pytest.mark.parametrize("z,expected", [(0, []), (1, [qp.X(0)])])
     def test_trivial_powers(self, z, expected):
         """Tests trivial powers of 1 or 0."""
 
-        op = qp.pow(qp.H(0), z)
+        op = qp.pow(qp.X(0), z)
 
-        graph = DecompositionGraph(operations=[op], gate_set={"Hadamard"})
+        graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
         with qp.queuing.AnnotatedQueue() as q:
