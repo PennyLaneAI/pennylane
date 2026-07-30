@@ -429,12 +429,15 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     to find a decomposition for ``Hadamard``. We can investigate further:
 
     >>> inspector.inspect_decomps(qp.Hadamard(0))
-    Decomposition 0 (name: _hadamard_to_rz_ry)
+    Decomposition 0 (name: _hadamard_ppm)
+    Insufficient work wires: requires 1 but only 0 available.
+    <BLANKLINE>
+    Decomposition 1 (name: _hadamard_to_rz_ry)
     0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤
     First-Level Expansion Gates: {GlobalPhase: 1, RY: 1, RZ: 1}
     Missing Ops: {GlobalPhase}
     <BLANKLINE>
-    Decomposition 1 (name: _hadamard_to_rz_rx)
+    Decomposition 2 (name: _hadamard_to_rz_rx)
     0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤
     First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
     Missing Ops: {GlobalPhase}
