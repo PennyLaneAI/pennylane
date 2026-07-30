@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core import AnnotatedQueue
 from pennylane.decomposition import adjoint_resource_rep, controlled_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -394,6 +395,20 @@ class TestQROM:
 
         circuit()
         assert spy.call_count > 0, "_select_decomp_unary was never called"
+
+    def test_zero_control_wires(self):
+        """Test that the edge case of zero control wires works"""
+
+        ops = qp.QROM(
+            ((1, 0),),
+            target_wires=[0, 1],
+            work_wires=None,
+            control_wires=[],
+            clean=False,
+        ).decomposition()
+
+        assert len(ops) == 1
+        assert qp.equal(ops[0], qp.BasisEmbedding([1, 0], wires=[0, 1]))
 
     @pytest.mark.jax
     def test_traced_wires(self):
