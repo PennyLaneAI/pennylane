@@ -80,6 +80,7 @@ def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
 <<<<<<< HEAD
+<<<<<<< HEAD
     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -107,6 +108,27 @@ def test_as_fixed_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
+=======
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
+    custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
+    gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
+
+    @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
+    @qp.qnode(qp.device("null.qubit"))
+    def circuit():
+        qp.RZ(phi, 0)
+        return qp.state()
+
+>>>>>>> 09a29c6c19 (get rid of graph ctx in favour of marker)
     specs = qp.specs(circuit)()["resources"].quantum_operations
     expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
     assert specs == expected_specs
@@ -118,6 +140,7 @@ def test_as_fixed_decomps(phi, p):
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_rz_to_phase_gradient_decomp works`` as
     expected as an alternative decomposition and yields the correct resources"""
+<<<<<<< HEAD
 <<<<<<< HEAD
     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
@@ -146,6 +169,27 @@ def test_as_alt_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
+=======
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
+    custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
+    gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
+
+    @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
+    @qp.qnode(qp.device("null.qubit"))
+    def circuit():
+        qp.RZ(phi, 0)
+        return qp.state()
+
+>>>>>>> 09a29c6c19 (get rid of graph ctx in favour of marker)
     specs = qp.specs(circuit)()["resources"].quantum_operations
     expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
     assert specs == expected_specs
@@ -211,9 +255,13 @@ def test_integration_multi_wire(seed):
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 @pytest.mark.usefixtures("enable_graph_decomposition")
 =======
 >>>>>>> d378cc45a5 (fix)
+=======
+@pytest.mark.usefixtures("enable_graph_decomposition")
+>>>>>>> 09a29c6c19 (get rid of graph ctx in favour of marker)
 @pytest.mark.capture
 def test_capture_compatibility():
     """Ensures capture compatibility."""
@@ -226,6 +274,7 @@ def test_capture_compatibility():
 <<<<<<< HEAD
 =======
 
+<<<<<<< HEAD
     qp.capture.enable()
     try:
         with qp.decomposition.toggle_graph_ctx(True):
@@ -255,6 +304,31 @@ def test_capture_compatibility():
     collector = CollectOpsandMeas()
     collector.eval(cjaxpr.jaxpr, cjaxpr.consts, phi_val)
 
+=======
+    first_free = 1  # 0 used by RZ
+
+    precision = 3
+    angle_wires = jnp.array(list(range(first_free, first_free + precision)))
+    phase_grad_wires = jnp.array(list(range(first_free + precision, first_free + 2 * precision)))
+    work_wires = jnp.array(list(range(first_free + 2 * precision, first_free + 3 * precision - 1)))
+
+    custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+
+    gate_set = {"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"}
+
+    @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
+    def f(phi):
+        qp.RZ(phi, 0)
+        return qp.state()
+
+    phi_val = jnp.pi
+
+    cjaxpr = jax.make_jaxpr(f)(phi_val)
+
+    collector = CollectOpsandMeas()
+    collector.eval(cjaxpr.jaxpr, cjaxpr.consts, phi_val)
+
+>>>>>>> 09a29c6c19 (get rid of graph ctx in favour of marker)
     op_names = {op.name for op in collector.state["ops"]}
     assert op_names.issubset(
         gate_set
