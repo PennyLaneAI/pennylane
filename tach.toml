@@ -165,14 +165,6 @@ depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
-
-
-[[modules]]
-path = "pennylane.configuration"
-depends_on = []
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "core"
-
 [[modules]]
 path = "pennylane.compiler"
 depends_on = []

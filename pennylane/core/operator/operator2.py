@@ -1090,6 +1090,19 @@ class Operator2(metaclass=OperatorMeta):
             setattr(copied_op, attr, deepcopy(value, memo))
         return copied_op
 
+    def __getattr__(self, name):
+        # By default, all operator arguments are accessible as properties without needing
+        # to manually add properties. However, these properties are created dynamically in
+        # __init_subclass__. Pylint raises 'no-member' errors when trying to access these
+        # dynamically added properties. This dunder method is added to circumvent the error.
+        # Pylint does not raise the 'no-member' error for classes that contain __getattr__.
+        # The catch is that 'no-member' errors will no longer be raised for values that are
+        # _actually_ not present.
+
+        # __getattr__ is a fallback called after an attribute is not found on an object, so,
+        # unconditionally raising an AttributeError is exactly what would be expected anyway.
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
     # ------------------------------------------------------------------------
     # ------------------ Operator arithmetic dunder methods ------------------
     # ------------------------------------------------------------------------

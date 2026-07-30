@@ -244,8 +244,24 @@ def interface(request):
 
 
 def pytest_collection_modifyitems(items, config):
+    custom_markers = {
+        "autograd",
+        "data",
+        "torch",
+        "jax",
+        "qchem",
+        "qcut",
+        "all_interfaces",
+        "finite-diff",
+        "param-shift",
+        "external",
+        "capture",
+        "catalyst",
+    }
     rootdir = pathlib.Path(config.rootdir)
+
     for item in items:
+        # Auto-assign the marker based on its file path
         rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
@@ -260,35 +276,33 @@ def pytest_collection_modifyitems(items, config):
             mark = getattr(pytest.mark, "data")
             item.add_marker(mark)
 
-    # Tests that do not have a specific suite marker are marked `core`
-    for item in items:
-        markers = {mark.name for mark in item.iter_markers()}
-        if (
-            not any(
-                elem
-                in [
-                    "autograd",
-                    "data",
-                    "torch",
-                    "jax",
-                    "qchem",
-                    "qcut",
-                    "all_interfaces",
-                    "finite-diff",
-                    "param-shift",
-                    "external",
-                    "capture",
-                    "catalyst",
-                ]
-                for elem in markers
-            )
-            or not markers
-        ):
+        # Get all markers on the item
+        item_markers = {mark.name for mark in item.iter_markers()}
+
+        # Default to the core marker if it's missing one of our markers
+        if not item_markers or not item_markers & custom_markers:
             item.add_marker(pytest.mark.core)
-        if "capture" in markers:
+
+        # Auto add jax marker if the item is marked under capture
+        if "capture" in item_markers:
             item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
-            if "jax" not in markers:
+            if "jax" not in item_markers:
                 item.add_marker(pytest.mark.jax)
+
+        if pl2do_marker := item.get_closest_marker("pl2do"):
+            # Allow developers to set a custom reason if they wish
+            # either through positional or keyword argument
+            custom_reason = None
+            if pl2do_marker.args:
+                custom_reason = pl2do_marker.args[0]
+            elif "reason" in pl2do_marker.kwargs:
+                custom_reason = pl2do_marker.kwargs["reason"]
+
+            reason = (
+                custom_reason
+                or "PL 2.0: Feature is deprioritized and is scheduled to be re-visited."
+            )
+            item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
 
 
 def pytest_runtest_setup(item):
