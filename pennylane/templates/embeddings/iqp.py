@@ -178,7 +178,7 @@ class IQPEmbedding(Operation):
 
     grad_method = None
 
-    resource_keys = {"pattern_size", "n_repeats", "num_wires"}
+    resource_keys = {"features", "pattern_size", "n_repeats", "num_wires"}
 
     def __init__(self, features, wires, n_repeats=1, pattern=None):
         shape = math.shape(features)
@@ -203,6 +203,7 @@ class IQPEmbedding(Operation):
     @property
     def resource_params(self) -> dict:
         return {
+            "features": self.data[0],
             "pattern_size": len(self.hyperparameters["pattern"]),
             "n_repeats": self.hyperparameters["n_repeats"],
             "num_wires": len(self.wires),
@@ -279,11 +280,13 @@ class IQPEmbedding(Operation):
         return op_list
 
 
-def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
+def _iqp_embedding_resources(features, pattern_size, n_repeats, num_wires):
+    is_batched = len(features.shape) > 1
+    mrz_rep = MultiRZ(Float[features.shape[-1]], Wire[2]) if is_batched else MultiRZ(Float, Wire[2])
     return {
         RZ: n_repeats * num_wires,
         H: n_repeats * num_wires,
-        MultiRZ(Float, Wire[2]): pattern_size * n_repeats,
+        mrz_rep: pattern_size * n_repeats,
     }
 
 

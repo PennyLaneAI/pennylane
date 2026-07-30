@@ -116,7 +116,7 @@ class TestCollectResourceOps:
         assert ops == {
             _ctrl_abstract(qp.X, Wire[1]),
             _ctrl_abstract(qp.RX, Wire[1]),
-            qp.decomposition.controlled_resource_rep(qp.MultiRZ, {"num_wires": 3}, 1, 0, 0),
+            _ctrl_abstract(qp.MultiRZ(Float, Wire[3]), Wire[1]),
         }
 
     @pytest.mark.unit
@@ -140,7 +140,7 @@ class TestCollectResourceOps:
         assert ops == {
             _adjoint_abstract(qp.X),
             _adjoint_abstract(qp.RX),
-            qp.decomposition.adjoint_resource_rep(qp.MultiRZ, {"num_wires": 3}),
+            _adjoint_abstract(qp.MultiRZ(Float, Wire[3])),
         }
 
     @pytest.mark.unit
