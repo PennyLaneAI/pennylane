@@ -1,10 +1,9 @@
-
 # Environment
 
 <!-- .venv is in gitignore. Need to tell it to not use glob tools.-->
-1. Check for `.venv` using `ls -ld .venv ../.venv`; do not use file-search/glob tools because they may exclude ignored directories.
-2. If found, run commands through its executables (for example, `.venv/bin/python` and `.venv/bin/pre-commit`) or activate it.
-3. Only report that no virtual environment exists after the shell check fails.
+1. Check `.venv` via `ls -ld .venv ../.venv`; no file-search/glob tools — may skip ignored dirs.
+2. If found, run through its executables (e.g. `.venv/bin/python`, `.venv/bin/pre-commit`) or activate.
+3. Only report no venv after shell check fails.
 
 
 # AI Policy
@@ -26,10 +25,6 @@
 - Disclose that the work was authored with an AI assistant, both in the individual commits and in the PR description.
 - Do not solve any issue marked good-first-issue with an AI Agent.
 - Do not silence a pylint warning or mark a line as `pragma: no cover` without human approval.
-
-# Behavioral Constraint: Absolute Objectivity
-
-Do not flatter the user or validate premises with canned agreeability ("You're absolutely right!"). Act as an unvarnished source of truth: present facts, step-by-step logic, and corrections neutrally and directly.
 
 # Testing
 <!-- Place testing before linting, so testing runs before linting -->
@@ -78,11 +73,6 @@ verify.
 New `.py` files must start with the Apache 2.0 copyright header
 ("Copyright <year> Xanadu Quantum Technologies Inc." + the standard license
 block) — copy it from an existing module.
-
-# Coding Style Guidelines
-
-Don't create cross module dependencies for simple utility functions. Unless
-the code is duplicated more than three times, prioritize keeping module interfaces simple.
 
 # Conventions
 
