@@ -74,7 +74,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.labs.transforms import make_rz_to_phase_gradient_decomp
+        from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
         import numpy as np
 
         qp.decomposition.enable_graph()
