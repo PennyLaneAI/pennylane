@@ -1166,6 +1166,16 @@ class TestDecomposition:
 
         active_wires = ctrl_wires + base_wires
         base_op = base_cls(*params, wires=base_wires)
+
+        # Operator2 custom ctrl classes don't support the legacy Controlled wrapper;
+        # use qp.ctrl (ControlledOp2 path) instead.
+        if isinstance(custom_ctrl_cls, type) and issubclass(custom_ctrl_cls, qp.core.Operator2):
+            custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
+            assert custom_ctrl_op.decomposition() == expected
+            mat = qp.matrix(custom_ctrl_op.decomposition, wire_order=active_wires)()
+            assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
+            return
+
         ctrl_op = Controlled(base_op, control_wires=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
@@ -1261,13 +1271,17 @@ class TestDecomposition:
             qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
-        "base_cls, params, base_wires, ctrl_wires, _, expected",
+        "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         custom_ctrl_op_decomps,
     )
     def test_control_on_zero_custom_ops(
-        self, base_cls, params, base_wires, ctrl_wires, _, expected
+        self, base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected
     ):
         """Tests that custom ops are not converted when wires are control-on-zero."""
+
+        # Operator2 custom ctrl classes don't support the legacy Controlled wrapper
+        if isinstance(custom_ctrl_cls, type) and issubclass(custom_ctrl_cls, qp.core.Operator2):
+            return
 
         base_op = base_cls(*params, wires=base_wires)
         op = Controlled(base_op, control_wires=ctrl_wires, control_values=[False] * len(ctrl_wires))
