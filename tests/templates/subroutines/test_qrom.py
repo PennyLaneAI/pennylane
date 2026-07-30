@@ -632,9 +632,7 @@ class TestMeasurementQROM:
         )
         # The ladder is symmetric: as many forward ANDs as adjoints.
         assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
-        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
-            n_extra - 1
-        )
+        assert res_extra[TemporaryAND] == res_one[TemporaryAND] + (n_extra - 1)
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
