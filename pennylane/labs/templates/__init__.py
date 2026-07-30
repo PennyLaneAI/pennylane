@@ -32,4 +32,4 @@ from .left_quantum_comparator import LeftQuantumComparator
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2
 from .trotter_fragmented import trotter_fragmented
-from .alias_sampling import uniform_prep_ops
+from .alias_sampling import uniform_prep_ops, alias_sampling, alias_sampling_wires
