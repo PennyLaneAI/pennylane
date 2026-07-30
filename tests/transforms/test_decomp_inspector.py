@@ -120,9 +120,9 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 88, RX: 8, RY: 28, RZ: 136}
-            Weighted Cost: 332.0
+            First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2}
+            Full Expansion Gates: {CNOT: 160, GlobalPhase: 112, RX: 32, RY: 24, RZ: 140}
+            Weighted Cost: 356.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -186,10 +186,10 @@ class TestInspectDecompGraph:
             4: ───────├●─│──────────────├●────┤  
             5: ───────├●─│──────────────├●────┤  
                  |0>├─╰X─╰●─────────────╰X──┤    
-            First-Level Expansion Gates: {Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            First-Level Expansion Gates: {Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True)): 2}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 34, GlobalPhase: 64, MidMeasure: 2, RX: 8, RY: 18, RZ: 58}
-            Weighted Cost: 120.0
+            Full Expansion Gates: {CNOT: 36, GlobalPhase: 68, MidMeasure: 2, RX: 14, RY: 14, RZ: 60}
+            Weighted Cost: 126.0
 
             Decomposition 1 (name: to_controlled_qubit_unitary)
             Not applicable (provided operator instance does not meet all conditions for this rule).
@@ -200,9 +200,9 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 72, GlobalPhase: 76, MidMeasure: 4, RX: 16, RY: 24, RZ: 80}
-            Weighted Cost: 196.0
+            First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2}
+            Full Expansion Gates: {CNOT: 76, GlobalPhase: 80, MidMeasure: 4, RX: 24, RY: 16, RZ: 84}
+            Weighted Cost: 204.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -284,9 +284,22 @@ class TestInspectDecompGraph:
             M0 = 
             [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-            First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, CNOT: 2, Controlled(GlobalPhase, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(num_control_wires=2, num_work_wires=1, num_zero_control_values=0, work_wire_type=borrowed): 2, QubitUnitary(num_wires=1): 2}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 25, RX: 4, RY: 10, RZ: 31}
-            Weighted Cost: 69.0
+            Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, CNOT: 2, Controlled(GlobalPhase, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 2, PauliX: 3, QubitUnitary(num_wires=1): 2}
+            Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, CNOT: 2, Controlled(GlobalPhase, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, QubitUnitary(num_wires=1): 2}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 32, RX: 11, RY: 8, RZ: 33}
+            Weighted Cost: 76.0
+
+            Decomposition 1 (name: one_borrowed_worker)
+            0: ────╭●────╭●───────┤  
+            1: ────├●────├●───────┤  
+            2: ────│──╭●─│──╭●────┤  
+            3: ────│──├X─│──├X────┤  
+                 ├─╰X─╰●─╰X─╰●──┤    
+            Estimated First-Level Expansion Gates: {PauliX: 3, Toffoli: 4}
+            Actual First-Level Expansion Gates: {Toffoli: 4}
+            Wire Allocations: {'any': 1}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
+            Weighted Cost: 71.0
 
             CHOSEN: Decomposition 2 (name: one_zeroed_worker)
             0: ───────╭●─────●╮────┤  
@@ -294,33 +307,10 @@ class TestInspectDecompGraph:
             2: ───────│──╭●───│────┤  
             3: ───────│──├X───│────┤  
                  |0>├─╰⊕─╰●──⊕╯──┤    
-            First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
+            Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 3, TemporaryAND: 1, Toffoli: 1}
+            Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 10, GlobalPhase: 23, MidMeasure: 1, RX: 4, RY: 7, RZ: 19}
-            Weighted Cost: 41.0
-
-            Decomposition 3 (name: one_borrowed_worker)
-            0: ────╭●────╭●───────┤  
-            1: ────├●────├●───────┤  
-            2: ────│──╭●─│──╭●────┤  
-            3: ────│──├X─│──├X────┤  
-                 ├─╰X─╰●─╰X─╰●──┤    
-            Estimated First-Level Expansion Gates: {Toffoli: 4, PauliX: 3}
-            Actual First-Level Expansion Gates: {Toffoli: 4}
-            Wire Allocations: {'any': 1}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RY: 8, RZ: 36}
-            Weighted Cost: 68.0
-
-            Decomposition 2 (name: one_zeroed_worker)
-            0: ───────╭●─────●╮────┤  
-            1: ───────├●─────●┤────┤  
-            2: ───────│──╭●───│────┤  
-            3: ───────│──├X───│────┤  
-                 |0>├─╰⊕─╰●──⊕╯──┤    
-            Estimated First-Level Expansion Gates: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 3}
-            Actual First-Level Expansion Gates: {TemporaryAND: 1, Toffoli: 1, Adjoint(TemporaryAND): 1}
-            Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {GlobalPhase: 25, RX: 7, MidMeasure: 1, RY: 5, RZ: 20, CNOT: 11}
+            Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
             Weighted Cost: 44.0
 
             Decomposition 3 (name: two_borrowed_workers)
@@ -335,22 +325,22 @@ class TestInspectDecompGraph:
             2: ────│──├●─│──├●────┤  
             3: ────├X─│──├X─│─────┤  
                  ├─╰●─╰X─╰●─╰X──┤    
-            Estimated First-Level Expansion Gates: {Toffoli: 4, PauliX: 3}
+            Estimated First-Level Expansion Gates: {PauliX: 3, Toffoli: 4}
             Actual First-Level Expansion Gates: {Toffoli: 4}
             Wire Allocations: {'any': 1}
-            Full Expansion Gates: {GlobalPhase: 39, RX: 3, CNOT: 24, RZ: 36, RY: 8}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 71.0
 
-            CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+            Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤  
             1: ───────╭●─│───●╮────┤  
             2: ───────├●─│───●┤────┤  
             3: ───────│──├X───│────┤  
                  |0>├─╰⊕─╰●──⊕╯──┤    
-            Estimated First-Level Expansion Gates: {TemporaryAND: 1, Adjoint(TemporaryAND): 1, Toffoli: 1, PauliX: 3}
-            Actual First-Level Expansion Gates: {TemporaryAND: 1, Toffoli: 1, Adjoint(TemporaryAND): 1}
+            Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 3, TemporaryAND: 1, Toffoli: 1}
+            Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {GlobalPhase: 25, RX: 7, MidMeasure: 1, RY: 5, RZ: 20, CNOT: 11}
+            Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
             Weighted Cost: 44.0
             """).strip()
 
