@@ -226,17 +226,14 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         match rot_axis:
             case "X":
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
-                    qp.Hadamard, change_basis_rep, qp.Hadamard
+                    qp.Hadamard, change_basis_rep, _adjoint_abstract(qp.Hadamard)
                 )
             case "Y":
                 comp_rep = resource_rep(
                     Prod, resources={abstractify(qp.Hadamard): 1, _adjoint_abstract(qp.S): 1}
                 )
-                uncomp_rep = resource_rep(
-                    Prod, resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1}
-                )
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
-                    comp_rep, change_basis_rep, uncomp_rep
+                    comp_rep, change_basis_rep, _adjoint_abstract(comp_rep)
                 )
             case "Z":
                 change_basis_rep_basis_adapted = change_basis_rep
