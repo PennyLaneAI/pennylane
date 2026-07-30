@@ -24,7 +24,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.typing import Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike

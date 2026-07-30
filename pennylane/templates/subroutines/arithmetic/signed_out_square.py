@@ -22,7 +22,6 @@ from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState, X
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
 from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
