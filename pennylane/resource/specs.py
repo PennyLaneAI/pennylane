@@ -102,6 +102,9 @@ def _specs_qjit_device_level_tracking(
 
         new_qnode = qjit.original_function.update(device=spoofed_dev)
         new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
+        
+        # Signal to capture the diagnostic output from the compiler
+        new_qjit.stderr_return = True
 
         # Execute on null.qubit with resource tracking
         new_qjit(*args, **kwargs)
