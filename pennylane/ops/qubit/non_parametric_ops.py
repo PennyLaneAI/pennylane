@@ -864,9 +864,7 @@ class PauliZ(Operator2):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                {
-                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0
-                }
+                {qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0}
             )
         return self._pauli_rep
 
