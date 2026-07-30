@@ -294,7 +294,7 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
     _test_decomposition_rule(op, custom_decomp)
 
     with qp.queuing.AnnotatedQueue() as q:
-        custom_decomp(angles, [], 0, rot_axis=op.hyperparameters.get("rot_axis", "Z"))
+        custom_decomp(angles, [], 0, rot_axis=rot_axis)
 
     assert len(q.queue) == 1
     assert isinstance(q.queue[0], expected_op)
