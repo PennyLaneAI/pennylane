@@ -865,7 +865,6 @@ class PauliZ(Operator2):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
                 {
-                    # pylint: disable=unsubscriptable-object
                     qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0
                 }
             )
