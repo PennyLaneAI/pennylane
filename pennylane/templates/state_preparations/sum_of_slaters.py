@@ -23,6 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import Int, Wire
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -970,7 +971,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
     if num_entries == 1:
-        return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
+        return {qp.BasisState(Int[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
     m = min(num_bits, 2 * d - 1)
 

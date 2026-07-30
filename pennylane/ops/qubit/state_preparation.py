@@ -166,6 +166,39 @@ class BasisState(StatePrepBase2):
 
         return math.convert_like(ket, prep_vals)
 
+    @staticmethod
+    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.BasisState.decomposition`.
+
+        Args:
+            state (array): the basis state to be prepared
+            wires (Iterable, Wires): the wire(s) the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qp.BasisState.compute_decomposition([1,0], wires=(0,1))
+        [X(0)]
+
+        """
+
+        if not qp.math.is_abstract(state):
+            return [qp.X(wire) for wire, basis in zip(wires, state, strict=True) if basis == 1]
+
+        op_list = []
+        for wire, basis in zip(wires, state, strict=True):
+            op_list.append(qp.GlobalPhase(-basis * np.pi / 2, wire))
+            op_list.append(qp.RX(basis * np.pi, wire))
+
+        return op_list
+
 
 # pylint: disable=unused-argument
 def _jax_jit_basis_state_resources(state: AbstractArray, wires: AbstractWires):
