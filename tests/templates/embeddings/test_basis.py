@@ -19,34 +19,14 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.operator import Operator
-from pennylane.decomposition.decomposition_graph import DecompositionGraph
 
 
 @pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     wires = qp.wires.Wires((0, 1, 2))
-    op = qp.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
+    op = qp.BasisEmbedding(np.array([1, 1, 1]), wires=wires)
     qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
-
-
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Test the _flatten and _unflatten methods."""
-    wires = qp.wires.Wires((0, 1, 2))
-    op = qp.BasisEmbedding(features=[1, 1, 1], wires=wires)
-    data, metadata = op._flatten()
-    assert np.allclose(data[0], [1, 1, 1])
-    assert metadata[0] == wires
-
-    # make sure metadata hashable
-    assert hash(metadata)
-
-    new_op = op._unflatten(*op._flatten())
-    qp.assert_equal(op, new_op)
-    assert op is not new_op
 
 
 class TestDecomposition:
@@ -56,7 +36,7 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue."""
 
-        op = qp.BasisEmbedding(features=features, wires=range(3))
+        op = qp.BasisEmbedding(features, wires=range(3))
         tape = qp.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == features.count(1)
@@ -72,274 +52,14 @@ class TestDecomposition:
 
         @qp.qnode(dev)
         def circuit(x=None):
-            qp.BasisEmbedding(features=x, wires=range(2))
+            qp.BasisEmbedding(x, wires=range(2))
             return [qp.expval(qp.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=state)
         expected = [1 if s == 0 else -1 for s in state]
         assert np.allclose(res, expected)
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        features = [1, 0, 1]
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.BasisEmbedding(features, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.BasisEmbedding(features, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_equivalent_to_basis_state(self):
-        """Tests that BasisEmbedding has the same decomposition rules as BasisState."""
-
-        assert list(qp.list_decomps(qp.BasisEmbedding)) == list(qp.list_decomps(qp.BasisState))
-
-        class _CustomOp(Operator):  # pylint: disable=too-few-public-methods
-            pass
-
-        # we're constructing a decomposition rule which says that it produces a `BasisEmbedding`
-        # but actually contains a `BasisState`, and testing that the graph is able to find a rule for
-        # the `BasisState` even though it was constructed with `BasisEmbedding`.
-        @qp.register_resources({qp.resource_rep(qp.BasisEmbedding, num_wires=3): 1})
-        def _custom_decomp(wires):
-            qp.BasisState([1, 0, 0], wires)
-
-        graph = DecompositionGraph(
-            [_CustomOp(wires=[0, 1, 2])],
-            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
-            alt_decomps={_CustomOp: [_custom_decomp]},
-        )
-        solution = graph.solve()
-        assert solution.is_solved_for(qp.BasisState([1, 0, 0], wires=[0, 1, 2]))
-
-
-class TestInputs:
-    """Test inputs and pre-processing."""
-
-    @pytest.mark.parametrize(
-        ("feat", "wires", "expected"),
-        [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
-    )
-    def test_features_as_int_conversion(self, feat, wires, expected):
-        """checks conversion from features as int to a list of binary digits
-        with length = len(wires)"""
-
-        assert np.allclose(qp.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
-
-    @pytest.mark.parametrize(
-        "x, msg",
-        [
-            ([0], "State must be of length"),
-            ([0, 1, 1], "State must be of length"),
-            (4, "Integer state must be"),
-        ],
-    )
-    def test_wrong_input_bits_exception(self, x, msg):
-        """Checks exception if number of features is not same as number of qubits."""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.BasisEmbedding(features=x, wires=range(2))
-            return qp.expval(qp.PauliZ(0))
-
-        with pytest.raises(ValueError, match=msg):
-            circuit()
-
-    def test_input_not_binary_exception(self):
-        """Checks exception if the features contain values other than zero and one."""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(x=None):
-            qp.BasisEmbedding(features=x, wires=range(2))
-            return qp.expval(qp.PauliZ(0))
-
-        with pytest.raises(ValueError, match="Basis state must only consist of"):
-            circuit(x=[2, 3])
-
-    def test_exception_wrong_dim(self):
-        """Checks exception if the number of dimensions of features is incorrect."""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(x=None):
-            qp.BasisEmbedding(features=x, wires=2)
-            return qp.expval(qp.PauliZ(0))
-
-        with pytest.raises(ValueError, match="State must be one-dimensional"):
-            circuit(x=[[1], [0]])
-
-
-def circuit_template(features):
-    qp.BasisEmbedding(features, wires=range(3))
-    return qp.state()
-
-
-def circuit_decomposed(features):
-    # convert tensor to list
-    feats = list(qp.math.array(features))
-    _ = [qp.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
-
-    return qp.state()
-
-
-class TestInterfaces:
-    """Tests that the template is compatible with all interfaces."""
-
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-        features = [0, 1, 0]
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(tuple(features))
-        res2 = circuit2(tuple(features))
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(2)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        features = pnp.array([0, 1, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(pnp.array(2))
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.jax
-    def test_jax(self, tol):
-        """Tests the jax interface."""
-
-        import jax.numpy as jnp
-
-        features = jnp.array([0, 1, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(jnp.array(2))
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.jax
-    def test_jax_jit(self, tol):
-        """Tests compilation with JAX JIT."""
-
-        import jax
-        import jax.numpy as jnp
-
-        features = jnp.array([0, 1, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = jax.jit(qp.QNode(circuit_template, dev))
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(2)
-        res2 = circuit2(2)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        features = tf.Variable([0, 1, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(tf.Variable(2))
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf_autograph(self, tol):
-        """Tests the tf interface with autograph"""
-
-        import tensorflow as tf
-
-        features = tf.Variable([0, 1, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(tf.Variable(2))
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.torch
-    def test_torch(self, tol):
-        """Tests the torch interface."""
-
-        import torch
-
-        features = torch.tensor([0, 1, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(torch.tensor(2))
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+        """Tests that BasisEmbedding is an alias of BasisState."""
+        assert qp.BasisEmbedding is qp.BasisState

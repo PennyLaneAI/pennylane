@@ -21,17 +21,31 @@ import pytest
 import scipy as sp
 
 import pennylane as qp
+from pennylane import numpy as pnp
 from pennylane.exceptions import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 
 
-def test_basis_state_input_cast_to_int():
-    """Test that the input to BasisState is cast to an int."""
+class TestInputs:
+    """Test inputs and pre-processing."""
 
-    state = np.array([1.0, 0.0], dtype=np.float64)
-    op = qp.BasisState(state, wires=(0, 1))
-    assert op.data[0].dtype == np.int64
+    def test_basis_state_input_cast_to_int(self):
+        """Test that the input to BasisState is cast to an int."""
+
+        state = np.array([1.0, 0.0], dtype=np.float64)
+        op = qp.BasisState(state, wires=(0, 1))
+        assert op.data[0].dtype == np.int64
+
+    @pytest.mark.parametrize(
+        ("feat", "wires", "expected"),
+        [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
+    )
+    def test_features_as_int_conversion(self, feat, wires, expected):
+        """checks conversion from features as int to a list of binary digits
+        with length = len(wires)"""
+
+        assert np.allclose(qp.BasisEmbedding(feat, wires=wires).parameters[0], expected)
 
 
 class TestStandardValidityBasisState:
@@ -361,6 +375,8 @@ class TestStatePrepIntegration:
 class TestStateVector:
     """Test the state_vector() method of various state-prep operations."""
 
+    # pylint: disable=too-many-public-methods
+
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
@@ -626,8 +642,18 @@ class TestStateVector:
     @pytest.mark.parametrize("state", [-3, 9])
     def test_basis_state_invalid_integer_state(self, state):
         """Tests that the parameter must be of length num_wires."""
-        with pytest.raises(ValueError, match=r"State must be a non-negative integer"):
+        with pytest.raises(ValueError, match=r"Integer state must be a non-negative integer"):
             _ = qp.BasisState(state, wires=[0, 1, 2])
+
+    def test_input_not_binary_exception(self):
+        """Checks exception if the state contains values other than zero and one."""
+        with pytest.raises(ValueError, match="Basis state must only consist of"):
+            qp.BasisState([2, 3], wires=range(2))
+
+    def test_exception_wrong_shape(self):
+        """Checks exception if the number of dimensions of state is incorrect."""
+        with pytest.raises(ValueError, match="State must be one-dimensional"):
+            qp.BasisState([[1], [0]], wires=2)
 
 
 class TestSparseStateVector:
@@ -731,3 +757,160 @@ class TestSparseStateVector:
         qsv_op = qp.StatePrep(sp.sparse.csr_matrix([0, 0, 0, 1]), wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all wires"):
             qsv_op.state_vector(wire_order=[1, 2])
+
+
+def circuit_template(features):
+    qp.BasisEmbedding(features, wires=range(3))
+    return qp.state()
+
+
+def circuit_decomposed(features):
+    # convert tensor to list
+    feats = list(qp.math.array(features))
+    _ = [qp.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
+
+    return qp.state()
+
+
+class TestInterfacesBasisState:
+    """Tests that BasisState is compatible with all interfaces."""
+
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+        features = [0, 1, 0]
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tuple(features))
+        res2 = circuit2(tuple(features))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(2)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    def test_autograd(self, tol):
+        """Tests the autograd interface."""
+
+        features = pnp.array([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(pnp.array(2))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax(self, tol):
+        """Tests the jax interface."""
+
+        import jax.numpy as jnp
+
+        features = jnp.array([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(jnp.array(2))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests compilation with JAX JIT."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = jax.jit(qp.QNode(circuit_template, dev))
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(2)
+        res2 = circuit2(2)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf(self, tol):
+        """Tests the tf interface."""
+
+        import tensorflow as tf
+
+        features = tf.Variable([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tf.Variable(2))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf_autograph(self, tol):
+        """Tests the tf interface with autograph"""
+
+        import tensorflow as tf
+
+        features = tf.Variable([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tf.Variable(2))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    def test_torch(self, tol):
+        """Tests the torch interface."""
+
+        import torch
+
+        features = torch.tensor([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(torch.tensor(2))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
