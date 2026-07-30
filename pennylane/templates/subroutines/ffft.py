@@ -198,10 +198,11 @@ def _recursive_decompose(wires: WiresLike):
         _recursive_decompose(wires[: len(wires) // 2])
         _recursive_decompose(wires[len(wires) // 2 :])
 
-        # Keep the wire labels concrete when constructing the Operator2 ``PauliZ`` instances.
-        # A captured loop index would otherwise become an abstract wire.
-        for mode in range(len(wires) // 2):
+        @for_loop(len(wires) // 2)
+        def twiddle(mode):
             pow(PauliZ(wires[len(wires) // 2 + mode]), z=2 * mode / len(wires))
+
+        twiddle()  # pylint: disable=no-value-for-parameter
 
         _permute_and_apply_parallel(wires, TwoWireFFT)
 
