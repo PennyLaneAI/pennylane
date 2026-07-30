@@ -319,4 +319,6 @@ def test_rot_axis_basis_changes(rot_axis):
     angles = np.array([0.5, 1.5]) * np.pi
     op = qp.SelectPauliRot(angles, control_wires=[0], target_wire=1, rot_axis=rot_axis)
 
+    # This should verify the decomp structure annd make sure that the resources match the
+    # decomposition, giving us enough coverage
     _test_decomposition_rule(op, custom_decomp)
