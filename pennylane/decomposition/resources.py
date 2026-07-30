@@ -154,7 +154,8 @@ class Resources:
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
+        gate_counts = _gate_count_dict_to_str(self.gate_counts)
+        return f"<num_gates={self.num_gates}, gate_counts={gate_counts}, weighted_cost={self.weighted_cost}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -166,6 +167,12 @@ def _combine_dict(dict1: dict, dict2: dict):
         combined_dict[k] = combined_dict.get(k, 0) + v
 
     return combined_dict
+
+
+def _gate_count_dict_to_str(gate_counts):
+    str_op = ((str(op), count) for op, count in gate_counts.items())
+    inner = ", ".join(f"{op}: {count}" for op, count in sorted(str_op))
+    return f"{{{inner}}}"
 
 
 def _scale_dict(dict1: dict, scalar: int):
@@ -489,9 +496,6 @@ def custom_ctrl_op_to_base():
         qp.Toffoli: qp.X,
         qp.CZ: qp.Z,
         qp.CCZ: qp.Z,
-        qp.CY: qp.Y,
-        qp.CSWAP: qp.SWAP,
-        qp.CH: qp.H,
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
         qp.CRZ: qp.RZ,

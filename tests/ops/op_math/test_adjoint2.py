@@ -21,9 +21,12 @@ from scipy import sparse
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, adjoint_rotation
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import OneWireDynOp
 
 # pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
 
@@ -216,12 +219,12 @@ def test_representation():
 
     base_op = RX2(0.5, wires=1)
     op = qp.adjoint(base_op)
-    assert repr(op) == "Adjoint(RX2(theta=0.5, wires=[1]))"
+    assert repr(op) == "Adjoint(RX2(0.5, wires=[1]))"
     assert op.label() == "RX2†"
     assert op.name == "Adjoint(RX2)"
 
     nested_op = qp.adjoint(op)
-    assert repr(nested_op) == "Adjoint(Adjoint(RX2(theta=0.5, wires=[1])))"
+    assert repr(nested_op) == "Adjoint(Adjoint(RX2(0.5, wires=[1])))"
     assert nested_op.label() == "(RX2†)†"
     assert nested_op.name == "Adjoint(Adjoint(RX2))"
 
@@ -240,3 +243,18 @@ def test_adjoint_equality():
 
     with pytest.raises(AssertionError, match="different base operations"):
         qp.assert_equal(qp.adjoint(base_op), qp.adjoint(another_base))
+
+
+def test_adjoint_rotation_decomposition_rule():
+    """Tests the adjoint_rotation decomposition with an ``Operator2`` base."""
+
+    op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
+    assert isinstance(op, Adjoint2)
+
+    with qp.core.AnnotatedQueue() as q:
+        adjoint_rotation(**op.arguments)
+
+    assert q.queue == [OneWireDynOp(-0.5, wires=[0])]
+    assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
+        {OneWireDynOp(Float, wires=Wire[1]): 1}
+    )

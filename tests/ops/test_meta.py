@@ -38,13 +38,13 @@ class TestBarrier:
 
         dev = qp.device("default.qubit", wires=3)
         qnode = qp.QNode(qfunc, dev)
-        gates = qp.specs(qnode)()["resources"].gate_sizes[1]
+        gates = qp.specs(qnode)()["resources"].total_quantum_operations
 
         assert gates == 3
 
         optimized_qfunc = qp.compile(qfunc)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        optimized_gates = qp.specs(optimized_qnode)()["resources"].gate_sizes[1]
+        optimized_gates = qp.specs(optimized_qnode)()["resources"].total_quantum_operations
 
         assert optimized_gates == 2
 
@@ -61,7 +61,7 @@ class TestBarrier:
         optimized_qfunc = qp.compile(qfunc)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
 
-        assert 1 not in qp.specs(optimized_qnode)()["resources"].gate_sizes
+        assert "Hadamard" not in qp.specs(optimized_qnode)()["resources"].quantum_operations
 
     def test_barrier_edge_cases(self):
         r"""Test that the barrier works in edge cases."""
@@ -75,13 +75,13 @@ class TestBarrier:
 
         dev = qp.device("default.qubit", wires=3)
         qnode = qp.QNode(qfunc, dev)
-        gates = qp.specs(qnode)()["resources"].gate_sizes[1]
+        gates = qp.specs(qnode)()["resources"].total_quantum_operations
 
         assert gates == 4
 
         optimized_qfunc = qp.compile(qfunc)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        assert 1 not in qp.specs(optimized_qnode)()["resources"].gate_sizes
+        assert "Hadamard" not in qp.specs(optimized_qnode)()["resources"].quantum_operations
 
         def qfunc1():
             qp.Hadamard(wires=0)
@@ -93,7 +93,7 @@ class TestBarrier:
 
         dev = qp.device("default.qubit", wires=3)
         qnode = qp.QNode(qfunc1, dev)
-        gates = qp.specs(qnode)()["resources"].gate_sizes[1]
+        gates = qp.specs(qnode)()["resources"].total_quantum_operations
 
         assert gates == 4
 
@@ -108,7 +108,7 @@ class TestBarrier:
         dev = qp.device("default.qubit", wires=3)
         optimized_qfunc = qp.compile(qfunc2)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        optimized_gates = qp.specs(optimized_qnode)()["resources"].gate_sizes[1]
+        optimized_gates = qp.specs(optimized_qnode)()["resources"].total_quantum_operations
 
         assert optimized_gates == 2
 
