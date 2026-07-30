@@ -268,6 +268,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `assert_valid` now checks the fine grained work wire spec.
+  [(#9919)](https://github.com/PennyLaneAI/pennylane/pull/9919)
+
 * Sorts the gate counts in the display of resources produced from decompositions.
   [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
 

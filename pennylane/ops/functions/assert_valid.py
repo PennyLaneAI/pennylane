@@ -17,6 +17,7 @@ Operator class is correctly defined.
 """
 
 import copy
+import dataclasses
 import itertools
 import pickle
 from collections import defaultdict
@@ -214,6 +215,19 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
+def _update_work_wires_dict(op, work_wires):
+    if op.state.value == "zero":
+        if op.restored:
+            work_wires["zeroed"] += len(op.wires)
+        else:
+            work_wires["burnable"] += len(op.wires)
+    elif op.state.value == "any":
+        if op.restored:
+            work_wires["borrowed"] += len(op.wires)
+        else:
+            work_wires["garbage"] += len(op.wires)
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
@@ -251,17 +265,23 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
         tape = qp.tape.QuantumScript.from_queue(q)
 
-    total_work_wires = rule.get_work_wire_spec(**params).total
-    if total_work_wires:
-        tape = _resolve_dynamic_wires(tape, total_work_wires)
-
+    actual_work_wires = {"zeroed": 0, "borrowed": 0, "burnable": 0, "garbage": 0}
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
-        if isinstance(_op, qp.ops.Conditional):
-            _op = _op.base
-        op_rep = abstractify(_op)
-        actual_gate_counts[op_rep] += 1
+        if isinstance(_op, qp.allocation.Allocate):
+            _update_work_wires_dict(_op, actual_work_wires)
+        elif not isinstance(_op, qp.allocation.Deallocate):
+            if isinstance(_op, qp.ops.Conditional):
+                _op = _op.base
+            op_rep = abstractify(_op)
+            actual_gate_counts[op_rep] += 1
+
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
+
+    work_wires = dataclasses.asdict(rule.get_work_wire_spec(**params))
+    assert (
+        work_wires == actual_work_wires
+    ), f"Mismatch in work wire spec. Got {actual_work_wires} and expected {work_wires}"
 
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
@@ -277,6 +297,9 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             "Missing in gate counts from resource function:\n"
             f"{[op for op in actual_gate_counts if op not in gate_counts]}"
         )
+
+    if total_work_wires := rule.get_work_wire_spec(**params).total:
+        tape = _resolve_dynamic_wires(tape, total_work_wires)
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix and not skip_decomp_matrix_check:
