@@ -30,7 +30,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
 )
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Float, Wire
 from pennylane.wires import WiresLike
 
 I4 = np.eye(4)
@@ -1537,7 +1537,7 @@ class FermionicSWAP(Operation):
 def _fermionic_swap_decomp_resources():
     return {
         qp.Hadamard: 4,
-        qp.resource_rep(qp.MultiRZ, num_wires=2): 2,
+        qp.MultiRZ(Float, Wire[2]): 2,
         qp.RX: 4,
         qp.RZ: 2,
         qp.GlobalPhase: 1,

@@ -258,7 +258,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
 
     When calling ``resource_rep`` for ``MultiRZ``, ``num_wires`` must be provided as a keyword argument.
 
-    >>> rep = resource_rep(qp.MultiRZ, num_wires=3)
+    >>> rep = qp.MultiRZ(Float, Wire[3])
     >>> rep
     MultiRZ(num_wires=3)
     >>> type(rep)

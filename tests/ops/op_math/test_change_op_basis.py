@@ -32,6 +32,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import NonParametricOp
 
@@ -410,11 +411,11 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {abstractify(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 2, qp.MultiRZ(Float, Wire[2]): 1}
 
         resource_obj = default_decomp.compute_resources(
             compute_op=abstractify(qp.X),
-            target_op=resource_rep(qp.MultiRZ, num_wires=2),
+            target_op=qp.MultiRZ(Float, Wire[2]),
             uncompute_op=abstractify(qp.X),
         )
 

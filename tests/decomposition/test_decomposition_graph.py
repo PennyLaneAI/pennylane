@@ -624,8 +624,8 @@ class TestDecompGraphSolver:
         )
         assert solution.decomposition(op).compute_resources(**op.resource_params) == to_resources(
             {
-                qp.resource_rep(qp.MultiRZ, num_wires=4): 1,
-                qp.resource_rep(qp.MultiRZ, num_wires=3): 2,
+                qp.MultiRZ(Float, Wire[4]): 1,
+                qp.MultiRZ(Float, Wire[3]): 2,
             },
         )
         assert solution.decomposition(qp.Hadamard(wires=[0])).compute_resources() == to_resources(
