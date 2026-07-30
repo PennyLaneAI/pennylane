@@ -1096,6 +1096,12 @@ class TestHash:
         op2 = FullOp(phi=0.6, static="ab", hybrid=[1, 1], wires=1)
         assert hash(op1) != hash(op2)
 
+    @pytest.mark.parametrize("pytree_wires", ([Wire[1]], [[Wire[2]], [Wire[3]]]))
+    def test_op_is_hashable_with_abstract_wires_in_hybrid(self, pytree_wires):
+        """Test that ``Operator2`` is hashable when the wires are `AbstractWires` in hybrid args."""
+        op = HybridWireOp(pytree_wires)
+        assert isinstance(hash(op), int)
+
     def test_different_types_different_hash(self):
         """Test that operators of different types produce different hashes."""
 
