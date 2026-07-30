@@ -36,7 +36,7 @@ from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import FlatPytree, TensorLike, Wire
+from pennylane.typing import FlatPytree, TensorLike, Wire, Float
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -69,23 +69,22 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
+    dynamcic_argnames = ("theta",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"theta": Float[-1], "wires": Wire[-1]}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_wires"}
-
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def _flatten(self) -> FlatPytree:
-        return self.data, (self.wires, tuple())
-
     def __init__(self, theta: TensorLike, wires: WiresLike):
         wires = Wires(wires)
-        self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires)
         if not self._wires:
             raise ValueError(
@@ -93,7 +92,7 @@ class MultiRZ(Operation):
             )
 
     @staticmethod
-    def compute_matrix(theta: TensorLike, num_wires: int) -> TensorLike:
+    def compute_matrix(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -117,6 +116,7 @@ class MultiRZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
                dtype=torch.complex128)
         """
+        num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
         if (
@@ -135,7 +135,7 @@ class MultiRZ(Operation):
         return qp.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
     @staticmethod
-    def compute_eigvals(theta: TensorLike, num_wires: int) -> TensorLike:
+    def compute_eigvals(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -164,6 +164,7 @@ class MultiRZ(Operation):
                 0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
                dtype=torch.complex128)
         """
+        num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
         if (
@@ -179,7 +180,7 @@ class MultiRZ(Operation):
 
     @staticmethod
     def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
-        theta: TensorLike, wires: WiresLike, **kwargs
+        theta: TensorLike, wires: WiresLike
     ) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -209,13 +210,6 @@ class MultiRZ(Operation):
 
         return ops
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
-
-    def adjoint(self) -> "MultiRZ":
-        return MultiRZ(-self.parameters[0], wires=self.wires)
-
     def pow(self, z: int | float) -> list[Operator]:
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
 
@@ -228,12 +222,13 @@ class MultiRZ(Operation):
         return MultiRZ(theta, wires=self.wires)
 
 
-def _multi_rz_decomposition_resources(num_wires):
+def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
+    num_wires = len(wires)
     return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
 
 @register_resources(_multi_rz_decomposition_resources)
-def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
+def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
 
     if compiler.active() or qp.capture.enabled():
         wires = math.array(wires, like="jax")
