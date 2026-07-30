@@ -140,32 +140,6 @@ class BasisState(StatePrepBase2):
         state = qp.math.cast(state, int)
         super().__init__(state, wires=wires)
 
-    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:  # TODO
-        """Returns a statevector of shape ``(2,) * num_wires``."""
-        prep_vals = self.parameters[0]
-        prep_vals_int = math.cast(self.parameters[0], int)
-
-        if wire_order is None:
-            indices = prep_vals_int
-            num_wires = len(indices)
-        else:
-            if not Wires(wire_order).contains_wires(self.wires):
-                raise WireError("Custom wire_order must contain all BasisState wires")
-            num_wires = len(wire_order)
-            indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals_int, strict=True):
-                indices[wire_order.index(base_wire_label)] = value
-
-        if qp.math.get_interface(prep_vals_int) == "jax":
-            ket = math.array(math.zeros((2,) * num_wires), like="jax")
-            ket = ket.at[tuple(indices)].set(1)
-
-        else:
-            ket = math.zeros((2,) * num_wires)
-            ket[tuple(indices)] = 1
-
-        return math.convert_like(ket, prep_vals)
-
     @staticmethod
     def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
@@ -198,6 +172,32 @@ class BasisState(StatePrepBase2):
             op_list.append(qp.RX(basis * np.pi, wire))
 
         return op_list
+
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
+        """Returns a statevector of shape ``(2,) * num_wires``."""
+        prep_vals = self.parameters[0]
+        prep_vals_int = math.cast(self.parameters[0], int)
+
+        if wire_order is None:
+            indices = prep_vals_int
+            num_wires = len(indices)
+        else:
+            if not Wires(wire_order).contains_wires(self.wires):
+                raise WireError("Custom wire_order must contain all BasisState wires")
+            num_wires = len(wire_order)
+            indices = [0] * num_wires
+            for base_wire_label, value in zip(self.wires, prep_vals_int, strict=True):
+                indices[wire_order.index(base_wire_label)] = value
+
+        if qp.math.get_interface(prep_vals_int) == "jax":
+            ket = math.array(math.zeros((2,) * num_wires), like="jax")
+            ket = ket.at[tuple(indices)].set(1)
+
+        else:
+            ket = math.zeros((2,) * num_wires)
+            ket[tuple(indices)] = 1
+
+        return math.convert_like(ket, prep_vals)
 
 
 # pylint: disable=unused-argument

@@ -45,7 +45,7 @@ class TestInputs:
         """checks conversion from features as int to a list of binary digits
         with length = len(wires)"""
 
-        assert np.allclose(qp.BasisEmbedding(feat, wires=wires).parameters[0], expected)
+        assert np.allclose(qp.BasisState(feat, wires=wires).parameters[0], expected)
 
 
 class TestStandardValidityBasisState:
@@ -194,8 +194,8 @@ class TestDecomposition:
     )
     def test_BasisState_abstract_decomposition_correctness(self, state):
         """Test that the abstract decomposition of BasisState produces the correct
-        state vector when compiled and executed via ``qjit``.  Uses BasisEmbedding
-        which delegates to BasisState.compute_decomposition through the abstract
+        state vector when compiled and executed via ``qjit``.  Uses
+        BasisState.compute_decomposition through the abstract
         (traced) path, exercising the GlobalPhase+RX decomposition end-to-end."""
         import jax  # pylint: disable=import-outside-toplevel
 
@@ -205,7 +205,7 @@ class TestDecomposition:
         @qp.qjit
         @qp.qnode(dev)
         def circuit(s):
-            qp.BasisEmbedding(features=s, wires=range(n_wires))
+            qp.BasisState(features=s, wires=range(n_wires))
             return qp.state()
 
         result = circuit(jax.numpy.array(state))
@@ -760,7 +760,7 @@ class TestSparseStateVector:
 
 
 def circuit_template(features):
-    qp.BasisEmbedding(features, wires=range(3))
+    qp.BasisState(features, wires=range(3))
     return qp.state()
 
 
