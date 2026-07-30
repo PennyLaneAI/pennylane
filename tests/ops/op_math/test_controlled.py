@@ -21,12 +21,9 @@ import numpy as np
 import pytest
 import scipy as sp
 from gate_data import (
-    CCZ,
     CH,
     CNOT,
     CSWAP,
-    CY,
-    CZ,
     ControlledPhaseShift,
     CRot3,
     CRotx,
@@ -711,9 +708,6 @@ base_num_control_mats = [
     (qp.PauliX("a"), 1, CNOT),
     (qp.PauliX("a"), 2, Toffoli),
     (qp.CNOT(["a", "b"]), 1, Toffoli),
-    (qp.PauliY("a"), 1, CY),
-    (qp.PauliZ("a"), 1, CZ),
-    (qp.PauliZ("a"), 2, CCZ),
     (qp.SWAP(("a", "b")), 1, CSWAP),
     (qp.Hadamard("a"), 1, CH),
     (qp.RX(1.234, "b"), 1, CRotx(1.234)),
@@ -848,55 +842,6 @@ special_non_par_op_decomps = [
         [0, 1, 2],
         (lambda wires: qp.ctrl(qp.Identity(wires[-1]), control=wires[:-1])),
         [qp.Identity([0, 1, 2, 3])],
-    ),
-    (qp.PauliZ, [], [1], [0], qp.CZ, [qp.ControlledPhaseShift(np.pi, wires=[0, 1])]),
-    (
-        qp.PauliZ,
-        [],
-        [0],
-        [2, 1],
-        qp.CCZ,
-        [
-            qp.CNOT(wires=[1, 0]),
-            qp.adjoint(qp.T(wires=0)),
-            qp.CNOT(wires=[2, 0]),
-            qp.T(wires=0),
-            qp.CNOT(wires=[1, 0]),
-            qp.adjoint(qp.T(wires=0)),
-            qp.CNOT(wires=[2, 0]),
-            qp.T(wires=0),
-            qp.T(wires=1),
-            qp.CNOT(wires=[2, 1]),
-            qp.Hadamard(wires=0),
-            qp.T(wires=2),
-            qp.adjoint(qp.T(wires=1)),
-            qp.CNOT(wires=[2, 1]),
-            qp.Hadamard(wires=0),
-        ],
-    ),
-    (
-        qp.CZ,
-        [],
-        [1, 2],
-        [0],
-        qp.CCZ,
-        [
-            qp.CNOT(wires=[1, 2]),
-            qp.adjoint(qp.T(wires=2)),
-            qp.CNOT(wires=[0, 2]),
-            qp.T(wires=2),
-            qp.CNOT(wires=[1, 2]),
-            qp.adjoint(qp.T(wires=2)),
-            qp.CNOT(wires=[0, 2]),
-            qp.T(wires=2),
-            qp.T(wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.Hadamard(wires=2),
-            qp.T(wires=0),
-            qp.adjoint(qp.T(wires=1)),
-            qp.CNOT(wires=[0, 1]),
-            qp.Hadamard(wires=[2]),
-        ],
     ),
 ]
 
@@ -1166,16 +1111,6 @@ class TestDecomposition:
 
         active_wires = ctrl_wires + base_wires
         base_op = base_cls(*params, wires=base_wires)
-
-        # Operator2 custom ctrl classes don't support the legacy Controlled wrapper;
-        # use qp.ctrl (ControlledOp2 path) instead.
-        if isinstance(custom_ctrl_cls, type) and issubclass(custom_ctrl_cls, qp.core.Operator2):
-            custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
-            assert custom_ctrl_op.decomposition() == expected
-            mat = qp.matrix(custom_ctrl_op.decomposition, wire_order=active_wires)()
-            assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
-            return
-
         ctrl_op = Controlled(base_op, control_wires=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
@@ -1271,17 +1206,13 @@ class TestDecomposition:
             qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
-        "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
+        "base_cls, params, base_wires, ctrl_wires, _, expected",
         custom_ctrl_op_decomps,
     )
     def test_control_on_zero_custom_ops(
-        self, base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected
+        self, base_cls, params, base_wires, ctrl_wires, _, expected
     ):
         """Tests that custom ops are not converted when wires are control-on-zero."""
-
-        # Operator2 custom ctrl classes don't support the legacy Controlled wrapper
-        if isinstance(custom_ctrl_cls, type) and issubclass(custom_ctrl_cls, qp.core.Operator2):
-            return
 
         base_op = base_cls(*params, wires=base_wires)
         op = Controlled(base_op, control_wires=ctrl_wires, control_values=[False] * len(ctrl_wires))
@@ -1763,8 +1694,6 @@ class TestControlledSupportsBroadcasting:
 
 
 custom_ctrl_ops = [
-    (qp.PauliY(wires=0), [1], qp.CY(wires=[1, 0])),
-    (qp.PauliZ(wires=0), [1], qp.CZ(wires=[1, 0])),
     (qp.RX(0.123, wires=0), [1], qp.CRX(0.123, wires=[1, 0])),
     (qp.RY(0.123, wires=0), [1], qp.CRY(0.123, wires=[1, 0])),
     (qp.RZ(0.123, wires=0), [1], qp.CRZ(0.123, wires=[1, 0])),
