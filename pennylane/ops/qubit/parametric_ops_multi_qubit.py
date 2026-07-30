@@ -118,6 +118,7 @@ class MultiRZ(Operator2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
                dtype=torch.complex128)
         """
+        wires = Wires(wires)
         num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 

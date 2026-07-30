@@ -3330,7 +3330,7 @@ class TestMultiRZ:
         theta = 0.8362
         mat_fn = qp.qjit(qp.matrix(qp.MultiRZ.compute_decomposition, wires), static_argnums=[1])
         mat = mat_fn(theta, wires)
-        exp_mat = qp.MultiRZ.compute_matrix(theta, n)
+        exp_mat = qp.MultiRZ.compute_matrix(theta, wires)
         assert np.allclose(mat, exp_mat)
 
     @pytest.mark.catalyst
@@ -3340,7 +3340,7 @@ class TestMultiRZ:
         produces the correct matrix."""
         wires = tuple(range(n))
         theta = 0.8362
-        exp_state = np.diag(qp.MultiRZ.compute_matrix(theta, n)) / 2 ** (n / 2)
+        exp_state = np.diag(qp.MultiRZ.compute_matrix(theta, wires)) / 2 ** (n / 2)
         for rule in qp.list_decomps(qp.MultiRZ):
 
             @partial(qp.qjit, static_argnums=[1])

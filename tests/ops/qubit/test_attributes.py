@@ -350,7 +350,7 @@ class TestSupportsBroadcasting:
         op = qp.MultiRZ(par, wires=wires)
 
         mat1 = op.matrix()
-        mat2 = qp.MultiRZ.compute_matrix(par, num_wires=len(wires))
+        mat2 = qp.MultiRZ.compute_matrix(par, wires)
         single_mats = [qp.MultiRZ(p, wires=wires).matrix() for p in par]
 
         assert qp.math.allclose(mat1, single_mats)
