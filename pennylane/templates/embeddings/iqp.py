@@ -24,7 +24,6 @@ from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import RZ, H, MultiRZ
-from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 has_jax = True
@@ -283,7 +282,7 @@ def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
     return {
         RZ: n_repeats * num_wires,
         H: n_repeats * num_wires,
-        MultiRZ(Float, Wire[2]): pattern_size * n_repeats,
+        resource_rep(MultiRZ, num_wires=2): pattern_size * n_repeats,
     }
 
 
