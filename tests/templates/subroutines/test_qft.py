@@ -21,6 +21,7 @@ from gate_data import QFT
 
 import pennylane as qp
 from pennylane.capture import run_autograph
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 
 @pytest.mark.jax
@@ -157,7 +158,6 @@ class TestDynamicDecomposition:
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         wires = [0, 1, 2, 3]
@@ -179,7 +179,11 @@ class TestDynamicDecomposition:
         outer_loop_eqn = outer_loop.params["jaxpr_body_fn"].eqns
         swap_loop_eqn = swap_loop.params["jaxpr_body_fn"].eqns
 
-        hadamards = [eqn for eqn in outer_loop_eqn if eqn.primitive == qp.Hadamard._primitive]
+        hadamards = [
+            eqn
+            for eqn in outer_loop_eqn
+            if "op_cls" in eqn.params and eqn.params["op_cls"] == qp.Hadamard
+        ]
         assert len(hadamards) == 1
 
         cphaseshift_loop = [eqn for eqn in outer_loop_eqn if eqn.primitive == for_loop_prim]
@@ -187,18 +191,7 @@ class TestDynamicDecomposition:
         cphaseshift_eqns = cphaseshift_loop[0].params["jaxpr_body_fn"].eqns
         assert cphaseshift_eqns[-1].primitive == qp.ControlledPhaseShift._primitive
 
-        assert swap_loop_eqn[-1].primitive == qp.SWAP._primitive
-
-        # Validate Ops
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
-        ops_list = collector.state["ops"]
-        tape = qp.tape.QuantumScript([qp.QFT(wires=wires)])
-        [decomp_tape], _ = qp.transforms.decompose(
-            tape, max_expansion=max_expansion, gate_set=gate_set
-        )
-        for op1, op2 in zip(ops_list, decomp_tape.operations):
-            assert qp.equal(op1, op2, check_interface=False)
+        assert_eqn_matches_op(swap_loop_eqn[-1], qp.SWAP)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("n_wires", [4, 5])

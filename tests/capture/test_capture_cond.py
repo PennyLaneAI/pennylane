@@ -564,6 +564,7 @@ def circuit_branches(pred, arg1, arg2):
     return qp.expval(qp.Z(wires=0))
 
 
+# pylint: disable=unused-argument
 @qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
@@ -572,11 +573,11 @@ def circuit_with_returned_operator(pred, arg1, arg2):
 
     def true_fn(arg1, arg2):
         qp.RY(arg1, wires=0)
-        return 7, 4.6, qp.RY(arg2, wires=0), True
+        return 7, 4.6, qp.S(wires=0), True
 
     def false_fn(arg1, arg2):
         qp.RZ(arg2, wires=0)
-        return 2, 2.2, qp.RZ(arg1, wires=0), False
+        return 2, 2.2, qp.T(wires=0), False
 
     qp.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
     qp.RX(0.10, wires=0)
@@ -670,12 +671,14 @@ class TestCondCircuits:
         for branch in jaxpr.eqns[-1].params["jaxpr_branches"]:
             assert branch.outvars == []
 
-    def test_circuit_with_returned_operator(self):
-        """Test circuit with returned operators in the branches."""
+    def test_circuit_with_returned_operator_raises_error(self):
+        """Test circuit with returned operators in the branches raises an error."""
 
         args = [1, 0.5, 0.6]
-        jaxpr = jax.make_jaxpr(circuit_with_returned_operator)(*args)
-        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
+        with pytest.raises(
+            ValueError, match="Operator2 instances cannot be returned from conditional branches"
+        ):
+            _ = jax.make_jaxpr(circuit_with_returned_operator)(*args)
 
     def test_circuit_multiple_cond(self):
         """Test circuit with returned operators in the branches."""
