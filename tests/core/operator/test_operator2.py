@@ -1098,7 +1098,7 @@ class TestHash:
 
     def test_op_is_hashable_with_abstract_wires_in_hybrid(self):
         """Test that ``Operator2`` is hashable when the wires are `AbstractWires` in hybrid args."""
-        op = FullOp(phi=0.5, static="a", hybrid=[AbstractWires(1)], wires=0)
+        op = HybridWireOp([AbstractWires(1)])
         assert isinstance(hash(op), int)
 
     def test_different_types_different_hash(self):
