@@ -29,7 +29,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -996,9 +996,9 @@ def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
         return NotImplemented
     is_abstract = isinstance(control, AbstractWires) or isinstance(base.wires, AbstractWires)
     if len(control) == 1:
-        return resource_rep(qp.CZ) if is_abstract else qp.CZ(control + base.wires)
+        return abstractify(qp.CZ) if is_abstract else qp.CZ(control + base.wires)
     if len(control) == 2:
-        return resource_rep(qp.CCZ) if is_abstract else qp.CCZ(control + base.wires)
+        return abstractify(qp.CCZ) if is_abstract else qp.CCZ(control + base.wires)
     return NotImplemented
 
 
