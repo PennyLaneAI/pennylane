@@ -832,13 +832,17 @@ class Operator2(metaclass=OperatorMeta):
         # see https://github.com/pylint-dev/pylint/issues/11198
 
         # Instead, walk the MRO to detect an override in a subclass.
+        # MRO = method resolution order determines who defines what methods
 
         def defines_compute_decomposition(op_type):
             for klass in op_type.__mro__:
+                if klass is Operator2:
+                    return False
                 if "compute_decomposition" in vars(klass):
-                    # NOTE: If the class that defines it *isn't* Operator2, a subclass overrode it.
-                    return klass is not Operator2
-            return False
+                    return True
+            # should always find Operator2 in the mro
+            msg = "This line should be impossible to hit. Something is wrong."  # pragma: no cover
+            raise TypeError(msg)  # pragma: no cover
 
         return (
             defines_compute_decomposition(cls)
