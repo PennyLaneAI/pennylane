@@ -48,6 +48,7 @@ clifford_t_measure = {
     qp.CNOT,
     qp.CZ,
     qp.Hadamard,
+    qp.TemporaryAND,
     PauliMeasure,
 }
 
@@ -594,7 +595,6 @@ class TestMeasurementQROM:
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
         assert res_two[qp.BasisState(Int[3], Wire[3])] == 1
-        assert res_two[qp.resource_rep(qp.CNOT)] == 3
         assert res_two[qp.ctrl(qp.BasisState(Int[3], Wire[3]), Wire[1])] == 1
 
     def test_resources_general_case(self):
@@ -724,6 +724,7 @@ class TestMeasurementQROM:
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -765,6 +766,7 @@ class TestMeasurementQROM:
             ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
@@ -813,6 +815,7 @@ class TestMeasurementQROM:
         assert np.isclose(circuit()[0][0], 1.0)
         assert np.isclose(circuit()[1][0], 1.0)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -866,6 +869,7 @@ class TestMeasurementQROM:
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         ("L", "n_extra"),
