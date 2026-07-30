@@ -640,7 +640,7 @@ def _cz_to_ppr(wires: AbstractWires, **_):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Z)
 
 
-def _cz_lattice_surgery_ppm_resources():
+def _cz_lattice_surgery_ppm_resources(wires: AbstractWires = None):  # pylint: disable=unused-argument
     return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3, qp.GlobalPhase: 1}
 
 
