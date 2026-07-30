@@ -28,7 +28,7 @@ import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
-from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
@@ -502,7 +502,16 @@ class QSVT(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, UA, projectors, **kwargs):  # kwarg is id
-        return cls._primitive.bind(UA, *projectors, **kwargs)
+
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        return cls._primitive.bind(_get_tracer(UA), *projectors, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, _) -> "QSVT":
