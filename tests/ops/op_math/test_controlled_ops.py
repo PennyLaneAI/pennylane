@@ -870,6 +870,7 @@ def test_ppm_decomposition(op_type, rule_name, seed):
     init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
     assert np.allclose(init_state_full, circuit())
 
+
 def test_CY_decomposition():
     """The migrated ``CY`` uses its registered graph decomposition rule."""
     assert qp.CY([0, 1]).decomposition() == [qp.CRY(np.pi, wires=[0, 1]), qp.S(0)]
