@@ -382,12 +382,15 @@ class TestInspectDecompGraph:
             """).strip()
 
         assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""
-            Decomposition 0 (name: _hadamard_to_rz_ry)
+            Decomposition 0 (name: _hadamard_ppm)
+            Insufficient work wires: requires 1 but only 0 available.
+
+            Decomposition 1 (name: _hadamard_to_rz_ry)
             0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤  
             First-Level Expansion Gates: {GlobalPhase: 1, RY: 1, RZ: 1}
             Missing Ops: {GlobalPhase}
 
-            Decomposition 1 (name: _hadamard_to_rz_rx)
+            Decomposition 2 (name: _hadamard_to_rz_rx)
             0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤  
             First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
             Missing Ops: {GlobalPhase}
@@ -426,14 +429,14 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {GlobalPhase: 1, RX: 3, RZ: 2}
             Weighted Cost: 6.0
 
-            CHOSEN: Decomposition 4 (name: xzx)
+            Decomposition 4 (name: xzx)
             0: ──RX(0.00)──RZ(0.00)──RX(0.00)─┤  
             Estimated First-Level Expansion Gates: {GlobalPhase: 1, RX: 2, RZ: 1}
             Actual First-Level Expansion Gates: {RX: 2, RZ: 1}
             Full Expansion Gates: {GlobalPhase: 1, RX: 2, RZ: 1}
             Weighted Cost: 4.0
 
-            Decomposition 5 (name: zxz)
+            CHOSEN: Decomposition 5 (name: zxz)
             0: ──RZ(0.00)──RX(0.00)──RZ(0.00)─┤  
             Estimated First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
             Actual First-Level Expansion Gates: {RX: 1, RZ: 2}
@@ -507,7 +510,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 4 (name: xzx)
+            #### Decomposition 4 (name: xzx)
 
             ```
             0: ──RX(0.00)──RZ(0.00)──RX(0.00)─┤  
@@ -530,7 +533,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 5 (name: zxz)
+            #### **CHOSEN:** Decomposition 5 (name: zxz)
 
             ```
             0: ──RZ(0.00)──RX(0.00)──RZ(0.00)─┤  

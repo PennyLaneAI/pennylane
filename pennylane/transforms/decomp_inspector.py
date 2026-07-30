@@ -427,12 +427,15 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     to find a decomposition for ``Hadamard``. We can investigate further:
 
     >>> inspector.inspect_decomps(qp.Hadamard(0))
-    Decomposition 0 (name: _hadamard_to_rz_ry)
+    Decomposition 0 (name: _hadamard_ppm)
+    Insufficient work wires: requires 1 but only 0 available.
+    <BLANKLINE>
+    Decomposition 1 (name: _hadamard_to_rz_ry)
     0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤
     First-Level Expansion Gates: {GlobalPhase: 1, RY: 1, RZ: 1}
     Missing Ops: {GlobalPhase}
     <BLANKLINE>
-    Decomposition 1 (name: _hadamard_to_rz_rx)
+    Decomposition 2 (name: _hadamard_to_rz_rx)
     0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤
     First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
     Missing Ops: {GlobalPhase}
@@ -486,7 +489,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
              |0>├─╰X─╰●─────────────╰X──┤
         First-Level Expansion Gates: {Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {CNOT: 58, GlobalPhase: 104, MidMeasure: 2, RX: 12, RY: 26, RZ: 94}
+        Full Expansion Gates: {CNOT: 60, GlobalPhase: 102, MidMeasure: 2, RX: 12, RY: 22, RZ: 96}
         Weighted Cost: 192.0
         <BLANKLINE>
         Decomposition 1 (name: to_controlled_qubit_unitary)
@@ -532,7 +535,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
              |0>├─╰⊕───────╰●────────⊕╯──┤
         First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 2, TemporaryAND: 1, Toffoli: 3}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {CNOT: 22, GlobalPhase: 43, MidMeasure: 1, RX: 6, RY: 11, RZ: 37}
+        Full Expansion Gates: {CNOT: 23, GlobalPhase: 42, MidMeasure: 1, RX: 6, RY: 9, RZ: 38}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
@@ -569,7 +572,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
              |0>├─╰⊕─╰●─────●╯──⊕╯──┤
         First-Level Expansion Gates: {Adjoint(TemporaryAND): 2, TemporaryAND: 2, Toffoli: 1}
         Wire Allocations: {'zero': 2}
-        Full Expansion Gates: {CNOT: 14, GlobalPhase: 37, MidMeasure: 2, RX: 8, RY: 12, RZ: 29}
+        Full Expansion Gates: {CNOT: 16, GlobalPhase: 35, MidMeasure: 2, RX: 8, RY: 8, RZ: 31}
         Weighted Cost: 65.0
         <BLANKLINE>
         Decomposition 9 (name: many_borrowed_workers)
@@ -626,7 +629,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
              |0>├─╰⊕───────╰●────────⊕╯──┤
         First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 2, TemporaryAND: 1, Toffoli: 3}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {CNOT: 22, GlobalPhase: 43, MidMeasure: 1, RX: 6, RY: 11, RZ: 37}
+        Full Expansion Gates: {CNOT: 23, GlobalPhase: 42, MidMeasure: 1, RX: 6, RY: 9, RZ: 38}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)

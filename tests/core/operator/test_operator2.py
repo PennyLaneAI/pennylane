@@ -1096,6 +1096,12 @@ class TestHash:
         op2 = FullOp(phi=0.6, static="ab", hybrid=[1, 1], wires=1)
         assert hash(op1) != hash(op2)
 
+    @pytest.mark.parametrize("pytree_wires", ([Wire[1]], [[Wire[2]], [Wire[3]]]))
+    def test_op_is_hashable_with_abstract_wires_in_hybrid(self, pytree_wires):
+        """Test that ``Operator2`` is hashable when the wires are `AbstractWires` in hybrid args."""
+        op = HybridWireOp(pytree_wires)
+        assert isinstance(hash(op), int)
+
     def test_different_types_different_hash(self):
         """Test that operators of different types produce different hashes."""
 
@@ -2273,13 +2279,17 @@ class TestGraphDecomposition:
 
             @qp.register_resources({qp.RX: 1})
             def use_rx(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+                qp.RX(phi, wires=wires)
 
             qp.add_decomps(Op, use_rx)
 
             decomp = Op(0.5, wires=0).decomposition()
             assert len(decomp) == 1
             assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+            decomp2 = Op.compute_decomposition(0.5, wires=0)
+            assert len(decomp2) == 1
+            assert qp.equal(decomp2[0], qp.RX(0.5, wires=0))
 
     def test_rule_receives_full_argument_model(self):
         """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""

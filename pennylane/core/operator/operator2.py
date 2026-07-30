@@ -780,8 +780,8 @@ class Operator2(metaclass=OperatorMeta):
         canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
-    @staticmethod
-    def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
+    @classmethod
+    def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -800,7 +800,18 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        raise DecompositionUndefinedError
+        with pause(), QueuingManager.stop_recording():
+            # creating dummy op means this works for adjoint and ctrl too.
+            op = cls(*args, **kwargs)
+        for decomp in qp.list_decomps(op):
+            if decomp.is_applicable(**op.arguments):
+                with AnnotatedQueue() as q:
+                    decomp(**op.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError(f"No applicable decomposition rule for {cls}.")
 
     @classproperty
     @classmethod
@@ -812,8 +823,29 @@ class Operator2(metaclass=OperatorMeta):
         rules are registered for the operator type. Per-instance rule applicability is resolved
         in :meth:`~.Operator2.decomposition`, not here.
         """
+
+        # cant do cls.compute_decompsition != Operator2.compute_decomposition
+        # because default is now a classmethod
+        # classmethod is always different, even if not overwritten
+        # cant do getattr(cls.compute_decomposition "__func__", cls.compute_decomposition)
+        # because of an astroid/ pylint bug
+        # see https://github.com/pylint-dev/pylint/issues/11198
+
+        # Instead, walk the MRO to detect an override in a subclass.
+        # MRO = method resolution order determines who defines what methods
+
+        def defines_compute_decomposition(op_type):
+            for klass in op_type.__mro__:
+                if klass is Operator2:
+                    return False
+                if "compute_decomposition" in vars(klass):
+                    return True
+            # should always find Operator2 in the mro
+            msg = "This line should be impossible to hit. Something is wrong."  # pragma: no cover
+            raise TypeError(msg)  # pragma: no cover
+
         return (
-            cls.compute_decomposition != Operator2.compute_decomposition
+            defines_compute_decomposition(cls)
             or cls.decomposition != Operator2.decomposition
             or qp.decomposition.has_decomp(cls)
         )
@@ -830,19 +862,7 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        if type(self).compute_decomposition != Operator2.compute_decomposition:
-            return self.compute_decomposition(**self.arguments)
-
-        for decomp in qp.list_decomps(self):
-            if decomp.is_applicable(**self.arguments):
-                with AnnotatedQueue() as q:
-                    decomp(**self.arguments)
-                if QueuingManager.recording():
-                    # no need for copies if we just use queue method
-                    _ = [op.queue() for op in q.queue]
-                return q.queue
-
-        raise DecompositionUndefinedError
+        return self.compute_decomposition(**self.arguments)
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
@@ -1052,7 +1072,8 @@ class Operator2(metaclass=OperatorMeta):
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             ser_leaves = tuple(
-                l if isinstance(l, (Operator2, Wires)) else _canonicalize_dynamic(l) for l in leaves
+                l if isinstance(l, (AbstractWires, Operator2, Wires)) else _canonicalize_dynamic(l)
+                for l in leaves
             )
             serialized_hybrid.append((ser_leaves, tree))
 
