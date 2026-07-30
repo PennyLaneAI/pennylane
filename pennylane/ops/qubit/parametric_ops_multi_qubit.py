@@ -136,6 +136,10 @@ class MultiRZ(Operator2):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
+    @property
+    def num_wires(self):
+        return len(self.wires)
+
     @staticmethod
     def compute_eigvals(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
