@@ -257,14 +257,16 @@ class QROM(Operator2):
     # pylint: disable=arguments-differ
     def __abstract_init__(
         self,
-        data: AbstractArray,
-        control_wires: AbstractArray,
-        target_wires: AbstractArray,
-        work_wires: AbstractArray,
+        data: AbstractArray | TensorLike | Sequence[str],
+        control_wires: AbstractArray | WiresLike,
+        target_wires: AbstractArray | WiresLike,
+        work_wires: AbstractArray | WiresLike,
         clean=True,
     ):
+        if isinstance(data, Sequence) and isinstance(data[0], str):
+            data = AbstractArray(shape=(len(data), len(data[0])), dtype=np.int64)
         super().__abstract_init__(
-            AbstractArray(shape=data.shape, dtype=np.int64),
+            data,
             control_wires=Wire[len(control_wires)],
             target_wires=Wire[len(target_wires)],
             work_wires=Wire[len(work_wires)],
