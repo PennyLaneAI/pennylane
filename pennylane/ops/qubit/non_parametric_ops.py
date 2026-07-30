@@ -189,10 +189,6 @@ class Hadamard(Operator2):
         return [qp.RY(-np.pi / 4, wires=wires)]
 
     @override
-    def adjoint(self) -> "Hadamard":
-        return Hadamard(wires=self.wires)
-
-    @override
     def pow(self, z: int | float):
         return super().pow(z % 2)
 
@@ -751,9 +747,6 @@ class PauliY(Operator2):
             S(wires=wires),
             Hadamard(wires=wires),
         ]
-
-    def adjoint(self) -> "PauliY":
-        return Y(wires=self.wires)
 
     def pow(self, z: float | int) -> list[qp.operation.Operator]:
         return super().pow(z % 2)
@@ -1651,10 +1644,6 @@ class SWAP(Operator2):
     def pow(self, z: int | float) -> list[qp.operation.Operator]:
         return super().pow(z % 2)
 
-    @override
-    def adjoint(self) -> "SWAP":
-        return SWAP(wires=self.wires)
-
 
 @custom_ctrl_dispatch.register
 def _ctrl_swap(base: SWAP, control, control_values, *_):
@@ -1841,10 +1830,6 @@ class ECR(Operator2):
         """
 
         return np.array([1, -1, 1, -1])
-
-    @override
-    def adjoint(self) -> "ECR":
-        return ECR(wires=self.wires)
 
     @override
     def pow(self, z: int | float) -> list[qp.operation.Operator]:

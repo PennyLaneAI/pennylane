@@ -589,7 +589,9 @@ class Operator2(metaclass=OperatorMeta):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.adjoint != Operator2.adjoint
+        return cls.adjoint != Operator2.adjoint or qp.decomposition.has_decomp(
+            f"Adjoint({cls.__name__})"
+        )
 
     def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one. Used to simplify
@@ -620,6 +622,18 @@ class Operator2(metaclass=OperatorMeta):
         >>> op
         MyClass(0.5, wires=[0])
         """
+        with pause(), QueuingManager.stop_recording():
+            dummy_op = qp.adjoint(self)
+        for decomp in qp.list_decomps(dummy_op):
+            if decomp.is_applicable(self):
+                with AnnotatedQueue() as q:
+                    decomp(self)
+                if len(q) != 1:
+                    op = qp.prod(*reversed(q.queue))
+                if QueuingManager.recording():
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+
         raise AdjointUndefinedError
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator2":
