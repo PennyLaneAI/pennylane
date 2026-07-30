@@ -582,7 +582,7 @@ def _pauli_rot_resources(pauli_word):
     return {
         qp.Hadamard: 2 * pauli_word.count("X"),
         qp.RX: 2 * pauli_word.count("Y"),
-        qp.resource_rep(qp.MultiRZ, num_wires=num_active_wires): 1,
+        qp.MultiRZ(Float, Wire[num_active_wires]): 1,
     }
 
 
