@@ -195,14 +195,14 @@ class TestDecomposition:
         pytest.param(
             np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)),
             range(2),
-            marks=pytest.mark.xfail(
+            marks=pytest.mark.pl2do(
                 reason="Broadcasting support not fully implemented for Operator2"
             ),
         ),
         pytest.param(
             np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)),
             range(2),
-            marks=pytest.mark.xfail(
+            marks=pytest.mark.pl2do(
                 reason="Broadcasting support not fully implemented for Operator2"
             ),
         ),
