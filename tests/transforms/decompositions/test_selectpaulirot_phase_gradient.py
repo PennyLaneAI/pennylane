@@ -268,3 +268,55 @@ def test_capture_compatibility():
             ), f"Following ops are present but not in gateset: {op_names - gate_set}"
     finally:
         qp.capture.disable()
+
+
+@pytest.mark.parametrize(
+    "rot_axis, expected_op",
+    [
+        ("X", qp.RX),
+        ("Y", qp.RY),
+        ("Z", qp.RZ),
+    ],
+)
+def test_rot_axis_zero_controls(rot_axis, expected_op):
+    """Test the 0-control-wire edge case for all rotation axes."""
+    angle_wires = qp.wires.Wires(["aux_0"])
+    phase_grad_wires = qp.wires.Wires(["qft_0"])
+    work_wires = qp.wires.Wires(["work_0"])
+
+    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires
+    )
+
+    angles = np.array([1.23])
+    op = qp.SelectPauliRot(angles, control_wires=[], target_wire=0, rot_axis=rot_axis)
+
+    _test_decomposition_rule(op, custom_decomp)
+
+    with qp.queuing.AnnotatedQueue() as q:
+        custom_decomp(angles, [], 0, rot_axis=op.hyperparameters.get("rot_axis", "Z"))
+
+    assert len(q.queue) == 1
+    assert isinstance(q.queue[0], expected_op)
+
+
+@pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
+def test_rot_axis_basis_changes(rot_axis):
+    """Test that the custom decomposition rule correctly applies basis changes (Hadamard/S)
+    for different rotation axes when control wires are present."""
+    prec = 2
+    num_controls = 1
+    num_work_wires = max(prec, num_controls + 1) - 1
+
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
+
+    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires
+    )
+
+    angles = np.array([0.5, 1.5]) * np.pi
+    op = qp.SelectPauliRot(angles, control_wires=[0], target_wire=1, rot_axis=rot_axis)
+
+    _test_decomposition_rule(op, custom_decomp)
