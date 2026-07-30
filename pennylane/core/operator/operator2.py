@@ -838,7 +838,7 @@ class Operator2(metaclass=OperatorMeta):
                 if "compute_decomposition" in vars(klass):
                     # NOTE: If the class that defines it *isn't* Operator2, a subclass overrode it.
                     return klass is not Operator2
-                return False
+            return False
 
         return (
             defines_compute_decomposition(cls)
