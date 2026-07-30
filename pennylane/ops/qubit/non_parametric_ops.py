@@ -104,7 +104,6 @@ class Hadamard(Operator2):
 
     @staticmethod
     @override
-    @lru_cache
     # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -127,7 +126,6 @@ class Hadamard(Operator2):
 
     @staticmethod
     @override
-    @lru_cache
     # pylint: disable=arguments-differ,unused-argument
     def compute_sparse_matrix(wires: WiresLike = None, format="csr") -> sparse.spmatrix:
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]]).asformat(
@@ -383,7 +381,6 @@ class PauliX(Operator2):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
-    @lru_cache
     @override
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
         return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
@@ -598,7 +595,6 @@ class PauliY(Operator2):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
-    @lru_cache
     # pylint: disable=unused-argument,arguments-differ
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
         return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
@@ -1089,7 +1085,6 @@ class S(Operator2):
         return self._pauli_rep
 
     @staticmethod
-    @lru_cache
     # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1232,7 +1227,6 @@ class T(Operator2):
         return self._pauli_rep
 
     @staticmethod
-    @lru_cache
     # pylint: disable=arguments-differ, unused-argument
     def compute_matrix(wires=None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1497,7 +1491,6 @@ class SWAP(Operator2):
 
     @staticmethod
     @override
-    @lru_cache
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1521,7 +1514,6 @@ class SWAP(Operator2):
 
     @staticmethod
     @override
-    @lru_cache
     # pylint: disable=arguments-differ
     def compute_sparse_matrix(wires: WiresLike = None, format="csr") -> sparse.spmatrix:
         r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1827,7 +1819,6 @@ class ISWAP(Operator2):
 
     @staticmethod
     @override
-    @lru_cache
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1987,7 +1978,6 @@ class SISWAP(Operator2):
 
     @staticmethod
     @override
-    @lru_cache
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
