@@ -144,39 +144,6 @@ class BasisState(StatePrepBase2):
         state = qp.math.cast(state, int)
         super().__init__(state, wires=wires)
 
-    @staticmethod
-    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.BasisState.decomposition`.
-
-        Args:
-            state (array): the basis state to be prepared
-            wires (Iterable, Wires): the wire(s) the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [X(0)]
-
-        """
-
-        if not qp.math.is_abstract(state):
-            return [qp.X(wire) for wire, basis in zip(wires, state, strict=True) if basis == 1]
-
-        op_list = []
-        for wire, basis in zip(wires, state, strict=True):
-            op_list.append(qp.GlobalPhase(-basis * np.pi / 2, wire))
-            op_list.append(qp.RX(basis * np.pi, wire))
-
-        return op_list
-
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
@@ -204,40 +171,11 @@ class BasisState(StatePrepBase2):
         return math.convert_like(ket, prep_vals)
 
 
-# pylint: disable=unused-argument
-def _jax_jit_basis_state_resources(state: AbstractArray, wires: AbstractWires):
-    num_wires = len(wires)
-    resources = {
-        pow_resource_rep(qp.X, base_params={}, z=0): num_wires // 2,
-        pow_resource_rep(qp.X, base_params={}, z=1): num_wires - num_wires // 2,
-    }
-    return resources
-
-
-def _jax_jit_basis_state_cond(**_):
-    if qp.capture.enabled() or qp.compiler.active():
-        return False
-
-    if find_spec("jax") is None:
-        return False
-
-    x = qp.math.array(0.2, like="jax")
-    # If x is turned into a tracer and qjit/capture are not active, we must be using jax.jit
-    return qp.math.is_abstract(x)
-
-
-@register_condition(_jax_jit_basis_state_cond)
-@register_resources(_jax_jit_basis_state_resources, exact=False)
-def _jax_jit_basis_state_decomp(state: AbstractArray, wires: AbstractWires):
-    _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state, strict=True)]
-
-
 def _basis_state_decomp_resources(state: AbstractArray, wires: AbstractWires):
     num_wires = len(wires)
-    return {qp.X: num_wires - num_wires // 2}
+    return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
 
-@register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state: AbstractArray, wires: AbstractWires):
 
@@ -254,7 +192,7 @@ def _basis_state_decomp(state: AbstractArray, wires: AbstractWires):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_decomp, _jax_jit_basis_state_decomp)
+add_decomps(BasisState, _basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
