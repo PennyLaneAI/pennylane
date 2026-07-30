@@ -351,7 +351,6 @@ class CH(Controlled2):
         return CH(self.wires)
 
     @staticmethod
-    @lru_cache
     def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -727,7 +726,6 @@ class CSWAP(Controlled2):
         return CSWAP(self.wires)
 
     @staticmethod
-    @lru_cache
     def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1119,7 +1117,6 @@ class CNOT(Controlled2):
         return CNOT(self.wires)
 
     @staticmethod
-    @lru_cache
     @override
     def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1266,7 +1263,6 @@ class Toffoli(Controlled2):
         return Toffoli(self.wires)
 
     @staticmethod
-    @lru_cache
     @override
     def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
