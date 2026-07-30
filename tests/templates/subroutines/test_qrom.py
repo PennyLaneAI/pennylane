@@ -597,7 +597,7 @@ class TestMeasurementQROM:
         """Test that the general resource estimate contains the expected gate types."""
         res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
         assert res[qp.resource_rep(PauliMeasure)] > 0
-        assert res[qp.resource_rep(qp.CZ)] > 0
+        assert res[qp.CZ] > 0
 
     def test_resources_from_base_params(self):
         """Test that resources are extracted from ``base_params`` (Adjoint path)."""
