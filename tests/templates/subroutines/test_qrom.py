@@ -34,6 +34,7 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_measurement_resources,
 )
 from pennylane.templates.subroutines.select import _select_decomp_unary
+from pennylane.typing import Int, Wire
 
 clifford_t_measure = {
     qp.H,
@@ -354,6 +355,7 @@ class TestQROM:
             clean=clean,
         )
         for rule in qp.list_decomps(qp.QROM):
+            print(rule)
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -587,10 +589,10 @@ class TestMeasurementQROM:
     def test_resources_small_cases(self):
         """Test resource estimates for the L <= 1 and L == 2 edge cases."""
         res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
-        assert res_one[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+        assert res_one[qp.BasisState(Int[3], Wire[3])] == 1
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
-        assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+        assert res_two[qp.BasisState(Int[3], Wire[3])] == 1
         assert res_two[qp.resource_rep(qp.CNOT)] == 3
 
     def test_resources_general_case(self):

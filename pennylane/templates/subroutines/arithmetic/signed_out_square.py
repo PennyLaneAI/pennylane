@@ -22,7 +22,9 @@ from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState, X
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .semi_adder import _controlled_semi_adder, _controlled_semi_adder_resource
@@ -310,7 +312,7 @@ def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed
 
     # Bit flips on input register
     if n - 1 > 1:
-        basis_rep = resource_rep(BasisState, num_wires=n - 2)
+        basis_rep = BasisState(Int[n - 2], Wire[n - 2])
         cadd_resources[basis_rep] = cadd_resources.get(basis_rep, 0) + 2
 
     # Bit flips on output and work registers

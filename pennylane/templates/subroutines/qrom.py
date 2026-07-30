@@ -35,8 +35,7 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import TensorLike
+from pennylane.typing import Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
@@ -52,7 +51,7 @@ def _multi_swap(wires1, wires2):
 def _new_ops(depth, target_wires, control_wires, swap_wires, data):
 
     with QueuingManager.stop_recording():
-        ops_new = [BasisEmbedding(bits, wires=target_wires) for bits in data]
+        ops_new = [BasisState(bits, wires=target_wires) for bits in data]
         ops_identity_new = ops_new + [qp_ops.I(target_wires)] * int(
             2 ** len(control_wires) - len(ops_new)
         )
@@ -139,7 +138,7 @@ class QROM(Operation):
         def circuit():
 
             # the third index is encoded in the control wires [0, 1]
-            qp.BasisEmbedding(2, wires = [0,1])
+            qp.BasisState(2, wires = [0,1])
 
             qp.QROM(data = data,
                     control_wires = [0,1],
@@ -161,7 +160,7 @@ class QROM(Operation):
 
         The second set of wires is ``target_wires`` which stores the bitstrings.
         For instance, if the data is ``[0, 1, 1, 0]``, we will need four target wires. Internally,
-        the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
+        the bitstrings are encoded using the :class:`~.BasisState` template.
 
 
         The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
@@ -310,7 +309,7 @@ class QROM(Operation):
     ):  # pylint: disable=arguments-differ
 
         if len(control_wires) == 0:
-            return [BasisEmbedding(bits, wires=target_wires) for bits in data]
+            return [BasisState(bits, wires=target_wires) for bits in data]
 
         with QueuingManager.stop_recording():
             n_select_work_wires = _calculate_n_select_work_wires(
@@ -326,7 +325,7 @@ class QROM(Operation):
             depth = int(2 ** np.floor(np.log2(depth)))
             depth = min(depth, data.shape[0])
 
-            ops = [BasisEmbedding(bits, wires=target_wires) for bits in data]
+            ops = [BasisState(bits, wires=target_wires) for bits in data]
             ops_identity = ops + [qp_ops.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
             n_columns = len(ops) // depth + int(bool(len(ops) % depth))
@@ -470,7 +469,7 @@ def _qrom_decomposition_resources(
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
-        return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
+        return {BasisState(Int[num_target_wires], Wire[num_target_wires]): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires_swap
 
@@ -479,7 +478,7 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    ops = [resource_rep(BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
+    ops = [BasisState(Int[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)]
     ops_identity = ops + [qp_ops.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
@@ -558,7 +557,8 @@ def _qrom_decomposition(
     data, control_wires, target_wires, work_wires, clean, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
-        BasisEmbedding(data[0, :], wires=target_wires)
+        BasisState(data[0], wires=target_wires)
+        return
 
     n_select_work_wires = _calculate_n_select_work_wires(
         len(data), len(control_wires), len(target_wires), len(work_wires)
@@ -743,11 +743,11 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     L = 2 ** ceil_log2(num_bitstrings)
 
     if L <= 1:
-        return {resource_rep(BasisState, num_wires=num_target_wires): 1}
+        return {BasisState(Int[num_target_wires], Wire[num_target_wires]): 1}
 
     if L == 2:
         return {
-            resource_rep(BasisState, num_wires=num_target_wires): 1,
+            BasisState(Int[num_target_wires], Wire[num_target_wires]): 1,
             resource_rep(CNOT): num_target_wires,
         }
 
@@ -762,7 +762,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         resource_rep(PauliMeasure): num_measurements,
         resource_rep(CZ): num_cz,
         resource_rep(CNOT): L - 1,
-        resource_rep(BasisState, num_wires=num_target_wires): L,
+        BasisState(Int[num_target_wires], Wire[num_target_wires]): L,
         resource_rep(X): L,
         controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
     }

@@ -55,7 +55,9 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     interface = execution_kwargs.get("interface", None)
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qp.operation.StatePrepBase):
+    if len(circuit) > 0 and isinstance(
+        circuit[0], (qp.operation.StatePrepBase, qp.operator.StatePrepBase2)
+    ):
         prep = circuit[0]
 
     state = create_initial_state(

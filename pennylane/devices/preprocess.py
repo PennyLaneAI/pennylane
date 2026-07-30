@@ -23,7 +23,7 @@ from collections.abc import Callable, Sequence
 from copy import copy
 
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
-from pennylane.core.operator import Operator, StatePrepBase
+from pennylane.core.operator import Operator, StatePrepBase, StatePrepBase2
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import (
@@ -295,7 +295,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             ``False``, the operator should be decomposed. This replaces ``stopping_condition``
             if and only if the tape has shots.
         skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if
-            it inherits from :class:`~.StatePrepBase`. Defaults to ``True``.
+            it inherits from :class:`~.StatePrepBase` or :class:`~.StatePrepBase2`.
+            Defaults to ``True``.
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
@@ -396,7 +397,11 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             strict=strict,
         )
 
-    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
+    if (
+        tape.operations
+        and isinstance(tape[0], (StatePrepBase, StatePrepBase2))
+        and skip_initial_state_prep
+    ):
         prep_op = [tape[0]]
     else:
         prep_op = []

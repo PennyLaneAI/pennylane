@@ -24,7 +24,7 @@ from numpy.random import default_rng
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import StatePrepBase
+from pennylane.core.operator import StatePrepBase, StatePrepBase2
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import ShotCopies, Shots
 from pennylane.logging import debug_logger
@@ -200,7 +200,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     interface = execution_kwargs.get("interface", None)
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], StatePrepBase):
+    if len(circuit) > 0 and isinstance(circuit[0], (StatePrepBase, StatePrepBase2)):
         prep = circuit[0]
 
     state = create_initial_state(
@@ -677,7 +677,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     or measurements. This function makes sure that an initial state with the correct size is created
     on the first invocation of ``simulate_tree_mcm``. ``wires`` should be the wires attribute
     of the original circuit (which included all wires)."""
-    if len(circuit) > 0 and isinstance(circuit[0], StatePrepBase):
+    if len(circuit) > 0 and isinstance(circuit[0], (StatePrepBase, StatePrepBase2)):
         return circuit
 
     interface = Interface(interface)

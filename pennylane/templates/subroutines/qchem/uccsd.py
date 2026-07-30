@@ -27,7 +27,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState
-from pennylane.typing import TensorLike
+from pennylane.typing import Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
@@ -330,7 +330,7 @@ class UCCSD(Operation):
 
 
 def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
-    resources = Counter({resource_rep(BasisState, num_wires=num_wires): 1})
+    resources = Counter({BasisState(Int[num_wires], Wire[num_wires]): 1})
 
     for _ in range(n_repeats):
         for w1, w2 in num_d_wires:

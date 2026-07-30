@@ -31,7 +31,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..controlled_sequence import ControlledSequence
@@ -599,10 +599,9 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     resources = defaultdict(int)
     if num_x_wires > 1:
         resources[
-            controlled_resource_rep(
-                BasisState,
-                base_params={"num_wires": num_x_wires - 1},
-                num_control_wires=1,
+            _ctrl_abstract(
+                BasisState(Int[num_x_wires - 1], Wire[num_x_wires - 1]),
+                Wire[1],
                 num_zero_control_values=1,
             )
         ] += 2

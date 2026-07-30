@@ -27,8 +27,8 @@ from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import TensorLike
+from pennylane.ops.qubit import BasisState
+from pennylane.typing import Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
@@ -321,7 +321,7 @@ class kUpCCGSD(Operation):
         """
         op_list = []
 
-        op_list.append(BasisEmbedding(init_state, wires=wires))
+        op_list.append(BasisState(init_state, wires=wires))
 
         for layer in range(k):
             for i, (w1, w2) in enumerate(d_wires):
@@ -367,7 +367,7 @@ class kUpCCGSD(Operation):
 
 def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
-    resources[resource_rep(BasisEmbedding, num_wires=num_wires)] = 1
+    resources[BasisState(Int[num_wires], Wire[num_wires])] = 1
 
     for _ in range(k):
         for w1, w2 in d_wires:
@@ -391,7 +391,7 @@ def _kupccgsd_decomposition(
     init_state: tuple[int],
     delta_sz: int = None,
 ):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
-    BasisEmbedding(init_state, wires=wires)
+    BasisState(init_state, wires=wires)
 
     @for_loop(k)
     def layer_loop(layer):

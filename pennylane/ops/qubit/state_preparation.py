@@ -28,7 +28,7 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
+from pennylane.core.operator import Operation, Operator, StatePrepBase, StatePrepBase2
 from pennylane.decomposition import (
     add_decomps,
     pow_resource_rep,
@@ -46,7 +46,7 @@ state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 _STATE_NORM_TOLERANCE = 1e-10
 
 
-class BasisState(Operator2):
+class BasisState(StatePrepBase2):
     r"""BasisState(state, wires)
     Prepares a single computational basis state.
 
@@ -165,14 +165,6 @@ class BasisState(Operator2):
             ket[tuple(indices)] = 1
 
         return math.convert_like(ket, prep_vals)
-
-    def label(
-        self,
-        decimals: int | None = None,
-        base_label: str | None = None,
-        cache: dict | None = None,
-    ) -> str:
-        return "|Ψ⟩"
 
 
 # pylint: disable=unused-argument

@@ -53,7 +53,7 @@ def _adjoint_jacobian_state(tape: QuantumScript):
     """
     jacobian = []
 
-    has_state_prep = isinstance(tape[0], qp.operation.StatePrepBase)
+    has_state_prep = isinstance(tape[0], (qp.operation.StatePrepBase, qp.operator.StatePrepBase2))
     state = create_initial_state(tape.wires, tape[0] if has_state_prep else None)
 
     param_idx = has_state_prep

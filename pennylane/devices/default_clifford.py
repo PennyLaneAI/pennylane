@@ -25,7 +25,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math, ops
-from pennylane.core.operator import Channel, Operator, StatePrepBase
+from pennylane.core.operator import Channel, Operator, StatePrepBase, StatePrepBase2
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.transforms import CompilePipeline
 from pennylane.exceptions import DeviceError, QuantumFunctionError
@@ -584,7 +584,7 @@ class DefaultClifford(Device):
 
         # Account for state preparation operation
         prep = None
-        if len(circuit) > 0 and isinstance(circuit[0], StatePrepBase):
+        if len(circuit) > 0 and isinstance(circuit[0], (StatePrepBase, StatePrepBase2)):
             prep = circuit[0]
         use_prep_ops = bool(prep)
 

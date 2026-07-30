@@ -26,7 +26,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
-from pennylane.typing import TensorLike
+from pennylane.typing import Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 has_jax = True
@@ -289,7 +289,7 @@ if AllSinglesDoubles._primitive is not None:
 
 def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
     return {
-        resource_rep(BasisState, num_wires=num_wires): 1,
+        BasisState(Int[num_wires], Wire[num_wires]): 1,
         DoubleExcitation: num_doubles,
         SingleExcitation: num_singles,
     }
