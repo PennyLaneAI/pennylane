@@ -1301,7 +1301,7 @@ class Operator2(metaclass=OperatorMeta):
         if not enabled():
             return
 
-        pos_args = [self.arguments[d] for d in self.dynamic_argnames]
+        pos_args = [self.arguments[d] for d in self._sig.parameters.keys()]
 
         wire_lens = []
         for name, value in self.wire_args.items():
