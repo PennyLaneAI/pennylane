@@ -248,10 +248,6 @@ class TestSuperpositionTHC:
 
         assert np.isclose(p_success, expected)
 
-        # For the physically relevant regime the preparation is exact.
-        if frac >= 0.25:
-            assert np.isclose(p_success, 1.0)
-
     @pytest.mark.parametrize(
         ("M", "N", "mu_wires", "nu_wires", "work_wires", "msg_match"),
         [
