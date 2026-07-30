@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.operator import Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -202,8 +203,8 @@ class TestOperations:
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         qp.assert_equal(op_unflattened, op)
 
-        if isinstance(op, qp.MultiControlledX):
-            return  # The below test does not work for control_values, which is now pytree leaves
+        if isinstance(op, Operator2):
+            return  # The below test does not work for Operator2
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
