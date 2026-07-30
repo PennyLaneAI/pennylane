@@ -66,7 +66,6 @@ class MultiplexerStatePreparation(Operator2):
     """
 
     dynamic_argnames = ("state_vector",)
-    wires_argnames = ("wires",)
 
     arg_specs = {"state_vector": Complex[-1], "wires": Wire[-1]}
     wire_sizes = (None,)
@@ -82,17 +81,6 @@ class MultiplexerStatePreparation(Operator2):
             )
 
         super().__init__(state_vector, wires=wires)
-
-    @staticmethod
-    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
-        with queuing.AnnotatedQueue() as q:
-            _multiplexer_state_prep_decomposition(state_vector, wires)
-
-        if queuing.QueuingManager.recording():
-            for op in q.queue:
-                qp.apply(op)
-
-        return q.queue
 
 
 # pylint: disable=unused-argument
