@@ -51,7 +51,6 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
-from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -110,7 +109,6 @@ STRING_REPR = (
     (qp.X(1), "X(1)"),
     (qp.Y(2), "Y(2)"),
     (qp.Z(3), "Z(3)"),
-    (qp.Z(Wire[1]), "Z(wires=AbstractWires(1))"),
     (qp.T(0), "T(0)"),
     (qp.S(0), "S(0)"),
     (qp.SX(0), "SX(0)"),

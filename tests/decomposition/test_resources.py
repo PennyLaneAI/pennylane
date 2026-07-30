@@ -588,9 +588,6 @@ class TestControlledResourceRep:
         """Tests that the resource rep of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            if issubclass(op_type, qp.core.Operator2):
-                # Operator2 types use abstractify, not resource_rep
-                continue
             rep = resource_rep(op_type)
             assert rep == CompressedResourceOp(op_type, {})
 
@@ -626,9 +623,6 @@ class TestSymbolicResourceRep:
         """Tests that the adjoint of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            if issubclass(op_type, qp.core.Operator2):
-                # Operator2 types use _adjoint_abstract, not adjoint_resource_rep
-                continue
             rep = qp.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
             assert rep == CompressedResourceOp(
                 qp.ops.Adjoint,
