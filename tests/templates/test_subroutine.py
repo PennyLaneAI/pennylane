@@ -207,7 +207,7 @@ def test_fallback_creating_resources_AbstractArray():
 
     @partial(Subroutine, static_argnames="rotation")
     def f(params, wires, rotation):
-        for p, w in zip(params["a"], wires):
+        for p, w in zip(params["a"], wires, strict=True):
             qp.PauliRot(p, rotation, w)
         qp.MultiControlledX(wires)
 
