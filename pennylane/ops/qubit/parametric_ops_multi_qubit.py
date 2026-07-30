@@ -318,8 +318,16 @@ class PauliRot(Operator2):
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
-        "X": Hadamard.compute_matrix(),
-        "Y": RX.compute_matrix(np.pi / 2),
+        # Hadamard
+        "X": np.array([[1, 1], [1, -1]]) / np.sqrt(2),
+        # RX(pi / 2)
+        "Y": np.array(
+            [
+                [np.cos(np.pi / 4), -1j * np.sin(np.pi / 4)],
+                [-1j * np.sin(np.pi / 4), np.cos(np.pi / 4)],
+            ]
+        ),
+        # Identity
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
@@ -579,7 +587,7 @@ class PauliRot(Operator2):
         ]
 
 
-def _pauli_rot_resources(pauli_word, **__):
+def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-argument
     if set(pauli_word) == {"I"}:
         return {qp.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
@@ -592,7 +600,7 @@ def _pauli_rot_resources(pauli_word, **__):
 
 @register_resources(_pauli_rot_resources)
 @disable_autograph
-def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLike, **__):
+def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLike):
     if set(pauli_word) == {"I"}:
         qp.GlobalPhase(theta / 2)
         return
