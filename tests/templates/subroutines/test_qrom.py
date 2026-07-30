@@ -36,7 +36,7 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_measurement_resources,
 )
 from pennylane.templates.subroutines.select import _select_decomp_unary
-from pennylane.typing import Int, Wire
+from pennylane.typing import AbstractArray, Int, Wire
 
 clifford_t_measure = {
     qp.H,
@@ -56,6 +56,24 @@ try:
     from jax import numpy as jnp
 except ImportError:
     has_jax = False
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        ["00000", "00001", "00011", "10001", "00101"],
+        ["0001", "1010", "0100", "1000"],
+        ("000", "101"),
+    ],
+)
+def test_abstract_init(data):
+    """Tests that the abstract init handles Sequence[str] data."""
+    control_wires = Wire[3]
+    target_wires = Wire[len(data[0])]
+    work_wires = Wire[3]
+
+    op = qp.QROM(data, control_wires, target_wires, work_wires)
+    assert op.arguments["data"] == AbstractArray((len(data), len(data[0])), dtype=np.int64)
 
 
 @pytest.mark.jax
