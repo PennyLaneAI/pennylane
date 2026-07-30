@@ -268,6 +268,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
+  [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)
+
 * Sorts the gate counts in the display of resources produced from decompositions.
   [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
 
@@ -847,6 +850,7 @@
   - Templates are ported:
     - `~.BasisRotation`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
