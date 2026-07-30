@@ -478,8 +478,7 @@ def _compute_mc_statistics(
     return expvals, cov, mean_y_sq
 
 
-def build_qudit_expval_func( #pylint: disable=too-many-statements
-
+def build_qudit_expval_func(  # pylint: disable=too-many-statements
     config: QuditCircuitConfig,
 ) -> Callable:
     """Build an estimator for expectation values of a qudit IQP circuit.
