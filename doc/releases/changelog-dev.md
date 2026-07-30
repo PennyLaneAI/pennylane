@@ -416,6 +416,7 @@
 * Added a decomposition of :class:`~.QROM` using `qp.pauli_measure` operators. This decomposition reduces
   the PPM count in the compilation pipeline.
   [(#9531)](https://github.com/PennyLaneAI/pennylane/pull/9531)
+  [(#9853)](https://github.com/PennyLaneAI/pennylane/pull/9853)
 
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
@@ -592,6 +593,10 @@
 
   ```
 
+* Created a new ``labs.templates.SuperpositionTHC`` template, used as a subroutine in tensor
+  hypercontraction (THC) qubitization.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+
 * Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for
   their quantum workflows. This contains core functions and classes such as
   :class:`~.pennylane.labs.profiler.ProfileNode`, :func:`~.pennylane.labs.profiler.profile`, and
@@ -659,6 +664,7 @@
 
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
+  [(#9931)](https://github.com/PennyLaneAI/pennylane/pull/9931)
 
 * Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`,
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
@@ -1091,8 +1097,11 @@
   :class:`~.Incrementer` were also included in the target wires.
   [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
-* Fixed a bug in :class:~.OutMultiplier` for small output registers.
+* Fixed a bug in :class:`~.OutMultiplier` for small output registers.
   [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
+
+* Fixed a bug in :class:`~.labs.LeftClassicalComparator` for `L = 2^n -1`.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
 
 * Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
