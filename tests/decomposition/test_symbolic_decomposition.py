@@ -809,7 +809,7 @@ class TestControlledDecomposition:
                     num_work_wires=1,
                 ): 1,
                 abstractify(qp.CCZ): 1,
-                controlled_resource_rep(qp.CZ, {}, num_control_wires=2, num_work_wires=1): 1,
+                _ctrl_abstract(qp.CZ, Wire[2], Wire[1]): 1,
             }
         )
 
@@ -924,7 +924,7 @@ class TestControlledDecomposition:
                     num_work_wires=1,
                 ): 1,
                 _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
-                controlled_resource_rep(qp.CZ, {}, num_control_wires=3, num_work_wires=1): 1,
+                _ctrl_abstract(qp.CZ, Wire[3], Wire[1]): 1,
             }
         )
 
