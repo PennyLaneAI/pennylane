@@ -15,10 +15,6 @@ r"""
 Contains the FlipSign template.
 """
 
-from collections.abc import Sequence
-
-import numpy as np
-
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -40,9 +36,9 @@ class FlipSign(Operator2):
     where :math:`n` is the basis state (argument ``state``) to flip and :math:`m` is the input.
 
     Args:
-        state (Sequence[int] or array[int] or int): integer or binary sequence representing
+        state (tuple[int] or list[int] or int): integer or binary sequence representing
             the basis state whose sign is to be flipped
-        wires (array[int] or int): wires that the template acts on
+        wires (WiresLike): wires that the template acts on
 
     **Example**
 
@@ -75,7 +71,7 @@ class FlipSign(Operator2):
     wire_sizes = (None,)
 
     @staticmethod
-    def _canonicalize_state(state: int | Sequence[int] | np.ndarray, num_wires: int) -> tuple[int]:
+    def _canonicalize_state(state: int | list[int] | tuple[int], num_wires: int) -> tuple[int]:
         """Canonicalize the input state into a tuple of integers."""
         if isinstance(state, int):
             if not 0 <= state < 2**num_wires:
@@ -91,7 +87,7 @@ class FlipSign(Operator2):
             )
         return tuple(state)
 
-    def __init__(self, state, wires):
+    def __init__(self, state: int | list[int] | tuple[int], wires: WiresLike):
         wires = Wires(wires)
         num_wires = len(wires)
         if num_wires == 0:
