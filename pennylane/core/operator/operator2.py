@@ -208,10 +208,6 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
-        # NOTE: Use 'getattr' to not clobber '_is_abstract' if coming
-        # from '__abstract_init__'
-        self._is_abstract = getattr(self, "_is_abstract", False)
-
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
@@ -227,7 +223,6 @@ class Operator2(metaclass=OperatorMeta):
 
     def __abstract_init__(self, *args, **kwargs):
         """Constructor for canonicalization of abstract inputs."""
-        self._is_abstract = True
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         arguments = bound_args.arguments
@@ -238,7 +233,7 @@ class Operator2(metaclass=OperatorMeta):
             arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
         Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
-        self._is_abstract = True
+        self._is_abstract = True  # pylint: disable=attribute-defined-outside-init
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
