@@ -71,7 +71,7 @@ class FlipSign(Operation):
         return tuple(), (self.wires, hyperparameters)
 
     def __repr__(self):
-        return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
+        return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires})"
 
     def __init__(self, n, wires):
         if not isinstance(wires, int) and len(wires) == 0:

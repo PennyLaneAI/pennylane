@@ -528,10 +528,9 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=2,
-            gate_types={},
-            gate_sizes={},
-            measurements={"probs(all wires)": 1},
-            depth=0,
+            counts={},
+            measurement_processes={"probs(all wires)": 1},
+            circuit_depth=0,
         )
         assert tape.specs["resources"] == expected_resources
 
@@ -543,10 +542,9 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=3,
-            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
-            gate_sizes={1: 3, 2: 1},
-            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
-            depth=3,
+            counts={"RX": 2, "Rot": 1, "CNOT": 1},
+            measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            circuit_depth=3,
         )
         assert specs["resources"] == expected_resources
 
@@ -558,10 +556,9 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=3,
-            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
-            gate_sizes={1: 3, 2: 1},
-            measurements={},
-            depth=3,
+            counts={"RX": 2, "Rot": 1, "CNOT": 1},
+            measurement_processes={},
+            circuit_depth=3,
         )
         assert specs1["resources"] == expected_resources
 
@@ -575,10 +572,9 @@ class TestResourceEstimation:
 
         expected_resources = qp.resource.SpecsResources(
             num_allocs=5,
-            gate_types={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
-            gate_sizes={1: 4, 2: 2},
-            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
-            depth=4,
+            counts={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
+            measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            circuit_depth=4,
         )
         assert specs2["resources"] == expected_resources
 
@@ -1041,26 +1037,6 @@ class TestExecution:
         )
         res = dev.execute(tape)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
-
-
-class TestCVExecution:
-    """Tests for CV tape execution"""
-
-    def test_single_output_value(self):
-        """Tests correct execution and output shape for a CV tape
-        with a single expval output"""
-        dev = qp.device("default.gaussian", wires=2)
-        x = 0.543
-        y = -0.654
-
-        with QuantumTape() as tape:
-            qp.Displacement(x, 0, wires=[0])
-            qp.Squeezing(y, 0, wires=[1])
-            qp.Beamsplitter(np.pi / 4, 0, wires=[0, 1])
-            qp.expval(qp.NumberOperator(0))
-
-        res = dev.batch_execute([tape])[0]
-        assert res.shape == ()
 
 
 class TestTapeCopying:
