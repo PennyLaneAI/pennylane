@@ -21,8 +21,7 @@ from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CNOT, CZ, CRot, PhaseShift
-from pennylane.templates.embeddings import BasisState
+from pennylane.ops import CNOT, CZ, BasisState, CRot, PhaseShift
 from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
