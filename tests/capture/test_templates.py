@@ -319,6 +319,7 @@ tested_modified_templates = [
     qp.SelectOnlyQRAM,
     qp.MERA,
     qp.MPS,
+    qp.MultiplexerStatePreparation,
     qp.TTN,
     qp.QROM,
     qp.PhaseAdder,
@@ -1156,12 +1157,10 @@ class TestModifiedTemplates:
         """Test the primitive bind call of MultiplexerStatePreparation."""
 
         state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
-        kwargs = {
-            "wires": (8, 9),
-        }
+        wires = [8, 9]
 
         def qfunc(state_vector):
-            qp.MultiplexerStatePreparation(state_vector, **kwargs)
+            qp.MultiplexerStatePreparation(state_vector, wires)
 
         qfunc(state_vector)
         jaxpr = jax.make_jaxpr(qfunc)(state_vector)

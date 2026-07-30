@@ -21,6 +21,7 @@ import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import controlled_resource_rep
+from pennylane.typing import Complex
 from pennylane.wires import Wires
 
 _U64 = np.uint64
@@ -699,7 +700,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
     num_work_wires = max(num_work_wires, n_subspace - 1, 1)
-    resources[qp.resource_rep(qp.MultiplexerStatePreparation, num_wires=n_subspace)] += 1
+    resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=range(n_subspace))] += 1
 
     R = num_wires - n_subspace
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
