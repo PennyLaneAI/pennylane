@@ -1,10 +1,12 @@
+<!-- This file pulled in by every agent automatically. Keep it terse and minimal to 
+avoid using too much context and making the agent worse. Write it for an agent, not a person.-->
+
 # Environment
 
 <!-- .venv is in gitignore. Need to tell it to not use glob tools.-->
 1. Check `.venv` via `ls -ld .venv ../.venv`; no file-search/glob tools — may skip ignored dirs.
 2. If found, run through its executables (e.g. `.venv/bin/python`, `.venv/bin/pre-commit`) or activate.
 3. Only report no venv after shell check fails.
-
 
 # AI Policy
 
@@ -36,6 +38,8 @@ New functionality and bug fixes require accompanying tests.
 
 Docstring/code-example tests are collected by Sybil (see `conftest.py`); run them
 by pointing pytest at the source file, e.g. `pytest pennylane/path/to/file.py`.
+
+Validate new operator with `pennylane.ops.functions.assert_valid(op)`.
 
 # Linting and formatting
 
@@ -79,3 +83,7 @@ block) — copy it from an existing module.
 In tests, examples, and docstrings, import PennyLane as `qp`
 (`import pennylane as qp`), not the legacy `qml` alias. Avoid importing
 `pennylane` within source code unless needed to break a circular dependency.
+
+Use framework-agnostic `pennylane.math` library, not NumPy.
+
+Keep validation and sanity checks minimal and opt-in.
