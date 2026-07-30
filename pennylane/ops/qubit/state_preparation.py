@@ -16,6 +16,7 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 
+from collections.abc import Sequence
 from importlib.util import find_spec
 
 # pylint: disable=too-many-branches,arguments-differ
@@ -27,7 +28,7 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator, StatePrepBase
+from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
 from pennylane.decomposition import (
     add_decomps,
     pow_resource_rep,
@@ -36,7 +37,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractArray, AbstractWires, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -45,7 +46,7 @@ state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 _STATE_NORM_TOLERANCE = 1e-10
 
 
-class BasisState(StatePrepBase):
+class BasisState(Operator2):
     r"""BasisState(state, wires)
     Prepares a single computational basis state.
 
@@ -64,116 +65,82 @@ class BasisState(StatePrepBase):
     .. note::
 
         When called in the middle of a circuit, the action of the operation is defined
-        as :math:`U|0\rangle = |\psi\rangle`
+        as :math:`U|0\rangle = |\psi\rangle`.
 
     Args:
-        state (tensor_like): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])`` or ``state=2`` (equivalent to 010 in binary), the quantum system will be prepared in the state :math:`|010 \rangle`.
-
-        wires (Sequence[int] or int): the wire(s) the operation acts on
+        state (int or Sequence[int] or tensor_like): Computational basis state to be prepared.
+            May be given as a single integer to describe the index of the state, or as a
+            binary sequence of length ``len(wires)`` or binary array with shape ``(len(wires),)``
+            to describe the state qubit-wise.
+        wires (WiresLike): the wires to prepare the state on
 
     **Example**
+    In the following example, we prepare the state :math:`|11\rangle` on two qubits, by explicitly
+    providing the bit string representation:
 
     >>> dev = qp.device('default.qubit', wires=2)
     >>> @qp.qnode(dev)
-    ... def example_circuit():
-    ...     qp.BasisState(np.array([1, 1]), wires=range(2))
+    ... def example_circuit(state):
+    ...     qp.BasisState(state, wires=range(2))
     ...     return qp.state()
-    >>> print(example_circuit())
+    >>> print(example_circuit(np.array([1, 1])))
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+
+    Alternatively, we may provide the corresponding integer-valued index :math:`(3)_{10}=(11)_2`:
+
+    >>> print(example_circuit(3))
+    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+    >>> print(np.where(example_circuit(3)))
+    (3,)
+
     """
 
-    resource_keys = {"num_wires"}
+    dynamic_argnames = ("state",)
+    arg_specs = {"state": Int[-1], "wires": Wire[-1]}
 
-    @classmethod
-    def _primitive_bind_call(cls, state, wires, **kwargs):
-        if isinstance(state, (tuple, list)):
-            if any(qp.math.is_abstract(x) for x in state):
-                state = qp.math.asarray(state, like="jax")
-            else:
-                state = qp.math.asarray(state)
-        return super()._primitive_bind_call(state, wires, **kwargs)
+    def __abstract_init__(self, state, wires):
+        # pylint: disable=unused-argument
+        super().__abstract_init__(Int[len(wires)], wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
-    def __init__(self, state, wires: WiresLike):
+    def __init__(self, state: int | TensorLike | Sequence[int], wires: WiresLike):
 
         wires = Wires(wires)
         if isinstance(state, list):
             state = qp.math.stack(state)
 
-        tracing = qp.math.is_abstract(state)
-
-        if not qp.math.shape(state):
-            if not tracing and state >= 2 ** len(wires):
-                raise ValueError(
-                    f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
-                )
-            bin = 2 ** math.arange(len(wires))[::-1]
-            state = qp.math.where((state & bin) > 0, 1, 0)
+        abstract_state = qp.math.is_abstract(state)
 
         shape = qp.math.shape(state)
+        num_wires = len(wires)
+        if not shape:
+            if not abstract_state and not 0 <= state < 2**num_wires:
+                raise ValueError(
+                    f"Integer state must be a non-negative integer smaller than {2 ** num_wires} "
+                    f"to have a feasible binary representation on {num_wires} qubits, got {state}"
+                )
+            state = qp.math.int_to_binary(state, num_wires)
+            shape = (num_wires,)
+        else:
+            if len(shape) != 1:
+                raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 
-        if len(shape) != 1:
-            raise ValueError(f"State must be one-dimensional; got shape {shape}.")
+            n_states = shape[0]
+            if n_states != num_wires:
+                raise ValueError(
+                    f"State and wires must have the same length; got {num_wires} wires but "
+                    f"a state of length {n_states} ({state=})."
+                )
 
-        n_states = shape[0]
-        if n_states != len(wires):
-            raise ValueError(
-                f"State must be of length {len(wires)}; got length {n_states} (state={state})."
-            )
-
-        if not tracing:
-            state_list = list(qp.math.toarray(state))
-            if not set(state_list).issubset({0, 1}):
-                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
+            if not abstract_state:
+                state_list = list(qp.math.toarray(state))
+                if not set(state_list).issubset({0, 1}):
+                    raise ValueError(
+                        f"Basis state must only consist of 0s and 1s; got {state_list}"
+                    )
         state = qp.math.cast(state, int)
         super().__init__(state, wires=wires)
 
-    def _flatten(self):
-        state = self.parameters[0]
-        state = tuple(state) if isinstance(state, list) else state
-        return (state,), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata) -> "BasisState":
-        return cls(data[0], wires=metadata[0])
-
-    @staticmethod
-    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.BasisState.decomposition`.
-
-        Args:
-            state (array): the basis state to be prepared
-            wires (Iterable, Wires): the wire(s) the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [X(0)]
-
-        """
-
-        if not qp.math.is_abstract(state):
-            return [qp.X(wire) for wire, basis in zip(wires, state, strict=True) if basis == 1]
-
-        op_list = []
-        for wire, basis in zip(wires, state, strict=True):
-            op_list.append(qp.GlobalPhase(-basis * np.pi / 2, wire))
-            op_list.append(qp.RX(basis * np.pi, wire))
-
-        return op_list
-
-    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:  # TODO
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
         prep_vals_int = math.cast(self.parameters[0], int)
@@ -199,8 +166,18 @@ class BasisState(StatePrepBase):
 
         return math.convert_like(ket, prep_vals)
 
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return "|Ψ⟩"
 
-def _jax_jit_basis_state_resources(num_wires):
+
+# pylint: disable=unused-argument
+def _jax_jit_basis_state_resources(state: AbstractArray, wires: AbstractWires):
+    num_wires = len(wires)
     resources = {
         pow_resource_rep(qp.X, base_params={}, z=0): num_wires // 2,
         pow_resource_rep(qp.X, base_params={}, z=1): num_wires - num_wires // 2,
@@ -222,17 +199,18 @@ def _jax_jit_basis_state_cond(**_):
 
 @register_condition(_jax_jit_basis_state_cond)
 @register_resources(_jax_jit_basis_state_resources, exact=False)
-def _jax_jit_basis_state_decomp(state, wires, **__):
+def _jax_jit_basis_state_decomp(state: AbstractArray, wires: AbstractWires):
     _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state, strict=True)]
 
 
-def _basis_state_decomp_resources(num_wires):
+def _basis_state_decomp_resources(state: AbstractArray, wires: AbstractWires):
+    num_wires = len(wires)
     return {qp.X: num_wires - num_wires // 2}
 
 
 @register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
-def _basis_state_decomp(state, wires, **__):
+def _basis_state_decomp(state: AbstractArray, wires: AbstractWires):
 
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
