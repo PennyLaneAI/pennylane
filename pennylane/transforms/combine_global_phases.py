@@ -110,7 +110,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
                 qp.GlobalPhase(0.1, wires=0)
                 qp.GlobalPhase(0.1, wires=0)
 
-                return qp.expval(qp.X(0))
+                return qp.expval(qp.Z(0))
 
         The two ``GlobalPhase`` operations within the ``for_loop`` context will be merged together.
         However, they will not be merged together with the ``GlobalPhase`` operations that occur
