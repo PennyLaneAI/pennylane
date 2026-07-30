@@ -29,6 +29,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 @pytest.mark.parametrize(
     "op, basis",
     [
+        (qp.X(0), "X"),
         (qp.Y(0), "Y"),
         (qp.Z(0), "Z"),
         (qp.S(0), "Z"),
