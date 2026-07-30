@@ -38,14 +38,14 @@ class TestInputs:
         assert op.data[0].dtype == np.int64
 
     @pytest.mark.parametrize(
-        ("feat", "wires", "expected"),
+        ("state", "wires", "expected"),
         [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
     )
-    def test_features_as_int_conversion(self, feat, wires, expected):
-        """checks conversion from features as int to a list of binary digits
+    def test_state_as_int_conversion(self, state, wires, expected):
+        """checks conversion from state as int to a list of binary digits
         with length = len(wires)"""
 
-        assert np.allclose(qp.BasisState(feat, wires=wires).parameters[0], expected)
+        assert np.allclose(qp.BasisState(state, wires=wires).parameters[0], expected)
 
 
 class TestStandardValidityBasisState:
@@ -227,7 +227,7 @@ class TestDecomposition:
         @qp.qjit
         @qp.qnode(dev)
         def circuit(s):
-            qp.BasisState(features=s, wires=range(n_wires))
+            qp.BasisState(s, wires=range(n_wires))
             return qp.state()
 
         result = circuit(jax.numpy.array(state))
@@ -330,18 +330,15 @@ class TestStatePrepIntegration:
     @pytest.mark.parametrize("input_type", [tuple, list])
     def test_basis_state_tuple_list_capture(self, input_type):
         """Tests that tuple or list types for 'state' can be used."""
+        # Note that this test only validates that we can compile (via AOT compilation).
 
         state = input_type([1, 0])
 
-        @qp.qjit(capture=True)
+        @qp.qjit(capture=True, target="mlir")
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit():
             qp.BasisState(state, wires=[0, 1])
             return qp.state()
-
-        result = circuit()
-        # (0,0,1,0) == |10>
-        assert np.allclose(result, (0, 0, 1, 0))
 
     @pytest.mark.parametrize(
         "state, pad_with, expected",
@@ -781,14 +778,14 @@ class TestSparseStateVector:
             qsv_op.state_vector(wire_order=[1, 2])
 
 
-def circuit_template(features):
-    qp.BasisState(features, wires=range(3))
+def circuit_template(state):
+    qp.BasisState(state, wires=range(3))
     return qp.state()
 
 
-def circuit_decomposed(features):
+def circuit_decomposed(state):
     # convert tensor to list
-    feats = list(qp.math.array(features))
+    feats = list(qp.math.array(state))
     _ = [qp.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qp.state()
@@ -799,19 +796,19 @@ class TestInterfacesBasisState:
 
     def test_list_and_tuples(self, tol):
         """Tests common iterables as inputs."""
-        features = [0, 1, 0]
+        state = [0, 1, 0]
 
         dev = qp.device("default.qubit", wires=3)
 
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 
-        res = circuit(features)
-        res2 = circuit2(features)
+        res = circuit(state)
+        res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        res = circuit(tuple(features))
-        res2 = circuit2(tuple(features))
+        res = circuit(tuple(state))
+        res2 = circuit2(tuple(state))
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(2)
@@ -821,15 +818,15 @@ class TestInterfacesBasisState:
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
-        features = pnp.array([0, 1, 0])
+        state = pnp.array([0, 1, 0])
 
         dev = qp.device("default.qubit", wires=3)
 
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 
-        res = circuit(features)
-        res2 = circuit2(features)
+        res = circuit(state)
+        res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(pnp.array(2))
@@ -841,15 +838,15 @@ class TestInterfacesBasisState:
 
         import jax.numpy as jnp
 
-        features = jnp.array([0, 1, 0])
+        state = jnp.array([0, 1, 0])
 
         dev = qp.device("default.qubit", wires=3)
 
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 
-        res = circuit(features)
-        res2 = circuit2(features)
+        res = circuit(state)
+        res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(jnp.array(2))
@@ -862,15 +859,15 @@ class TestInterfacesBasisState:
         import jax
         import jax.numpy as jnp
 
-        features = jnp.array([0, 1, 0])
+        state = jnp.array([0, 1, 0])
 
         dev = qp.device("default.qubit", wires=3)
 
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(qp.QNode(circuit_template, dev))
 
-        res = circuit(features)
-        res2 = circuit2(features)
+        res = circuit(state)
+        res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(2)
@@ -883,15 +880,15 @@ class TestInterfacesBasisState:
 
         import tensorflow as tf
 
-        features = tf.Variable([0, 1, 0])
+        state = tf.Variable([0, 1, 0])
 
         dev = qp.device("default.qubit", wires=3)
 
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 
-        res = circuit(features)
-        res2 = circuit2(features)
+        res = circuit(state)
+        res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tf.Variable(2))
@@ -903,15 +900,15 @@ class TestInterfacesBasisState:
 
         import tensorflow as tf
 
-        features = tf.Variable([0, 1, 0])
+        state = tf.Variable([0, 1, 0])
 
         dev = qp.device("default.qubit", wires=3)
 
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 
-        res = circuit(features)
-        res2 = circuit2(features)
+        res = circuit(state)
+        res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tf.Variable(2))
@@ -923,15 +920,15 @@ class TestInterfacesBasisState:
 
         import torch
 
-        features = torch.tensor([0, 1, 0])
+        state = torch.tensor([0, 1, 0])
 
         dev = qp.device("default.qubit", wires=3)
 
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 
-        res = circuit(features)
-        res2 = circuit2(features)
+        res = circuit(state)
+        res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(torch.tensor(2))

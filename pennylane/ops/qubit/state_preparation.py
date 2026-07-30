@@ -105,13 +105,12 @@ class BasisState(StatePrepBase2):
     def __init__(self, state: int | TensorLike | Sequence[int], wires: WiresLike):
 
         wires = Wires(wires)
-        if isinstance(state, list):
+        if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
-
-        abstract_state = qp.math.is_abstract(state)
 
         shape = qp.math.shape(state)
         num_wires = len(wires)
+        abstract_state = qp.math.is_abstract(state)
         if not shape:
             if not abstract_state and not 0 <= state < 2**num_wires:
                 raise ValueError(

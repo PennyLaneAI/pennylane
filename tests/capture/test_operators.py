@@ -373,13 +373,13 @@ class TestTemplates:
 
         state = input_type([1, 0])
         jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
-        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), int)
+        assert jaxpr.eqns[4].params["op_cls"] == qp.BasisState
+        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), int)
 
         state = input_type([1.0, 0.0])
         jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
-        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), float)
+        assert jaxpr.eqns[4].params["op_cls"] == qp.BasisState
+        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), int)
 
 
 class TestOpmath:
