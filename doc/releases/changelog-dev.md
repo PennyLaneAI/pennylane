@@ -841,6 +841,8 @@
   - Templates are ported:
     - `~.BasisRotation`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+    - `~.BasisState`
+  [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
