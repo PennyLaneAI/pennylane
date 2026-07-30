@@ -131,7 +131,7 @@ class QFT(Operator2):
         super().__init__(wires)
 
     @staticmethod
-    def compute_matrix(wires):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike):  # pylint: disable=arguments-differ
         return np.fft.ifft(np.eye(2 ** len(wires)), norm="ortho")
 
 
@@ -145,7 +145,7 @@ def _qft_decomposition_resources(wires: AbstractWires):
 
 
 @register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: AbstractWires):
+def _qft_decomposition(wires: WiresLike):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
     if compiler.active() or enabled():

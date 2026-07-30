@@ -26,6 +26,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator2
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
@@ -1823,7 +1824,6 @@ unsupported_templates = [
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
 ]
-migrated_templates = [qp.BasisRotation, qp.QFT]
 
 
 @pytest.mark.parametrize("template", modified_templates)
@@ -1831,7 +1831,7 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
-    if template == qp.templates.SubroutineOp or template in migrated_templates:
+    if template == qp.templates.SubroutineOp or issubclass(template, Operator2):
         return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
