@@ -1059,11 +1059,6 @@ class TestHash:
         op = DynOp(0.5, wires=0)
         assert isinstance(hash(op), int)
 
-    def test_op_is_hashable_with_abstract_wires(self):
-        """Test that ``Operator2`` is hashable when the wires are `AbstractWires`."""
-        op = DynOp(0.5, wires=AbstractWires(1))
-        assert isinstance(hash(op), int)
-
     def test_op_can_be_dict_key(self):
         """Test that an ``Operator2`` instance can be used as a dict key."""
         op = DynOp(0.5, wires=0)
@@ -1100,6 +1095,11 @@ class TestHash:
         op1 = FullOp(phi=0.5, static="a", hybrid=[0, 1], wires=0)
         op2 = FullOp(phi=0.6, static="ab", hybrid=[1, 1], wires=1)
         assert hash(op1) != hash(op2)
+
+    def test_op_is_hashable_with_abstract_wires_in_hybrid(self):
+        """Test that ``Operator2`` is hashable when the wires are `AbstractWires` in hybrid args."""
+        op = FullOp(phi=0.5, static="a", hybrid=[AbstractWires(1)], wires=0)
+        assert isinstance(hash(op), int)
 
     def test_different_types_different_hash(self):
         """Test that operators of different types produce different hashes."""
