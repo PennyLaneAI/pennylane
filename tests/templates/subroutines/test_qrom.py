@@ -22,9 +22,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.decomposition import adjoint_resource_rep, controlled_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
     _count_tempAND_in_measurement_qrom,
@@ -591,7 +593,10 @@ class TestMeasurementQROM:
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
         assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
-        assert res_two[qp.resource_rep(qp.CNOT)] == 3
+        assert (
+            res_two[controlled_resource_rep(qp.BasisState, {"num_wires": 3}, num_control_wires=1)]
+            == 1
+        )
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
@@ -605,6 +610,29 @@ class TestMeasurementQROM:
         res_direct = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
         res_base = _qrom_measurement_resources(base_params=base_params)
         assert res_base == res_direct
+
+    @pytest.mark.parametrize("n_extra", [2, 3, 4])
+    def test_resources_and_ladder(self, n_extra):
+        """The flag ladder (n_extra >= 2) is symmetric: n_extra - 1 TemporaryAND and the same
+        number of adjoints.
+
+        The core table is not doubled, so the extra cost is only the AND ladder folding the
+        extra wires into the flag: n_extra - 1 opened and n_extra - 1 later uncomputed.
+        """
+        n_active = 2  # ceil_log2(4)
+        res_extra = _qrom_measurement_resources(
+            num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + n_extra
+        )
+        # A single extra wire builds the flag with X gates (no ANDs from folding), so its
+        # TemporaryAND count is exactly the gated inner-iterator core; use it as the baseline.
+        res_one = _qrom_measurement_resources(
+            num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
+        )
+        # The ladder is symmetric: as many forward ANDs as adjoints.
+        assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
+        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
+            n_extra - 1
+        )
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
@@ -645,11 +673,11 @@ class TestMeasurementQROM:
         )
 
     def test_decomposition_single_bitstring(self):
-        """Test the L == 1 branch of the measurement decomposition."""
+        """Test the L == 1 branch of the measurement decomposition (no control wires)."""
         with qp.queuing.AnnotatedQueue() as q:
             _qrom_measurement_decomposition(
                 data=np.array([[1, 0, 1]]),
-                control_wires=[0],
+                control_wires=[],
                 target_wires=[1, 2, 3],
                 work_wires=[],
             )
@@ -670,9 +698,10 @@ class TestMeasurementQROM:
             )
         ops = q.queue
         assert isinstance(ops[0], qp.BasisState)
-        # Only the differing bit (index 0) produces a controlled load.
-        assert all(isinstance(op, qp.CNOT) for op in ops[1:])
+        # The diff bitstring is loaded with a single controlled BasisState.
         assert len(ops[1:]) == 1
+        assert isinstance(ops[1], qp.ops.Controlled)
+        assert isinstance(ops[1].base, qp.BasisState)
 
     def test_decomposition_from_base_operator(self):
         """Test that the decomposition extracts arguments from ``base`` (Adjoint path)."""
@@ -837,3 +866,48 @@ class TestMeasurementQROM:
             assert np.allclose(
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        ("L", "n_extra"),
+        [(4, 1), (4, 2), (4, 3), (5, 1), (5, 2), (3, 2), (8, 1), (8, 2), (2, 1), (2, 2)],
+    )
+    def test_extra_control_wires(self, L, n_extra, seed):
+        """Extra control wires (beyond ceil_log2(L)) must gate the whole QROM."""
+
+        rng = np.random.default_rng(seed)
+        n_target = 3
+        n_input = math.ceil(math.log2(L)) + n_extra
+        n_work = n_input - 1
+
+        bitstrings = rng.choice(2, size=(L, n_target))
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        wires = qp.registers(
+            {"control_wires": n_input, "work_wires": n_work, "target_wires": n_target}
+        )
+
+        shots = 10
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
+        def circuit(j):
+            qp.BasisState(j, wires=wires["control_wires"])
+            _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
+            return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+
+        for j in range(2**n_input):
+            target_samples, work_samples = circuit(j)
+
+            # Real data is loaded only when all extra (top) wires are zero, i.e. j < L.
+            expected = bitstrings[j] if j < L else np.zeros(n_target, dtype=int)
+            assert np.all(
+                target_samples == expected
+            ), f"L={L}, n_extra={n_extra}, j={j}: got {target_samples}, expected {expected}"
+            assert np.allclose(
+                work_samples, 0
+            ), f"L={L}, n_extra={n_extra}, j={j}: work wires not clean, got {work_samples}"
