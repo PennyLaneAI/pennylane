@@ -355,7 +355,6 @@ class TestQROM:
             clean=clean,
         )
         for rule in qp.list_decomps(qp.QROM):
-            print(rule)
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")

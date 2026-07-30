@@ -82,6 +82,9 @@ class TestStandardValidityBasisState:
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(state, wires=wires)
                 tapes.append(qp.tape.QuantumScript.from_queue(q))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.BasisState.compute_decomposition(state, wires=wires)
+            tapes.append(qp.tape.QuantumScript.from_queue(q))
 
             return tapes
 
@@ -107,11 +110,19 @@ class TestStandardValidityBasisState:
         )
 
         tapes = jax.jit(abstract_check)(state, wires)
-        for tape in tapes:
+        for tape in tapes[:-1]:  # Test the new decomp rules
             assert len(tape) == 3
             assert all(
                 isinstance(op, qp.ops.Pow) and isinstance(op.base, qp.X) for op in tape.operations
             )
+        # Test compute_decomposition result
+        tape = tapes[-1]
+        if state_traced:
+            assert len(tape) == 6
+            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
+        else:
+            assert len(tape) == 1
+            assert isinstance(tape[0], qp.X)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("state_traced", [True, False])
@@ -180,6 +191,17 @@ def test_labelling_matrix_cache(op, mat, base):
 
 
 class TestDecomposition:
+    def test_BasisState_decomposition(self):
+        """Test the decomposition for BasisState"""
+
+        n = np.array([0, 1, 0])
+        wires = (0, 1, 2)
+        ops1 = qp.BasisState.compute_decomposition(n, wires)
+        ops2 = qp.BasisState(n, wires=wires).decomposition()
+
+        assert len(ops1) == len(ops2) == 1
+        assert isinstance(ops1[0], qp.X)
+        assert isinstance(ops2[0], qp.X)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
