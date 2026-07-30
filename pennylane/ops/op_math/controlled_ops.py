@@ -1516,9 +1516,10 @@ class MultiControlledX(Controlled2):
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
         return block_diag(np.eye(padding_left), qp.X.compute_matrix(), np.eye(padding_right))
 
-    @staticmethod
+    @classmethod
     @override
     def compute_decomposition(
+        cls,
         wires: WiresLike,
         control_values: int | bool | Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
