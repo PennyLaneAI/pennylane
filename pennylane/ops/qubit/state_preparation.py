@@ -95,6 +95,11 @@ class BasisState(StatePrepBase2):
 
     """
 
+    # This is a mock attribute to satisfy an assumption made by Catalyst
+    # (BasisState._primitive needs to exist). This attribute is not used anywhere in PennyLane.
+    # It can be removed as soon as Catalyst is updated to BasisState being an Operator2.
+    _primitive = "This is a mocked attribute, not a valid primitive"
+
     dynamic_argnames = ("state",)
     arg_specs = {"state": Int[-1], "wires": Wire[-1]}
 
