@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.core import AnnotatedQueue
 from pennylane.decomposition import adjoint_resource_rep, controlled_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
