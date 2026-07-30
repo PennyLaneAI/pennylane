@@ -503,7 +503,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
         First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4)): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-        Full Expansion Gates: {CNOT: 96, GlobalPhase: 204, MidMeasure: 6, RX: 36, RY: 54, RZ: 170}
+        Full Expansion Gates: {CNOT: 102, GlobalPhase: 198, MidMeasure: 6, RX: 36, RY: 42, RZ: 176}
         Weighted Cost: 362.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
