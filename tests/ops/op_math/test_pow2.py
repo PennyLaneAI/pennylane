@@ -20,6 +20,7 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -29,8 +30,9 @@ from pennylane.exceptions import (
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2
-from tests.core.operator.operator2_utils import DynOp
+from pennylane.ops.op_math.pow2 import Pow2, pow_rotation
+from pennylane.typing import Float, Wire
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
 
 
@@ -313,3 +315,18 @@ def test_label(exp, sup):
 
     assert op.label() == "DynOp" + sup
     assert op.label(decimals=2) == "DynOp\n(1.20)" + sup
+
+
+def test_pow_rotation2():
+    """Tests the pow_rotation decomposition with an ``Operator2`` base."""
+
+    op = pow(OneWireDynOp(0.3, wires=[0]), 2.5)
+    assert isinstance(op, Pow2)
+
+    with qp.core.AnnotatedQueue() as q:
+        pow_rotation(**op.arguments)
+
+    assert q.queue == [OneWireDynOp(0.3 * 2.5, wires=[0])]
+    assert pow_rotation.compute_resources(**op.arguments) == Resources(
+        {OneWireDynOp(Float, wires=Wire[1]): 1}
+    )

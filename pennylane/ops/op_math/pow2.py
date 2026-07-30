@@ -370,6 +370,19 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 pow_involutory = make_pow_decomp_with_period(2)
 
 
+def _pow_rotation_resource(base, z):  # pylint: disable=unused-argument
+    return {abstractify(base): 1}
+
+
+@register_resources(_pow_rotation_resource)
+def pow_rotation(base, z):
+    """Decompose the power of a general rotation operator by multiplying the power by the angle."""
+    # A rotation should only have 1 dynamic parameter
+    assert len(base.dynamic_argnames) == 1
+    angle = tuple(base.dynamic_args.values())[0]
+    qp.ops.functions.bind_new_parameters(base, (angle * z,))
+
+
 @list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
 

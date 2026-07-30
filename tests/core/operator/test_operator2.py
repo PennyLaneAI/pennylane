@@ -1399,6 +1399,13 @@ class TestDunderMethods:
             # Deep copy so stored attributes must NOT be the same references
             assert getattr(op_deep, attr) is not getattr(op, attr)
 
+    def test_getattr(self):
+        """Test that an AttributeError is raised if trying to access an attribute that
+        does not exist."""
+        op = DynOp(1.5, 0)
+        with pytest.raises(AttributeError, match="'DynOp' object has no attribute"):
+            _ = op.non_existent_attr
+
 
 class TestPublicProperties:
     """Tests for public properties of ``Operator2``."""

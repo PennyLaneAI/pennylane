@@ -642,7 +642,7 @@
 * Added an optional parameter ``phase_fn`` to ``QuditCircuitConfig`` which enables the inclusion of
   a phase layer with trainable weights to a qudit IQP circuit.
   [(#9826)][https://github.com/PennyLaneAI/pennylane/pull/9826]
-  
+
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
 
@@ -659,8 +659,9 @@
 
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
+  [(#9931)](https://github.com/PennyLaneAI/pennylane/pull/9931)
 
-* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`,
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
   `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
@@ -815,6 +816,7 @@
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -904,6 +906,7 @@
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
   [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
+  [(#9927)](https://github.com/PennyLaneAI/pennylane/pull/9927)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -970,6 +973,7 @@
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
+    [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
