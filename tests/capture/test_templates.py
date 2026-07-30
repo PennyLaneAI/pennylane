@@ -1159,11 +1159,11 @@ class TestModifiedTemplates:
         state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
         wires = [8, 9]
 
-        def qfunc(state_vector):
+        def qfunc(state_vector, wires):
             qp.MultiplexerStatePreparation(state_vector, wires)
 
-        qfunc(state_vector)
-        jaxpr = jax.make_jaxpr(qfunc)(state_vector)
+        qfunc(state_vector, wires)
+        jaxpr = jax.make_jaxpr(qfunc)(state_vector, wires)
 
         assert len(jaxpr.eqns) == 1
 
