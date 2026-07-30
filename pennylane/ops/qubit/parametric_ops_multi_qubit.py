@@ -31,7 +31,7 @@ import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
 from pennylane.core import queuing
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
@@ -45,7 +45,7 @@ from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 
 
-class MultiRZ(Operation):
+class MultiRZ(Operator2):
     r"""
     Arbitrary multi Z rotation.
 
@@ -71,10 +71,10 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
-    dynamcic_argnames = ("theta",)
+    dynamic_argnames = ("theta",)
     wire_argnames = ("wires",)
 
-    arg_specs = {"theta": Float[-1], "wires": Wire[-1]}
+    arg_specs = {"theta": Float, "wires": Wire[-1]}
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -449,7 +449,7 @@ class PauliRot(Operation):
             strict=True,
         )
 
-        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
+        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, non_identity_gates)
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
