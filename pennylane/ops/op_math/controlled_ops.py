@@ -529,6 +529,8 @@ class CZ(Controlled2):
 
     arg_specs = {"wires": Wire[2]}
 
+    name = "CZ"
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
