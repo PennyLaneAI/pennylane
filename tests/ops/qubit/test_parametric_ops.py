@@ -3252,7 +3252,7 @@ class TestMultiRZ:
     def test_MultiRZ_matrix_parametric(self, theta, wires, expected_matrix, tol):
         """Test parametrically that the MultiRZ matrix is correct."""
 
-        res_static = qp.MultiRZ.compute_matrix(theta, len(wires))
+        res_static = qp.MultiRZ.compute_matrix(theta, wires)
         res_dynamic = qp.MultiRZ(theta, wires=wires).matrix()
         expected = expected_matrix(theta)
 
@@ -3264,7 +3264,7 @@ class TestMultiRZ:
         """Test that the MultiRZ matrix is correct for broadcasted parameters."""
 
         theta = np.linspace(0, 2 * np.pi, 7)[:3]
-        res_static = qp.MultiRZ.compute_matrix(theta, num_wires)
+        res_static = qp.MultiRZ.compute_matrix(theta, list(range(num_wires)))
         res_dynamic = qp.MultiRZ(theta, wires=list(range(num_wires))).matrix()
         signs = reduce(np.kron, [np.array([1, -1])] * num_wires) / 2
         expected = [np.diag(np.exp(-1j * signs * p)) for p in theta]
