@@ -495,6 +495,9 @@
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
 
+* TCDQ now supports workflows with qudits of non-uniform dimensions.
+  [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
+
   ```python
   import pennylane as qp
   from pennylane.labs.templates import LeftQuantumComparator
