@@ -20,8 +20,9 @@ from collections import defaultdict
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RX, RY, RZ, H, MultiRZ, cond
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments
@@ -355,7 +356,7 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
         {
             RX: n_features * (repeat + 1),
             H: (num_wires - n_features) * (repeat + 1),
-            resource_rep(MultiRZ, num_wires=2): multi_rz_count,
+            MultiRZ(Float, Wire[2]): multi_rz_count,
         },
     )
     resources[abstractify(local_field)] += num_wires * repeat
