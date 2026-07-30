@@ -534,6 +534,10 @@ class RZ(Operator2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         """Return the operator's basis."""
@@ -549,10 +553,6 @@ class RZ(Operator2):
 
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
-
-    wire_sizes = (1,)
-    dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[1]}
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)

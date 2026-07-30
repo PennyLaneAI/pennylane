@@ -2307,9 +2307,6 @@ class CRZ(Controlled2):
         # size of 2, which always splits into one control and one target wire.
         super().__abstract_init__(qp.RZ(phi, Wire[1]), Wire[1])
 
-    def __repr__(self):
-        return f"CRZ({self.data[0]}, wires={self.wires})"
-
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
 
