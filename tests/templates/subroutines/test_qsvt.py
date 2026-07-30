@@ -131,9 +131,9 @@ class TestQSVTBasics:
                 ],
             ),
             (
-                qp.Hadamard(wires=0),
+                qp.RX(1.0, wires=0),
                 [qp.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
-                [qp.RZ(-2.46, wires=[0]), qp.Hadamard(wires=0), qp.RZ(1.0, wires=[0])],
+                [qp.RZ(-2.46, wires=[0]), qp.RX(1.0, wires=0), qp.RZ(1.0, wires=[0])],
             ),
         ],
     )
