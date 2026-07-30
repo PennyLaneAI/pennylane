@@ -498,6 +498,23 @@ def test_none_work_wires_case():
     assert gates_clean == expected_gates
 
 
+def test_too_many_work_wires_case():
+    """Test that QROM works when more work wires are given than necessary"""
+
+    gates_clean = qp.QROM(
+        np.array([[1], [0], [0], [1]]), [0, 1], [2], [3, 4, 5], clean=False
+    ).decomposition()
+    expected_gates = qp.QROM(
+        np.array([[1], [0], [0], [1]]),
+        [0, 1],
+        [2],
+        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        clean=False,
+    ).decomposition()
+
+    assert gates_clean == expected_gates
+
+
 @pytest.mark.parametrize(
     ("terms", "n_ctrl", "n_target", "n_work", "expected"),
     [

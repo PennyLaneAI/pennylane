@@ -429,8 +429,9 @@ def _qrom_decomposition(
         len(data), len(control_wires), len(target_wires), len(work_wires)
     )
 
-    select_work_wires = work_wires[:n_select_work_wires]
-    swap_work_wires = work_wires[n_select_work_wires:]
+    n_swap_work_wires = len(work_wires) - n_select_work_wires
+    swap_work_wires = work_wires[:n_swap_work_wires]
+    select_work_wires = work_wires[n_swap_work_wires:]
     swap_wires = target_wires + swap_work_wires
 
     # number of operators we store per column (power of 2)
