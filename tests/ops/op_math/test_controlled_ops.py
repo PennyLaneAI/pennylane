@@ -833,13 +833,7 @@ def test_tuple_control_wires_parametric_ops(op_type):
     assert op_type(0.123, [(0, 1), 2]).wires == qp.wires.Wires([(0, 1), 2])
 
 
-@pytest.mark.parametrize(
-    "op_type, wires",
-    [
-        (qp.CNOT, Wire[2]),
-        (qp.Toffoli, Wire[3]),
-    ],
-)
+@pytest.mark.parametrize("op_type, wires", [(qp.CNOT, Wire[2]), (qp.Toffoli, Wire[3])])
 def test_abstract_controlled_ops(op_type, wires):
     """Tests creating abstract controlled ops as one might for resource keys."""
     key = op_type(wires)
