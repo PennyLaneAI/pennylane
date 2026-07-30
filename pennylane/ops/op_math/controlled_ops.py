@@ -1442,7 +1442,7 @@ class MultiControlledX(Controlled2):
 
     wire_argnames = ("wires", "work_wires")
 
-    static_argnames = ("work_wire_type",)
+    compilable_argnames = ("work_wire_type",)
 
     arg_specs = {"control_values": Bool[-1], "wires": Wire[-1], "work_wires": Wire[-1]}
 
