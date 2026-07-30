@@ -208,6 +208,8 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
+        self._is_abstract = False
+
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
@@ -233,7 +235,7 @@ class Operator2(metaclass=OperatorMeta):
             arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
         Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
-        self._is_abstract = True  # pylint: disable=attribute-defined-outside-init
+        self._is_abstract = True
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
