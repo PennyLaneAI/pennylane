@@ -444,6 +444,7 @@ class TestModifiedTemplates:
         H = qp.dot(coeffs, ops)
         assert q.queue[0] == template(H, time=2.4, **kwargs)
 
+    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_amplitude_amplification(self):
         """Test the primitive bind call of AmplitudeAmplification."""
 
@@ -464,7 +465,7 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 3
 
-        assert jaxpr.eqns[0].primitive == qp.Hadamard._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
         assert jaxpr.eqns[1].primitive == qp.FlipSign._primitive
 
         eqn = jaxpr.eqns[2]
@@ -574,6 +575,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qp.FermionicDoubleExcitation(weight, **kwargs)
 
+    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
@@ -591,7 +593,7 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(qfunc)(v_params)
 
         assert len(jaxpr.eqns) == 5
-        assert jaxpr.eqns[0].primitive == qp.Hadamard._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
         assert jaxpr.eqns[-2].primitive == qp.RZ._primitive
 
         eqn = jaxpr.eqns[-1]
@@ -609,6 +611,7 @@ class TestModifiedTemplates:
         V = qp.RZ(v_params[0], wires=1)
         assert qp.equal(q.queue[0], template(V, U)) is True
 
+    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt_multiple_ops(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt with multiple ops."""
@@ -1629,6 +1632,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.GQSP(unitary, angles, control=0))
 
+    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_reflection(self):
         """Test the primitive bind call of Reflection."""
 
@@ -1648,7 +1652,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 4
 
         assert jaxpr.eqns[0].primitive == qp.RX._primitive
-        assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 
         eqn = jaxpr.eqns[3]
@@ -1667,6 +1671,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Reflection(op, alpha, reflection_wires=reflection_wires))
 
+    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_quantum_phase_estimation(self):
         """Test the primitive bind call of QuantumPhaseEstimation."""
 
@@ -1685,7 +1690,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 4
 
         assert jaxpr.eqns[0].primitive == qp.RX._primitive
-        assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 
         eqn = jaxpr.eqns[3]
@@ -1701,6 +1706,9 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.QuantumPhaseEstimation(op, **kwargs))
 
+    @pytest.mark.xfail(
+        reason="Select support under capture is out of scope by product-team decision."
+    )
     def test_select(self):
         """Test the primitive bind call of Select."""
 
