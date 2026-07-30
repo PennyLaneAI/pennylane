@@ -22,6 +22,7 @@ from pennylane import capture, math
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import CaptureWarning
 
 from ._loop_abstract_axes import (
@@ -535,6 +536,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start
         )
 
-        if enabled() and not start_equals_stop:
+        if enabled() and not start_equals_stop and not QueuingManager.recording():
             return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)

@@ -195,8 +195,6 @@ def _recursive_decompose(wires: WiresLike):
     if len(wires) == 2:
         TwoWireFFT(wires)
     else:
-        if capture.enabled():
-            wires = math.array(wires, like="jax")
         _recursive_decompose(wires[: len(wires) // 2])
         _recursive_decompose(wires[len(wires) // 2 :])
 

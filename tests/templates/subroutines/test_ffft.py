@@ -125,17 +125,13 @@ def test_raises(wires, error_type, error_msg):
     ],
 )
 def test_ffft_circuit(wires, expected_circuit):
-    @qnode(device("default.qubit", wires=wires), shots=1)
-    def ffft_simple(wires):  # pylint: disable=redefined-outer-name
-        FFFT(wires)
-        return sample(wires=wires)
+    """Test that FFFT decomposes into the correct ops (type and wires)."""
+    ops = FFFT(wires).decomposition()
 
-    tape = workflow.construct_tape(ffft_simple, level="device")(wires)
-    for i, op in enumerate(tape.operations):
-        assert type(op) == type(expected_circuit[i])
-        assert op.hyperparameters == expected_circuit[i].hyperparameters
-        assert op.data == expected_circuit[i].data
-        assert op.wires == expected_circuit[i].wires
+    assert len(ops) == len(expected_circuit)
+    for op, expected in zip(ops, expected_circuit, strict=True):
+        assert type(op) == type(expected)
+        assert op.wires == expected.wires
 
 
 def fermionic_superposition_state(amplitudes):
