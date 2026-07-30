@@ -24,6 +24,7 @@ from scipy.linalg import expm
 import pennylane as qp
 from pennylane.labs.tcdq.qudit_expval_functions import (
     QuditCircuitConfig,
+    _dims_to_numpy,
     _parse_qudit_generator_dict,
     build_qudit_expval_func,
 )
@@ -38,38 +39,41 @@ def _build_qudit_expval_func_exact(config):
     """Build a brute-force reference evaluator by summing over all basis states."""
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
+    dims = _dims_to_numpy(config.d, config.n_qudits)  # (n_qudits,)
+    dims_f = jnp.asarray(dims, dtype=jnp.float32)  # (n_qudits,)
+
     all_states = jnp.array(
-        list(itertools.product(range(config.d), repeat=config.n_qudits)),
+        list(itertools.product(*(range(int(d_j)) for d_j in dims))),
         dtype=jnp.int32,
-    )  # (d^n, n_qudits)
+    )  # (prod(dims), n_qudits)
 
     l_vecs = jnp.array(config.observables[0], dtype=jnp.int32)
     m_vecs = jnp.array(config.observables[1], dtype=jnp.int32)
 
-    d = config.d
-    d_n = d**config.n_qudits
+    d_n = int(np.prod(dims))
     n_obs = l_vecs.shape[0]
+    d_col = dims_f[jnp.newaxis, :, jnp.newaxis]
 
     g_f = generators.astype(jnp.float32)
     s_f = all_states.astype(jnp.float32)
     outer = g_f[:, :, jnp.newaxis] * s_f.T[jnp.newaxis, :, :]
-    per_qudit_vals = jnp.sqrt(2.0) * jnp.cos(2 * jnp.pi * outer / d + jnp.pi / 4)
-    val_k = jnp.prod(per_qudit_vals, axis=1)  # (n_gates, d^n)
+    per_qudit_vals = jnp.sqrt(2.0) * jnp.cos(2 * jnp.pi * outer / d_col + jnp.pi / 4)
+    val_k = jnp.prod(per_qudit_vals, axis=1)  # (n_gates, prod(dims))
 
     def qudit_expval(gates_params):
         expanded_params = jnp.asarray(gates_params)[param_map]
 
         def single_obs(l, m):
-            k_shifted = (all_states - l[jnp.newaxis, :]) % d
+            k_shifted = (all_states - l[jnp.newaxis, :]) % dims[jnp.newaxis, :]
             ks_f = k_shifted.astype(jnp.float32)
             m_f = m.astype(jnp.float32)
             l_f = l.astype(jnp.float32)
-            obs_phase_scalar = jnp.exp(1j * jnp.pi * jnp.dot(m_f, l_f) / d)
-            obs_state_phase = jnp.exp(1j * 2 * jnp.pi * (ks_f @ m_f) / d)
+            obs_phase_scalar = jnp.exp(1j * jnp.pi * jnp.sum(m_f * l_f / dims_f))
+            obs_state_phase = jnp.exp(1j * 2 * jnp.pi * (ks_f @ (m_f / dims_f)))
             obs_phase = obs_phase_scalar * obs_state_phase
             outer_shifted = g_f[:, :, jnp.newaxis] * ks_f.T[jnp.newaxis, :, :]
             val_k_shifted = jnp.prod(
-                jnp.sqrt(2.0) * jnp.cos(2 * jnp.pi * outer_shifted / d + jnp.pi / 4),
+                jnp.sqrt(2.0) * jnp.cos(2 * jnp.pi * outer_shifted / d_col + jnp.pi / 4),
                 axis=1,
             )
             gate_phase_sum = jnp.sum(
@@ -135,7 +139,8 @@ def qudit_expectation_brute_force(
 
     Args:
         n: Number of qudits.
-        d: Local dimension.
+        d: Local dimension(s). Either a scalar broadcast to all qudits or a
+            per-qudit sequence of length ``n`` for non-uniform dimensions.
         gates: Sequence of gate vectors.
         thetas: Sequence of gate angles.
         l_vec: Observable frequency indices.
@@ -147,16 +152,17 @@ def qudit_expectation_brute_force(
     Returns:
         complex: Exact expectation value of the requested observable.
     """
-    dim = d**n
+    dims = _dims_to_numpy(d, n)  # (n,)
+    dims = [int(d_j) for d_j in dims]
+    dim = int(np.prod(dims))
 
-    # F^{otimes n}
-    F1 = _dft_matrix(d)
-    F_n = _kron_n([F1] * n)
+    # F^{otimes n}, each factor sized by its qudit's dimension.
+    F_n = _kron_n([_dft_matrix(dims[i]) for i in range(n)])
 
     # D(theta) = prod_g exp(i theta_g Q_g)  [eqn 43]
     D = np.eye(dim, dtype=complex)
     for g, theta in zip(gates, thetas):
-        Q_g = _kron_n([_hermitian_observable(g[i], 0, d) for i in range(n)])
+        Q_g = _kron_n([_hermitian_observable(g[i], 0, dims[i]) for i in range(n)])
         D = expm(1j * theta * Q_g) @ D
 
     if phase_diag is not None:
@@ -166,7 +172,7 @@ def qudit_expectation_brute_force(
     U = F_n.conj().T @ D @ F_n
 
     # O(l, m) = bigotimes_i O(l_i, m_i)  [eqn 36, 46]
-    O = _kron_n([_displacement_operator(l_vec[i], m_vec[i], d) for i in range(n)])
+    O = _kron_n([_displacement_operator(l_vec[i], m_vec[i], dims[i]) for i in range(n)])
 
     if init_state_elems is None or init_state_amps is None:
         psi0 = np.zeros(dim, dtype=complex)
@@ -174,7 +180,9 @@ def qudit_expectation_brute_force(
     else:
         psi0 = np.zeros(dim, dtype=complex)
         for elem, amp in zip(init_state_elems, init_state_amps):
-            idx = sum(int(e) * d ** (n - 1 - i) for i, e in enumerate(elem))
+            idx = 0
+            for i, e in enumerate(elem):
+                idx = idx * dims[i] + int(e)
             psi0[idx] += amp
 
     # <psi_in| U^dag O U |psi_in>
@@ -447,6 +455,140 @@ class TestQuditExpvalBatchedVsMatrix:
             assert np.isclose(
                 mc_vals[i], ref, atol=3.5 / np.sqrt(NUM_SAMPLES)
             ), f"Observable {i} (l={l}, m={m}): got {mc_vals[i]}, expected {ref}"
+
+
+class TestQuditExpvalNonUniformDims:
+    """Systems of qudits with non-uniform local dimensions.
+
+    ``d`` is passed as a per-qudit sequence, and every generator / observable
+    entry stays within its own qudit's ``{0, ..., d_j - 1}`` range.
+    """
+
+    @pytest.mark.parametrize(
+        "dims, n, generators, thetas, l_vecs, m_vecs",
+        [
+            # qubit x qutrit
+            (
+                [2, 3],
+                2,
+                [[1, 0], [0, 2], [1, 1]],
+                [0.5, 0.2, 0.3],
+                [[1, 1], [0, 2]],
+                [[0, 1], [1, 0]],
+            ),
+            # qutrit x ququart
+            (
+                [3, 4],
+                2,
+                [[1, 0], [0, 3], [2, 1]],
+                [0.4, 0.7, 0.1],
+                [[2, 3], [1, 0]],
+                [[1, 2], [0, 1]],
+            ),
+            # qubit x qutrit x ququart, batch of observables
+            (
+                [2, 3, 4],
+                3,
+                [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 2, 3]],
+                [0.2, 0.5, 0.3, 0.15],
+                [[1, 0, 0], [0, 2, 3], [1, 1, 1]],
+                [[0, 0, 0], [1, 1, 2], [0, 2, 1]],
+            ),
+        ],
+    )
+    def test_matches_exact_and_matrix(self, dims, n, generators, thetas, l_vecs, m_vecs):
+        """Batched MC must agree with both the exact and dense-matrix references."""
+        generators_arr = np.array(generators)
+        thetas_arr = np.array(thetas)
+        l_arr = np.array(l_vecs)
+        m_arr = np.array(m_vecs)
+
+        config, params = _make_config_one_param_per_gate(
+            dims,
+            n,
+            generators_arr,
+            thetas_arr,
+            l_arr,
+            m_arr,
+            n_samples=NUM_SAMPLES,
+            key=jax.random.PRNGKey(2024),
+        )
+        exact_fn = _build_qudit_expval_func_exact(config)
+        exact_vals, *_ = exact_fn(jnp.array(params))
+
+        batched_fn = build_qudit_expval_func(config)
+        mc_vals, mc_cov = batched_fn(jnp.array(params))
+
+        assert mc_vals.shape == exact_vals.shape
+        assert mc_cov.shape == exact_vals.shape + (2, 2)
+        np.testing.assert_allclose(mc_vals, exact_vals, atol=3.5 / np.sqrt(NUM_SAMPLES))
+
+        for i, (l, m) in enumerate(zip(l_arr, m_arr)):
+            ref = qudit_expectation_brute_force(n, dims, generators_arr, thetas_arr, l, m)
+            assert np.isclose(
+                mc_vals[i], ref, atol=3.5 / np.sqrt(NUM_SAMPLES)
+            ), f"Observable {i} (l={l}, m={m}): got {mc_vals[i]}, expected {ref}"
+
+    def test_scalar_and_broadcast_sequence_agree(self):
+        """A scalar ``d`` and the equivalent constant sequence must match exactly."""
+        n = 2
+        generators = np.array([[1, 0], [0, 2], [1, 1]])
+        thetas = np.array([0.5, 0.2, 0.3])
+        l_vecs = np.array([[1, 2], [0, 1]])
+        m_vecs = np.array([[0, 1], [2, 0]])
+
+        config_scalar, params = _make_config_one_param_per_gate(
+            3, n, generators, thetas, l_vecs, m_vecs, key=jax.random.PRNGKey(5)
+        )
+        config_seq, _ = _make_config_one_param_per_gate(
+            [3, 3], n, generators, thetas, l_vecs, m_vecs, key=jax.random.PRNGKey(5)
+        )
+
+        vals_scalar, *_ = build_qudit_expval_func(config_scalar)(jnp.array(params))
+        vals_seq, *_ = build_qudit_expval_func(config_seq)(jnp.array(params))
+        np.testing.assert_allclose(vals_scalar, vals_seq, atol=1e-6)
+
+    def test_non_uniform_dims_with_init_state(self):
+        """Non-uniform dims combined with a sparse custom initial state."""
+        dims, n = [2, 3], 2
+        generators = np.array([[1, 0], [0, 1]])
+        thetas = np.array([0.4, 0.6])
+        l_vecs = np.array([[1, 2]])
+        m_vecs = np.array([[0, 1]])
+        elems = np.array([[0, 0], [1, 2]])
+        amps = np.array([1 / np.sqrt(2), 1j / np.sqrt(2)], dtype=complex)
+
+        config, params = _make_config_one_param_per_gate(
+            dims,
+            n,
+            generators,
+            thetas,
+            l_vecs,
+            m_vecs,
+            n_samples=NUM_SAMPLES_INIT_STATE,
+            key=jax.random.PRNGKey(42),
+        )
+        batched_fn = build_qudit_expval_func(config)
+        mc_vals, mc_cov = batched_fn(
+            jnp.array(params),
+            init_state_elems=jnp.array(elems),
+            init_state_amps=jnp.array(amps),
+        )
+        mc_err_re = np.sqrt(mc_cov[:, 0, 0])
+        mc_err_im = np.sqrt(mc_cov[:, 1, 1])
+
+        ref = qudit_expectation_brute_force(
+            n,
+            dims,
+            generators,
+            thetas,
+            l_vecs[0],
+            m_vecs[0],
+            init_state_elems=elems,
+            init_state_amps=amps,
+        )
+        tol = max(3.5 * float(mc_err_re[0]), 3.5 * float(mc_err_im[0]), 1e-5)
+        assert np.isclose(mc_vals[0], ref, atol=tol)
 
 
 class TestQuditExpvalBatchedEdgeCases:
