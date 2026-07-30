@@ -430,7 +430,7 @@ class TestOutMultiplier:
         x, y = 2, 3
         x_list = [1, 0]
         y_list = [1, 1]
-        mod = 16
+        mod = 12
         x_wires = [0, 1]
         y_wires = [2, 3]
         output_wires = [6, 7, 8, 9]

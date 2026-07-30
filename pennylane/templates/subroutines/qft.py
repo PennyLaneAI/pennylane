@@ -15,8 +15,6 @@
 This submodule contains the template for QFT.
 """
 
-import functools
-
 import numpy as np
 
 from pennylane import compiler, math
@@ -25,8 +23,8 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
-from pennylane.typing import AbstractWires
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import AbstractWires, Wire
+from pennylane.wires import WiresLike
 
 
 class QFT(Operator2):
@@ -127,13 +125,12 @@ class QFT(Operator2):
         array([[1, 1, 1, 0]])
     """
 
+    arg_specs = {"wires": Wire[-1]}
+
     def __init__(self, wires: WiresLike):
-        wires = Wires(wires)
-        # self.hyperparameters["num_wires"] = len(wires)
         super().__init__(wires)
 
     @staticmethod
-    @functools.lru_cache
     def compute_matrix(wires):  # pylint: disable=arguments-differ
         return np.fft.ifft(np.eye(2 ** len(wires)), norm="ortho")
 
