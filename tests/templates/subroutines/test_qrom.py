@@ -485,6 +485,19 @@ def test_wrong_wires_error(data, control_wires, target_wires, msg_match):
         qp.QROM(data, control_wires, target_wires, work_wires=None)
 
 
+def test_none_work_wires_case():
+    """Test that clean version is not applied if work wires are not used"""
+
+    gates_clean = qp.QROM(
+        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
+    ).decomposition()
+    expected_gates = qp.QROM(
+        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
+    ).decomposition()
+
+    assert gates_clean == expected_gates
+
+
 @pytest.mark.parametrize(
     ("terms", "n_ctrl", "n_target", "n_work", "expected"),
     [
