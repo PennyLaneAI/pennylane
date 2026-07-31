@@ -658,10 +658,10 @@ class DiagonalQubitUnitary(Operator2):
 
 
 @custom_ctrl_dispatch.register
+# pylint: disable=unused-argument
 def _ctrl_diagonal_qubit_unitary(
     base: DiagonalQubitUnitary, control, control_values, work_wires, work_wire_type
 ):
-    del work_wires, work_wire_type
     if len(control) == 1 and _is_empty_or_all_true(control_values):
         if base.is_abstract:
             input_shape = qp.math.shape(base.D)
