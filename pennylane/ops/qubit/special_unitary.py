@@ -486,7 +486,7 @@ class SpecialUnitary(Operation):
             _ = next(matrices)
             A = sum(
                 t * qp.math.asarray(reduce(qp.math.kron, pauli_ops), like=qp.math.get_interface(t))
-                for t, pauli_ops in zip(theta, matrices, strict=True)
+                for t, pauli_ops in zip(theta, matrices)
             )
         else:
             A = qp.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])

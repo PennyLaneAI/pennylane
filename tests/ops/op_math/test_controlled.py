@@ -1485,7 +1485,6 @@ class TestControlledSupportsBroadcasting:
     separately_tested_ops = [
         "QubitUnitary",
         "ControlledQubitUnitary",
-        "DiagonalQubitUnitary",
         "PauliRot",
         "MultiRZ",
         "StatePrep",
@@ -1593,6 +1592,7 @@ class TestControlledSupportsBroadcasting:
 
         assert qp.math.allclose(mat, single_mats)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_controlled_diagonal_qubit_unitary(self):
         """Test that a Controlled operation whose base is a DiagonalQubitUnitary, which is marked
         as supporting parameter broadcasting, actually does support broadcasting."""

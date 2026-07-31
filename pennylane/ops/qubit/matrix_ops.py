@@ -560,6 +560,8 @@ class DiagonalQubitUnitary(Operator2):
 def _ctrl_diagonal_qubit_unitary(
     base: DiagonalQubitUnitary, control, control_values, work_wires, work_wire_type
 ):
+    # Let ControlledOp2 handle multiple controls instead of materializing an exponentially
+    # larger diagonal here.
     if len(control) == 1 and _is_empty_or_all_true(control_values):
         if base.is_abstract:
             input_shape = qp.math.shape(base.D)
@@ -618,7 +620,8 @@ add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_deco
 
 
 def _diagonal_qubit_unitary_resource(base, **_):
-    return {abstractify(base): 1}
+    diagonal_size = qp.math.shape(base.D)[-1]
+    return {DiagonalQubitUnitary(Complex[diagonal_size], wires=abstractify(base.wires)): 1}
 
 
 @register_resources(_diagonal_qubit_unitary_resource)
