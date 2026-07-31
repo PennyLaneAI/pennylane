@@ -247,72 +247,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     Returns:
         pennylane.decomposition.resources.CompressedResourceOp: a lightweight representation of the operator.
 
-    **Example**
-
-    The resource parameters of an operator are a minimal set of information required to determine
-    the resource estimate of its decompositions. To check the required set of keyword arguments
-    for an operator type, refer to the ``resource_keys`` attribute of the operator class:
-
-    >>> qp.MultiRZ.resource_keys  # doctest: +SKIP
-    {'num_wires'}
-
-    When calling ``resource_rep`` for ``MultiRZ``, ``num_wires`` must be provided as a keyword argument.
-
-    >>> rep = qp.MultiRZ(Float, Wire[3])  # doctest: +SKIP
-    >>> rep  # doctest: +SKIP
-    MultiRZ(num_wires=3)
-    >>> type(rep)  # doctest: +SKIP
-    <class 'pennylane.decomposition.resources.CompressedResourceOp'>
-
-    .. seealso:: See how this function is used in the context of defining a decomposition rule using :func:`~pennylane.register_resources`
-
-    .. details::
-        :title: Usage Details
-
-        The same approach applies also to symbolic operators. For example, if the decomposition
-        of an operator contains a controlled operation:
-
-        .. code-block:: python
-
-            def my_decomp(wires):
-                qp.ctrl(
-                    qp.MultiRZ(wires=wires[:3]),
-                    control=wires[3:5],
-                    control_values=[0, 1],
-                    work_wires=wires[5]
-                )
-
-        To declare this controlled operator in the resource function, we find the resource keys
-        of ``qp.ops.Controlled``:
-
-        >>> print(sorted(qp.ops.Controlled.resource_keys))
-        ['base_class', 'base_params', 'num_control_wires', 'num_work_wires', 'num_zero_control_values', 'work_wire_type']
-
-        Then the resource representation can be created as follows:
-
-        >>> qp.resource_rep(
-        ...     qp.ops.Controlled,
-        ...     base_class=qp.ops.MultiRZ,
-        ...     base_params={'num_wires': 3},
-        ...     num_control_wires=2,
-        ...     num_zero_control_values=1,
-        ...     num_work_wires=1,
-        ...     work_wire_type='borrowed'
-        ... )  # doctest: +SKIP
-        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
-
-        Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
-
-        >>> qp.decomposition.controlled_resource_rep(
-        ...     base_class=qp.ops.MultiRZ,
-        ...     base_params={'num_wires': 3},
-        ...     num_control_wires=2,
-        ...     num_zero_control_values=1,
-        ...     num_work_wires=1
-        ... )  # doctest: +SKIP
-        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
-
-        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
+    .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
     _validate_resource_rep(op_type, params)
