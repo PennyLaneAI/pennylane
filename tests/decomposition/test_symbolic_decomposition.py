@@ -31,7 +31,6 @@ from pennylane.decomposition.resources import (
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
-    controlled_resource_rep,
     ctrl_single_work_wire,
     flip_control_adjoint,
     flip_pow_adjoint,
