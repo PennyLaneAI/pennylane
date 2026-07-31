@@ -191,9 +191,7 @@ def test_controlled_operator_handling(op_class, args, kwargs):
 
     jaxpr = jax.make_jaxpr(f)()
     if issubclass(op_class, Operator2):
-        op_instance = op_class(*args, **kwargs)
-        assert jaxpr.eqns[0].primitive is operator_p
-        assert jaxpr.eqns[0].params["op_cls"] is type(op_instance)
+        assert_eqn_matches_op(jaxpr.eqns[0], op_class)
     else:
         assert jaxpr.eqns[0].primitive == op_class._primitive
 
