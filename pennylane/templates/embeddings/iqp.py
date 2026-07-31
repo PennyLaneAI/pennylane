@@ -253,11 +253,11 @@ class IQPEmbedding(Operation):
         [H(0), RZ(tensor(1.), wires=[0]),
          H(1), RZ(tensor(2.), wires=[1]),
          H(2), RZ(tensor(3.), wires=[2]),
-         MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2]),
+         MultiRZ(2.0, wires=[0, 1]), MultiRZ(3.0, wires=[0, 2]), MultiRZ(6.0, wires=[1, 2]),
          H(0), RZ(tensor(1.), wires=[0]),
          H(1), RZ(tensor(2.), wires=[1]),
          H(2), RZ(tensor(3.), wires=[2]),
-         MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2])]
+         MultiRZ(2.0, wires=[0, 1]), MultiRZ(3.0, wires=[0, 2]), MultiRZ(6.0, wires=[1, 2])]
         """
         wires = Wires(wires)
         op_list = []

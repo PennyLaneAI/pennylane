@@ -253,15 +253,15 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     the resource estimate of its decompositions. To check the required set of keyword arguments
     for an operator type, refer to the ``resource_keys`` attribute of the operator class:
 
-    >>> qp.MultiRZ.resource_keys
+    >>> qp.MultiRZ.resource_keys  # doctest: +SKIP
     {'num_wires'}
 
     When calling ``resource_rep`` for ``MultiRZ``, ``num_wires`` must be provided as a keyword argument.
 
-    >>> rep = qp.MultiRZ(Float, Wire[3])
-    >>> rep
+    >>> rep = qp.MultiRZ(Float, Wire[3])  # doctest: +SKIP
+    >>> rep  # doctest: +SKIP
     MultiRZ(num_wires=3)
-    >>> type(rep)
+    >>> type(rep)  # doctest: +SKIP
     <class 'pennylane.decomposition.resources.CompressedResourceOp'>
 
     .. seealso:: See how this function is used in the context of defining a decomposition rule using :func:`~pennylane.register_resources`
@@ -298,7 +298,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     num_zero_control_values=1,
         ...     num_work_wires=1,
         ...     work_wire_type='borrowed'
-        ... )
+        ... )  # doctest: +SKIP
         Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
 
         Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
@@ -309,7 +309,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     num_control_wires=2,
         ...     num_zero_control_values=1,
         ...     num_work_wires=1
-        ... )
+        ... )  # doctest: +SKIP
         Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
 
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`

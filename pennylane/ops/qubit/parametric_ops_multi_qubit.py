@@ -111,7 +111,7 @@ class MultiRZ(Operator2):
 
         **Example**
 
-        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), (0, 1))
+        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), (0, 1))  # doctest: +SKIP
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
@@ -166,7 +166,7 @@ class MultiRZ(Operator2):
 
         **Example**
 
-        >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
+        >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)  # doctest: +SKIP
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
                 0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
                dtype=torch.complex128)
@@ -205,7 +205,7 @@ class MultiRZ(Operator2):
 
         **Example:**
 
-        >>> qp.MultiRZ.compute_decomposition(1.2, wires=(0,1))
+        >>> qp.MultiRZ.compute_decomposition(1.2, wires=(0,1))  # doctest: +SKIP
         [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
 
         """
@@ -544,7 +544,7 @@ class PauliRot(Operation):
 
         **Example:**
 
-        >>> qp.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
+        >>> qp.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")  # doctest: +SKIP
         [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
 
         """

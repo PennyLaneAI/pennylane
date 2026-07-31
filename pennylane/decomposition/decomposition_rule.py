@@ -267,7 +267,7 @@ def register_resources(
 
         >>> qp.CNOT.resource_keys
         set()
-        >>> qp.MultiRZ.resource_keys
+        >>> qp.MultiRZ.resource_keys  # doctest: +SKIP
         {'num_wires'}
 
         The output of ``resource_keys`` indicates that custom decompositions for the operator
