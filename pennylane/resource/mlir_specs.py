@@ -213,7 +213,11 @@ def _get_resources_from_analysis_pass(
 
     # Only include information about qnodes, ignoring any extra functions
     # The blank substitution will return a concrete SpecsResources if no symbolic variables remain
-    return [resource_data[fn].subs() for fn, data in all_data.items() if data["metadata"]["qnode"]]
+    return [
+        resource_data[fn].subs()
+        for fn, data in all_data.items()
+        if data["metadata"].get("qnode", False)
+    ]
 
 
 def _execute_analysis_pass(

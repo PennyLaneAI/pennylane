@@ -67,83 +67,73 @@ class TestAnalysisPassConversion:
 
         return {
             "circuit": {
-                "auto_qubit_management": False,
                 "classical_instructions": {
-                    "arith.index_cast": 3,
+                    "arith.constant": 5,
                     "func.return": 1,
                     "scf.for": 1,
-                    "stablehlo.constant": 4,
-                    "tensor.extract": 8,
                     "tensor.from_elements": 1,
                 },
-                "device_name": "LightningSimulator",
-                "function_calls": {"for_loop_2": 2},
-                "has_branches": False,
-                "measurements": {"expval(PauliZ)": 1},
-                "num_alloc_qubits": 10,
-                "num_arg_qubits": 0,
-                "num_qubits": 10,
-                "operations": {"Hadamard(1)": 1},
-                "qnode": True,
-                "var_function_calls": {},
+                "extended_fields": {},
+                "function_calls": {"dynamic": {}, "static": {"for_loop_2": 2}},
+                "measurement_processes": {"expval(PauliZ)": 1},
+                "metadata": {
+                    "auto_qubit_management": False,
+                    "device_name": "LightningSimulator",
+                    "has_branches": False,
+                    "qnode": True,
+                },
+                "num_qubits": {"alloc": 10, "arg": 0, "total": 10},
+                "quantum_operations": {"1": {"Hadamard": 1}},
             },
             "dyn_for_loop_1": {
-                "classical_instructions": {
-                    "arith.index_cast": 1,
-                    "scf.yield": 1,
-                    "stablehlo.constant": 1,
-                    "tensor.extract": 2,
-                    "tensor.from_elements": 1,
+                "classical_instructions": {"scf.yield": 1},
+                "extended_fields": {},
+                "function_calls": {"dynamic": {}, "static": {}},
+                "measurement_processes": {},
+                "metadata": {
+                    "auto_qubit_management": None,
+                    "device_name": "",
+                    "has_branches": False,
+                    "qnode": False,
                 },
-                "device_name": "",
-                "function_calls": {},
-                "has_branches": False,
-                "measurements": {},
-                "num_alloc_qubits": 0,
-                "num_arg_qubits": 0,
-                "num_qubits": 0,
-                "operations": {"PauliX(1)": 1},
-                "qnode": False,
-                "var_function_calls": {},
+                "num_qubits": {"alloc": 0, "arg": 0, "total": 0},
+                "quantum_operations": {"1": {"PauliX": 1}},
             },
             "for_loop_1": {
-                "classical_instructions": {
-                    "arith.index_cast": 1,
-                    "scf.yield": 1,
-                    "stablehlo.constant": 1,
-                    "tensor.extract": 2,
-                    "tensor.from_elements": 1,
+                "classical_instructions": {"scf.yield": 1},
+                "extended_fields": {},
+                "function_calls": {"dynamic": {}, "static": {}},
+                "measurement_processes": {},
+                "metadata": {
+                    "auto_qubit_management": None,
+                    "device_name": "",
+                    "has_branches": False,
                 },
-                "device_name": "",
-                "function_calls": {},
-                "has_branches": False,
-                "measurements": {},
-                "num_alloc_qubits": 0,
-                "num_arg_qubits": 0,
-                "num_qubits": 0,
-                "operations": {"PauliZ(1)": 1},
                 "qnode": False,
-                "var_function_calls": {},
+                "num_qubits": {"alloc": 0, "arg": 0, "total": 0},
+                "quantum_operations": {"1": {"PauliZ": 1}},
             },
             "for_loop_2": {
                 "classical_instructions": {
-                    "arith.index_cast": 7,
+                    "arith.index_cast": 1,
                     "scf.for": 2,
                     "scf.yield": 1,
-                    "stablehlo.constant": 3,
-                    "tensor.extract": 8,
-                    "tensor.from_elements": 1,
+                    "tensor.extract": 1,
                 },
-                "device_name": "",
-                "function_calls": {"for_loop_1": 3},
-                "has_branches": False,
-                "measurements": {},
-                "num_alloc_qubits": 0,
-                "num_arg_qubits": 0,
-                "num_qubits": 0,
-                "operations": {"Hadamard(1)": 1},
-                "qnode": False,
-                "var_function_calls": {"dyn_for_loop_1": "a"},
+                "extended_fields": {},
+                "function_calls": {
+                    "dynamic": {"dyn_for_loop_1": "0xf30441eef5432233"},
+                    "static": {"for_loop_1": 3},
+                },
+                "measurement_processes": {},
+                "metadata": {
+                    "auto_qubit_management": None,
+                    "device_name": "",
+                    "has_branches": False,
+                    "qnode": False,
+                },
+                "num_qubits": {"alloc": 0, "arg": 0, "total": 0},
+                "quantum_operations": {"1": {"Hadamard": 1}},
             },
         }
 
@@ -164,7 +154,7 @@ class TestAnalysisPassConversion:
     def test_get_resources_from_analysis_pass_warns_for_branches(
         self, example_loop_analysis_pass_result
     ):
-        example_loop_analysis_pass_result["circuit"]["has_branches"] = True
+        example_loop_analysis_pass_result["circuit"]["metadata"]["has_branches"] = True
 
         with pytest.warns(UserWarning, match="branches"):
             _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
@@ -189,7 +179,7 @@ class TestAnalysisPassConversion:
     def test_get_resources_from_analysis_pass_warns_for_auto_management(
         self, example_loop_analysis_pass_result
     ):
-        example_loop_analysis_pass_result["circuit"]["auto_qubit_management"] = True
+        example_loop_analysis_pass_result["circuit"]["metadata"]["auto_qubit_management"] = True
 
         with pytest.warns(UserWarning, match="automatic qubit management"):
             _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
@@ -198,11 +188,15 @@ class TestAnalysisPassConversion:
         """Extra tests for features that aren't tested in the main test"""
 
         # Force both a PPR and PPM to exist
-        example_loop_analysis_pass_result["circuit"]["operations"]["PPR-pi/2(3)"] = 1
-        example_loop_analysis_pass_result["circuit"]["operations"]["PPM(3)"] = 1
+        example_loop_analysis_pass_result["circuit"]["quantum_operations"]["3"] = {}
+        example_loop_analysis_pass_result["circuit"]["quantum_operations"]["3"]["PPR-pi/2"] = 1
+        example_loop_analysis_pass_result["circuit"]["quantum_operations"]["3"]["PPM"] = 1
 
         # Force a measurement inside a subroutine
-        example_loop_analysis_pass_result["dyn_for_loop_1"]["measurements"]["expval(PauliZ)"] = 1
+        example_loop_analysis_pass_result["dyn_for_loop_1"]["measurement_processes"] = {}
+        example_loop_analysis_pass_result["dyn_for_loop_1"]["measurement_processes"][
+            "expval(PauliZ)"
+        ] = 1
 
         var = _generate_display_name_for_symbolic_var("a", {})
         actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
@@ -228,22 +222,26 @@ class TestAnalysisPassConversion:
         actual = _get_resources_from_analysis_pass(
             {
                 "circuit": {
-                    "auto_qubit_management": False,
                     "classical_instructions": {},
-                    "device_name": "NullQubit",
-                    "function_calls": {},
-                    "has_branches": False,
-                    "measurements": {},
-                    "num_alloc_qubits": 4,
-                    "num_arg_qubits": 0,
-                    "num_qubits": 4,
-                    "operations": {
-                        "MultiControlledX(2)": 5,
-                        "MultiControlledX(3)": 7,
-                        "Hadamard(1)": 2,
+                    "metadata": {
+                        "auto_qubit_management": False,
+                        "device_name": "NullQubit",
+                        "has_branches": False,
+                        "qnode": True,
                     },
-                    "qnode": True,
-                    "var_function_calls": {},
+                    "measurement_processes": {},
+                    "num_qubits": {
+                        "alloc": 4,
+                        "arg": 0,
+                        "total": 4,
+                    },
+                    "quantum_operations": {
+                        "1": {"Hadamard": 2},
+                        "2": {"MultiControlledX": 5},
+                        "3": {"MultiControlledX": 7},
+                    },
+                    "function_calls": {"dynamic": {}, "static": {}},
+                    "extended_fields": {},
                 }
             }
         )
@@ -303,11 +301,11 @@ class TestAnalysisPassConversion:
 
     def test_extra_depth_info(self, example_loop_analysis_pass_result):
         """Test that PBC depth information is correctly extracted from the analysis pass result."""
-        example_loop_analysis_pass_result["for_loop_2"]["depth"] = {
+        example_loop_analysis_pass_result["for_loop_2"]["extended_fields"]["pbc_depth"] = {
             "any_commuting_depth": 5,
             "qubit_disjoint_depth": 0,
         }
-        example_loop_analysis_pass_result["for_loop_1"]["depth"] = {
+        example_loop_analysis_pass_result["for_loop_1"]["extended_fields"]["pbc_depth"] = {
             "any_commuting_depth": 2,
             "qubit_disjoint_depth": 3,
         }
