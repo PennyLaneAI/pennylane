@@ -162,7 +162,7 @@ class TestAnalysisPassConversion:
     def test_get_resources_from_analysis_pass_warns_for_self_recursion(
         self, example_loop_analysis_pass_result
     ):
-        example_loop_analysis_pass_result["circuit"]["function_calls"]["circuit"] = 1
+        example_loop_analysis_pass_result["circuit"]["function_calls"]["static"]["circuit"] = 1
 
         with pytest.warns(UserWarning, match="recursion"):
             _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
@@ -170,8 +170,12 @@ class TestAnalysisPassConversion:
     def test_get_resources_from_analysis_pass_warns_for_paired_recursion(
         self, example_loop_analysis_pass_result
     ):
-        example_loop_analysis_pass_result["for_loop_1"]["function_calls"]["for_loop_2"] = 1
-        example_loop_analysis_pass_result["for_loop_2"]["function_calls"]["for_loop_1"] = 1
+        example_loop_analysis_pass_result["for_loop_1"]["function_calls"]["static"][
+            "for_loop_2"
+        ] = 1
+        example_loop_analysis_pass_result["for_loop_2"]["function_calls"]["static"][
+            "for_loop_1"
+        ] = 1
 
         with pytest.warns(UserWarning, match="recursion"):
             _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
