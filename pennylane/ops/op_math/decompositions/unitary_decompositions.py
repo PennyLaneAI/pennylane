@@ -32,6 +32,7 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
@@ -426,8 +427,18 @@ def two_qubit_decomp_rule(U, wires, **__):
 def _multi_qubit_decomp_resource(num_wires):
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
-        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 2,
-        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Y"): 1,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 2,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Y",
+        ): 1,
     }
 
 
