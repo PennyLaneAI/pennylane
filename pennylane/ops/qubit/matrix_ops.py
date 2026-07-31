@@ -27,11 +27,11 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -41,7 +41,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.typing import Complex, FlatPytree, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -430,7 +430,7 @@ def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wire_ty
 add_decomps("C(QubitUnitary)", _controlled_qubit_unitary)
 
 
-class DiagonalQubitUnitary(Operation):
+class DiagonalQubitUnitary(Operator2):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
 
@@ -446,6 +446,12 @@ class DiagonalQubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
 
+    dynamic_argnames = ("D",)
+
+    wire_sizes = (None,)
+
+    arg_specs = {"D": Complex[-1], "wires": Wire[-1]}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -455,14 +461,15 @@ class DiagonalQubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    resource_keys = {"num_wires"}
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
+    def __init__(self, D: TensorLike, wires: WiresLike):
+        if isinstance(D, (list, tuple)):
+            D = qp.math.array(D, like=qp.math.get_deep_interface(D))
+        super().__init__(D, wires=wires)
 
     @staticmethod
-    def compute_matrix(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        D: TensorLike, wires: WiresLike = None
+    ) -> TensorLike:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -496,7 +503,9 @@ class DiagonalQubitUnitary(Operation):
         return qp.math.diag(D)
 
     @staticmethod
-    def compute_eigvals(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(
+        D: TensorLike, wires: WiresLike = None
+    ) -> TensorLike:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -634,17 +643,11 @@ class DiagonalQubitUnitary(Operation):
         ]
 
     def adjoint(self) -> "DiagonalQubitUnitary":
-        return DiagonalQubitUnitary(qp.math.conj(self.parameters[0]), wires=self.wires)
+        return DiagonalQubitUnitary(qp.math.conj(self.D), wires=self.wires)
 
     def pow(self, z) -> list["DiagonalQubitUnitary"]:
-        cast_data = qp.math.cast(self.data[0], np.complex128)
+        cast_data = qp.math.cast(self.D, np.complex128)
         return [DiagonalQubitUnitary(cast_data**z, wires=self.wires)]
-
-    def _controlled(self, control: WiresLike):
-        return DiagonalQubitUnitary(
-            qp.math.hstack([qp.math.ones_like(self.parameters[0]), self.parameters[0]]),
-            wires=control + self.wires,
-        )
 
     def label(
         self,
@@ -655,11 +658,33 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(num_wires):
+@custom_ctrl_dispatch.register
+def _ctrl_diagonal_qubit_unitary(
+    base: DiagonalQubitUnitary, control, control_values, work_wires, work_wire_type
+):
+    del work_wires, work_wire_type
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        if base.is_abstract:
+            input_shape = qp.math.shape(base.D)
+            last_dim = -1 if input_shape[-1] == -1 else 2 * input_shape[-1]
+            controlled_D = Complex[(*input_shape[:-1], last_dim)]
+        else:
+            controlled_D = qp.math.hstack([qp.math.ones_like(base.D), base.D])
+        return DiagonalQubitUnitary(
+            controlled_D,
+            wires=control + base.wires,
+        )
+    return NotImplemented
+
+
+def _diagonal_qu_resource(D, wires):
+    num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1, qp.GlobalPhase: 1}
+
+    output_shape = (*qp.math.shape(D)[:-1], qp.math.shape(D)[-1] // 2)
     return {
-        resource_rep(DiagonalQubitUnitary, num_wires=num_wires - 1): 1,
+        DiagonalQubitUnitary(Complex[output_shape], wires=Wire[num_wires - 1]): 1,
         resource_rep(qp.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 1,
     }
 
@@ -677,7 +702,9 @@ def _diagonal_qu_decomp(D, wires, **_):
         qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-def _diagonal_mux_on_aux_resources(num_wires):
+def _diagonal_mux_on_aux_resources(D, wires):
+    del D
+    num_wires = len(wires)
     return {resource_rep(qp.SelectPauliRot, num_wires=num_wires + 1, rot_axis="Z"): 1}
 
 
@@ -691,22 +718,21 @@ def _diagonal_mux_on_aux_decomp(D, wires, **_):
 add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_decomp)
 
 
-def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
-    return {resource_rep(base_class, **base_params): 1}
+def _diagonal_qubit_unitary_resource(base, **_):
+    return {abstractify(base): 1}
 
 
 @register_resources(_diagonal_qubit_unitary_resource)
-def _adjoint_diagonal_unitary(U, wires, **_):
-    U = qp.math.conj(U)
-    DiagonalQubitUnitary(U, wires=wires)
+def _adjoint_diagonal_unitary(base, **_):
+    DiagonalQubitUnitary(qp.math.conj(base.D), wires=base.wires)
 
 
 add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
 
 
 @register_resources(_diagonal_qubit_unitary_resource)
-def _pow_diagonal_unitary(U, wires, z, **_):
-    DiagonalQubitUnitary(qp.math.cast(U, np.complex128) ** z, wires=wires)
+def _pow_diagonal_unitary(base, z, **_):
+    DiagonalQubitUnitary(qp.math.cast(base.D, np.complex128) ** z, wires=base.wires)
 
 
 add_decomps("Pow(DiagonalQubitUnitary)", _pow_diagonal_unitary)
