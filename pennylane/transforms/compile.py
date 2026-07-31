@@ -195,7 +195,7 @@ def compile(
     with QueuingManager.stop_recording():
         if basis_set is None:
             basis_set = gate_sets.ALL_OPS
-        
+
         for op in basis_set:
             if isinstance(op, str):
                 pass  # or just don't write anything, valid case
@@ -207,7 +207,7 @@ def compile(
                                      f"got class {(op.__name__)} which is not an Operator subclass")
             else:
                 raise ValueError(f"Elements of basis_set must be strings or Operator subclasses, {type(op).__name__} was neither")
-            
+
 
         def stop_at(obj):
             if not isinstance(obj, qp.operation.Operator):
