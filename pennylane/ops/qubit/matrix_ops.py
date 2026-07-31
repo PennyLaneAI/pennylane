@@ -691,7 +691,7 @@ def _diagonal_qu_resource(D, wires):
 
 
 @register_resources(_diagonal_qu_resource)
-def _diagonal_qu_decomp(D, wires, **_):
+def _diagonal_qu_decomp(D, wires):
     angles = qp.math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
@@ -724,7 +724,7 @@ def _diagonal_qubit_unitary_resource(base, **_):
 
 
 @register_resources(_diagonal_qubit_unitary_resource)
-def _adjoint_diagonal_unitary(base, **_):
+def _adjoint_diagonal_unitary(base):
     DiagonalQubitUnitary(qp.math.conj(base.D), wires=base.wires)
 
 
@@ -732,7 +732,7 @@ add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
 
 
 @register_resources(_diagonal_qubit_unitary_resource)
-def _pow_diagonal_unitary(base, z, **_):
+def _pow_diagonal_unitary(base, z):
     DiagonalQubitUnitary(qp.math.cast(base.D, np.complex128) ** z, wires=base.wires)
 
 
