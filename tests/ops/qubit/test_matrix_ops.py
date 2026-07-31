@@ -30,6 +30,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -731,6 +732,24 @@ class TestWalshHadamardTransform:
 class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     """Test the DiagonalQubitUnitary operation."""
 
+    def test_operator2_construction(self):
+        """Test the Operator2 argument model and list canonicalization."""
+        op = qp.DiagonalQubitUnitary([1, -1], wires="a")
+
+        assert isinstance(op, qp.core.Operator2)
+        assert tuple(op.arguments) == ("D", "wires")
+        assert isinstance(op.D, np.ndarray)
+        assert np.allclose(op.D, [1, -1])
+        assert op.wires == Wires("a")
+
+    def test_abstract_construction(self):
+        """Test that an abstract DiagonalQubitUnitary can be constructed."""
+        op = qp.DiagonalQubitUnitary(Complex[4], wires=Wire[2])
+
+        assert op.is_abstract
+        assert op.D == Complex[4]
+        assert op.wires == Wire[2]
+
     def test_decomposition_single_qubit(self):
         """Test that a single-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.array([1j, -1])
@@ -903,12 +922,30 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
+    def test_decomposition_rule_new_broadcasted(self):
+        """Test graph decomposition rules with a broadcasted diagonal."""
+        D = np.exp(1j * np.arange(12).reshape(3, 4))
+        op = qp.DiagonalQubitUnitary(D, wires=[0, 1])
+
+        for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
+            _test_decomposition_rule(op, rule)
+
+    def test_symbolic_decomposition_rules(self):
+        """Test the Operator2-specific adjoint and power decomposition rules."""
+        D = np.array([1, 1j, -1, -1j])
+        base = qp.DiagonalQubitUnitary(D, wires=[0, 1])
+        symbolic_ops = (qp.adjoint(base, lazy=True), qp.pow(base, 0.5, lazy=True))
+
+        for op in symbolic_ops:
+            for rule in qp.list_decomps(op):
+                _test_decomposition_rule(op, rule)
+
     @pytest.mark.catalyst
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            num_work_wires = rule.get_work_wire_spec(**op.arguments).total
             work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
             all_wires = work_wires + list(op.wires)
             fn = qp.qjit(
@@ -918,7 +955,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                 ),
                 static_argnums=[1],
             )
-            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)
             assert qp.math.allclose(mat[dim:, :dim], 0.0)
             assert qp.math.allclose(mat[:dim, dim:], 0.0)
@@ -970,7 +1007,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     def test_decomposition_rule_edge_cases_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            num_work_wires = rule.get_work_wire_spec(**op.arguments).total
             work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
             all_wires = work_wires + list(op.wires)
             fn = qp.qjit(
@@ -980,7 +1017,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                 ),
                 static_argnums=[1],
             )
-            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)
             assert qp.math.allclose(mat[dim:, :dim], 0.0)
             assert qp.math.allclose(mat[:dim, dim:], 0.0)
@@ -988,11 +1025,10 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qp.DiagonalQubitUnitary."""
-        # pylint: disable=protected-access
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
         op = qp.DiagonalQubitUnitary(D, wires=[1, 2, 3])
         with qp.queuing.AnnotatedQueue() as q:
-            op._controlled(control=0)
+            qp.ctrl(op, control=0)
         tape = qp.tape.QuantumScript.from_queue(q)
         mat = qp.matrix(tape, wire_order=[0, 1, 2, 3])
         assert qp.math.allclose(
@@ -1002,17 +1038,23 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     def test_controlled_broadcasted(self):
         """Test that the correct controlled operation is created when
         controlling a qp.DiagonalQubitUnitary with a broadcasted diagonal."""
-        # pylint: disable=protected-access
         D = np.array([[1j, 1, -1j, 1], [1, -1, 1j, -1]])
         op = qp.DiagonalQubitUnitary(D, wires=[1, 2])
         with qp.queuing.AnnotatedQueue() as q:
-            op._controlled(control=0)
+            qp.ctrl(op, control=0)
         tape = qp.tape.QuantumScript.from_queue(q)
         mat = qp.matrix(tape, wire_order=[0, 1, 2])
         expected = np.array(
             [np.diag([1, 1, 1, 1, 1j, 1, -1j, 1]), np.diag([1, 1, 1, 1, 1, -1, 1j, -1])]
         )
         assert qp.math.allclose(mat, expected)
+
+    def test_controlled_abstract(self):
+        """Test custom control dispatch for an abstract DiagonalQubitUnitary."""
+        base = qp.DiagonalQubitUnitary(Complex[4], wires=Wire[2])
+        op = qp.ctrl(base, control=Wire[1])
+
+        qp.assert_equal(op, qp.DiagonalQubitUnitary(Complex[8], wires=Wire[3]))
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
@@ -1683,7 +1725,6 @@ class TestInterfaceMatricesLabel:
 
 control_data = [
     (qp.QubitUnitary(X, wires=0), Wires([])),
-    (qp.DiagonalQubitUnitary([1, 1], wires=1), Wires([])),
     (qp.ControlledQubitUnitary(X, wires=[0, 1]), Wires([0])),
 ]
 
