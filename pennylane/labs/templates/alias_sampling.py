@@ -3,13 +3,15 @@
 # Licensed under the Apache License, Version 2.0 (the "License").
 """Contains the templates for Alias Sampling."""
 
+from itertools import islice
+
 import numpy as np
 
 import pennylane as qp
 from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 
 
-def uniform_prep_ops(n_states, target_wires, flag, work_wires):
+def uniform_prep_ops(n_states, target_wires, work_wires):
     r"""Prepare a uniform superposition over ``n_states`` basis states.
 
     .. math::
@@ -23,8 +25,7 @@ def uniform_prep_ops(n_states, target_wires, flag, work_wires):
     Args:
         n_states (int): the number of states to prepare.
         target_wires (Sequence[int]): wires on which to prepare the superposition.
-        flag (int): a single flag qubit.
-        work_wires (Sequence[int]): auxiliary qubits (returned to zero).
+        work_wires (Sequence[int]): auxiliary qubits, returned to zero.
     """
     if n_states < 1:
         raise ValueError("n_states must be at least 1")
@@ -49,14 +50,14 @@ def uniform_prep_ops(n_states, target_wires, flag, work_wires):
 
     flr = (L).bit_length() - 1  # floor(log2(L))
     theta = np.arccos(1.0 - (2**flr) / L)
-    w_used = list(work_wires)[: max(logL - 1, 1)]
+    w_used = work_wires[1 : 1 + max(logL - 1, 1)]
 
     LeftClassicalComparator(
-        x_wires=data_L, L=L, target_wire=flag, work_wires=w_used, comparator="<"
+        x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
     )
-    qp.RZ(theta, wires=flag)
+    qp.RZ(theta, wires=work_wires[0])
     qp.adjoint(LeftClassicalComparator)(
-        x_wires=data_L, L=L, target_wire=flag, work_wires=w_used, comparator="<"
+        x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
     )
 
     for w in data_L:
@@ -64,6 +65,8 @@ def uniform_prep_ops(n_states, target_wires, flag, work_wires):
     qp.ctrl(qp.GlobalPhase(-theta), control=data_L, control_values=[0] * logL)
     for w in data_L:
         qp.Hadamard(w)
+
+    qp.GlobalPhase(np.pi/2)
 
 
 def _build_alias_tables(probs, mu):
@@ -153,7 +156,7 @@ def alias_sampling_wires(n_states, mu):
 
 
 def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=None):
-    r"""Prepare an arbitrary state via coherent alias sampling (Figure 11 of
+    r"""Prepare a state with real and positive amplitudes via coherent alias sampling (Figure 11 of
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
     Starting from all-zeros, prepares
@@ -221,7 +224,9 @@ def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=Non
         work_wires = list(range(start, start + req["work_wires"]))
 
     if len(target_wires) != req["target_wires"]:
-        raise ValueError(f"wires must have {req['target_wires']} entries for L={L}; got {len(target_wires)}.")
+        raise ValueError(
+            f"wires must have {req['target_wires']} entries for L={L}; got {len(target_wires)}."
+        )
     if len(temp_wires) != req["temp_wires"]:
         raise ValueError(
             f"temp_wires must have {req['temp_wires']} entries for L={L}, mu={mu}; "
@@ -235,31 +240,24 @@ def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=Non
 
     # Split temp_wires: sigma (mu), alt (logL), keep (mu), flag (1),
     # comparator scratch (mu-1).
-    tw = list(temp_wires)
-    i = 0
-    sigma_wires = tw[i : i + mu]; i += mu
-    alt_wires = tw[i : i + logL]; i += logL
-    keep_wires = tw[i : i + mu]; i += mu
-    flag = tw[i]; i += 1
-    cmp_work = tw[i : i + max(mu - 1, 0)]; i += max(mu - 1, 0)
+    tw_iter = iter(temp_wires)
 
-    # Split work_wires: uniform_flag (1), then shared clean scratch.
-    ww = list(work_wires)
-    uniform_flag = ww[0]
-    uniform_work = ww[1:]
+    sigma_wires = list(islice(tw_iter, mu))
+    alt_wires   = list(islice(tw_iter, logL))
+    keep_wires  = list(islice(tw_iter, mu))
+    flag        = next(tw_iter)
+    cmp_work    = list(islice(tw_iter, max(mu - 1, 0)))
 
     alt, keep = _build_alias_tables(probs, mu)
 
-    data = [
-        [int(b) for b in format(alt[l], f"0{logL}b")]
-        + [int(b) for b in format(keep[l], f"0{mu}b")]
-        for l in range(L)
-    ]
-    while len(data) < 2**logL:
-        data.append([0] * (logL + mu))
+    data = [[0] * (logL + mu) for _ in range(2**logL)]
+    for l in range(L):
+        data[l] = [int(b) for b in format(alt[l], f"0{logL}b")] + [
+            int(b) for b in format(keep[l], f"0{mu}b")
+        ]
 
     # 1. UNIFORM_L over |l>.
-    uniform_prep_ops(L, target_wires, uniform_flag, uniform_work)
+    uniform_prep_ops(L, target_wires, work_wires)
 
     # 2. H^mu over sigma.
     for w in sigma_wires:
@@ -270,7 +268,7 @@ def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=Non
         data,
         control_wires=list(target_wires),
         target_wires=list(alt_wires) + list(keep_wires),
-        work_wires=uniform_work,
+        work_wires=work_wires[1:],
         clean=True,
     )
 
@@ -283,4 +281,4 @@ def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=Non
 
     # 5. flag-controlled SWAP of |l> with |alt_l>.
     for wl, wa in zip(target_wires, alt_wires):
-        qp.ctrl(qp.SWAP(wires=[wl, wa]), control=flag)
+        qp.CSWAP(wires=[flag, wl, wa])

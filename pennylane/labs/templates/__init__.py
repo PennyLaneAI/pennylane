@@ -25,6 +25,8 @@ This module contains templates, which are pre-coded routines that can be used in
     ~SumOfSlatersPrep2
     ~trotter_fragmented
     ~uniform_prep_ops
+    ~alias_sampling
+    ~alias_sampling_wires
 """
 
 from .left_classical_comparator import LeftClassicalComparator

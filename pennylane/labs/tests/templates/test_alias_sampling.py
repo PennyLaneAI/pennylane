@@ -19,10 +19,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import wires
-from pennylane.labs.templates import uniform_prep_ops
+from pennylane.labs.templates import alias_sampling, alias_sampling_wires, uniform_prep_ops
 from pennylane.labs.templates.alias_sampling import _build_alias_tables
-from pennylane.labs.templates import alias_sampling_wires, alias_sampling
+
 
 def _wire_layout(n_states):
     """Return (target_wires, flag, work_wires, n_wires) for a given n_states."""
@@ -33,23 +32,23 @@ def _wire_layout(n_states):
     n_work = max(logL - 1, 1)
 
     target_wires = list(range(n_tgt))
-    flag = n_tgt
-    work_wires = list(range(n_tgt + 1, n_tgt + 1 + n_work))
+    #    flag = n_tgt
+    work_wires = list(range(n_tgt, n_tgt + 1 + n_work))
     n_wires = n_tgt + 1 + n_work
-    return target_wires, flag, work_wires, n_wires
+    return target_wires, work_wires, n_wires
 
 
 def _target_probs(n_states):
-    """Run the circuit and return the probability marginal on the target register."""
-    target_wires, flag, work_wires, n_wires = _wire_layout(n_states)
+    """Run the circuit and return the probability on the target register."""
+    target_wires, work_wires, n_wires = _wire_layout(n_states)
     dev = qp.device("default.qubit", wires=n_wires)
 
     @qp.qnode(dev)
     def circuit():
-        uniform_prep_ops(n_states, target_wires, flag, work_wires)
+        uniform_prep_ops(n_states, target_wires, work_wires)
         return qp.probs(wires=target_wires)
 
-    return circuit()
+    return np.asarray(circuit())
 
 
 class TestUniformPrepOps:
@@ -66,18 +65,18 @@ class TestUniformPrepOps:
     @pytest.mark.parametrize("n_states", [3, 4, 10, 11])
     def test_state_amplitudes(self, n_states):
         """Amplitudes on the target register have equal magnitude sqrt(1/n_states)."""
-        target_wires, flag, work_wires, n_wires = _wire_layout(n_states)
+        target_wires, work_wires, n_wires = _wire_layout(n_states)
         dev = qp.device("default.qubit", wires=n_wires)
 
         @qp.qnode(dev)
         def circuit():
-            uniform_prep_ops(n_states, target_wires, flag, work_wires)
+            uniform_prep_ops(n_states, target_wires, work_wires)
             return qp.state()
 
-        state = circuit()
+        state = np.asarray(circuit())
         block = 2 ** (n_wires - len(target_wires))
         target_amps = state[::block][: 2 ** len(target_wires)]
-        assert np.allclose(np.abs(target_amps[:n_states]), np.sqrt(1 / n_states))
+        assert np.allclose(target_amps[:n_states], np.sqrt(1 / n_states))
         assert np.allclose(target_amps[n_states:], 0.0)
 
     @pytest.mark.parametrize("n_states", [2, 4, 8, 16])
@@ -89,7 +88,7 @@ class TestUniformPrepOps:
     def test_single_state(self):
         """Test that n_states = 1 uses zero target wires and leaves the register in |0>."""
         with qp.queuing.AnnotatedQueue() as q:
-            uniform_prep_ops(1, [], flag=0, work_wires=[1])
+            uniform_prep_ops(1, [], work_wires=[1])
         assert len(q.queue) == 0
 
     def test_wrong_target_wire_count_raises(self):
@@ -97,13 +96,14 @@ class TestUniformPrepOps:
         # n_states = 5 needs 3 target wires; give it 2.
         with pytest.raises(ValueError, match="target_wires must have 3 wires"):
             with qp.queuing.AnnotatedQueue():
-                uniform_prep_ops(5, [0, 1], flag=2, work_wires=[3, 4])
+                uniform_prep_ops(5, [0, 1], work_wires=[3, 4])
 
     def test_non_positive_n_states_raises(self):
         """Test that an error is raised when n_states is not a positive integer."""
         with pytest.raises(ValueError, match="n_states must be at least 1"):
             with qp.queuing.AnnotatedQueue():
-                uniform_prep_ops(n_states=0, target_wires=[0, 1, 2], flag=3, work_wires=[4, 5])
+                uniform_prep_ops(n_states=0, target_wires=[0, 1, 2], work_wires=[3, 4, 5])
+
 
 def _reconstruct_amplitudes(alt, keep, mu):
     """Exact ground-truth distribution from the integer alias tables (Eq. 29 from 	arXiv:1805.03662)."""
@@ -115,6 +115,7 @@ def _reconstruct_amplitudes(alt, keep, mu):
             if alt[k] == l:
                 rho[l] += n - keep[k]
     return rho / (n * L)
+
 
 class TestBuildAliasTables:
     """Test the classical alias-table construction."""
@@ -176,13 +177,17 @@ class TestAliasSampling:
 
         req = alias_sampling_wires(L, mu)
         n = req["target_wires"] + req["temp_wires"] + req["work_wires"]
-        wires, temp, work = np.split(np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]]))
+        wires, temp, work = np.split(
+            np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
 
         dev = qp.device("lightning.qubit", wires=n)
+
         @qp.qnode(dev)
         def circuit():
             alias_sampling(w, mu, wires, temp, work)
             return qp.probs(wires=wires)
+
         probs = np.asarray(circuit())
 
         assert np.allclose(probs[:L], recon, atol=1e-9)
@@ -196,13 +201,17 @@ class TestAliasSampling:
 
         req = alias_sampling_wires(L, mu)
         n = req["target_wires"] + req["temp_wires"] + req["work_wires"]
-        wires, temp, work = np.split(np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]]))
+        wires, temp, work = np.split(
+            np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
 
         dev = qp.device("lightning.qubit", wires=n)
+
         @qp.qnode(dev)
         def circuit():
             alias_sampling(w, mu, wires, temp, work)
             return qp.probs(wires=wires)
+
         probs = np.asarray(circuit())
 
         assert np.isclose(probs[:L].sum(), 1.0, atol=1e-6)
