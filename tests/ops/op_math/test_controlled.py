@@ -245,6 +245,12 @@ class TestControlledInit:
         qp.ops.functions.assert_valid(op)
 
 
+# pylint: disable=too-few-public-methods
+class DummyHadamard(qp.operation.Operator):
+    resource_keys = set({})
+    num_wires = 1
+
+
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
 
@@ -252,14 +258,14 @@ class TestControlledProperties:
         """Tests that a controlled op has the correct resource params."""
 
         op = Controlled(
-            qp.MultiRZ(0.5, wires=[0, 1, 2]),
-            control_wires=[3, 4],
+            DummyHadamard(wires=[0]),
+            control_wires=[1, 2],
             control_values=[True, False],
-            work_wires=[5],
+            work_wires=[3],
         )
         assert op.resource_params == {
-            "base_class": qp.MultiRZ,
-            "base_params": {"num_wires": 3},
+            "base_class": DummyHadamard,
+            "base_params": {},
             "num_control_wires": 2,
             "num_zero_control_values": 1,
             "num_work_wires": 1,
