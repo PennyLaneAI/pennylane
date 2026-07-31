@@ -16,7 +16,6 @@ Tests for the QROM template.
 """
 
 import math
-from typing import Sequence
 
 import numpy
 import pytest
