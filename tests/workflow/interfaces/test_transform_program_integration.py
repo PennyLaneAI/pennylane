@@ -52,8 +52,8 @@ class TestCompilePipeline:
 
         # checks on what is passed to the device. Should be exactly what we put in.
         assert tracker.totals["executions"] == 2
-        assert tracker.history["resources"][0].gate_types["RX"] == 1
-        assert tracker.history["resources"][1].gate_types["RY"] == 1
+        assert tracker.history["resources"][0].quantum_operations["RX"] == 1
+        assert tracker.history["resources"][1].quantum_operations["RY"] == 1
 
     @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     def test_transform_program_modifies_circuit(self, interface):
@@ -88,10 +88,10 @@ class TestCompilePipeline:
         assert qp.math.allclose(results[1], 0.0)
 
         assert tracker.totals["executions"] == 2
-        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].num_gates == 1
-        assert tracker.history["resources"][1].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][1].num_gates == 1
+        assert tracker.history["resources"][0].quantum_operations["PauliX"] == 1
+        assert tracker.history["resources"][0].total_quantum_operations == 1
+        assert tracker.history["resources"][1].quantum_operations["PauliX"] == 1
+        assert tracker.history["resources"][1].total_quantum_operations == 1
 
     @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
     def test_shot_distributing_transform(self, interface):
@@ -195,7 +195,7 @@ class TestCompilePipeline:
         with dev.tracker:
             results = qp.execute((tape1,), dev, transform_program=prog)
 
-        assert dev.tracker.history["resources"][0].gate_types["PauliX"] == 2
+        assert dev.tracker.history["resources"][0].quantum_operations["PauliX"] == 2
         assert qp.math.allclose(results, 1.0)
 
         prog_reverse = qp.CompilePipeline(repeat_operations_container, just_pauli_x_container)
@@ -203,7 +203,7 @@ class TestCompilePipeline:
         with dev.tracker:
             results = qp.execute((tape1,), dev, transform_program=prog_reverse)
 
-        assert dev.tracker.history["resources"][0].gate_types["PauliX"] == 1
+        assert dev.tracker.history["resources"][0].quantum_operations["PauliX"] == 1
         assert qp.math.allclose(results, -1.0)
 
     @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))

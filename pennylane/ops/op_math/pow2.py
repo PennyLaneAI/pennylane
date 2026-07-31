@@ -15,7 +15,7 @@
 """Defines the base class for the power of operators."""
 
 from functools import reduce
-from typing import Union
+from typing import Union, override
 
 from scipy.linalg import fractional_matrix_power
 
@@ -50,6 +50,8 @@ from pennylane.ops.op_math import adjoint
 from .adjoint import Adjoint
 from .adjoint2 import Adjoint2
 from .symbolicop2 import SymbolicOp2
+
+_superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
 class Pow2(SymbolicOp2):
@@ -106,15 +108,31 @@ class Pow2(SymbolicOp2):
         )
 
     @property
+    @override
+    def name(self) -> str:
+        return f"Pow({self.base.name})"
+
+    @property
+    @override
     def ndim_params(self):
         return self.base.ndim_params
 
+    @override
+    def label(self, decimals=None, base_label=None, cache=None):
+        z_string = format(self.z).translate(_superscript)
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return (
+            f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
+        )
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    @override
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix and isinstance(self.z, int)
 
     @staticmethod
+    @override
     def compute_matrix(base, z):  # pylint: disable=arguments-differ
         mat = qp.matrix(base)
         if isinstance(z, int):
@@ -123,6 +141,7 @@ class Pow2(SymbolicOp2):
 
     # pylint: disable=arguments-differ
     @staticmethod
+    @override
     def compute_sparse_matrix(base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(**base.arguments)
@@ -131,6 +150,7 @@ class Pow2(SymbolicOp2):
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    @override
     def has_decomposition(self):
 
         if isinstance(self.z, int) and self.z > 0:
@@ -147,6 +167,7 @@ class Pow2(SymbolicOp2):
         return True
 
     @staticmethod
+    @override
     def compute_decomposition(base, z):
         try:
             return base.pow(z)
@@ -160,10 +181,12 @@ class Pow2(SymbolicOp2):
             raise DecompositionUndefinedError from e
 
     @property
+    @override
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
     @staticmethod
+    @override
     def compute_diagonalizing_gates(base, z):  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
@@ -197,15 +220,18 @@ class Pow2(SymbolicOp2):
         return base.diagonalizing_gates()
 
     @staticmethod
+    @override
     def compute_eigvals(base, z):
         base_eigvals = base.eigvals()
-        return [value**z for value in base_eigvals]
+        return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    @override
     def has_generator(self):
         return self.base.has_generator
 
+    @override
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -220,14 +246,17 @@ class Pow2(SymbolicOp2):
         """
         return self.z * self.base.generator()
 
+    @override
     def pow(self, z):
         return [Pow2(base=self.base, z=self.z * z)]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    @override
     def has_adjoint(self):
         return isinstance(self.z, int)
 
+    @override
     def adjoint(self):
         """Create an operation that is the adjoint of this one.
 
@@ -255,6 +284,7 @@ class Pow2(SymbolicOp2):
             "The adjoint of Pow operators only is well-defined for integer powers."
         )
 
+    @override
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:
         if pr := self.pauli_rep:
@@ -295,7 +325,7 @@ def repeat_pow_base(base, z):
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(lambda base, z: {abstractify(base.base): z * base.z})
+@register_resources(lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1})
 def merge_powers(base, z):
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
@@ -341,6 +371,19 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 
 
 pow_involutory = make_pow_decomp_with_period(2)
+
+
+def _pow_rotation_resource(base, z):  # pylint: disable=unused-argument
+    return {abstractify(base): 1}
+
+
+@register_resources(_pow_rotation_resource)
+def pow_rotation(base, z):
+    """Decompose the power of a general rotation operator by multiplying the power by the angle."""
+    # A rotation should only have 1 dynamic parameter
+    assert len(base.dynamic_argnames) == 1
+    angle = tuple(base.dynamic_args.values())[0]
+    qp.ops.functions.bind_new_parameters(base, (angle * z,))
 
 
 @list_decomps.register

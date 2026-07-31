@@ -24,6 +24,12 @@ op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 
 op_params = tuple(zip(op_wires, op_repr))
 
 
+def test_is_verified_hermitian():
+    """Test that identity is verified to be hermitian."""
+    assert Identity.is_verified_hermitian is True
+    assert Identity(0).is_verified_hermitian is True
+
+
 @pytest.mark.parametrize("wires", op_wires)
 class TestIdentity:
     # pylint: disable=protected-access

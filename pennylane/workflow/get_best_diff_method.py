@@ -57,7 +57,7 @@ def get_best_diff_method(qnode: QNode) -> str:
 
     def handle_return(transform):
         """Helper function to manage the return"""
-        if transform in (qp.gradients.param_shift, qp.gradients.param_shift_cv):
+        if transform is qp.gradients.param_shift:
             return "parameter-shift"
         return transform
 

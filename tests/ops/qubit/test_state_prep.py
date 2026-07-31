@@ -109,7 +109,6 @@ class TestStandardValidityBasisState:
             assert len(tape) == 1
             assert isinstance(tape[0], qp.X)
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     @pytest.mark.parametrize("state_traced", [True, False])
     @pytest.mark.parametrize("wires_traced", [True, False])
@@ -189,7 +188,6 @@ class TestDecomposition:
         assert isinstance(ops1[0], qp.X)
         assert isinstance(ops2[0], qp.X)
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "state",
@@ -296,7 +294,7 @@ class TestDecomposition:
 
 
 class TestStatePrepIntegration:
-    @pytest.mark.external
+
     @pytest.mark.catalyst
     @pytest.mark.parametrize("input_type", [tuple, list])
     def test_state_prep_tuple_list_capture(self, input_type):
@@ -313,7 +311,6 @@ class TestStatePrepIntegration:
         result = circuit()
         assert np.allclose(result, state)
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     @pytest.mark.parametrize("input_type", [tuple, list])
     def test_basis_state_tuple_list_capture(self, input_type):
