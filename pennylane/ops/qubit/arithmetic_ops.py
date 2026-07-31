@@ -532,6 +532,8 @@ class IntegerComparator(Operation):
         if control_wires is None:
             raise ValueError("Must specify the control wires.")
 
+        control_wires = Wires(control_wires)
+
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
 
@@ -548,7 +550,7 @@ class IntegerComparator(Operation):
             for control_values in control_values_list:
                 control_values = [int(n) for n in control_values]
                 mat = mat @ qp.MultiControlledX.compute_matrix(
-                    control_wires + ["target"], control_values=control_values
+                    control_wires + Wires(["target"]), control_values=control_values
                 )
 
         return mat

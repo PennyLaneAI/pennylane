@@ -135,7 +135,7 @@ class TemporaryAND(Operation):
     def __init__(self, wires: WiresLike, control_values=None):
         wires = Wires(wires)
         if control_values is None:
-            control_values = (1, 1)
+            control_values = (True, True)
         self.hyperparameters["control_values"] = tuple(control_values)
         super().__init__(wires=wires)
 
