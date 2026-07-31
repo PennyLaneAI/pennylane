@@ -31,7 +31,7 @@ from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -553,29 +553,6 @@ class DiagonalQubitUnitary(Operator2):
         cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
-
-
-@custom_ctrl_dispatch.register
-# pylint: disable=unused-argument
-def _ctrl_diagonal_qubit_unitary(
-    base: DiagonalQubitUnitary, control, control_values, work_wires, work_wire_type
-):
-    # Let ControlledOp2 handle multiple controls instead of materializing an exponentially
-    # larger diagonal here.
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        if base.is_abstract:
-            input_shape = qp.math.shape(base.D)
-            last_dim = -1 if input_shape[-1] == -1 else 2 * input_shape[-1]
-            controlled_D = Complex[last_dim]
-            controlled_wires = abstractify(control) + base.wires
-        else:
-            controlled_D = qp.math.hstack([qp.math.ones_like(base.D), base.D])
-            controlled_wires = control + base.wires
-        return DiagonalQubitUnitary(
-            controlled_D,
-            wires=controlled_wires,
-        )
-    return NotImplemented
 
 
 # pylint: disable=unused-argument

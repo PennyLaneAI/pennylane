@@ -30,7 +30,6 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
-from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -1017,22 +1016,6 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             [np.diag([1, 1, 1, 1, 1j, 1, -1j, 1]), np.diag([1, 1, 1, 1, 1, -1, 1j, -1])]
         )
         assert qp.math.allclose(mat, expected)
-
-    @pytest.mark.parametrize("control", ([0], Wire[1]))
-    def test_controlled_abstract(self, control):
-        """Test custom control dispatch for an abstract DiagonalQubitUnitary."""
-        base = qp.DiagonalQubitUnitary(Complex[4], wires=Wire[2])
-        op = qp.ctrl(base, control=control)
-
-        qp.assert_equal(op, qp.DiagonalQubitUnitary(Complex[8], wires=Wire[3]))
-
-    def test_controlled_zero_value_uses_generic_control(self):
-        """Test that a zero-valued control uses the generic controlled operator."""
-        base = qp.DiagonalQubitUnitary(np.array([1, 1j]), wires=1)
-        op = qp.ctrl(base, control=0, control_values=[0])
-
-        assert isinstance(op, qp.ops.ControlledOp2)
-        assert op.control_values == [False]
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
