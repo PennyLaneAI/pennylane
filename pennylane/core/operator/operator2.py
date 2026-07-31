@@ -69,6 +69,15 @@ class GradMethod(StrEnum):
     FINITE_DIFF = "F"
 
 
+ARGNAME_CATEGORIES = (
+    "wire_argnames",
+    "dynamic_argnames",
+    "static_argnames",
+    "compilable_argnames",
+    "hybrid_argnames",
+)
+
+
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
@@ -1370,13 +1379,7 @@ class Operator2(metaclass=OperatorMeta):
             return
 
         # Argnames setup
-        for attr in (
-            "dynamic_argnames",
-            "wire_argnames",
-            "static_argnames",
-            "hybrid_argnames",
-            "compilable_argnames",
-        ):
+        for attr in ARGNAME_CATEGORIES:
             if isinstance(v := getattr(cls, attr), str):
                 setattr(cls, attr, (v,))
 
@@ -1385,6 +1388,11 @@ class Operator2(metaclass=OperatorMeta):
         _init_subclass_wire_sizes_setup(cls)
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
+
+        for attr in ARGNAME_CATEGORIES:
+            # enforce sorting by signature
+            sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
+            setattr(cls, attr, sorted_names)
 
 
 # ---------------------------------------------------------------------------------
