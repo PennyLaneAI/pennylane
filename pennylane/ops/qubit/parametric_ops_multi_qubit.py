@@ -171,7 +171,7 @@ class MultiRZ(Operator2):
                 0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
                dtype=torch.complex128)
         """
-        num_wires = len(wires)
+        num_wires = 1 if isinstance(wires, int) else len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
         if (
@@ -216,6 +216,9 @@ class MultiRZ(Operator2):
         ops += [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0], strict=True)]
 
         return ops
+
+    def adjoint(self) -> "MultiRZ":
+        return MultiRZ(-self.parameters[0], wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
         return [MultiRZ(self.data[0] * z, wires=self.wires)]

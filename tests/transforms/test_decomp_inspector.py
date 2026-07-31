@@ -108,37 +108,29 @@ class TestInspectDecompGraph:
         op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
-            Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
+            Decomposition 0 (name: ctrl_single_work_wire)
             Insufficient work wires: requires 1 but only 0 available.
 
-            Decomposition 1 (name: to_controlled_qubit_unitary)
-            Not applicable (provided operator instance does not meet all conditions for this rule).
-
-            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            CHOSEN: Decomposition 1 (name: controlled(_multi_rz_decomposition))
             0: ─╭X─╭RZ(0.50)─╭X─┤  
             1: ─├●─│─────────├●─┤  
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 88, RX: 12, RY: 20, RZ: 140}
-            Weighted Cost: 332.0
+            Estimated First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            Full Expansion Gates: {CNOT: 160, GlobalPhase: 91, RX: 19, RY: 24, RZ: 132}
+            Weighted Cost: 335.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
-            #### Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
+            #### Decomposition 0 (name: ctrl_single_work_wire)
 
             _Insufficient work wires: requires 1 but only 0 available._
 
             ---
 
-            #### Decomposition 1 (name: to_controlled_qubit_unitary)
-
-            _Not applicable (provided operator instance does not meet all conditions for this rule)._
-
-            ---
-
-            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            #### **CHOSEN:** Decomposition 1 (name: controlled(_multi_rz_decomposition))
 
             ```
             0: ─╭X─╭RZ(0.50)─╭X─┤  
@@ -149,19 +141,20 @@ class TestInspectDecompGraph:
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
-            | First-Level Expansion | Count |
-            | :--- | :--- |
-            | Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 1 |
-            | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 |
+            | First-Level Expansion | Estimated | Actual |
+            | :--- | :--- | :--- |
+            | Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 1 | 1 |
+            | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 | 2 |
+            | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 160 |
-            | GlobalPhase | 88 |
-            | RX | 12 |
-            | RY | 20 |
-            | RZ | 140 |
-            | **Weighted Cost** | 332.0 |
+            | GlobalPhase | 91 |
+            | RX | 19 |
+            | RY | 24 |
+            | RZ | 132 |
+            | **Weighted Cost** | 335.0 |
             </details>
             """).strip()
 

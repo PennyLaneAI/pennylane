@@ -29,7 +29,8 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.ops.op_math.pow2 import _pow_abstract
+from pennylane.typing import Wire, Float
 
 
 @pytest.mark.unit
@@ -635,10 +636,5 @@ class TestSymbolicResourceRep:
     def test_pow_resource_rep(self):
         """Tests the pow_resource_rep utility function."""
 
-        rep = qp.decomposition.pow_resource_rep(qp.MultiRZ, {"num_wires": 3}, 3)
-        assert rep == CompressedResourceOp(
-            qp.ops.Pow, {"base_class": qp.MultiRZ, "base_params": {"num_wires": 3}, "z": 3}
-        )
-
-        op = qp.pow(qp.MultiRZ(0.5, wires=[0, 1, 2]), 3)
-        assert op.resource_params == rep.params
+        rep = _pow_abstract(qp.MultiRZ(Float, Wire[3]), 3)
+        assert rep == qp.MultiRZ(Float, wires=Wire[3]) ** 3
