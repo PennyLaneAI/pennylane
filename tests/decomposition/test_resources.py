@@ -241,25 +241,22 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(qp.RX, {})
         assert repr(op) == "RX"
 
-        op = CompressedResourceOp(qp.MultiRZ, {"num_wires": 5})
-        assert repr(op) == "MultiRZ(num_wires=5)"
-
         op = CompressedResourceOp(DummyOp, {"bar": 1, "foo": 2})
         assert repr(op) == "DummyOp(bar=1, foo=2)"
 
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
         assert repr(op) == "DummyOp(bar=1, foo=2)"
 
-        op = adjoint_resource_rep(qp.MultiRZ, {"num_wires": 4})
-        assert repr(op) == "Adjoint(MultiRZ(num_wires=4))"
+        op = adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
+        assert repr(op) == "Adjoint(DummyOp(bar=1, foo=2))"
 
-        op = pow_resource_rep(qp.MultiRZ, {"num_wires": 4}, z=2)
-        assert repr(op) == "Pow(MultiRZ(num_wires=4), z=2)"
+        op = pow_resource_rep(DummyOp, {"foo": 2, "bar": 1}, z=2)
+        assert repr(op) == "Pow(DummyOp(bar=1, foo=2), z=2)"
 
-        op = controlled_resource_rep(qp.MultiRZ, {"num_wires": 5}, num_control_wires=2)
+        op = controlled_resource_rep(DummyOp, {"foo": 2, "bar": 1}, num_control_wires=2)
         assert (
             repr(op)
-            == "Controlled(MultiRZ(num_wires=5), num_control_wires=2, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed)"
+            == "Controlled(DummyOp(bar=1, foo=2), num_control_wires=2, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed)"
         )
 
     @pytest.mark.parametrize(
