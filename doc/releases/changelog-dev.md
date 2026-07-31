@@ -268,6 +268,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.compile`'s `basis_set` argument now accepts Operator subclasses (e.g. ``qml.RX``) in addition to
+  string gate names, and raises a clear ``ValueError`` for invalid entries.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Sorts the gate counts in the display of resources produced from decompositions.
   [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
 
@@ -1211,3 +1215,4 @@ Dennis Wayo,
 David Wierichs,
 Jake Zaia,
 Zinan Zhou.
+Rohit David Paul
