@@ -853,6 +853,9 @@
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  - Parametric operators are ported:
+    - `~.MultiRZ`
+  [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
