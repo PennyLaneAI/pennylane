@@ -199,12 +199,19 @@ class TestSpecsTransform:
         assert resources.total_quantum_operations == 4
         assert resources.depth == 4
 
-    @pytest.mark.xfail(
-        reason="Needs changes from https://github.com/PennyLaneAI/catalyst/pull/3076 in order to pass.",
-        strict=True,
+    @pytest.mark.parametrize(
+        "level",
+        [
+            pytest.param(
+                0,
+                marks=pytest.mark.xfail(
+                    reason="Needs changes from https://github.com/PennyLaneAI/catalyst/pull/3076 in order to pass.",
+                    strict=True,
+                ),
+            ),
+            "device",
+        ],
     )
-    @pytest.mark.catalyst
-    @pytest.mark.parametrize("level", [0, "device"])
     def test_qjit_partial(self, level):
         """Test specs for a partial-wrapped Catalyst jitted QNode."""
         pytest.importorskip("catalyst")
