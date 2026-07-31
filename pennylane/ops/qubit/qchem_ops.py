@@ -30,6 +30,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
 )
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -265,7 +266,7 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
-add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
+add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
 add_decomps("Pow(SingleExcitation)", pow_rotation)
 
 
