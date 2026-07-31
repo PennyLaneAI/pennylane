@@ -122,7 +122,7 @@ def _mlir_resources_to_specs_resources(
             # Separate out PPMs and PPRs by weight
             gate_name += f"-w{gate_size}"
 
-            quantum_operations[gate_name] += count
+        quantum_operations[gate_name] += count
 
     # Process PBC depths
     pbc_depth = None
