@@ -1386,6 +1386,9 @@ class Operator2(metaclass=OperatorMeta):
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
 
+        if cls.has_fixed_sig:
+            qp.decomposition.register_signature(cls)
+
 
 # ---------------------------------------------------------------------------------
 # ------------------------- Instance construction helpers -------------------------
