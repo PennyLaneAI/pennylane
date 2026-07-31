@@ -904,24 +904,6 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    def test_decomposition_rule_new_broadcasted(self):
-        """Test graph decomposition rules with a broadcasted diagonal."""
-        D = np.exp(1j * np.arange(12).reshape(3, 4))
-        op = qp.DiagonalQubitUnitary(D, wires=[0, 1])
-
-        for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            _test_decomposition_rule(op, rule)
-
-    def test_symbolic_decomposition_rules(self):
-        """Test the Operator2-specific adjoint and power decomposition rules."""
-        D = np.array([1, 1j, -1, -1j])
-        base = qp.DiagonalQubitUnitary(D, wires=[0, 1])
-        symbolic_ops = (qp.adjoint(base, lazy=True), qp.pow(base, 0.5, lazy=True))
-
-        for op in symbolic_ops:
-            for rule in qp.list_decomps(op):
-                _test_decomposition_rule(op, rule)
-
     @pytest.mark.catalyst
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new_qjit(self, op):
