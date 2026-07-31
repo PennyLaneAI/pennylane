@@ -858,10 +858,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         def fanout():
             """The second branch calls a fan-out, in form of a controlled ``BasisState``,
             controlled by one of the (first ``iso_finder.m``) remainder qubits and targeting
-            all other qubits. In order to avoid dynamic (intermediate) shapes, we define an
-            inner conditional function ``fanout_branches`` and register ``iso_finder.m`` many
-            branches to it, one for each possible control qubit. This is not optimal in terms of
-            coding practice, but it works in a stable manner and is sufficiently efficient.
+            all other qubits.
             """
             control, fanout_bit_pointer = data[:2]
             target_wires = del_cwire(control)
