@@ -131,8 +131,9 @@ def _mlir_resources_to_specs_resources(
         quantum_operations[gate_name] += count
 
     # Recurse through all function calls and combine resources with the appropriate multiplicative factors
+    function_calls = resources["function_calls"]
     for called_fn, call_count in itertools.chain(
-        resources["function_calls"].items(), resources["var_function_calls"].items()
+        function_calls["static"].items(), function_calls["dynamic"].items()
     ):
         if not isinstance(call_count, int):
             # If there is no integer call count, we have to treat this as a symbolic variable
