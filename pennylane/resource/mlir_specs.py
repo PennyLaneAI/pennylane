@@ -92,6 +92,16 @@ def _mlir_resources_to_specs_resources(
     fn_resources[focus] = None
     resources = all_data[focus]
 
+    # Process qubit allocations
+    num_allocs = resources["num_qubits"]["alloc"]
+    if resources["metadata"].get("auto_qubit_management", False):
+        warnings.warn(
+            f"Specs detected that function '{focus}' uses automatic qubit management. "
+            "The number of qubits allocated by this function will not be known at this time, so "
+            "the final allocation counts may be inaccurate.",
+        )
+
+    # Process quantum operations and measurements
     operations = {
         k: resources["quantum_operations"][k] for k in resources["quantum_operations"].keys()
     }
@@ -104,22 +114,6 @@ def _mlir_resources_to_specs_resources(
         },
     )
     quantum_operations = defaultdict(int)
-    num_allocs = resources["num_qubits"]["alloc"]
-
-    pbc_depth = None
-    if depths := resources["extended_fields"].get("pbc_depth"):
-        pbc_depth = PBCDepth(
-            any_commuting_depth=depths["any_commuting_depth"],
-            qubit_disjoint_depth=depths["qubit_disjoint_depth"],
-        )
-
-    if resources["metadata"].get("auto_qubit_management", False):
-        warnings.warn(
-            f"Specs detected that function '{focus}' uses automatic qubit management. "
-            "The number of qubits allocated by this function will not be known at this time, so "
-            "the final allocation counts may be inaccurate.",
-        )
-
     for res_name, count in operations.items():
         match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
         gate_name, gate_size = match.groups() if match else (res_name, 0)
@@ -128,9 +122,18 @@ def _mlir_resources_to_specs_resources(
             # Separate out PPMs and PPRs by weight
             gate_name += f"-w{gate_size}"
 
-        quantum_operations[gate_name] += count
+            quantum_operations[gate_name] += count
 
-    # Recurse through all function calls and combine resources with the appropriate multiplicative factors
+    # Process PBC depths
+    pbc_depth = None
+    if depths := resources["extended_fields"].get("pbc_depth"):
+        pbc_depth = PBCDepth(
+            any_commuting_depth=depths["any_commuting_depth"],
+            qubit_disjoint_depth=depths["qubit_disjoint_depth"],
+        )
+
+    # Process function calls (both static and dynamic)
+    # NOTE: Recurse through all function calls and combine resources with the appropriate multiplicative factors
     function_calls = resources["function_calls"]
     for called_fn, call_count in itertools.chain(
         function_calls["static"].items(), function_calls["dynamic"].items()
@@ -173,7 +176,8 @@ def _mlir_resources_to_specs_resources(
                     + call_count * called_fn_resources.qubit_disjoint_depth,
                 )
 
-    # Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
+    # Construct final specs resource objects
+    # NOTE: Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
 
     kwargs = {
