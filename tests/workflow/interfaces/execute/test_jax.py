@@ -36,6 +36,28 @@ def get_device(device_name, seed):
     return qp.device(device_name, seed=seed)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Passing a QuantumScript containing an Operator2 directly through jax.jit traces "
+        "concrete wire labels as dynamic leaves."
+    ),
+)
+def test_jit_execution():
+    """Test that qp.execute can be directly jitted."""
+    dev = qp.device("default.qubit")
+
+    tape = qp.tape.QuantumScript(
+        [qp.RX(jax.numpy.array(0.1), 0)], [qp.expval(qp.s_prod(2.0, qp.PauliZ(0)))]
+    )
+
+    out = jax.jit(qp.execute, static_argnames=("device", "diff_method"))(
+        (tape,), device=dev, diff_method=qp.gradients.param_shift
+    )
+    expected = 2.0 * jax.numpy.cos(jax.numpy.array(0.1))
+    assert qp.math.allclose(out[0], expected)
+
+
 # pylint: disable=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
