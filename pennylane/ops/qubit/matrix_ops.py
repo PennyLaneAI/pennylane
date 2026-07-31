@@ -667,11 +667,13 @@ def _ctrl_diagonal_qubit_unitary(
             input_shape = qp.math.shape(base.D)
             last_dim = -1 if input_shape[-1] == -1 else 2 * input_shape[-1]
             controlled_D = Complex[(*input_shape[:-1], last_dim)]
+            controlled_wires = abstractify(control) + base.wires
         else:
             controlled_D = qp.math.hstack([qp.math.ones_like(base.D), base.D])
+            controlled_wires = control + base.wires
         return DiagonalQubitUnitary(
             controlled_D,
-            wires=control + base.wires,
+            wires=controlled_wires,
         )
     return NotImplemented
 
