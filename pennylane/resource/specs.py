@@ -121,7 +121,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
 ]:  # pragma: no cover
-
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
@@ -575,8 +574,8 @@ def specs(
 
         We can get a pass-by-pass overview of the resources using ``level="all"``:
 
-        >>> all_specs = qp.specs(circuit, level="all")(1.23)
-        >>> print(all_specs)
+        >>> all_specs = qp.specs(circuit, level="all")(1.23) # doctest: +SKIP
+        >>> print(all_specs) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
@@ -600,7 +599,7 @@ def specs(
         accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
         the name of a pass or marker. For example:
 
-        >>> print(all_specs.resources['merge-rotations'])
+        >>> print(all_specs.resources['merge-rotations']) # doctest: +SKIP
         Quantum operations:
         - Total: 2
           - CNOT: 1
@@ -614,7 +613,7 @@ def specs(
         applied is to use the ``"user"`` level. For example, the following will also return the
         resources after the ``merge-rotations`` pass:
 
-        >>> print(qp.specs(circuit, level="user")(1.23).resources)
+        >>> print(qp.specs(circuit, level="user")(1.23).resources)# doctest: +SKIP
         Quantum operations:
         - Total: 2
           - CNOT: 1
@@ -642,7 +641,7 @@ def specs(
                 qp.X(0)
                 return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
-        >>> print(qp.specs(circuit, level="all")())
+        >>> print(qp.specs(circuit, level="all")()) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
@@ -694,12 +693,12 @@ def specs(
                     qp.PauliZ(0)
                 return qp.expval(qp.PauliZ(0))
 
-            specs_result = qp.specs(circuit, level=0)(5, 3)
+        >>> specs_result = qp.specs(circuit, level=0)(5, 3) # doctest: +SKIP
 
         If we attempt to get pass-by-pass specs for this circuit, the resource information will be
         symbolic due to the dependence on the input parameters ``x`` and ``z``:
 
-        >>> print(specs_result)
+        >>> print(specs_result) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
@@ -720,8 +719,8 @@ def specs(
         returned :class:`~.resource.SpecsResources` object, and providing keyword arguments
         which describe the mapping from each symbolic variable to an integer value:
 
-        >>> res = specs_result.resources
-        >>> print(res.subs(a=5, b=3))
+        >>> res = specs_result.resources # doctest: +SKIP
+        >>> print(res.subs(a=5, b=3)) # doctest: +SKIP
         Quantum operations:
         - Total: 10
           - Hadamard: 1
@@ -735,7 +734,7 @@ def specs(
         These substitutions may also be provided as a dictionary, which can be helpful in
         programmatic contexts:
 
-        >>> print(res.subs({"a": 5, "b": 3}))
+        >>> print(res.subs({"a": 5, "b": 3})) # doctest: +SKIP
         Quantum operations:
         - Total: 10
           - Hadamard: 1

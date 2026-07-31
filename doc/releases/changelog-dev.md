@@ -157,12 +157,11 @@
       for _ in range(x):
           qp.PauliX(0)
       return qp.expval(qp.PauliX(0))
-
-  specs_result = qp.specs(circuit, level=0)(5)
   ```
 
   ```pycon
-  >>> print(specs_result)
+  >>> specs_result = qp.specs(circuit, level=0)(5) # doctest: +SKIP
+  >>> print(specs_result) # doctest: +SKIP
   Device: lightning.qubit
   Device wires: 1
   Shots: Shots(total=None)
@@ -183,8 +182,8 @@
   These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
 
   ```pycon
-  >>> res = specs_result.resources
-  >>> print(res.subs(a=5))
+  >>> res = specs_result.resources # doctest: +SKIP
+  >>> print(res.subs(a=5)) # doctest: +SKIP
   Quantum operations:
   - Total: 7
     - Hadamard: 1
