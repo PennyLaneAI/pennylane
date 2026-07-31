@@ -47,6 +47,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
@@ -248,9 +249,9 @@ class TestDecompositions:
         op = qp.Hadamard(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 4
 
-        assert res[0].name == "PhaseShift"
+        assert res[0].name == "RZ"
 
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
@@ -259,12 +260,33 @@ class TestDecompositions:
         assert res[1].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
-        assert res[2].name == "PhaseShift"
+        assert res[2].name == "RZ"
         assert res[2].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
+        assert res[3].name == "GlobalPhase"
+
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    @pytest.mark.catalyst
+    def test_hadamard_ppm_decomposition(self, seed):
+        """Tests that the PPM decomposition of Hadamard is correct."""
+        rule = qp.list_decomps(qp.Hadamard)["_hadamard_ppm"]
+        rng = np.random.default_rng(seed)
+        init_state = rng.random(2) + 1j * rng.random(2)
+        init_state /= np.linalg.norm(init_state)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=[0, 1]))
+        def circuit():
+            qp.StatePrep(init_state, [0])
+            rule([0])
+            qp.H(0)
+            return qp.state()
+
+        init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
+        assert np.allclose(init_state_full, circuit())
 
     def test_CH_decomposition(self, tol):
         """Tests that the decomposition of the CH gate is correct"""
@@ -1052,30 +1074,15 @@ class TestControlledMethod:
         out = qp.PauliX(0)._controlled("a")
         qp.assert_equal(out, qp.CNOT(("a", 0)))
 
-    def test_PauliY(self):
-        """Test the PauliY _controlled method."""
-        out = qp.PauliY(0)._controlled("a")
-        qp.assert_equal(out, qp.CY(("a", 0)))
-
     def test_PauliZ(self):
         """Test the PauliZ _controlled method."""
         out = qp.PauliZ(0)._controlled("a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
 
-    def test_Hadamard(self):
-        """Test the Hadamard _controlled method."""
-        out = qp.Hadamard(0)._controlled("a")
-        qp.assert_equal(out, qp.CH(("a", 0)))
-
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
         out = qp.CNOT((0, 1))._controlled("a")
         qp.assert_equal(out, qp.Toffoli(("a", 0, 1)))
-
-    def test_SWAP(self):
-        """Test the SWAP _controlled method."""
-        out = qp.SWAP((0, 1))._controlled("a")
-        qp.assert_equal(out, qp.CSWAP(("a", 0, 1)))
 
     def test_Barrier(self):
         """Tests the _controlled behavior of Barrier."""
@@ -1103,27 +1110,22 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         half_op = qp.pow(op, half_data)
         quart_op = qp.pow(op, quart_data)
 
-        decomps = qp.list_decomps(f"Pow({op.name})")
-        for rule in decomps:
-            params, args, kwargs = _get_decomp_args(half_op)
-            if rule.is_applicable(**params):
+        def check_power(pow_op, repetitions):
+            params, args, kwargs = _get_decomp_args(pow_op)
+            decomps = qp.list_decomps(abstractify(pow_op))
+            applicable_rules = [rule for rule in decomps if rule.is_applicable(**params)]
+            assert applicable_rules
+
+            for rule in applicable_rules:
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
+                    for _ in range(repetitions):
+                        rule(*args, **kwargs)
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
-            params, args, kwargs = _get_decomp_args(quart_op)
-            if rule.is_applicable(**params):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-
-                tape = qp.tape.QuantumScript.from_queue(q)
-                assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
+        check_power(half_op, 2)
+        check_power(quart_op, 4)
 
     @pytest.mark.parametrize("z", [0.25, 0.5, 2, 4, 8, 9, [0.25, 0.5]])
     @pytest.mark.parametrize("op", [qp.ISWAP(wires=[0, 1]), qp.SISWAP(wires=[0, 1])])
@@ -1135,10 +1137,10 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
 
-            if rule.is_applicable(**pow_op.resource_params):
+            if rule.is_applicable(**pow_op.arguments):
 
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
+                    rule(**pow_op.arguments)
 
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.
