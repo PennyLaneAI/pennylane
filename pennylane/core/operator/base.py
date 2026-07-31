@@ -395,9 +395,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Some examples include arithmetic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
         perform preprocessing during initialization.
 
-        See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
-
-
     .. details::
         :title: Parameter broadcasting
         :href: parameter-broadcasting
