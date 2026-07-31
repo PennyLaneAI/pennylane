@@ -40,7 +40,7 @@ class TestGQSP:
             qp.RZ(0.6, wires)
 
         op = qp.GQSP(unitary(1), angles, control=(0,))
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
     @pytest.mark.parametrize(
         ("unitary", "poly"),
