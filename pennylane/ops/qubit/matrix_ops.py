@@ -564,7 +564,7 @@ def _ctrl_diagonal_qubit_unitary(
         if base.is_abstract:
             input_shape = qp.math.shape(base.D)
             last_dim = -1 if input_shape[-1] == -1 else 2 * input_shape[-1]
-            controlled_D = Complex[(*input_shape[:-1], last_dim)]
+            controlled_D = Complex[last_dim]
             controlled_wires = abstractify(control) + base.wires
         else:
             controlled_D = qp.math.hstack([qp.math.ones_like(base.D), base.D])
@@ -576,14 +576,14 @@ def _ctrl_diagonal_qubit_unitary(
     return NotImplemented
 
 
+# pylint: disable=unused-argument
 def _diagonal_qu_resource(D, wires):
     num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1, qp.GlobalPhase: 1}
 
-    output_shape = (*qp.math.shape(D)[:-1], qp.math.shape(D)[-1] // 2)
     return {
-        DiagonalQubitUnitary(Complex[output_shape], wires=Wire[num_wires - 1]): 1,
+        DiagonalQubitUnitary(Complex[2 ** (num_wires - 1)], wires=Wire[num_wires - 1]): 1,
         resource_rep(qp.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 1,
     }
 
