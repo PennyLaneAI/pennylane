@@ -3230,6 +3230,15 @@ class TestPauliRot:
 class TestMultiRZ:
     """Test the MultiRZ operation."""
 
+    @pytest.mark.parametrize("op, expected", [
+        (qp.MultiRZ(0.1, wires=[0]), 1),
+        (qp.MultiRZ(0.1, wires=[0, 1]), 2),
+        (qp.MultiRZ(0.1, wires=[0, 1, 2]), 3),
+    ])
+    def test_num_wires(self, op, expected):
+        """Test that the number of wires is correct."""
+        assert op.num_wires == expected
+
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
         "wires,expected_matrix",
