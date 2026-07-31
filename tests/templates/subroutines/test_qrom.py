@@ -892,7 +892,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=clifford_t_measure | {qp.RX, qp.RZ})
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
