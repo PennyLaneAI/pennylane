@@ -449,7 +449,7 @@ class TestMatrix:
         assert np.allclose(mat, true_mat)
 
     templates_and_mats = (
-        (qp.QFT(wires=[0, 1, 2]), qp.QFT(wires=[0, 1, 2]).compute_matrix(3)),
+        (qp.QFT(wires=[0, 1, 2]), qp.QFT.compute_matrix(tuple(range(3)))),
         (
             qp.GroverOperator(wires=[0, 1, 2]),
             qp.GroverOperator(wires=[0, 1, 2]).compute_matrix(3, range(3)),
