@@ -485,7 +485,10 @@ class TestHasUnitaryGenerator:
         attribute are unitary up to a factor of 2."""
         op_class = getattr(qp, entry)
         phi = 1.23
-        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        try:
+            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        except TypeError:
+            wires = [0, 1, 2]
         if op_class is qp.PauliRot:
             op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == None
         elif op_class is qp.PCPhase:
