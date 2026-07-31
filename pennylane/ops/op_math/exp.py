@@ -62,6 +62,7 @@ def _get_has_generator_types(num_wires):
 
 
 def _find_equal_generator(base, coeff):
+    coeff = math.real_if_close(-1j * coeff)
     for op_class in _get_has_generator_types(len(base.wires)):
         g, c = qp.generator(op_class)(coeff, base.wires)
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
@@ -69,14 +70,13 @@ def _find_equal_generator(base, coeff):
 
         if qp.equal(mapped_wires_g, base):
             # Cancel the coefficients added by the generator
-            coeff = math.real(-1j / c * coeff)
+            coeff = math.real(1 / c * coeff)
             return op_class(coeff, g.wires)
 
         # could have absorbed the coefficient.
         simplified_g = qp.simplify(qp.s_prod(c, mapped_wires_g))
 
         if qp.equal(simplified_g, base):
-            coeff = math.real(-1j * coeff)
             return op_class(coeff, g.wires)
 
     return None

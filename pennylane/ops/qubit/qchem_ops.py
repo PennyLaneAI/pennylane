@@ -23,14 +23,14 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
 )
-from pennylane.typing import TensorLike
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 I4 = np.eye(4)
@@ -120,7 +120,7 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
     return diag + off_diag
 
 
-class SingleExcitation(Operation):
+class SingleExcitation(Operator2):
     r"""
     Single excitation rotation.
 
@@ -166,26 +166,18 @@ class SingleExcitation(Operation):
         circuit(0.1)
     """
 
-    num_wires = 2
-    """int: Number of wires that the operator acts on."""
+    dynamic_argnames = "phi"
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
+    num_wires = 2  # TODO: try and get rid of this legacy property
+    num_params = 1  # TODO: try and get rid of this legacy property
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
-
-    parameter_frequencies = [(0.5, 1.0)]
-    """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
@@ -194,8 +186,11 @@ class SingleExcitation(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires=None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -220,51 +215,11 @@ class SingleExcitation(Operation):
         """
         return _single_excitations_matrix(phi, 0.0)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.SingleExcitation.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [H(0),
-         CNOT(wires=[0, 1]),
-         RY(-0.615, wires=[0]),
-         RY(-0.615, wires=[1]),
-         CNOT(wires=[0, 1]),
-         H(0)]
-
-        """
-        # This decomposition is reported, e.g., in Fig. 2 of https://arxiv.org/pdf/2104.05695
-        decomp_ops = [
-            qp.Hadamard(wires[0]),
-            qp.CNOT(wires),
-            qp.RY(-phi / 2, wires[0]),
-            qp.RY(-phi / 2, wires[1]),
-            qp.CNOT(wires),
-            qp.Hadamard(wires[0]),
-        ]
-
-        return decomp_ops
-
     def adjoint(self) -> "SingleExcitation":
-        (phi,) = self.parameters
-        return SingleExcitation(-phi, wires=self.wires)
+        return SingleExcitation(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [SingleExcitation(self.data[0] * z, wires=self.wires)]
+        return [SingleExcitation(self.phi * z, wires=self.wires)]
 
     def label(
         self,
@@ -275,7 +230,9 @@ class SingleExcitation(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
-def _single_excitation_resources():
+# needs to be wrapped in function due to circular dependencies
+# pylint: disable=unused-argument
+def _single_excitation_resources(phi, wires):
     return {
         qp.Hadamard: 2,
         qp.CNOT: 2,
@@ -284,7 +241,7 @@ def _single_excitation_resources():
 
 
 @register_resources(_single_excitation_resources)
-def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
+def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
     qp.Hadamard(wires[0])
     qp.CNOT(wires)
     qp.RY(-phi / 2, wires[0])
@@ -293,7 +250,8 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
     qp.Hadamard(wires[0])
 
 
-def _single_excitation_ppr_resource():
+# pylint: disable=unused-argument
+def _single_excitation_ppr_resource(phi, wires):
     return {
         resource_rep(qp.PauliRot, pauli_word="XY"): 1,
         resource_rep(qp.PauliRot, pauli_word="YX"): 1,
@@ -301,7 +259,7 @@ def _single_excitation_ppr_resource():
 
 
 @register_resources(_single_excitation_ppr_resource)
-def _single_excitation_ppr(phi: TensorLike, wires: WiresLike, **__):
+def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "YX", wires=wires)
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
