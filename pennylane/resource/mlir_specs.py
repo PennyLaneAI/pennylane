@@ -92,22 +92,28 @@ def _mlir_resources_to_specs_resources(
     fn_resources[focus] = None
     resources = all_data[focus]
 
-    operations = {k: resources["operations"][k] for k in resources["operations"].keys()}
+    operations = {
+        k: resources["quantum_operations"][k] for k in resources["quantum_operations"].keys()
+    }
 
     measurement_processes = defaultdict(
-        int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
+        int,
+        {
+            k: resources["measurement_processes"][k]
+            for k in resources["measurement_processes"].keys()
+        },
     )
     quantum_operations = defaultdict(int)
-    num_allocs = resources["num_qubits"]
+    num_allocs = resources["num_qubits"]["alloc"]
 
     pbc_depth = None
-    if depths := resources.get("depth"):  # TODO: This field is being renamed in Catalyst soon
+    if depths := resources["extended_fields"].get("pbc_depth"):
         pbc_depth = PBCDepth(
             any_commuting_depth=depths["any_commuting_depth"],
             qubit_disjoint_depth=depths["qubit_disjoint_depth"],
         )
 
-    if resources.get("auto_qubit_management", False):
+    if resources["metadata"].get("auto_qubit_management", False):
         warnings.warn(
             f"Specs detected that function '{focus}' uses automatic qubit management. "
             "The number of qubits allocated by this function will not be known at this time, so "
