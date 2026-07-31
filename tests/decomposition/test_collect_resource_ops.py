@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire, Float
+from pennylane.typing import Float, Wire
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

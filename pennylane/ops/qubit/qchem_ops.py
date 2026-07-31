@@ -30,7 +30,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
 )
-from pennylane.typing import TensorLike, Float, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 I4 = np.eye(4)

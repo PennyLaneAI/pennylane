@@ -3770,12 +3770,15 @@ class TestSimplify:
         if op == qp.U2:
             pytest.skip("U2 gate does not simplify to Identity")
 
-        num_wires = op.num_wires if op.num_wires is not None else 2
+        try:
+            wires = range(op.num_wires) if op.num_wires is not None else range(2)
+        except TypeError:
+            wires = range(2)
 
         if op == qp.PCPhase:
-            unsimplified_op = op(*([0] * op.num_params), dim=2, wires=range(num_wires))
+            unsimplified_op = op(*([0] * op.num_params), dim=2, wires=wires)
         else:
-            unsimplified_op = op(*([0] * op.num_params), wires=range(num_wires))
+            unsimplified_op = op(*([0] * op.num_params), wires=wires)
 
         simplified_op = qp.simplify(unsimplified_op)
 

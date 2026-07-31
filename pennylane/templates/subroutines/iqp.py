@@ -25,7 +25,7 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.math import expand_matrix
 from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
-from pennylane.typing import TensorLike, Wire, Float
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires
 
 

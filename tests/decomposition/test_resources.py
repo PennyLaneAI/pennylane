@@ -30,7 +30,7 @@ from pennylane.decomposition.resources import (
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Wire, Float
+from pennylane.typing import Float, Wire
 
 
 @pytest.mark.unit

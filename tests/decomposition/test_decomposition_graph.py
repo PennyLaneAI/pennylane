@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import DecompositionGraph, pow_resource_rep
+from pennylane.decomposition import DecompositionGraph, pow_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.exceptions import DecompositionError, DecompositionWarning
@@ -54,6 +54,19 @@ class MultiWireOp(Operation):
     """A custom op"""
 
     resource_keys = {"num_wires"}
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
+
+
+class MultiWireRot(Operation):
+    """A custom op"""
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires)
 
     @property
     def resource_params(self):
@@ -594,24 +607,31 @@ class TestDecompGraphSolver:
     def test_decomposition_with_resource_params(self):
         """Tests operators with non-empty resource params."""
 
-        def _custom_resource(num_wires):
+        def _custom_rot_resource(num_wires):
             return {
-                qp.resource_rep(qp.MultiRZ, num_wires=num_wires): 1,
-                qp.resource_rep(qp.MultiRZ, num_wires=num_wires - 1): 2,
+                qp.resource_rep(MultiWireOp, num_wires=num_wires): 1,
+                qp.resource_rep(MultiWireOp, num_wires=num_wires - 1): 2,
             }
+
+        @qp.register_resources(_custom_rot_resource)
+        def _custom_rot_decomp(*_, **__):
+            raise NotImplementedError
+
+        def _custom_resource(num_wires):
+            return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
         @qp.register_resources(_custom_resource)
         def _custom_decomp(*_, **__):
             raise NotImplementedError
 
-        op = MultiWireOp(wires=[0, 1, 2, 3])
+        op = MultiWireRot(1.23, wires=[0, 1, 2, 3])
         graph = DecompositionGraph(
             operations=[op],
             gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
-            alt_decomps={MultiWireOp: [_custom_decomp]},
+            alt_decomps={MultiWireRot: [_custom_rot_decomp], MultiWireOp: [_custom_decomp]},
         )
-        # 10 ops (CustomOp, MultiRZ(4), MultiRZ(3), CNOT, CZ, RX, RY, RZ, Hadamard, GlobalPhase)
-        # 7 decompositions (1 for CustomOp, 1 for each of the two MultiRZs, 1 for CNOT, 2 for Hadamard, and 1 for RY)
+        # 10 ops (MultiWireRot, MultiWireOp(4), MultiWireOp(3), CNOT, CZ, RX, RY, RZ, Hadamard, GlobalPhase)
+        # 7 decompositions (1 for CustomOp, 1 for each MultiWireOp, 1 for CNOT, 2 for Hadamard, and 1 for RY)
         # and the dummy starting node
         assert len(graph._graph.nodes()) == 18
         # 16 edges from ops to decompositions and 7 from decompositions to ops,
@@ -624,8 +644,8 @@ class TestDecompGraphSolver:
         )
         assert solution.decomposition(op).compute_resources(**op.resource_params) == to_resources(
             {
-                qp.MultiRZ(Float, Wire[4]): 1,
-                qp.MultiRZ(Float, Wire[3]): 2,
+                resource_rep(MultiWireOp, num_wires=4): 1,
+                resource_rep(MultiWireOp, num_wires=3): 2,
             },
         )
         assert solution.decomposition(qp.Hadamard(wires=[0])).compute_resources() == to_resources(
