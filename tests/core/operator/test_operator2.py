@@ -76,6 +76,7 @@ class TestInitSubclass:
             static_argnames = ("s2", "s1")
             hybrid_argnames = ("h2", "h1")
 
+            # pylint: disable=useless-parent-delegation, too-many-arguments
             def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
                 super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
 
@@ -88,6 +89,7 @@ class TestInitSubclass:
 
             compilable_argnames = ("c3", "c2", "c1")
 
+            # pylint: disable=useless-parent-delegation
             def __init__(self, c1, wires, c2, c3):
                 super().__init__(c1, wires, c2, c3)
 
