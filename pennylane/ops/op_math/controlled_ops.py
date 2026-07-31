@@ -514,11 +514,6 @@ def _cy_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Y)
 
 
-@qp.register_resources({PauliMeasure: 3, Z: 2, Y: 1, GlobalPhase: 1}, work_wires={"burnable": 1})
-def _cy_lattice_surgery_ppm(wires: AbstractWires):
-    _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Y)
-
-
 def _pauli_ctrl_pauli_ppm(wires, pauli0, pauli1):
     """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPMs."""
     with qp.allocate(1, state="zero", restored=False) as work_wires:
