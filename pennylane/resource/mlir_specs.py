@@ -183,6 +183,8 @@ def _mlir_resources_to_specs_resources(
         },
         "num_allocs": num_allocs,
         "circuit_depth": None,  # Can't get depth from MLIR pass results
+        # Store all remaining extended_fields into the extra fields kwarg
+        "extra": {k: v for k, v in resources["extended_fields"] if k != "pbc_depth"},
     }
 
     if pbc_depth is not None:
