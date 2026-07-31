@@ -17,7 +17,6 @@ import copy
 import itertools
 import json
 import os
-import re
 import tempfile
 import time
 import warnings
@@ -102,10 +101,6 @@ def _mlir_resources_to_specs_resources(
         )
 
     # Process quantum operations and measurements
-    operations = {
-        k: resources["quantum_operations"][k] for k in resources["quantum_operations"].keys()
-    }
-
     measurement_processes = defaultdict(
         int,
         {
@@ -114,15 +109,13 @@ def _mlir_resources_to_specs_resources(
         },
     )
     quantum_operations = defaultdict(int)
-    for res_name, count in operations.items():
-        match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
-        gate_name, gate_size = match.groups() if match else (res_name, 0)
+    for gate_size, ops in resources["quantum_operations"].items():
+        for gate_name, count in ops.items():
+            if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+                # Separate out PPMs and PPRs by weight
+                gate_name += f"-w{gate_size}"
 
-        if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-            # Separate out PPMs and PPRs by weight
-            gate_name += f"-w{gate_size}"
-
-        quantum_operations[gate_name] += count
+            quantum_operations[gate_name] += count
 
     # Process PBC depths
     pbc_depth = None
@@ -188,7 +181,7 @@ def _mlir_resources_to_specs_resources(
         "num_allocs": num_allocs,
         "circuit_depth": None,  # Can't get depth from MLIR pass results
         # Store all remaining extended_fields into the extra fields kwarg
-        "extra": {k: v for k, v in resources["extended_fields"] if k != "pbc_depth"},
+        "extra": {k: v for k, v in resources["extended_fields"].items() if k != "pbc_depth"},
     }
 
     if pbc_depth is not None:
@@ -211,7 +204,7 @@ def _get_resources_from_analysis_pass(
             all_data, focus=fn_name, fn_resources=resource_data, display_names={}
         )
 
-    if any(resources["has_branches"] for resources in all_data.values()):
+    if any(resources["metadata"]["has_branches"] for resources in all_data.values()):
         warnings.warn(
             "Specs was unable to determine the branch of a conditional or switch statement."
             " The results will take the maximum resources across all possible branches, serving as an upper bound.",
@@ -220,7 +213,7 @@ def _get_resources_from_analysis_pass(
 
     # Only include information about qnodes, ignoring any extra functions
     # The blank substitution will return a concrete SpecsResources if no symbolic variables remain
-    return [resource_data[fn].subs() for fn, data in all_data.items() if data["qnode"]]
+    return [resource_data[fn].subs() for fn, data in all_data.items() if data["metadata"]["qnode"]]
 
 
 def _execute_analysis_pass(
