@@ -16,8 +16,9 @@
 import numpy as np
 import pytest
 
-from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode, workflow
-from pennylane.measurements import sample, state
+import pennylane as qp
+from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode
+from pennylane.measurements import state
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT
@@ -125,13 +126,12 @@ def test_raises(wires, error_type, error_msg):
     ],
 )
 def test_ffft_circuit(wires, expected_circuit):
-    """Test that FFFT decomposes into the correct ops (type and wires)."""
+    """Test that FFFT decomposes into the correct operations."""
     ops = FFFT(wires).decomposition()
 
     assert len(ops) == len(expected_circuit)
     for op, expected in zip(ops, expected_circuit, strict=True):
-        assert type(op) == type(expected)
-        assert op.wires == expected.wires
+        qp.assert_equal(op, expected)
 
 
 def fermionic_superposition_state(amplitudes):

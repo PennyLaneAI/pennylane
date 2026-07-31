@@ -1250,7 +1250,10 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         for decomp in qp.list_decomps(self):
             if decomp.is_applicable(**self.resource_params):
-                with AnnotatedQueue() as q:
+                # ``decomposition`` materializes a concrete Python list of operations. Pause
+                # program capture so that structured control flow in a rule is unrolled into
+                # the temporary queue instead of being represented by higher-order primitives.
+                with capture.pause(), AnnotatedQueue() as q:
                     decomp(*self.data, wires=self.wires, **self.hyperparameters)
                 if QueuingManager.recording():
                     # no need for copies if we just use queue method
