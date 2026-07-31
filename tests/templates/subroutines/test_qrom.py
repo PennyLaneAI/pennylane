@@ -87,9 +87,7 @@ except ImportError:
 def test_abstract_init(data):
     """Tests that the abstract init handles Sequence[str] data and more."""
     control_wires = Wire[3]
-    if not isinstance(data, AbstractArray) and (
-        isinstance(data[0], str) or isinstance(data[0], list)
-    ):
+    if not isinstance(data, AbstractArray) and isinstance(data[0], (str, list)):
         target_wires = Wire[len(data[0])]
     else:
         target_wires = Wire[data.shape[-1]]
@@ -97,9 +95,7 @@ def test_abstract_init(data):
 
     op = qp.QROM(data, control_wires, target_wires, work_wires)
 
-    if not isinstance(data, AbstractArray) and (
-        isinstance(data[0], str) or isinstance(data[0], list)
-    ):
+    if not isinstance(data, AbstractArray) and isinstance(data[0], (str, list)):
         assert op.arguments["data"] == AbstractArray((len(data), len(data[0])), dtype=np.int64)
     else:
         assert op.arguments["data"] == AbstractArray(shape=data.shape, dtype=np.int64)
