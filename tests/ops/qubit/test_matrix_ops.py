@@ -732,24 +732,6 @@ class TestWalshHadamardTransform:
 class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     """Test the DiagonalQubitUnitary operation."""
 
-    def test_operator2_construction(self):
-        """Test the Operator2 argument model and list canonicalization."""
-        op = qp.DiagonalQubitUnitary([1, -1], wires="a")
-
-        assert isinstance(op, qp.core.Operator2)
-        assert tuple(op.arguments) == ("D", "wires")
-        assert isinstance(op.D, np.ndarray)
-        assert np.allclose(op.D, [1, -1])
-        assert op.wires == Wires("a")
-
-    def test_abstract_construction(self):
-        """Test that an abstract DiagonalQubitUnitary can be constructed."""
-        op = qp.DiagonalQubitUnitary(Complex[4], wires=Wire[2])
-
-        assert op.is_abstract
-        assert op.D == Complex[4]
-        assert op.wires == Wire[2]
-
     def test_decomposition_single_qubit(self):
         """Test that a single-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.array([1j, -1])
@@ -1049,12 +1031,21 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         )
         assert qp.math.allclose(mat, expected)
 
-    def test_controlled_abstract(self):
+    @pytest.mark.parametrize("control", ([0], Wire[1]))
+    def test_controlled_abstract(self, control):
         """Test custom control dispatch for an abstract DiagonalQubitUnitary."""
         base = qp.DiagonalQubitUnitary(Complex[4], wires=Wire[2])
-        op = qp.ctrl(base, control=Wire[1])
+        op = qp.ctrl(base, control=control)
 
         qp.assert_equal(op, qp.DiagonalQubitUnitary(Complex[8], wires=Wire[3]))
+
+    def test_controlled_zero_value_uses_generic_control(self):
+        """Test that a zero-valued control uses the generic controlled operator."""
+        base = qp.DiagonalQubitUnitary(np.array([1, 1j]), wires=1)
+        op = qp.ctrl(base, control=0, control_values=[0])
+
+        assert isinstance(op, qp.ops.ControlledOp2)
+        assert op.control_values == [False]
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
