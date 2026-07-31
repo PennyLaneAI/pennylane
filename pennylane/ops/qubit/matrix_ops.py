@@ -575,8 +575,7 @@ class DiagonalQubitUnitary(Operator2):
 
         >>> diag = np.exp(1j * np.array([0.4, 2.1, 0.5, 1.8]))
         >>> qp.DiagonalQubitUnitary.compute_decomposition(diag, wires=[0, 1])
-        [DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0]),
-        SelectPauliRot(array([1.7, 1.3]), wires=[0, 1])]
+        [DiagonalQubitUnitary([0.31532236+0.94898462j 0.40848744+0.91276394j], wires=[0]), SelectPauliRot(array([1.7, 1.3]), wires=[0, 1])]
 
         .. details::
             :title: Finding the parameters
