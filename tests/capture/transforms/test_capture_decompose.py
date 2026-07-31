@@ -508,7 +508,7 @@ class TestControlledDecompositions:
     def test_ctrl_simple(self):
         """Test that ctrl higher order primitives are correctly interpreted."""
 
-        @DecomposeInterpreter(gate_set=[qp.CRX, qp.CRY, qp.CRZ])
+        @DecomposeInterpreter(gate_set=[qp.CRX, qp.CRY, qp.CRZ, qp.RZ])
         def inner_f(x):
             qp.Rot(x, 1.0, 2.0, 0)
 
