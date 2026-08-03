@@ -172,6 +172,7 @@ pl-device-test = "pennylane.devices.tests:cli"
 "null.qubit" = "pennylane.devices.null_qubit:NullQubit"
 "default.clifford" = "pennylane.devices.default_clifford:DefaultClifford"
 "default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
+"sparse.qubit" = "pennylane.devices.sparse_qubit:SparseQubit"
 
 [project.entry-points."console_scripts"]
 "pl-device-test" = "pennylane.devices.tests:cli"

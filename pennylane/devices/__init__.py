@@ -156,6 +156,7 @@ from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit
 from .legacy_facade import LegacyDeviceFacade
+from .sparse_qubit import SparseQubit
 
 # DefaultTensor is not imported here to avoid possible warnings
 # from quimb. Such warnings are due to a known issue with the cotengra package
