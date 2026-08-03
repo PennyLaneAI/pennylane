@@ -18,9 +18,10 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 # pylint: disable=arguments-differ,arguments-renamed
 
+from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Literal
+from typing import Literal, override
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -39,10 +40,14 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     pow_involutory,
     pow_rotation,
+    self_adjoint,
     self_adjoint_legacy,
 )
+from pennylane.ops.identity import GlobalPhase
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import TensorLike
+from pennylane.ops.qubit import X, Y, Z
+from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -51,6 +56,7 @@ from .controlled import (
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
 )
+from .controlled2 import Controlled2
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
@@ -68,6 +74,7 @@ from .decompositions.controlled_decompositions import (
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
+from .pow2 import pow_involutory as pow_involutory2
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
@@ -291,7 +298,7 @@ add_decomps(
 )
 
 
-class CH(ControlledOp):
+class CH(Controlled2):
     r"""CH(wires)
     The controlled-Hadamard operator
 
@@ -313,6 +320,12 @@ class CH(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    wire_argnames = ("wires",)
+
+    arg_specs = {"wires": Wire[2]}
+
+    wire_sizes = (2,)
+
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -322,43 +335,22 @@ class CH(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "CH"
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
+    def __init__(self, wires: WiresLike):
+        super().__init__(qp.H(wires[1:]), wires[:1])
 
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
+    @override
+    def __abstract_init__(self, wires: WiresLike):  # pylint: disable=unused-argument
+        super().__abstract_init__(qp.H(Wire[1]), control_wires=Wire[1])
 
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
-    def __init__(self, wires):
-        control_wires = wires[:1]
-        target_wires = wires[1:]
-
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.Hadamard, wires=target_wires)
-        super().__init__(base, control_wires)
-
-    def __repr__(self):
-        return f"CH(wires={self.wires.tolist()})"
-
+    @override
     def adjoint(self):
         return CH(self.wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -366,6 +358,8 @@ class CH(ControlledOp):
 
         .. seealso:: :meth:`~.CH.matrix`
 
+        Args:
+            wires (Iterable, Wires): optional wires that the operator acts on
 
         Returns:
             ndarray: matrix
@@ -387,36 +381,8 @@ class CH(ControlledOp):
             ]
         )
 
-    @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
 
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CH.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CH.compute_decomposition([0, 1]))
-        [RY(-0.7853981633974483, wires=[1]), CZ(wires=[0, 1]), RY(0.7853981633974483, wires=[1])]
-
-        """
-        return [
-            qp.RY(-np.pi / 4, wires=wires[1]),
-            qp.CZ(wires=wires),
-            qp.RY(+np.pi / 4, wires=wires[1]),
-        ]
-
-
-def _ch_to_ry_cz_ry_resources():
+def _ch_to_ry_cz_ry_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.CZ: 1}
 
 
@@ -428,11 +394,11 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
-add_decomps("Adjoint(CH)", self_adjoint_legacy)
-add_decomps("Pow(CH)", pow_involutory)
+add_decomps("Adjoint(CH)", self_adjoint)
+add_decomps("Pow(CH)", pow_involutory2)
 
 
-class CY(ControlledOp):
+class CY(Controlled2):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -454,6 +420,8 @@ class CY(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    arg_specs = {"wires": Wire[2]}
+
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -463,40 +431,23 @@ class CY(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    def __init__(self, wires: WiresLike):
+        super().__init__(qp.Y(wires[1:]), wires[:1])
 
-    name = "CY"
-
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=2)
-
-    def __init__(self, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.Y, wires=wires[1:])
-        super().__init__(base, wires[:1])
-
-    def __repr__(self):
-        return f"CY(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    @override
+    # pylint: disable=unused-argument
+    def __abstract_init__(self, wires: WiresLike):
+        # `wires` is abstract here and carries no information beyond its fixed
+        # size of 2, which always splits into one control and one target wire.
+        super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
 
     def adjoint(self):
         return CY(self.wires)
 
     @staticmethod
-    @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    @override
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -525,32 +476,8 @@ class CY(ControlledOp):
             ]
         )
 
-    @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
 
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CY.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
-
-        """
-        return [qp.CRY(np.pi, wires=wires), qp.S(wires=wires[0])]
-
-
-def _cy_to_cry_s_resources():
+def _cy_to_cry_s_resources(wires: AbstractWires):  # pylint: disable=unused-argument
     return {qp.CRY: 1, qp.S: 1}
 
 
@@ -560,26 +487,52 @@ def _cy(wires: WiresLike, **__):
     qp.S(wires=wires[0])
 
 
-def _cy_to_ppr_resource():
-    return {
-        resource_rep(qp.PauliRot, pauli_word="Y"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZY"): 1,
-        qp.GlobalPhase: 1,
-    }
+# pylint: disable=unused-argument
+def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
+    """Resources for _pauli_ctrl_pauli_ppr."""
+    resources = defaultdict(int)
+    p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
+    resources[resource_rep(qp.PauliRot, pauli_word=p0)] += 1
+    resources[resource_rep(qp.PauliRot, pauli_word=p1)] += 1
+    resources[resource_rep(qp.PauliRot, pauli_word=p0 + p1)] += 1
+    resources[qp.GlobalPhase] += 1
+    return dict(resources)
 
 
-@register_resources(_cy_to_ppr_resource)
-def _cy_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 2, "Y", wires=wires[1])
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[0])
-    qp.PauliRot(np.pi / 2, "ZY", wires=wires)
+def _pauli_ctrl_pauli_ppr(wires: AbstractWires, pauli0, pauli1):
+    """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPRs."""
+    p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
+    qp.PauliRot(-np.pi / 2, p0, wires=wires[0])
+    qp.PauliRot(-np.pi / 2, p1, wires=wires[1])
+    qp.PauliRot(np.pi / 2, p0 + p1, wires=wires)
     qp.GlobalPhase(np.pi / 4)
 
 
-add_decomps(CY, _cy, _cy_to_ppr)
-add_decomps("Adjoint(CY)", self_adjoint_legacy)
-add_decomps("Pow(CY)", pow_involutory)
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=Y))
+def _cy_to_ppr(wires: AbstractWires):
+    _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Y)
+
+
+def _pauli_ctrl_pauli_ppm(wires, pauli0, pauli1):
+    """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPMs."""
+    with qp.allocate(1, state="zero", restored=False) as work_wires:
+        m0 = pauli_measure(pauli0.__name__[-1] + "X", [wires[0], work_wires[0]])
+        m1 = pauli_measure("Z" + pauli1.__name__[-1], [work_wires[0], wires[1]])
+        m2 = pauli_measure("X", work_wires)
+        qp.cond(m1, pauli0)(wires[0])
+        qp.cond(m0 != m2, pauli1)(wires[1])
+        qp.cond(m1 & (m0 != m2), qp.GlobalPhase)(np.pi)
+        qp.cond(m2, qp.Z)(work_wires[0])  # Reset work wire (to |+>), achieving pure state
+
+
+@qp.register_resources({PauliMeasure: 3, Z: 2, Y: 1, GlobalPhase: 1}, work_wires={"burnable": 1})
+def _cy_lattice_surgery_ppm(wires: AbstractWires):
+    _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Y)
+
+
+add_decomps(CY, _cy, _cy_to_ppr, _cy_lattice_surgery_ppm)
+add_decomps("Adjoint(CY)", self_adjoint)
+add_decomps("Pow(CY)", pow_involutory2)
 
 
 class CZ(ControlledOp):
@@ -635,7 +588,7 @@ class CZ(ControlledOp):
         super().__init__(base, wires[:1])
 
     def __repr__(self):
-        return f"CZ(wires={self.wires.tolist()})"
+        return f"CZ(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -702,28 +655,26 @@ def _cz_to_cnot(wires: WiresLike, **__):
     qp.H(wires=wires[1])
 
 
-def _cz_to_ppr_resource():
-    return {
-        resource_rep(qp.PauliRot, pauli_word="Z"): 2,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
-        qp.GlobalPhase: 1,
-    }
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, wires=None, pauli0=Z, pauli1=Z))
+def _cz_to_ppr(wires: AbstractWires, **_):
+    _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Z)
 
 
-@register_resources(_cz_to_ppr_resource)
-def _cz_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[1])
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[0])
-    qp.PauliRot(np.pi / 2, "ZZ", wires=wires)
-    qp.GlobalPhase(np.pi / 4)
+def _cz_lattice_surgery_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3, qp.GlobalPhase: 1}
 
 
-add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
+@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
+def _cz_lattice_surgery_ppm(wires: WiresLike, **__):
+    _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Z)
+
+
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr, _cz_lattice_surgery_ppm)
 add_decomps("Adjoint(CZ)", self_adjoint_legacy)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
-class CSWAP(ControlledOp):
+class CSWAP(Controlled2):
     r"""CSWAP(wires)
     The controlled-swap operator
 
@@ -749,6 +700,12 @@ class CSWAP(ControlledOp):
         wires (Sequence[int]): the wires the operation acts on
     """
 
+    wire_argnames = ("wires",)
+
+    arg_specs = {"wires": Wire[3]}
+
+    wire_sizes = (3,)
+
     num_wires = 3
     """int : Number of wires that the operation acts on."""
 
@@ -758,49 +715,29 @@ class CSWAP(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    def __init__(self, wires: WiresLike):
+        super().__init__(qp.SWAP(wires[1:]), wires[:1])
 
-    name = "CSWAP"
+    @override
+    def __abstract_init__(self, wires: WiresLike):  # pylint: disable=unused-argument
+        super().__abstract_init__(qp.SWAP(Wire[2]), control_wires=Wire[1])
 
-    def _flatten(self):
-        return tuple(), (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, wires):
-        return cls._primitive.bind(*wires, n_wires=3)
-
-    def __init__(self, wires):
-        control_wires = wires[:1]
-        target_wires = wires[1:]
-
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.SWAP, wires=target_wires)
-        super().__init__(base, control_wires)
-
-    def __repr__(self):
-        return f"CSWAP(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
+    @override
     def adjoint(self):
         return CSWAP(self.wires)
 
     @staticmethod
     @lru_cache
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. seealso:: :meth:`~.CSWAP.matrix`
+
+        Args:
+            wires (Iterable, Wires): optional wires that the operator acts on
 
         Returns:
             ndarray: matrix
@@ -830,35 +767,9 @@ class CSWAP(ControlledOp):
             ]
         )
 
-    @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CSWAP.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qp.CSWAP.compute_decomposition((0,1,2)))
-        [CNOT(wires=[2, 1]), Toffoli(wires=[0, 1, 2]), CNOT(wires=[2, 1])]
-
-        """
-        return [
-            qp.CNOT([wires[2], wires[1]]),
-            qp.Toffoli(wires=[wires[0], wires[1], wires[2]]),
-            qp.CNOT([wires[2], wires[1]]),
-        ]
-
-
-def _cswap_to_toffoli_resources():
+# pylint: disable=unused-argument
+def _cswap_to_toffoli_resources(wires: WiresLike = None):
     return {qp.CNOT: 2, qp.Toffoli: 1}
 
 
@@ -869,7 +780,8 @@ def _cswap(wires: WiresLike, **__):
     qp.CNOT([wires[2], wires[1]])
 
 
-def _cswap_to_ppr_resource():
+# pylint: disable=unused-argument
+def _cswap_to_ppr_resource(wires: WiresLike = None):
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZYY"): 1,
@@ -895,8 +807,8 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
-add_decomps("Adjoint(CSWAP)", self_adjoint_legacy)
-add_decomps("Pow(CSWAP)", pow_involutory)
+add_decomps("Adjoint(CSWAP)", self_adjoint)
+add_decomps("Pow(CSWAP)", pow_involutory2)
 
 
 class CCZ(ControlledOp):
@@ -988,7 +900,7 @@ class CCZ(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"CCZ(wires={self.wires.tolist()})"
+        return f"CCZ(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -1244,7 +1156,7 @@ class CNOT(ControlledOp):
         return {}
 
     def __repr__(self):
-        return f"CNOT(wires={self.wires.tolist()})"
+        return f"CNOT(wires={self.wires})"
 
     @staticmethod
     @lru_cache
@@ -1296,24 +1208,21 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
     qp.H(wires[1])
 
 
-def _cnot_to_ppr_resource():
-    return {
-        resource_rep(qp.PauliRot, pauli_word="X"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZX"): 1,
-        qp.GlobalPhase: 1,
-    }
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, wires=None, pauli0=Z, pauli1=X))
+def _cnot_to_ppr(wires: AbstractWires, **_):
+    _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.X)
 
 
-@register_resources(_cnot_to_ppr_resource)
-def _cnot_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 2, "X", wires=wires[1])
-    qp.PauliRot(-np.pi / 2, "Z", wires=wires[0])
-    qp.PauliRot(np.pi / 2, "ZX", wires=wires)
-    qp.GlobalPhase(np.pi / 4)
+def _cnot_lattice_surgery_ppm_resources():
+    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 2, qp.X: 1, qp.GlobalPhase: 1}
 
 
-add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
+@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
+def _cnot_lattice_surgery_ppm(wires: WiresLike, **__):
+    _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.X)
+
+
+add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr, _cnot_lattice_surgery_ppm)
 add_decomps("Adjoint(CNOT)", self_adjoint_legacy)
 add_decomps("Pow(CNOT)", pow_involutory)
 
@@ -1404,7 +1313,7 @@ class Toffoli(ControlledOp):
         super().__init__(base, control_wires)
 
     def __repr__(self):
-        return f"Toffoli(wires={self.wires.tolist()})"
+        return f"Toffoli(wires={self.wires})"
 
     @property
     def resource_params(self) -> dict:
@@ -1746,9 +1655,7 @@ class MultiControlledX(ControlledOp):
         )
 
     def __repr__(self):
-        return (
-            f"MultiControlledX(wires={self.wires.tolist()}, control_values={self.control_values})"
-        )
+        return f"MultiControlledX(wires={self.wires}, control_values={self.control_values})"
 
     @property
     def wires(self):
@@ -2004,7 +1911,7 @@ class CRX(ControlledOp):
         super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
-        return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
+        return f"CRX({self.data[0]}, wires={self.wires})"
 
     def _flatten(self):
         return self.data, (self.wires,)
@@ -2220,7 +2127,7 @@ class CRY(ControlledOp):
         super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
-        return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
+        return f"CRY({self.data[0]}, wires={self.wires}))"
 
     def _flatten(self):
         return self.data, (self.wires,)

@@ -382,18 +382,6 @@ class TestState:
             with pytest.raises(QuantumFunctionError, match="The current device is not capable"):
                 func()
 
-    def test_state_not_supported(self):
-        """Test if an error is raised for devices inheriting from the base Device class,
-        which do not currently support returning the state"""
-        dev = qp.device("default.gaussian", wires=1)
-
-        @qp.qnode(dev)
-        def func():
-            return state()
-
-        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
-            func()
-
     @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
     def test_default_qubit(self, diff_method):
         """Test that the returned state is equal to the expected returned state for all of
@@ -1029,18 +1017,6 @@ class TestDensityMatrix:
                 match="The current device is not capable" " of returning the state",
             ):
                 func()
-
-    def test_density_matrix_not_supported(self):
-        """Test if an error is raised for devices inheriting from the base Device class,
-        which do not currently support returning the state"""
-        dev = qp.device("default.gaussian", wires=2)
-
-        @qp.qnode(dev)
-        def func():
-            return density_matrix(0)
-
-        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
-            func()
 
     @pytest.mark.parametrize("wires", [[0, 2], ["a", -1]])
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])

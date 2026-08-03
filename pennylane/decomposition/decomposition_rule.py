@@ -33,8 +33,13 @@ from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .resources import AbstractOperatorLike, CompressedResourceOp, Resources
-from .utils import to_name
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    Resources,
+    _gate_count_dict_to_str,
+)
+from .utils import _get_decomp_args, to_name
 
 
 @dataclass(frozen=True)
@@ -858,8 +863,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        self._conditions_met = rule.is_applicable(**op.resource_params)
-        self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
+        self._decomp_args = _get_decomp_args(op)
+        self._conditions_met = rule.is_applicable(**self._decomp_args[0])
+        self._work_wire_spec = rule.get_work_wire_spec(**self._decomp_args[0])
         n_work_wires = self._work_wire_spec.total
         self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires
@@ -893,8 +899,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     @property
     def _circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
+        _, args, kwargs = _get_decomp_args(self._op)
         assert self._conditions_met and self._enough_work_wires
-        return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **self._op.hyperparameters)
+        return qp.draw(self._rule)(*args, **kwargs)
 
     @property
     def _name(self) -> str:
@@ -905,7 +912,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations(self) -> str:
         """The actual and estimated gate counts of this rule."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
         if allocations:
@@ -916,7 +923,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _gate_counts_and_allocations_md(self) -> str:
         """The actual and estimated gate counts of this rule in the Markdown format."""
         assert self._conditions_met and self._enough_work_wires
-        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
         if allocations:
@@ -927,9 +934,11 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        estimated_str = _gate_count_dict_to_str(estimated_count)
         if estimated_count == actual_count:
-            return f"Gate Count: {estimated_count}"
-        return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
+            return f"Gate Count: {estimated_str}"
+        actual_str = _gate_count_dict_to_str(actual_count)
+        return f"Estimated Gate Count: {estimated_str}\nActual Gate Count: {actual_str}"
 
     def _get_gate_count_markdown(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
@@ -1043,22 +1052,22 @@ def inspect_decomps(
     Decomposition 0 (name: _crx_to_rx_cz)
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
-    Gate Count: {RX: 2, CZ: 2}
+    Gate Count: {CZ: 2, RX: 2}
     <BLANKLINE>
     Decomposition 1 (name: _crx_to_rz_ry)
     0: ─────────────────────╭●────────────╭●────────────┤
     1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
-    Gate Count: {RZ: 2, RY: 2, CNOT: 2}
+    Gate Count: {CNOT: 2, RY: 2, RZ: 2}
     <BLANKLINE>
     Decomposition 2 (name: _crx_to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
-    Gate Count: {Hadamard: 2, CRZ: 1}
+    Gate Count: {CRZ: 1, Hadamard: 2}
     <BLANKLINE>
     Decomposition 3 (name: _crx_to_ppr)
     0: ───────────╭RZX(-0.25)─┤
     1: ──RX(0.25)─╰RZX(-0.25)─┤
-    Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
+    Gate Count: {PauliRot(pauli_word=X): 1, PauliRot(pauli_word=ZX): 1}
 
     For each decomposition rule, the output includes its name, circuit diagram, gate
     count, and wire allocation (if any). Alternatively, you can inspect a single
@@ -1068,7 +1077,7 @@ def inspect_decomps(
     Decomposition 0 (name: _crx_to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
-    Gate Count: {Hadamard: 2, CRZ: 1}
+    Gate Count: {CRZ: 1, Hadamard: 2}
 
     Or use this tool to inspect a custom decomposition rule:
 
@@ -1106,8 +1115,9 @@ def inspect_decomps(
 def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
     """Count the gates that a decomposition rule produced."""
 
+    _, args, kwargs = _get_decomp_args(op)
     with queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*args, **kwargs)
 
     actual_gate_counts = defaultdict(int)
     allocations = defaultdict(int)
@@ -1177,6 +1187,8 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
 
 
 def _decomp_contains_mcm(rule, params):
+    if not rule.is_applicable(**params):
+        return False
     resources = rule.compute_resources(**params).gate_counts
     mcm = abstractify(qp.ops.MidMeasure)
     ppm = abstractify(qp.ops.PauliMeasure)

@@ -240,4 +240,4 @@ class MeasurementValue:
         return "\n".join(lines)
 
     def __repr__(self):
-        return f"MeasurementValue(wires={self.wires.tolist()})"
+        return f"MeasurementValue(wires={self.wires})"

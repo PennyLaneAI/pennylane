@@ -19,7 +19,7 @@ TODO: [sc-120453] Fill docstring
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -41,6 +41,7 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -59,6 +60,22 @@ if TYPE_CHECKING:
 has_jax = find_spec("jax") is not None
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
+
+
+class GradMethod(StrEnum):
+    """Supported gradient methods."""
+
+    ANALYTIC = "A"
+    FINITE_DIFF = "F"
+
+
+ARGNAME_CATEGORIES = (
+    "wire_argnames",
+    "dynamic_argnames",
+    "static_argnames",
+    "compilable_argnames",
+    "hybrid_argnames",
+)
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -205,7 +222,7 @@ class Operator2(metaclass=OperatorMeta):
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
-        self._wires = None
+        self._wires = Wires([])
         _init_wires(self)
         _init_arg_types(self)
 
@@ -274,7 +291,7 @@ class Operator2(metaclass=OperatorMeta):
         return self.__class__.__name__
 
     @property
-    def wires(self) -> Wires | None:
+    def wires(self) -> Wires:
         """Wires that the operator acts on.
 
         The returned :class:`~.Wires` are collected from the operator's arguments in
@@ -394,6 +411,43 @@ class Operator2(metaclass=OperatorMeta):
     # control_wires).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
+
+    _grad_recipe = None
+    """Legacy Operator compatibility default for parameter-shift recipes."""
+
+    @property
+    def grad_recipe(self):
+        """Compute 'grad_recipe' lazily."""
+        if self._grad_recipe is None:
+            return [None] * self.num_params
+        return self._grad_recipe
+
+    @grad_recipe.setter
+    def grad_recipe(self, recipe):
+        self._grad_recipe = recipe
+
+    @property
+    def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation using the parameter-shift method.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients import parameter_frequencies
+
+        if self.num_params == 0:
+            return None
+        if self.grad_recipe != [None] * self.num_params:
+            return GradMethod.ANALYTIC
+        try:
+            _ = parameter_frequencies(self)
+            return GradMethod.ANALYTIC
+        except ParameterFrequenciesUndefinedError:
+            return GradMethod.FINITE_DIFF
 
     @property
     def data(self) -> tuple:
@@ -517,10 +571,10 @@ class Operator2(metaclass=OperatorMeta):
         ...         return [MyClass(self.phi*z, self.wires)]
         ...
         >>> MyClass(0.5, 0).pow(2)
-        [MyClass(phi=1.0, wires=[0])]
+        [MyClass(1.0, wires=[0])]
         """
         # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # For example, PauliX**2 = I, SX**4 = I.
         # Hence we define the non-negative integer cases here as a repeated list
         if z == 0:
             return []
@@ -573,7 +627,7 @@ class Operator2(metaclass=OperatorMeta):
         ...
         >>> op = MyClass(0.5, wires=0).adjoint()
         >>> op
-        MyClass(phi=0.5, wires=[0])
+        MyClass(0.5, wires=[0])
         """
         raise AdjointUndefinedError
 
@@ -735,8 +789,8 @@ class Operator2(metaclass=OperatorMeta):
         canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
-    @staticmethod
-    def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
+    @classmethod
+    def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -755,7 +809,18 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        raise DecompositionUndefinedError
+        with pause(), QueuingManager.stop_recording():
+            # creating dummy op means this works for adjoint and ctrl too.
+            op = cls(*args, **kwargs)
+        for decomp in qp.list_decomps(op):
+            if decomp.is_applicable(**op.arguments):
+                with AnnotatedQueue() as q:
+                    decomp(**op.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError(f"No applicable decomposition rule for {cls}.")
 
     @classproperty
     @classmethod
@@ -767,8 +832,29 @@ class Operator2(metaclass=OperatorMeta):
         rules are registered for the operator type. Per-instance rule applicability is resolved
         in :meth:`~.Operator2.decomposition`, not here.
         """
+
+        # cant do cls.compute_decompsition != Operator2.compute_decomposition
+        # because default is now a classmethod
+        # classmethod is always different, even if not overwritten
+        # cant do getattr(cls.compute_decomposition "__func__", cls.compute_decomposition)
+        # because of an astroid/ pylint bug
+        # see https://github.com/pylint-dev/pylint/issues/11198
+
+        # Instead, walk the MRO to detect an override in a subclass.
+        # MRO = method resolution order determines who defines what methods
+
+        def defines_compute_decomposition(op_type):
+            for klass in op_type.__mro__:
+                if klass is Operator2:
+                    return False
+                if "compute_decomposition" in vars(klass):
+                    return True
+            # should always find Operator2 in the mro
+            msg = "This line should be impossible to hit. Something is wrong."  # pragma: no cover
+            raise TypeError(msg)  # pragma: no cover
+
         return (
-            cls.compute_decomposition != Operator2.compute_decomposition
+            defines_compute_decomposition(cls)
             or cls.decomposition != Operator2.decomposition
             or qp.decomposition.has_decomp(cls)
         )
@@ -785,19 +871,7 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        if type(self).compute_decomposition != Operator2.compute_decomposition:
-            return self.compute_decomposition(**self.arguments)
-
-        for decomp in qp.list_decomps(self):
-            if decomp.is_applicable(**self.arguments):
-                with AnnotatedQueue() as q:
-                    decomp(**self.arguments)
-                if QueuingManager.recording():
-                    # no need for copies if we just use queue method
-                    _ = [op.queue() for op in q.queue]
-                return q.queue
-
-        raise DecompositionUndefinedError
+        return self.compute_decomposition(**self.arguments)
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
@@ -971,25 +1045,27 @@ class Operator2(metaclass=OperatorMeta):
             if isinstance(wire_arg, Wires) and len(wire_arg) == 1:
                 return f"{self.name}({wire_arg.tolist()[0]!r})"
 
-        inputs = []
+        non_dyn_args = self.static_argnames + self.compilable_argnames + self.hybrid_argnames
 
+        inputs = []
         for key, value in self.arguments.items():
-            # Non-wire arguments
-            if key not in self.wire_argnames:
-                res = value
-            # Non-hybrid wire arguments
-            elif key not in self.hybrid_argnames:
-                res = value.tolist() if isinstance(value, Wires) else value
-            # Hybrid wire arguments
-            else:
+            # Hybrid wire arguments.
+            if key in self.wire_argnames and key in self.hybrid_argnames:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
                 leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
-                res = unflatten(leaves, tree)
+                value = unflatten(leaves, tree)
 
-            inputs.append(f"{key}={res}")
+            # Simplified repr for operators with only dynamic args
+            is_dyn = key in self.dynamic_argnames and not non_dyn_args
+            inputs.append(f"{value}" if is_dyn else f"{key}={value}")
 
         inputs = ", ".join(inputs)
         return f"{self.name}({inputs})"
+
+    def __str__(self) -> str:
+        if self.is_abstract and self.has_fixed_sig:
+            return self.name
+        return repr(self)
 
     def __hash__(self) -> int:
         serialized_dynamic = tuple(
@@ -1005,7 +1081,8 @@ class Operator2(metaclass=OperatorMeta):
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             ser_leaves = tuple(
-                l if isinstance(l, (Operator2, Wires)) else _canonicalize_dynamic(l) for l in leaves
+                l if isinstance(l, (AbstractWires, Operator2, Wires)) else _canonicalize_dynamic(l)
+                for l in leaves
             )
             serialized_hybrid.append((ser_leaves, tree))
 
@@ -1042,6 +1119,19 @@ class Operator2(metaclass=OperatorMeta):
         for attr, value in vars(self).items():
             setattr(copied_op, attr, deepcopy(value, memo))
         return copied_op
+
+    def __getattr__(self, name):
+        # By default, all operator arguments are accessible as properties without needing
+        # to manually add properties. However, these properties are created dynamically in
+        # __init_subclass__. Pylint raises 'no-member' errors when trying to access these
+        # dynamically added properties. This dunder method is added to circumvent the error.
+        # Pylint does not raise the 'no-member' error for classes that contain __getattr__.
+        # The catch is that 'no-member' errors will no longer be raised for values that are
+        # _actually_ not present.
+
+        # __getattr__ is a fallback called after an attribute is not found on an object, so,
+        # unconditionally raising an AttributeError is exactly what would be expected anyway.
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     # ------------------------------------------------------------------------
     # ------------------ Operator arithmetic dunder methods ------------------
@@ -1290,13 +1380,7 @@ class Operator2(metaclass=OperatorMeta):
             return
 
         # Argnames setup
-        for attr in (
-            "dynamic_argnames",
-            "wire_argnames",
-            "static_argnames",
-            "hybrid_argnames",
-            "compilable_argnames",
-        ):
+        for attr in ARGNAME_CATEGORIES:
             if isinstance(v := getattr(cls, attr), str):
                 setattr(cls, attr, (v,))
 
@@ -1305,6 +1389,11 @@ class Operator2(metaclass=OperatorMeta):
         _init_subclass_wire_sizes_setup(cls)
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
+
+        for attr in ARGNAME_CATEGORIES:
+            # enforce sorting by signature
+            sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
+            setattr(cls, attr, sorted_names)
 
 
 # ---------------------------------------------------------------------------------
@@ -1602,9 +1691,12 @@ if has_jax:
         for name in op_cls.wire_argnames:
             if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
-                # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete impl.
-                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
+                # TODO: impl is being used here for reconstruction while the interpreter itself is
+                # under JAX tracing. Need to separate this logic from such scenario. For now,
+                # we can use the fact that wires are always integers and cast them to int.
+                args[name] = Wires(
+                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
+                )
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first

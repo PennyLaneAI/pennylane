@@ -23,7 +23,6 @@ import sys
 from importlib import metadata
 from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
-from sys import version_info
 
 import numpy
 import scipy
@@ -58,14 +57,8 @@ def about():
     """
     Prints the information for pennylane installation.
     """
-    if version_info[:2] == (3, 9):
-        from pkg_resources import iter_entry_points  # pylint:disable=import-outside-toplevel
-
-        plugin_devices = iter_entry_points("pennylane.plugins")
-        dist_name = "project_name"
-    else:  # pragma: no cover
-        plugin_devices = metadata.entry_points(group="pennylane.plugins")
-        dist_name = "name"
+    plugin_devices = metadata.entry_points(group="pennylane.plugins")
+    dist_name = "name"
 
     try:
         dist = metadata.distribution("pennylane")

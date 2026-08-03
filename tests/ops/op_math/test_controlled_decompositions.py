@@ -569,7 +569,7 @@ class TestControlledDecompBisect:
         assert qp.math.allclose(decomp_matrix, expected_matrix)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
+    @pytest.mark.parametrize("op", list(zip(gen_ops, gen_ops_best)))
     @pytest.mark.parametrize("control_wires", cw5)
     def test_auto_select(self, op, control_wires, mocker):
         """Tests that the correct shortcut is chosen if possible."""
@@ -1131,7 +1131,7 @@ class TestMCXDecomposition:
             )
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
         [(4, 1), (4, 2)],

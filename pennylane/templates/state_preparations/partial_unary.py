@@ -21,6 +21,7 @@ import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import controlled_resource_rep
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires
 
 _U64 = np.uint64
@@ -619,18 +620,18 @@ class PartialUnaryStatePreparation(Operation):
         work_wires = list(range(15, 15 + num_work_wires))
 
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
-    Wire allocations: 26
-    Total gates: 6,040
-    Gate counts:
-    - MultiplexerStatePreparation: 1
-    - BasisState: 2,414
-    - QROM: 1,207
-    - C(BasisState): 2,414
-    - MultiControlledX: 3
-    - SWAP: 1
-    Measurements:
+    Quantum operations:
+    - Total: 6,040
+      - MultiplexerStatePreparation: 1
+      - BasisState: 2,414
+      - QROM: 1,207
+      - C(BasisState): 2,414
+      - MultiControlledX: 3
+      - SWAP: 1
+    Measurement processes:
     - state(all wires): 1
-    Depth: Not computed
+    Wire allocations: 26
+    Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
     makes the isometry circuit of the state preparation cheaper:
@@ -638,18 +639,18 @@ class PartialUnaryStatePreparation(Operation):
     >>> new_num_work_wires = 3*num_work_wires
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
-    Wire allocations: 48
-    Total gates: 3,056
-    Gate counts:
-    - MultiplexerStatePreparation: 1
-    - BasisState: 320
-    - QROM: 160
-    - C(BasisState): 2,553
-    - MultiControlledX: 6
-    - SWAP: 16
-    Measurements:
+    Quantum operations:
+    - Total: 3,056
+      - MultiplexerStatePreparation: 1
+      - BasisState: 320
+      - QROM: 160
+      - C(BasisState): 2,553
+      - MultiControlledX: 6
+      - SWAP: 16
+    Measurement processes:
     - state(all wires): 1
-    Depth: Not computed
+    Wire allocations: 48
+    Circuit Depth: Not computed
 
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
     number of indices :math:`|L|`, it is the same between the two decompositions.
@@ -705,12 +706,11 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
 
     qrom_reps = {
-        p: qp.resource_rep(
-            qp.QROM,
-            num_bitstrings=p,
-            num_control_wires=n_subspace,
-            num_target_wires=p,
-            num_work_wires=n_subspace - 1,
+        p: qp.QROM(
+            data=Int[p, p],
+            control_wires=Wire[n_subspace],
+            target_wires=Wire[p],
+            work_wires=Wire[n_subspace - 1],
             clean=True,
         )
         for p in range(1, main_pui_batch_size + 1)
@@ -780,7 +780,12 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             k_start, k = data
             qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires[: n_subspace - 1])
+            qp.QROM(
+                data=np.eye(b, dtype=np.int64),
+                control_wires=subspace_wires,
+                target_wires=nonsubspace_wires[:b],
+                work_wires=work_wires[: n_subspace - 1],
+            )
             qp.BasisState(k_start, subspace_wires)
             continue
         if _type == "Fanout":
