@@ -15,6 +15,7 @@
 Unit tests for the SelectPauliRot template.
 """
 
+import re
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods
@@ -92,7 +93,7 @@ class TestSelectPauliRot:
         """Test that the abstract init method is works correctly."""
 
         if expected_error is not None:
-            with pytest.raises(ValueError, match=expected_error):
+            with pytest.raises(ValueError, match=re.escape(expected_error)):
                 qp.SelectPauliRot(angles, control_wires, target_wire, rot_axis)
         else:
             qp.SelectPauliRot(angles, control_wires, target_wire, rot_axis)
