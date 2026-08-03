@@ -184,38 +184,6 @@ class MultiRZ(Operator2):
 
         return math.exp(math.outer(-0.5j * theta, eigs))
 
-    @staticmethod
-    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
-        theta: TensorLike, wires: WiresLike
-    ) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.MultiRZ.decomposition`.
-
-        Args:
-            theta (TensorLike): rotation angle :math:`\theta`
-            wires (Iterable, Wires): the wires the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.MultiRZ.compute_decomposition(1.2, wires=(0,1))
-        [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
-
-        """
-        ops = [
-            qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1], strict=True)
-        ]
-        ops.append(RZ(theta, wires=wires[0]))
-        ops += [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0], strict=True)]
-
-        return ops
-
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
