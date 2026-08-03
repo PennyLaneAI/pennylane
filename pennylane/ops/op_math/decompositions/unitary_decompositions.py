@@ -459,7 +459,7 @@ def multi_qubit_decomp_rule(U, wires, **__):
     ops.QubitUnitary(v12_dagg, wires=wires[1:])
 
     templates.SelectPauliRot(
-        -2 * math.angle(diag_v),
+        math.cast(-2 * math.angle(diag_v), dtype=np.float64),
         target_wire=wires[0],
         control_wires=wires[1:],
         rot_axis="Z",
