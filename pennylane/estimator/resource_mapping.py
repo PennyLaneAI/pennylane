@@ -534,10 +534,10 @@ def _(op: qtemps.Reflection):
 
 @_map_to_resource_op.register
 def _(op: qtemps.GQSP):
-    be_op = op.hyperparameters["unitary"]
+    be_op = op.unitary
     mapped_be_op = _map_to_resource_op(be_op)
 
-    ctrl_wire = op.hyperparameters["control"]
+    ctrl_wire = op.control
     target_wires = mapped_be_op.wires
     total_wires = target_wires + Wires(ctrl_wire)
 
