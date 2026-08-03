@@ -502,6 +502,9 @@
 * TCDQ now supports workflows with qudits of non-uniform dimensions.
   [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
 
+* Added variance reduction techniques to the TCDQ IQP estimators.
+  [(#9953)](https://github.com/PennyLaneAI/pennylane/pull/9953)
+
   ```python
   import pennylane as qp
   from pennylane.labs.templates import LeftQuantumComparator
