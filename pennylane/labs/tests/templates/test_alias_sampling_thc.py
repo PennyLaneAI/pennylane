@@ -53,12 +53,6 @@ def _wire_layout(M, N, n, aleph):
     return mu_wires, nu_wires, sup_work, edge_flag, work_wires
 
 
-def _valid_pairs(M, N):
-    two_body = [(mu, nu) for nu in range(M) for mu in range(nu + 1)]
-    one_body = [(ell, M) for ell in range(N // 2)]
-    return two_body + one_body
-
-
 def _symmetric_target(M, N, zeta, t_ell, n):
     """The probability distribution over |mu>|nu> encoded by ``alias_sampling_thc``.
 
@@ -104,7 +98,9 @@ def _symmetric_target(M, N, zeta, t_ell, n):
     return P
 
 
-def _run(M, N, zeta, t_ell, n, aleph, device="lightning.qubit"):
+def _run(
+    M, N, zeta, t_ell, n, aleph, device="lightning.qubit"
+):  # pylint: disable=too-many-arguments
     mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, n, aleph)
     total = max(mu_wires + nu_wires + sup_work + work_wires) + 1
     dev = qp.device(device, wires=total)
@@ -112,9 +108,7 @@ def _run(M, N, zeta, t_ell, n, aleph, device="lightning.qubit"):
     @qp.qnode(dev)
     def circuit():
         SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
-        alias_sampling_thc(
-            M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
-        )
+        alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
         return qp.probs(wires=mu_wires + nu_wires)
 
     return np.asarray(circuit()).reshape((2**n, 2**n))
@@ -127,6 +121,7 @@ class TestClassicalTables:
     """Test the classical alias-table construction."""
 
     def test_table_size_and_normalization(self):
+        """The alias table has one entry per valid pair with valid keep-probabilities."""
         M, N = 3, 4
         np.random.seed(0)
         zeta = np.random.randn(M, M)
@@ -169,10 +164,11 @@ class TestClassicalTables:
             recon[(row["mu"], row["nu"])] += (1 / d) * row["keep_prob"]
             recon[(row["mu_alt"], row["nu_alt"])] += (1 / d) * (1 - row["keep_prob"])
 
-        for k in weights:
-            assert np.isclose(recon[k], weights[k] / tot, atol=1e-6)
+        for k, weight in weights.items():
+            assert np.isclose(recon[k], weight / tot, atol=1e-6)
 
     def test_qrom_data_shape(self):
+        """Each packed QROM row has the expected number of bits, all binary."""
         M, N, n, aleph = 3, 2, 3, 5
         np.random.seed(2)
         zeta = np.random.randn(M, M)
@@ -193,7 +189,8 @@ class TestClassicalTables:
 # Arithmetic address computation
 # --------------------------------------------------------------------------- #
 
-'''
+
+@pytest.mark.skip(reason="Kept for reference; not run in CI yet.")
 @pytest.mark.parametrize(
     ("M", "N", "n"),
     [(5, 2, 3), (3, 2, 2)],
@@ -218,7 +215,7 @@ def test_first_arithmetic_op_index(M, N, n):
             probs = circuit(mu, nu)
             assert int(np.argmax(probs)) == mu + nu * (nu + 1) // 2
 
-'''
+
 # --------------------------------------------------------------------------- #
 # End-to-end preparation
 # --------------------------------------------------------------------------- #
@@ -227,7 +224,7 @@ def test_first_arithmetic_op_index(M, N, n):
 class TestAliasSamplingTHC:
     """Test the full alias-sampling PREPARE routine."""
 
-    '''
+    @pytest.mark.skip(reason="Kept for reference; not run in CI yet.")
     @pytest.mark.parametrize(
         ("M", "N", "n", "aleph"),
         [
@@ -236,6 +233,7 @@ class TestAliasSamplingTHC:
         ],
     )
     def test_probabilities_normalized(self, M, N, n, aleph):
+        """The prepared distribution sums to one."""
         np.random.seed(3)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
@@ -243,7 +241,7 @@ class TestAliasSamplingTHC:
         probs = _run(M, N, zeta, t_ell, n, aleph)
         assert np.isclose(probs.sum(), 1.0)
 
-    
+    @pytest.mark.skip(reason="Kept for reference; not run in CI yet.")
     def test_support_matches_symmetric_valid_set(self):
         """All probability mass lands on the symmetrized valid support."""
         M, N, n, aleph = 2, 2, 2, 4
@@ -256,11 +254,10 @@ class TestAliasSamplingTHC:
         target = _symmetric_target(M, N, zeta, t_ell, n)
 
         support = {(a, b) for a in range(2**n) for b in range(2**n) if probs[a, b] > 1e-9}
-        target_support = {
-            (a, b) for a in range(2**n) for b in range(2**n) if target[a, b] > 1e-9
-        }
+        target_support = {(a, b) for a in range(2**n) for b in range(2**n) if target[a, b] > 1e-9}
         assert support == target_support
 
+    @pytest.mark.skip(reason="Kept for reference; not run in CI yet.")
     def test_approaches_target_distribution(self):
         """The prepared distribution is close to the (correctly normalized) target.
 
@@ -279,7 +276,7 @@ class TestAliasSamplingTHC:
 
         assert np.max(np.abs(probs - target)) < 0.05
 
-    '''
+
 # --------------------------------------------------------------------------- #
 # Input validation
 # --------------------------------------------------------------------------- #
@@ -292,26 +289,31 @@ class TestInputValidation:
         return zeta, t_ell
 
     def test_mismatched_registers(self):
+        """mu_wires and nu_wires of different lengths raise an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="same number of wires"):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3, 4], 5, list(range(6, 40)), 3)
 
     def test_index_register_too_small(self):
+        """An index register too small to hold M raises an error."""
         zeta, t_ell = self._dummy(8, 2)
         with pytest.raises(ValueError, match="at least ceil"):
             alias_sampling_thc(8, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
 
     def test_not_enough_work_wires(self):
+        """Too few work wires raise an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="At least"):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, [5, 6, 7], 3)
 
     def test_invalid_aleph(self):
+        """A non-positive aleph raises an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="aleph"):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 0)
 
     def test_bad_n_over_two(self):
+        """A value of N / 2 larger than M + 1 raises an error."""
         zeta = np.ones((2, 2))
         t_ell = np.ones(4)
         with pytest.raises(ValueError, match="N / 2 must be"):

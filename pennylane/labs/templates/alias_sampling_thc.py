@@ -14,8 +14,6 @@
 """Contains the ``alias_sampling_thc`` quantum function, used as the coefficient
 oracle (``PREPARE``) in tensor hypercontraction (THC) qubitization."""
 
-import math
-
 import numpy as np
 
 import pennylane as qml
@@ -114,7 +112,9 @@ def _build_alias_tables(M, N, zeta, t_ell):
     return table
 
 
-def _build_qrom_data(M, N, zeta, t_ell, num_index_wires, aleph):
+def _build_qrom_data(
+    M, N, zeta, t_ell, num_index_wires, aleph
+):  # pylint: disable=too-many-arguments
     r"""Pack the alias tables into the bitstrings consumed by ``qml.QROM``.
 
     The QROM is addressed by the contiguous two-body index
@@ -163,7 +163,9 @@ def _first_arithmetic_op(M, N, mu_wires, nu_wires, work_wires):
     qml.SemiAdder(mu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
 
 
-def alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph):
+def alias_sampling_thc(  # pylint: disable=too-many-arguments
+    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
+):
     r"""Coefficient oracle for tensor hypercontraction (THC) qubitization via
     coherent alias (Walker) sampling.
 
@@ -307,9 +309,7 @@ def alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wi
     for w in sample_reg:
         qml.Hadamard(wires=w)
 
-    LeftQuantumComparator(
-        keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<"
-    )
+    LeftQuantumComparator(keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<")
 
     # 4. Phase the sign of the kept / alternate entries onto the amplitudes.
     qml.CZ([keep_flag, work_wires[n_d + 1]])  # alt_sign, applied when keeping
