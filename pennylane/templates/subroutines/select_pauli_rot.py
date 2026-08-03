@@ -15,8 +15,8 @@ r"""
 Contains the SelectPauliRot template.
 """
 
-from pennylane import math
-from pennylane.core.operator import Operation, abstractify
+from pennylane import capture, math
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -32,7 +32,7 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
-class SelectPauliRot(Operation):
+class SelectPauliRot(Operator2):
     r"""Applies individual single-qubit Pauli rotations depending on the state of
     designated control qubits.
 
@@ -96,7 +96,7 @@ class SelectPauliRot(Operation):
      0.    +0.j 0.    +0.j]
     """
 
-    dynamic_arganmes = ("angles",)
+    dynamic_argnames = ("angles",)
     wire_argnames = ("control_wires", "target_wire")
     compilable_argnames = ("rot_axis",)
 
@@ -118,8 +118,7 @@ class SelectPauliRot(Operation):
         if len(Wires(target_wire)) != 1:
             raise ValueError("Only one target wire can be specified")
 
-        all_wires = Wires(control_wires) + Wires(target_wire)
-        super().__init__(angles, wires=all_wires)
+        super().__init__(angles, control_wires=control_wires, target_wire=target_wire, rot_axis=rot_axis)
 
 
 def _select_pauli_rot_resource(num_wires, rot_axis):
@@ -149,9 +148,14 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
 
 # Not exact resources because rotations might be skipped based on angles
 @register_resources(_select_pauli_rot_resource, exact=False)
-def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
+def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
+    
+    wires = Wires(control_wires) + Wires(target_wire)
 
+    if capture.enabled():
+        wires = math.array(wires, like="jax")
+    
     match rot_axis:
         case "X":
             change_op_basis(
