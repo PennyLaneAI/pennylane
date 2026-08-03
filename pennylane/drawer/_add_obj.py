@@ -214,7 +214,7 @@ def _add_controlled_global_op(obj, layer_str, config):
 
 
 def _add_elbow_core(obj, layer_str, config):
-    cvals = obj.hyperparameters["control_values"]
+    cvals = obj.control_values
     mapped_wires = [config.wire_map[w] for w in obj.wires]
     layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
     layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
