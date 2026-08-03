@@ -2345,7 +2345,7 @@ class CRZ(Controlled2):
         .. seealso:: :meth:`~.CRZ.matrix`
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (TensorLike): rotation angle
 
         Returns:
             tensor_like: canonical matrix
