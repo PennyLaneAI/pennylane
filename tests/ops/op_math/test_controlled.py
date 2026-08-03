@@ -2102,6 +2102,26 @@ class TestCtrl:
 
         assert qp.ctrl(CustomOp([0]), control=1) == qp.CNOT([1, 0])
 
+    def test_ctrl_u1_single_control(self):
+        """Tests that controlling ``U1`` on a single active wire yields a ``ControlledPhaseShift``."""
+        assert qp.ctrl(qp.U1(0.123, wires=0), control=1) == qp.ControlledPhaseShift(
+            0.123, wires=[1, 0]
+        )
+
+    @pytest.mark.parametrize(
+        "control, control_values",
+        [
+            ([1], [False]),
+            ([1, 2], None),
+        ],
+    )
+    def test_ctrl_u1_falls_back_to_controlled(self, control, control_values):
+        """Tests that controlling ``U1`` on zero or on multiple wires falls back to a
+        generic ``ControlledOp2`` instead of a ``ControlledPhaseShift``."""
+        op = qp.ctrl(qp.U1(0.123, wires=0), control=control, control_values=control_values)
+        assert isinstance(op, ControlledOp2)
+        assert op.base == qp.U1(0.123, wires=0)
+
 
 class _Rot(Operation):
     """A rotation operation that is not an instance of Rot
