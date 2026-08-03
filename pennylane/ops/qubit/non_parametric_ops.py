@@ -29,7 +29,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
