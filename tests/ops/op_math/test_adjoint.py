@@ -862,7 +862,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         y = 2.34
         z = 3.45
         with qp.queuing.AnnotatedQueue() as q:
-            _ = adjoint(func)(x, y, z)
+            adjoint(func)(x, y, z)
 
         tape = qp.tape.QuantumScript.from_queue(q)
 
