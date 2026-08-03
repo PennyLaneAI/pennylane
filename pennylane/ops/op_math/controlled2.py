@@ -839,7 +839,7 @@ def _ctrl_abstract(
 
         op_type = op if isinstance(op, type) else type(op)
         if custom := base_to_custom_ctrl_op().get((op_type, len(control_wires))):
-            return custom
+            return abstractify(custom)
 
     if not num_zero_control_values:
         return qp.ctrl(
