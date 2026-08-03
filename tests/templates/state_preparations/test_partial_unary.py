@@ -25,6 +25,9 @@ from pennylane.ops.functions import assert_valid
 from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
+    _find_affine_subspace_isometry,
+    _pui_state_prep_core,
+    _pui_state_prep_resources,
 )
 
 # pylint: disable=protected-access
@@ -78,13 +81,13 @@ class TestPUIsometryFinder:
         "num_entries, n, expected",
         [
             (2, 2, [2, 1, 1, 1, 2, np.uint64, np.uint64]),
-            (2, 8, [8, 1, 7, 4, 2, np.uint64, np.uint64]),
-            (2, 65, [65, 1, 64, 64, 2, object, int]),
+            (2, 8, [8, 1, 7, 2, 2, np.uint64, np.uint64]),
+            (2, 65, [65, 1, 64, 2, 2, object, int]),
             (3, 3, [3, 2, 1, 1, 3, np.uint64, np.uint64]),
             (4, 8, [8, 2, 6, 4, 4, np.uint64, np.uint64]),
             (15, 5, [5, 4, 1, 1, 15, np.uint64, np.uint64]),
             (23, 29, [29, 5, 24, 16, 23, np.uint64, np.uint64]),
-            (7, 65, [65, 3, 62, 32, 7, object, int]),
+            (7, 65, [65, 3, 62, 7, 7, object, int]),
             (112563, 100, [100, 17, 83, 64, 112563, object, int]),
         ],
     )
@@ -150,7 +153,11 @@ class TestPUIsometryFinder:
                 assert len(data) == 2
                 assert len(data[0]) == 3
                 assert all(isinstance(d, int) for d in data[0])
-                assert all(n_subspace <= d < n for d in data[0])
+                # The first control and target are remainder wires. The distinguishing second
+                # control may be any wire, including a subspace wire.
+                assert n_subspace <= data[0][0] < n
+                assert 0 <= data[0][1] < n
+                assert n_subspace <= data[0][2] < n
                 assert isinstance(data[1], int)
                 assert 0 <= data[1] <= 1
 
@@ -229,6 +236,103 @@ class TestPUIsometryFinder:
         # Validate circuit structure:
         self._validate_circuit_structure(circuit, iso_finder, num_entries)
         self._validate_circuit_ops(circuit, iso_finder, states)
+
+    def test_toffoli_may_use_subspace_control(self):
+        """A fallback Toffoli may distinguish rows using a subspace qubit."""
+        iso_finder = PUIsometryFinder([0b0010, 0b0110, 0b1000], 4)
+        circuit, _ = iso_finder.find_isometry()
+        toffolis = [data for op_type, *data in circuit if op_type == "Toffoli"]
+
+        assert toffolis
+        assert any(wires[1] < iso_finder.n_subspace for wires, _ in toffolis)
+
+
+class TestAffineSubspaceIsometry:
+    """Tests for the Clifford-only affine-support fast path."""
+
+    @staticmethod
+    def _apply_circuit(states, circuit, n):
+        states = list(map(int, states))
+        for op_type, *data in circuit:
+            if op_type == "X":
+                mask = 1 << (n - 1 - data[0])
+                states = [state ^ mask for state in states]
+            elif op_type == "CNOT":
+                control, target = data
+                control_mask = 1 << (n - 1 - control)
+                target_mask = 1 << (n - 1 - target)
+                states = [
+                    state ^ target_mask if state & control_mask else state for state in states
+                ]
+            else:
+                w0, w1 = data[0]
+                mask0, mask1 = 1 << (n - 1 - w0), 1 << (n - 1 - w1)
+                states = [
+                    state ^ mask0 ^ mask1 if bool(state & mask0) != bool(state & mask1) else state
+                    for state in states
+                ]
+        return states
+
+    def test_affine_support_maps_to_subspace(self):
+        """An affine support of minimal dimension maps into the subspace using Clifford gates."""
+        n, n_subspace = 8, 3
+        anchor = 0b10110110
+        basis = (0b11001001, 0b00110111, 0b01011100)
+        states = []
+        for mask in range(2**n_subspace):
+            state = anchor
+            for j, vector in enumerate(basis):
+                if (mask >> j) & 1:
+                    state ^= vector
+            states.append(state)
+
+        circuit, bijection = _find_affine_subspace_isometry(states, n, n_subspace)
+        mapped = self._apply_circuit(states, circuit, n)
+
+        assert all(op_type in {"X", "CNOT", "SWAP"} for op_type, *_ in circuit)
+        assert all((state & ((1 << (n - n_subspace)) - 1)) == 0 for state in mapped)
+        assert [state >> (n - n_subspace) for state in mapped] == [
+            bijection[i] for i in range(len(states))
+        ]
+
+    def test_non_affine_support_falls_back(self):
+        """Support with affine rank above the subspace width does not use the fast path."""
+        assert _find_affine_subspace_isometry([0, 1, 2, 4], 4, 2) is None
+
+    def test_affine_decomposition_omits_qrom_and_toffoli(self):
+        """The decomposition emits no non-Clifford isometry operations for affine support."""
+        coefficients = np.ones(4) / 2
+        indices = (0b1010, 0b0110, 0b1001, 0b0101)
+
+        with qp.queuing.AnnotatedQueue() as queue:
+            _pui_state_prep_core(coefficients, range(4), indices, work_wires=[4])
+
+        ops = [wrapped.obj for wrapped in queue]
+        assert not any(isinstance(op, (qp.QROM, qp.MultiControlledX)) for op in ops)
+        assert any(isinstance(op, qp.CNOT) for op in ops)
+
+    def test_autograd_coefficients(self):
+        """Coefficient padding and permutation preserve the Autograd interface."""
+        coefficients = qp.numpy.array([0.5, 0.5, 0.5, 0.5], requires_grad=True)
+        indices = (0b1010, 0b0110, 0b1001, 0b0101)
+        dev = qp.device("default.qubit", wires=5)
+
+        @qp.qnode(dev, interface="autograd")
+        def circuit(values):
+            PartialUnaryStatePreparation(values, range(4), indices, [4])
+            return qp.probs(wires=0)
+
+        assert qp.math.allclose(circuit(coefficients), [0.5, 0.5])
+        assert qp.math.all(qp.math.isfinite(qp.jacobian(circuit)(coefficients)))
+
+    def test_resource_model_caps_batches_and_accounts_for_excess_wires(self):
+        """Resource heuristics stay finite and change when excess wires enlarge the register."""
+        base = _pui_state_prep_resources(num_entries=3, num_wires=4, num_work_wires=1)
+        excess = _pui_state_prep_resources(num_entries=3, num_wires=4, num_work_wires=5)
+
+        assert len(base) < 20
+        assert len(excess) < 20
+        assert base != excess
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -322,6 +426,25 @@ class TestPartialUnaryStatePreparation:
         coefficients /= np.linalg.norm(coefficients)
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_complex_coefficients_on_non_affine_support(self):
+        """The generic PUI path preserves arbitrary relative phases."""
+        indices = (0, 3, 7, 17, 25)
+        coefficients = np.array([1, 1j, -2, -2j, 3], dtype=complex)
+        coefficients /= np.linalg.norm(coefficients)
+        assert _find_affine_subspace_isometry(indices, 5, 3) is None
+
+        dev = qp.device("default.qubit", wires=7)
+
+        @qp.qnode(dev)
+        def circuit():
+            PartialUnaryStatePreparation(coefficients, range(5), indices, [5, 6])
+            return qp.state()
+
+        target = np.zeros(32, dtype=complex)
+        target[list(indices)] = coefficients
+        assert np.allclose(circuit()[::4], target)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("provide_work_wires", [False, True])
@@ -437,3 +560,15 @@ class TestPartialUnaryStatePreparation:
         unique_indices = (0, -4, 1, 2, 3, 6, 10)
         with pytest.raises(ValueError, match=r"must be positive"):
             PartialUnaryStatePreparation(coeffs, wires, unique_indices, [])
+
+        with pytest.raises(ValueError, match="At least one state index"):
+            PartialUnaryStatePreparation(np.array([]), wires, (), [])
+
+        with pytest.raises(TypeError, match="must be integers"):
+            PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, (0, 1.5), [])
+
+        with pytest.raises(ValueError, match="must have norm 1.0"):
+            PartialUnaryStatePreparation(np.array([0.0]), wires, (0,), [])
+
+        with pytest.raises(ValueError, match="must be disjoint"):
+            PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, (0, 1), [3, 4])
