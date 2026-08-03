@@ -24,7 +24,7 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.core import queuing, Operator1, Operator2
+from pennylane.core import Operator1, Operator2, queuing
 from pennylane.core.operator import Operator
 from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
@@ -203,7 +203,12 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                 decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
             else:
                 args = tuple(op.dynamic_args.values()) + tuple(op.wire_args.values())
-                decomp_fn = partial(compute_qfunc_decomposition, **op.static_args, **op.compilable_args, **op.hybrid_args)
+                decomp_fn = partial(
+                    compute_qfunc_decomposition,
+                    **op.static_args,
+                    **op.compilable_args,
+                    **op.hybrid_args,
+                )
 
             jaxpr_decomp = make_plxpr(decomp_fn)(*args)
 

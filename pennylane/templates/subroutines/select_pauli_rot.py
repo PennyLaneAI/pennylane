@@ -117,7 +117,22 @@ class SelectPauliRot(Operator2):
         if len(Wires(target_wire)) != 1:
             raise ValueError("Only one target wire can be specified")
 
-        super().__init__(angles, control_wires=control_wires, target_wire=target_wire, rot_axis=rot_axis)
+        super().__init__(
+            angles, control_wires=control_wires, target_wire=target_wire, rot_axis=rot_axis
+        )
+
+    def __abstract_init__(self, angles, control_wires, target_wire, rot_axis):
+        if math.shape(angles)[-1] != 2 ** len(control_wires):
+            raise ValueError("Number of angles must be 2^(len(control_wires))")
+        if rot_axis not in ["X", "Y", "Z"]:
+            raise ValueError("'rot_axis' can only take the values 'X', 'Y' and 'Z'.")
+        if (
+            not isinstance(target_wire, int)
+            and target_wire.shape != (1,)
+            and target_wire.shape != ()
+        ):
+            raise ValueError("Only one target wire can be specified")
+        return super().__abstract_init__(angles, control_wires, target_wire, rot_axis)
 
 
 # pylint: disable=unused-arguments
@@ -153,12 +168,12 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 @register_resources(_select_pauli_rot_resource, exact=False)
 def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
-    
+
     wires = Wires(control_wires) + Wires(target_wire)
 
     if capture.enabled():
         wires = math.array(wires, like="jax")
-    
+
     match rot_axis:
         case "X":
             change_op_basis(
