@@ -13,10 +13,14 @@
 # limitations under the License.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 """Tests for ``qp.transforms.decompositions.make_crz_to_phase_gradient_decomp``"""
 =======
 """Tests for ``labs.transforms.make_crz_to_phase_gradient_decomp``"""
 >>>>>>> 1918ebdab4 (fix)
+=======
+"""Tests for ``qp.transforms.decompositions.make_crz_to_phase_gradient_decomp``"""
+>>>>>>> 2eb312e97c (fix docstring for test files)
 
 import numpy as np
 

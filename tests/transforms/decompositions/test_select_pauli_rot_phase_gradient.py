@@ -13,12 +13,16 @@
 # limitations under the License.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 """Tests for the decomposition rule qp.transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp"""
 
 import warnings
 =======
 """Tests for the decomposition rule qp.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp"""
 >>>>>>> 2d4eb0439e (renaming)
+=======
+"""Tests for the decomposition rule qp.transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp"""
+>>>>>>> 2eb312e97c (fix docstring for test files)
 
 import numpy as np
 
