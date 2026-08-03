@@ -191,7 +191,7 @@ def _init_signature_registration():
         spec = dict(op.arg_specs or {})
         spec.update(**kwargs)
 
-        if any(op.hybrid_argnames or op.static_argnames):
+        if op.hybrid_argnames or op.static_argnames:
             # Precompiling decomposition rules will require UID generation for operators
             # with hybrid/non-compilable static arguments. But, the UID is Python session
             # dependent, and precompilation happens in a different Python session.
