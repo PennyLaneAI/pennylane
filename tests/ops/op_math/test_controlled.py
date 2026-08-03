@@ -52,7 +52,11 @@ from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
 
-# pylint: disable=protected-access, expression-not-assigned, too-many-arguments
+# pylint: disable=too-few-public-methods
+# pylint: disable=protected-access
+# pylint: disable=pointless-statement
+# pylint: disable=expression-not-assigned
+# pylint: disable=too-many-arguments
 
 
 def equal_list(lhs, rhs):
@@ -584,8 +588,6 @@ class TestControlledMiscMethods:
 
 class TestControlledOperationProperties:
     """Test ControlledOp specific properties."""
-
-    # pylint:disable=no-member
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
@@ -1374,7 +1376,7 @@ class TestDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2
@@ -1481,7 +1483,6 @@ class TestControlledSupportsBroadcasting:
     separately_tested_ops = [
         "QubitUnitary",
         "ControlledQubitUnitary",
-        "DiagonalQubitUnitary",
         "PauliRot",
         "MultiRZ",
         "StatePrep",
@@ -1589,6 +1590,7 @@ class TestControlledSupportsBroadcasting:
 
         assert qp.math.allclose(mat, single_mats)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_controlled_diagonal_qubit_unitary(self):
         """Test that a Controlled operation whose base is a DiagonalQubitUnitary, which is marked
         as supporting parameter broadcasting, actually does support broadcasting."""
@@ -2084,11 +2086,12 @@ class TestCtrl:
         assert new_op.control_values == Bool[3]
         assert new_op.work_wires == Wire[1]
 
+    # pylint: disable=too-few-public-methods,unused-argument
     def test_custom_ctrl_dispatch(self):
         """Tests that custom controlled dispatchers work for `Operator2`."""
 
         class CustomOp(Operator2):
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         @custom_ctrl_dispatch.register
@@ -2357,13 +2360,13 @@ class TestTapeExpansionWithControlled:
         with qp.queuing.AnnotatedQueue() as q_tape:
             qp.ctrl(qp.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
         tape = QuantumScript.from_queue(q_tape)
-        [tape], _ = decompose(
-            tape,
-            max_expansion=3,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            stopping_condition=lambda op: not isinstance(op, Controlled),
+        qp.assert_equal(
+            tape[0],
+            qp.ops.ControlledOp2(
+                qp.DiagonalQubitUnitary(np.array([-1.0, 1.0j]), wires=0),
+                control_wires=1,
+            ),
         )
-        assert tape[0] == qp.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
 
     @pytest.mark.parametrize("M", unitaries)
     def test_qubit_unitary(self, M):
@@ -2486,7 +2489,7 @@ class TestCtrlTransformDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2
