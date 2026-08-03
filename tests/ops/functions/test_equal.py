@@ -421,8 +421,7 @@ class TestEqual:
             is False
         )
 
-        error_msg = "differ in trainability"
-        with pytest.raises(AssertionError, match=error_msg):
+        with pytest.raises(AssertionError, match="differ in trainability"):
             assert_equal(
                 op1(param_qp, wires=wire),
                 op1(param_qp_1, wires=wire),
