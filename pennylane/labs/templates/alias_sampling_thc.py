@@ -22,8 +22,68 @@ from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.wires import Wires
 
 
-def _build_alias_tables(M, N, zeta, t_ell):
-    r"""Build the classical Walker alias tables for the THC coefficients.
+def _build_alias_tables(probs, mu):
+    r"""Compute the classical alias-sampling tables ``alt`` and ``keep``.
+
+    O(L) iterative matching (Walker/Vose) for the coherent alias sampling of
+    `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_. Returns integers
+    :math:`\mathrm{alt}_\ell \in [0, L)` and :math:`\mathrm{keep}_\ell \in [0, 2^\mu)`
+    satisfying the normalization constraint (Eq. requirekl):
+
+    .. math::
+
+        \frac{\mathrm{keep}_\ell + \sum_{k \,:\, \mathrm{alt}_k = \ell}
+        (2^\mu - \mathrm{keep}_k)}{2^\mu L} = \widetilde{\rho}_\ell .
+
+    Args:
+        probs (Sequence[float]): non-negative weights (normalized internally).
+        mu (int): number of bits for ``keep`` and the ``sigma`` register.
+
+    Returns:
+        tuple[list[int], list[int]]: ``(alt, keep)``, each of length ``L``.
+
+    .. note::
+
+        ``keep_l`` holds :math:`\mu` bits (range :math:`[0, 2^\mu - 1]`). Columns
+        not touched by the matching loop keep their defaults ``alt_l = l`` and a
+        full ``keep``; these are self-aliased, so the ``keep`` value cancels in the
+        constraint above and capping at :math:`2^\mu - 1` is exact.
+    """
+    probs = np.asarray(probs, dtype=float)
+    if np.any(probs < 0):
+        raise ValueError("probs must be non-negative")
+    L = len(probs)
+
+    total = probs.sum()
+    if total <= 0:
+        raise ValueError("probs must sum to a positive value")
+
+    n = 2**mu
+    scaled = (L * probs / total).astype(float)
+    alt = list(range(L))
+    keep = [n] * L  # default: self-aliased, full keep (covers leftover columns)
+
+    small_mask = scaled < 1.0
+    small = np.where(small_mask)[0].tolist()
+    large = np.where(~small_mask)[0].tolist()
+
+    while small and large:
+        s = small.pop()
+        g = large.pop()
+        keep[s] = int(round(scaled[s] * n))
+        alt[s] = g
+        scaled[g] += scaled[s] - 1.0
+        if scaled[g] < 1.0:
+            small.append(g)
+        else:
+            large.append(g)
+
+    keep = np.clip(keep, 0, n - 1).tolist()
+    return alt, keep
+
+
+def _build_thc_pairs(M, N, zeta, t_ell):
+    r"""Enumerate the valid THC index pairs and their (signed) weights.
 
     The valid index set is
 
@@ -34,12 +94,7 @@ def _build_alias_tables(M, N, zeta, t_ell):
     of size :math:`d = N/2 + M(M+1)/2`. Each entry is assigned the weight
     :math:`\zeta_{\mu\nu}` (halved on the diagonal :math:`\mu = \nu`) for the two-body
     block, and :math:`t_\ell` for the one-body block (the sentinel column
-    :math:`\nu = M`). Walker's method turns the resulting target distribution into,
-    for every index ``s``:
-
-    * ``keep_prob[s]``: probability of keeping the original ``(mu, nu)``,
-    * ``(mu_alt, nu_alt)``: the alternate pair used otherwise,
-    * ``sign`` / ``alt_sign``: sign bits of the original and alternate weights.
+    :math:`\nu = M`).
 
     Args:
         M (int): the THC rank.
@@ -48,7 +103,8 @@ def _build_alias_tables(M, N, zeta, t_ell):
         t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``.
 
     Returns:
-        list[dict]: one entry per valid pair, sorted lexicographically by ``(mu, nu)``.
+        tuple[list[tuple[int, int]], list[float]]: the pairs sorted lexicographically
+        by ``(mu, nu)`` and their (signed) weights, aligned index-by-index.
     """
     n_half = N // 2
     d = n_half + M * (M + 1) // 2
@@ -69,47 +125,7 @@ def _build_alias_tables(M, N, zeta, t_ell):
     if len(entries) != d:
         raise ValueError(f"Expected {d} valid pairs, built {len(entries)}.")
 
-    total_w = sum(abs(weights[k]) for k in entries)
-    probs = {k: abs(weights[k]) / total_w for k in entries}
-    signs = {k: (1 if weights[k] >= 0 else -1) for k in entries}
-
-    # Walker's alias method.
-    small, large = [], []
-    prob_table, alias_of = {}, {}
-    scaled = {k: probs[k] * d for k in entries}
-    for k in entries:
-        (small if scaled[k] < 1.0 else large).append(k)
-
-    while small and large:
-        s = small.pop()
-        l = large.pop()
-        prob_table[s] = scaled[s]
-        alias_of[s] = l
-        scaled[l] = scaled[l] + scaled[s] - 1.0
-        (small if scaled[l] < 1.0 else large).append(l)
-
-    for k in small + large:
-        # Kept with probability ~1; the tiny offset avoids rounding
-        # int(keep_prob * 2 ** aleph) up to the out-of-range value 2 ** aleph.
-        prob_table[k] = 1.0 - 2.0 ** (-30)
-        alias_of[k] = k
-
-    table = []
-    for key in entries:
-        alt = alias_of[key]
-        table.append(
-            {
-                "mu": key[0],
-                "nu": key[1],
-                "keep_prob": prob_table[key],
-                "mu_alt": alt[0],
-                "nu_alt": alt[1],
-                "sign": signs[key],
-                "alt_sign": signs[alt],
-                "alt_edge": 1 if alt[1] == M else 0,
-            }
-        )
-    return table
+    return entries, [weights[k] for k in entries]
 
 
 def _build_qrom_data(
@@ -123,25 +139,37 @@ def _build_qrom_data(
     bits), ``nu_alt`` (``num_index_wires`` bits), the ``aleph``-bit keep threshold,
     and the ``alt_edge`` flag.
 
+    The keep threshold and alternate index are produced by the classical
+    :func:`_build_alias_tables` (Walker/Vose, ``mu = aleph`` bits); signs and the
+    ``alt_edge`` sentinel are derived from the THC pair enumeration.
+
     Args:
-        M, N, zeta, t_ell: as in :func:`_build_alias_tables`.
+        M, N, zeta, t_ell: as in :func:`_build_thc_pairs`.
         num_index_wires (int): number of wires per index register (``len(mu_wires)``).
         aleph (int): number of bits used for the keep-probability comparison.
 
     Returns:
         list[list[int]]: the QROM data, one bitstring (list of ints) per address.
     """
-    table = _build_alias_tables(M, N, zeta, t_ell)
-    data = [[] for _ in range(len(table))]
-    for entry in table:
-        s = entry["mu"] + (entry["nu"] ** 2 + entry["nu"]) // 2
+    entries, weights = _build_thc_pairs(M, N, zeta, t_ell)
+    probs = [abs(w) for w in weights]
+    signs = [1 if w >= 0 else -1 for w in weights]
+
+    # Classical alias matching on the magnitudes; aleph bits for the keep register.
+    alt, keep = _build_alias_tables(probs, aleph)
+
+    data = [[] for _ in range(len(entries))]
+    for i, (mu, nu) in enumerate(entries):
+        s = mu + (nu**2 + nu) // 2
+        alt_i = alt[i]
+        mu_alt, nu_alt = entries[alt_i]
         row = (
-            [(1 - entry["sign"]) // 2]
-            + [(1 - entry["alt_sign"]) // 2]
-            + [int(b) for b in f"{int(entry['mu_alt']):0{num_index_wires}b}"]
-            + [int(b) for b in f"{int(entry['nu_alt']):0{num_index_wires}b}"]
-            + [int(b) for b in f"{int(entry['keep_prob'] * 2 ** aleph):0{aleph}b}"]
-            + [entry["alt_edge"]]
+            [(1 - signs[i]) // 2]
+            + [(1 - signs[alt_i]) // 2]
+            + [int(b) for b in f"{int(mu_alt):0{num_index_wires}b}"]
+            + [int(b) for b in f"{int(nu_alt):0{num_index_wires}b}"]
+            + [int(b) for b in f"{int(keep[i]):0{aleph}b}"]
+            + [1 if nu_alt == M else 0]
         )
         data[s] = row
     return data
