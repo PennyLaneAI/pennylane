@@ -840,7 +840,7 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Non-parametric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.X`
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.X`, `~.CNOT`, `~.Toffoli`, `~.MultiControlledX`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
@@ -848,6 +848,8 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   [(#9844)](https://github.com/PennyLaneAI/pennylane/pull/9844)
+  [(#9814)](https://github.com/PennyLaneAI/pennylane/pull/9814)
+  [(#9854)](https://github.com/PennyLaneAI/pennylane/pull/9854)
   - Templates are ported:
     - `~.BasisRotation`, `~.QROM`, `~.QFT`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
