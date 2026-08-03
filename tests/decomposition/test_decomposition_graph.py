@@ -28,6 +28,7 @@ from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_de
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
@@ -307,7 +308,7 @@ class TestDecompGraphConstruction:
                 qp.X: 1,
                 _adjoint_abstract(qp.RY): 1,
                 _ctrl_abstract(qp.T, Wire[2]): 1,
-                pow_resource_rep(qp.Z, {}, z=2): 1,
+                _pow_abstract(qp.Z, z=2): 1,
             }
         )
         def custom_decomp(wires):

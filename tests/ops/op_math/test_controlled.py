@@ -21,12 +21,9 @@ import numpy as np
 import pytest
 import scipy as sp
 from gate_data import (
-    CCZ,
     CH,
     CNOT,
     CSWAP,
-    CY,
-    CZ,
     ControlledPhaseShift,
     CRot3,
     CRotx,
@@ -717,9 +714,6 @@ base_num_control_mats = [
     (qp.PauliX("a"), 1, CNOT),
     (qp.PauliX("a"), 2, Toffoli),
     (qp.CNOT(["a", "b"]), 1, Toffoli),
-    (qp.PauliY("a"), 1, CY),
-    (qp.PauliZ("a"), 1, CZ),
-    (qp.PauliZ("a"), 2, CCZ),
     (qp.SWAP(("a", "b")), 1, CSWAP),
     (qp.Hadamard("a"), 1, CH),
     (qp.RX(1.234, "b"), 1, CRotx(1.234)),
@@ -854,55 +848,6 @@ special_non_par_op_decomps = [
         [0, 1, 2],
         (lambda wires: qp.ctrl(qp.Identity(wires[-1]), control=wires[:-1])),
         [qp.Identity([0, 1, 2, 3])],
-    ),
-    (qp.PauliZ, [], [1], [0], qp.CZ, [qp.ControlledPhaseShift(np.pi, wires=[0, 1])]),
-    (
-        qp.PauliZ,
-        [],
-        [0],
-        [2, 1],
-        qp.CCZ,
-        [
-            qp.CNOT(wires=[1, 0]),
-            qp.adjoint(qp.T(wires=0)),
-            qp.CNOT(wires=[2, 0]),
-            qp.T(wires=0),
-            qp.CNOT(wires=[1, 0]),
-            qp.adjoint(qp.T(wires=0)),
-            qp.CNOT(wires=[2, 0]),
-            qp.T(wires=0),
-            qp.T(wires=1),
-            qp.CNOT(wires=[2, 1]),
-            qp.Hadamard(wires=0),
-            qp.T(wires=2),
-            qp.adjoint(qp.T(wires=1)),
-            qp.CNOT(wires=[2, 1]),
-            qp.Hadamard(wires=0),
-        ],
-    ),
-    (
-        qp.CZ,
-        [],
-        [1, 2],
-        [0],
-        qp.CCZ,
-        [
-            qp.CNOT(wires=[1, 2]),
-            qp.adjoint(qp.T(wires=2)),
-            qp.CNOT(wires=[0, 2]),
-            qp.T(wires=2),
-            qp.CNOT(wires=[1, 2]),
-            qp.adjoint(qp.T(wires=2)),
-            qp.CNOT(wires=[0, 2]),
-            qp.T(wires=2),
-            qp.T(wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.Hadamard(wires=2),
-            qp.T(wires=0),
-            qp.adjoint(qp.T(wires=1)),
-            qp.CNOT(wires=[0, 1]),
-            qp.Hadamard(wires=[2]),
-        ],
     ),
 ]
 
@@ -1491,7 +1436,6 @@ class TestControlledSupportsBroadcasting:
     separately_tested_ops = [
         "QubitUnitary",
         "ControlledQubitUnitary",
-        "DiagonalQubitUnitary",
         "PauliRot",
         "MultiRZ",
         "StatePrep",
@@ -1599,6 +1543,7 @@ class TestControlledSupportsBroadcasting:
 
         assert qp.math.allclose(mat, single_mats)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_controlled_diagonal_qubit_unitary(self):
         """Test that a Controlled operation whose base is a DiagonalQubitUnitary, which is marked
         as supporting parameter broadcasting, actually does support broadcasting."""
@@ -1755,8 +1700,6 @@ class TestControlledSupportsBroadcasting:
 
 
 custom_ctrl_ops = [
-    (qp.PauliY(wires=0), [1], qp.CY(wires=[1, 0])),
-    (qp.PauliZ(wires=0), [1], qp.CZ(wires=[1, 0])),
     (qp.RX(0.123, wires=0), [1], qp.CRX(0.123, wires=[1, 0])),
     (qp.RY(0.123, wires=0), [1], qp.CRY(0.123, wires=[1, 0])),
     (qp.RZ(0.123, wires=0), [1], qp.CRZ(0.123, wires=[1, 0])),
@@ -2368,13 +2311,13 @@ class TestTapeExpansionWithControlled:
         with qp.queuing.AnnotatedQueue() as q_tape:
             qp.ctrl(qp.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
         tape = QuantumScript.from_queue(q_tape)
-        [tape], _ = decompose(
-            tape,
-            max_expansion=3,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            stopping_condition=lambda op: not isinstance(op, Controlled),
+        qp.assert_equal(
+            tape[0],
+            qp.ops.ControlledOp2(
+                qp.DiagonalQubitUnitary(np.array([-1.0, 1.0j]), wires=0),
+                control_wires=1,
+            ),
         )
-        assert tape[0] == qp.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
 
     @pytest.mark.parametrize("M", unitaries)
     def test_qubit_unitary(self, M):
