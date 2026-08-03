@@ -2316,7 +2316,6 @@ class CRZ(Controlled2):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     name = "CRZ"
-    parameter_frequencies = [(0.5, 1.0)]
 
     wire_sizes = (2,)
     dynamic_argnames = ("phi",)
