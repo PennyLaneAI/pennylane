@@ -1177,7 +1177,7 @@ class TestUnitaryLabels:
         """Test 'matrices' key pair is not a list."""
         assert op.label(cache={"matrices": 0}) == "U"
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_empty_cache_list(self, mat, op):
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
@@ -1185,7 +1185,7 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U\n(M0)"
         assert qp.math.allclose(cache["matrices"][0], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
@@ -1195,7 +1195,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 2
         assert qp.math.allclose(cache["matrices"][1], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""
