@@ -27,6 +27,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
+from pennylane import math
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
@@ -391,7 +392,8 @@ def _check_eigendecomposition(op):
     if has_eigvals:
         assert qp.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
-    if has_eigvals and op.has_diagonalizing_gates:
+    if (eg is not None or compute_eg is not None) and op.has_diagonalizing_gates:
+        eg = eg if eg is not None else compute_eg
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
@@ -563,7 +565,9 @@ def _check_bind_new_parameters(op):
 
 def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
-    new_dyn_args = {k: v * 0.0 for k, v in op.arguments.items() if k in op.dynamic_argnames}
+    new_dyn_args = {
+        k: math.cast_like(v * 0.0, v) for k, v in op.arguments.items() if k in op.dynamic_argnames
+    }
     new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
