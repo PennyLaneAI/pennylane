@@ -296,7 +296,7 @@ class TestUnbiasedMmdSquared:
     def test_matching_moments_near_zero(self):
         """When model and data moments agree the loss is ≈ 0."""
         rng = np.random.default_rng(0)
-        n_ops, n_q = 30, 2
+        n_ops = 30
         dims = (2, 3)
         m = 50
         n_samples = 1000
@@ -321,7 +321,7 @@ class TestUnbiasedMmdSquared:
     def test_sqrt_loss_flag(self):
         """sqrt_loss=True returns sqrt(|result|)."""
         rng = np.random.default_rng(1)
-        n_ops, n_q = 20, 2
+        n_ops = 20
         dims = (2, 3)
         n_samples = 1000
         data = jnp.array(np.stack([rng.integers(0, d_i, 40) for d_i in dims], axis=1))
@@ -336,7 +336,7 @@ class TestUnbiasedMmdSquared:
     def test_deterministic(self):
         """Same inputs produce identical outputs."""
         rng = np.random.default_rng(3)
-        n_ops, n_q = 15, 2
+        n_ops = 15
         dims = (2, 3)
         n_samples = 500
         data = jnp.array(np.stack([rng.integers(0, d_i, 30) for d_i in dims], axis=1))
