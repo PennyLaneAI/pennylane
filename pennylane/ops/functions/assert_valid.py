@@ -176,7 +176,8 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     for rule in qp.list_decomps(f"C({op.name})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
-            max_wire = max(op.wires) if op.wires else 0
+            int_wires = [w for w in op.wires if isinstance(w, int)]
+            max_wire = max(int_wires) if int_wires else -1
             control_wires = [i + max_wire + 1 for i in range(n_ctrl_wires)]
             control_values = [c_value] * n_ctrl_wires
             work_wires = [i + max(control_wires) + 1 for i in range(n_workers)]
