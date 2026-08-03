@@ -111,7 +111,7 @@ class MultiRZ(Operator2):
 
         **Example**
 
-        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), (0, 1))
+        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), wires=(0, 1))
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
