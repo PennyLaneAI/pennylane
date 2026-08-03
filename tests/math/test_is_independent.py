@@ -168,18 +168,18 @@ class TestIsIndependentAutograd:
         *args_dependent_lambdas,
     ]
 
-    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    @pytest.mark.parametrize("func, args", list(zip(constant_functions, args_constant)))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
         assert is_independent(func, self.interface, args)
 
-    @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
+    @pytest.mark.parametrize("func, args", list(zip(dependent_functions, args_dependent)))
     def test_dependent(self, func, args):
         """Tests that a dependent function is correctly detected as such."""
         assert not is_independent(func, self.interface, args)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    @pytest.mark.parametrize("func, args", list(zip(overlooked_lambdas, args_overlooked_lambdas)))
     def test_overlooked_dependence(self, func, args):
         """Test that particular functions that are dependent on the input
         are overlooked."""
@@ -282,18 +282,18 @@ class TestIsIndependentJax:
         *args_dependent_lambdas,
     ]
 
-    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    @pytest.mark.parametrize("func, args", list(zip(constant_functions, args_constant)))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
         assert is_independent(func, self.interface, args)
 
-    @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
+    @pytest.mark.parametrize("func, args", list(zip(dependent_functions, args_dependent)))
     def test_dependent(self, func, args):
         """Tests that a dependent function is correctly detected as such."""
         assert not is_independent(func, self.interface, args)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    @pytest.mark.parametrize("func, args", list(zip(overlooked_lambdas, args_overlooked_lambdas)))
     def test_overlooked_dependence(self, func, args):
         """Test that particular functions that are dependent on the input
         are overlooked."""
@@ -369,7 +369,7 @@ class TestIsIndependentTorch:
 
     dependent_expect_torch_fail = [False, False, False, *lambdas_expect_torch_fail]
 
-    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    @pytest.mark.parametrize("func, args", list(zip(constant_functions, args_constant)))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
         with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
@@ -377,7 +377,7 @@ class TestIsIndependentTorch:
 
     @pytest.mark.parametrize(
         "func, args, exp_fail",
-        zip(dependent_functions, args_dependent, dependent_expect_torch_fail),
+        list(zip(dependent_functions, args_dependent, dependent_expect_torch_fail)),
     )
     def test_dependent(self, func, args, exp_fail):
         """Tests that a dependent function is correctly detected as such."""
@@ -388,7 +388,7 @@ class TestIsIndependentTorch:
                 assert not is_independent(func, self.interface, args)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    @pytest.mark.parametrize("func, args", list(zip(overlooked_lambdas, args_overlooked_lambdas)))
     def test_overlooked_dependence(self, func, args):
         """Test that particular functions that are dependent on the input
         are overlooked."""

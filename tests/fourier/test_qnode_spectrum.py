@@ -233,7 +233,7 @@ class TestCircuits:
 
     @pytest.mark.parametrize(
         "circuit, args, expected",
-        zip(circuits_linear, all_args, expected_spectra),
+        list(zip(circuits_linear, all_args, expected_spectra)),
     )
     def test_various_circuits(self, circuit, args, expected):
         """Test the spectrum for some simple standard circuits."""
@@ -438,7 +438,7 @@ class TestAutograd:
         assert res
         assert res == expected_result
 
-    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    @pytest.mark.parametrize("circuit, args", list(zip(circuits_nonlinear, all_args_nonlinear)))
     def test_nonlinear_error(self, circuit, args):
         """Test that an error is raised if non-linear
         preprocessing happens in a circuit."""
@@ -466,7 +466,7 @@ class TestTorch:
         assert res
         assert res == expected_result
 
-    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    @pytest.mark.parametrize("circuit, args", list(zip(circuits_nonlinear, all_args_nonlinear)))
     def test_nonlinear_error(self, circuit, args):
         """Test that an error is raised if non-linear
         preprocessing happens in a circuit."""
@@ -497,7 +497,7 @@ class TestTensorflow:
         assert res
         assert res == expected_result
 
-    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    @pytest.mark.parametrize("circuit, args", list(zip(circuits_nonlinear, all_args_nonlinear)))
     def test_nonlinear_error(self, circuit, args):
         """Test that an error is raised if non-linear
         preprocessing happens in a circuit."""
@@ -528,7 +528,7 @@ class TestJax:
         assert res
         assert res == expected_result
 
-    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    @pytest.mark.parametrize("circuit, args", list(zip(circuits_nonlinear, all_args_nonlinear)))
     def test_nonlinear_error(self, circuit, args):
         """Test that an error is raised if non-linear
         preprocessing happens in a circuit."""

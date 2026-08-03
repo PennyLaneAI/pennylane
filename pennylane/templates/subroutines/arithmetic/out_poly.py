@@ -21,13 +21,14 @@ from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import adjoint, ctrl
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -472,11 +473,7 @@ class OutPoly(Operation):
 def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
-    resources = Counter(
-        {
-            resource_rep(QFT, num_wires=num_output_adder_mod): 1,
-        }
-    )
+    resources = Counter({QFT(Wire[num_output_adder_mod]): 1})
 
     coeffs_dic = dict(coeffs_list)
 
@@ -500,7 +497,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
             )
             resources[ctrl_phase_rep] += 1
 
-    resources[adjoint_resource_rep(QFT, {"num_wires": num_output_adder_mod})] = 1
+    resources[_adjoint_abstract(QFT(Wire[num_output_adder_mod]))] = 1
 
     return dict(resources)
 

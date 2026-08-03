@@ -485,7 +485,7 @@ class TestPrivateFunctions:
         ],
     )
 
-    @pytest.mark.parametrize("order, expected_expansion", zip((1, 2, 4), expected_expansions))
+    @pytest.mark.parametrize("order, expected_expansion", list(zip((1, 2, 4), expected_expansions)))
     def test_recursive_expression_no_queue(self, order, expected_expansion):
         """Test the _recursive_expression function correctly generates the decomposition"""
         ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]
@@ -502,7 +502,7 @@ class TestDecomposition:
     """Test the decomposition of the TrotterProduct class."""
 
     @pytest.mark.parametrize("order", (1, 2, 4))
-    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_compute_decomposition(self, hamiltonian, hamiltonian_index, order):
         """Test the decomposition is correct and queues"""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
@@ -519,9 +519,10 @@ class TestDecomposition:
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("order", (1, 2, 4))
-    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
-    # pylint: disable=unused-argument
-    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
+    def test_decomposition_new(
+        self, hamiltonian, hamiltonian_index, order
+    ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
         for rule in qp.list_decomps(qp.TrotterProduct):
@@ -564,7 +565,7 @@ class TestIntegration:
 
     #   Circuit execution tests:
     @pytest.mark.parametrize("order", (1, 2, 4))
-    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_execute_circuit(self, hamiltonian, hamiltonian_index, order):
         """Test that the gate executes correctly in a circuit."""
         wires = hamiltonian.wires

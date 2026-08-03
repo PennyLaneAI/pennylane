@@ -509,7 +509,9 @@ class TestMeasurementCompositeValueManipulation:
     """Test composite application of dunder methods associated with the MeasurementValue class"""
 
     @pytest.mark.parametrize("unary_name", unary_dunders)
-    @pytest.mark.parametrize("binary1_name, binary2_name", product(binary_dunders, binary_dunders))
+    @pytest.mark.parametrize(
+        "binary1_name, binary2_name", list(product(binary_dunders, binary_dunders))
+    )
     def test_composition_between_measurement_values(self, unary_name, binary1_name, binary2_name):
         """Test the composition of dunder methods."""
         m0 = MeasurementValue([mp1], lambda v: v)

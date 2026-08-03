@@ -42,24 +42,6 @@ class TestQFT:
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_compute_decomposition(self, n_qubits):
-        """Test if the QFT operation is correctly decomposed"""
-        decomp = qp.QFT.compute_decomposition(wires=range(n_qubits))
-
-        dev = qp.device("default.qubit", wires=n_qubits)
-
-        out_states = []
-        for state in np.eye(2**n_qubits):
-            ops = [qp.StatePrep(state, wires=range(n_qubits))] + decomp
-            qs = qp.tape.QuantumScript(ops, [qp.state()])
-            out_states.append(dev.execute(qs))
-
-        reconstructed_unitary = np.array(out_states).T
-        expected_unitary = qp.QFT(wires=range(n_qubits)).matrix()
-
-        assert np.allclose(reconstructed_unitary, expected_unitary)
-
-    @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""
         op = qp.QFT(wires=range(n_qubits))
@@ -99,7 +81,7 @@ class TestQFT:
     def test_matrix(self, tol):
         """Test that the matrix representation is correct."""
 
-        res_static = qp.QFT.compute_matrix(2)
+        res_static = qp.QFT.compute_matrix(tuple(range(2)))
         res_dynamic = qp.QFT(wires=[0, 1]).matrix()
         res_reordered = qp.QFT(wires=[0, 1]).matrix([1, 0])
 

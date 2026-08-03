@@ -64,8 +64,15 @@ def _generator_prefactor(gen):
         return ops[0], coeffs[0]
 
     if isinstance(gen, Sum):
-        ops = [o.base if isinstance(o, SProd) else o for o in gen]
-        coeffs = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
+        ops = []
+        coeffs = []
+        for o in gen.operands:
+            if isinstance(o, SProd):
+                ops.append(o.base)
+                coeffs.append(o.scalar)
+            else:
+                ops.append(o)
+                coeffs.append(1)
         abs_coeffs = list(qp.math.abs(coeffs))
         if qp.math.allequal(coeffs[0], coeffs):
             # case where the Hamiltonian coefficients are all the same

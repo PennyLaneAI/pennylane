@@ -581,9 +581,7 @@ class TestSpsaGradient:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupportingSpecialObservable(
-            DefaultQubitLegacy
-        ):  # pylint: disable=too-few-public-methods
+        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
             name = "Device supporting SpecialObservable"
@@ -593,6 +591,10 @@ class TestSpsaGradient:
             @staticmethod
             def _asarray(arr, dtype=None):
                 return pnp.array(arr, dtype=dtype)
+
+            @staticmethod
+            def supported_observables():
+                return {"SpecialObservable"}
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)

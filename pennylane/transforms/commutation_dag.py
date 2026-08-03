@@ -365,7 +365,6 @@ class CommutationDAG:
         """
         return len(self._multi_graph)
 
-    # pylint: disable=no-member
     def draw(self, filename="dag.png"):  # pragma: no cover
         """Draw the DAG object.
 
@@ -399,7 +398,7 @@ class CommutationDAG:
         from networkx.drawing.nx_pydot import to_pydot  # pylint: disable=import-outside-toplevel
 
         dot = to_pydot(draw_graph)
-        dot.write_png(filename)
+        dot.write_png(filename)  # pylint: disable=no-member
 
     def _pred_update(self, node_id):
         self.get_node(node_id).predecessors = []

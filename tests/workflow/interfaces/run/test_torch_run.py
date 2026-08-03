@@ -14,6 +14,7 @@
 
 """Unit tests for the `run` helper function on the 'torch' interface"""
 
+# pylint: disable=no-name-in-module
 from dataclasses import replace
 
 import pytest

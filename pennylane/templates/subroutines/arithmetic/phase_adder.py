@@ -24,13 +24,13 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -277,7 +277,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         int,
         {
             abstractify(ops.X): 1,
-            adjoint_resource_rep(QFT, {"num_wires": num_x_wires}): 1,
+            _adjoint_abstract(QFT(Wire[num_x_wires])): 1,
             _adjoint_abstract(ops.PhaseShift): num_x_wires,
         },
     )
@@ -286,7 +286,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         int,
         {
             abstractify(ops.PhaseShift): num_x_wires,
-            resource_rep(QFT, num_wires=num_x_wires): 1,
+            QFT(Wire[num_x_wires]): 1,
             abstractify(ops.X): 1,
         },
     )
@@ -295,9 +295,9 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         ops.PhaseShift: num_x_wires,
         _adjoint_abstract(ops.PhaseShift): num_x_wires,
         change_op_basis_resource_rep(
-            adjoint_resource_rep(QFT, {"num_wires": num_x_wires}),
+            _adjoint_abstract(QFT(Wire[num_x_wires])),
             ops.CNOT,
-            resource_rep(QFT, num_wires=num_x_wires),
+            QFT(Wire[num_x_wires]),
         ): 1,
         ops.ControlledPhaseShift: num_x_wires,
         change_op_basis_resource_rep(

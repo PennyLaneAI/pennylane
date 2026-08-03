@@ -132,7 +132,9 @@ class TestCompressedResourceOp:
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
         assert CmprssedQSVT1 != Other
 
-    @pytest.mark.parametrize("args, name", zip(compressed_ops_and_params_lst, compressed_op_names))
+    @pytest.mark.parametrize(
+        "args, name", list(zip(compressed_ops_and_params_lst, compressed_op_names))
+    )
     def test_name(self, args, name):
         """Test that the name method behaves as expected."""
         _, op_type, num_wires, parameters, name_param = args

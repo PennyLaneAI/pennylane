@@ -1944,9 +1944,8 @@ class TestParameterShiftRule:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupporingSpecialObservable(
-            DefaultQubitLegacy
-        ):  # pylint: disable=too-few-public-methods
+        # pylint: disable=too-few-public-methods
+        class DeviceSupporingSpecialObservable(DefaultQubitLegacy):
             """A custom device that supports the above SpecialObservable."""
 
             name = "Device supporting SpecialObservable"

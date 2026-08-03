@@ -22,12 +22,13 @@ from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
 )
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .qft import QFT
@@ -272,7 +273,7 @@ class QuantumPhaseEstimation(Operation):
 def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
     gate_count = {
         ops.Hadamard: num_estimation_wires,
-        adjoint_resource_rep(QFT, {"num_wires": num_estimation_wires}): 1,
+        _adjoint_abstract(QFT(Wire[num_estimation_wires])): 1,
     }
     for i in range(num_estimation_wires):
         gate_count[
