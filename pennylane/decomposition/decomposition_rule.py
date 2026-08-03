@@ -262,69 +262,6 @@ def register_resources(
 
         For each operator class, the set of parameters that affects the type of gates and their
         number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
-        For example, the number of gates in the decomposition for ``qp.MultiRZ`` changes based
-        on the number of wires it acts on, in contrast to the decomposition for ``qp.CNOT``:
-
-        >>> qp.CNOT.resource_keys
-        set()
-        >>> qp.MultiRZ.resource_keys  # doctest: +SKIP
-        {'num_wires'}
-
-        The output of ``resource_keys`` indicates that custom decompositions for the operator
-        should be registered to a resource function (as opposed to a static dictionary) that
-        accepts those exact arguments and returns a dictionary.
-
-        .. code-block:: python
-
-            def _multi_rz_resources(num_wires):
-                return {
-                    qp.CNOT: 2 * (num_wires - 1),
-                    qp.RZ: 1
-                }
-
-            @qp.register_resources(_multi_rz_resources)
-            def multi_rz_decomposition(theta, wires, **__):
-                for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                    qp.CNOT(wires=(w0, w1))
-                qp.RZ(theta, wires=wires[0])
-                for w0, w1 in zip(wires[1:], wires[:-1]):
-                    qp.CNOT(wires=(w0, w1))
-
-        Additionally, if a custom decomposition for an operator contains gates that, in turn,
-        have properties that affect their own decompositions, this information must also be
-        included in the resource function. For example, if a decomposition rule produces a
-        ``MultiRZ`` gate, it is not sufficient to declare the existence of a ``MultiRZ`` in the
-        resource function; the number of wires it acts on must also be specified.
-
-        Consider a fictitious operator with the following decomposition:
-
-        .. code-block:: python
-
-            def my_decomp(theta, wires):
-                qp.MultiRZ(theta, wires=wires[:-1])
-                qp.MultiRZ(theta, wires=wires)
-                qp.MultiRZ(theta, wires=wires[1:])
-
-        It contains two ``MultiRZ`` gates acting on ``len(wires) - 1`` wires (the first and last
-        ``MultiRZ``) and one ``MultiRZ`` gate acting on exactly ``len(wires)`` wires. This
-        distinction must be reflected in the resource function:
-
-        .. code-block:: python
-
-            def my_resources(num_wires):
-                return {
-                    qp.resource_rep(qp.MultiRZ, num_wires=num_wires - 1): 2,
-                    qp.resource_rep(qp.MultiRZ, num_wires=num_wires): 1
-                }
-
-            my_decomp = qp.register_resources(my_resources, my_decomp)
-
-        where :func:`~pennylane.resource_rep` is a utility function that wraps an operator type and any
-        additional information relevant to its resource estimate into a compressed data structure.
-        To check what (if any) additional information is required to declare an operator type
-        in a resource function, refer to the ``resource_keys`` attribute of the :class:`~pennylane.operation.Operator`
-        class. Operators with non-empty ``resource_keys`` must be declared using ``qp.resource_rep``,
-        with keyword arguments matching its ``resource_keys`` exactly.
 
         .. seealso::
 
