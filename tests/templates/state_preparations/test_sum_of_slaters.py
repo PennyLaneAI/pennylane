@@ -600,7 +600,7 @@ class TestSumOfSlatersPrep:
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("force_non_id_encoding", (False, True))
     def test_qjit_on_subroutine(self, seed, force_non_id_encoding):
         """Test that the subroutine of the SumOfSlatersPrep decomposition

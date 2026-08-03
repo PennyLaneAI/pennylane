@@ -158,7 +158,9 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
 
-    if active_jit := compiler.active_compiler():
+    if (active_jit := compiler.active_compiler()) and not (
+        isinstance(op, Operator2) and op.is_abstract
+    ):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(
@@ -205,6 +207,7 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
 
     # Remove base operator from the queue.
     qp.QueuingManager.remove(op)
+    _ = pop_op_eqns((op,))
 
     if (
         custom_op := custom_ctrl_dispatch(
@@ -218,7 +221,6 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
         return custom_op
 
     if isinstance(op, Controlled2):
-        _ = pop_op_eqns((op,))
         work_wire_type = resolve_work_wire_type(
             op.work_wires,
             op.work_wire_type,
@@ -812,9 +814,9 @@ class Controlled(SymbolicOp):
     # Methods ##########################################
 
     def __repr__(self):
-        params = [f"control_wires={self.control_wires.tolist()}"]
+        params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
-            params.append(f"work_wires={self.work_wires.tolist()}")
+            params.append(f"work_wires={self.work_wires}")
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"

@@ -34,15 +34,12 @@ Operator Types
     ~Operator1
     ~Operator2
     ~Operation
-    ~CV
-    ~CVObservable
-    ~CVOperation
     ~Channel
     ~StatePrepBase
 
 .. currentmodule:: pennylane.core.operator
 
-.. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
+.. inheritance-diagram:: Operator Operation Channel StatePrepBase
     :parts: 1
 
 
@@ -101,10 +98,7 @@ Transforms
 from .queuing import QueuingManager, AnnotatedQueue, apply
 
 from .operator import (
-    CV,
     Channel,
-    CVObservable,
-    CVOperation,
     Operation,
     Operator,
     Operator1,
@@ -137,9 +131,6 @@ __all__ = [
     "Operator2",
     "Operation",
     "Channel",
-    "CV",
-    "CVOperation",
-    "CVObservable",
     "StatePrepBase",
     "StatePrepBase2",
     "MeasurementProcess",

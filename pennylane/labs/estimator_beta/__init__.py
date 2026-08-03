@@ -31,6 +31,8 @@ Resource Estimation
 
     ~estimate
     ~LabsResourceConfig
+    ~mark_subroutine
+    ~ResourceQfunc
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,6 +159,8 @@ from .ops import (
     mcx_one_clean_aux_resource_decomp,
     mcx_one_dirty_aux_resource_decomp,
     mcx_many_clean_aux_resource_decomp,
+    mark_subroutine,
+    ResourceQfunc,
 )
 
 Adder = LabsAdder

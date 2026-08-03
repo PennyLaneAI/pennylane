@@ -835,7 +835,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(orig_mat, decomp_mat)
         assert qp.math.allclose(orig_mat, decomp_mat2)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_decomposition_matrix_match_jit(self, n, seed):
         """Test that the matrix of the decomposition matches the original matrix with jit."""
@@ -903,7 +903,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
@@ -965,7 +965,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
@@ -1171,7 +1171,7 @@ class TestUnitaryLabels:
         """Test 'matrices' key pair is not a list."""
         assert op.label(cache={"matrices": 0}) == "U"
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_empty_cache_list(self, mat, op):
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
@@ -1179,7 +1179,7 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U\n(M0)"
         assert qp.math.allclose(cache["matrices"][0], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
@@ -1189,7 +1189,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 2
         assert qp.math.allclose(cache["matrices"][1], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""

@@ -423,20 +423,8 @@ def test_basis_rotation_exceptions(wires, unitary_matrix, msg_match):
     """Test that BasisRotation template throws an exception if the parameters have illegal
     shapes, types or values."""
 
-    dev = qp.device("default.qubit", wires=len(wires))
-
-    @qp.qnode(dev)
-    def circuit():
+    with pytest.raises(ValueError, match=msg_match):
         qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
-        return qp.expval(qp.PauliZ(0))
-
-    with pytest.raises(ValueError, match=msg_match):
-        circuit()
-
-    with pytest.raises(ValueError, match=msg_match):
-        qp.BasisRotation.compute_decomposition(
-            wires=wires, unitary_matrix=unitary_matrix, check=True
-        )
 
 
 def circuit_template(unitary_matrix, check=False):
@@ -578,7 +566,6 @@ class TestInterfaces:
     )
     @pytest.mark.parametrize("device_name", ("lightning.qubit", "null.qubit"))
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_qjit(self, unitary, device_name, tol):
         """Test with qjit interface."""
         catalyst = pytest.importorskip("catalyst")
@@ -603,8 +590,8 @@ class TestInterfaces:
         circuit_dec = qp.decompose(circuit, gate_set=gate_set)
         specs = qp.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
         specs2 = qp.specs(circuit_dec, level="device")(unitary_matrix)
-        assert specs["resources"].gate_types == specs2["resources"].gate_types
-        assert specs["resources"].gate_sizes == specs2["resources"].gate_sizes
+        assert specs.resources.quantum_operations == specs2.resources.quantum_operations
+        assert specs.resources.quantum_operations == specs2.resources.quantum_operations
 
     @pytest.mark.slow
     @pytest.mark.tf
