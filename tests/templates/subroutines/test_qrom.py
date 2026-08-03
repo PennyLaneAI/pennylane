@@ -22,10 +22,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition import adjoint_resource_rep, controlled_resource_rep, resource_rep
+from pennylane.decomposition import controlled_resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
@@ -648,10 +649,8 @@ class TestMeasurementQROM:
             num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
         )
         # The ladder is symmetric: as many forward ANDs as adjoints.
-        assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
-        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
-            n_extra - 1
-        )
+        assert res_extra[_adjoint_abstract(TemporaryAND)] == n_extra - 1
+        assert res_extra[TemporaryAND] == res_one[TemporaryAND] + (n_extra - 1)
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""

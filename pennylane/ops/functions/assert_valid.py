@@ -392,7 +392,8 @@ def _check_eigendecomposition(op):
     if has_eigvals:
         assert qp.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
-    if has_eigvals and op.has_diagonalizing_gates:
+    if (eg is not None or compute_eg is not None) and op.has_diagonalizing_gates:
+        eg = eg if eg is not None else compute_eg
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
@@ -633,6 +634,7 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -646,6 +648,8 @@ def _assert_valid_operator2(
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
+        skip_bind_new_parameters: If ``True``, bind_new_parameters test will be skipped.
+
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -693,7 +697,8 @@ def _assert_valid_operator2(
                     skip_capture=skip_capture,
                 )
 
-    _check_bind_new_parameters_op2(op)
+    if not skip_bind_new_parameters:
+        _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
@@ -707,6 +712,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -726,6 +732,7 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_capture: If ``True``, the program capture tests will be skipped.
+        skip_bind_new_parameters: If ``True``, bind_new_parameters test will be skipped.
 
     **Examples:**
 
@@ -772,6 +779,7 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_capture,
+            skip_bind_new_parameters,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -781,7 +789,8 @@ def assert_valid(
             assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
             assert qp.math.allclose(d, p), "data and parameters must match."
 
-        _check_bind_new_parameters(op)
+        if not skip_bind_new_parameters:
+            _check_bind_new_parameters(op)
 
     _check_pytree(op)
     if len(op.wires) <= 26:

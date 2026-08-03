@@ -27,7 +27,6 @@ from pennylane.core.operator import Operator2
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     controlled_resource_rep,
     register_condition,
     register_resources,
@@ -36,6 +35,7 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import AbstractArray, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -633,7 +633,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     # CNOTs, PauliX gates and BasisState ops are an approximation
     flag = _flag_resources(n_extra, num_target_wires)
     resources = {
-        resource_rep(TemporaryAND): num_ands + flag.get(resource_rep(TemporaryAND), 0),
+        TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
         resource_rep(PauliMeasure): num_measurements,
         resource_rep(CZ): num_cz,
         resource_rep(CNOT): L - 1,
@@ -661,8 +661,8 @@ def _flag_resources(n_extra, num_target_wires):
     if n_extra == 1:
         resources[resource_rep(X)] = 2
         return resources
-    resources[resource_rep(TemporaryAND)] = n_extra - 1
-    resources[adjoint_resource_rep(TemporaryAND)] = n_extra - 1
+    resources[TemporaryAND] = n_extra - 1
+    resources[_adjoint_abstract(TemporaryAND)] = n_extra - 1
     return resources
 
 

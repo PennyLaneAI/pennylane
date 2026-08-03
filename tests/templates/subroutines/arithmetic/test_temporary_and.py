@@ -60,7 +60,7 @@ class TestTemporaryAND:
         assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
         assert (
             repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
-            == "TemporaryAND(wires=[0, 'a', 2], control_values=(0, 1))"
+            == "TemporaryAND(wires=[0, 'a', 2], control_values=[False, True])"
         )
 
     def test_alias(self):
@@ -74,8 +74,13 @@ class TestTemporaryAND:
         """Check the operation using the assert_valid function."""
         op = qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
         # Skip matrix check because the decomposition to Toffoli,and the adjoint decomposition
-        # to mcm + cond(CZ) do not reproduce the matrix of the op.
-        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+        # to mcm + cond(CZ) do not reproduce the matrix of the op. Skip bind_new_parameters
+        # now that control_values is part of dynamic data
+        qp.ops.functions.assert_valid(
+            op,
+            skip_decomp_matrix_check=True,
+            skip_bind_new_parameters=True,
+        )
 
     def test_correctness(self):
         """Tests the correctness of the TemporaryAND operator.
@@ -152,7 +157,7 @@ class TestTemporaryAND:
             # Prepare control state
             qp.StatePrep(state, wires=sys_wires[:2])
             op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
-            rule(sys_wires, base=op)
+            rule(op)
             # Unprepare control state
             qp.adjoint(qp.StatePrep)(state, wires=sys_wires[:2])
             return qp.probs(wires=sys_wires)
