@@ -167,7 +167,7 @@ class MultiRZ(Operator2):
 
         **Example**
 
-        >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
+        >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), wires=[0,1,2])
         tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
         num_wires = 1 if isinstance(wires, int) else len(wires)
