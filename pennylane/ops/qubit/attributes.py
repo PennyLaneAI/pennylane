@@ -220,7 +220,6 @@ supports_broadcasting = Attribute(
     [
         "QubitUnitary",
         "ControlledQubitUnitary",
-        "DiagonalQubitUnitary",
         "SpecialUnitary",
         "RX",
         "RY",
