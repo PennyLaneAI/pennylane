@@ -46,8 +46,10 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
-from pennylane.typing import AbstractWires, TensorLike, Wire
+from pennylane.typing import AbstractWires, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
@@ -2715,7 +2717,7 @@ def _adjoint_crot(phi, theta, omega, wires, **_):
 add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
-class ControlledPhaseShift(ControlledOp):
+class ControlledPhaseShift(Controlled2):
     r"""A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -2741,6 +2743,10 @@ class ControlledPhaseShift(ControlledOp):
 
     """
 
+    wire_sizes = (2,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+
     num_wires = 2
     """int: Number of wires the operator acts on."""
 
@@ -2753,37 +2759,25 @@ class ControlledPhaseShift(ControlledOp):
     resource_keys = set()
 
     name = "ControlledPhaseShift"
-    parameter_frequencies = [(1,)]
+    grad_method = "A"
 
     def __init__(self, phi, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.PhaseShift, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(qp.PhaseShift(phi, wires[1:]), wires[:1])
+
+    @override
+    def __abstract_init__(self, phi, wires):  # pylint: disable=arguments-differ,unused-argument
+        super().__abstract_init__(qp.PhaseShift(Float, Wire), Wire)
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
 
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, wires):
-        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
+    @override
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(phi, wires=None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2826,7 +2820,8 @@ class ControlledPhaseShift(ControlledOp):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi, **_):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_eigvals(phi, wires=None, **_):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2866,44 +2861,8 @@ class ControlledPhaseShift(ControlledOp):
             product = qp.math.outer(phi, prefactors)
         return qp.math.exp(product)
 
-    def eigvals(self):
-        return self.compute_eigvals(*self.parameters)
 
-    @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.ControlledPhaseShift.decomposition`.
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.ControlledPhaseShift.compute_decomposition(1.234, wires=(0,1))
-        [PhaseShift(0.617, wires=[0]),
-         CNOT(wires=[0, 1]),
-         PhaseShift(-0.617, wires=[1]),
-         CNOT(wires=[0, 1]),
-         PhaseShift(0.617, wires=[1])]
-
-        """
-        return [
-            qp.PhaseShift(phi / 2, wires=wires[0]),
-            qp.CNOT(wires=wires),
-            qp.PhaseShift(-phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.PhaseShift(phi / 2, wires=wires[1]),
-        ]
-
-
-def _cphase_rz_resource():
+def _cphase_rz_resource(phi, wires):  # pylint: disable=unused-argument
     return {qp.RZ: 3, qp.CNOT: 2, qp.GlobalPhase: 1}
 
 
@@ -2917,7 +2876,7 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.GlobalPhase(-phi / 4)
 
 
-def _cphase_to_ppr_resource():
+def _cphase_to_ppr_resource(phi, wires):  # pylint: disable=unused-argument
     return {
         qp.GlobalPhase: 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 2,
@@ -2934,7 +2893,7 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
-add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
-add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
+add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation2)
+add_decomps("Pow(ControlledPhaseShift)", pow_rotation2)
 
 CPhase = ControlledPhaseShift

@@ -800,9 +800,8 @@ controlled_data = [
 
 @pytest.mark.parametrize("base, cbase", controlled_data)
 def test_controlled_method(base, cbase):
-    """Tests the _controlled method for parametric ops."""
-    # pylint: disable=protected-access
-    qp.assert_equal(base._controlled("a"), cbase)
+    """Tests that controlling parametric ops produces the custom controlled op."""
+    qp.assert_equal(qp.ctrl(base, "a"), cbase)
 
 
 @pytest.mark.parametrize(

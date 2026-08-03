@@ -30,6 +30,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
 
@@ -168,5 +169,5 @@ decompositions.get()["Pow(Hadamard)"].append(pow_involutory2)
 decompositions.get()["Adjoint(RX)"].append(adjoint_rotation)
 decompositions.get()["Pow(RX)"].append(pow_rotation)
 decompositions.get()["Adjoint(CNOT)"].append(self_adjoint_legacy)
-decompositions.get()["Adjoint(PhaseShift)"].append(adjoint_rotation)
-decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint_rotation)
+decompositions.get()["Adjoint(PhaseShift)"].append(adjoint_rotation2)
+decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint_rotation2)
