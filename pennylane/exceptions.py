@@ -47,6 +47,7 @@ General Execution Errors
     ~DecompositionError
     ~InvalidCapabilitiesError
     ~NonDifferentiableError
+    ~UnsupportedPathwayError
 
 Operator Property Errors
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,7 +94,8 @@ class CaptureError(Exception):
 
 
 class UnsupportedPathwayError(Exception):
-    """An error for using modes and pathways that are no longer supported."""
+    """An error for using modes and pathways that are no longer supported, for example, things that are
+    not supported with program capture."""
 
 
 class DeviceError(Exception):
