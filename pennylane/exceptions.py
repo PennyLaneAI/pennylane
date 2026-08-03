@@ -47,6 +47,7 @@ General Execution Errors
     ~DecompositionError
     ~InvalidCapabilitiesError
     ~NonDifferentiableError
+    ~UnsupportedPathwayError
 
 Operator Property Errors
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -90,6 +91,11 @@ class AllocationError(RuntimeError):
 
 class CaptureError(Exception):
     """Errors related to PennyLane's Program Capture execution pipeline."""
+
+
+class UnsupportedPathwayError(Exception):
+    """An error for using modes and pathways that are no longer supported, for example, things that are
+    not supported with program capture."""
 
 
 class DeviceError(Exception):

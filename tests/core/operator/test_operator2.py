@@ -37,6 +37,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
+    UnsupportedPathwayError,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
@@ -2093,6 +2094,70 @@ class TestRepresentations:
         decomp = op.decomposition()
         assert len(decomp) == 1
         assert decomp[0] == DynOp(0.7, wires=0)
+
+    @pytest.mark.capture
+    def test_error_if_decomposition_with_capture_staticmethod(self):
+        """Test an error is raised if Operator.decomposition is used with capture turned on."""
+
+        class WithDecomp(Operator2):
+
+            @staticmethod
+            def compute_decomposition(wires):
+                return []
+
+            def decomposition(self):
+                return []
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        with pytest.raises(UnsupportedPathwayError, match="not supported with program capture"):
+            WithDecomp.compute_decomposition(0)
+
+        with pytest.raises(UnsupportedPathwayError, match="not supported with program capture"):
+            WithDecomp(wires=0).decomposition()
+
+    @pytest.mark.capture
+    def test_error_if_decomposition_with_capture_classmethod(self):
+        """Test an error is raised if Operator.decomposition is used with capture turned on."""
+
+        class WithDecomp(Operator2):
+
+            @classmethod
+            def compute_decomposition(cls, wires):
+                return []
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        with pytest.raises(UnsupportedPathwayError, match="not supported with program capture"):
+            WithDecomp.compute_decomposition(0)
+
+        with pytest.raises(UnsupportedPathwayError, match="not supported with program capture"):
+            WithDecomp(wires=0).decomposition()
+
+    @pytest.mark.capture
+    def test_error_if_decomposition_with_capture_fallback(self):
+        """Test an error is raised if Operator.decomposition is used with capture turned on."""
+
+        with qp.decomposition.local_decomps():
+
+            class WithDecomp(Operator2):
+
+                def __init__(self, wires):
+                    super().__init__(wires=wires)
+
+            @qp.register_resources({qp.X: 1})
+            def f(wires):
+                qp.X(wires)
+
+            qp.add_decomps(WithDecomp, f)
+
+            with pytest.raises(UnsupportedPathwayError, match="not supported with program capture"):
+                WithDecomp.compute_decomposition(0)
+
+            with pytest.raises(UnsupportedPathwayError, match="not supported with program capture"):
+                WithDecomp(wires=0).decomposition()
 
     def test_compute_eigvals_used_by_eigvals(self):
         """Test that ``eigvals`` dispatches to ``compute_eigvals`` when defined."""

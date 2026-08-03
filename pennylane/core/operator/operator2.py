@@ -20,7 +20,7 @@ from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
-from functools import partial
+from functools import partial, wraps
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
@@ -45,6 +45,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
+    UnsupportedPathwayError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
@@ -67,6 +68,26 @@ class GradMethod(StrEnum):
 
     ANALYTIC = "A"
     FINITE_DIFF = "F"
+
+
+def _no_capture(f):
+    """Wrap a function to raise an error if called while program capture is enabled.
+
+    ``staticmethod`` and ``classmethod`` objects are unwrapped and re-wrapped in the same
+    descriptor, so that binding behaviour is preserved.
+    """
+    if isinstance(f, staticmethod):
+        return staticmethod(_no_capture(f.__func__))
+    if isinstance(f, classmethod):
+        return classmethod(_no_capture(f.__func__))
+
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        if enabled():
+            raise UnsupportedPathwayError(f"{f} is not supported with program capture")
+        return f(*args, **kwargs)
+
+    return decorator
 
 
 ARGNAME_CATEGORIES = (
@@ -790,6 +811,7 @@ class Operator2(metaclass=OperatorMeta):
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
     @classmethod
+    @_no_capture
     def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -1382,6 +1404,14 @@ class Operator2(metaclass=OperatorMeta):
         for attr in ARGNAME_CATEGORIES:
             if isinstance(v := getattr(cls, attr), str):
                 setattr(cls, attr, (v,))
+
+        # only wrap and set if being overridden on this class.
+        for attr in ("compute_decomposition", "decomposition"):
+            if attr in vars(cls):
+                # pull from vars so get raw, unprocessed version
+                # cls.compute_decomposition will have modified and processed
+                # the function, we need to wrap the original
+                setattr(cls, attr, _no_capture(vars(cls)[attr]))
 
         _init_subclass_validate_argnames(cls)
         _init_subclass_arg_specs_setup(cls)
