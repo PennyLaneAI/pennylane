@@ -840,7 +840,8 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Non-parametric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`
+    - :class:`~.S`, :class:`~.T`, :class:`~.SX`, :class:`~.Y`, :class:`~.CY`, :class:`~.SISWAP`, :class:`~.ISWAP`, :class:`~.ECR`,
+      :class:`~.SWAP`, :class:`~.CSWAP`, :class:`~.H`, :class:`~.CH`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
@@ -848,11 +849,12 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   - Templates are ported:
-    - `~.BasisRotation`, `~.QROM`, `~.QFT`
+    - :class:`~.BasisRotation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.GQSP`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
