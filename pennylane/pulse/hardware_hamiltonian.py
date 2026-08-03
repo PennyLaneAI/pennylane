@@ -331,8 +331,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
     def __repr__(self):
         return f"HardwareHamiltonian: terms={math.shape(self.coeffs)[0]}"
 
-    # pylint: disable=too-many-return-statements
-    def __add__(self, other):
+    def __add__(self, other):  # pylint: disable=too-many-return-statements
         if QueuingManager.recording():
             QueuingManager.remove(self)
             QueuingManager.remove(other)

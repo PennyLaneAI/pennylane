@@ -75,18 +75,15 @@ def _get_abstract_operator() -> type:
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
 
-        # pylint: disable=missing-function-docstring
-        def at_least_vspace(self):
+        def at_least_vspace(self):  # pylint: disable=missing-function-docstring
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
 
-        # pylint: disable=missing-function-docstring
-        def join(self, other):
+        def join(self, other):  # pylint: disable=missing-function-docstring
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
 
-        # pylint: disable=missing-function-docstring
-        def update(self, **kwargs):
+        def update(self, **kwargs):  # pylint: disable=missing-function-docstring
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
 

@@ -2487,7 +2487,7 @@ class TestLegacyGradMethodProperty:
     def test_generator_gives_frequencies(self):
         """Tests that a generator can create parameter frequencies which returns analytic."""
 
-        class GenOp(DynOp):
+        class GenOp(DynOp):  # pylint: disable=too-few-public-methods
             @override
             def generator(self):
                 return -0.5 * qp.Z(0)

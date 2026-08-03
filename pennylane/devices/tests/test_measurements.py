@@ -1101,8 +1101,7 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol)
 
-    # pylint: disable=too-many-statements
-    def test_projector(self, device, tol, skip_if, shots):
+    def test_projector(self, device, tol, skip_if, shots):  # pylint: disable=too-many-statements
         """Test that a tensor product involving qp.Projector works correctly"""
         n_wires = 3
         dev = device(n_wires)

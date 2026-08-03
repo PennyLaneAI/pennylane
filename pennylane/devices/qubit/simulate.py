@@ -103,8 +103,7 @@ class TreeTraversalStack:
 class _FlexShots(Shots):
     """Shots class that allows zero shots."""
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, shots=None):
+    def __init__(self, shots=None):  # pylint: disable=super-init-not-called
         if isinstance(shots, int):
             self.total_shots = shots
             self.shot_vector = (ShotCopies(shots, 1),)

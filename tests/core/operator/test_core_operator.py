@@ -360,8 +360,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qp.operation.Operation):
             num_wires = 1
 
-            # pylint: disable=super-init-not-called
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint: disable=super-init-not-called
                 pass
 
         op = MyOp(wires=0)
@@ -376,8 +375,7 @@ class TestOperatorConstruction:
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-            # pylint: disable=super-init-not-called
-            def __init__(self, wires, basis_state=None):
+            def __init__(self, wires, basis_state=None):  # pylint: disable=super-init-not-called
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]

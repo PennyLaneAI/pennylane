@@ -155,8 +155,7 @@ class LegacyDeviceFacade(Device):
         device (qp.device.LegacyDevice): a device that follows the legacy device interface.
     """
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, device: LegacyDevice):
+    def __init__(self, device: LegacyDevice):  # pylint: disable=super-init-not-called
         if isinstance(device, type(self)):
             raise RuntimeError("An already-facaded device can not be wrapped in a facade again.")
 
