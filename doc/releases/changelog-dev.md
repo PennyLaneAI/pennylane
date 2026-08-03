@@ -848,6 +848,9 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
+  - Multi-qubit, parametric operators are ported:
+    - `~.DiagonalQubitUnitary`
+  [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   - Templates are ported:
     - `~.BasisRotation`, `~.QROM`, `~.QFT`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
