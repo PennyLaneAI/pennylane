@@ -460,7 +460,7 @@ def test_capture_compatibility():
 
     @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.SelectPauliRot: custom_decomp})
     def f(angles):
-        qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
+        qp.SelectPauliRot(angles, control_wires, target_wire)
         return qp.state()
 
     cjaxpr = jax.make_jaxpr(f)(angles)
