@@ -84,7 +84,7 @@ def _select_pauli_rot_phase_gradient(
     return inner_cob()
 
 
-def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
+def make_selectpaulirot_to_phase_gradient_decomp(angles, control_wires, target_wire, rot_axis):
     r"""
     Create a custom decomposition rule for :class:`~.SelectPauliRot` gates.
 
@@ -174,10 +174,11 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         angle_wires, phase_grad_wires, work_wires
     )
 
-    def _resource_fn(num_wires, rot_axis):
+    # pylint: disable=unused-argument
+    def _resource_fn(angles, control_wires, target_wire, rot_axis):
         # decomposition costs, using information about angle_wires etc from the outer scope
 
-        num_control_wires = num_wires - 1
+        num_control_wires = len(control_wires)
         if num_control_wires == 0:
             match rot_axis:
                 case "X":
