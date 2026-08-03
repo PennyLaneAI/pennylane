@@ -199,6 +199,7 @@ class TestSpecsTransform:
         assert resources.total_quantum_operations == 4
         assert resources.depth == 4
 
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "level",
         [
