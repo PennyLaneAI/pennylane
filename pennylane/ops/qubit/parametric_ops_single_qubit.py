@@ -43,7 +43,9 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -1399,28 +1401,8 @@ def _u1_phaseshift(phi, wires):
 
 
 add_decomps(U1, _u1_phaseshift)
-
-
-@register_resources(lambda **__: {abstractify(U1): 1})
-def _adjoint_u1(base=None, phi=None, wires=None, **__):
-    if base is not None:
-        phi = base.dynamic_args["phi"]
-        wires = base.wires
-    U1(-phi, wires=wires)
-
-
-add_decomps("Adjoint(U1)", _adjoint_u1)
-
-
-@register_resources(lambda **__: {abstractify(U1): 1})
-def _pow_u1(base=None, phi=None, wires=None, z=None, **__):
-    if base is not None:
-        phi = base.dynamic_args["phi"]
-        wires = base.wires
-    U1(phi * z, wires=wires)
-
-
-add_decomps("Pow(U1)", _pow_u1)
+add_decomps("Adjoint(U1)", adjoint_rotation2)
+add_decomps("Pow(U1)", pow_rotation2)
 
 
 class U2(Operator2):
@@ -1587,15 +1569,13 @@ def _u2_phaseshift_rot(phi, delta, wires):
 add_decomps(U2, _u2_phaseshift_rot)
 
 
-@register_resources(lambda **__: {abstractify(U2): 1})
-def _adjoint_u2(base=None, phi=None, delta=None, wires=None, **__):
-    if base is not None:
-        phi = base.dynamic_args["phi"]
-        delta = base.dynamic_args["delta"]
-        wires = base.wires
+@register_resources(lambda base: {abstractify(U2): 1})
+def _adjoint_u2(base):
+    phi = base.dynamic_args["phi"]
+    delta = base.dynamic_args["delta"]
     new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
-    U2(new_phi, new_delta, wires=wires)
+    U2(new_phi, new_delta, wires=base.wires)
 
 
 add_decomps("Adjoint(U2)", _adjoint_u2)
@@ -1803,16 +1783,14 @@ def _u3_phaseshift_rot(theta, phi, delta, wires):
 add_decomps(U3, _u3_phaseshift_rot)
 
 
-@register_resources(lambda **__: {abstractify(U3): 1})
-def _adjoint_u3(base=None, theta=None, phi=None, delta=None, wires=None, **__):
-    if base is not None:
-        theta = base.dynamic_args["theta"]
-        phi = base.dynamic_args["phi"]
-        delta = base.dynamic_args["delta"]
-        wires = base.wires
+@register_resources(lambda base: {abstractify(U3): 1})
+def _adjoint_u3(base):
+    theta = base.dynamic_args["theta"]
+    phi = base.dynamic_args["phi"]
+    delta = base.dynamic_args["delta"]
     new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
-    U3(theta, new_phi, new_delta, wires=wires)
+    U3(theta, new_phi, new_delta, wires=base.wires)
 
 
 add_decomps("Adjoint(U3)", _adjoint_u3)
