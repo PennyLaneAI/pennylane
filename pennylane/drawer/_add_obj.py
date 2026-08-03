@@ -253,14 +253,14 @@ def _add_select_pauli_rot(
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
 
-    for w in obj.hyperparameters["control_wires"]:
+    for w in obj.control_wires:
         layer_str[config.wire_map[w]] += "◑"
 
-    base_label = f"R{obj.hyperparameters['rot_axis']}"
+    base_label = f"R{obj.rot_axis}"
     target_label = obj.label(
         decimals=config.decimals, base_label=base_label, cache=config.cache
     ).replace("\n", "")
-    for w in obj.hyperparameters["target_wire"]:
+    for w in obj.target_wire:
         layer_str[config.wire_map[w]] += target_label
 
     return layer_str

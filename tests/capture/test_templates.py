@@ -1194,7 +1194,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.SelectPauliRot._primitive
+        assert_eqn_matches_op(eqn, qp.SelectPauliRot)
         assert eqn.invars[:1] == jaxpr.jaxpr.invars
         assert [invar.val for invar in eqn.invars[1:]] == [0, 1, 2, 3]
         assert eqn.params == {"n_wires": 4, "rot_axis": "X"}
