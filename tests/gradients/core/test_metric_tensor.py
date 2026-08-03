@@ -1057,7 +1057,7 @@ class TestFullMetricTensor:
         assert qp.math.allclose(qjit_res, cost_autograd)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_autograd(self, dev_name, ansatz, params, interface):
@@ -1079,7 +1079,7 @@ class TestFullMetricTensor:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     @pytest.mark.parametrize("use_jit", [False, True])
@@ -1118,7 +1118,7 @@ class TestFullMetricTensor:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_jax_argnum_error(self, dev_name, ansatz, params, interface):
@@ -1141,7 +1141,7 @@ class TestFullMetricTensor:
             qp.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_torch(self, dev_name, ansatz, params, interface):
@@ -1166,7 +1166,7 @@ class TestFullMetricTensor:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     @pytest.mark.parametrize("interface", ["auto"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_tf(self, dev_name, ansatz, params, interface):
