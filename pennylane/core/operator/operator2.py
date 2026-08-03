@@ -811,6 +811,7 @@ class Operator2(metaclass=OperatorMeta):
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
     @classmethod
+    @_no_capture
     def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 
