@@ -65,7 +65,7 @@ def _find_equal_generator(base, coeff):
     for op_class in _get_has_generator_types(len(base.wires)):
         # NOTE: Use a real probe coeff so that constructing the candidate does not fail for operators that do not support
         # complex angles (like RZ). This should be fine as any op_class in _get_has_generator_types has a generator
-        # which doesn't depend on coeff. The coefficient is cast to real during construction anyways.
+        # which doesn't depend on coeff. The coefficient is cast to real during construction anyways down below.
         probe_coeff = math.real(coeff)
         g, c = qp.generator(op_class)(probe_coeff, base.wires)
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
