@@ -2165,8 +2165,7 @@ class TestPostselection:
                     reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
                 )
 
-            # pylint: disable=import-outside-toplevel
-            import jax
+            import jax  # pylint: disable=import-outside-toplevel
 
             # We do not raise an error if using jax.jit, because we cannot check whether or not
             # the probability is zero. But, this is only the case with analytic execution because

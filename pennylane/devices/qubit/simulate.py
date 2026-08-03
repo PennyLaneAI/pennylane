@@ -148,8 +148,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
         if prng_key is not None:
-            # pylint: disable=import-outside-toplevel
-            from jax.random import binomial
+            from jax.random import binomial  # pylint: disable=import-outside-toplevel
 
             binomial_fn = partial(binomial, prng_key)
         else:
@@ -361,8 +360,7 @@ def simulate(
         aux_circ = circuit.copy(shots=[1])
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
-            # pylint: disable=import-outside-toplevel
-            import jax
+            import jax  # pylint: disable=import-outside-toplevel
 
             def simulate_partial(k):
                 return simulate_one_shot_native_mcm(

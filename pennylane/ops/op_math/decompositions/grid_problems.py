@@ -251,8 +251,7 @@ class EllipseState:
         e2.b *= (-1) ** k
         return EllipseState(e1, e2), k
 
-    # pylint: disable=too-many-branches
-    def reduce_skew(self) -> tuple[GridOp, EllipseState]:
+    def reduce_skew(self) -> tuple[GridOp, EllipseState]:  # pylint: disable=too-many-branches
         """Reduce the skew of the state.
 
         This uses Step Lemma described in Appendix A.6 of arXiv:1403.2975.

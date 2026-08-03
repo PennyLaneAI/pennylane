@@ -299,8 +299,7 @@ def _register_jax_vjp():
     """
     Register the custom VJP for JAX
     """
-    # pylint: disable=import-outside-toplevel
-    import jax
+    import jax  # pylint: disable=import-outside-toplevel
 
     @jax.custom_vjp
     def _compute_fidelity_jax(dm0, dm1):
@@ -326,8 +325,7 @@ def _register_torch_vjp():
     """
     Register the custom VJP for torch
     """
-    # pylint: disable=import-outside-toplevel
-    import torch
+    import torch  # pylint: disable=import-outside-toplevel
 
     class _TorchFidelity(torch.autograd.Function):
         @staticmethod
@@ -354,8 +352,7 @@ def _register_tf_vjp():  # pragma: no cover (TensorFlow tests were disabled duri
     """
     Register the custom VJP for tensorflow
     """
-    # pylint: disable=import-outside-toplevel
-    import tensorflow as tf
+    import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
     @tf.custom_gradient
     def _compute_fidelity_tf(dm0, dm1):

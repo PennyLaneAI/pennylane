@@ -80,8 +80,7 @@ ar.register_function("scipy", "ndim", np.ndim)
 def sparse_matrix_power(A, n):
     """Dispatch to the appropriate sparse matrix power function."""
     try:  # pragma: no cover
-        # pylint: disable=import-outside-toplevel
-        from scipy.sparse.linalg import matrix_power
+        from scipy.sparse.linalg import matrix_power  # pylint: disable=import-outside-toplevel
 
         # added in scipy 1.12.0
 

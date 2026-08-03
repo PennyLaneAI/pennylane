@@ -380,8 +380,7 @@ def apply_conditional(
     prng_key = execution_kwargs.get("prng_key", None)
     interface = math.get_deep_interface(state)
     if interface == "jax":
-        # pylint: disable=import-outside-toplevel
-        from jax.lax import cond
+        from jax.lax import cond  # pylint: disable=import-outside-toplevel
 
         return cond(
             op.meas_val.concretize(mid_measurements),
@@ -456,8 +455,7 @@ def apply_mid_measure(
             prob0 = prob0 / norm
 
     if prng_key is not None:
-        # pylint: disable=import-outside-toplevel
-        from jax.random import binomial
+        from jax.random import binomial  # pylint: disable=import-outside-toplevel
 
         def binomial_fn(n, p):
             return binomial(prng_key, n, p).astype(int)

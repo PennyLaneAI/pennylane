@@ -207,8 +207,7 @@ def test_integration_multi_wire(seed):
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
-    # pylint: disable=import-outside-toplevel
-    import jax
+    import jax  # pylint: disable=import-outside-toplevel
 
     qp.capture.enable()
     try:

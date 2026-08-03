@@ -45,8 +45,7 @@ def _import_of():
 def _import_pyscf():
     """Import pyscf."""
     try:
-        # pylint: disable=import-outside-toplevel
-        import pyscf
+        import pyscf  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires pyscf. It can be installed with: pip install pyscf."
@@ -618,8 +617,7 @@ def dipole_of(
     hf = openfermion.MolecularData(filename=hf_file.strip())
 
     # Load dipole matrix elements in the atomic basis
-    # pylint: disable=import-outside-toplevel
-    from pyscf import gto
+    from pyscf import gto  # pylint: disable=import-outside-toplevel
 
     mol = gto.M(
         atom=hf.geometry, basis=hf.basis, charge=hf.charge, spin=0.5 * (hf.multiplicity - 1)
@@ -738,8 +736,7 @@ def meanfield(
     molecule = openfermion.MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
     if package == "pyscf":
-        # pylint: disable=import-outside-toplevel
-        from openfermionpyscf import run_pyscf
+        from openfermionpyscf import run_pyscf  # pylint: disable=import-outside-toplevel
 
         run_pyscf(molecule, run_scf=1, verbose=0)
 

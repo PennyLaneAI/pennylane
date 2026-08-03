@@ -62,8 +62,7 @@ class TestDefaultMixedInit:
     @pytest.mark.jax
     def test_seed_jax(self):
         """Test JAX PRNGKey seed initialization"""
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         dev = DefaultMixed(wires=1, seed=jax.random.PRNGKey(0))
         assert dev._rng is not None

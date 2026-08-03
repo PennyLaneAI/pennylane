@@ -37,8 +37,7 @@ def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:
         return (None,) * num
-    # pylint: disable=import-outside-toplevel
-    from jax.random import split
+    from jax.random import split  # pylint: disable=import-outside-toplevel
 
     return split(prng_key, num=num)
 

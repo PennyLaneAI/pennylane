@@ -90,7 +90,7 @@ class Hadamard(Operator2):
     def __repr__(self) -> str:
         # Hadamard.name is still "Hadamard" but we want the repr to be just "H(0)"
         if isinstance(self.wires, Wires):
-            return f"H({self.wires[0]!r})"  # pylint: disable=unsubscriptable-object
+            return f"H({self.wires[0]!r})"
         return f"H(wires={self.wires})"
 
     @override

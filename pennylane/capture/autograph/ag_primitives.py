@@ -323,8 +323,7 @@ def for_stmt(
             iteration_array,
         )
     except Exception as e:
-        # pylint: disable=import-outside-toplevel
-        import textwrap
+        import textwrap  # pylint: disable=import-outside-toplevel
 
         raise AutoGraphError(
             f"Tracing of an AutoGraph converted for loop failed with an exception:\n"

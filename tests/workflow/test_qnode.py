@@ -1088,8 +1088,7 @@ class TestIntegration:
     def test_qnode_default_interface(self):
         """Tests that the default interface is set correctly for a QNode."""
 
-        # pylint: disable=import-outside-toplevel
-        import networkx as nx
+        import networkx as nx  # pylint: disable=import-outside-toplevel
 
         @qp.qnode(qp.device("default.qubit"))
         def circuit(graph: nx.Graph):
@@ -1106,8 +1105,7 @@ class TestIntegration:
     def test_qscript_default_interface(self):
         """Tests that the default interface is set correctly for a QuantumScript."""
 
-        # pylint: disable=import-outside-toplevel
-        import networkx as nx
+        import networkx as nx  # pylint: disable=import-outside-toplevel
 
         dev = qp.device("default.qubit")
 

@@ -793,8 +793,7 @@ def load_basisset(basis, element):
      'coefficients': [[0.04013973935, 0.261246097, 0.7931846246], [1.0]]}
     """
     try:
-        # pylint: disable=import-outside-toplevel
-        import basis_set_exchange as bse
+        import basis_set_exchange as bse  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires basis_set_exchange. "

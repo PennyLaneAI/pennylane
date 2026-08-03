@@ -60,8 +60,7 @@ try:
 
     from openqasm3.parser import parse
 
-    # pylint: disable=ungrouped-imports
-    from pennylane.io.qasm_interpreter import (
+    from pennylane.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
         Context,
         QasmInterpreter,
         Variable,

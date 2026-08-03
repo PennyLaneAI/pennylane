@@ -581,8 +581,9 @@ class TestSpsaGradient:
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
-        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
+        class DeviceSupportingSpecialObservable(
+            DefaultQubitLegacy
+        ):  # pylint: disable=too-few-public-methods
             """A device class supporting SpecialObservable."""
 
             name = "Device supporting SpecialObservable"

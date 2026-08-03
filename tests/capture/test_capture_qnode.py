@@ -803,8 +803,7 @@ class TestQNodeVmapIntegration:
     def test_simple_multidim_case_2(self):
         """Test vmap over a simple multidimensional case with a scalar and constant argument."""
 
-        # pylint: disable=import-outside-toplevel
-        from scipy.stats import unitary_group
+        from scipy.stats import unitary_group  # pylint: disable=import-outside-toplevel
 
         const = jnp.array(2.0)
 

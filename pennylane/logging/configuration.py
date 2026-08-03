@@ -101,8 +101,7 @@ def show_system_config():
     """
     This function opens the logging configuration file in the system-default browser.
     """
-    # pylint:disable = import-outside-toplevel
-    import webbrowser
+    import webbrowser  # pylint: disable=import-outside-toplevel
 
     webbrowser.open(config_path())
 

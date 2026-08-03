@@ -321,8 +321,7 @@ class TestJaxIntegration:
     def test_sample_with_prng_key(self, mcm_method, shots, postselect, seed):
         """Test that setting a PRNGKey gives the expected behaviour. With separate calls
         to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
-        # pylint: disable=import-outside-toplevel
-        from jax.random import PRNGKey
+        from jax.random import PRNGKey  # pylint: disable=import-outside-toplevel
 
         dev = qp.device("default.qubit", seed=PRNGKey(seed))
         params = [np.pi / 4, np.pi / 3]

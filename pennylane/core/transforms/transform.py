@@ -628,8 +628,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
 
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self, other)
 
@@ -639,8 +638,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     def __mul__(self, n):
         """Multiply by an integer to create a compile pipeline with this transform repeated."""
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self) * n
 
@@ -929,8 +927,7 @@ class BoundTransform:
             return NotImplemented
 
         # Import here to avoid circular import
-        # pylint: disable=import-outside-toplevel
-        from .compile_pipeline import CompilePipeline
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
         if self.is_final_transform and other.is_final_transform:
             raise TransformError(

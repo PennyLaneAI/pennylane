@@ -87,8 +87,7 @@ class SymbolicOp(Operator):
 
         return copied_op
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, base):
+    def __init__(self, base):  # pylint: disable=super-init-not-called
         self.hyperparameters["base"] = base
         if isinstance(base, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
             raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")

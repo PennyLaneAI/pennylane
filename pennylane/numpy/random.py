@@ -40,8 +40,7 @@ if Version(np_version) in SpecifierSet(">=0.17.0"):
                 if name[0] != "_":
                     self.__dict__[name] = tensor_wrapper(getattr(super(), name))
 
-    # pylint: disable=missing-function-docstring
-    def default_rng(seed=None):
+    def default_rng(seed=None):  # pylint: disable=missing-function-docstring
         # Mostly copied from NumPy, but uses our Generator instead
 
         if hasattr(seed, "capsule"):  # I changed this line

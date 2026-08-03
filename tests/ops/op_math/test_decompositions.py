@@ -149,8 +149,7 @@ class TestQubitUnitaryZYZDecomposition:
     def test_zyz_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import torch
+        import torch  # pylint: disable=import-outside-toplevel
 
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
@@ -160,8 +159,7 @@ class TestQubitUnitaryZYZDecomposition:
     def test_zyz_decomposition_tf(self, U, expected_params):
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
@@ -171,8 +169,7 @@ class TestQubitUnitaryZYZDecomposition:
     def test_zyz_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
@@ -227,8 +224,7 @@ class TestQubitUnitaryXYXDecomposition:
     def test_xyx_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import torch
+        import torch  # pylint: disable=import-outside-toplevel
 
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
@@ -238,8 +234,7 @@ class TestQubitUnitaryXYXDecomposition:
     def test_xyx_decomposition_tf(self, U, expected_params):
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
@@ -249,8 +244,7 @@ class TestQubitUnitaryXYXDecomposition:
     def test_xyx_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
@@ -302,8 +296,7 @@ class TestQubitUnitaryXZXDecomposition:
     def test_xzx_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import torch
+        import torch  # pylint: disable=import-outside-toplevel
 
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
@@ -313,8 +306,7 @@ class TestQubitUnitaryXZXDecomposition:
     def test_xzx_decomposition_tf(self, U, expected_params):
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
@@ -324,8 +316,7 @@ class TestQubitUnitaryXZXDecomposition:
     def test_xzx_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
@@ -391,8 +382,7 @@ class TestQubitUnitaryZXZDecomposition:
     def test_zxz_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import torch
+        import torch  # pylint: disable=import-outside-toplevel
 
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
@@ -402,8 +392,7 @@ class TestQubitUnitaryZXZDecomposition:
     def test_zxz_decomposition_tf(self, U, expected_params):
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
@@ -413,8 +402,7 @@ class TestQubitUnitaryZXZDecomposition:
     def test_zxz_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
@@ -458,8 +446,7 @@ class TestOneQubitRotDecomposition:
     def test_rot_decomposition_torch(self, U, expected_gates, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import torch
+        import torch  # pylint: disable=import-outside-toplevel
 
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "rot", expected_gates, expected_params)
@@ -469,8 +456,7 @@ class TestOneQubitRotDecomposition:
     def test_rot_decomposition_tf(self, U, expected_gates, expected_params):
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "rot", expected_gates, expected_params)
@@ -480,8 +466,7 @@ class TestOneQubitRotDecomposition:
     def test_rot_decomposition_jax(self, U, expected_gates, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "rot", expected_gates, expected_params)
@@ -1092,8 +1077,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_torch(self, U, wires):
         """Test that a two-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import torch
+        import torch  # pylint: disable=import-outside-toplevel
 
         U = torch.tensor(U, dtype=torch.complex128)
 
@@ -1110,8 +1094,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_torch(self, U_pair, wires):
         """Test that a two-qubit tensor product in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import torch
+        import torch  # pylint: disable=import-outside-toplevel
 
         U1 = torch.tensor(U_pair[0], dtype=torch.complex128)
         U2 = torch.tensor(U_pair[1], dtype=torch.complex128)
@@ -1130,8 +1113,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tf(self, U, wires):
         """Test that a two-qubit operation in Tensorflow is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         U = tf.Variable(U, dtype=tf.complex128)
 
@@ -1148,8 +1130,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_tf(self, U_pair, wires):
         """Test that a two-qubit tensor product in Tensorflow is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         U1 = tf.Variable(U_pair[0], dtype=tf.complex128)
         U2 = tf.Variable(U_pair[1], dtype=tf.complex128)
@@ -1168,8 +1149,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_jax(self, U, wires):
         """Test that a two-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -1186,8 +1166,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_jax(self, U_pair, wires):
         """Test that a two-qubit tensor product in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
         U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
@@ -1206,8 +1185,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_jax_jit(self, U, wires):
         """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -1264,8 +1242,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
         U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
@@ -1363,8 +1340,7 @@ class TestTwoQubitDecompositionWarnings:
     def test_warning_parameterized_torch(self):
         """Test warning is raised for parameterized matrix with PyTorch"""
         try:
-            # pylint: disable=import-outside-toplevel
-            import torch
+            import torch  # pylint: disable=import-outside-toplevel
         except ImportError:
             pytest.skip("PyTorch not installed")
 
@@ -1389,8 +1365,7 @@ class TestTwoQubitDecompositionWarnings:
     def test_warning_parameterized_tf(self):
         """Test warning is raised for parameterized matrix with TensorFlow"""
         try:
-            # pylint: disable=import-outside-toplevel
-            import tensorflow as tf
+            import tensorflow as tf  # pylint: disable=import-outside-toplevel
         except ImportError:
             pytest.skip("TensorFlow not installed")
 

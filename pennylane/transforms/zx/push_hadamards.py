@@ -89,8 +89,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     2: ──H─╰●─┤ ╰State
 
     """
-    # pylint: disable=import-outside-toplevel
-    import pyzx
+    import pyzx  # pylint: disable=import-outside-toplevel
 
     pyzx_graph = to_zx(tape)
     pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
