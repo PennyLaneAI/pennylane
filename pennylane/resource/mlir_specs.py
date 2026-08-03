@@ -101,13 +101,7 @@ def _mlir_resources_to_specs_resources(
         )
 
     # Process quantum operations and measurements
-    measurement_processes = defaultdict(
-        int,
-        {
-            k: resources["measurement_processes"][k]
-            for k in resources["measurement_processes"].keys()
-        },
-    )
+    measurement_processes = defaultdict(int, resources["measurement_processes"])
     quantum_operations = defaultdict(int)
     for gate_size, ops in resources["quantum_operations"].items():
         for gate_name, count in ops.items():
