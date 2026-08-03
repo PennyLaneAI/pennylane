@@ -63,6 +63,9 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         phase_fn (Callable | None): Optional custom phase function
             ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
             Defaults to ``None``.
+        control_variate (bool): Reduces the variance by modifying the Monte Carlo sampling with a
+            control variate for the case when the IQP circuit is the identity. This only works when
+            the rotation angles of the IQP circuit are small. Defaults to ``False``.
 
     **Example**
 
@@ -98,6 +101,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
+    #: Optional control variate to reduce variance.
+    control_variate: bool = False
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
@@ -200,9 +205,7 @@ def _core_expval_execution(
         M = M * H
         expvals = jnp.real(M)
 
-    std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
-
-    return jnp.mean(expvals, axis=1), std_err
+    return expvals
 
 
 def build_expval_func(
@@ -263,6 +266,10 @@ def build_expval_func(
         :class:`~pennylane.labs.tcdq.CircuitConfig`,
         `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
+
+    if config.control_variate and config.phase_fn is not None:
+        raise ValueError("Phase layers are not combatible with control variates.")
+
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     vmapped_phase_func = None
@@ -335,7 +342,7 @@ def build_expval_func(
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        return _core_expval_execution(
+        expvals = _core_expval_execution(
             gates_params,
             phase_fn_params,
             samples,
@@ -347,4 +354,105 @@ def build_expval_func(
             vmapped_phase_func,
         )
 
+        if not config.control_variate:
+            mean = jnp.mean(expvals, axis=1)
+            std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+            return mean, std_err
+
+        cv = _control_variate_expval_execution(samples, obs_data, state_elems, state_amps)
+        cv_ev = _control_variate_expected_value(obs_data, state_elems, state_amps)
+
+        expvals_centered = expvals - jnp.mean(expvals, axis=-1, keepdims=True)
+        cv_centered = cv - jnp.mean(cv, axis=-1, keepdims=True)
+
+        cov = jnp.sum(expvals_centered * cv_centered, axis=-1)
+        var_cv = jnp.sum(cv_centered**2, axis=-1)
+
+        c = jnp.where(var_cv > 0, -cov / var_cv, 0.0)
+
+        expvals_cv = expvals + c[..., None] * (cv - cv_ev[..., None])
+        mean_cv = jnp.mean(expvals_cv, axis=-1)
+        std_err_cv = jnp.std(expvals_cv, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+
+        return mean_cv, std_err_cv
+
     return expval_execution
+
+
+def _control_variate_expval_execution(
+    samples: jnp.ndarray,
+    obs_data: tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
+    init_state_elems: ArrayLike | None,
+    init_state_amps: ArrayLike | None,
+) -> jnp.ndarray:
+    """Per-sample values of the theta=0 control variate f_0(z).
+
+    This is exactly the main integrand of `_core_expval_execution` evaluated at
+    theta=0, so E=0 and the circuit factor reduces to the observable phase alone.
+    Uses the SAME `samples`, `obs_data`, and initial state as the main estimator so
+     sign_k = 1 - 2 * ((bitflips @ X.T) % 2)                      # (n_obs, N) = (-1)^{b.x_k}
+    amp_outer = amps[:, None] * jnp.conj(amps)[None, :]          # (N, N) = alpha_k alpha_l^*
+
+    term = match * sign_k[:, :, None] * amp_outer[None, :, :]    # (n_obs, N, N)
+    s = jnp.sum(term, axis=(1, 2))                               # (n_obs,)
+    return jnp.real(y_phase[:, 0] * s)   that the control is maximally correlated with `expvals`.
+
+    Returns:
+        jnp.ndarray: shape (n_observables, n_samples), matching `expvals`.
+    """
+    bitflips, mask_XY, y_phase = obs_data
+
+    s_f = samples.astype(jnp.float32)
+    m_f = mask_XY.astype(jnp.float32)
+
+    # At theta=0: E=0, so M = phases (cos(0)=1, sin(0)=0).
+    sign_flip = 1 - 2 * ((m_f @ s_f.T) % 2)
+    phases = sign_flip * y_phase  # (n_obs, n_samples)
+
+    if init_state_elems is None or init_state_amps is None:
+        # Default |0...0> start: H(z) = 1 identically.
+        return jnp.real(phases)
+
+    # Custom initial state: same H(z) factor as the main estimator.
+    X = jnp.asarray(init_state_elems)
+    P = jnp.asarray(init_state_amps)
+    F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))  # (N, n_samples)
+    H1 = (1 - 2 * ((bitflips @ X.T) % 2)) @ F  # (n_obs, n_samples)
+    col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)  # (1, n_samples)
+    H = H1 * col_sums
+    return jnp.real(phases * H)
+
+
+def _control_variate_expected_value(
+    obs_data: tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
+    init_state_elems: ArrayLike | None,
+    init_state_amps: ArrayLike | None,
+) -> jnp.ndarray:
+    """Analytic expectation tau = E[control variate] = <Psi_0|P|Psi_0>.
+
+    Closed form of the theta=0 expectation value; no sampling. Matches the code's
+    (-i)^{n_Y} phase convention (so it agrees term-by-term with
+    `_control_variate_expval_execution`).
+
+    Returns:
+        jnp.ndarray: shape (n_observables,), the exact control mean.
+    """
+    bitflips, mask_XY, y_phase = obs_data  # y_phase: (n_obs, 1), complex
+
+    if init_state_elems is None or init_state_amps is None:
+        # |0...0>: tau = 1 if the observable is pure I/Z, else 0.
+        is_IZ = jnp.all(mask_XY == 0, axis=1)  # (n_obs,)
+        return jnp.real(y_phase[:, 0]) * is_IZ.astype(y_phase.real.dtype)
+
+    X = jnp.asarray(init_state_elems).astype(jnp.int32)  # (N, n_qubits)
+    amps = jnp.asarray(init_state_amps)  # (N,)
+
+    # tau = Re[ y_phase * sum_{k,l : x_k = x_l XOR m_XY} (-1)^{b.x_k} alpha_k alpha_l^* ]
+    xor = (X[:, None, :] + X[None, :, :]) % 2  # (N, N, n_qubits)
+    match = jnp.all(xor[None] == mask_XY[:, None, None, :], axis=-1)  # (n_obs, N, N)
+    sign_k = 1 - 2 * ((bitflips @ X.T) % 2)  # (n_obs, N) = (-1)^{b.x_k}
+    amp_outer = amps[:, None] * jnp.conj(amps)[None, :]  # (N, N) = alpha_k alpha_l^*
+
+    term = match * sign_k[:, :, None] * amp_outer[None, :, :]  # (n_obs, N, N)
+    s = jnp.sum(term, axis=(1, 2))  # (n_obs,)
+    return jnp.real(y_phase[:, 0] * s)
