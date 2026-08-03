@@ -45,6 +45,7 @@ from pennylane.templates.subroutines import (
     PrepSelPrep,
     QDrift,
     Select,
+    TemporaryAND,
     TrotterProduct,
 )
 from pennylane.templates.subroutines.hilbert_schmidt import HilbertSchmidt
@@ -192,6 +193,7 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 @bind_new_parameters.register(ops.CNOT)
 @bind_new_parameters.register(ops.Toffoli)
 @bind_new_parameters.register(ops.MultiControlledX)
+@bind_new_parameters.register(TemporaryAND)
 def bind_new_parameters_copy(op, params: Sequence[TensorLike]):
     return copy.copy(op)
 
