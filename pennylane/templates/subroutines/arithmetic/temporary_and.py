@@ -126,14 +126,15 @@ class TemporaryAND(Operator2):
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    dynamic_argnames = "control_values"
+    dynamic_argnames = ("control_values",)
 
     arg_specs = {"wires": Wire[3], "control_values": Bool[2]}
 
     def __init__(self, wires: WiresLike, control_values=None):
         if control_values is None:
-            control_values = [True, True]
-        control_values = math.asarray(control_values, dtype=bool)
+            control_values = math.ones(2, dtype=bool)
+        interface = math.get_deep_interface(control_values)
+        control_values = math.cast(math.asarray(control_values, like=interface), bool)
         super().__init__(wires=wires, control_values=control_values)
 
     def __repr__(self):
@@ -155,7 +156,7 @@ class TemporaryAND(Operator2):
 
         **Example**
 
-        >>> print(qp.TemporaryAND.compute_matrix(control_values = (1,1)))
+        >>> print(qp.TemporaryAND.compute_matrix([0, 1, 2], control_values = (1, 1)))
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]

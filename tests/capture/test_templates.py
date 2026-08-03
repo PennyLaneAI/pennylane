@@ -228,8 +228,6 @@ unmodified_templates_cases = [
         (jnp.ones(3), [2, 3, 0, 1]),
         {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
-    (qp.TemporaryAND, (), {"wires": [0, 1, 2], "control_values": [0, 1]}),
-    (qp.TemporaryAND, ([0, 1, 2],), {"control_values": [0, 1]}),
     (qp.FFQRAM, (jnp.array([0.3, 0.7]),), {"wires": (0, 1, 2), "address": ((0, 0), (1, 1))}),
     (
         qp.SumOfSlatersPrep,
@@ -287,6 +285,27 @@ def test_unmodified_templates(template, args, kwargs):
     # Check that remaining kwargs are passed properly to the eqn
     # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
     assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+
+
+@pytest.mark.parametrize(
+    "args, kwargs",
+    (
+        ((), {"wires": [0, 1, 2], "control_values": [0, 1]}),
+        (([0, 1, 2],), {}),
+    ),
+)
+def test_temporaryand(args, kwargs):
+    """Tests capturing a TemporaryAND."""
+
+    def fn(*args, **kwargs):
+        qp.TemporaryAND(*args, **kwargs)
+
+    jaxpr = jax.make_jaxpr(fn)(*args, **kwargs)
+    eqn = jaxpr.eqns[-1]
+    assert_eqn_matches_op(eqn, qp.TemporaryAND)
+    assert len(eqn.invars) == 4
+    assert len(eqn.outvars) == 1
+    assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
 
 # Only add a template to the following list if you manually added a test for it to
