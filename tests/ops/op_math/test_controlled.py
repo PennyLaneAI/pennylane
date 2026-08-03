@@ -1091,27 +1091,6 @@ class TestDecomposition:
         op = Controlled(target, 2)
         assert op.decomposition() == decomp
 
-    @pytest.mark.xfail(
-        reason="The behaviour of decomposing a controlled op to a qubit unitary exists as a standalone decomposition rule now for Operator2 instances."
-    )
-    def test_non_differentiable_one_qubit_special_unitary(self):
-        """Assert that a non-differentiable on qubit special unitary uses the bisect decomposition."""
-
-        op = qp.ctrl(qp.RZ(1.2, wires=0), (1, 2, 3, 4))
-        decomp = op.decomposition()
-
-        qp.assert_equal(decomp[0], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
-        assert isinstance(decomp[1], qp.QubitUnitary)
-        qp.assert_equal(decomp[2], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
-        assert isinstance(decomp[3].base, qp.QubitUnitary)
-        qp.assert_equal(decomp[4], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
-        assert isinstance(decomp[5], qp.QubitUnitary)
-        qp.assert_equal(decomp[6], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
-        assert isinstance(decomp[7].base, qp.QubitUnitary)
-
-        decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
-        assert qp.math.allclose(op.matrix(), decomp_mat)
-
     def test_differentiable_one_qubit_special_unitary_single_ctrl(self):
         """
         Assert that a differentiable qubit special unitary uses the zyz decomposition with a single controlled wire.
