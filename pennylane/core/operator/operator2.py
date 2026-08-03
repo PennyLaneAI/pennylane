@@ -45,6 +45,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
+    UnsupportedPathwayError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
@@ -67,6 +68,15 @@ class GradMethod(StrEnum):
 
     ANALYTIC = "A"
     FINITE_DIFF = "F"
+
+
+def _no_capture(f):
+    def decorator(*args, **kwargs):
+        if enabled():
+            raise UnsupportedPathwayError(f"{f} is not suppoted with program capture")
+        return f(*args, **kwargs)
+
+    return decorator
 
 
 ARGNAME_CATEGORIES = (
@@ -790,6 +800,7 @@ class Operator2(metaclass=OperatorMeta):
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
     @classmethod
+    @_no_capture
     def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 

@@ -92,6 +92,10 @@ class CaptureError(Exception):
     """Errors related to PennyLane's Program Capture execution pipeline."""
 
 
+class UnsupportedPathwayError(Exception):
+    """An error for using modes and pathways that are no longer supported."""
+
+
 class DeviceError(Exception):
     """Exception raised when it encounters an illegal operation in the quantum circuit."""
 
