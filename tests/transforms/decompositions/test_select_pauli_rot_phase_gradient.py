@@ -162,6 +162,11 @@ def test_integration_multi_wire(rot_axis, seed):
             "CNOT",
             "PauliX",
             "GlobalPhase",
+            "StatePrep",
+            "Adjoint(StatePrep)",
+            "Hadamard",  # needed if rot_axis = X , Y
+            "S",  # needed if rot_axis = Y
+            "Adjoint(S)",  # needed if rot_axis = Y
         },
         fixed_decomps={qp.SelectPauliRot: custom_decomp},
     )
