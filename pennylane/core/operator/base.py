@@ -181,7 +181,7 @@ def _process_data(op):
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
     else:
         mod_val = None

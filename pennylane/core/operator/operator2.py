@@ -1491,16 +1491,6 @@ def _init_arg_types(op: Operator2) -> None:
             # expected shape but the actual dtype
             actual_dtype = argval_dtype
             if not exp_type.is_compatible_with(AbstractArray(exp_type.shape, actual_dtype)):
-                # Scalar real parameters may receive complex dtypes from holomorphic AD (e.g. JAX).
-                if (
-                    exp_type.ndim == 0
-                    and np.issubdtype(exp_type.dtype, np.floating)
-                    and np.issubdtype(np.dtype(actual_dtype), np.complexfloating)
-                    and exp_type.is_compatible_with(
-                        AbstractArray(exp_type.shape, np.dtype(np.float64))
-                    )
-                ):
-                    continue
                 raise ValueError(
                     f"Parameter '{name}' does not match the operator's expected 'arg_specs' dtype. "
                     f"Expected {exp_type.dtype} but received {actual_dtype}."
@@ -1853,7 +1843,7 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
     else:
         mod_val = None

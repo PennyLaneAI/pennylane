@@ -1259,6 +1259,17 @@ def _controlled_rot_decomp(
 add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp))
 
 
+def _real_angle(x: TensorLike) -> TensorLike:
+    """Return the real part of a rotation angle.
+
+    ``U1``/``U2``/``U3`` angles are real-valued, but JAX autodiff can feed complex
+    tracers (e.g. spurious imaginary parts from decomposition matrix arithmetic, or
+    holomorphic differentiation). We discard the imaginary part rather than storing a
+    complex angle so the values still satisfy the operators' real ``arg_specs``.
+    """
+    return qp.math.real(x) if "complex" in qp.math.get_dtype_name(x) else x
+
+
 class U1(Operator2):
     r"""
     U1 gate.
@@ -1303,7 +1314,7 @@ class U1(Operator2):
         return qp.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
-        super().__init__(phi, wires=wires)
+        super().__init__(_real_angle(phi), wires=wires)
 
     @staticmethod
     # pylint: disable=unused-argument
@@ -1456,7 +1467,7 @@ class U2(Operator2):
     parameter_frequencies = [(1,), (1,)]
 
     def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike):
-        super().__init__(phi, delta, wires=wires)
+        super().__init__(_real_angle(phi), _real_angle(delta), wires=wires)
 
     @staticmethod
     # pylint: disable=unused-argument
@@ -1639,7 +1650,7 @@ class U3(Operator2):
         delta: TensorLike,
         wires: WiresLike,
     ):
-        super().__init__(theta, phi, delta, wires=wires)
+        super().__init__(_real_angle(theta), _real_angle(phi), _real_angle(delta), wires=wires)
 
     @staticmethod
     # pylint: disable=unused-argument
