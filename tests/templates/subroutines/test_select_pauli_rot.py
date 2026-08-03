@@ -64,6 +64,7 @@ class TestSelectPauliRot:
         ("angles", "control_wires", "target_wire", "rot_axis", "expected_error"),
         [
             (Float[4], [0, 1], 2, "X", None),  # should pass
+            (Float[5], [0, 1], 2, "X", "Number of angles must be 2^(len(control_wires))"),  # wrong number of angles
             (
                 np.array([1.0, 2.0, 3.0, 4.0]),
                 [0, 1],
