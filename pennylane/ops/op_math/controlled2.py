@@ -235,11 +235,18 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if set(signature(cls).parameters.keys()) == base_argnames:
             return
 
+        def _remove_from_program(op):
+            if qp.QueuingManager.recording():
+                qp.QueuingManager.remove(op)
+            if qp.capture.enabled():
+                pop_op_eqns((op,))
+
         if cls.compute_matrix is Controlled2.compute_matrix:
 
             @staticmethod
             def _compute_matrix(*args, **kwargs):
                 op = cls(*args, **kwargs)
+                _remove_from_program(op)
                 return Controlled2.compute_matrix(op.base, op.control_wires, op.control_values)
 
             cls.compute_matrix = _compute_matrix
@@ -249,6 +256,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_sparse_matrix(*args, format="csr", **kwargs):
                 op = cls(*args, **kwargs)
+                _remove_from_program(op)
                 return Controlled2.compute_sparse_matrix(
                     op.base,
                     op.control_wires,
@@ -263,7 +271,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_eigvals(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                return Controlled2.compute_eigvals(op.base, op.control_wires)
+                _remove_from_program(op)
+                return Controlled2.compute_eigvals(op.base, op.control_wires, op.control_values)
 
             cls.compute_eigvals = _compute_eigvals
 
@@ -272,6 +281,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_diagonalizing_gates(*args, **kwargs):
                 op = cls(*args, **kwargs)
+                _remove_from_program(op)
                 return Controlled2.compute_diagonalizing_gates(op.base)
 
             cls.compute_diagonalizing_gates = _compute_diagonalizing_gates
@@ -363,13 +373,45 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @staticmethod
     @override
     # pylint: disable=arguments-differ
-    def compute_eigvals(base, control_wires, **_):
-        base_eigvals = base.eigvals()
+    def compute_eigvals(base, control_wires, control_values=None, **_):
+
+        base_eigvals = math.asarray(base.eigvals())
         num_target_wires = len(base.wires)
         num_control_wires = len(control_wires)
-        total = 2 ** (num_target_wires + num_control_wires)
-        ones = math.ones(total - len(base_eigvals))
-        return math.concatenate([ones, base_eigvals])
+        num_wires = num_target_wires + num_control_wires
+
+        if control_values is None:
+            control_values = math.ones_like(control_wires)
+
+        # The purpose of the following process is so that when control values are present,
+        # the matrix reconstruction test (M = U_d^\dagger D U_d, where U_d is the matrix
+        # of the diagonalizing gates, and D is the diagonal matrix generated from the list
+        # of eigenvalues) still passes. Courtesy of Gemini 3.1 Pro
+
+        # Calculate the integer index of the control state
+        control_values = math.cast(control_values, int)
+        powers = 2 ** math.arange(num_control_wires - 1, -1, -1)
+        control_int = math.sum(control_values * powers)
+
+        # The size of the base operator's eigenvalue block and the entire eigvals array
+        target_dim = 2**num_target_wires
+        total_dim = 2**num_wires
+
+        # Find the indices
+        indices = math.arange(total_dim)
+        control_indices = indices // target_dim
+        target_indices = indices % target_dim
+
+        # Create the mask for the active block
+        mask = control_indices == control_int
+
+        # Tile the base eigenvalues across the whole space using advanced indexing
+        tiled_base = base_eigvals[target_indices]
+
+        # Select between base eigenvalues and 1s based on the mask
+        ones_array = math.ones(total_dim, dtype=base_eigvals.dtype)
+
+        return math.where(mask, tiled_base, ones_array)
 
     @property
     @override
