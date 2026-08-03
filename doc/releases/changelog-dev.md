@@ -847,7 +847,7 @@
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
-  - Parameteric operators are ported:
+  - Parametric operators are ported:
     - `~.RZ`, `~.CRZ`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   - Templates are ported:
