@@ -104,7 +104,7 @@ class MultiRZ(Operator2):
 
         Args:
             theta (TensorLike): rotation angle
-            num_wires (int): number of wires the rotation acts on
+            wires (Sequence[int]): wires the rotation acts on
 
         Returns:
             TensorLike: canonical matrix
