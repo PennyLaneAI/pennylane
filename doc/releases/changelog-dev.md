@@ -848,8 +848,9 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   - Parametric operators are ported:
-    - :class:`~.PauliRot`
+    - :class:`~.PauliRot`, :class:`~.DiagonalQubitUnitary`
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
+  [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   - Templates are ported:
     - `~.BasisRotation`, `~.QROM`, `~.QFT`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)

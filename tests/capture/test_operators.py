@@ -247,6 +247,23 @@ def test_parametrized_op():
 
 class TestSpecialOps:
 
+    def test_diagonal_qubit_unitary(self):
+        """Test Operator2 capture and list canonicalization for DiagonalQubitUnitary."""
+
+        def qfunc(D, wires):
+            qp.DiagonalQubitUnitary(D, wires)
+
+        D = [1.0, 1.0j, -1.0, -1.0j]
+        wires = [0, 1]
+        jaxpr = jax.make_jaxpr(qfunc)(D, wires)
+
+        eqn = jaxpr.eqns[-1]
+        assert_eqn_matches_op(eqn, qp.DiagonalQubitUnitary)
+        assert eqn.invars[0].aval == jax.core.ShapedArray((4,), complex)
+        assert eqn.invars[1:] == jaxpr.jaxpr.invars[-2:]
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
     def test_pauli_rot(self):
         """Test a special operation that has positional metadata and overrides binding."""
 

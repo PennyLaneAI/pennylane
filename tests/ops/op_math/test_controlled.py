@@ -1485,7 +1485,6 @@ class TestControlledSupportsBroadcasting:
     separately_tested_ops = [
         "QubitUnitary",
         "ControlledQubitUnitary",
-        "DiagonalQubitUnitary",
         "PauliRot",
         "MultiRZ",
         "StatePrep",
@@ -1593,6 +1592,7 @@ class TestControlledSupportsBroadcasting:
 
         assert qp.math.allclose(mat, single_mats)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_controlled_diagonal_qubit_unitary(self):
         """Test that a Controlled operation whose base is a DiagonalQubitUnitary, which is marked
         as supporting parameter broadcasting, actually does support broadcasting."""
@@ -2362,13 +2362,13 @@ class TestTapeExpansionWithControlled:
         with qp.queuing.AnnotatedQueue() as q_tape:
             qp.ctrl(qp.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
         tape = QuantumScript.from_queue(q_tape)
-        [tape], _ = decompose(
-            tape,
-            max_expansion=3,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            stopping_condition=lambda op: not isinstance(op, Controlled),
+        qp.assert_equal(
+            tape[0],
+            qp.ops.ControlledOp2(
+                qp.DiagonalQubitUnitary(np.array([-1.0, 1.0j]), wires=0),
+                control_wires=1,
+            ),
         )
-        assert tape[0] == qp.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
 
     @pytest.mark.parametrize("M", unitaries)
     def test_qubit_unitary(self, M):
