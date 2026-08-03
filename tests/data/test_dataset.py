@@ -343,6 +343,25 @@ class TestDataset:
         assert dset.y == "abc"
         assert dset.attr_info["y"].doc == "abc"
 
+    def test_read_from_dataset_does_not_close_source(self, tmp_path):
+        """Test that read() leaves a caller-supplied Dataset open."""
+        path = tmp_path / "dset.h5"
+
+        existing = Dataset.open(path, "w")
+        existing.x = 1
+        existing.close()
+
+        existing = Dataset.open(path, "r")
+        dset = Dataset()
+
+        try:
+            dset.read(existing)
+
+            assert dset.x == 1
+            assert existing.x == 1
+        finally:
+            existing.close()
+
     @pytest.mark.parametrize("overwrite, expect_x", [(False, 2), (True, 1)])
     def test_read_overwrite(self, overwrite, expect_x):
         """Test that overwrite determnines whether an existing attribute
