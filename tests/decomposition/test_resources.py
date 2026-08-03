@@ -48,7 +48,7 @@ class TestResources:
         with pytest.raises(AssertionError):
             Resources(
                 gate_counts={
-                    CompressedResourceOp(qp.RX, {}): 2,
+                    abstractify(qp.RX): 2,
                     abstractify(qp.RZ): -1,
                 }
             )
@@ -58,7 +58,7 @@ class TestResources:
         with pytest.raises(AssertionError):
             Resources(
                 gate_counts={
-                    CompressedResourceOp(qp.RX, {}): 2,
+                    abstractify(qp.RX): 2,
                 },
                 weighted_cost=-2.0,
             )
@@ -67,20 +67,20 @@ class TestResources:
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 2, abstractify(qp.RZ): 1},
+            gate_counts={abstractify(qp.RX): 2, abstractify(qp.RZ): 1},
             weighted_cost=6.0,
         )
         resources2 = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 1, CompressedResourceOp(qp.RY, {}): 1},
+            gate_counts={abstractify(qp.RX): 1, abstractify(qp.RY): 1},
             weighted_cost=2.0,
         )
 
         resources = resources1 + resources2
         assert resources.num_gates == 5
         assert resources.gate_counts == {
-            CompressedResourceOp(qp.RX, {}): 3,
+            abstractify(qp.RX): 3,
             abstractify(qp.RZ): 1,
-            CompressedResourceOp(qp.RY, {}): 1,
+            abstractify(qp.RY): 1,
         }
         assert resources.weighted_cost == 8.0
 
@@ -88,14 +88,14 @@ class TestResources:
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 2, abstractify(qp.RZ): 1},
+            gate_counts={abstractify(qp.RX): 2, abstractify(qp.RZ): 1},
             weighted_cost=2.0,
         )
 
         resources = resources * 2
         assert resources.num_gates == 6
         assert resources.gate_counts == {
-            CompressedResourceOp(qp.RX, {}): 4,
+            abstractify(qp.RX): 4,
             abstractify(qp.RZ): 2,
         }
         assert resources.weighted_cost == 4
@@ -103,7 +103,7 @@ class TestResources:
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
-        resources = Resources({CompressedResourceOp(qp.RX, {}): 2, qp.S(Wire[1]): 1}, 5.0)
+        resources = Resources({abstractify(qp.RX): 2, qp.S(Wire[1]): 1}, 5.0)
         assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, S: 1}, weighted_cost=5.0>"
 
 
