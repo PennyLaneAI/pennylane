@@ -362,7 +362,7 @@ def _equal_operators(
             params2_train = math.requires_grad(params2)
             if params1_train != params2_train:
                 return (
-                    "Parameters have different trainability.\n "
+                    "Parameters differ in trainability.\n "
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 

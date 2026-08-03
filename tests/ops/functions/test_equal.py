@@ -421,11 +421,7 @@ class TestEqual:
             is False
         )
 
-        error_msg = (
-            "differ in trainability"
-            if issubclass(op1, Operator2)
-            else "have different trainability"
-        )
+        error_msg = "differ in trainability"
         with pytest.raises(AssertionError, match=error_msg):
             assert_equal(
                 op1(param_qp, wires=wire),
@@ -1472,7 +1468,7 @@ class TestPauliErrorEqual:
         pes = [qp.PauliError("XY", x1, (0, 1)), qp.PauliError("XY", 0.5, (0, 1))]
 
         assert qp.equal(pes[0], pes[1]) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Parameters differ in trainability"):
             assert_equal(pes[0], pes[1])
 
         with pytest.raises(AssertionError, match="Parameters have different interfaces"):
