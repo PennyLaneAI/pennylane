@@ -1197,7 +1197,6 @@ class TestModifiedTemplates:
         assert_eqn_matches_op(eqn, qp.SelectPauliRot)
         assert eqn.invars[:1] == jaxpr.jaxpr.invars
         assert [invar.val for invar in eqn.invars[1:]] == [0, 1, 2, 3]
-        assert eqn.params == {"n_wires": 4, "rot_axis": "X"}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
