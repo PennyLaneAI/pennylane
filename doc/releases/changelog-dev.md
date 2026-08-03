@@ -848,8 +848,10 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   - Templates are ported:
-    - `~.BasisRotation`
+    - `~.BasisRotation`, `~.QROM`, `~.QFT`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
+  [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
@@ -917,6 +919,7 @@
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
   [(#9927)](https://github.com/PennyLaneAI/pennylane/pull/9927)
   [(#9920)](https://github.com/PennyLaneAI/pennylane/pull/9920)
+  [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
