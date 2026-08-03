@@ -358,6 +358,7 @@ tested_modified_templates = [
     qp.MultiplexerStatePreparation,
     qp.SelectPauliRot,
     qp.QFT,
+    qp.TemporaryAND,
 ]
 
 
