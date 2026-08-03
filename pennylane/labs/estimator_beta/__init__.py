@@ -110,11 +110,45 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.estimator import *
-
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
+from .ops import (
+    ResourceQfunc,
+    ch_resource_decomp,
+    ch_toffoli_based_resource_decomp,
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+    mark_subroutine,
+    mcx_many_clean_aux_resource_decomp,
+    mcx_one_clean_aux_resource_decomp,
+    mcx_one_dirty_aux_resource_decomp,
+    paulirot_controlled_resource_decomp,
+)
+from .resource_config import LabsResourceConfig
+from .templates import (
+    ClassicalOutMultiplier,
+    LabsAdder,
+    LabsCosineWindow,
+    LabsModExp,
+    LabsMottonenStatePreparation,
+    LabsMultiplier,
+    LabsOutAdder,
+    LabsPhaseAdder,
+    LabsQROM,
+    LabsSumOfSlatersPrep,
+    OutOfPlaceIntegerComparator,
+    RegisterEquality,
+    SelectCopyQROM,
+    aqft_resource_decomp,
+    qft_phase_grad_resource_decomp,
+    qrom_state_preparation_phase_grad_resource_decomp,
+    qrom_state_preparation_resource_decomp,
+    select_thc_controlled_resource_decomp,
+    select_thc_resource_decomp,
+    selectpaulirot_controlled_resource_decomp,
+)
 from .wires_manager.base_classes import (
     Allocate,
     Deallocate,
@@ -124,43 +158,6 @@ from .wires_manager.base_classes import (
 from .wires_manager.wire_counting import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
-)
-from .resource_config import LabsResourceConfig
-from .templates import LabsCosineWindow
-from .templates import LabsMottonenStatePreparation
-from .templates import LabsSumOfSlatersPrep
-
-from .templates import (
-    SelectCopyQROM,
-    LabsQROM,
-    OutOfPlaceIntegerComparator,
-    RegisterEquality,
-    selectpaulirot_controlled_resource_decomp,
-    ClassicalOutMultiplier,
-    LabsAdder,
-    LabsModExp,
-    LabsMultiplier,
-    LabsOutAdder,
-    LabsPhaseAdder,
-    aqft_resource_decomp,
-    qft_phase_grad_resource_decomp,
-    qrom_state_preparation_resource_decomp,
-    qrom_state_preparation_phase_grad_resource_decomp,
-    select_thc_resource_decomp,
-    select_thc_controlled_resource_decomp,
-)
-
-from .ops import (
-    ch_resource_decomp,
-    ch_toffoli_based_resource_decomp,
-    hadamard_controlled_resource_decomp,
-    hadamard_toffoli_based_controlled_decomp,
-    paulirot_controlled_resource_decomp,
-    mcx_one_clean_aux_resource_decomp,
-    mcx_one_dirty_aux_resource_decomp,
-    mcx_many_clean_aux_resource_decomp,
-    mark_subroutine,
-    ResourceQfunc,
 )
 
 Adder = LabsAdder
@@ -207,7 +204,7 @@ def _(op: qp.QROM):
     bitstrings = op.data[0]
     num_bitstrings = bitstrings.shape[0]
     size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
-    op_wires = op.hyperparameters["control_wires"] + op.hyperparameters["target_wires"]
+    op_wires = op.control_wires + op.target_wires
     return LabsQROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
