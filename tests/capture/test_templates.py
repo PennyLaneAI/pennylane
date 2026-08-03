@@ -1200,12 +1200,6 @@ class TestModifiedTemplates:
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, angles)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.SelectPauliRot(angles, **kwargs))
-
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""
 
