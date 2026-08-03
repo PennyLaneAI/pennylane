@@ -132,11 +132,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        if qp.QueuingManager.recording():
-            qp.QueuingManager.remove(base)
 
-        if qp.capture.enabled():
-            pop_op_eqns((base,))
+        _remove_from_program(base)
 
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
@@ -234,12 +231,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         base_argnames = {"base", "control_wires", "control_values", "work_wires", "work_wire_type"}
         if set(signature(cls).parameters.keys()) == base_argnames:
             return
-
-        def _remove_from_program(op):
-            if qp.QueuingManager.recording():
-                qp.QueuingManager.remove(op)
-            if qp.capture.enabled():
-                pop_op_eqns((op,))
 
         if cls.compute_matrix is Controlled2.compute_matrix:
 
@@ -626,6 +617,14 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
             self.tracer = res
+
+
+def _remove_from_program(op):
+    """Removes an operator from the captured/queued program."""
+    if qp.QueuingManager.recording():
+        qp.QueuingManager.remove(op)
+    if qp.capture.enabled():
+        pop_op_eqns((op,))
 
 
 @list_decomps.register
