@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the decomposition rule qp.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp"""
+"""Tests for the decomposition rule qp.transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp"""
 
 import numpy as np
 
