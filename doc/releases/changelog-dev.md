@@ -828,6 +828,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds an error if `Operator2.decomposition` or `Operator2.compute_decomposition` is used with program capture turned on.
+  [(#9949)](https://github.com/PennyLaneAI/pennylane/pull/9949)
+
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
   [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
