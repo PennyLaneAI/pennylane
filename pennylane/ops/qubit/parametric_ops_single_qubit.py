@@ -548,9 +548,6 @@ class RZ(Operator2):
         )
         return "Z"
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
