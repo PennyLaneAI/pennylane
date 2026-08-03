@@ -42,6 +42,7 @@ def _generator_hamiltonian(gen, op):
     return qp.Hamiltonian([1.0], [gen])
 
 
+# pylint: disable=no-member
 def _generator_prefactor(gen):
     r"""Return the generator as ```(obs, prefactor)`` representing
     :math:`G=p \hat{O}`, where
@@ -64,15 +65,8 @@ def _generator_prefactor(gen):
         return ops[0], coeffs[0]
 
     if isinstance(gen, Sum):
-        ops = []
-        coeffs = []
-        for o in gen.operands:
-            if isinstance(o, SProd):
-                ops.append(o.base)
-                coeffs.append(o.scalar)
-            else:
-                ops.append(o)
-                coeffs.append(1)
+        ops = [o.base if isinstance(o, SProd) else o for o in gen]
+        coeffs = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
         abs_coeffs = list(qp.math.abs(coeffs))
         if qp.math.allequal(coeffs[0], coeffs):
             # case where the Hamiltonian coefficients are all the same
