@@ -19,7 +19,10 @@ import pytest
 import pennylane as qp
 from pennylane.labs.tcdq.expval_functions import (
     CircuitConfig,
+    _control_variate_expected_value,
+    _control_variate_expval_execution,
     _parse_generator_dict,
+    _prep_observables,
     build_expval_func,
 )
 
@@ -373,3 +376,271 @@ def test_parse_generator_dict_index_error():
 
     with pytest.raises(IndexError):
         _parse_generator_dict(circuit_def, n_qubits)
+
+
+class TestControlVariate:
+    """Tests for the theta=0 control-variate helpers and the CV branch of build_expval_func."""
+
+    @staticmethod
+    def _obs_data(obs_batch):
+        """Preprocess an integer-coded observable batch into (bitflips, mask_XY, y_phase)."""
+        return _prep_observables(jnp.array(obs_batch))
+
+    # ------------------------------------------------------------------
+    # 1. The key requested test: the analytic control expectation must equal
+    #    the *core* estimator evaluated at params = 0, on the SAME samples.
+    #    At theta=0 the core integrand collapses to the control integrand, so the
+    #    match is exact (up to float tolerance), not merely statistical.
+    # ------------------------------------------------------------------
+    @pytest.mark.parametrize(
+        "n_qubits, gates, obs_strings, init_state_spec",
+        [
+            (3, {0: [[0], [1]], 1: [[0, 1], [1, 2]]}, ["X", "Z", "Y"], None),
+            (2, {0: [[0, 1]]}, ["Z", "Z"], None),
+            (2, {0: [[0, 1]]}, ["I", "I"], None),
+            (2, {0: [[0, 1]]}, [["Z", "Z"], ["X", "X"]], None),
+            (3, {0: [[0, 1]], 1: [[1, 2]]}, ["X", "Z", "Y"], [1, 0, 1]),
+            (3, {0: [[0], [1], [2]]}, ["Z", "Z", "Z"], [1, 1, 1]),
+            (
+                2,
+                {0: [[0, 1]]},
+                [["Z", "Z"], ["X", "X"], ["Y", "Y"]],
+                ([[0, 0], [1, 1]], [1 / np.sqrt(2), 1 / np.sqrt(2)]),
+            ),
+        ],
+    )
+    def test_control_variate_expected_value_matches_core_at_zero_params(
+        self, n_qubits, gates, obs_strings, init_state_spec
+    ):
+        """_control_variate_expected_value equals the core estimator at params=0."""
+        obs_batch, _ = _prepare_obs_batch(obs_strings)
+        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
+
+        n_params = len(gates)
+        zero_params = jnp.zeros(n_params)
+        key = jax.random.PRNGKey(7)
+        # Large sample count: the core mean at params=0 is itself a Monte Carlo
+        # estimate of tau, so compare within Monte Carlo tolerance.
+        n_samples = 200000
+
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
+        )
+        core_func = build_expval_func(config)
+        core_mean_at_zero, _ = core_func(zero_params)
+
+        obs_data = self._obs_data(obs_batch)
+        tau = _control_variate_expected_value(obs_data, jax_state_elems, jax_state_amps)
+
+        atol = 3.5 / np.sqrt(n_samples)
+        assert np.allclose(np.array(core_mean_at_zero), np.array(tau), atol=atol)
+
+    def test_control_variate_expected_value_equals_persample_mean_exactly(self):
+        """Analytic tau equals the exact mean of the per-sample control over all bitstrings."""
+        n_qubits = 3
+        obs_batch = [[3, 3, 0], [1, 0, 2], [2, 2, 0], [0, 0, 0]]
+        # Custom complex initial state.
+        rng = np.random.default_rng(0)
+        elems = np.array([[0, 0, 0], [1, 0, 1], [0, 1, 1], [1, 1, 0]])
+        amps = rng.normal(size=4) + 1j * rng.normal(size=4)
+        amps = amps / np.linalg.norm(amps)
+        elems_j = jnp.array(elems.astype(float))
+        amps_j = jnp.array(amps)
+
+        # Enumerate ALL 2**n bitstrings -> the per-sample mean is the exact expectation.
+        all_bits = jnp.array(
+            [[int(b) for b in format(k, f"0{n_qubits}b")] for k in range(2**n_qubits)]
+        )
+        obs_data = self._obs_data(obs_batch)
+
+        cv_samples = _control_variate_expval_execution(all_bits, obs_data, elems_j, amps_j)
+        tau_from_samples = np.array(jnp.mean(cv_samples, axis=1))
+        tau_analytic = np.array(_control_variate_expected_value(obs_data, elems_j, amps_j))
+
+        assert np.allclose(tau_from_samples, tau_analytic, atol=1e-6)
+
+    # ------------------------------------------------------------------
+    # 2. Pure I/Z observables from |0...0>: tau must be exactly 1, and the
+    #    per-sample control must be the constant 1 (the degenerate/no-op case).
+    # ------------------------------------------------------------------
+    @pytest.mark.parametrize(
+        "obs_batch, expected_tau",
+        [
+            ([[3, 0, 0]], [1.0]),  # Z I I
+            ([[3, 3, 0]], [1.0]),  # Z Z I
+            ([[3, 3, 3]], [1.0]),  # Z Z Z
+            ([[0, 0, 0]], [1.0]),  # I I I
+            ([[1, 0, 0]], [0.0]),  # X -> 0
+            ([[2, 0, 0]], [0.0]),  # Y -> 0
+            ([[3, 0, 0], [1, 0, 0], [0, 2, 0]], [1.0, 0.0, 0.0]),  # mixed batch
+        ],
+    )
+    def test_default_state_tau_is_one_for_pure_iz(self, obs_batch, expected_tau):
+        """For |0...0>, tau = 1 for pure I/Z observables and 0 when any X/Y is present."""
+        obs_data = self._obs_data(obs_batch)
+        tau = _control_variate_expected_value(obs_data, None, None)
+        assert np.allclose(np.array(tau), np.array(expected_tau), atol=1e-12)
+
+    def test_default_state_pure_z_control_is_constant_one(self):
+        """The per-sample control for a pure Z observable from |0...0> is identically 1."""
+        n_qubits = 3
+        obs_batch = [[3, 3, 3]]
+        samples = jnp.array(
+            [[int(b) for b in format(k, f"0{n_qubits}b")] for k in range(2**n_qubits)]
+        )
+        obs_data = self._obs_data(obs_batch)
+        cv = np.array(_control_variate_expval_execution(samples, obs_data, None, None))
+        assert np.allclose(cv, 1.0, atol=1e-12)
+        # Zero variance => degenerate control (the c = -cov/var guard must handle it).
+        assert np.isclose(np.var(cv), 0.0, atol=1e-12)
+
+    def test_control_variate_branch_no_op_for_pure_z_default_state(self):
+        """The CV branch must not produce NaNs when the control is degenerate (var=0)."""
+        n_qubits = 2
+        gates = {0: [[0, 1]]}
+        obs_batch = [[3, 3]]  # pure Z from |0...0> -> control is constant
+        params = jnp.array([0.4])
+        key = jax.random.PRNGKey(3)
+        n_samples = 5000
+
+        base_kwargs = dict(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+        )
+        plain_mean, _ = build_expval_func(CircuitConfig(**base_kwargs))(params)
+        cv_mean, _ = build_expval_func(CircuitConfig(control_variate=True, **base_kwargs))(params)
+
+        assert np.all(np.isfinite(np.array(cv_mean)))
+        # With a degenerate control the CV estimator falls back to the plain mean.
+        assert np.allclose(np.array(plain_mean), np.array(cv_mean), atol=1e-6)
+
+    # ------------------------------------------------------------------
+    # 3. Shapes and unbiasedness of the CV branch.
+    # ------------------------------------------------------------------
+    def test_control_variate_helper_shapes(self):
+        """The two helpers return the documented shapes."""
+        n_qubits = 3
+        obs_batch = [[3, 3, 0], [1, 0, 2]]
+        n_samples = 128
+        samples = (
+            jax.random.bits(  # any (n_samples, n_qubits) binary array
+                jax.random.PRNGKey(0), shape=(n_samples, n_qubits), dtype=jnp.uint8
+            )
+            % 2
+        )
+        obs_data = self._obs_data(obs_batch)
+
+        elems = jnp.array([[0.0, 0.0, 0.0], [1.0, 1.0, 0.0]])
+        amps = jnp.array([1 / np.sqrt(2), 1 / np.sqrt(2)])
+
+        cv = _control_variate_expval_execution(samples, obs_data, elems, amps)
+        tau = _control_variate_expected_value(obs_data, elems, amps)
+
+        assert cv.shape == (len(obs_batch), n_samples)
+        assert tau.shape == (len(obs_batch),)
+
+    @pytest.mark.parametrize(
+        "n_qubits, gates, obs_strings, init_state_spec",
+        [
+            (
+                3,
+                {0: [[0], [1]], 1: [[0, 1], [1, 2]]},
+                ["X", "Z", "Y"],
+                ([[0, 0, 0], [1, 0, 1], [0, 1, 1]], [0.6, 0.6, 0.52915026]),
+            ),
+            (
+                2,
+                {0: [[0, 1]], 1: [[0]]},
+                [["Z", "Z"], ["X", "X"]],
+                ([[0, 0], [1, 1]], [1 / np.sqrt(2), 1 / np.sqrt(2)]),
+            ),
+        ],
+    )
+    def test_control_variate_branch_is_unbiased_vs_pennylane(
+        self, n_qubits, gates, obs_strings, init_state_spec
+    ):
+        """The CV estimator agrees with the PennyLane ground truth (unbiasedness)."""
+        generators_binary, param_map = _parse_generator_dict(gates, n_qubits)
+        generators_pl = [list(np.where(row)[0]) for row in generators_binary]
+
+        rng = np.random.default_rng(1)
+        n_params = len(gates)
+        params = rng.uniform(-0.6, 0.6, size=n_params)
+        params_pl = np.array(params)[param_map]
+
+        obs_batch, _ = _prepare_obs_batch(obs_strings)
+        pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
+        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
+
+        exact_vals = _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch, pl_state)
+
+        n_samples = 40000
+        atol = 3.5 / np.sqrt(n_samples)
+
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=jax.random.PRNGKey(42),
+            n_qubits=n_qubits,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
+            control_variate=True,
+        )
+        cv_mean, _ = build_expval_func(config)(jnp.array(params))
+
+        assert np.allclose(exact_vals, cv_mean, atol=atol)
+
+    def test_control_variate_reduces_variance_for_custom_state(self):
+        """With a non-trivial initial state the CV branch lowers the *actual* dispersion
+        of the estimator across seeds.
+
+        We measure the empirical standard deviation of the returned mean over many PRNG
+        keys rather than the reported ``std_err``: the two branches are compared on the
+        same footing, independent of any per-observable normalization convention in the
+        returned standard error. Small rotation angles are used so that the theta=0
+        control is strongly correlated with the estimator and the reduction is large and
+        non-flaky.
+        """
+        n_qubits = 3
+        gates = {0: [[0], [1], [2]], 1: [[0, 1], [1, 2]]}
+        obs_batch = [[3, 3, 0]]  # ZZ: control is constant for |0>, but not for a custom state
+        params = jnp.array([0.05, 0.03])  # small angles -> high correlation -> large reduction
+
+        rng = np.random.default_rng(2)
+        elems = np.array([[0, 0, 0], [1, 0, 1], [0, 1, 1], [1, 1, 0]])
+        amps = rng.normal(size=4) + 1j * rng.normal(size=4)
+        amps = amps / np.linalg.norm(amps)
+        elems_j = jnp.array(elems.astype(float))
+        amps_j = jnp.array(amps)
+
+        def empirical_std_of_mean(control_variate):
+            means = []
+            for seed in range(40):
+                config = CircuitConfig(
+                    gates=gates,
+                    observables=obs_batch,
+                    n_samples=4000,
+                    key=jax.random.PRNGKey(seed),
+                    n_qubits=n_qubits,
+                    init_state_elems=elems_j,
+                    init_state_amps=amps_j,
+                    control_variate=control_variate,
+                )
+                mean, _ = build_expval_func(config)(params)
+                means.append(float(np.array(mean)[0]))
+            return np.std(means, ddof=1)
+
+        plain_std = empirical_std_of_mean(False)
+        cv_std = empirical_std_of_mean(True)
+
+        assert cv_std < plain_std
