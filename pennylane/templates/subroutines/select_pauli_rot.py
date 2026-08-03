@@ -121,7 +121,11 @@ class SelectPauliRot(Operator2):
         super().__init__(angles, control_wires=control_wires, target_wire=target_wire, rot_axis=rot_axis)
 
 
-def _select_pauli_rot_resource(num_wires, rot_axis):
+# pylint: disable=unused-arguments
+def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
+
+    num_wires = len(control_wires) + 1
+    
     prod_res = {
         abstractify(RZ): 2 ** (num_wires - 1),
         abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
