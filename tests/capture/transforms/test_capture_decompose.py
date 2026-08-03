@@ -508,10 +508,10 @@ class TestControlledDecompositions:
     def test_ctrl_simple(self):
         """Test that ctrl higher order primitives are correctly interpreted."""
 
-        @DecomposeInterpreter(gate_set=[qp.CRX, qp.CRY, qp.CRZ, qp.RZ])
         def inner_f(x):
             qp.Rot(x, 1.0, 2.0, 0)
 
+        @DecomposeInterpreter(gate_set=[qp.RZ, qp.CNOT, qp.RY])
         def f(x):
             qp.ctrl(inner_f, control=[1])(x)
 
@@ -519,11 +519,21 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert collector.state["ops"] == [
-            qp.CRZ(1.5, [1, 0]),
-            qp.CRY(1.0, [1, 0]),
-            qp.CRZ(2.0, [1, 0]),
+
+        phi, theta, omega = 1.5, 1.0, 2.0
+        wires = [1, 0]
+        # CRot's decomposition
+        expected = [
+            qp.RZ((phi - omega) / 2, wires=wires[1]),
+            qp.CNOT(wires=wires),
+            qp.RZ(-(phi + omega) / 2, wires=wires[1]),
+            qp.RY(-theta / 2, wires=wires[1]),
+            qp.CNOT(wires=wires),
+            qp.RY(theta / 2, wires=wires[1]),
+            qp.RZ(omega, wires=wires[1]),
         ]
+        for actual, exp in zip(collector.state["ops"], expected):
+            assert qp.equal(actual, exp, check_interface=False)
 
     def test_ctrl_no_decomposition(self):
         """Test that ctrl_transform that does not need to be decomposed gets changed into
