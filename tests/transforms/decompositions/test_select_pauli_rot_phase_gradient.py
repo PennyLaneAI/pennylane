@@ -14,6 +14,8 @@
 
 """Tests for the decomposition rule qp.transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp"""
 
+import warnings
+
 import numpy as np
 
 # pylint: disable=no-value-for-parameter
@@ -155,19 +157,28 @@ def test_integration_multi_wire(rot_axis, seed):
         angle_wires, phase_grad_wires, work_wires
     )
 
+    gs = {
+        "QROM",
+        "SemiAdder",
+        "CNOT",
+        "PauliX",
+        "GlobalPhase",
+        "StatePrep",
+        "Adjoint(StatePrep)",
+    }
+
+    # Depending on the rot_axis, additional operators
+    # are expected in the decomposition
+    if rot_axis == "Y":
+        gs |= {
+            "S",
+            "Adjoint(S)",
+        }
+    if rot_axis in ("X", "Y"):
+        gs |= {"Hadamard"}
+
     @qp.decompose(
-        gate_set={
-            "QROM",
-            "SemiAdder",
-            "CNOT",
-            "PauliX",
-            "GlobalPhase",
-            "StatePrep",
-            "Adjoint(StatePrep)",
-            "Hadamard",  # needed if rot_axis = X , Y
-            "S",  # needed if rot_axis = Y
-            "Adjoint(S)",  # needed if rot_axis = Y
-        },
+        gate_set=gs,
         fixed_decomps={qp.SelectPauliRot: custom_decomp},
     )
     @qp.qnode(qp.device("default.qubit", wires=all_wires))
@@ -188,7 +199,13 @@ def test_integration_multi_wire(rot_axis, seed):
     in_state /= np.linalg.norm(in_state)
 
     # returned output state
-    out_state = circuit(in_state)
+
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        out_state = circuit(in_state)
+
+    # Assert no warnings are raised from the decomposition
+    assert len(record) == 0
 
     # expected: SelectPauliRot is applied on the system wires
     out_state_expected = (
