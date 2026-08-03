@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator.base import Operator
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
@@ -965,11 +966,15 @@ class TestAdjointConstructorOutsideofQueuing:
     def test_single_op(self):
         """Test providing a single op outside of a queuing context."""
 
+        class DummyOp(Operator):
+            pass
+
         x = 1.234
-        out = adjoint(qp.RZ(x, wires=0))
+        out = adjoint(DummyOp(x, wires=0))
 
         assert isinstance(out, Adjoint)
-        assert out.base.__class__ is qp.RZ
+        assert out.base.__class__ is DummyOp
+        assert out.data == (1.234,)
         assert out.wires == qp.wires.Wires(0)
 
     def test_single_op_eager(self):
