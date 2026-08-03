@@ -202,12 +202,11 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                 args = (*op.parameters, *op.wires)
                 decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
             else:
-                args = tuple(op.dynamic_args.values()) + tuple(op.wire_args.values())
+                args = tuple(op.dynamic_args.values()) + tuple(op.wire_args.values()) + tuple(op.hybrid_args.values())
                 decomp_fn = partial(
                     compute_qfunc_decomposition,
                     **op.static_args,
                     **op.compilable_args,
-                    **op.hybrid_args,
                 )
 
             jaxpr_decomp = make_plxpr(decomp_fn)(*args)
