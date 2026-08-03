@@ -24,7 +24,7 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.core import Operator1, Operator2, queuing
+from pennylane.core import Operator1, queuing
 from pennylane.core.operator import Operator
 from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
