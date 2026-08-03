@@ -1010,9 +1010,9 @@ def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
         return NotImplemented
     is_abstract = isinstance(control, AbstractWires) or isinstance(base.wires, AbstractWires)
     if len(control) == 1:
-        return abstractify(qp.CZ) if is_abstract else qp.CZ(control + base.wires)
+        return qp.CZ(Wire[2]) if is_abstract else qp.CZ(control + base.wires)
     if len(control) == 2:
-        return abstractify(qp.CCZ) if is_abstract else qp.CCZ(control + base.wires)
+        return qp.CCZ(Wire[3]) if is_abstract else qp.CCZ(control + base.wires)
     return NotImplemented
 
 
