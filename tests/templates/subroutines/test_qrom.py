@@ -39,19 +39,6 @@ from pennylane.templates.subroutines.qrom import (
 from pennylane.templates.subroutines.select import _select_decomp_unary
 from pennylane.typing import AbstractArray, Int, Wire
 
-clifford_t_measure = {
-    qp.H,
-    qp.T,
-    qp.S,
-    qp.X,
-    qp.Y,
-    qp.Z,
-    qp.CNOT,
-    qp.CZ,
-    qp.Hadamard,
-    PauliMeasure,
-}
-
 has_jax = True
 try:
     from jax import numpy as jnp
@@ -753,7 +740,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -795,7 +782,7 @@ class TestMeasurementQROM:
         x_state /= np.linalg.norm(x_state)
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
@@ -852,7 +839,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -896,7 +883,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):

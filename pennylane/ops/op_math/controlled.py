@@ -1208,10 +1208,6 @@ def base_to_custom_ctrl_op():
     """
 
     ops_with_custom_ctrl_ops = {
-        (qp.PauliZ, 1): qp.CZ,
-        (qp.PauliZ, 2): qp.CCZ,
-        (qp.PauliY, 1): qp.CY,
-        (qp.CZ, 1): qp.CCZ,
         (qp.SWAP, 1): qp.CSWAP,
         (qp.Hadamard, 1): qp.CH,
         (qp.RX, 1): qp.CRX,

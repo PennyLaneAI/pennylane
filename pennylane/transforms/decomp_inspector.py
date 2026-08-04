@@ -41,7 +41,6 @@ class _DecompInGraphInfo(_DecompInfo):
         num_work_wires: int | None,
         solution: DecompGraphSolution,
     ) -> None:
-
         decomp_node = solution._graph[decomp_node_idx]
         assert isinstance(decomp_node, _DecompositionNode)
 
@@ -244,7 +243,6 @@ class DecompGraphInspector:
         return _DecompInGraphInfoCollection(rule_infos, show_not_applicable, chosen_idx)
 
     def _find_op_node(self, op: Operator, num_work_wires: int | None = 0) -> _OperatorNode | str:
-
         if isinstance(op, type) and issubclass(op, Operator):
             raise TypeError(
                 "The inspect_decomps function takes a concrete operator instance as its "
@@ -377,11 +375,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2}
     Full Expansion Gates: {CNOT: 76, GlobalPhase: 80, MidMeasure: 4, RX: 24, RY: 16, RZ: 84}
     Weighted Cost: 204.0
-
-    For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
-    whereas the "Full Expansion" refers to the circuit produced by decomposing the operator all the way
-    down to the target gate set. The weighted cost of the decomposition, computed based on the full expansion, is also displayed.
-
     In addition to the operators at the top level of the circuit, we can also inspect the graph
     for how intermediate operators are decomposed. For example, let's look at the single-controlled
     ``MultiRZ`` produced in the decomposition of the controlled ``MultiRZ`` (notice how ``num_work_wires``
