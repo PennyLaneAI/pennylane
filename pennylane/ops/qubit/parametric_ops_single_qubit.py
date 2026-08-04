@@ -813,13 +813,21 @@ class PhaseShift(Operator2):
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[1]}
 
-    grad_method = "A"
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        """The basis of an operation."""
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
-
-    def __init__(self, phi: TensorLike, wires: WiresLike):
-        super().__init__(phi, wires=wires)
 
     def label(
         self,
