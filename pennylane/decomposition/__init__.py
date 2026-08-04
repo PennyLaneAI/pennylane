@@ -120,12 +120,12 @@ guarantee a decomposition to the desired target gate set:
     [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 
 >>> pprint(new_tape.operations)
-[RZ(np.float64(1.5707963267948966), wires=[1]),
+[RZ(1.5707963267948966, wires=[1]),
      RY(0.25, wires=[1]),
      CNOT(wires=[0, 1]),
      RY(-0.25, wires=[1]),
      CNOT(wires=[0, 1]),
-     RZ(np.float64(-1.5707963267948966), wires=[1])]
+     RZ(-1.5707963267948966, wires=[1])]
 
 With the new system enabled, the transform produces the expected outcome.
 

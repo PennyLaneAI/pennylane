@@ -108,7 +108,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         angle_wires, phase_grad_wires, work_wires
     )
 
-    def _resource_fn():
+    def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         precision = len(angle_wires)
         # decomposition costs, using information about angle_wires etc from the outer scope
         target_op = qp.resource_rep(
@@ -130,9 +130,9 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         return {change_basis_rep: 1}
 
     @qp.register_resources(_resource_fn)
-    def _decomp_fn(angle, wires, **_):
+    def _decomp_fn(phi, wires):  # pylint: disable=unused-argument
         precision = len(angle_wires)
-        binary_int = qp.math.binary_decimals(angle, precision, unit=4 * np.pi)
+        binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
 
         def compute_fn():
             qp.ctrl(qp.BasisState(binary_int, angle_wires), control=wires[0])
