@@ -117,10 +117,10 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            Estimated First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 91, RX: 19, RY: 24, RZ: 132}
-            Weighted Cost: 335.0
+            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            Full Expansion Gates: {CNOT: 160, GlobalPhase: 94, RX: 22, RY: 24, RZ: 132}
+            Weighted Cost: 338.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -143,18 +143,18 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
-            | Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 1 | 1 |
+            | Controlled(RZ, control_wires=AbstractWires(3)) | 1 | 1 |
             | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 | 2 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 160 |
-            | GlobalPhase | 91 |
-            | RX | 19 |
+            | GlobalPhase | 94 |
+            | RX | 22 |
             | RY | 24 |
             | RZ | 132 |
-            | **Weighted Cost** | 335.0 |
+            | **Weighted Cost** | 338.0 |
             </details>
             """).strip()
 
@@ -191,10 +191,10 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            Estimated First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 76, GlobalPhase: 75, MidMeasure: 4, RX: 19, RY: 16, RZ: 84}
-            Weighted Cost: 199.0
+            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            Full Expansion Gates: {CNOT: 76, GlobalPhase: 78, MidMeasure: 4, RX: 22, RY: 16, RZ: 84}
+            Weighted Cost: 202.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -246,19 +246,19 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
-            | Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 1 | 1 |
+            | Controlled(RZ, control_wires=AbstractWires(3)) | 1 | 1 |
             | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 | 2 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 76 |
-            | GlobalPhase | 75 |
+            | GlobalPhase | 78 |
             | MidMeasure | 4 |
-            | RX | 19 |
+            | RX | 22 |
             | RY | 16 |
             | RZ | 84 |
-            | **Weighted Cost** | 199.0 |
+            | **Weighted Cost** | 202.0 |
             </details>
             """).strip()
 
