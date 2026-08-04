@@ -56,7 +56,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         # Handle set-up upon object creation only.
         from mpi4py import MPI
 
-        self._size = max_workers
+        self._size = max_workers if max_workers else MPI.COMM_WORLD.Get_size() - 1
         self._comm = MPI.COMM_WORLD
 
         self._cfg = ExecBackendConfig(
@@ -83,10 +83,6 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
             *args,
             **kwargs,
         )
-
-    @property
-    def size(self):
-        return self._size
 
     def submit(self, fn: Callable, *args, **kwargs):
         with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
@@ -193,10 +189,6 @@ class MPICommExec(ExtExec):  # pragma: no cover
         with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
             output_f = executor.starmap(fn, args, chunksize=chunksize, **kwargs)
         return list(output_f)
-
-    @property
-    def size(self):
-        return self._size
 
     def shutdown(self):
         "Shutdown the executor backend, if valid."
