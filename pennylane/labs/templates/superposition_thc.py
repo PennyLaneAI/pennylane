@@ -16,7 +16,7 @@ hypercontraction (THC) qubitization."""
 
 import numpy as np
 
-from pennylane import adjoint, math
+from pennylane import adjoint, ctrl, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
@@ -353,6 +353,16 @@ def _controlled_rep(base_class, num_control_wires, num_work_wires):
     )
 
 
+def _controlled_z(num_control_wires, num_work_wires):
+    """Resources for a borrowed-work multi-controlled ``Z``."""
+    wires = list(range(num_control_wires + 1 + num_work_wires))
+    return ctrl(
+        Z(wires[0]),
+        control=wires[1 : num_control_wires + 1],
+        work_wires=wires[num_control_wires + 1 :],
+    )
+
+
 def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
 
@@ -382,8 +392,8 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
         resource_rep(RY): 3,
         _controlled_rep(X, 2, ctrl_work): 4,
         _controlled_rep(X, 3, ctrl_work): 1,
-        _controlled_rep(Z, 3, ctrl_work): 1,
-        _controlled_rep(Z, 2 * n, ctrl_work): 1,
+        _controlled_z(3, ctrl_work): 1,
+        _controlled_z(2 * n, ctrl_work): 1,
         # _left_inequalities applied twice in the forward direction
         lcc_le: 2,
         lcc_gt: 2,
@@ -436,7 +446,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
-    Controlled(Z(work_wires[5]), control_wires=work_wires[0:3], work_wires=extra_work)
+    ctrl(Z(work_wires[5]), control=work_wires[0:3], work_wires=extra_work)
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
 
     # 4. Uncompute the flags and the amplitude-marking rotation.
@@ -451,7 +461,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     for wire in mu_wires + nu_wires + work_wires[:1]:
         X(wires=wire)
     GlobalPhase(np.pi)
-    Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
+    ctrl(Z(work_wires[0]), control=mu_wires + nu_wires, work_wires=extra_work)
     for wire in mu_wires + nu_wires + work_wires[:1]:
         X(wires=wire)
 
