@@ -124,7 +124,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         return obj
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments, too-many-branches
         self,
         base: Operator,
         control_wires: WiresLike,
@@ -160,7 +160,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if len(control_values) != len(control_wires):
             raise ValueError("control_values should be the same length as control_wires")
 
-        control_values = [bool(v) for v in control_values]
+        # Python bool conversion is invalid for abstract tracer values.
+        if any(math.is_abstract(v) for v in control_values):
+            control_values = math.stack(control_values)
+        else:
+            control_values = [bool(v) for v in control_values]
 
         self._base = base
         self._control_wires = control_wires
@@ -568,14 +572,16 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values.
+        control_values_list = list(self.control_values)
+        control_wires_list = list(self.control_wires)
         if n_ctrls == 0:
-            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
+            invars = eqns[0].invars + control_wires_list + control_values_list
         else:
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
             # need to insert the new control wires before the old ones, and do the same
             # for control values too.
-            control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
-            control_values = self.control_values + eqns[0].invars[-n_ctrls:]
+            control_wires = control_wires_list + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
+            control_values = control_values_list + eqns[0].invars[-n_ctrls:]
             invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
 
         params["n_ctrls"] += len(self.control_wires)
