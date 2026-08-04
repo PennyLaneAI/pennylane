@@ -42,7 +42,7 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -672,19 +672,26 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     return _impl
 
 
+# pylint: disable=unused-argument
 def _flip_control_adjoint_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    num_zero_control_values = 0
-    if control_values is not None and len(control_values):
-        num_zero_control_values = int(math.sum(math.logical_not(control_values)))
-
-    inner = _ctrl_abstract(
-        base.base,
-        control_wires,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-        num_zero_control_values=num_zero_control_values,
-    )
-    return {_adjoint_abstract(inner): 1}
+    # Everything in this file is an ``Operator2``, so we lean on the native ``qp.ctrl`` /
+    # ``qp.adjoint`` dispatchers directly instead of the ``_ctrl_abstract`` / ``_adjoint_abstract``
+    # bridges (which also exist to handle the legacy ``CompressedResourceOp`` path). ``qp.ctrl``
+    # resolves any custom controlled op (e.g. ``ctrl(U1)`` -> ``ControlledPhaseShift``), which is
+    # what makes this decomposition solvable against gate sets like ``{ControlledPhaseShift}``.
+    # ``control_values`` is an abstract array here, so it cannot be inspected for zero controls;
+    # this matches the previous behaviour where ``num_zero_control_values`` always evaluated to 0
+    # in this abstract resource-estimation flow, i.e. the all-true controlled op is used.
+    return {
+        qp.adjoint(
+            qp.ctrl(
+                base.base,
+                control=control_wires,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            )
+        ): 1
+    }
 
 
 # pylint: disable=too-many-arguments
