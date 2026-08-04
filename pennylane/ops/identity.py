@@ -280,14 +280,15 @@ class GlobalPhase(Operator2):
 
     """
 
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[-1]}
+    wire_sizes = (None,)
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[1]}
 
     def __init__(self, phi, wires: WiresLike = ()):
         super().__init__(phi, wires=wires)
