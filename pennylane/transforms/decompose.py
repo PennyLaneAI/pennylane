@@ -564,12 +564,12 @@ def decompose(
 
         >>> from pprint import pprint
         >>> pprint(new_tape.operations)
-        [RZ(np.float64(1.57...), wires=[1]),
+        [RZ(1.57079..., wires=[1]),
          RY(0.25, wires=[1]),
          CNOT(wires=[0, 1]),
          RY(-0.25, wires=[1]),
          CNOT(wires=[0, 1]),
-         RZ(np.float64(-1.57...), wires=[1])]
+         RZ(-1.57079..., wires=[1])]
 
         With the new system enabled, the transform produces the expected outcome.
 

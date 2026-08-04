@@ -32,15 +32,17 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.core.operator import Operator2
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [
     pytest.mark.jax,
     pytest.mark.capture,
     pytest.mark.usefixtures("disable_graph_decomposition"),
 ]
+
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 
 class TestDecomposeInterpreter:
@@ -90,9 +92,9 @@ class TestDecomposeInterpreter:
             return x
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
-        assert jaxpr.eqns[0].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RZ)
         assert jaxpr.eqns[1].primitive == qp.RY._primitive
-        assert jaxpr.eqns[2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[2], qp.RZ)
 
     def test_returned_op_not_decomposed(self):
         """Test that operators that are returned by the input function are not decomposed."""
@@ -119,9 +121,9 @@ class TestDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert jaxpr.eqns[0].primitive.name == "neg"
-        assert jaxpr.eqns[1].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.RZ)
         assert jaxpr.eqns[2].primitive == qp.RY._primitive
-        assert jaxpr.eqns[3].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[3], qp.RZ)
         assert jaxpr.eqns[4].primitive == qp.PhaseShift._primitive
         assert jaxpr.eqns[5].primitive == qp.PhaseShift._primitive
 
@@ -280,15 +282,17 @@ class TestDecomposeInterpreter:
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
-            op_prims = [
-                eqn.primitive
+            op_eqns = [
+                eqn
                 for eqn in transformed_jaxpr.eqns
                 if eqn.outvars[0].aval == qp.capture.AbstractOperator()
             ]
-            expected_prims = [op._primitive for op in qp.ctrl(qp.RX(*args, 0), 1).decomposition()]
-            assert all(
-                prim == exp_prim for prim, exp_prim in zip(op_prims, expected_prims, strict=True)
-            )
+            expected_ops = [type(op) for op in qp.ctrl(qp.RX(*args, 0), 1).decomposition()]
+            for eqn, expected_op_type in zip(op_eqns, expected_ops, strict=True):
+                if issubclass(expected_op_type, Operator2):
+                    assert_eqn_matches_op(eqn, expected_op_type)
+                else:
+                    assert eqn.primitive == expected_op_type._primitive
         else:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
@@ -336,9 +340,9 @@ class TestDecomposeInterpreter:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[0].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RZ)
         assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
-        assert inner_jaxpr.eqns[2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[2], qp.RZ)
 
     def test_cond_higher_order_primitive(self):
         """Test that the cond primitive is correctly interpreted"""
@@ -424,9 +428,9 @@ class TestDecomposeInterpreter:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[0].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RZ)
         assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
-        assert inner_jaxpr.eqns[2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[2], qp.RZ)
 
     def test_while_loop_higher_order_primitive(self):
         """Test that the while_loop primitive is correctly interpreted"""
@@ -447,9 +451,9 @@ class TestDecomposeInterpreter:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 4
-        assert inner_jaxpr.eqns[0].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RZ)
         assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
-        assert inner_jaxpr.eqns[2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[2], qp.RZ)
 
     def test_qnode_higher_order_primitive(self):
         """Test that the qnode primitive is correctly interpreted"""
@@ -466,9 +470,9 @@ class TestDecomposeInterpreter:
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[0], qp.RZ)
         assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RZ)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[3], qp.PauliZ)
         assert qfunc_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
 
@@ -492,9 +496,9 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[0].primitive == jacobian_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[0], qp.RZ)
         assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RZ)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[3], qp.PauliZ)
         assert qfunc_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
 
@@ -505,10 +509,10 @@ class TestControlledDecompositions:
     def test_ctrl_simple(self):
         """Test that ctrl higher order primitives are correctly interpreted."""
 
-        @DecomposeInterpreter(gate_set=[qp.CRX, qp.CRY, qp.CRZ])
         def inner_f(x):
             qp.Rot(x, 1.0, 2.0, 0)
 
+        @DecomposeInterpreter(gate_set=[qp.RZ, qp.CNOT, qp.RY])
         def f(x):
             qp.ctrl(inner_f, control=[1])(x)
 
@@ -516,11 +520,21 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert collector.state["ops"] == [
-            qp.CRZ(1.5, [1, 0]),
-            qp.CRY(1.0, [1, 0]),
-            qp.CRZ(2.0, [1, 0]),
+
+        phi, theta, omega = 1.5, 1.0, 2.0
+        wires = [1, 0]
+        # CRot's decomposition
+        expected = [
+            qp.RZ((phi - omega) / 2, wires=wires[1]),
+            qp.CNOT(wires=wires),
+            qp.RZ(-(phi + omega) / 2, wires=wires[1]),
+            qp.RY(-theta / 2, wires=wires[1]),
+            qp.CNOT(wires=wires),
+            qp.RY(theta / 2, wires=wires[1]),
+            qp.RZ(omega, wires=wires[1]),
         ]
+        for actual, exp in zip(collector.state["ops"], expected):
+            assert qp.equal(actual, exp, check_interface=False)
 
     def test_ctrl_no_decomposition(self):
         """Test that ctrl_transform that does not need to be decomposed gets changed into
@@ -630,8 +644,8 @@ def test_decompose_plxpr_to_plxpr():
     )
     assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
-    assert transformed_jaxpr.eqns[0].primitive == qp.RZ._primitive
+    assert_eqn_matches_op(transformed_jaxpr.eqns[0], qp.RZ)
     assert transformed_jaxpr.eqns[1].primitive == qp.RY._primitive
-    assert transformed_jaxpr.eqns[2].primitive == qp.RZ._primitive
+    assert_eqn_matches_op(transformed_jaxpr.eqns[2], qp.RZ)
     assert_eqn_matches_op(transformed_jaxpr.eqns[3], qp.PauliZ)
     assert transformed_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
