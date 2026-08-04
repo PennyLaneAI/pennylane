@@ -1,6 +1,16 @@
 # Copyright 2026 Xanadu Quantum Technologies Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License").
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Contains the templates for Alias Sampling."""
 
 from itertools import islice
@@ -32,7 +42,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
 
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
-    logL = (L - 1).bit_length()
+    logL = qp.math.ceil_log2(L)
 
     expected = k + logL
     if len(target_wires) != expected:
@@ -48,7 +58,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     if L == 1:
         return
 
-    flr = (L).bit_length() - 1  # floor(log2(L))
+    flr = L.bit_length() - 1  # floor(log2 L)
     theta = np.arccos(1.0 - (2**flr) / L)
     w_used = work_wires[1 : 1 + max(logL - 1, 1)]
 
@@ -66,7 +76,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     for w in data_L:
         qp.Hadamard(w)
 
-    qp.GlobalPhase(np.pi/2)
+    qp.GlobalPhase(np.pi / 2)
 
 
 def _build_alias_tables(probs, mu):
@@ -143,19 +153,28 @@ def alias_sampling_wires(n_states, mu):
         * ``temp_wires`` (``3*mu + ceil(log2 L)``): sigma + alt + keep + flag +
           comparator scratch (``mu - 1`` wires that the comparator leaves dirty);
           left entangled with ``|l>`` and uncomputed by :math:`prepare^{\dagger}`.
-        * ``work_wires`` (``max(ceil(log2 L), mu, 2) + 5``): genuinely clean
+        * ``work_wires`` (``1+max(log(L) - 1, 1)``): minimum clean
           scratch (UNIFORM_L flag + work, reused by QROM), returned to
-          :math:`|0\rangle` and safe to reuse.
+          :math:`|0\rangle`.
+
+    .. note::
+
+        The reported ``work_wires`` is the minimum required by :func:`alias_sampling`.
+        More work_wires can be added to be forwarded to the internal
+        ``qml.QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
+        the T-gate count at the cost of the additional qubits. At exactly the
+        minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
+        ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
     """
-    logL = max((n_states - 1).bit_length(), 1)
+    logL = max(qp.math.ceil_log2(n_states), 1)
     n_target = logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     n_temp = mu + logL + mu + 1 + max(mu - 1, 0)
-    n_work = 1 + (max(logL, mu, 2) + 4)  # uniform_flag + uniform_work
+    n_work = 1 + max(logL - 1, 1)
     return {"target_wires": n_target, "temp_wires": n_temp, "work_wires": n_work}
 
 
-def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=None):
+def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
     r"""Prepare a state with real and positive amplitudes via coherent alias sampling (Figure 11 of
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
@@ -183,49 +202,25 @@ def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=Non
 
     Args:
         probs (Sequence[float]): non-negative weights :math:`w_\ell` (length ``L``).
-        mu (int): number of bits for ``keep`` and ``sigma``.
+        mu (int): number of bits for ``keep`` and ``sigma``, representing the precision of the alias-sampling coefficients.
         target_wires (Sequence[int]): the output index register ``|l>``, size ``ceil(log2 L)``.
-            Optional; if ``None``, contiguous integer wires ``0 .. ceil(log2 L) - 1``
-            are used.
         temp_wires (Sequence[int]): the garbage register (sigma + alt + keep + flag +
             comparator scratch), left entangled; size ``3*mu + ceil(log2 L)``.
-            Optional; if ``None``, contiguous integer wires directly after ``wires``
-            are used.
         work_wires (Sequence[int]): clean scratch, returned to :math:`|0\rangle`.
-            Optional; if ``None``, contiguous integer wires directly after
-            ``temp_wires`` are used.
 
-    .. note::
-
-        The optional wires default to statically assigned contiguous integers
-        (not :func:`~pennylane.allocate` dynamic wires), because dynamically
-        allocated/deallocated wires cannot be inverted by ``qml.adjoint`` on the
-        state-vector devices — and ``qml.adjoint(alias_sampling)`` is exactly how
-        ``prepare``-dagger is applied in a prepare/select/prepare pattern.
     """
     probs = np.asarray(probs, dtype=float)
     L = len(probs)
-    logL = max((L - 1).bit_length(), 1)
+    logL = max(qp.math.ceil_log2(L), 1)
 
     if mu < 1:
         raise ValueError(f"mu must be a positive integer, got {mu}.")
 
     req = alias_sampling_wires(L, mu)
 
-    # Auto-assign contiguous integer wires for any register left as None. These
-    # are static
-    if target_wires is None:
-        target_wires = list(range(req["wires"]))
-    if temp_wires is None:
-        start = max(target_wires) + 1
-        temp_wires = list(range(start, start + req["temp_wires"]))
-    if work_wires is None:
-        start = max(list(target_wires) + list(temp_wires)) + 1
-        work_wires = list(range(start, start + req["work_wires"]))
-
     if len(target_wires) != req["target_wires"]:
         raise ValueError(
-            f"wires must have {req['target_wires']} entries for L={L}; got {len(target_wires)}."
+            f"target_wires must have {req['target_wires']} entries for L={L}; got {len(target_wires)}."
         )
     if len(temp_wires) != req["temp_wires"]:
         raise ValueError(
@@ -243,10 +238,10 @@ def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=Non
     tw_iter = iter(temp_wires)
 
     sigma_wires = list(islice(tw_iter, mu))
-    alt_wires   = list(islice(tw_iter, logL))
-    keep_wires  = list(islice(tw_iter, mu))
-    flag        = next(tw_iter)
-    cmp_work    = list(islice(tw_iter, max(mu - 1, 0)))
+    alt_wires = list(islice(tw_iter, logL))
+    keep_wires = list(islice(tw_iter, mu))
+    flag = next(tw_iter)
+    cmp_work = list(islice(tw_iter, max(mu - 1, 0)))
 
     alt, keep = _build_alias_tables(probs, mu)
 
