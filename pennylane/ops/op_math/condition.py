@@ -358,9 +358,7 @@ class CondCallable:
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-        if (qp.compiler.active() or qp.capture.enabled()) and any(
-            math.is_abstract(p) for p in self.preds
-        ):
+        if qp.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
