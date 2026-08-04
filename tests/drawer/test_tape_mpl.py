@@ -27,7 +27,7 @@ import pytest
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.drawer import tape_mpl
-from pennylane.ops.op_math import Controlled
+from pennylane.ops.op_math import ControlledOp2
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -576,9 +576,11 @@ class TestControlledGates:
         """Test control_values get displayed correctly for nested controlled operations
         when they are provided as a list of bools."""
 
+        # ControlledOp2 is constructed directly because qp.ctrl flattens nested
+        # controlled operations of an Operator2 base eagerly.
         with qp.queuing.AnnotatedQueue() as q_tape:
-            Controlled(
-                qp.ctrl(qp.PauliY(wires=4), control=[2, 3], control_values=[1, 0]),
+            ControlledOp2(
+                ControlledOp2(qp.PauliY(wires=4), control_wires=[2, 3], control_values=[1, 0]),
                 control_wires=[0, 1],
                 control_values=[1, 0],
             )

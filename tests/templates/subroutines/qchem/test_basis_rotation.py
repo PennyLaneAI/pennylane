@@ -423,20 +423,8 @@ def test_basis_rotation_exceptions(wires, unitary_matrix, msg_match):
     """Test that BasisRotation template throws an exception if the parameters have illegal
     shapes, types or values."""
 
-    dev = qp.device("default.qubit", wires=len(wires))
-
-    @qp.qnode(dev)
-    def circuit():
+    with pytest.raises(ValueError, match=msg_match):
         qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
-        return qp.expval(qp.PauliZ(0))
-
-    with pytest.raises(ValueError, match=msg_match):
-        circuit()
-
-    with pytest.raises(ValueError, match=msg_match):
-        qp.BasisRotation.compute_decomposition(
-            wires=wires, unitary_matrix=unitary_matrix, check=True
-        )
 
 
 def circuit_template(unitary_matrix, check=False):

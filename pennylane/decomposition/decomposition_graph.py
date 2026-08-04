@@ -236,7 +236,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
      CNOT(wires=[0, 1]),
      RZ(-1.5707963267948966, wires=[1])]
     >>> solution.resource_estimate(op)
-    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
+    <num_gates=10, gate_counts={CNOT: 2, RX: 2, RZ: 6}, weighted_cost=10.0>
 
     """
 
@@ -710,7 +710,7 @@ class DecompGraphSolution:
      CNOT(wires=[0, 1]),
      RZ(-1.5707963267948966, wires=[1])]
     >>> solution.resource_estimate(op)
-    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
+    <num_gates=10, gate_counts={CNOT: 2, RX: 2, RZ: 6}, weighted_cost=10.0>
 
     """
 
@@ -815,7 +815,7 @@ class DecompGraphSolution:
          CNOT(wires=[0, 1]),
          RZ(-1.5707963267948966, wires=[1])]
         >>> solution.resource_estimate(op)
-        <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
+        <num_gates=10, gate_counts={CNOT: 2, RX: 2, RZ: 6}, weighted_cost=10.0>
 
         """
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)

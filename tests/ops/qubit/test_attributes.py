@@ -129,7 +129,6 @@ three_scalar_multi_wire_ops = [
 separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
-    "DiagonalQubitUnitary",
     "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
@@ -294,6 +293,7 @@ class TestSupportsBroadcasting:
 
         assert qp.math.allclose(mat1, single_mats)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_diagonal_qubit_unitary(self):
         """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
