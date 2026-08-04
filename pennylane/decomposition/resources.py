@@ -492,11 +492,8 @@ def custom_ctrl_op_to_base():
     """The set of custom controlled operations."""
 
     return {
-        qp.CZ: qp.Z,
-        qp.CCZ: qp.Z,
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
-        qp.CRZ: qp.RZ,
         qp.CRot: qp.Rot,
         qp.ControlledPhaseShift: qp.PhaseShift,
     }

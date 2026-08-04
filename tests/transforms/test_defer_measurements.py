@@ -285,7 +285,7 @@ class TestQNode:
         deferred_tape = deferred_tapes[0]
         assert isinstance(deferred_tape.operations[5], Controlled)
         qp.assert_equal(deferred_tape.operations[5].base, qp.PauliZ(2))
-        assert deferred_tape.operations[5].hyperparameters["control_wires"] == qp.wires.Wires(0)
+        assert deferred_tape.operations[5].control_wires == qp.wires.Wires(0)
 
         qp.assert_equal(deferred_tape.operations[6], qp.CNOT([1, 2]))
 

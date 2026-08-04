@@ -203,7 +203,7 @@ def assert_equal(
     >>> qp.assert_equal(op1, op2)
     Traceback (most recent call last):
         ...
-    AssertionError: op1 and op2 have different data. Got (array(0.12),) and (array(1.23),)
+    AssertionError: op1 and op2 have different values. Got (array(0.12),) and (array(1.23),)
 
     >>> h1 = qp.Hamiltonian([1, 2], [qp.PauliX(0), qp.PauliY(1)])
     >>> h2 = qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(1)])
@@ -349,12 +349,12 @@ def _equal_operators(
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if len(op1.data) != len(op2.data):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+        return f"op1 and op2 have different values.\nGot {op1.data} and {op2.data}"
     if not all(
         math.allclose(d1, d2, rtol=rtol, atol=atol)
         for d1, d2 in zip(op1.data, op2.data, strict=True)
     ):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+        return f"op1 and op2 have different values.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data, strict=True):
@@ -362,7 +362,7 @@ def _equal_operators(
             params2_train = math.requires_grad(params2)
             if params1_train != params2_train:
                 return (
-                    "Parameters have different trainability.\n "
+                    "Parameters differ in trainability.\n "
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 

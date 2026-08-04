@@ -240,7 +240,6 @@ class TestDecompositionRule:
             qp.RZ(theta, wires=wires[1])
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
             assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
             assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
@@ -283,7 +282,6 @@ class TestDecompositionRule:
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
         class MissingFixedSigOp(Operator2):
-
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
@@ -323,7 +321,6 @@ class TestDecompositionRule:
         """Tests that abstract operators can be used as keys."""
 
         class FixedSigOp(Operator2):
-
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
@@ -592,7 +589,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
@@ -619,7 +615,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Controlled(DynOp)", _controlled_rule)
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
@@ -697,7 +692,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
 
