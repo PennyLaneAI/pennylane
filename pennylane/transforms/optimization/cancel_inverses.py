@@ -202,7 +202,7 @@ def cancel_inverses(
           - :class:`qp.SWAP <pennylane.SWAP>`
           - :class:`qp.Toffoli <pennylane.Toffoli>`
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qp.device("lightning.qubit", wires=1)
 
@@ -215,7 +215,7 @@ def cancel_inverses(
                 qp.Hadamard(wires=0)
                 return qp.expval(qp.PauliZ(0))
 
-        >>> print(qp.specs(circuit, level=1)())  # doctest: +SKIP
+        >>> print(qp.specs(circuit, level=1)())
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
