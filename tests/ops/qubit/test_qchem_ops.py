@@ -351,9 +351,7 @@ class TestSingleExcitationDecompositions:
         for actual, exp in zip(q.queue, expected, strict=True):
             qp.assert_equal(actual, exp)
 
-    @pytest.mark.jax
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_decomp_capture(self):
         """Test the operations captured by the Hadamard/CNOT/RY decomposition rule."""
 
@@ -412,9 +410,7 @@ class TestSingleExcitationDecompositions:
         for actual, exp in zip(q.queue, expected, strict=True):
             qp.assert_equal(actual, exp)
 
-    @pytest.mark.jax
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_ppr_capture(self):
         """Test the operations captured by the Pauli-rotation decomposition rule."""
 
@@ -465,9 +461,7 @@ class TestSingleExcitationDecompositions:
         for actual, exp in zip(q.queue, expected, strict=True):
             qp.assert_equal(actual, exp)
 
-    @pytest.mark.jax
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_adjoint_capture(self):
         """Test the operations captured by the Adjoint(SingleExcitation) rule."""
 
@@ -478,6 +472,7 @@ class TestSingleExcitationDecompositions:
         wires = qp.wires.Wires((0, 1))
         rule = qp.list_decomps("Adjoint(SingleExcitation)")[0]
 
+        # can't just pass in an operator at the moment due to ArgInfo as a wire
         def circuit(phi, w0, w1):
             with qp.capture.pause():  # the base itself should not be captured
                 base = qp.SingleExcitation(phi, wires=qp.wires.Wires((w0, w1)))
@@ -513,9 +508,7 @@ class TestSingleExcitationDecompositions:
         for actual, exp in zip(q.queue, expected, strict=True):
             qp.assert_equal(actual, exp)
 
-    @pytest.mark.jax
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("z", (2, 2.5))
     def test_pow_capture(self, z):
         """Test the operations captured by the Pow(SingleExcitation) rule."""
@@ -527,6 +520,7 @@ class TestSingleExcitationDecompositions:
         wires = qp.wires.Wires((0, 1))
         rule = qp.list_decomps("Pow(SingleExcitation)")[0]
 
+        # can't just pass in an operator at the moment due to ArgInfo as a wire
         def circuit(phi, w0, w1):
             with qp.capture.pause():  # the base itself should not be captured
                 base = qp.SingleExcitation(phi, wires=qp.wires.Wires((w0, w1)))
