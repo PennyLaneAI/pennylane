@@ -851,6 +851,9 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
+  - Parametric operators are ported:
+    - `~.RZ`, `~.CRZ`
+  [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   - Multi-qubit, parametric operators are ported:
     - `~.DiagonalQubitUnitary`
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
