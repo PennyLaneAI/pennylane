@@ -226,6 +226,17 @@ class TestExpressionMath:
         assert new_expr._data == {("x",): 1, (): 5}
         assert expr + 3 == 3 + expr
 
+    def test_add_cancels(self):
+        expr1 = Expression({("x",): 1, (): 1})
+        expr2 = Expression({("x",): -1, (): 2})
+        expr3 = Expression({("x",): -1, (): -1})
+
+        assert expr1 + expr2 == 3
+        assert isinstance(expr1 + expr2, int)
+
+        assert expr1 + expr3 == 0
+        assert isinstance(expr1 + expr3, int)
+
     def test_add_invalid(self, sample_expr):
         # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
@@ -256,7 +267,7 @@ class TestExpressionMath:
     def test_mul_zero(self):
         expr = Expression({("x",): 1, (): 2})
         new_expr = expr * 0
-        assert new_expr._data == {}
+        assert isinstance(new_expr, int)
         assert expr * 0 == 0 * expr == Expression({})
 
     def test_mul_invalid(self, sample_expr):

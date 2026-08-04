@@ -164,7 +164,7 @@ def merge_rotations(
           - RX: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 1
+        Total wires: 1
         Circuit Depth: Not computed
 
         Additionally, the ``merge_rotations`` transform supports

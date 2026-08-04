@@ -14,200 +14,20 @@
 """Helper functions for converting MLIR resource analysis output into SpecsResources objects."""
 
 import copy
-import itertools
 import json
 import os
 import tempfile
 import time
-import warnings
-from collections import defaultdict, namedtuple
 from pathlib import Path
-from typing import Any
 
 import pennylane as qp
 
 from ._utils import make_level_name_unique
-from .expression import Expression
-from .resource import PBCSpecsResources, SpecsResources, num_to_letters
+from .parsing import parse_resources_json
+from .resource import SpecsResources
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
-
-
-def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:
-    if var not in display_names:
-        display_names[var] = num_to_letters(len(display_names))
-    return display_names[var]
-
-
-def _update_resource_dict(
-    result_dict: dict[str, Any], call_count: int | Expression, fn_resources: dict[str, Any]
-) -> None:
-    for label, value in fn_resources.items():
-        result_dict[label] += call_count * value
-
-
-# Internal namedtuple for storing PBC depth information within a single object
-PBCDepth = namedtuple("PBCDepth", ["any_commuting_depth", "qubit_disjoint_depth"])
-
-
-def _mlir_resources_to_specs_resources(
-    all_data: dict[str, Any],
-    focus: str,
-    fn_resources: dict[str, SpecsResources | None],
-    display_names: dict[str, str],
-) -> None:
-    """
-    Helper function to convert the output of the resource analysis pass into ``SpecsResources`` objects.
-
-    Recursively resolves the resources for a given function call, combining subroutine resources
-    with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from
-    function name to the corresponding :class:`~pennylane.resource.SpecsResources` object.
-
-    .. note::
-
-        All resources are stored within :class:`~pennylane.resource.SpecsResources` objects
-        as symbolic expressions, even if all values are concrete and knowable at compile time.
-        It is the responsibility of the caller to upcast these to concrete valued
-        :class:`~pennylane.resource.SpecsResources` objects if desired.
-
-    Args:
-        all_data (dict[str, Any]): the full data output from the MLIR resource analysis
-        focus (str): the name of the function to resolve resources for in this call
-        fn_resources (dict[str, SpecsResources | None]): the mapping from function name to
-            resolved `SpecsResources` objects. (modified in-place by this function)
-        display_names (dict[str, str]): a mapping from symbolic variable names to their display
-            names in the output. (modified in-place by this function)
-    """
-
-    # pylint: disable=too-many-branches
-    # This method would not benefit from being broken up further, the parsing logic just requires
-    # several branches
-
-    if focus in fn_resources:
-        return
-
-    # Set to None to mark that we are currently resolving this function, which helps with detecting recursion
-    fn_resources[focus] = None
-    resources = all_data[focus]
-
-    # Process qubit allocations
-    num_allocs = resources["num_qubits"]["alloc"]
-    if resources["metadata"].get("auto_qubit_management", False):
-        warnings.warn(
-            f"Specs detected that function '{focus}' uses automatic qubit management. "
-            "The number of qubits allocated by this function will not be known at this time, so "
-            "the final allocation counts may be inaccurate.",
-        )
-
-    # Process quantum operations and measurements
-    measurement_processes = defaultdict(int, resources["measurement_processes"])
-    quantum_operations = defaultdict(int)
-    for gate_size, ops in resources["quantum_operations"].items():
-        for gate_name, count in ops.items():
-            if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-                # Separate out PPMs and PPRs by weight
-                gate_name += f"-w{gate_size}"
-
-            quantum_operations[gate_name] += count
-
-    # Process PBC depths
-    pbc_depth = None
-    if depths := resources["extended_fields"].get("pbc_depth"):
-        pbc_depth = PBCDepth(
-            any_commuting_depth=depths["any_commuting_depth"],
-            qubit_disjoint_depth=depths["qubit_disjoint_depth"],
-        )
-
-    # Process function calls (both static and dynamic)
-    # NOTE: Recurse through all function calls and combine resources with the appropriate multiplicative factors
-    function_calls = resources["function_calls"]
-    for called_fn, call_count in itertools.chain(
-        function_calls["static"].items(), function_calls["dynamic"].items()
-    ):
-        if not isinstance(call_count, int):
-            # If there is no integer call count, we have to treat this as a symbolic variable
-            var_name = _generate_display_name_for_symbolic_var(call_count, display_names)
-
-            call_count = Expression({(var_name,): 1})
-        if called_fn not in fn_resources:
-            _mlir_resources_to_specs_resources(all_data, called_fn, fn_resources, display_names)
-
-        called_fn_resources = fn_resources[called_fn]
-        if called_fn_resources is None:
-            warnings.warn(
-                f"Specs detected recursion during resolution of MLIR resource analysis results. "
-                f"Function '{focus}' calls '{called_fn}' which is already being resolved. "
-                "This recursive call will not be counted, so final results may be inaccurate."
-            )
-            continue
-
-        num_allocs += call_count * called_fn_resources.num_allocs
-        _update_resource_dict(
-            quantum_operations, call_count, called_fn_resources.quantum_operations
-        )
-        _update_resource_dict(
-            measurement_processes, call_count, called_fn_resources.measurement_processes
-        )
-        if isinstance(called_fn_resources, PBCSpecsResources):
-            if pbc_depth is None:
-                pbc_depth = PBCDepth(
-                    any_commuting_depth=call_count * called_fn_resources.any_commuting_depth,
-                    qubit_disjoint_depth=call_count * called_fn_resources.qubit_disjoint_depth,
-                )
-            else:
-                pbc_depth = PBCDepth(
-                    any_commuting_depth=pbc_depth.any_commuting_depth
-                    + call_count * called_fn_resources.any_commuting_depth,
-                    qubit_disjoint_depth=pbc_depth.qubit_disjoint_depth
-                    + call_count * called_fn_resources.qubit_disjoint_depth,
-                )
-
-    # Construct final specs resource objects
-    # NOTE: Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
-    # which is helpful for testing and readability
-
-    kwargs = {
-        "counts": {k: quantum_operations[k] for k in sorted(quantum_operations.keys())},
-        "measurement_processes": {
-            k: measurement_processes[k] for k in sorted(measurement_processes.keys())
-        },
-        "num_allocs": num_allocs,
-        "circuit_depth": None,  # Can't get depth from MLIR pass results
-        # Store all remaining extended_fields into the extra fields kwarg
-        "extra": {k: v for k, v in resources["extended_fields"].items() if k != "pbc_depth"},
-    }
-
-    if pbc_depth is not None:
-        fn_resources[focus] = PBCSpecsResources(
-            any_commuting_depth=pbc_depth.any_commuting_depth,
-            qubit_disjoint_depth=pbc_depth.qubit_disjoint_depth,
-            **kwargs,
-        )
-    else:
-        fn_resources[focus] = SpecsResources(**kwargs)
-
-
-def _get_resources_from_analysis_pass(
-    all_data: dict[str, Any],
-) -> list[SpecsResources]:
-    resource_data = {}
-
-    for fn_name in all_data.keys():
-        _mlir_resources_to_specs_resources(
-            all_data, focus=fn_name, fn_resources=resource_data, display_names={}
-        )
-
-    if any(resources["metadata"]["has_branches"] for resources in all_data.values()):
-        warnings.warn(
-            "Specs was unable to determine the branch of a conditional or switch statement."
-            " The results will take the maximum resources across all possible branches, serving as an upper bound.",
-            UserWarning,
-        )
-
-    # Only include information about qnodes, ignoring any extra functions
-    # The blank substitution will return a concrete SpecsResources if no symbolic variables remain
-    return [resource_data[fn].subs() for fn, data in all_data.items() if data["metadata"]["qnode"]]
 
 
 def _execute_analysis_pass(
@@ -375,7 +195,7 @@ def resources_from_analysis_pass(
             with res_file.open("r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            cur_level_resources = _get_resources_from_analysis_pass(data)
+            cur_level_resources = parse_resources_json(data)
 
             if len(cur_level_resources) == 1:
                 cur_level_resources = cur_level_resources[0]

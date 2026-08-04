@@ -231,7 +231,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
       - Conditional(PauliX): 1
     Measurement processes:
     - expval(PauliZ): 1
-    Wire allocations: 3
+    Total wires: 3
     Circuit Depth: 3
     """
 

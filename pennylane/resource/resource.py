@@ -340,7 +340,7 @@ class Resources:
             >>> res = SpecsResources(
             ...     counts={"CNOT": Expression({("x",): 1})},
             ...     measurement_processes={"expval(PauliX)": 1},
-            ...     num_allocs=2,
+            ...     num_wires=2,
             ...     circuit_depth=1,
             ... )
 
@@ -349,10 +349,10 @@ class Resources:
             A substitution may either use a dictionary or keyword arguments:
 
             >>> res.subs({"x": 3})
-            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_wires=2, circuit_depth=1, total_quantum_operations=3)
 
             >>> res.subs(x=3)
-            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_wires=2, circuit_depth=1, total_quantum_operations=3)
         """
         if substitutions is None:
             substitutions = {}
@@ -388,7 +388,7 @@ class Resources:
 class SpecsResources(Resources):
     """
     Class for storing resource information for a quantum circuit. Contains attributes which store
-    key resources such as gate counts, number of wire allocations, measurement processes, and
+    key resources such as gate counts, total wires, measurement processes, and
     circuit depth.
 
     Note that this class is intended to be immutable. Modifying the attributes after creation may
@@ -397,7 +397,7 @@ class SpecsResources(Resources):
     Args:
         counts (dict[str, int]): A dictionary mapping gate names to their counts.
         measurement_processes (dict[str, int]): A dictionary mapping measurement processes to their counts.
-        num_allocs (int): The number of unique wire allocations. For circuits that do not use
+        num_wires (int): The number of unique wires. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
         circuit_depth (int | None): The depth of the circuit, or None if not computed. Defaults to ``None``.
 
@@ -421,7 +421,7 @@ class SpecsResources(Resources):
         >>> res = SpecsResources(
         ...     counts={'Hadamard': 1, 'CNOT': 1},
         ...     measurement_processes={'expval(PauliZ)': 1},
-        ...     num_allocs=2,
+        ...     num_wires=2,
         ...     circuit_depth=2
         ... )
 
@@ -438,15 +438,15 @@ class SpecsResources(Resources):
           - CNOT: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 2
     """
 
     measurement_processes: dict[str, int | Expression] = field(
-        metadata={"display_name": "Measurement Processes"}
+        metadata={"display_name": "Measurement processes"}
     )
 
-    num_allocs: int | Expression = field(metadata={"display_name": "Wire allocations"})
+    num_wires: int | Expression = field(metadata={"display_name": "Total wires"})
     circuit_depth: int | Expression | None = field(
         default=None, metadata={"display_name": "Circuit depth"}
     )
@@ -477,8 +477,6 @@ class SpecsResources(Resources):
                 return self.quantum_operations
             case "depth":
                 return self.depth
-            case "num_wires":
-                return self.num_wires
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
@@ -494,11 +492,6 @@ class SpecsResources(Resources):
     def depth(self):
         """The circuit depth (alias for ``circuit_depth``)."""
         return self.circuit_depth
-
-    @property
-    def num_wires(self):
-        """The number of wires (alias for ``num_allocs``)."""
-        return self.num_allocs
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
@@ -531,7 +524,7 @@ class SpecsResources(Resources):
             for meas, count in _flatten_dict(self.measurement_processes).items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
+        lines.append(f"{prefix}Total wires: {_count_to_str(self.num_wires)}")
 
         if (
             self.circuit_depth is not None
@@ -576,9 +569,7 @@ class SpecsResources(Resources):
             for meas, count in _flatten_dict(self.measurement_processes).items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
-        lines.append(
-            f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
-        )
+        lines.append(f"| **Total wires** | {_count_to_str(self.num_wires, markdown_safe=True)} |")
 
         if (
             self.circuit_depth is not None
@@ -712,7 +703,7 @@ class CircuitSpecs:
         ...     resources=SpecsResources(
         ...         counts={"RX": 2, "CNOT": 1},
         ...         measurement_processes={"expval(PauliZ)": 1},
-        ...         num_allocs=2,
+        ...         num_wires=2,
         ...         circuit_depth=3,
         ...     ),
         ... )
@@ -735,7 +726,7 @@ class CircuitSpecs:
           - CNOT: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 3
     """
 
@@ -858,7 +849,7 @@ class CircuitSpecs:
                 )
             max_column_size = max(
                 max_column_size,
-                len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
+                len(_count_to_str(res.num_wires, extra_compact=True)) + 1,
                 len(_count_to_str(res.total_quantum_operations, extra_compact=True)) + 1,
             )
 
@@ -920,10 +911,10 @@ class CircuitSpecs:
             )
 
         lines.append(
-            "Wire allocations".ljust(max_metric_length)
+            "Total wires".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_allocs, extra_compact=True).rjust(max_column_size)
+                _count_to_str(res.num_wires, extra_compact=True).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
@@ -1060,8 +1051,8 @@ class CircuitSpecs:
 
         lines.append(
             data_row(
-                "**Wire allocations**",
-                [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
+                "**Total wires**",
+                [_count_to_str(r.num_wires, markdown_safe=True) for r in flat_resources.values()],
             )
         )
 
@@ -1270,6 +1261,6 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     return SpecsResources(
         counts=dict(quantum_operations),
         measurement_processes=dict(measurement_processes),
-        num_allocs=num_wires,
+        num_wires=num_wires,
         circuit_depth=depth,
     )

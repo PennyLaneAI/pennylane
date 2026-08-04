@@ -174,7 +174,7 @@
     - PauliX: a + 1
   Measurement processes:
   - expval(PauliX): 1
-  Wire allocations: 1
+  Total wires: 1
   Circuit Depth: Not computed
 
   ```
@@ -190,7 +190,7 @@
     - PauliX: 6
   Measurement processes:
   - expval(PauliX): 1
-  Wire allocations: 1
+  Total wires: 1
   Circuit Depth: Not computed
 
   ```

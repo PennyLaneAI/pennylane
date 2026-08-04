@@ -603,7 +603,7 @@ class TestNestedDictSpecsResources:
         return SpecsResources(
             counts={"Hadamard": 1, "Controlled": {"CNOT": 2, "CY": 3}},
             measurement_processes={"grouped": {"expval(PauliZ)": 1}},
-            num_allocs=2,
+            num_wires=2,
             circuit_depth=2,
         )
 
@@ -623,7 +623,7 @@ class TestNestedDictSpecsResources:
               - Controlled.CY: 3
             Measurement processes:
             - grouped.expval(PauliZ): 1
-            Wire allocations: 2
+            Total wires: 2
             Circuit Depth: 2""")
 
         assert str(s) == expected
@@ -642,7 +642,7 @@ class TestNestedDictSpecsResources:
             | Controlled.CY | 3 |
             | **Measurement processes:** | |
             | grouped.expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |""")
 
         assert s._repr_markdown_() == expected
@@ -652,14 +652,14 @@ class TestNestedDictSpecsResources:
         s = SpecsResources(
             counts={"Hadamard": 1, "grouped": {"CNOT": Expression({("n",): 1})}},
             measurement_processes={},
-            num_allocs=Expression({("n",): 1}),
+            num_wires=Expression({("n",): 1}),
             circuit_depth=None,
         )
         assert s.vars == {"n"}
 
         subbed = s.subs({"n": 3})
         assert subbed.counts == {"Hadamard": 1, "grouped": {"CNOT": 3}}
-        assert subbed.num_allocs == 3
+        assert subbed.num_wires == 3
         assert subbed.total_quantum_operations == 4
         assert subbed.vars == set()
 
@@ -678,13 +678,13 @@ class TestNestedDictCircuitSpecs:
                 1: SpecsResources(
                     counts={"Hadamard": 4, "Controlled": {"CNOT": 2, "CY": 1}},
                     measurement_processes={"expval(PauliX)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     circuit_depth=2,
                 ),
                 2: SpecsResources(
                     counts={"Controlled": {"CNOT": 1}},
                     measurement_processes={"grouped": {"expval(PauliZ)": 1}},
-                    num_allocs=2,
+                    num_wires=2,
                     circuit_depth=1,
                 ),
             },
@@ -712,7 +712,7 @@ class TestNestedDictCircuitSpecs:
             Measurement processes:   |
             - expval(PauliX)         |  1 |  0
             - grouped.expval(PauliZ) |  0 |  1
-            Wire allocations         |  2 |  2
+            Total wires              |  2 |  2
             Circuit depth            |  2 |  1""")
 
         assert str(r) == expected
@@ -732,7 +732,7 @@ class TestNestedDictCircuitSpecs:
             | **Measurement processes** |  |  |
             | expval(PauliX) | 1 | 0 |
             | grouped.expval(PauliZ) | 0 | 1 |
-            | **Wire allocations** | 2 | 2 |
+            | **Total wires** | 2 | 2 |
             | **Circuit depth** | 2 | 1 |""")
 
         assert r._to_markdown_tabular() == expected
@@ -747,7 +747,7 @@ class TestSpecsResources:
         return SpecsResources(
             counts={"Hadamard": 2, "CNOT": 1},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
             circuit_depth=2,
         )
 
@@ -757,7 +757,7 @@ class TestSpecsResources:
         s = SpecsResources(
             counts={"Hadamard": 2, "CNOT": 1},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
         )
 
         assert s.depth is None
@@ -791,7 +791,7 @@ class TestSpecsResources:
         assert s["counts"] == s.counts
         assert s["quantum_operations"] == s.quantum_operations
         assert s["measurement_processes"] == s.measurement_processes
-        assert s["num_allocs"] == s.num_allocs
+        assert s["num_wires"] == s.num_wires
         assert s["num_wires"] == s.num_wires
         assert s["depth"] == s.depth
 
@@ -816,7 +816,7 @@ class TestSpecsResources:
               - CNOT: 1
             Measurement processes:
             - expval(PauliZ): 1
-            Wire allocations: 2
+            Total wires: 2
             Circuit Depth: 2""")
 
         assert str(s) == expected
@@ -826,14 +826,14 @@ class TestSpecsResources:
 
         # Check with no depth, gates, or measurements
 
-        s = SpecsResources(counts={}, measurement_processes={}, num_allocs=0)
+        s = SpecsResources(counts={}, measurement_processes={}, num_wires=0)
 
         expected = textwrap.dedent("""\
             Quantum operations:
             - No operations.
             Measurement processes:
             - No measurement processes.
-            Wire allocations: 0
+            Total wires: 0
             Circuit Depth: Not computed""")
 
         expected_indented = textwrap.indent(expected, " " * 4)
@@ -850,7 +850,7 @@ class TestSpecsResources:
         expected = {
             "quantum_operations": {"Hadamard": 2, "CNOT": 1},
             "measurement_processes": {"expval(PauliZ)": 1},
-            "num_allocs": 2,
+            "num_wires": 2,
             "num_wires": 2,
             "circuit_depth": 2,
             "total_quantum_operations": 3,
@@ -869,7 +869,7 @@ class TestPBCSpecsResources:
         return PBCSpecsResources(
             counts={"Hadamard": 1, "CNOT": 2},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
             any_commuting_depth=3,
             qubit_disjoint_depth=6,
         )
@@ -882,7 +882,7 @@ class TestPBCSpecsResources:
             PBCSpecsResources(
                 counts={"Hadamard": 1, "CNOT": 2},
                 measurement_processes={"expval(PauliZ)": 1},
-                num_allocs=2,
+                num_wires=2,
             )
 
     def test_str_pbc_depth(self, example_resource):
@@ -896,7 +896,7 @@ class TestPBCSpecsResources:
               - CNOT: 2
             Measurement processes:
             - expval(PauliZ): 1
-            Wire allocations: 2
+            Total wires: 2
             PBC Depths:
             - Any commuting depth: 3
             - Qubit disjoint depth: 6
@@ -915,7 +915,7 @@ class TestPBCSpecsResources:
             | CNOT | 2 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **PBC Depths** | |
             | Any commuting depth | 3 |
             | Qubit disjoint depth | 6 |
@@ -949,7 +949,7 @@ class TestPBCSpecsResources:
               - CNOT               |  2
             Measurement processes: |
             - expval(PauliZ)       |  1
-            Wire allocations       |  2
+            Total wires            |  2
             PBC Depths:            |
             - Any commuting depth  |  3
             - Qubit disjoint depth |  6
@@ -991,7 +991,7 @@ class TestPBCSpecsResources:
             | CNOT | 2 |
             | **Measurement processes** |  |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **PBC Depths** |  |
             | Any commuting depth | 3 |
             | Qubit disjoint depth | 6 |
@@ -1006,7 +1006,7 @@ class TestPBCSpecsResources:
         s = PBCSpecsResources(
             counts={"Hadamard": Expression({("x",): 2})},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
             any_commuting_depth=Expression({("x",): 3}),
             qubit_disjoint_depth=Expression({("x",): 6}),
         )
@@ -1014,7 +1014,7 @@ class TestPBCSpecsResources:
         assert s.subs({"x": 2}) == PBCSpecsResources(
             counts={"Hadamard": 4},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
             any_commuting_depth=6,
             qubit_disjoint_depth=12,
         )
@@ -1030,7 +1030,7 @@ class TestPBCSpecsResources:
                 1: PBCSpecsResources(
                     counts={"Hadamard": Expression({("x",): 2})},
                     measurement_processes={"expval(PauliZ)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     any_commuting_depth=Expression({("x",): 3}),
                     qubit_disjoint_depth=Expression({("x",): 6}),
                 )
@@ -1051,7 +1051,7 @@ class TestPBCSpecsResources:
               - Hadamard           | 2*x
             Measurement processes: |
             - expval(PauliZ)       |   1
-            Wire allocations       |   2
+            Total wires            |   2
             PBC Depths:            |
             - Any commuting depth  | 3*x
             - Qubit disjoint depth | 6*x
@@ -1070,13 +1070,13 @@ class TestPBCSpecsResources:
                 1: SpecsResources(
                     counts={"Hadamard": 2},
                     measurement_processes={"expval(PauliZ)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     circuit_depth=2,
                 ),
                 2: PBCSpecsResources(
                     counts={"Hadamard": 2},
                     measurement_processes={"expval(PauliZ)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     any_commuting_depth=2,
                     qubit_disjoint_depth=4,
                 ),
@@ -1098,7 +1098,7 @@ class TestPBCSpecsResources:
               - Hadamard           |  2 |  2
             Measurement processes: |
             - expval(PauliZ)       |  1 |  1
-            Wire allocations       |  2 |  2
+            Total wires            |  2 |  2
             Circuit depth          |  2 |  -
             PBC Depths:            |
             - Any commuting depth  |  - |  2
@@ -1118,13 +1118,13 @@ class TestPBCSpecsResources:
                 1: SpecsResources(
                     counts={"Hadamard": 2},
                     measurement_processes={"expval(PauliZ)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     circuit_depth=2,
                 ),
                 2: PBCSpecsResources(
                     counts={"Hadamard": 2},
                     measurement_processes={"expval(PauliZ)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     any_commuting_depth=2,
                     qubit_disjoint_depth=4,
                 ),
@@ -1152,7 +1152,7 @@ class TestPBCSpecsResources:
             | Hadamard | 2 | 2 |
             | **Measurement processes** |  |  |
             | expval(PauliZ) | 1 | 1 |
-            | **Wire allocations** | 2 | 2 |
+            | **Total wires** | 2 | 2 |
             | **Circuit depth** | 2 | N/A |
             | **PBC Depths** |  |  |
             | Any commuting depth | N/A | 2 |
@@ -1160,6 +1160,33 @@ class TestPBCSpecsResources:
         """).strip()
 
         assert s._repr_markdown_(collapsible=False) == expected
+
+    def test_eq(self):
+        s1 = PBCSpecsResources(
+            counts={"Hadamard": Expression({("x,"): 1})},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=1,
+            any_commuting_depth=2,
+            qubit_disjoint_depth=1,
+        )
+        s2 = PBCSpecsResources(
+            counts={"Hadamard": Expression({("x,"): 1})},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=1,
+            any_commuting_depth=2,
+            qubit_disjoint_depth=1,
+        )
+        s3 = PBCSpecsResources(
+            counts={"Hadamard": Expression({("x,"): 1})},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=1,
+            any_commuting_depth=2,
+            qubit_disjoint_depth=11,
+        )
+
+        assert s1 == s2
+        assert s2 == s1
+        assert s1 != s3
 
 
 class TestSymbolicSpecsResources:
@@ -1191,7 +1218,7 @@ class TestSymbolicSpecsResources:
             },
             measurement_processes={"expval(PauliZ)": 1},
             # The values for allocs and depth are a bit off, but are helpful for testing substitutions
-            num_allocs=Expression({("x",): 1, ("z",): 2, (): 1}),
+            num_wires=Expression({("x",): 1, ("z",): 2, (): 1}),
             circuit_depth=Expression({("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}),
         )
 
@@ -1205,7 +1232,7 @@ class TestSymbolicSpecsResources:
         return SpecsResources(
             counts={"Hadamard": 1, "CNOT": 1},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=1,
+            num_wires=1,
             circuit_depth=1,
         )
 
@@ -1233,7 +1260,7 @@ class TestSymbolicSpecsResources:
                 "PauliZ": Expression({("z",): 2}),
             },
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=Expression({("z",): 2, (): 3}),
+            num_wires=Expression({("z",): 2, (): 3}),
             circuit_depth=Expression({("z",): 4, (): 4}),
         )
 
@@ -1248,7 +1275,7 @@ class TestSymbolicSpecsResources:
         expected = SpecsResources(
             counts={"Hadamard": 1, "PauliX": 3, "CNOT": 6, "PauliZ": 6},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=9,
+            num_wires=9,
             circuit_depth=16,
         )
 
@@ -1268,19 +1295,19 @@ class TestSymbolicSpecsResources:
         s1 = SpecsResources(
             counts={"Hadamard": Expression({("x,"): 1})},
             measurement_processes={"expval(PauliZ)": Expression(1)},
-            num_allocs=Expression(1),
+            num_wires=Expression(1),
             circuit_depth=Expression(1),
         )
         s2 = SpecsResources(
             counts={"Hadamard": Expression({("x,"): 1})},
             measurement_processes={"expval(PauliZ)": Expression(1)},
-            num_allocs=Expression(1),
+            num_wires=Expression(1),
             circuit_depth=Expression(1),
         )
         s3 = SpecsResources(
             counts={"Hadamard": Expression({("z,"): 1})},
             measurement_processes={"expval(PauliZ)": Expression(1)},
-            num_allocs=Expression(1),
+            num_wires=Expression(1),
             circuit_depth=Expression(1),
         )
 
@@ -1290,7 +1317,7 @@ class TestSymbolicSpecsResources:
         assert s1 != SpecsResources(
             counts={"Hadamard": 1},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=1,
+            num_wires=1,
             circuit_depth=1,
         )
 
@@ -1298,21 +1325,21 @@ class TestSymbolicSpecsResources:
         s1 = SpecsResources(
             counts={"Hadamard": Expression(1)},
             measurement_processes={"expval(PauliZ)": Expression(1)},
-            num_allocs=Expression(1),
+            num_wires=Expression(1),
             circuit_depth=Expression(1),
         )
 
         s2 = SpecsResources(
             counts={"Hadamard": Expression(1)},
             measurement_processes={"expval(PauliZ)": Expression(1)},
-            num_allocs=Expression(1),
+            num_wires=Expression(1),
             circuit_depth=Expression(1),
         )
 
         s3 = SpecsResources(
             counts={"Hadamard": Expression(2)},  # different value here
             measurement_processes={"expval(PauliZ)": Expression(1)},
-            num_allocs=Expression(1),
+            num_wires=Expression(1),
             circuit_depth=Expression(1),
         )
 
@@ -1323,7 +1350,7 @@ class TestSymbolicSpecsResources:
         assert s1 == SpecsResources(
             counts={"Hadamard": 1},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=1,
+            num_wires=1,
             circuit_depth=1,
         )
 
@@ -1342,7 +1369,7 @@ class TestSymbolicSpecsResources:
         expected += "  - PauliZ: 2*z\n"
         expected += "Measurement processes:\n"
         expected += "- expval(PauliZ): 1\n"
-        expected += "Wire allocations: 2*z + x + 1\n"
+        expected += "Total wires: 2*z + x + 1\n"
         expected += "Circuit Depth: x*z + 2*z + x + 2"
 
         assert str(s) == expected
@@ -1360,7 +1387,7 @@ class TestCircuitSpecs:
             resources=SpecsResources(
                 counts={"Hadamard": 2, "CNOT": 1},
                 measurement_processes={"expval(PauliZ)": 1},
-                num_allocs=2,
+                num_wires=2,
                 circuit_depth=2,
             ),
         )
@@ -1377,20 +1404,20 @@ class TestCircuitSpecs:
                 1: SpecsResources(
                     counts={"Hadamard": 4, "CNOT": 2},
                     measurement_processes={"expval(PauliX)": 1, "expval(PauliZ)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     circuit_depth=2,
                 ),
                 2: [
                     SpecsResources(
                         counts={"CNOT": 1},
                         measurement_processes={"expval(PauliX)": 1},
-                        num_allocs=2,
+                        num_wires=2,
                         circuit_depth=1,
                     ),
                     SpecsResources(
                         counts={"CNOT": 1},
                         measurement_processes={"expval(PauliZ)": 1},
-                        num_allocs=2,
+                        num_wires=2,
                         circuit_depth=1,
                     ),
                 ],
@@ -1412,20 +1439,20 @@ class TestCircuitSpecs:
                         "CNOT": Expression({("x",): 2}),
                     },
                     measurement_processes={"expval(PauliX)": 1, "expval(PauliZ)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                     circuit_depth=2,
                 ),
                 2: [
                     SpecsResources(
                         counts={"CNOT": Expression({("x",): 1})},
                         measurement_processes={"expval(PauliX)": 1},
-                        num_allocs=2,
+                        num_wires=2,
                         circuit_depth=1,
                     ),
                     SpecsResources(
                         counts={"CNOT": Expression({("x",): 1})},
                         measurement_processes={"expval(PauliZ)": 1},
-                        num_allocs=2,
+                        num_wires=2,
                         circuit_depth=1,
                     ),
                 ],
@@ -1468,7 +1495,7 @@ class TestCircuitSpecs:
             "resources": {
                 "quantum_operations": {"Hadamard": 2, "CNOT": 1},
                 "measurement_processes": {"expval(PauliZ)": 1},
-                "num_allocs": 2,
+                "num_wires": 2,
                 "num_wires": 2,
                 "circuit_depth": 2,
                 "total_quantum_operations": 3,
@@ -1490,7 +1517,7 @@ class TestCircuitSpecs:
                 1: {
                     "quantum_operations": {"Hadamard": 4, "CNOT": 2},
                     "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
-                    "num_allocs": 2,
+                    "num_wires": 2,
                     "num_wires": 2,
                     "circuit_depth": 2,
                     "total_quantum_operations": 6,
@@ -1501,7 +1528,7 @@ class TestCircuitSpecs:
                     {
                         "quantum_operations": {"CNOT": 1},
                         "measurement_processes": {"expval(PauliX)": 1},
-                        "num_allocs": 2,
+                        "num_wires": 2,
                         "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": 1,
@@ -1511,7 +1538,7 @@ class TestCircuitSpecs:
                     {
                         "quantum_operations": {"CNOT": 1},
                         "measurement_processes": {"expval(PauliZ)": 1},
-                        "num_allocs": 2,
+                        "num_wires": 2,
                         "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": 1,
@@ -1538,7 +1565,7 @@ class TestCircuitSpecs:
                         "CNOT": Expression({("x",): 2}),
                     },
                     "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
-                    "num_allocs": 2,
+                    "num_wires": 2,
                     "num_wires": 2,
                     "circuit_depth": 2,
                     "total_quantum_operations": Expression({("x",): 4, (): 2}),
@@ -1549,7 +1576,7 @@ class TestCircuitSpecs:
                     {
                         "quantum_operations": {"CNOT": Expression({("x",): 1})},
                         "measurement_processes": {"expval(PauliX)": 1},
-                        "num_allocs": 2,
+                        "num_wires": 2,
                         "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": Expression({("x",): 1}),
@@ -1559,7 +1586,7 @@ class TestCircuitSpecs:
                     {
                         "quantum_operations": {"CNOT": Expression({("x",): 1})},
                         "measurement_processes": {"expval(PauliZ)": 1},
-                        "num_allocs": 2,
+                        "num_wires": 2,
                         "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": Expression({("x",): 1}),
@@ -1607,7 +1634,7 @@ class TestCircuitSpecs:
         Measurement processes: |
         - expval(PauliX)       |    1 |    1 |    0
         - expval(PauliZ)       |    1 |    0 |    1
-        Wire allocations       |    2 |    2 |    2
+        Total wires            |    2 |    2 |    2
         Circuit depth          |    2 |    1 |    1
         """).strip()
 
@@ -1632,7 +1659,7 @@ class TestCircuitSpecs:
             Measurement processes: |
             - expval(PauliX)       |     1 |     1 |     0
             - expval(PauliZ)       |     1 |     0 |     1
-            Wire allocations       |     2 |     2 |     2
+            Total wires            |     2 |     2 |     2
             Circuit depth          |     2 |     1 |     1
             """).strip()
 
@@ -1679,7 +1706,7 @@ class TestIPythonDisplays:
             # Pick a number that forces scientific notation
             counts={"Hadamard": 1, "CNOT": 100_001},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
             circuit_depth=2,
         )
 
@@ -1691,7 +1718,7 @@ class TestIPythonDisplays:
                 "CNOT": 1,
             },
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
             circuit_depth=2,
         )
 
@@ -1700,7 +1727,7 @@ class TestIPythonDisplays:
         return PBCSpecsResources(
             counts={"Hadamard": 1, "CNOT": 100_001},
             measurement_processes={"expval(PauliZ)": 1},
-            num_allocs=2,
+            num_wires=2,
             any_commuting_depth=2,
             qubit_disjoint_depth=3,
         )
@@ -1716,7 +1743,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
         """)
         actual = example_specs_resource._repr_markdown_()
@@ -1734,7 +1761,7 @@ class TestIPythonDisplays:
             | CNOT | 1 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
         """)
         actual = example_symbolic_specs_resource._repr_markdown_()
@@ -1752,7 +1779,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **PBC Depths** | |
             | Any commuting depth | 2 |
             | Qubit disjoint depth | 3 |
@@ -1791,7 +1818,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
         """)
 
@@ -1830,7 +1857,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
 
             </details>
@@ -1870,7 +1897,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
 
             **Batched tape b:**
@@ -1883,7 +1910,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
         """)
 
@@ -1925,7 +1952,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
 
             </details>
@@ -1940,7 +1967,7 @@ class TestIPythonDisplays:
             | CNOT | 1.000E+5 |
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
-            | **Wire allocations** | 2 |
+            | **Total wires** | 2 |
             | **Circuit depth** | 2 |
 
             </details>
@@ -1994,7 +2021,7 @@ class TestIPythonDisplays:
             | CNOT | 1 | 1.000E+5 | 1.000E+5 |
             | **Measurement processes** |  |  |  |
             | expval(PauliZ) | 1 | 1 | 1 |
-            | **Wire allocations** | 2 | 2 | 2 |
+            | **Total wires** | 2 | 2 | 2 |
         """)
 
         if with_depth:
@@ -2009,7 +2036,7 @@ class TestIPythonDisplays:
         s = SpecsResources(
             counts={},
             measurement_processes={},
-            num_allocs=1,
+            num_wires=1,
         )
         actual = s._repr_markdown_()
         expected = textwrap.dedent("""\
@@ -2019,7 +2046,7 @@ class TestIPythonDisplays:
             | *No operations* | |
             | **Measurement processes:** | |
             | *No measurement processes* | |
-            | **Wire allocations** | 1 |
+            | **Total wires** | 1 |
             | **Circuit depth** | Not computed |
         """)
 
