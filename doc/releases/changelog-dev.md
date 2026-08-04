@@ -661,6 +661,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
+  [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
