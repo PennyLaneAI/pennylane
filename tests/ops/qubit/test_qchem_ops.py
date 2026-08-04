@@ -34,6 +34,7 @@ from scipy.linalg import expm, fractional_matrix_power
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
+from pennylane.typing import Float, Wire
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qp.SingleExcitation(0.14, wires=[0, 1]),
@@ -324,6 +325,228 @@ class TestSingleExcitation:
             return qp.expval(qp.PauliZ(0))
 
         assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+
+
+class TestSingleExcitationDecompositions:
+    """Tests the decomposition rules registered for SingleExcitation with the graph system."""
+
+    def test_decomp_queuing(self):
+        """Test the operations queued by the Hadamard/CNOT/RY decomposition rule."""
+        phi = 0.5
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps(qp.SingleExcitation)[0]
+        op = qp.SingleExcitation(phi, wires=wires)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        expected = [
+            qp.Hadamard(wires[0]),
+            qp.CNOT(wires),
+            qp.RY(-phi / 2, wires[0]),
+            qp.RY(-phi / 2, wires[1]),
+            qp.CNOT(wires),
+            qp.Hadamard(wires[0]),
+        ]
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_decomp_capture(self):
+        """Test the operations captured by the Hadamard/CNOT/RY decomposition rule."""
+
+        import jax
+        import jax.numpy as jnp
+
+        phi = jnp.array(0.5)
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps(qp.SingleExcitation)[0]
+
+        def circuit(phi, w0, w1):
+            rule(phi, wires=qp.wires.Wires((w0, w1)))
+
+        jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
+        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+
+        expected = [
+            qp.Hadamard(wires[0]),
+            qp.CNOT(wires),
+            qp.RY(-phi / 2, wires[0]),
+            qp.RY(-phi / 2, wires[1]),
+            qp.CNOT(wires),
+            qp.Hadamard(wires[0]),
+        ]
+        for actual, exp in zip(ops, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    def test_decomp_resources(self):
+        """Test the resources of the Hadamard/CNOT/RY decomposition rule."""
+        rule = qp.list_decomps(qp.SingleExcitation)[0]
+        op = qp.SingleExcitation(0.5, wires=(0, 1))
+
+        expected = qp.decomposition.Resources(
+            {
+                qp.Hadamard(Wire[1]): 2,
+                qp.resource_rep(qp.CNOT): 2,
+                qp.resource_rep(qp.RY): 2,
+            }
+        )
+        assert rule.compute_resources(**op.arguments) == expected
+
+    def test_ppr_queuing(self):
+        """Test the operations queued by the Pauli-rotation decomposition rule."""
+        phi = 0.5
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps(qp.SingleExcitation)[1]
+        op = qp.SingleExcitation(phi, wires=wires)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        expected = [
+            qp.PauliRot(phi / 2, "YX", wires=wires),
+            qp.PauliRot(-phi / 2, "XY", wires=wires),
+        ]
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_ppr_capture(self):
+        """Test the operations captured by the Pauli-rotation decomposition rule."""
+
+        import jax
+        import jax.numpy as jnp
+
+        phi = jnp.array(0.5)
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps(qp.SingleExcitation)[1]
+
+        def circuit(phi, w0, w1):
+            rule(phi, wires=qp.wires.Wires((w0, w1)))
+
+        jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
+        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+
+        expected = [
+            qp.PauliRot(phi / 2, "YX", wires=wires),
+            qp.PauliRot(-phi / 2, "XY", wires=wires),
+        ]
+        for actual, exp in zip(ops, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    def test_ppr_resources(self):
+        """Test the resources of the Pauli-rotation decomposition rule."""
+        rule = qp.list_decomps(qp.SingleExcitation)[1]
+        op = qp.SingleExcitation(0.5, wires=(0, 1))
+
+        expected = qp.decomposition.Resources(
+            {
+                qp.resource_rep(qp.PauliRot, pauli_word="YX"): 1,
+                qp.resource_rep(qp.PauliRot, pauli_word="XY"): 1,
+            }
+        )
+        assert rule.compute_resources(**op.arguments) == expected
+
+    def test_adjoint_queuing(self):
+        """Test the operations queued by the Adjoint(SingleExcitation) rule."""
+        phi = 0.5
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps("Adjoint(SingleExcitation)")[0]
+        adj_op = qp.adjoint(qp.SingleExcitation(phi, wires=wires))
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**adj_op.arguments)
+
+        expected = [qp.SingleExcitation(-phi, wires=wires)]
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_adjoint_capture(self):
+        """Test the operations captured by the Adjoint(SingleExcitation) rule."""
+
+        import jax
+        import jax.numpy as jnp
+
+        phi = jnp.array(0.5)
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps("Adjoint(SingleExcitation)")[0]
+
+        def circuit(phi, w0, w1):
+            with qp.capture.pause():  # the base itself should not be captured
+                base = qp.SingleExcitation(phi, wires=qp.wires.Wires((w0, w1)))
+            rule(base=base)
+
+        jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
+        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+
+        expected = [qp.SingleExcitation(-phi, wires=wires)]
+        for actual, exp in zip(ops, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    def test_adjoint_resources(self):
+        """Test the resources of the Adjoint(SingleExcitation) rule."""
+        rule = qp.list_decomps("Adjoint(SingleExcitation)")[0]
+        adj_op = qp.adjoint(qp.SingleExcitation(0.5, wires=(0, 1)))
+
+        expected = qp.decomposition.Resources({qp.SingleExcitation(Float, wires=Wire[2]): 1})
+        assert rule.compute_resources(**adj_op.arguments) == expected
+
+    @pytest.mark.parametrize("z", (2, 2.5))
+    def test_pow_queuing(self, z):
+        """Test the operations queued by the Pow(SingleExcitation) rule."""
+        phi = 0.5
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps("Pow(SingleExcitation)")[0]
+        pow_op = qp.pow(qp.SingleExcitation(phi, wires=wires), z)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**pow_op.arguments)
+
+        expected = [qp.SingleExcitation(phi * z, wires=wires)]
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize("z", (2, 2.5))
+    def test_pow_capture(self, z):
+        """Test the operations captured by the Pow(SingleExcitation) rule."""
+
+        import jax
+        import jax.numpy as jnp
+
+        phi = jnp.array(0.5)
+        wires = qp.wires.Wires((0, 1))
+        rule = qp.list_decomps("Pow(SingleExcitation)")[0]
+
+        def circuit(phi, w0, w1):
+            with qp.capture.pause():  # the base itself should not be captured
+                base = qp.SingleExcitation(phi, wires=qp.wires.Wires((w0, w1)))
+            rule(base=base, z=z)
+
+        jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
+        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+
+        expected = [qp.SingleExcitation(phi * z, wires=wires)]
+        for actual, exp in zip(ops, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    @pytest.mark.parametrize("z", (2, 2.5))
+    def test_pow_resources(self, z):
+        """Test the resources of the Pow(SingleExcitation) rule."""
+        rule = qp.list_decomps("Pow(SingleExcitation)")[0]
+        pow_op = qp.pow(qp.SingleExcitation(0.5, wires=(0, 1)), z)
+
+        expected = qp.decomposition.Resources({qp.SingleExcitation(Float, wires=Wire[2]): 1})
+        assert rule.compute_resources(**pow_op.arguments) == expected
 
 
 class TestDoubleExcitation:
