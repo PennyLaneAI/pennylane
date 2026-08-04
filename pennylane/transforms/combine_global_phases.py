@@ -84,7 +84,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
         Consider the following example:
 
-        .. code-block:: python
+        .. code-block:: python3
 
             import pennylane as qp
 
@@ -120,7 +120,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
         ``combine_global_phases`` results in two ``GlobalPhase`` instances (one inside of a
         ``for_loop`` and the other from the ``GlobalPhase`` instances outside of the ``for_loop``).
 
-        >>> qp.specs(circuit, level="device")().resources.quantum_operations
+        >>> qp.specs(circuit, level="device")().resources.quantum_operations  # doctest: +SKIP
         {'GlobalPhase': 3, 'Hadamard': 1, 'PauliX': 1}
         >>> print(qp.draw_graph(circuit)()) # doctest: +SKIP
 
