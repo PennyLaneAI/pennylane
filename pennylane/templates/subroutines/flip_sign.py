@@ -103,8 +103,11 @@ class FlipSign(Operator2):
 def _flip_sign_resources(state: tuple[int], wires: WiresLike):
     num_wires = len(wires)
     num_ctrl_wires = num_wires - 1
-    num_zeros = num_ctrl_wires - sum(state[:-1])
-    res = {_ctrl_abstract(Z, Wire[num_ctrl_wires], num_zero_control_values=num_zeros): 1}
+    if num_ctrl_wires == 0:
+        res = {Z: 1}
+    else:
+        num_zeros = num_ctrl_wires - sum(state[:-1])
+        res = {_ctrl_abstract(Z, Wire[num_ctrl_wires], num_zero_control_values=num_zeros): 1}
     if state[-1] == 0:
         res[X] = 2
     return res
@@ -118,7 +121,7 @@ def _flip_sign_decomposition(state: tuple[int], wires: WiresLike):
     if len(wires) == 1:
         Z(wires[-1])
     else:
-        ctrl(Z(wires[-1]), control=wires[:-1], control_values=values_state[:-1])
+        ctrl(Z(wires[-1]), control=wires[:-1], control_values=state[:-1])
 
     if state[-1] == 0:
         X(wires[-1])
