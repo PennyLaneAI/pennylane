@@ -66,6 +66,35 @@ class TestInitSubclass:
         assert Op.wire_argnames == ("wires",)
         assert Op.compilable_argnames == ()
 
+    def test_sorting_argnames_order(self):
+        """Test that argnames are automatically sorted to be in signature order."""
+
+        class DummyOp(qp.core.Operator2):
+
+            wire_argnames = ("reg2", "reg1")
+            dynamic_argnames = ("b", "a")
+            static_argnames = ("s2", "s1")
+            hybrid_argnames = ("h2", "h1")
+
+            # pylint: disable=useless-parent-delegation, too-many-arguments
+            def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
+                super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
+
+        assert DummyOp.wire_argnames == ("reg1", "reg2")
+        assert DummyOp.dynamic_argnames == ("a", "b")
+        assert DummyOp.static_argnames == ("s1", "s2")
+        assert DummyOp.hybrid_argnames == ("h1", "h2")
+
+        class DummyOp2(qp.core.Operator2):
+
+            compilable_argnames = ("c3", "c2", "c1")
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, c1, wires, c2, c3):
+                super().__init__(c1, wires, c2, c3)
+
+        assert DummyOp2.compilable_argnames == ("c1", "c2", "c3")
+
     @pytest.mark.parametrize(
         "other_argnames",
         [
@@ -533,7 +562,7 @@ class TestOperatorInit:
         inner = [DynOp(0.1, wires=7), DynOp(0.2, wires=8)]
         op = Composite(inner, [0, [1, 2], [3, 4]], [5, 6])
         # Wires are ordered using wire_argnames, so `wires` come before `pytree_wires`
-        assert op.wires == Wires([5, 6, 0, 1, 2, 3, 4, 7, 8])
+        assert op.wires == Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
 
     def test_non_hybrid_wire_arg_auto_wrapped_in_constructor(self):
         """Test that non-hybrid wire arguments are wrapped in ``Wires`` by the
@@ -842,7 +871,7 @@ class TestProperties:
                 super().__init__(Wires(wires), Wires(wires1))
 
         op = Op([0, 1], [2, 3, 4])
-        assert op.wires == Wires([2, 3, 4, 0, 1])
+        assert op.wires == Wires([0, 1, 2, 3, 4])
 
 
 class TestBroadcasting:

@@ -983,14 +983,15 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources[resource_rep(qp.MultiplexerStatePreparation, num_wires=d)] += 1
 
     # Step 2 in paper (p.7)
-    qrom_params = {
-        "num_bitstrings": num_entries,
-        "num_control_wires": d,
-        "num_target_wires": num_wires,
-        "num_work_wires": d - 1,
-        "clean": True,
-    }
-    resources[resource_rep(qp.QROM, **qrom_params)] += 1
+    resources[
+        qp.QROM(
+            data=Int[num_entries, num_wires],
+            control_wires=Wire[d],
+            target_wires=Wire[num_wires],
+            work_wires=Wire[d - 1],
+            clean=True,
+        )
+    ] += 1
 
     if not identity_encoding:
         ## Step 3 & 4 in paper (p.7). This is an upper bound
