@@ -734,7 +734,7 @@ def _rz_to_ry_cliff(phi, wires: WiresLike):
     )
 
 
-def _rz_to_ppr_resources():
+def _rz_to_ppr_resources(phi, wires):
     return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 

@@ -83,7 +83,15 @@ _INSTANCES_TO_TEST = [
     (qp.s_prod(1.1, qp.RX(1.1, 0)), {"skip_differentiation": True}),
     (qp.prod(qp.PauliX(0), qp.PauliY(1), qp.PauliZ(0)), {}),
     (qp.ctrl(qp.RX(1.1, 0), 1), {}),
-    pytest.param((qp.exp(qp.PauliX(0), 1.1), {}), marks=pytest.mark.xfail),
+    pytest.param(
+        (qp.exp(qp.PauliX(0), 1.1), {}),
+        marks=pytest.mark.xfail(
+            reason=(
+                "Real exponent decomposes to complex PauliRot, which is not "
+                "supported with Operator2"
+            )
+        ),
+    ),
     (qp.pow(qp.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qp.ops.Evolution(qp.PauliX(0), 5.2), {}),
     (qp.estimator.FirstQuantization(1, 2, 1), {}),
