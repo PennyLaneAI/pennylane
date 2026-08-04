@@ -141,7 +141,7 @@ def merge_rotations(
           - :class:`qp.CRot <pennylane.CRot>`,
           - :class:`qp.MultiRZ <pennylane.MultiRZ>`.
 
-        .. code-block:: python
+        .. code-block:: python3
 
             dev = qp.device("lightning.qubit", wires=1)
 
