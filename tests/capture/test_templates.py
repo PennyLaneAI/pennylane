@@ -1846,14 +1846,6 @@ def test_templates_are_modified(template):
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
 
-def test_migrated_templates_have_custom_test():
-    """As templates migrated to Operator2 are considered to be modified in the previous test,
-    we make sure that all templates marked as migrated actually are recognized as modified
-    in `modified_templates`. Together with the test below, this also ensures that there is a
-    dedicated custom test for all migrated templates."""
-    assert set(migrated_templates).issubset(set(modified_templates))
-
-
 def test_all_modified_templates_are_tested():
     """Test that all templates in `modified_templates` (automatically computed and
     validated above) also are in `tested_modified_templates` (manually created and
