@@ -84,7 +84,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
         Consider the following example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             import pennylane as qp
 
