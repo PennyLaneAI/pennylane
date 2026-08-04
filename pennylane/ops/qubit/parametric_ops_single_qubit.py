@@ -1367,13 +1367,13 @@ class U1(Operator2):
         return [PhaseShift(phi, wires=wires)]
 
     def adjoint(self) -> "U1":
-        return U1(-self.dynamic_args["phi"], wires=self.wires)
+        return U1(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [U1(self.dynamic_args["phi"] * z, wires=self.wires)]
+        return [U1(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "U1":
-        phi = self.dynamic_args["phi"] % (2 * np.pi)
+        phi = self.phi % (2 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
@@ -1384,7 +1384,7 @@ class U1(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_u1(base: U1, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.ControlledPhaseShift(base.dynamic_args["phi"], wires=control + base.wires)
+        return qp.ControlledPhaseShift(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
@@ -1527,8 +1527,8 @@ class U2(Operator2):
         ]
 
     def adjoint(self) -> "U2":
-        phi = self.dynamic_args["phi"]
-        delta = self.dynamic_args["delta"]
+        phi = self.phi
+        delta = self.delta
         new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
         new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
         return U2(new_phi, new_delta, wires=self.wires)
@@ -1537,8 +1537,8 @@ class U2(Operator2):
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
-        phi = self.dynamic_args["phi"] % (2 * np.pi)
-        delta = self.dynamic_args["delta"] % (2 * np.pi)
+        phi = self.phi % (2 * np.pi)
+        delta = self.delta % (2 * np.pi)
 
         if _can_replace(delta, 0) and _can_replace(phi, 0):
             return RY(np.pi / 2, wires=wires)
@@ -1568,8 +1568,8 @@ add_decomps(U2, _u2_phaseshift_rot)
 
 @register_resources(lambda base: {abstractify(U2): 1})
 def _adjoint_u2(base):
-    phi = base.dynamic_args["phi"]
-    delta = base.dynamic_args["delta"]
+    phi = base.phi
+    delta = base.delta
     new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
     U2(new_phi, new_delta, wires=base.wires)
@@ -1728,9 +1728,9 @@ class U3(Operator2):
         ]
 
     def adjoint(self) -> "U3":
-        theta = self.dynamic_args["theta"]
-        phi = self.dynamic_args["phi"]
-        delta = self.dynamic_args["delta"]
+        theta = self.theta
+        phi = self.phi
+        delta = self.delta
         new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
         new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
         return U3(theta, new_phi, new_delta, wires=self.wires)
@@ -1744,9 +1744,9 @@ class U3(Operator2):
 
         """
         wires = self.wires
-        p0 = self.dynamic_args["theta"] % (4 * np.pi)
-        p1 = self.dynamic_args["phi"] % (2 * np.pi)
-        p2 = self.dynamic_args["delta"] % (2 * np.pi)
+        p0 = self.theta % (4 * np.pi)
+        p1 = self.phi % (2 * np.pi)
+        p2 = self.delta % (2 * np.pi)
 
         if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
             return qp.Identity(wires=wires)
@@ -1781,9 +1781,9 @@ add_decomps(U3, _u3_phaseshift_rot)
 
 @register_resources(lambda base: {abstractify(U3): 1})
 def _adjoint_u3(base):
-    theta = base.dynamic_args["theta"]
-    phi = base.dynamic_args["phi"]
-    delta = base.dynamic_args["delta"]
+    theta = base.theta
+    phi = base.phi
+    delta = base.delta
     new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
     U3(theta, new_phi, new_delta, wires=base.wires)
