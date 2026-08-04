@@ -38,7 +38,7 @@ from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import Complex, FlatPytree, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -1163,7 +1163,7 @@ class IsingXX(Operator2):
     dynamic_argnames = ("phi",)
     wires_argnames = ("wires",)
 
-    arg_specs = {"phi": Float, "wires": Wire[2]}
+    arg_specs = {"phi": Complex, "wires": Wire[2]}
     wire_sizes = (2,)
 
     num_wires = 2
@@ -1179,7 +1179,7 @@ class IsingXX(Operator2):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
-    def __init__(self, phi: Float, wires: WiresLike):
+    def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
     @staticmethod
@@ -1305,7 +1305,7 @@ class IsingYY(Operator2):
     dynamic_argnames = ("phi",)
     wires_argnames = ("wires",)
 
-    arg_specs = {"phi": Float, "wires": Wire[2]}
+    arg_specs = {"phi": Complex, "wires": Wire[2]}
     wire_sizes = (2,)
 
     num_wires = 2
@@ -1456,7 +1456,7 @@ class IsingZZ(Operator2):
     dynamic_argnames = ("phi",)
     wires_argnames = ("wires",)
 
-    arg_specs = {"phi": Float, "wires": Wire[2]}
+    arg_specs = {"phi": Complex, "wires": Wire[2]}
     wire_sizes = (2,)
 
     num_wires = 2
@@ -1649,7 +1649,7 @@ class IsingXY(Operator2):
     dynamic_argnames = ("phi",)
     wires_argnames = ("wires",)
 
-    arg_specs = {"phi": Float, "wires": Wire[2]}
+    arg_specs = {"phi": Complex, "wires": Wire[2]}
     wire_sizes = (2,)
 
     num_wires = 2
