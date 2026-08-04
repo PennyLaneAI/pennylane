@@ -14,8 +14,11 @@
 
 """Placement types and node constructors for backline heterogeneous compilation and execution."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+
+from pennylane.devices.device_constructor import device as _make_device
 
 from .functions import CoprocessorFunction
 from .transports import Transport, get_transport
@@ -23,143 +26,148 @@ from .transports import Transport, get_transport
 if TYPE_CHECKING:
     from pennylane.devices import Device
 
-@dataclass(frozen=True)
-class ExecutorSpec:
-    """Declarative executor configuration, realized by the compiler backend.
-    """
-
-    options: dict = field(default_factory=dict)
-    """Backend-specific executor options, passed verbatim to the compiler's executor builder."""
-
 
 @dataclass(frozen=True, kw_only=True)
 class Node:
-    """A node in a backline fabric, including its name and connection information.
+    """A node in a backline fabric.
 
-    Base class for :class:`Controller` and :class:`Coprocessor`. It carries information to determine whether the node's code needs to be cross-compiled and dispatched to a remote host or run
-    locally. Nodes are assembled into a device with :func:`~pennylane.backline`.
+    Base class for :class:`~.Controller` and :class:`~.Coprocessor`. It carries the node's label and
+    backend implementation, how its code is deployed, and any backend-specific initialization
+    arguments. Nodes are assembled into a device with :func:`~pennylane.backline`.
 
     See the Attributes section to learn more about the available options.
     """
 
-    name: str | None = None
-    """The backend device this node maps to, e.g. ``"gpu-libibverbs"`` or
-    ``"cpu-libibverbs"``. Defaults to ``None``."""
+    label: str | None = None
+    """A name for this node, used to identify its transport session and to label its executor's
+    logs. Defaults to ``None``, in which case the compiler derives one from the node's role
+    (``"controller"``, ``"coprocessor.0"``, ...). This does not select a backend — see
+    :attr:`backend`."""
 
-    addr: str | None = None
-    """Host address of the node. Required for remote nodes; may be ``None`` for local ones."""
+    backend: str | None = None
+    """The transport backend this node uses, by name, e.g. ``"cpu_verbs"`` or ``"gpu_verbs"``. The
+    compiler resolves the name together with the node's role to the installed backend library, so the
+    backend only has to be available to the compiler. Defaults to ``None``, letting the compiler pick
+    its default. A ``"backend_lib"`` path in :attr:`init_args` takes precedence."""
 
-    port: str | None = None
-    """Port the node is reached on."""
-
-    triple: str | None = None
-    """Cross-compilation target triple for the node's code."""
-
-    remote: bool = True
+    remote: bool = False
     """Whether the node runs on a separate host reached over the network (cross-compiled and
-    dispatched) rather than locally."""
+    dispatched) rather than locally. Defaults to ``False``. A remote node needs an executor to
+    dispatch its compiled code to, which is created and attached by the compiler
+    using :attr:`executor_options`."""
+
+    executor_options: dict | None = None
+    """Options for the executor to launch for this node, passed to the compiler's executor
+    builder. ``None`` (the default) requests no executor; ``{}`` requests one with all defaults.
+    The launched executor also determines the node's cross-compilation target triple, detecting it
+    on the target host when not given explicitly. TODO: add what is recognized here"""
 
     executor: object | None = None
-    """The executor this node runs on. Either a launched executor (e.g. a ``catalyst.Executor``,
-    duck-typed: exposes ``address`` and ``triple``) or an :class:`ExecutorSpec` the compiler realizes
-    into one. When realized, its ``address``/``triple`` drive the node's cross-compile and remote
-    dispatch; ``addr``/``port`` remain the data-plane endpoint. Defaults to ``None``."""
+    """The launched executor this node runs on. Created automatically by the compiler from
+    :attr:`executor_options`."""
 
     init_args: dict = field(default_factory=dict)
-    """Backend-specific initialization arguments; empty by default (never ``None``)."""
+    """Backend-specific initialization arguments; empty by default (never ``None``). TODO: add what is recognized here
+    """
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Controller(Node):
     """The node that controls the QPU and initiates data transfers.
 
-    The controller runs the qnode and is the data-initiator during a decoding step: it sends
-    syndromes to the coprocessors and receives corrections back. Pass it to
+    The controller runs the QNode and is the data-initiator during a decoding step: it sends
+    syndromes to the :class:`coprocessors <.Coprocessor>` and receives corrections back. Pass it to
     :func:`~pennylane.backline` to build a device.
 
     Args:
-        device (Device | None): The PennyLane device the controller executes (e.g. ``qp.device("lightning.qubit")``). Defaults to ``None``, which uses a ``null.qubit`` device.
+        device (Device | None): The PennyLane device the controller executes. Defaults to ``None``,
+            which uses a ``null.qubit`` device.
 
-    See the Attributes section for the connection options inherited from :class:`Node`.
+    See the Attributes section for the options inherited from :class:`~.Node`.
+
+    .. seealso:: :class:`~.Coprocessor`, :func:`~pennylane.backline`
     """
 
     device: "Device | None" = None
-    """The PennyLane device the controller executes, e.g. ``qp.device("lightning.qubit")``. When ``None``, a ``null.qubit`` device is used."""
+    """The PennyLane device the controller executes, e.g. one built with :func:`~pennylane.device`.
+    When ``None``, a ``null.qubit`` device is used."""
 
     def __post_init__(self):
         if self.device is None:
-            import pennylane as qp
-
-            object.__setattr__(self, "device", qp.device("null.qubit"))
+            object.__setattr__(self, "device", _make_device("null.qubit"))
 
 
 @dataclass(frozen=True, kw_only=True)
 class Coprocessor(Node):
     """The node that runs a coprocessor function per received message.
 
-    A coprocessor receives messages from the controller (e.g., syndromes). The ``coprocessor_fn`` is
-    used to process the message, and sends the result back (e.g., corrections). Depending on the
-    connection type, a ``coprocessor_fn`` may be a persistent kernel. Pass coprocessors to
-    :func:`~pennylane.backline` to build a device.
+    A coprocessor receives messages from the :class:`controller <.Controller>` (e.g., syndromes). The
+    :attr:`coprocessor_fn` is used to process the message, and sends the result back (e.g.,
+    corrections). Depending on the connection type, a :attr:`coprocessor_fn` may be a persistent
+    kernel. Pass coprocessors to :func:`~pennylane.backline` to build a device.
+
+    The coprocessor owns the connection endpoint: it listens on :attr:`oob_port`, and the controller
+    dials :attr:`comm_host`\\ ``:``\\ :attr:`oob_port` to bring the connection up.
 
     See the Attributes section to learn more about the available options.
+
+    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`, :func:`~pennylane.backline`
     """
 
     coprocessor_fn: str | CoprocessorFunction
     """The function for processing the received message. A string is resolved to a
     :class:`~.CoprocessorFunction` by name."""
 
+    comm_host: str
+    """This coprocessor's address, which the controller connects to in order to bring up the
+    connection. Must be reachable from the host the controller runs on, and is required for every
+    coprocessor. For one co-located with the controller, use localhost (``"127.0.0.1"``)."""
+
+    oob_port: int | None = None
+    """The port this coprocessor listens on for the out-of-band connection handshake. This is the handshake channel that exchanges the information needed to set up the
+    data path. Defaults to ``None``, leaving the choice to the compiled runtime."""
+
     def __post_init__(self):
         if isinstance(self.coprocessor_fn, str):
             object.__setattr__(self, "coprocessor_fn", CoprocessorFunction(self.coprocessor_fn))
+        if self.oob_port is not None:
+            if not isinstance(self.oob_port, int):
+                raise TypeError(
+                    f"oob_port must be an int, got {type(self.oob_port).__name__}: "
+                    f"{self.oob_port!r}"
+                )
+            if not 1 <= self.oob_port <= 65535:
+                raise ValueError(f"oob_port must be in 1..65535, got {self.oob_port}")
 
 
 @dataclass(frozen=True, kw_only=True)
-class Backline:
+class Placement:
     """Declarative placement for heterogeneous execution.
 
-    Contains a controller node, any coprocessor nodes, and the transport that carries data between
-    them. Use :func:`~pennylane.backline` to assemble a controller, coprocessors, and transport into a device that carries this placement.
+    Contains a :class:`controller <.Controller>` node, any :class:`coprocessor <.Coprocessor>` nodes,
+    and the :class:`transport <.Transport>` that carries data between them. Rather than constructing
+    this directly, use :func:`~pennylane.backline` to assemble a controller, coprocessors, and
+    transport into a device; the resulting placement is available as the device's
+    :attr:`~.HeterogeneousDevice.placement` attribute.
 
     See the Attributes section to learn more about the available options.
+
+    .. seealso:: :func:`~pennylane.backline`, :class:`~.HeterogeneousDevice`
     """
 
     controller: Controller
-    """The node running the qnode."""
+    """The :class:`~.Controller` running the QNode."""
 
-    coprocessors: tuple = ()
-    """Coprocessing accelerators."""
+    coprocessors: Sequence["Coprocessor"] = ()
+    """The :class:`coprocessing accelerators <.Coprocessor>`. Any sequence is accepted, and is stored
+    as a tuple."""
 
     transport: str | Transport
-    """How bytes move between executors, by registry name (e.g. ``"rdma"``) or a
-    :class:`~.Transport`. A name is resolved to a :class:`~.Transport` on construction."""
+    """How bytes move between nodes, by registry name (e.g. ``"rdma"``) or a :class:`~.Transport`. A
+    name is resolved to a :class:`~.Transport` on construction with :func:`~.get_transport`."""
 
     def __post_init__(self):
         if not isinstance(self.coprocessors, tuple):
             object.__setattr__(self, "coprocessors", tuple(self.coprocessors))
         if isinstance(self.transport, str):
             object.__setattr__(self, "transport", get_transport(self.transport))
-
-
-def controller(*, device=None, name=None, addr=None, port=None, remote=True, triple=None,
-               init_args=None, **executor_kwargs):
-    """Construct a :class:`Controller`, recording its executor for the compiler to launch.
-
-    Returns:
-        Controller: The controller node carrying its executor spec.
-    """
-    executor = ExecutorSpec(executor_kwargs) if executor_kwargs else None
-    return Controller(device=device, name=name, addr=addr, port=port, remote=remote,
-                      triple=triple, init_args=init_args or {}, executor=executor)
-
-
-def coprocessor(*, coprocessor_fn, name=None, addr=None, port=None, remote=True, triple=None,
-                init_args=None, **executor_kwargs):
-    """Construct a :class:`Coprocessor`, recording its executor for the compiler to launch.
-    
-    Returns:
-        Coprocessor: The coprocessor node carrying its executor spec.
-    """
-    executor = ExecutorSpec(executor_kwargs) if executor_kwargs else None
-    return Coprocessor(coprocessor_fn=coprocessor_fn, name=name, addr=addr, port=port,
-                       remote=remote, triple=triple, init_args=init_args or {}, executor=executor)

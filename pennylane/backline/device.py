@@ -18,9 +18,11 @@ A frontend device that carries a backline placement (consisting of controller, c
 heterogeneous compilation and execution. This device requires the Catalyst compiler.
 """
 
+from collections.abc import Sequence
+
 from pennylane.devices import Device
 
-from .placement import Backline, Controller, Coprocessor
+from .placement import Controller, Coprocessor, Placement
 
 
 class HeterogeneousDevice(Device):
@@ -29,57 +31,62 @@ class HeterogeneousDevice(Device):
     Rather than constructing this directly, build one with :func:`~pennylane.backline`::
 
         cpu_controller = qp.Controller(
-                qp.device("lightning.qubit", wires=4),
-                name="cpu-controller",
-                addr="192.168.1.1",
-                port="1234",
-                triple="aarch64-unknown-linux-gnu",
+                device=qp.device("lightning.qubit", wires=4),
+                label="cpu-controller",
                 remote=True,
+                executor_options={"host": "192.168.3.15"},
         )
 
         gpu_coprocessor = qp.Coprocessor(
-            name="gpu-coprocessor",
+            label="gpu-coprocessor",
             coprocessor_fn="decoder",
+            backend="gpu_verbs",
+            comm_host="192.168.1.3",
+            oob_port=18590,
             remote=False,
         )
 
-        dev = qp.backline(cpu_controller, gpu_coprocessor, transport="rdma")
+        dev = qp.backline(
+            controller=cpu_controller, coprocessors=[gpu_coprocessor], transport="rdma"
+        )
 
-    The device stores the :class:`~pennylane.backline.Backline` placement consisting of a transport,
-    controller, and coprocessors. Its wires are taken from the controller's device. This device
-    requires the Catalyst compiler.
+    The device stores the :class:`~.Placement` consisting of a :class:`transport <.Transport>`,
+    :class:`controller <.Controller>`, and :class:`coprocessors <.Coprocessor>`. This device requires
+    the Catalyst compiler.
 
     Args:
-        backline (Backline): The placement (controller, coprocessors, transport).
+        placement (Placement): The :class:`~.Placement` to execute over.
         shots (int | None): Number of shots. Defaults to ``None`` (analytic); set shots on the
             QNode with :func:`~pennylane.set_shots` instead.
+
+    .. seealso:: :func:`~pennylane.backline`, :class:`~.Placement`
     """
 
-    def __init__(self, backline, shots=None):
-        self._backline = backline
-        self._device = backline.controller.device  # the real, compilable device
+    def __init__(self, *, placement, shots=None):
+        self._placement = placement
+        self._device = placement.controller.device
         super().__init__(wires=self._device.wires, shots=shots)
         self.config_filepath = self._device.config_filepath
 
     @property
-    def backline(self):
-        """The placement backline the device was configured with."""
-        return self._backline
+    def placement(self):
+        """Placement: The :class:`~.Placement` the device was configured with."""
+        return self._placement
 
     @property
     def transport(self):
-        """The transport that carries data between executors (the backline's transport)."""
-        return self._backline.transport
+        """Transport: The :class:`~.Transport` carrying data between nodes."""
+        return self._placement.transport
 
     @property
     def controller(self):
-        """Controller: The controller executor of the backline placement."""
-        return self._backline.controller
+        """Controller: The :class:`~.Controller` node of the placement."""
+        return self._placement.controller
 
     @property
     def coprocessors(self):
-        """tuple[Coprocessor, ...]: The coprocessor executors of the backline placement."""
-        return self._backline.coprocessors
+        """tuple[Coprocessor, ...]: The :class:`~.Coprocessor` nodes of the placement."""
+        return self._placement.coprocessors
 
     @property
     def name(self):
@@ -101,27 +108,35 @@ class HeterogeneousDevice(Device):
         )
 
 
-def backline(controller: Controller, *coprocessors: Coprocessor, transport) -> HeterogeneousDevice:
+def backline(
+    *,
+    controller: Controller,
+    coprocessors: Sequence[Coprocessor] = (),
+    transport,
+) -> HeterogeneousDevice:
     """Build a heterogeneous execution device from a backline placement.
 
-    The returned device can be passed straight to a QNode, e.g. ``@qp.qnode(dev)``. Its wires are
-    taken from the controller's device. This device requires the Catalyst compiler.
+    The returned device can be passed straight to a :func:`~pennylane.qnode`. Its wires are taken
+    from the controller's device. This device requires the Catalyst compiler.
 
     .. warning::
 
         Backline is experimental. Its API may change without notice, and it is only usable through
         the Catalyst compiler.
 
-    Args:
-        controller (Controller): The executor that drives the QPU and runs the QNode.
-        *coprocessors (Coprocessor): Zero or more coprocessing accelerators.
-
     Keyword Args:
-        transport (str | Transport): The transfer protocol between executors, by registry name (e.g.
-            ``"rdma"``) or a :class:`~pennylane.backline.Transport`.
+        controller (Controller): The :class:`~.Controller` that drives the QPU and runs the QNode.
+        coprocessors (Sequence[Coprocessor]): Zero or more :class:`~.Coprocessor` accelerators.
+            Defaults to ``()``.
+        transport (str | Transport): The transfer protocol between nodes, by registry name (e.g.
+            ``"rdma"``) or a :class:`~.Transport`.
 
     Returns:
-        HeterogeneousDevice: A PennyLane device carrying the placement.
+        HeterogeneousDevice: A :class:`~.HeterogeneousDevice` carrying the
+        :class:`~.Placement`.
+
+    .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :class:`~.Placement`,
+        :class:`~.HeterogeneousDevice`
 
     **Example**
 
@@ -129,15 +144,27 @@ def backline(controller: Controller, *coprocessors: Coprocessor, transport) -> H
 
         import pennylane as qp
 
-        con = qp.Controller(qp.device("lightning.qubit", wires=4), addr="192.168.1.1", port="1234")
-        coproc = qp.Coprocessor(coprocessor_fn="decoder", name="gpu-libibverbs")
+        con = qp.Controller(
+            device=qp.device("lightning.qubit", wires=4),
+            label="cpu-controller",
+            remote=True,
+            executor_options={"host": "192.168.3.15"},
+        )
+        coproc = qp.Coprocessor(
+            coprocessor_fn="decoder",
+            label="decoder-0",
+            backend="gpu_verbs",
+            comm_host="192.168.1.3",
+            oob_port=18590,
+            remote=False,
+        )
 
-        dev = qp.backline(con, coproc, transport="rdma")
+        dev = qp.backline(controller=con, coprocessors=[coproc], transport="rdma")
 
         @qp.qjit
         @qp.qnode(dev)
         def circuit():
             ...
     """
-    placement = Backline(controller=controller, coprocessors=coprocessors, transport=transport)
-    return HeterogeneousDevice(placement)
+    placement = Placement(controller=controller, coprocessors=coprocessors, transport=transport)
+    return HeterogeneousDevice(placement=placement)

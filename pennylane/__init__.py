@@ -203,14 +203,11 @@ from pennylane.devices.device_constructor import device, refresh_devices
 
 # Imported after ``pennylane.devices`` because ``HeterogeneousDevice`` subclasses ``devices.Device``.
 from pennylane.backline import (
-    Backline,
     Controller,
     Coprocessor,
     CoprocessorFunction,
     Node,
     backline,
-    controller,
-    coprocessor,
     css_decoder,
 )
 

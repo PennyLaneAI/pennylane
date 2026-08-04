@@ -21,7 +21,8 @@ import numpy as np
 
 @dataclass(frozen=True)
 class CoprocessorFunction:
-    """A precompiled function to run on a Coprocessor to process messages received from Controller.
+    """A precompiled function run on a :class:`~.Coprocessor` to process messages received from the
+    :class:`~.Controller`.
 
     This is a thin handle over a precompiled library symbol. It contains the information needed to
     locate and dispatch the function (its symbol name, and the library it lives in).
@@ -29,6 +30,8 @@ class CoprocessorFunction:
     the same host, e.g., via Triton) and loaded by the runtime.
 
     See the Attributes section to learn more about the available options.
+
+    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_decoder`
     """
 
     name: str
@@ -48,7 +51,7 @@ def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
     """Compile a CSS code's Tanner graph into a coprocessor decode function.
 
     Accepts the X- and Z-type parity-check matrices of a CSS code and compiles a decoder down to a
-    shared library that can be used as a :class:`CoprocessorFunction`.
+    shared library that can be used as a :class:`~.CoprocessorFunction`.
 
     .. note::
         Not yet implemented — this is a placeholder for the Triton-based decoder compiler.
@@ -58,7 +61,10 @@ def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
         Hz (np.ndarray): The Z parity-check matrix.
 
     Returns:
-        CoprocessorFunction: The compiled decode function.
+        CoprocessorFunction: The compiled decode function, ready to pass as a
+        :class:`~.Coprocessor`'s ``coprocessor_fn``.
+
+    .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
     """
     raise NotImplementedError(
         "css_decoder is not yet implemented; it will compile a CSS code's Tanner graph "

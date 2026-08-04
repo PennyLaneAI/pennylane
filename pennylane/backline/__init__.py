@@ -16,8 +16,8 @@ r"""
 .. currentmodule:: pennylane.backline
 
 This module contains experimental features for compilation and execution on heterogeneous devices.
-The :func:`~pennylane.backline` function builds a device from a placement, which specifies where
-each part of the workload runs and the transport protocol between them.
+The :func:`~pennylane.backline` function builds a device from a :class:`~.Placement`, which specifies
+where each part of the workload runs and the :class:`~.Transport` protocol between them.
 
 .. warning::
 
@@ -27,38 +27,47 @@ each part of the workload runs and the transport protocol between them.
 A backline device is built with :func:`~pennylane.backline` from a
 :class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
 ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`. The resulting device is passed into a QNode:
+:class:`transport <.Transport>`. The resulting :class:`~.HeterogeneousDevice` is passed into a
+:func:`~pennylane.qnode`:
 
 .. code-block:: python
 
     import pennylane as qp
 
     cpu_controller = qp.Controller(
-        qp.device("lightning.qubit", wires=4),
-        name="cpu-controller",
-        addr="192.168.1.1",
-        port="1234",
-        triple="aarch64-unknown-linux-gnu",
+        device=qp.device("lightning.qubit", wires=4),
+        label="cpu-controller",
+        backend="cpu_verbs",
         remote=True,
+        executor_options={"host": "192.168.3.15"},
+        init_args={"config": "dev=mlx5_0;gid=1"},
     )
 
     gpu_coprocessor = qp.Coprocessor(
-        name="gpu-coprocessor",
+        label="gpu-coprocessor",
         coprocessor_fn="decoder",
+        backend="gpu_verbs",
+        comm_host="192.168.1.3",
+        oob_port=18590,
         remote=False,
+        init_args={"config": "dev=mlx5_0;gid=3"},
     )
 
-    dev = qp.backline(cpu_controller, gpu_coprocessor, transport="rdma")
+    dev = qp.backline(
+        controller=cpu_controller, coprocessors=[gpu_coprocessor], transport="rdma"
+    )
 
     @qp.qjit
     @qp.qnode(dev)
     def circuit():
-        # To be updated
+        ...
 
 Nodes
 ~~~~~
 
-A node is a participant in the backline fabric. A node can be a Controller (where the QNode is executed, and issues messages), or a Coprocessor (where the messages are processed and returned).
+A node is a participant in the backline fabric. It is either a :class:`~.Controller`, where the QNode
+executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are processed
+and returned. Both share the options on :class:`~.Node`.
 
 .. autosummary::
     :toctree: api
@@ -70,7 +79,10 @@ A node is a participant in the backline fabric. A node can be a Controller (wher
 Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-A coprocessor applies a precompiled function to each message it receives (e.g., decoding a syndrome). Currently, coprocessor functions can be defined directly in C++ as a runtime function, or in Python through helper functions such as ``css_decoder``.
+A :class:`~.Coprocessor` applies a precompiled function to each message it receives (e.g., decoding a
+syndrome). Coprocessor functions can be defined directly in C++ as a runtime function, or in Python
+through helper functions such as :func:`~.css_decoder`. Either way they are referenced by a
+:class:`~.CoprocessorFunction`.
 
 .. autosummary::
     :toctree: api
@@ -81,20 +93,24 @@ A coprocessor applies a precompiled function to each message it receives (e.g., 
 Placement
 ~~~~~~~~~
 
-A placement groups the controller, coprocessors, and transport. :func:`~pennylane.backline` assembles
-them into a device that can be bound to a QNode.
+A :class:`~.Placement` groups the :class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`, and
+the :class:`~.Transport`. :func:`~pennylane.backline` assembles them into a device that can be bound to
+a QNode, so a :class:`~.Placement` is normally created by calling :func:`~pennylane.backline` rather
+than constructed directly.
 
 .. autosummary::
     :toctree: api
 
     ~backline
-    ~Backline
+    ~Placement
 
 Device
 ~~~~~~
 
-:func:`~pennylane.backline` returns a device that carries the placement and can be bound directly to
-a QNode. It requires the Catalyst compiler for execution.
+:func:`~pennylane.backline` returns a :class:`~.HeterogeneousDevice` that carries the
+:class:`~.Placement` and can be bound directly to a :func:`~pennylane.qnode`. It requires the Catalyst
+compiler for execution, and exposes the placement it was built from as
+:attr:`~.HeterogeneousDevice.placement`.
 
 .. autosummary::
     :toctree: api
@@ -104,7 +120,8 @@ a QNode. It requires the Catalyst compiler for execution.
 Transports
 ~~~~~~~~~~
 
-A transport selects, by name, how messages transfer between executors. The implementation
+A :class:`~.Transport` selects, by name, how messages transfer between nodes. Names are resolved with
+:func:`~.get_transport` and new ones added with :func:`~.register_transport`; the implementation itself
 lives in the compiled runtime.
 
 .. autosummary::
@@ -117,25 +134,14 @@ lives in the compiled runtime.
 
 from .device import HeterogeneousDevice, backline
 from .functions import CoprocessorFunction, css_decoder
-from .placement import (
-    Backline,
-    Controller,
-    Coprocessor,
-    ExecutorSpec,
-    Node,
-    controller,
-    coprocessor,
-)
+from .placement import Controller, Coprocessor, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
 __all__ = [
     "Node",
     "Controller",
     "Coprocessor",
-    "controller",
-    "coprocessor",
-    "ExecutorSpec",
-    "Backline",
+    "Placement",
     "backline",
     "HeterogeneousDevice",
     "CoprocessorFunction",

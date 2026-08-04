@@ -28,9 +28,11 @@ class Transport:
     """A named data transport.
 
     Passed to :func:`~pennylane.backline` as the ``transport`` argument to select how messages move
-    between executors.
+    between the :class:`~.Controller` and its :class:`coprocessors <.Coprocessor>`.
 
     See the Attributes section to learn more about the available options.
+
+    .. seealso:: :func:`~.get_transport`, :func:`~.register_transport`
     """
 
     name: str
@@ -41,10 +43,13 @@ def register_transport(name):
     """Register a transport factory under ``name``.
 
     Args:
-        name (str): The name the transport is selected by.
+        name (str): The name the transport is selected by, as passed to
+            :func:`~pennylane.backline`.
 
     Returns:
         Callable: A decorator that registers the factory.
+
+    .. seealso:: :func:`~.get_transport`, :class:`~.Transport`
     """
 
     def decorator(factory):
@@ -58,13 +63,15 @@ def get_transport(name):
     """Return the :class:`Transport` registered under ``name``.
 
     Args:
-        name (str): The transport name.
+        name (str): The transport name, as registered by :func:`~.register_transport`.
 
     Returns:
-        Transport: The transport produced by the registered factory.
+        Transport: The :class:`~.Transport` produced by the registered factory.
 
     Raises:
         ValueError: If ``name`` is not registered.
+
+    .. seealso:: :func:`~.register_transport`, :class:`~.Transport`
     """
     try:
         factory = _TRANSPORTS[name]
