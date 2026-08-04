@@ -36,13 +36,12 @@ Validate new operator with `pennylane.ops.functions.assert_valid(op)`.
 # Linting and formatting
 
 <!--don't use pre-commit run as that fails in a sandboxed shell.-->
-Run configured tools directly on changed files. Pylint first, then formatting (black, isort) once at end.
+<!--Black and isort run in hook. -->
+Run configured tools directly on changed files.
 
 <!--Order is important, as we dont want changes required for pylint to force black to rerun-->
 <!--`--persistent=n` avoids writing a stats cache which a sandboxed shell can't access.-->
 - Lint: `pylint -rn -sn --persistent=n --rcfile=.pylintrc <path> ...` for files under `pennylane/` (use `--rcfile=tests/.pylintrc` for `tests/` or `pennylane/labs/tests/`)
-- Format: `black --config ./pyproject.toml <path> ...`
-- Sort imports (only `pennylane/` and `tests/` files): `isort --settings-path ./pyproject.toml <path> ...`
 - Module boundaries (repo-wide, no per-file mode): `tach check`
 
 Config in `pyproject.toml` (`black`, `isort`, line length 100) and `.pylintrc` files (`.pylintrc` source, `tests/.pylintrc` tests, `pennylane/labs/.pylintrc` labs).
