@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
+from pennylane.ops import CNOT, Adjoint, PauliX
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
     CollectedSubroutine,
@@ -738,17 +738,13 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "PauliZ"
-        assert rr.params["compute_op"].op_type == PauliZ
+        assert rr.params["compute_op"] == qp.Z(AbstractWires(1))
 
         assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "PauliX"
         assert rr.params["target_op"].op_type == PauliX
 
-        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
-        assert rr.params["uncompute_op"].op_type == Adjoint
+        assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(AbstractWires(1)))
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""

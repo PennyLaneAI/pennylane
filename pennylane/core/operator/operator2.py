@@ -69,6 +69,15 @@ class GradMethod(StrEnum):
     FINITE_DIFF = "F"
 
 
+ARGNAME_CATEGORIES = (
+    "wire_argnames",
+    "dynamic_argnames",
+    "static_argnames",
+    "compilable_argnames",
+    "hybrid_argnames",
+)
+
+
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
@@ -780,8 +789,8 @@ class Operator2(metaclass=OperatorMeta):
         canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
-    @staticmethod
-    def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
+    @classmethod
+    def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -800,7 +809,18 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        raise DecompositionUndefinedError
+        with pause(), QueuingManager.stop_recording():
+            # creating dummy op means this works for adjoint and ctrl too.
+            op = cls(*args, **kwargs)
+        for decomp in qp.list_decomps(op):
+            if decomp.is_applicable(**op.arguments):
+                with AnnotatedQueue() as q:
+                    decomp(**op.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError(f"No applicable decomposition rule for {cls}.")
 
     @classproperty
     @classmethod
@@ -812,8 +832,29 @@ class Operator2(metaclass=OperatorMeta):
         rules are registered for the operator type. Per-instance rule applicability is resolved
         in :meth:`~.Operator2.decomposition`, not here.
         """
+
+        # cant do cls.compute_decompsition != Operator2.compute_decomposition
+        # because default is now a classmethod
+        # classmethod is always different, even if not overwritten
+        # cant do getattr(cls.compute_decomposition "__func__", cls.compute_decomposition)
+        # because of an astroid/ pylint bug
+        # see https://github.com/pylint-dev/pylint/issues/11198
+
+        # Instead, walk the MRO to detect an override in a subclass.
+        # MRO = method resolution order determines who defines what methods
+
+        def defines_compute_decomposition(op_type):
+            for klass in op_type.__mro__:
+                if klass is Operator2:
+                    return False
+                if "compute_decomposition" in vars(klass):
+                    return True
+            # should always find Operator2 in the mro
+            msg = "This line should be impossible to hit. Something is wrong."  # pragma: no cover
+            raise TypeError(msg)  # pragma: no cover
+
         return (
-            cls.compute_decomposition != Operator2.compute_decomposition
+            defines_compute_decomposition(cls)
             or cls.decomposition != Operator2.decomposition
             or qp.decomposition.has_decomp(cls)
         )
@@ -830,19 +871,7 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        if type(self).compute_decomposition != Operator2.compute_decomposition:
-            return self.compute_decomposition(**self.arguments)
-
-        for decomp in qp.list_decomps(self):
-            if decomp.is_applicable(**self.arguments):
-                with AnnotatedQueue() as q:
-                    decomp(**self.arguments)
-                if QueuingManager.recording():
-                    # no need for copies if we just use queue method
-                    _ = [op.queue() for op in q.queue]
-                return q.queue
-
-        raise DecompositionUndefinedError
+        return self.compute_decomposition(**self.arguments)
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
@@ -1350,13 +1379,7 @@ class Operator2(metaclass=OperatorMeta):
             return
 
         # Argnames setup
-        for attr in (
-            "dynamic_argnames",
-            "wire_argnames",
-            "static_argnames",
-            "hybrid_argnames",
-            "compilable_argnames",
-        ):
+        for attr in ARGNAME_CATEGORIES:
             if isinstance(v := getattr(cls, attr), str):
                 setattr(cls, attr, (v,))
 
@@ -1365,6 +1388,11 @@ class Operator2(metaclass=OperatorMeta):
         _init_subclass_wire_sizes_setup(cls)
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
+
+        for attr in ARGNAME_CATEGORIES:
+            # enforce sorting by signature
+            sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
+            setattr(cls, attr, sorted_names)
 
 
 # ---------------------------------------------------------------------------------

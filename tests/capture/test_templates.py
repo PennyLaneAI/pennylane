@@ -26,6 +26,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator2
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
@@ -185,8 +186,6 @@ unmodified_templates_cases = [
     (qp.AQFT, (1, [0, 1, 2]), {}),
     (qp.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qp.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
-    (qp.QFT, ([0, 1],), {}),
-    (qp.QFT, (), {"wires": [0, 1]}),
     (qp.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qp.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
     pytest.param(
@@ -339,6 +338,7 @@ tested_modified_templates = [
     qp.QROMStatePreparation,
     qp.MultiplexerStatePreparation,
     qp.SelectPauliRot,
+    qp.QFT,
 ]
 
 
@@ -422,7 +422,7 @@ class TestModifiedTemplates:
 
         # due to flattening and unflattening H
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Z._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
@@ -575,7 +575,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qp.FermionicDoubleExcitation(weight, **kwargs)
 
-    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
@@ -594,7 +593,7 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 5
         assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
-        assert jaxpr.eqns[-2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RZ)
 
         eqn = jaxpr.eqns[-1]
         assert eqn.primitive == template._primitive
@@ -611,7 +610,6 @@ class TestModifiedTemplates:
         V = qp.RZ(v_params[0], wires=1)
         assert qp.equal(q.queue[0], template(V, U)) is True
 
-    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt_multiple_ops(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt with multiple ops."""
@@ -629,9 +627,9 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(qfunc)(v_params)
 
         assert len(jaxpr.eqns) == 9
-        assert jaxpr.eqns[0].primitive == qp.Hadamard._primitive
-        assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
-        assert jaxpr.eqns[-5].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
+        assert_eqn_matches_op(jaxpr.eqns[-5], qp.RZ)
         assert jaxpr.eqns[-2].primitive == qp.RX._primitive
 
         eqn = jaxpr.eqns[-1]
@@ -1106,17 +1104,9 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.QROM._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+        assert_eqn_matches_op(eqn, qp.QROM)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.QROM(**kwargs))
 
     @pytest.mark.xfail(reason="QROMStatePreparation uses array in metadata, [sc-104808]")
     def test_qrom_state_prep(self):
@@ -1778,6 +1768,28 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Superposition(**kwargs))
 
+    def test_qft(self):
+        """Test the primitive bind call of QFT."""
+
+        wires = [0, 5]
+
+        def qfunc(wires):
+            qp.QFT(wires)
+
+        # Validate inputs
+        qfunc(wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.QFT)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
 
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
@@ -1802,7 +1814,6 @@ unsupported_templates = [
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
 ]
-migrated_templates = [qp.BasisRotation]
 
 
 @pytest.mark.parametrize("template", modified_templates)
@@ -1810,7 +1821,7 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
-    if template == qp.templates.SubroutineOp or template in migrated_templates:
+    if template == qp.templates.SubroutineOp or issubclass(template, Operator2):
         return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
