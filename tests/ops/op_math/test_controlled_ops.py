@@ -537,6 +537,15 @@ def test_controlled_phase_shift_alias():
     qp.assert_equal(qp.ControlledPhaseShift(0.123, wires=[0, 1]), qp.CPhase(0.123, wires=[0, 1]))
 
 
+def test_controlled_phase_shift_label():
+    """Tests the label of ControlledPhaseShift, including the default and a custom base label."""
+    op = qp.ControlledPhaseShift(0.5, wires=[0, 1])
+    assert op.label() == "Rϕ"
+    assert op.label(decimals=2) == "Rϕ\n(0.50)"
+    assert op.label(base_label="X") == "X"
+    assert op.label(base_label="X", decimals=2) == "X\n(0.50)"
+
+
 def _arbitrary_crot(x, y, z):
     """controlled arbitrary single qubit rotation"""
     c = np.cos(y / 2)
