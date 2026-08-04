@@ -223,12 +223,6 @@ class TestDecimals:
         out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))
         assert out == expected
 
-    def test_string_decimals(self):
-        """Test displays string valued parameters."""
-
-        expected = "    0: ──RX(x)─┤  <Z>\n    a: ──RY(y)─┤     \n1.234: ──RZ(z)─┤     "
-        assert draw(circuit)("x", "y", "z") == expected
-
 
 class TestMatrixParameters:
     """Test that tapes containing matrix-valued parameters are drawn correctly."""

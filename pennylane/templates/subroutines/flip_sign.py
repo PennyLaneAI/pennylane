@@ -147,7 +147,11 @@ class FlipSign(Operation):
         if arr_bin[-1] == 0:
             op_list.append(X(wires[-1]))
 
-        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
+        op_list.append(
+            Z(wires[-1])
+            if len(wires) == 1
+            else ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
+        )
 
         if arr_bin[-1] == 0:
             op_list.append(X(wires[-1]))
@@ -156,13 +160,16 @@ class FlipSign(Operation):
 
 
 def _flip_sign_resources(num_wires, arr_bin):
-    res = {
-        _ctrl_abstract(
+    controlled_z = (
+        Z
+        if num_wires == 1
+        else _ctrl_abstract(
             Z,
             Wire[num_wires - 1],
             num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), arr_bin[:-1], 0),
-        ): 1
-    }
+        )
+    )
+    res = {controlled_z: 1}
     if arr_bin[-1] == 0:
         res[X] = 2
 
@@ -173,7 +180,10 @@ def _flip_sign_resources(num_wires, arr_bin):
 def _flip_sign_decomposition(wires, arr_bin):
     cond(arr_bin[-1] == 0, X)(wires[-1])
 
-    ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
+    if len(wires) == 1:
+        Z(wires[-1])
+    else:
+        ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
 
     cond(arr_bin[-1] == 0, X)(wires[-1])
 

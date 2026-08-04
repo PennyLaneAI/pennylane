@@ -15,7 +15,7 @@ avoid using too much context and making the agent worse. Write it for an agent, 
 - **Never act autonomously on GitHub.** Do NOT open, edit, comment on, or reply to any issue or PR unless user reviewed and explicitly approved exact content.
 - **Mark all AI-generated content.** Any text you produce going into issue, PR, or comment must wrap in code or quote block. Never present output as human-written.
 - **Never emit only raw AI text as reply.** Any AI content must carry human commentary explaining relevance.
-- **No code user hasn't read.** Keep changes minimal, strip AI artifacts and needless complexity. PR on GitHub not ready or not user-reviewed — always open draft mode.
+- **No code user hasn't read.** Keep changes minimal, strip AI artifacts and needless complexity. PR not ready or not user reviewed, draft mode.
 - No commit unless user explicitly asks.
 - Disclose work authored with AI assistant, in individual commits and PR description.
 - No solving good-first-issue with AI Agent.
