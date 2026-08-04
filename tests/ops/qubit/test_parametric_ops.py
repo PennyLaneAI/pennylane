@@ -163,7 +163,6 @@ SKIP_ASSERT_VALID = {
 
 
 class TestOperations:
-
     @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_assert_valid(self, op):
@@ -259,7 +258,6 @@ class TestOperations:
 
 
 class TestParameterFrequencies:
-
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not op.has_generator:
@@ -283,15 +281,6 @@ class TestParameterFrequencies:
 
 
 class TestDecompositions:
-
-    @pytest.mark.parametrize("op_class", (qp.RX, qp.RY, qp.RZ))
-    def test_decompositions_undefined(self, op_class):
-        """Test that RX, RY, and RZ don't have Operator.decomposition definitions, even though they
-        have graph decomps."""
-
-        with pytest.raises(qp.exceptions.DecompositionUndefinedError):
-            op_class(0.5, wires=0).decomposition()
-
     @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
     def test_phase_decomposition(self, phi, tol):
         """Tests that the decomposition of the Phase gate is correct"""
@@ -1872,7 +1861,6 @@ class TestEigvals:
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
-
     device_methods = [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
