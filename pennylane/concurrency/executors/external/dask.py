@@ -17,6 +17,9 @@ r"""
 Contains concurrent executor abstractions for task-based workloads based on support provided by Dask's distributed backend.
 """
 
+# pylint: disable=import-outside-toplevel
+
+
 import os
 from collections.abc import Callable, Sequence
 from typing import Union
@@ -24,7 +27,6 @@ from typing import Union
 from pennylane.concurrency.executors.base import ExtExec
 
 
-# pylint: disable=import-outside-toplevel
 class DaskExec(ExtExec):  # pragma: no cover
     """
     Dask distributed executor wrapper.

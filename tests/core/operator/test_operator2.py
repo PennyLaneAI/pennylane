@@ -12,7 +12,11 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
+# pylint: disable=too-many-public-methods
+
+
 # pylint: disable=protected-access
+
 # TODO: [sc-120817] Add interface tests
 # TODO: [sc-120982] Add integration tests
 
@@ -45,7 +49,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-public-methods
 class TestInitSubclass:
     """Tests for the validation performed in ``Operator2.__init_subclass__``."""
 
@@ -178,8 +181,9 @@ class TestInitSubclass:
         """Test that every parameter in the signature must appear in some ``**_argnames`` tuple."""
 
         with pytest.raises(TypeError, match="not classified in any argnames"):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 # ``phi`` is not in any argnames tuple
                 def __init__(self, phi, wires):
                     super().__init__(phi, wires=wires)
@@ -237,8 +241,9 @@ class TestInitSubclass:
         with pytest.raises(
             TypeError, match="'wire_sizes' must have the same length as 'wire_argnames'"
         ):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 wire_argnames = ("wires", "ctrl_wires")
                 wire_sizes = (1, 1, 1)
 
@@ -252,8 +257,9 @@ class TestInitSubclass:
             TypeError,
             match="Expected wire_size == None for 'pytree_wires' as it is a hybrid wire argument",
         ):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 wire_argnames = ("pytree_wires",)
                 hybrid_argnames = ("pytree_wires",)
                 wire_sizes = (2,)
@@ -266,8 +272,9 @@ class TestInitSubclass:
         """Test that ``wire_sizes`` entries must be positive integers or ``None``."""
 
         with pytest.raises(TypeError, match="'wire_sizes' must be a sequence of"):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 wire_sizes = (invalid_size,)
 
                 def __init__(self, wires):
@@ -319,8 +326,9 @@ class TestInitSubclass:
             TypeError,
             match="Number of wires specified for 'wires' does not match",
         ):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 dynamic_argnames = ("phi",)
                 wire_sizes = (3,)
                 arg_specs = {
@@ -508,8 +516,8 @@ class TestOperatorInit:
             dynamic_argnames = ("phi",)
             static_argnames = ("method",)
 
-            # pylint: disable=unused-argument
             def __init__(self, phi, wires, method="auto"):
+                # pylint: disable=unused-argument
                 super().__init__(phi, Wires(wires))
 
         op = Op(0.5, wires=0)
@@ -1941,10 +1949,12 @@ class TestHasRepresentations:
         assert WithGen.has_generator is True
 
 
-# pylint: disable=unused-argument,too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestRepresentations:
     """Tests for the various operator representation methods
     (and their corresponding ``compute_**`` static methods)."""
+
+    # pylint: disable=unused-argument
 
     def test_adjoint_default_error(self):
         """Test that the default ``adjoint`` raises ``AdjointUndefinedError``."""

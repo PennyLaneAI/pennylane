@@ -14,6 +14,7 @@
 """Tests trainable circuits using the JAX interface."""
 
 # pylint: disable=no-self-use
+
 import numpy as np
 import pytest
 

@@ -14,6 +14,7 @@
 """Tests trainable circuits using the Autograd interface."""
 
 # pylint: disable=no-self-use
+
 import numpy as np
 import pytest
 

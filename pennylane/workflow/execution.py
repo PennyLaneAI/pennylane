@@ -16,6 +16,9 @@ Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
 
+# pylint: disable=too-many-arguments
+
+
 from __future__ import annotations
 
 import inspect
@@ -48,7 +51,6 @@ if TYPE_CHECKING:
     from pennylane.workflow.resolution import SupportedDiffMethods
 
 
-# pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,

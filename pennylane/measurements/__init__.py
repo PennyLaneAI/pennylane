@@ -329,6 +329,9 @@ Here are a few more tips for adding measurements:
 You can find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 """
 
+# pylint: disable=import-outside-toplevel
+
+
 from pennylane.exceptions import MeasurementShapeError
 from pennylane.core.shots import Shots, ShotCopies, ShotsLike
 from pennylane.core.measurements import (
@@ -352,7 +355,6 @@ from .vn_entropy import VnEntropyMP, vn_entropy
 from .shots import add_shots
 
 
-# pylint: disable=import-outside-toplevel
 def __getattr__(name):
     import pennylane.ops.mid_measure as ops_measure
 

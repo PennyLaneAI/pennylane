@@ -162,7 +162,7 @@ class SPSAOptimizer:
     tf.Tensor(-0.9995854230771829, shape=(), dtype=float64)
     """
 
-    # pylint: disable-msg=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(self, maxiter=None, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
         self.a = a
         self.A = A

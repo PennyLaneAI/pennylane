@@ -15,13 +15,14 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=no-self-use
+
+
 import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-
-# pylint: disable=no-self-use
 
 
 class TestSingleQubitComparator:

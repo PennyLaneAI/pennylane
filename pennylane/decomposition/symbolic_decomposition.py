@@ -80,6 +80,8 @@ def _cancel_adjoint_resource(base_class, base_params):
 
 
 # pylint: disable=unused-argument
+
+
 @register_resources(_cancel_adjoint_resource)
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
@@ -91,6 +93,8 @@ def _adjoint_rotation_resource(base_class, base_params):
 
 
 # pylint: disable=unused-argument
+
+
 @register_resources(_adjoint_rotation_resource)
 def adjoint_rotation(phi, wires, base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
@@ -103,6 +107,8 @@ def is_integer(x):
 
 
 # pylint: disable=unused-argument
+
+
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
 @register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
 def repeat_pow_base(*params, wires, base, z, **__):
@@ -117,6 +123,8 @@ def repeat_pow_base(*params, wires, base, z, **__):
 
 
 # pylint: disable=unused-argument
+
+
 def _merge_powers_resource(base_class, base_params, z):
     return {
         pow_resource_rep(
@@ -128,6 +136,8 @@ def _merge_powers_resource(base_class, base_params, z):
 
 
 # pylint: disable=unused-argument
+
+
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
@@ -135,6 +145,8 @@ def merge_powers(*params, wires, base, z, **__):
 
 
 # pylint: disable=unused-argument
+
+
 def _flip_pow_adjoint_resource(base_class, base_params, z):
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
@@ -146,6 +158,8 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):
 
 
 # pylint: disable=unused-argument
+
+
 @register_resources(_flip_pow_adjoint_resource)
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
@@ -186,11 +200,15 @@ pow_involutory = make_pow_decomp_with_period(2)
 
 
 # pylint: disable=unused-argument
+
+
 def _pow_rotation_resource(base_class, base_params, z):
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=unused-argument
+
+
 @register_resources(_pow_rotation_resource)
 def pow_rotation(phi, wires, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
@@ -202,6 +220,8 @@ def _decomp_to_base_legacy_res(base_class, base_params, **__):
 
 
 # pylint: disable=unused-argument
+
+
 @register_resources(_decomp_to_base_legacy_res)
 def decompose_to_base_legacy(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
@@ -338,6 +358,8 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
 
 
 # pylint: disable=too-many-arguments
+
+
 def _flip_control_adjoint_resource(
     base_class,
     base_params,
@@ -360,6 +382,8 @@ def _flip_control_adjoint_resource(
 
 
 # pylint: disable=too-many-arguments
+
+
 @register_resources(_flip_control_adjoint_resource)
 def flip_control_adjoint(
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
@@ -389,6 +413,8 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 
 
 # pylint: disable=unused-argument
+
+
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):

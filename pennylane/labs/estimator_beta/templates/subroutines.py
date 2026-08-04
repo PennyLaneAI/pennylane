@@ -13,6 +13,9 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
+# pylint: disable=unused-argument
+
+
 import math
 
 import pennylane.labs.estimator_beta as qre
@@ -20,8 +23,6 @@ from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperato
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import WiresLike
-
-# pylint: disable=unused-argument
 
 
 def selectpaulirot_controlled_resource_decomp(
@@ -692,7 +693,6 @@ def qrom_state_preparation_phase_grad_resource_decomp(
     return gate_counts
 
 
-# pylint: disable=arguments-differ,too-many-arguments
 class LabsQROM(ResourceOperator):
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 
@@ -779,6 +779,7 @@ class LabsQROM(ResourceOperator):
             return w2
         return w1
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         num_bitstrings: int,
@@ -851,6 +852,7 @@ class LabsQROM(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(
         cls,
         num_bitstrings: int,
@@ -904,6 +906,7 @@ class LabsQROM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(
         cls,
         num_bitstrings: int,
@@ -1508,6 +1511,7 @@ class LabsQROM(ResourceOperator):
         return cls.qrom_clean_auxiliary_adjoint_resource_decomp(target_resource_params)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def tracking_name(
         num_bitstrings: int,
         size_bitstring: int,
@@ -1682,6 +1686,7 @@ class SelectCopyQROM(ResourceOperator):
 
         return (batch_size, bits_per_iter)
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         num_bitstrings: int,
@@ -1743,6 +1748,7 @@ class SelectCopyQROM(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(
         cls,
         num_bitstrings: int,
@@ -1790,6 +1796,7 @@ class SelectCopyQROM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(
         cls,
         num_bitstrings: int,

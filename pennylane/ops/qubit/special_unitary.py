@@ -17,6 +17,8 @@ its utility functions.
 """
 
 # pylint: disable=arguments-differ, import-outside-toplevel
+
+
 from functools import lru_cache, reduce
 from itertools import product
 from typing import Literal

@@ -366,8 +366,8 @@ class TestCompileIntegration:
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
-        # pylint: disable=expression-not-assigned
         def qfunc(x, params):
+            # pylint: disable=expression-not-assigned
             qp.templates.AngleEmbedding(x, wires=range(3))
             qp.adjoint(qp.adjoint(qp.templates.BasicEntanglerLayers(params, wires=range(3)))) ** 2
             return qp.expval(qp.PauliZ(wires=2))

@@ -14,6 +14,7 @@
 """Unit tests for matrix expand functions."""
 
 # pylint: disable=too-many-public-methods
+
 from functools import reduce
 
 import numpy as np

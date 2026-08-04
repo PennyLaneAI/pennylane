@@ -224,7 +224,7 @@ class IQPEmbedding(Operation):
         return (1,)
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(features, wires, n_repeats, pattern):
         r"""Representation of the operator as a product of other operators.
 

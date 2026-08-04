@@ -364,8 +364,8 @@ class Select(Operation):
             self.partial,
         )
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, ops, control, **kwargs):
         return super()._primitive_bind_call(*ops, wires=control, **kwargs)
 
@@ -455,8 +455,8 @@ class Select(Operation):
             self.ops, control=self.control, partial=self.partial, work_wires=self.work_wires
         )
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(ops, control, partial: bool = False, work_wires=None):
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -756,7 +756,6 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires):
     num_ops = len(op_reps)
     if num_ops == 0:
@@ -981,6 +980,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
 
 
 def _unary_condition(op_reps, num_control_wires, partial, num_work_wires):
+    # pylint: disable=unused-argument
     return num_work_wires >= num_control_wires - 1
 
 
@@ -1080,8 +1080,8 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
+    # pylint: disable=unused-argument
     return num_work_wires >= 1
 
 
@@ -1133,7 +1133,9 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 add_decomps(Select, _select_decomp_multi_control_work_wire)
 
 # pylint: disable=protected-access
+
 if Select._primitive is not None:
+    # pylint: disable=protected-access
 
     @Select._primitive.def_impl
     def _(*args, n_wires, **kwargs):

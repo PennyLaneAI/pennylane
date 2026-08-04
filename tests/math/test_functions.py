@@ -14,6 +14,7 @@
 """Unit tests for pennylane.math.single_dispatch"""
 
 # pylint: disable=import-outside-toplevel
+
 import itertools
 from functools import partial
 from unittest.mock import patch

@@ -78,8 +78,6 @@ class Pow2(SymbolicOp2):
 
     """
 
-    # pylint: disable=invalid-overridden-method
-
     z: int | float
 
     wire_argnames = ()
@@ -140,9 +138,9 @@ class Pow2(SymbolicOp2):
             return math.linalg.matrix_power(mat, z)
         return fractional_matrix_power(mat, z)
 
-    # pylint: disable=arguments-differ
     @staticmethod
     @override
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(**base.arguments)
@@ -151,6 +149,7 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
+    # pylint: disable-next=arguments-differ, invalid-overridden-method
     def has_decomposition(self):
 
         if isinstance(self.z, int) and self.z > 0:
@@ -168,6 +167,7 @@ class Pow2(SymbolicOp2):
 
     @staticmethod
     @override
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(base, z):
         try:
             return base.pow(z)
@@ -182,11 +182,13 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
+    # pylint: disable-next=arguments-differ, invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
+    # pylint: disable-next=arguments-differ
     def compute_diagonalizing_gates(base, z):  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
@@ -221,12 +223,14 @@ class Pow2(SymbolicOp2):
 
     @staticmethod
     @override
+    # pylint: disable-next=arguments-differ
     def compute_eigvals(base, z):
         base_eigvals = base.eigvals()
         return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
 
     @property
     @override
+    # pylint: disable-next=arguments-differ, invalid-overridden-method
     def has_generator(self):
         return self.base.has_generator
 
@@ -251,6 +255,7 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
+    # pylint: disable-next=arguments-differ, invalid-overridden-method
     def has_adjoint(self):
         return isinstance(self.z, int)
 
@@ -342,8 +347,8 @@ def flip_pow_adjoint(base, z, **__):
 def make_pow_decomp_with_period(period) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
-    # pylint: disable=unused-argument
     def _condition_fn(base, z):
+        # pylint: disable=unused-argument
         return math.shape(z) == () and z % period != z
 
     def _resource_fn(base, z):

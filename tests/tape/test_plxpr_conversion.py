@@ -16,6 +16,7 @@ Tests for CollectOpsandMeas and plxpr_to_tape
 """
 
 # pylint: disable=wrong-import-position
+
 from functools import partial
 
 import pytest

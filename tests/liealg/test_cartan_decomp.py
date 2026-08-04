@@ -14,6 +14,7 @@
 """Tests for pennylane/labs/dla/cartan.py functionality"""
 
 # pylint: disable=no-self-use, missing-class-docstring
+
 import pytest
 
 import pennylane as qp

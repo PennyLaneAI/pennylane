@@ -17,6 +17,7 @@ Contains the RandomLayers template.
 
 # pylint: disable=too-many-arguments
 
+
 import numpy as np
 
 from pennylane import math
@@ -182,7 +183,7 @@ class RandomLayers(Operation):
         return 1
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(weights, wires, ratio_imprim, imprimitive, rotations, seed):
         r"""Representation of the operator as a product of other operators.
 

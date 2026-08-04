@@ -125,6 +125,7 @@ def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
     return tapes_plus + tapes_minus, calculate_omegas
 
 
+# pylint: disable-next=too-many-instance-attributes
 class RiemannianGradientOptimizer:
     r"""Riemannian gradient optimizer.
 
@@ -227,7 +228,6 @@ class RiemannianGradientOptimizer:
     -2.2283086057521713
     """
 
-    # pylint: disable=too-many-instance-attributes
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
         if not isinstance(circuit, QNode):
             raise TypeError(f"circuit must be a QNode, received {type(circuit)}")
@@ -330,5 +330,5 @@ class RiemannianGradientOptimizer:
             array: array of omegas for each direction in the Lie algebra.
         """
 
-        # pylint: disable=not-callable
+        # pylint: disable-next=not-callable
         return algebra_commutator(self.circuit, self.lie_algebra_basis_names, self.nqubits)()

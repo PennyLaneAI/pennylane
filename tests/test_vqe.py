@@ -139,9 +139,9 @@ big_hamiltonian_grad = (
 # Ansatz
 
 
-# pylint: disable=unused-argument
 def custom_fixed_ansatz(params, wires=None):
     """Custom fixed ansatz"""
+    # pylint: disable=unused-argument
     qp.RX(0.5, wires=0)
     qp.RX(-1.2, wires=1)
     qp.Hadamard(wires=0)
@@ -239,6 +239,8 @@ add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
+    # pylint: disable=unused-argument
+
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
@@ -265,6 +267,7 @@ class TestVQE:
     def test_optimize_torch(self, shots, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
+        # pylint: disable=unused-argument
 
         dev = qp.device("default.qubit", wires=4)
 
@@ -705,6 +708,7 @@ class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
     # pylint: disable=cell-var-from-loop
+
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
@@ -983,6 +987,7 @@ class TestInterfaces:
     def test_gradient_autograd(self, tol, interface):
         """Tests for the Autograd interface (and the NumPy interface for
         backward compatibility)"""
+        # pylint: disable=unused-argument
         dev = qp.device("default.qubit", wires=1)
 
         def ansatz(params, **kwargs):
@@ -1010,6 +1015,7 @@ class TestInterfaces:
     @pytest.mark.torch
     def test_gradient_torch(self, tol):
         """Tests for the PyTorch interface"""
+        # pylint: disable=unused-argument
         import torch
 
         dev = qp.device("default.qubit", wires=1)
@@ -1041,6 +1047,7 @@ class TestInterfaces:
     @pytest.mark.tf
     def test_gradient_tf(self, tol):
         """Tests for the TF interface"""
+        # pylint: disable=unused-argument
         import tensorflow as tf
 
         dev = qp.device("default.qubit", wires=1)

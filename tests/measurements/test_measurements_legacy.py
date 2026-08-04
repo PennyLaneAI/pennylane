@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=protected-access
+
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -30,8 +33,6 @@ from pennylane.measurements import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=protected-access
-
 
 class NotValidMeasurement(MeasurementProcess):
     _shortname = "NotValidReturnType"
@@ -44,7 +45,7 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
@@ -65,7 +66,7 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 

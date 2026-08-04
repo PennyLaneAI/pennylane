@@ -51,7 +51,7 @@ def test_jit_execution():
     assert qp.math.allclose(out[0], expected)
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
 
@@ -294,8 +294,8 @@ class TestJaxExecuteIntegration:
         expected = [-jnp.cos(y) * jnp.sin(x), -jnp.cos(x) * jnp.sin(y)]
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
-    # pylint: disable=too-many-statements
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
+        # pylint: disable=too-many-statements
         """Test that tapes wit different can be executed and differentiated."""
 
         device = get_device(device_name, seed)

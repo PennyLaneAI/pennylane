@@ -80,7 +80,6 @@ def largest_first(binary_observables, adj):
     return colours
 
 
-# pylint: disable=too-many-locals
 def recursive_largest_first(binary_observables, adj):
     """Performs graph-colouring using the Recursive Largest Degree First heuristic. Often yields a
     lower chromatic number than Largest Degree First, but takes longer (runtime is cubic in number

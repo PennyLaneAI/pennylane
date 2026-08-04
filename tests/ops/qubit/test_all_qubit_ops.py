@@ -18,6 +18,7 @@ the more specific file.
 """
 
 # pylint: disable=too-few-public-methods
+
 import pytest
 from gate_data import I
 

@@ -15,7 +15,9 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-position, wrong-import-order
+# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports,unnecessary-lambda-assignment
+
+
 from functools import partial
 
 import numpy as np
@@ -38,17 +40,15 @@ from pennylane.capture.autograph.transformer import (
 pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
-from jax import make_jaxpr
 
 # must be below jax importorskip
-# pylint: disable=ungrouped-imports
+from jax import make_jaxpr
+
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
 from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
-
-# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 
 
 class TestPennyLaneTransformer:
@@ -164,7 +164,7 @@ class TestPennyLaneTransformer:
         assert transformer.get_cached_function(fn)(1.7) == fn(1.7)
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestIntegration:
     """Test that the autograph transformations trigger correctly in different settings."""
 
@@ -187,6 +187,8 @@ class TestIntegration:
         class FN:
             """Test object."""
 
+            # pylint: disable=too-few-public-methods
+
             __name__ = "unknown"
 
         fn = FN()
@@ -196,6 +198,7 @@ class TestIntegration:
 
     def test_callable_object(self):
         """Test run_autograph applied to a callable object."""
+        # pylint: disable=too-few-public-methods
 
         class FN:
             """Test object."""

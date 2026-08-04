@@ -280,6 +280,7 @@ class TestSnapshotSupportedQNode:
     """Test the Snapshot instruction for simulators."""
 
     # pylint: disable=protected-access
+
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_default_qubit_with_backprob_and_adjoint(self, diff_method):
         dev = qp.device("default.qubit")

@@ -18,6 +18,7 @@ Note some tests on the errors exist in test_capture_diff.py
 """
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 import pennylane as qp

@@ -404,8 +404,8 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -450,8 +450,8 @@ class Exp(ScalarSymbolicOp, Operation):
             return Exp(new_base.base, self.coeff * new_base.scalar)
         return Exp(new_base, self.coeff)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_generator(self):
         if math.is_abstract(self.coeff):
             return self.base.is_verified_hermitian

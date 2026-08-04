@@ -16,6 +16,9 @@ This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
 
+# pylint: disable=too-many-arguments, unused-argument
+
+
 from functools import partial
 
 import numpy as np
@@ -38,8 +41,6 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
 )
 
-# pylint: disable=too-many-arguments,unused-argument
-
 
 def _rademacher_sampler(indices, num_params, *args, rng):
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
@@ -57,7 +58,6 @@ def _rademacher_sampler(indices, num_params, *args, rng):
         tensor_like: Vector of size ``num_params`` with non-zero entries at positions indicated
         by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
-    # pylint: disable=unused-argument
     direction = np.zeros(num_params)
     direction[indices] = rng.choice([-1, 1], size=len(indices))
     return direction
@@ -67,7 +67,7 @@ def _stop_at_expand_invalid_trainable(obj):
     return not any(math.requires_grad(d) for d in obj.data) or obj.grad_method is not None
 
 
-# pylint: disable=too-many-positional-arguments
+# pylint: disable-next=too-many-positional-arguments
 def _expand_transform_spsa(
     tape: QuantumScript,
     argnum=None,
@@ -103,7 +103,7 @@ def _expand_transform_spsa(
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-# pylint: disable=too-many-positional-arguments
+# pylint: disable-next=too-many-positional-arguments
 def spsa_grad(
     tape: QuantumScript,
     argnum=None,

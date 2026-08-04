@@ -165,7 +165,7 @@ class QROMStatePreparation(Operation):
         )
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(state_vector, wires, input_wires, precision_wires, work_wires):
         r"""
         Computes the decomposition operations for the given state vector.

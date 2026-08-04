@@ -18,6 +18,7 @@ executed by a device.
 
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
+
 import contextlib
 import copy
 import warnings
@@ -723,7 +724,7 @@ class QuantumScript:
         [-0.1, 0.2, 0.5]
         """
 
-        # pylint: disable=import-outside-toplevel # tach-ignore
+        # pylint: disable-next=import-outside-toplevel # tach-ignore
         from pennylane.ops.functions import (
             bind_new_parameters,
         )
@@ -961,7 +962,7 @@ class QuantumScript:
                        total_quantum_operations=6)
         """
         if self._specs is None:
-            # pylint: disable=import-outside-toplevel # tach-ignore
+            # pylint: disable-next=import-outside-toplevel # tach-ignore
             from pennylane.resource.resource import (
                 resources_from_tape,
             )

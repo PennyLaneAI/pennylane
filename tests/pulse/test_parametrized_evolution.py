@@ -16,6 +16,7 @@ Unit tests for the ParametrizedEvolution class
 """
 
 # pylint: disable=unused-argument, too-few-public-methods, import-outside-toplevel, protected-access
+
 from functools import reduce
 
 import numpy as np
@@ -573,7 +574,6 @@ class TestIntegration:
         duration = time if qp.math.ndim(time) == 0 else time[1] - time[0]
         assert qp.math.isclose(res, qp.math.cos(4 * duration))
 
-    # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test the execution of a time independent hamiltonian."""
         import jax

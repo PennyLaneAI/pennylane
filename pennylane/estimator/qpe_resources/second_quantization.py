@@ -16,7 +16,12 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 
-# pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
+# pylint: disable=no-self-use
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-positional-arguments
+
+
 import numpy as np
 
 from pennylane.core.operator import Operation

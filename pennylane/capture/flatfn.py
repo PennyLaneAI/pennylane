@@ -15,6 +15,9 @@
 Defines a utility for capturing higher order primitives that return pytrees.
 """
 
+# pylint: disable=too-few-public-methods
+
+
 from functools import update_wrapper
 
 has_jax = True
@@ -24,7 +27,6 @@ except ImportError:
     has_jax = False
 
 
-# pylint: disable=too-few-public-methods
 class FlatFn:
     """Wrap a function so that it caches the pytree shape of the output into the ``out_tree``
     property, so that the results can be repacked later. It also returns flattened results

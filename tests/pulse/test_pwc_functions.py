@@ -16,6 +16,7 @@ Unit tests for the convenience functions used in pulsed programming.
 """
 
 # pylint: disable=import-outside-toplevel
+
 import inspect
 from functools import partial
 
@@ -221,7 +222,7 @@ class TestPWC_from_function:
 class TestIntegration:
     """Test integration of pwc functions with the pulse module."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def integral_pwc(
         self, t1, t2, num_bins, integration_bounds, fn, params, pwc_from_function=False
     ):

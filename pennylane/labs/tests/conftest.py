@@ -148,8 +148,8 @@ def pytest_runtest_setup(item):
 @pytest.fixture(scope="session", name="mpi4py_support")
 def fixture_mpi4py_support():
     """Fixture to determine whether mpi4py is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
+        # pylint: disable-next=unused-import, import-outside-toplevel
         import mpi4py
 
         mpi4py_support = True
@@ -169,8 +169,8 @@ def skip_if_no_mpi4py_support(mpi4py_support):
 @pytest.fixture(scope="session", name="pyscf_support")
 def fixture_pyscf_support():
     """Fixture to determine whether pyscf is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
+        # pylint: disable-next=unused-import, import-outside-toplevel
         import pyscf
 
         pyscf_support = True
@@ -190,8 +190,8 @@ def skip_if_no_pyscf_support(pyscf_support):
 @pytest.fixture(scope="session", name="geometric_support")
 def fixture_geometric_support():
     """Fixture to determine whether geometric is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
+        # pylint: disable-next=unused-import, import-outside-toplevel
         import geometric
 
         geometric_support = True
@@ -236,8 +236,7 @@ class StoreDictKeyPair(argparse.Action):
 
     """
 
-    # pylint: disable=too-few-public-methods
-
+    # pylint: disable-next=too-few-public-methods
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
         super().__init__(option_strings, dest, nargs=nargs, **kwargs)

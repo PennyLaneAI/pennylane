@@ -14,6 +14,7 @@
 """Test the pennylane drawer with Catalyst."""
 
 # pylint: disable=import-outside-toplevel,protected-access
+
 from functools import partial
 
 import pytest

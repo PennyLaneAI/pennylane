@@ -15,6 +15,9 @@
 This module contains the tests for the clifford simulator based on stim
 """
 
+# pylint: disable=protected-access
+
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -29,7 +32,6 @@ stim = pytest.importorskip("stim")
 pytestmark = pytest.mark.external
 
 
-# pylint: disable=protected-access
 def test_applied_modifiers():
     """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.

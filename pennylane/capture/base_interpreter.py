@@ -17,6 +17,7 @@ This submodule defines a strategy structure for defining custom plxpr interprete
 
 # pylint: disable=no-self-use
 
+
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
@@ -426,8 +427,8 @@ class PlxprInterpreter:
         return wrapper
 
 
-# pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
+# pylint: disable-next=unused-argument
 def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
 
@@ -453,8 +454,8 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     )
 
 
-# pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
+# pylint: disable-next=unused-argument
 def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
@@ -485,8 +486,8 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     )
 
 
-# pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
+# pylint: disable-next=too-many-arguments
 def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     """Interpret a ctrl transform primitive."""
     consts = invals[:n_consts]
@@ -506,6 +507,7 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
+# pylint: disable-next=too-many-arguments
 def handle_for_loop(
     self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
@@ -569,6 +571,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
 
 @PlxprInterpreter.register_primitive(while_loop_prim)
+# pylint: disable-next=too-many-arguments
 def handle_while_loop(
     self,
     *invals,
@@ -607,8 +610,8 @@ def handle_while_loop(
     )
 
 
-# pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
+# pylint: disable-next=too-many-arguments
 def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
     shots, invals = invals[:shots_len], invals[shots_len:]
@@ -725,10 +728,12 @@ def _pjit_primitive(self, *invals, jaxpr, **params):
 
 @FlattenedInterpreter.register_primitive(quantum_subroutine_prim)
 def _quantum_subroutine_eval(self, *invals, jaxpr, **params):
+    # pylint: disable=unused-argument
     return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
+# pylint: disable-next=too-many-arguments
 def flatten_while_loop(
     self,
     *invals,
@@ -784,6 +789,7 @@ FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
 @FlattenedInterpreter.register_primitive(for_loop_prim)
+# pylint: disable-next=too-many-arguments
 def flattened_for(
     self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):

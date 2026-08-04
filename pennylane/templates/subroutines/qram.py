@@ -604,7 +604,7 @@ def _bits(value: int, length: int) -> list[int]:
     return [(value >> (length - 1 - i)) & 1 for i in range(length)]
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _tree_leaf_ops_for_bit_block_ctrl(data, j, block_index, tree_wire_manager, n_tree, signal):
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
@@ -619,7 +619,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(data, j, block_index, tree_wire_manager, n
         # Global address index: (block_index << n_tree) + p
         addr = (block_index << n_tree) + p
         bit = data[addr][j]
-        # pylint: disable=cell-var-from-loop
+        # pylint: disable-next=cell-var-from-loop
         cond(bit, lambda: ctrl(PauliZ(wires=target), control=[signal], control_values=[1]))()
 
 
@@ -684,7 +684,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
             ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _block_tree_query_ops(data, block_index, tree_wire_manager, n_tree, k, signal):
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
@@ -996,7 +996,7 @@ def _select_only_qram_decomposition(
             # Multi-controlled X on target_wires[j],
             # controlled on controls matching `control_values`.
 
-            # pylint: disable=cell-var-from-loop
+            # pylint: disable-next=cell-var-from-loop
             cond(bits[j], lambda: ctrl(PauliX(wires=target_wires[j]), control=controls))()
 
         _flip_controls(controls, control_values)

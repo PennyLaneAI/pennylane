@@ -713,7 +713,7 @@ class GridIterator:
             if e1.contains(x1, y1) and e2.contains(x2, y2):
                 yield solution
 
-    # pylint: disable=too-many-branches
+    # pylint: disable-next=too-many-branches
     def solve_upright_problem(
         self,
         state: EllipseState,

@@ -14,6 +14,8 @@
 """Contains the Trotter templates for fragmented Hamiltonians."""
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
+
+
 import numpy as np
 
 import pennylane as qp

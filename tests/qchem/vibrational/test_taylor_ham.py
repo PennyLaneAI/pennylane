@@ -380,7 +380,6 @@ def test_taylor_kinetic():
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     (
         "taylor_1D_coeffs",
@@ -412,6 +411,7 @@ def test_taylor_kinetic():
         ),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_taylor_bosonic(
     taylor_1D_coeffs,
     taylor_2D_coeffs,

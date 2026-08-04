@@ -390,13 +390,13 @@ def _mcx_many_workers_resource(num_control_wires, work_wire_type, num_work_wires
     }
 
 
-# pylint: disable=no-value-for-parameter
 @register_condition(_mcx_many_workers_condition)
 @register_resources(_mcx_many_workers_resource)
 def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
+    # pylint: disable=no-value-for-parameter
     target_wire, control_wires = wires[-1], wires[:-1]
     num_work_wires = len(control_wires) - 2
     extra_work_wires = work_wires[num_work_wires:]
@@ -979,7 +979,7 @@ def _single_control_zyz(phi, theta, omega, wires):
     ops.cond(_not_zero(omega - phi), ops.RZ)((omega - phi) / 2, wires=wires[-1])
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
@@ -1017,7 +1017,6 @@ def _ctrl_global_phase(
     )
 
 
-# pylint: disable=no-value-for-parameter
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
     r"""
     Construct a quantum circuit for creating n-condionally zeroed auxiliary qubits using 3n qubits. This
@@ -1032,6 +1031,7 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
+    # pylint: disable=no-value-for-parameter
 
     if compiler.active() or qp.capture.enabled():
         control_wires_x = math.array(control_wires_x, like="jax")

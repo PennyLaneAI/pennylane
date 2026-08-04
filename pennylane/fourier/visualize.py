@@ -14,6 +14,8 @@
 """Contains visualization functions for Fourier series and coefficients."""
 
 # pylint: disable=too-many-arguments, blacklisted-name
+
+
 from itertools import product
 
 import numpy as np

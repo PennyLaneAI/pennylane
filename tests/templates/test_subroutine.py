@@ -14,6 +14,7 @@
 """Tests for Subroutine and SubroutineOp"""
 
 # pylint: disable=unused-argument
+
 import inspect
 from collections import Counter, defaultdict
 from functools import partial

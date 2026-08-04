@@ -16,6 +16,7 @@ Tests for capturing differentiation into jaxpr.
 """
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 import pennylane as qp

@@ -13,13 +13,14 @@
 # limitations under the License.
 """Tests for the purity measurement process"""
 
+# pylint: disable=too-many-arguments
+
+
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.measurements import PurityMP
-
-# pylint: disable=too-many-arguments
 
 
 def expected_purity_ising_xx(param):

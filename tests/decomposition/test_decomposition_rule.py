@@ -829,9 +829,10 @@ class CustomParametrizedOp(Operator):
         return {"num_wires": len(self.wires)}
 
 
-# pylint: disable=protected-access
 class TestInspectDecomps:
     """Tests inspecting decomposition rules."""
+
+    # pylint: disable=protected-access
 
     @pytest.fixture(autouse=True, scope="class")
     def setup(self):

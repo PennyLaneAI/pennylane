@@ -14,6 +14,8 @@
 """Simulate a quantum script."""
 
 # pylint: disable=protected-access
+
+
 import logging
 from collections import Counter
 from functools import partial, singledispatch
@@ -388,7 +390,7 @@ def simulate(
     )
 
 
-# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable-next=too-many-branches
 def simulate_tree_mcm(
     circuit: QuantumScript,
     debugger=None,
@@ -416,6 +418,7 @@ def simulate_tree_mcm(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
+    # pylint: disable=too-many-statements
     PROBS_TOL = 0.0
     interface = execution_kwargs.get("interface", None)
 

@@ -15,6 +15,9 @@
 Unit tests for functions and classes needed for construct a lattice.
 """
 
+# pylint: disable=too-many-arguments
+
+
 import re
 
 import numpy as np
@@ -22,8 +25,6 @@ import pytest
 
 from pennylane.spin import Lattice
 from pennylane.spin.lattice import generate_lattice
-
-# pylint: disable=too-many-arguments
 
 
 @pytest.mark.parametrize(("boundary_condition"), [([True, True]), ([4])])

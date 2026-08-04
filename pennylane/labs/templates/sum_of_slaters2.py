@@ -292,7 +292,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         selector_ids, _ = qp.select_sos_rows(v_bits)
         return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": num_wires}
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         coefficients,

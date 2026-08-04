@@ -127,8 +127,8 @@ class TestPauliWord:
         with pytest.raises(TypeError, match="PauliWord object does not support assignment"):
             pw.update({3: Z})  # trying to add to a pw after instantiation is prohibited
 
-    # pylint: disable=unnecessary-dunder-call
     def test_hash(self):
+        # pylint: disable=unnecessary-dunder-call
         """Test that a unique hash exists for different PauliWords."""
         pw_1 = PauliWord({0: I, 1: X, 2: Y})
         pw_2 = PauliWord({0: I, 1: X, 2: Y})  # same as 1
@@ -139,8 +139,8 @@ class TestPauliWord:
         assert pw_1.__hash__() == pw_3.__hash__()
         assert pw_1.__hash__() != pw_4.__hash__()
 
-    # pylint: disable=unnecessary-dunder-call
     def test_hash_caches(self):
+        # pylint: disable=unnecessary-dunder-call
         """Test that hashes are cached correctly and not recomputed."""
         pw = PauliWord({0: I, 1: X, 2: Y})
 

@@ -15,7 +15,8 @@
 Code relevant for performing measurements on a qubit mixed state.
 """
 
-# pylint:disable=too-many-branches, import-outside-toplevel, unused-argument
+# pylint: disable=too-many-branches, import-outside-toplevel, unused-argument
+
 
 from collections.abc import Callable
 
@@ -231,7 +232,7 @@ def sum_of_terms_method(
     )
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable-next=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable]], TensorLike]:

@@ -1760,6 +1760,7 @@ class TestStochPulseGradDiff:
     """Test that stoch_pulse_grad is differentiable."""
 
     # pylint: disable=too-few-public-methods
+
     @pytest.mark.slow
     def test_jax(self):
         """Test that stoch_pulse_grad is differentiable with JAX."""

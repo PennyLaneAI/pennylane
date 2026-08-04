@@ -15,6 +15,9 @@
 The conversion of a circuit to openqasm
 """
 
+# pylint: disable=unused-argument
+
+
 from collections.abc import Callable
 from functools import singledispatch, wraps
 from typing import Any, overload
@@ -67,7 +70,6 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
-# pylint: disable=unused-argument
 @singledispatch
 def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int) -> str:
     try:

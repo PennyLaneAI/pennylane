@@ -14,6 +14,7 @@
 """Tests for pennylane/labs/dla/involutions.py functionality"""
 
 # pylint: disable=no-self-use
+
 from functools import partial
 
 import numpy as np

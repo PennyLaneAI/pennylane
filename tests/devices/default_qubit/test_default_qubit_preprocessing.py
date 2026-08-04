@@ -30,6 +30,7 @@ class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
+
     @property
     def has_matrix(self):
         return False
@@ -42,6 +43,7 @@ class MatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
+
     @property
     def has_matrix(self):
         return True
@@ -109,6 +111,7 @@ class NoMatNoDecompOp(qp.operation.Operation):
     expected."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
+
     @property
     def has_matrix(self):
         return False
@@ -132,8 +135,9 @@ class CustomizedSparseOp(qp.operation.Operator):
     def has_matrix(self) -> bool:
         return False
 
-    # pylint: disable=unused-argument, arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(self, U):
+        # pylint: disable=unused-argument
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -298,7 +302,6 @@ class TestConfigSetup:
             dev.setup_execution_config(config)
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 
@@ -1149,6 +1152,8 @@ class TestDefaultQubitGraphModeExclusive:
 
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
     """
+
+    # pylint: disable=too-few-public-methods
 
     def test_insufficient_work_wires_causes_fallback(self):
         """Test that if a decomposition requires more work wires than available on default.qubit,

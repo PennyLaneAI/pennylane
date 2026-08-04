@@ -15,6 +15,9 @@
 This submodule defines grad and jacobian for differentiating circuits in an interface-independent way.
 """
 
+# pylint: disable=import-outside-toplevel
+
+
 from collections.abc import Callable, Sequence
 
 from pennylane._grad import grad as _autograd_grad
@@ -23,7 +26,6 @@ from pennylane._grad import jacobian as _autograd_jacobian
 from .interface_utils import get_interface
 
 
-# pylint: disable=import-outside-toplevel
 def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
@@ -103,9 +105,9 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     return compute_grad
 
 
-# pylint: disable=import-outside-toplevel
 def _torch_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via torch."""
+    # pylint: disable-next=import-outside-toplevel
     from torch.autograd.functional import jacobian as _torch_jac
 
     argnums_torch = (argnums,) if isinstance(argnums, int) else argnums
@@ -129,11 +131,11 @@ def _torch_jac(f, argnums, args, kwargs):
     return jac[0] if isinstance(argnums, int) else jac
 
 
-# pylint: disable=import-outside-toplevel
 def _tensorflow_jac(
     f, argnums, args, kwargs
 ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Calculate a jacobian via tensorflow"""
+    # pylint: disable-next=import-outside-toplevel
     import tensorflow as tf
 
     with tf.GradientTape() as tape:
@@ -155,7 +157,6 @@ def _tensorflow_jac(
     return g[0] if argnums_integer else g
 
 
-# pylint: disable=import-outside-toplevel
 def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the Jacobian in a jax-like manner for any interface.
 

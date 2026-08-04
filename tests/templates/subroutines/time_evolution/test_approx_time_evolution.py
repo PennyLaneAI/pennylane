@@ -32,9 +32,9 @@ def test_standard_validity():
     qp.ops.functions.assert_valid(op)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the _flatten and _unflatten methods."""
+    # pylint: disable=protected-access
     H = 2.0 * qp.PauliX(0) + 3.0 * qp.PauliY(0)
     t = 0.1
     op = qp.ApproxTimeEvolution(H, t, n=20)

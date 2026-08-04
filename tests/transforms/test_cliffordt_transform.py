@@ -625,8 +625,8 @@ class TestCliffordCompile:
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
 
-    # pylint: disable=protected-access, import-outside-toplevel
     def test_clifford_cached(self):
+        # pylint: disable=protected-access, import-outside-toplevel
         """Test that the cached version of the circuit is equivalent to the original one."""
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
@@ -679,8 +679,8 @@ class TestCliffordCached:
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
 
-    # pylint: disable=protected-access, import-outside-toplevel
     def test_cached_with_rtol(self):
+        # pylint: disable=protected-access, import-outside-toplevel
         """Test that caches are correctly identified as compatible or
         incompatible with a relative threshold for epsilon."""
 
@@ -707,6 +707,7 @@ class TestCatalyst:
     """Unit tests for catalyst integration."""
 
     # pylint: disable=import-outside-toplevel
+
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
         """Test that the catalyst integration is working correctly."""

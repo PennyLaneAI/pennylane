@@ -14,6 +14,7 @@
 """Tests that a device has the right attributes, arguments and methods."""
 
 # pylint: disable=no-self-use
+
 import pytest
 
 import pennylane as qp
@@ -41,7 +42,7 @@ def make_simple_circuit_expval(device, wires, shots):
 # =====
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestWiresIntegration:
     """Test that the device integrates with PennyLane's wire management."""
 
@@ -56,7 +57,7 @@ class TestWiresIntegration:
         ],
     )
     @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval])
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def test_wires_expval(self, device, circuit_factory, wires1, wires2, shots, tol):
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)

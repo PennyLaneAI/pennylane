@@ -13,6 +13,9 @@
 # limitations under the License.
 """Tests for controlled resource operators."""
 
+# pylint: disable=no-self-use
+
+
 import pytest
 
 import pennylane.estimator as qre
@@ -36,8 +39,6 @@ from pennylane.estimator.ops.op_math.controlled_ops import (
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
-
-# pylint: disable=no-self-use
 
 
 class TestCH:

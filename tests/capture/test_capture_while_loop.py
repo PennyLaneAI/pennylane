@@ -544,7 +544,7 @@ class TestCaptureWhileLoopDynamicShapes:
         Encountered in benchmarking suite.
         """
 
-        # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
         class ThingWithShape:
 
             def __init__(self):

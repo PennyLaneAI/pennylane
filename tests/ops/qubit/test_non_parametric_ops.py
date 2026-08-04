@@ -1069,22 +1069,26 @@ class TestControlledMethod:
     # pylint: disable=protected-access
 
     def test_PauliX(self):
+        # pylint: disable=protected-access
         """Test the PauliX _controlled method."""
         out = qp.PauliX(0)._controlled("a")
         qp.assert_equal(out, qp.CNOT(("a", 0)))
 
     def test_PauliZ(self):
         """Test the PauliZ _controlled method."""
+        # pylint: disable=protected-access
         out = qp.PauliZ(0)._controlled("a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
 
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
+        # pylint: disable=protected-access
         out = qp.CNOT((0, 1))._controlled("a")
         qp.assert_equal(out, qp.Toffoli(("a", 0, 1)))
 
     def test_Barrier(self):
         """Tests the _controlled behavior of Barrier."""
+        # pylint: disable=protected-access
         original = qp.Barrier((0, 1, 2), only_visual=True)
         out = original._controlled("a")
         qp.assert_equal(original, out)

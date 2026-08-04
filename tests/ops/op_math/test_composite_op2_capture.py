@@ -16,6 +16,7 @@ Unit tests for the composite operator class of Operator2 instances.
 """
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 import pennylane as qp

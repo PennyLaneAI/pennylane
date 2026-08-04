@@ -16,6 +16,7 @@ Unit tests for the metric tensor transform.
 """
 
 # pylint: disable=too-many-arguments, not-callable, too-many-statements, too-many-positional-arguments
+
 import importlib
 
 import pytest
@@ -1035,8 +1036,8 @@ class TestFullMetricTensor:
         pytest.importorskip("catalyst")
         jax = pytest.importorskip("jax")
 
-        # pylint: disable=unused-argument
         def ansatz(params, wires=None):
+            # pylint: disable=unused-argument
             qp.RX(params[0], 0)
             qp.RX(params[1], 1)
             qp.CNOT((0, 1))

@@ -208,7 +208,7 @@ class OutMultiplier(Operation):
         "output_wires_zeroed",
     }
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable-next=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         x_wires: WiresLike,
@@ -443,14 +443,14 @@ def _out_multiplier_with_adder_condition(
 
 @register_condition(_out_multiplier_with_adder_condition)
 @register_resources(_out_multiplier_with_adder_resources)
-def _out_multiplier_with_adder(  # pylint: disable=unused-argument, too-many-arguments
+def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     mod,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-    **__,
+    **_,
 ):
     """Implementation of Schoolbook multiplication via controlled adders as sole building block,
     except for a potential simplification for the very first adder.
@@ -742,8 +742,7 @@ def _out_multiplier_with_cache_condition(
     return num_work_wires >= 2 * num_output_wires - 1 and not output_wires_zeroed
 
 
-# pylint: disable=unused-argument,too-many-arguments
-def _out_multiplier_with_cache_resources(
+def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments,unused-argument
     num_output_wires, num_x_wires, num_y_wires, num_work_wires, output_wires_zeroed, mod, **_
 ):
     new_num_work_wires = num_work_wires - num_output_wires

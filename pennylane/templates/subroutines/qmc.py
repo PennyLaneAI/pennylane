@@ -15,7 +15,9 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+
+
 import copy
 
 import numpy as np
@@ -343,7 +345,7 @@ class QuantumMonteCarlo(Operation):
     resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
 
     @classmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires):
         # handle target wires and estimation wires
         return cls._primitive.bind(
@@ -418,7 +420,7 @@ class QuantumMonteCarlo(Operation):
         return 3
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(A, R, Q, wires, estimation_wires, target_wires):
         r"""Representation of the operator as a product of other operators.
 
@@ -450,7 +452,9 @@ class QuantumMonteCarlo(Operation):
 
 
 # pylint: disable=protected-access
+
 if QuantumMonteCarlo._primitive is not None:
+    # pylint: disable=protected-access
 
     @QuantumMonteCarlo._primitive.def_impl
     def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
@@ -472,8 +476,8 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_res
 
 
 @register_resources(_quantum_monte_carlo_resources)
-# pylint: disable=unused-argument
 def _quantum_monte_carlo_decomposition(A, R, Q, wires, estimation_wires, target_wires):
+    # pylint: disable=unused-argument
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
     QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)

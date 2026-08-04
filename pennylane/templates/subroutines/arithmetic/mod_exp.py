@@ -213,7 +213,7 @@ class ModExp(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike):
         r"""Representation of the operator as a product of other operators.
 

@@ -17,6 +17,8 @@ new interface.
 """
 
 # pylint: disable=not-callable
+
+
 import warnings
 from contextlib import contextmanager
 from copy import copy, deepcopy
@@ -224,10 +226,12 @@ class LegacyDeviceFacade(Device):
 
     @property
     def _debugger(self):
+        # pylint: disable=protected-access
         return self._device._debugger
 
     @_debugger.setter
     def _debugger(self, new_debugger):
+        # pylint: disable=protected-access
         self._device._debugger = new_debugger  # pragma: no cover
 
     def preprocess_transforms(

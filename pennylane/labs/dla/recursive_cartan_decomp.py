@@ -13,7 +13,9 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 
-# pylint: disable= missing-function-docstring
+# pylint: disable=missing-function-docstring
+
+
 from functools import partial
 
 import numpy as np

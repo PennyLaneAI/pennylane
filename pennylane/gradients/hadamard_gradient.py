@@ -63,7 +63,6 @@ def _inplace_set_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-# pylint: disable=unused-argument
 def _expand_transform_hadamard(
     tape: QuantumScript,
     argnum=None,
@@ -72,6 +71,7 @@ def _expand_transform_hadamard(
     mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
+    # pylint: disable=unused-argument
     batch, postprocessing = decompose(
         tape,
         gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
@@ -499,6 +499,7 @@ def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
 
 def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+    # pylint: disable=unused-argument
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
@@ -559,6 +560,7 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
 
 
 def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+    # pylint: disable=unused-argument
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 

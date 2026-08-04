@@ -13,6 +13,11 @@
 # limitations under the License.
 """Unit tests for Controlled"""
 
+# pylint: disable=too-many-arguments
+# pylint: disable=expression-not-assigned
+# pylint: disable=protected-access
+
+
 import pickle
 from copy import copy
 from functools import partial
@@ -51,12 +56,6 @@ from pennylane.transforms import decompose
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
-
-# pylint: disable=too-few-public-methods
-# pylint: disable=protected-access
-# pylint: disable=pointless-statement
-# pylint: disable=expression-not-assigned
-# pylint: disable=too-many-arguments
 
 
 def equal_list(lhs, rhs):
@@ -2086,12 +2085,11 @@ class TestCtrl:
         assert new_op.control_values == Bool[3]
         assert new_op.work_wires == Wire[1]
 
-    # pylint: disable=too-few-public-methods,unused-argument
     def test_custom_ctrl_dispatch(self):
         """Tests that custom controlled dispatchers work for `Operator2`."""
 
         class CustomOp(Operator2):
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
         @custom_ctrl_dispatch.register

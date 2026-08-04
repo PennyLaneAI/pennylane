@@ -272,7 +272,6 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_verified_hermitian for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -342,11 +341,12 @@ class Prod(CompositeOp):
 
     @property
     @handle_recursion_error
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_sparse_matrix(self):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_adjoint(self):
         return True
 
@@ -479,8 +479,8 @@ def _prod_resources(resources):
     return resources
 
 
-# pylint: disable=unused-argument
 @qp.register_resources(_prod_resources)
+# pylint: disable-next=unused-argument
 def _prod_decomp(*_, wires=None, operands, **__):
     for op in reversed(operands):
         qp.apply(op)

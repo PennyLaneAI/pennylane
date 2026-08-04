@@ -17,6 +17,7 @@ Contains the 'label' function for customizing operator labels.
 
 # pylint: disable=unused-argument
 
+
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
@@ -70,8 +71,8 @@ class MarkedOp(SymbolicOp):
     def resource_params(self) -> dict:
         return {"base": abstractify(self.base)}
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_generator(self) -> bool:
         return self.base.has_generator
 

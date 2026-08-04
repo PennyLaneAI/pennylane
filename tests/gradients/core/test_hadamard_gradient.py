@@ -547,7 +547,7 @@ class TestDifferentModes:
         _ = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=1, device_wires=qp.wires.Wires(0))
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 

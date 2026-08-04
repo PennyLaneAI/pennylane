@@ -16,6 +16,9 @@ This subpackage contains the quantum tape, which tracks, queues, and
 validates quantum operations and measurements.
 """
 
+# pylint: disable=import-outside-toplevel
+
+
 from pennylane.core.qscript import (
     QuantumScript,
     QuantumScriptBatch,
@@ -28,7 +31,6 @@ from .operation_recorder import OperationRecorder
 from .tape import QuantumTape, QuantumTapeBatch
 
 
-# pylint: disable=import-outside-toplevel
 def __getattr__(key):
     if key == "plxpr_to_tape":
         from .plxpr_conversion import plxpr_to_tape

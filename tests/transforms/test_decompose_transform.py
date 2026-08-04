@@ -14,6 +14,9 @@
 
 """Unit tests for the ``decompose`` transform"""
 
+# pylint: disable=unnecessary-lambda-assignment
+
+
 import warnings
 
 import numpy as np
@@ -25,8 +28,6 @@ from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
-
-# pylint: disable=unnecessary-lambda-assignment
 
 pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
@@ -42,6 +43,7 @@ class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
+
     @property
     def has_matrix(self):
         return False
@@ -55,6 +57,7 @@ class NoMatNoDecompOp(Operation):
     expected."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
+
     @property
     def has_matrix(self):
         return False

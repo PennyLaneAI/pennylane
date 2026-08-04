@@ -15,7 +15,11 @@
 Tests that apply to all device modifiers or act on a combination of them together.
 """
 
+# pylint: disable=protected-access
+
+
 # pylint: disable=missing-class-docstring
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -24,7 +28,6 @@ from pennylane.devices import Device
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
 
-# pylint: disable=protected-access
 def test_chained_modifiers():
     """Test that modifiers can be stacked together."""
 

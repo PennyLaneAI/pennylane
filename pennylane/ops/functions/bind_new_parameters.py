@@ -15,7 +15,8 @@
 This module contains the qp.bind_new_parameters function.
 """
 
-# pylint:disable=missing-function-docstring
+# pylint: disable=missing-function-docstring
+
 
 import copy
 from collections.abc import Sequence

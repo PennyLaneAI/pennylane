@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows transforms"""
 
 # pylint: disable=too-few-public-methods
+
 import pytest
 
 import pennylane as qp

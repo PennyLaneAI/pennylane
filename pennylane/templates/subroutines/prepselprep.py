@@ -16,6 +16,8 @@ Contains the PrepSelPrep template.
 """
 
 # pylint: disable=arguments-differ
+
+
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
@@ -223,8 +225,8 @@ def _prepselprep_resources(op_reps, num_control):
     }
 
 
-# pylint: disable=unused-argument
 @register_resources(_prepselprep_resources)
+# pylint: disable-next=unused-argument
 def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     coeffs, ops = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)
@@ -237,7 +239,9 @@ def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
 add_decomps(PrepSelPrep, _prepselprep_decomp)
 
 # pylint: disable=protected-access
+
 if PrepSelPrep._primitive is not None:
+    # pylint: disable=protected-access
 
     @PrepSelPrep._primitive.def_impl
     def _(*args, n_wires, **kwargs):

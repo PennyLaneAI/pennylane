@@ -16,6 +16,7 @@ Unit tests for the ``broadcast_expand`` transform.
 """
 
 # pylint: disable=unused-argument
+
 import numpy as np
 import pytest
 

@@ -15,6 +15,9 @@
 This module contains tests for functions needed to do vscf calculations.
 """
 
+# pylint: disable=protected-access
+
+
 from pathlib import Path
 
 import numpy as np
@@ -23,8 +26,6 @@ import pytest
 import pennylane as qp
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vscf
-
-# pylint: disable=protected-access
 
 h5py = pytest.importorskip("h5py")
 

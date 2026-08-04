@@ -15,6 +15,7 @@
 
 # pylint: disable=unused-argument
 
+
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -113,7 +114,7 @@ def _align_torch_interfaces(params, state0, state1, state_interface, param_inter
     return params, state0, state1
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _prepare_batched_params(params, state, state0, state1, axis, n_dim, is_state_batched):
     """Prepare parameters and state slices for batched parametric operations.
 
@@ -639,7 +640,7 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable-next=too-many-return-statements
 def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
 
@@ -913,7 +914,6 @@ def apply_snapshot(
     return state
 
 
-# pylint:disable=import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
     op: qp.pulse.ParametrizedEvolution,
@@ -959,6 +959,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     Returns:
         TensorLike[complex]: output state
     """
+    # pylint: disable=import-outside-toplevel
 
     try:
         import jax

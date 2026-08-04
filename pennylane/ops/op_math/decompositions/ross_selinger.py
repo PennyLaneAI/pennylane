@@ -128,7 +128,6 @@ def apply_clifford_from_idx(idx, wire):
     return qp.cond(head_cond, head_fn, elifs=elifs)
 
 
-# pylint: disable=no-value-for-parameter
 def _jit_rs_decomposition(wire, decomposition_info):
     """Apply the Ross-Selinger decomposition with QJIT to the given decomposition.
 
@@ -144,6 +143,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
     Returns:
         list[~pennylane.operation.Operation]: A Clifford+T gate implementing the instructions from `decomposition_info`.
     """
+    # pylint: disable=no-value-for-parameter
     ops = []
     has_leading_t, syllable_sequence, clifford_op_idx = decomposition_info
 

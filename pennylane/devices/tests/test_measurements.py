@@ -14,6 +14,7 @@
 """Tests that the different measurement types work correctly on a device."""
 
 # pylint: disable=no-self-use,no-member
+
 import pytest
 from flaky import flaky
 from scipy.sparse import csr_matrix
@@ -155,10 +156,11 @@ class TestSupportedObservables:
         assert isinstance(circuit(), (float, np.ndarray))
 
 
-# pylint: disable=too-few-public-methods
 @flaky(max_runs=10)
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
+
+    # pylint: disable=too-few-public-methods
 
     def test_hamiltonian_diff(self, device_kwargs, tol, shots):
         """Tests a simple VQE gradient using parameter-shift rules."""
@@ -1236,6 +1238,7 @@ class TestTensorSample:
 
 
 @flaky(max_runs=10)
+# pylint: disable-next=too-few-public-methods
 class TestSumExpval:
     """Test expectation values of Sum observables."""
 

@@ -16,6 +16,7 @@ Pytest configuration file for PennyLane test suite.
 """
 
 # pylint: disable=unused-import
+
 import os
 import pathlib
 import sys
@@ -88,6 +89,8 @@ def mock_device(monkeypatch):
 
 
 # pylint: disable=protected-access
+
+
 @pytest.fixture
 def tear_down_hermitian():
     yield None
@@ -208,8 +211,8 @@ except ImportError as e:
     jax_available = False
 
 
-# pylint: disable=unused-argument
 def pytest_generate_tests(metafunc):
+    # pylint: disable=unused-argument
     if jax_available:
         jax.config.update("jax_enable_x64", True)
 

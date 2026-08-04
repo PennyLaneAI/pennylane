@@ -291,8 +291,8 @@ def multi_qubit_decomposition(U, wires):
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
-    # pylint: disable=unused-argument
     def _resource_fn(num_wires):
+        # pylint: disable=unused-argument
         return su2_resource() | {ops.GlobalPhase: 1}
 
     name = name or su2_rule.name
@@ -764,7 +764,6 @@ def _decompose_2_cnots(U, wires, initial_phase):
 
     The final circuit is then constructed by applying these local gates around the V.
     """
-    # pylint: disable=too-many-locals
     # 1. Compute gamma(U)
     u_mag = _multidot(math.cast_like(E_dag, U), U, math.cast_like(E, U))
     gamma_u = math.dot(u_mag, math.T(u_mag))
@@ -1104,10 +1103,10 @@ def _compute_udv(a, b):
 
 def _cossin_decomposition(U, p):
 
-    # pylint: disable=import-outside-toplevel
     if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
 
+        # pylint: disable-next=import-outside-toplevel
         import jax
 
         def scipy_cossin_callback(U_flat, p):

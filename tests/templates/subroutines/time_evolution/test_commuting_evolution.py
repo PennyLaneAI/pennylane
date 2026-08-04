@@ -16,6 +16,7 @@ Tests for the CommutingEvolution template.
 """
 
 # pylint: disable=too-few-public-methods
+
 import pytest
 from scipy.linalg import expm
 
@@ -262,8 +263,8 @@ class TestGradients:
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
-    # pylint: disable=not-callable
     def test_four_term_case(self):
+        # pylint: disable=not-callable
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
 
@@ -288,8 +289,8 @@ class TestGradients:
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
-    # pylint: disable=not-callable
     def test_differentiable_hamiltonian(self):
+        # pylint: disable=not-callable
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
 
         n_wires = 2

@@ -113,8 +113,8 @@ class HilbertSchmidt(Operation):
     resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
-        # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
         V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
         num_v_ops = len(V)
@@ -207,13 +207,13 @@ class HilbertSchmidt(Operation):
         return self
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -258,7 +258,9 @@ class HilbertSchmidt(Operation):
 
 
 # pylint: disable=protected-access
+
 if HilbertSchmidt._primitive is not None:
+    # pylint: disable=protected-access
 
     @HilbertSchmidt._primitive.def_impl
     def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
@@ -404,7 +406,9 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
 
 # pylint: disable=protected-access
+
 if LocalHilbertSchmidt._primitive is not None:
+    # pylint: disable=protected-access
 
     @LocalHilbertSchmidt._primitive.def_impl
     def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):

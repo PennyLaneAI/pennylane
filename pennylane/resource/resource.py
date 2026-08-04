@@ -1107,6 +1107,7 @@ class CircuitSpecs:
 
         return "\n".join(lines)
 
+    # pylint: disable-next=too-many-branches
     def _repr_markdown_(self, collapsible: bool = True) -> str:
         """
         Return a Markdown representation of the :class:`CircuitSpecs` for Jupyter notebook display.
@@ -1121,7 +1122,6 @@ class CircuitSpecs:
 
             https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         """
-        # pylint: disable=too-many-branches
         # Ignore pylint on this one, this is not better served by splitting into even
         # smaller functions than it already has
         lines = []

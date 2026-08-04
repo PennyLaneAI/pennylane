@@ -117,8 +117,8 @@ class Reflection(Operation):
         data = (self.hyperparameters["base"], self.parameters[0])
         return data, (self.hyperparameters["reflection_wires"],)
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
         return super()._primitive_bind_call(U, alpha, wires=reflection_wires, **kwargs)
 
@@ -272,7 +272,9 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
 add_decomps(Reflection, _reflection_decomposition)
 
 # pylint: disable=protected-access
+
 if Reflection._primitive is not None:
+    # pylint: disable=protected-access
 
     @Reflection._primitive.def_impl
     def _(*args, n_wires, **kwargs):

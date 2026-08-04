@@ -14,12 +14,14 @@
 """This file provides support for logging framework filters. For more information please see the
 official Python documentation on filters at https://docs.python.org/3/library/logging.html#filter"""
 
+# pylint: disable=too-few-public-methods
+
+
 import logging
 import os
 from logging import Filter
 
 
-# pylint: disable=too-few-public-methods
 class LocalProcessFilter(Filter):
     """
     Filters logs not originating from the current executing Python process ID.
@@ -35,7 +37,7 @@ class LocalProcessFilter(Filter):
         return False
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class DebugOnlyFilter(Filter):
     """
     Filters logs that are less verbose than the DEBUG level (CRITICAL, ERROR, WARN & INFO).

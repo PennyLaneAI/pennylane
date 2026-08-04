@@ -15,6 +15,9 @@
 Test the core resource estimation functionality.
 """
 
+# pylint: disable=no-self-use, arguments-differ, too-many-public-methods, too-few-public-methods
+
+
 from collections import defaultdict
 
 import pytest
@@ -32,8 +35,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
-
-# pylint: disable= no-self-use, arguments-differ, too-many-public-methods, too-few-public-methods
 
 
 def _circuit_w_expval(circ):
@@ -599,8 +600,8 @@ class TestEstimateResources:
     def test_custom_adjoint_decomposition_labs(self):
         """Test that a custom adjoint decomposition can be set and used."""
 
-        # pylint: disable=unused-argument
         def custom_adj_RZ(target_resource_params):
+            # pylint: disable-next=unused-argument
             return [GateCount(resource_rep(qre.Z))]
 
         rc = ResourceConfig()
@@ -620,8 +621,8 @@ class TestEstimateResources:
     def test_custom_pow_decomposition_labs(self):
         """Test that a custom pow decomposition can be set and used."""
 
-        # pylint: disable=unused-argument
         def custom_pow_RZ(pow_z, target_resource_params):
+            # pylint: disable-next=unused-argument
             return [GateCount(resource_rep(qre.Hadamard), count=2)]
 
         rc = ResourceConfig()
@@ -641,8 +642,8 @@ class TestEstimateResources:
     def test_custom_controlled_decomposition_labs(self):
         """Test that a custom controlled decomposition can be set and used."""
 
-        # pylint: disable=unused-argument
         def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params):
+            # pylint: disable-next=unused-argument
             return [GateCount(resource_rep(qre.X), count=3)]
 
         rc = ResourceConfig()

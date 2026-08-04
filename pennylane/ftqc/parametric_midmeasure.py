@@ -360,7 +360,7 @@ class ParametricMidMeasure(MidMeasure):
 
     _shortname = "measure"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
@@ -408,8 +408,8 @@ class ParametricMidMeasure(MidMeasure):
 
         return hash(fingerprint)
 
-    # pylint: disable=too-many-positional-arguments, arguments-differ
     @classmethod
+    # pylint: disable-next=too-many-positional-arguments, arguments-differ, too-many-arguments
     def _primitive_bind_call(
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, meas_uid=None
     ):

@@ -16,6 +16,7 @@ Utility functions for capture-related tests.
 """
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 jax = pytest.importorskip("jax")

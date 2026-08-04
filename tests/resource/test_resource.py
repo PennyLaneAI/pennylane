@@ -16,6 +16,7 @@ Test base Resource class and its associated methods
 """
 
 # pylint: disable=protected-access, disallowed-name
+
 import dataclasses
 import textwrap
 from dataclasses import FrozenInstanceError

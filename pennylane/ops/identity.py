@@ -63,7 +63,7 @@ class Identity(Operation):
         return {}
 
     @classmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, wires: WiresLike = (), **kwargs):
         return super()._primitive_bind_call(wires=wires, **kwargs)
 
@@ -149,7 +149,7 @@ class Identity(Operation):
         return self.compute_matrix(n_wires=n_wires)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ
     def compute_diagonalizing_gates(wires, n_wires=1):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
@@ -173,6 +173,7 @@ class Identity(Operation):
         >>> qp.Identity.compute_diagonalizing_gates(wires=[0])
         []
         """
+        # pylint: disable=unused-argument
         return []
 
     @staticmethod
@@ -289,7 +290,7 @@ class GlobalPhase(Operation):
     resource_keys = set()
 
     @classmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, phi, wires: WiresLike = (), **kwargs):
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
@@ -373,7 +374,7 @@ class GlobalPhase(Operation):
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ
     def compute_diagonalizing_gates(phi, wires, n_wires=1):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
@@ -397,10 +398,11 @@ class GlobalPhase(Operation):
         >>> qp.GlobalPhase.compute_diagonalizing_gates(1.2, wires=[0])
         []
         """
+        # pylint: disable=unused-argument
         return []
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(phi, wires: WiresLike = ()):
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -430,6 +432,7 @@ class GlobalPhase(Operation):
         []
 
         """
+        # pylint: disable=unused-argument
         return []
 
     def eigvals(self):

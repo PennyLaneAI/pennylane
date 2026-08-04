@@ -13,7 +13,9 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint: disable=protected-access,import-outside-toplevel,unnecessary-lambda,wrong-import-order
+# pylint: disable=protected-access, import-outside-toplevel, unnecessary-lambda, wrong-import-order
+
+
 from importlib import import_module
 
 import autoray as ar
@@ -923,8 +925,8 @@ ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 
 
-# pylint: disable=unused-argument
 def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):
+    # pylint: disable=unused-argument
     return _i("jax").numpy.array(x, dtype=dtype, **kwargs)
 
 
@@ -955,7 +957,7 @@ ar.register_function(
     lambda x, index, value, **kwargs: x.at[tuple(index)].add(value, **kwargs),
 )
 ar.register_function("jax", "unstack", list)
-# pylint: disable=unnecessary-lambda
+# pylint: disable-next=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
 ar.register_function(
     "jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x), axis=-1)

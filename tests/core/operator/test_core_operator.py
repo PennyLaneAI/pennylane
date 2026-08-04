@@ -15,6 +15,16 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
+# pylint: disable=no-self-use
+# pylint: disable=no-member
+# pylint: disable=protected-access
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-public-methods
+# pylint: disable=unused-argument
+# pylint: disable=unnecessary-lambda-assignment
+
+
 import copy
 from collections.abc import Callable
 
@@ -36,8 +46,6 @@ from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods, too-many-public-methods, unused-argument, unnecessary-lambda-assignment
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -1679,7 +1687,6 @@ class TestCriteria:
         assert not qp.operation.is_trainable(self.cnot)
 
 
-# pylint: disable=too-few-public-methods
 class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 
@@ -2075,9 +2082,9 @@ def test_custom_operator_is_jax_pytree():
     qp.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# pylint: disable=unused-import
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
+    # pylint: disable=unused-import
 
     attr_name = "non_existent_attr"
     with pytest.raises(

@@ -16,6 +16,7 @@ Tests for the MERA template.
 """
 
 # pylint: disable=too-many-arguments, too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -107,9 +108,9 @@ def circuit3_MERA(weights, wires):
     qp.StronglyEntanglingLayers(SELWeights5, wires=[wires[0], wires[1]])
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     def block(weights, wires):
         qp.CNOT(wires=[wires[0], wires[1]])

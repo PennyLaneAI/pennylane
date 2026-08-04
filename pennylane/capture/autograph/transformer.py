@@ -58,7 +58,7 @@ class PennyLaneTransformer(PyToPy):
         elif inspect.isfunction(fn) or inspect.ismethod(fn):
             pass
         elif callable(obj):
-            # pylint: disable=unnecessary-lambda,unnecessary-lambda-assignment
+            # pylint: disable-next=unnecessary-lambda, unnecessary-lambda-assignment
             fn = lambda *args, **kwargs: obj(*args, **kwargs)
         else:
             raise AutoGraphError(f"Unsupported object for transformation: {type(fn)}")
@@ -292,7 +292,7 @@ def autograph_source(fn):
     )
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
     """Context decorator that disables AutoGraph for the given function/context.
 

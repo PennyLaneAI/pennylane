@@ -73,7 +73,7 @@ tape = qp.tape.QuantumScript.from_queue(q_tape)
 def test_error_if_unsupported_object_in_tape():
     """Test an error is raised if there's an unsupported object in the tape."""
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable-next=too-few-public-methods
     class DummyObj:
         wires = qp.wires.Wires(2)
 

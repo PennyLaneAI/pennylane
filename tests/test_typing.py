@@ -36,7 +36,7 @@ class TestTensorLike:
     def test_isinstance_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
         class UnknownType:
             """Unknown type."""
 
@@ -80,7 +80,7 @@ class TestTensorLike:
     def test_subclass_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
         class UnknownType:
             """Unknown type."""
 
@@ -117,9 +117,11 @@ class TestTensorLike:
         assert issubclass(tf.Variable, TensorLike)
 
 
-# pylint: disable=protected-access,too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestAbstractArray:
     """Tests for the AbstractArray class."""
+
+    # pylint: disable=protected-access
 
     def test_basic_instance(self):
         """Test a normal instance of AbstractArray."""

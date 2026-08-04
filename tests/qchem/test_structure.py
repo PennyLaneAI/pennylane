@@ -16,6 +16,7 @@ Unit tests for the functions of the structure module.
 """
 
 # pylint: disable=too-many-arguments
+
 import functools as ft
 import os
 import sys

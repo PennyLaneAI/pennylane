@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=too-few-public-methods
+
+
 import numpy as np
 import pytest
 
@@ -43,8 +46,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.wires import Wires
-
-# pylint: disable=too-few-public-methods
 
 
 def test_measurements_module_getattr():
@@ -182,10 +183,10 @@ valid_meausurements = [
 ]
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize("mp", valid_meausurements)
 def test_flatten_unflatten(mp):
     """Test flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     data, metadata = mp._flatten()
     assert hash(metadata)
@@ -373,6 +374,7 @@ class TestProperties:
     def test_measurement_value_map_wires(self):
         """Test that MeasurementProcess.map_wires works correctly when mp.mv
         is not None."""
+        # pylint: disable=protected-access
         m0 = qp.measure("a")
         m1 = qp.measure("b")
         m2 = qp.measure(0)
@@ -457,7 +459,7 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 

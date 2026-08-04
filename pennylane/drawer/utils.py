@@ -248,8 +248,8 @@ def unwrap_controls(op):
     return control_wires + base_ctrl_wires, control_values + base_ctrl_values, base_base
 
 
-# pylint: disable=unused-argument
 @singledispatch
+# pylint: disable-next=unused-argument
 def _get_meas(op, bit_map, wire_map):
     return [], None
 

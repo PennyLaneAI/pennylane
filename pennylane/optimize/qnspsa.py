@@ -24,6 +24,7 @@ from pennylane.ops import adjoint
 from pennylane.workflow import construct_tape, execute
 
 
+# pylint: disable-next=too-many-instance-attributes
 class QNSPSAOptimizer:
     r"""Quantum natural SPSA (QNSPSA) optimizer. QNSPSA is a second-order SPSA algorithm, which
     updates the ansatz parameters with the following equation:
@@ -128,7 +129,7 @@ class QNSPSAOptimizer:
     Step 50: cost = -0.9984
     """
 
-    # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         stepsize=1e-3,

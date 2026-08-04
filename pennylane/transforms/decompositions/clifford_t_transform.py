@@ -13,6 +13,9 @@
 # limitations under the License.
 """Transform function for the Clifford+T decomposition."""
 
+# pylint: disable=import-outside-toplevel, global-statement
+
+
 import math
 import warnings
 from functools import lru_cache, partial
@@ -73,7 +76,6 @@ _CLIFFORD_T_CACHE = None
 _CATALYST_SKIP_OP_TYPES = ()
 
 
-# pylint: disable=import-outside-toplevel, global-statement
 def _add_catalyst_skip_op_types():
     """Delayed addition of PennyLane-Catalyst skip op types."""
     global _CATALYST_SKIP_OP_TYPES
@@ -195,7 +197,7 @@ def _simplify_param(theta, gate):
     return None
 
 
-# pylint: disable= too-many-branches,
+# pylint: disable-next=too-many-branches
 def _rot_decompose(op):
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
     :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
@@ -430,8 +432,8 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
-# pylint: disable=too-many-branches,too-many-statements
 @transform
+# pylint: disable-next=too-many-branches, too-many-statements
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,

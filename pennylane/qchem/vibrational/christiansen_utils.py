@@ -14,6 +14,8 @@
 """Utility functions related to the construction of the taylor form Hamiltonian."""
 
 # pylint: disable=too-many-positional-arguments
+
+
 import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -202,7 +204,7 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial", path=None):
     return result
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _local_cform_onemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos, path):
     """Worker function to calculate the one body integrals. The result are written to a hdf5 file.
 
@@ -271,7 +273,7 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial", path=N
     return result
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _local_cform_onemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos, path):
     """Worker function to calculate the one-body integrals from the given potential energy surface data for the
     Christiansen dipole operator. The result are written to a hdf5 file.
@@ -345,7 +347,7 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial", path=None):
     return result
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _local_cform_twomode(rank, boscombos_on_rank, n_states, pes, all_mode_combos, path):
     """Worker function to calculate the two-body integrals from the given potential energy surface data for the
     Christiansen Hamiltonian. The result are written to a hdf5 file.
@@ -439,7 +441,7 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial", path=N
     return result
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _local_cform_twomode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos, path):
     """Worker function to calculate the two-body integrals from the given potential energy surface data for the
     Christiansen dipole operator. The result are written to a hdf5 file.
@@ -537,7 +539,7 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial", path=None):
     return result
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _local_cform_threemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos, path):
     """Worker function to calculate the three-body integrals from the given potential energy surface data for the
     Christiansen Hamiltonian. The result are written to a hdf5 file.
@@ -641,7 +643,7 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial", path
     return result
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _local_cform_threemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos, path):
     """Worker function to calculate the three-body integrals from the given potential energy surface data for the
     Christiansen dipole operator. The result are written to a hdf5 file.

@@ -14,6 +14,7 @@
 """Unit tests for the JAX-JIT interface"""
 
 # pylint: disable=protected-access
+
 import numpy as np
 import pytest
 

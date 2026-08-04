@@ -413,7 +413,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         ValueError: <cancel-inverses()> without a tape definition occurs before tape transform <defer_measurements()>.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __new__(
         cls,
         tape_transform: Callable | None = None,
@@ -447,8 +447,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 # NOTE: Prepend "qnode" as an argument to the docstring
                 # so that it's consistent with tape based transform signatures.
                 @wraps(setup_inputs)
-                # pylint: disable=unused-argument
                 def _modified_setup_inputs(qnode, *args, **kwargs):
+                    # pylint: disable=unused-argument
                     return setup_inputs(*args, **kwargs)  # pragma: no cover
 
                 orig_sig = signature(setup_inputs)
@@ -463,7 +463,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         tape_transform: Callable | None = None,

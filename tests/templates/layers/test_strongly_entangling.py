@@ -16,6 +16,7 @@ Unit tests for the StronglyEntanglingLayers template.
 """
 
 # pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -66,8 +67,8 @@ class TestDecomposition:
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
     @pytest.mark.capture
-    # pylint: disable=unused-argument
     def test_decomposition_new_capture(self, n_wires, imprimitive, batch_dim):
+        # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(
             size=(1, n_wires, 3),
@@ -80,8 +81,8 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
-    # pylint: disable=unused-argument
     def test_decomposition_new(self, n_wires, imprimitive, batch_dim):
+        # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(
             size=(1, n_wires, 3),
@@ -185,9 +186,10 @@ class TestDecomposition:
 
 @pytest.mark.jax
 @pytest.mark.capture
-# pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
+
+    # pylint: disable=protected-access
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_strongly_entangling_plxpr(self):

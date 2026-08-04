@@ -14,6 +14,7 @@
 """Unit tests for the QNode"""
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
+
 import copy
 import warnings
 from functools import partial
@@ -965,7 +966,6 @@ class TestCompilePipelineIntegration:
         assert circuit() == 100
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
@@ -978,6 +978,8 @@ class CustomDevice(qp.devices.Device):
 
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
+
+    # pylint: disable=unused-argument
 
     @pytest.mark.parametrize(
         "diff_method,mode",
@@ -1024,6 +1026,7 @@ class TestTapeExpansion:
     def test_no_gradient_expansion(self, mocker):
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
+        # pylint: disable=unused-argument
         dev = DefaultQubitLegacy(wires=1)
 
         class UnsupportedOp(qp.operation.Operation):

@@ -15,11 +15,12 @@
 Tests for qchem resource operators.
 """
 
+# pylint: disable=no-self-use
+
+
 import pytest
 
 import pennylane.estimator as qre
-
-# pylint: disable=no-self-use
 
 
 class TestSingleExcitation:

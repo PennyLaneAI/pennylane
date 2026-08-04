@@ -111,7 +111,7 @@ def local_gates(n_qubits: int, max_weight=2):
         ([[1, 0], [1, 0]], "multi_gens", [0.2], [0, 1], True, True, 10_000, None, None, True),
     ],
 )
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def test_expval(
     ops,
     gates_fn,

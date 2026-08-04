@@ -90,6 +90,8 @@ def _eval_unary_op(operand: any, operator: str, line: int):
 
 
 # pylint: disable = too-many-branches
+
+
 def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     """
     Evaluates an assignment.
@@ -137,7 +139,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
-# pylint: disable=too-many-return-statements, too-many-branches
+# pylint: disable-next=too-many-return-statements
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
@@ -500,7 +502,7 @@ class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
-# pylint: disable=unused-argument, no-self-use, too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -1228,6 +1230,7 @@ class QasmInterpreter:
         Returns:
             complex: a complex number corresponding to the imaginary literal.
         """
+        # pylint: disable=unused-argument
         return 1j * node.value
 
     @visit.register(ast.DiscreteSet)
@@ -1685,4 +1688,5 @@ class QasmInterpreter:
         Returns:
             The value of the literal.
         """
+        # pylint: disable=unused-argument
         return node.value

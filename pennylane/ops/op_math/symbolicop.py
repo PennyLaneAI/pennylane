@@ -129,8 +129,8 @@ class SymbolicOp(Operator):
         """Number of wires the operator acts on."""
         return len(self.wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_matrix(self):
         return self.base.has_matrix
 

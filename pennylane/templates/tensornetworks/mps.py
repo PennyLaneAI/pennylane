@@ -16,6 +16,8 @@ Contains the MPS template.
 """
 
 # pylint: disable=too-many-arguments
+
+
 import warnings
 
 from pennylane import math
@@ -230,7 +232,7 @@ class MPS(Operation):
         return 0 if self._weights is None else 1
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(weights=None, wires=None, ind_gates=None, block=None, **kwargs):
         r"""Representation of the operator as a product of other operators.
 

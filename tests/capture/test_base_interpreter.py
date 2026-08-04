@@ -16,6 +16,7 @@ This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
 # pylint: disable=protected-access, unbalanced-tuple-unpacking, wrong-import-position
+
 import pytest
 
 import pennylane as qp
@@ -355,7 +356,7 @@ def handle_add_3(self, x):  # pylint: disable=unused-argument
     return x + scalar
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestHigherOrderPrimitiveRegistrations:
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_transform(self, lazy):

@@ -13,6 +13,9 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+# pylint: disable=too-many-arguments
+
+
 from collections.abc import Sequence
 
 import mcm_utils
@@ -25,9 +28,6 @@ from pennylane.ops import MidMeasure
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
-
-
-# pylint: disable=too-many-arguments
 
 
 def test_combine_measurements_core():
@@ -102,8 +102,8 @@ def test_unsupported_measurement(mcm_method):
         func(*params)
 
 
-# pylint: disable=unused-argument
 def obs_tape(x, y, z, reset=False, postselect=None):
+    # pylint: disable=unused-argument
     qp.RX(x, 0)
     qp.RZ(np.pi / 4, 0)
     m0 = qp.measure(0, reset=reset)
@@ -230,6 +230,7 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
     dev = qp.device("default.qubit", seed=seed)
     param = qp.numpy.array([np.pi / 3, np.pi / 6])
 
+    # pylint: disable=unused-argument
     def func(x, y):
         qp.RX(x, 0)
         m0 = qp.measure(0)
@@ -310,7 +311,6 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
         _ = circuit([0.1, 0.2])
 
 
-# pylint: disable=import-outside-toplevel
 @pytest.mark.jax
 class TestJaxIntegration:
     """Integration tests for dynamic_one_shot with jax"""

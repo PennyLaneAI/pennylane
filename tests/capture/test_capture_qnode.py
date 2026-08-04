@@ -549,7 +549,7 @@ class TestDifferentiation:
             jax.grad(circuit)(0.5)
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestQNodeVmapIntegration:
     """Tests for integrating JAX vmap with the QNode primitive."""
 

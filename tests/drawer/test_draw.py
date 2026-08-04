@@ -16,6 +16,7 @@ Integration tests for the draw transform
 """
 
 # pylint: disable=import-outside-toplevel
+
 from functools import partial
 
 import pytest

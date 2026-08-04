@@ -37,11 +37,12 @@ def ansatz(a, b, c):
     qp.CNOT(wires=[1, 2])
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize("shots", [None, 1_000_000])
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
+
+    # pylint: disable=too-many-arguments
 
     @pytest.fixture
     def tolerance(self, shots, tol):
@@ -50,6 +51,7 @@ class TestTensorExpval:
 
         return {"atol": tol, "rtol": 0}
 
+    # pylint: disable-next=too-many-arguments
     def test_tensor_product(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product ZxZ gives the same result as simply
         using an Hermitian matrix"""
@@ -75,6 +77,7 @@ class TestTensorExpval:
     def test_combine_tensor_with_non_tensor(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product along with a non-tensor product
         continues to function correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -102,6 +105,7 @@ class TestTensorExpval:
 
     def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -118,6 +122,7 @@ class TestTensorExpval:
     @pytest.mark.autograd
     def test_paulix_tensor_pauliy_gradient(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -134,6 +139,7 @@ class TestTensorExpval:
 
     def test_pauliz_tensor_identity(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -149,6 +155,7 @@ class TestTensorExpval:
 
     def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -164,6 +171,7 @@ class TestTensorExpval:
 
     def test_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving an Hermitian matrix works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         A = np.array(
@@ -193,6 +201,7 @@ class TestTensorExpval:
 
     def test_hermitian_tensor_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         A1 = np.array([[1, 2], [2, 4]])
@@ -266,6 +275,8 @@ class TestTensorExpval:
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.fixture
     def tolerance(self, shots, tol):
         if shots is not None:
@@ -275,6 +286,7 @@ class TestTensorVar:
 
     def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -297,6 +309,7 @@ class TestTensorVar:
 
     def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
+        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -377,8 +390,8 @@ def tensor_product(observables):
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 
-    # pylint: disable=unused-argument
     def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol_stochastic, seed):
+        # pylint: disable=unused-argument
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
         dev = qp.device("default.qubit", wires=2, seed=seed)
 
@@ -410,6 +423,7 @@ class TestTensorSample:
 
     def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol_stochastic, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
+
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(1_000_000)
@@ -425,6 +439,8 @@ class TestTensorSample:
 
     def test_tensor_hermitian(self, theta, phi, varphi, tol_stochastic, seed):
         """Test that a tensor product involving qp.Hermitian works correctly"""
+        # pylint: disable=unused-argument
+
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         A = np.array(

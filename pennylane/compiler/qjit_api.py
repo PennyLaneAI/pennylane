@@ -13,12 +13,14 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
+# pylint: disable=keyword-arg-before-vararg
+
+
 from pennylane.exceptions import CompileError
 
 from .compiler import AvailableCompilers, _check_compiler_version, available
 
 
-# pylint: disable=keyword-arg-before-vararg
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):
     """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane.
 

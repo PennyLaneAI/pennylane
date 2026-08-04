@@ -289,7 +289,7 @@ def _fast_walsh_hadamard_transform(vec: np.ndarray) -> np.ndarray:
     return vec
 
 
-# pylint: disable=too-many-statements,too-many-branches
+# pylint: disable-next=too-many-branches
 def _generalized_pauli_decompose_sparse(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[TensorLike, list]:
@@ -349,6 +349,7 @@ def _generalized_pauli_decompose_sparse(
         >>> terms
         [Z(0) @ Z(1), X(0) @ I(1)]
     """
+    # pylint: disable=too-many-statements
     sparse_matrix = sps.coo_matrix(matrix)
     # Sum duplicate (row, col) entries as COO format allows multiple entries
     # for the same position, which must be combined before processing.

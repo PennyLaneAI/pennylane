@@ -135,7 +135,7 @@ class CommutingEvolution(Operation):
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
 
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -173,7 +173,7 @@ class CommutingEvolution(Operation):
         return self
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(time, *_, wires, hamiltonian, **__):
         r"""Representation of the operator as a product of other operators.
 
@@ -211,8 +211,7 @@ def _commuting_evolution_resources(words: tuple[PauliWord]):
 
 
 @register_resources(_commuting_evolution_resources)
-# pylint: disable=unused-argument
-def _commuting_evolution_decomposition(
+def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
     time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
 ):
     if capture.enabled() and isinstance(hamiltonian, Operator1):

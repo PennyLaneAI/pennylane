@@ -331,7 +331,7 @@ def _obs_phase_matrix(
     )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _build_all_weight_groups(
     gen_np: np.ndarray,
     pm_np: np.ndarray,
@@ -358,6 +358,7 @@ def _build_all_weight_groups(
     return weight_data
 
 
+# pylint: disable-next=too-many-arguments
 def _accumulate_phase_diffs(
     gates_params: ArrayLike,
     weight_data: list[WeightGroupData],
@@ -551,7 +552,7 @@ def build_qudit_expval_func(
     else:
         defaults = None
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def qudit_expval_batched(
         gates_params: ArrayLike,
         phase_fn_params: ArrayLike | None = None,

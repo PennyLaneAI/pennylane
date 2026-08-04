@@ -27,8 +27,8 @@ jaxopt = pytest.importorskip("jaxopt")
 def quadratic_problem():
     """Return a small convex optimization problem with a known optimum."""
 
-    # pylint: disable=unused-argument
     def loss_fn(params, target, key=None):
+        # pylint: disable-next=unused-argument
         diff = params - target
         return jnp.sum(diff**2)
 
@@ -41,7 +41,7 @@ def quadratic_problem():
 
 
 def test_optimization_success(quadratic_problem):
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     """The high-level trainer should drive the quadratic loss close to zero."""
     loss_fn, _, target, loss_kwargs = quadratic_problem
 
@@ -60,7 +60,7 @@ def test_optimization_success(quadratic_problem):
 
 
 def test_determinism(quadratic_problem):
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     """Repeated runs with the same seed should be bit-identical."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=5, random_state=123)
@@ -73,7 +73,7 @@ def test_determinism(quadratic_problem):
 
 
 def test_unroll_consistency(quadratic_problem):
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     """Changing ``unroll_steps`` should not change the optimization trajectory."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     seed = 999
@@ -89,7 +89,7 @@ def test_unroll_consistency(quadratic_problem):
 
 
 def test_convergence_early_stopping(quadratic_problem):
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     """Training should stop early once the convergence check is satisfied."""
     loss_fn, _, target, _ = quadratic_problem
 
@@ -106,7 +106,7 @@ def test_convergence_early_stopping(quadratic_problem):
 
 
 def test_validation_handling(quadratic_problem):
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     """Validation losses should be tracked separately from training losses."""
     loss_fn, params_init, target, _ = quadratic_problem
 
@@ -126,8 +126,8 @@ def test_loss_signature_variations():
     """The trainer should accept losses both with and without a ``key`` argument."""
     params = jnp.array([1.0])
 
-    # pylint: disable=unused-argument
     def loss_with_key(params, key):
+        # pylint: disable-next=unused-argument
         return jnp.sum(params**2)
 
     def loss_no_key(params):
@@ -140,7 +140,7 @@ def test_loss_signature_variations():
 
 
 def test_history_logging_manual(quadratic_problem):
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     """The iterator interface should expose per-batch parameters for custom logging."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=10)

@@ -18,6 +18,7 @@ These tests require JAX and Optax to be installed and are marked as external.
 """
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 # Skip entire module if JAX or Optax are not available

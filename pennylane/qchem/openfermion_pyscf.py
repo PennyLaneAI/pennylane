@@ -14,6 +14,8 @@
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``."""
 
 # pylint: disable=too-many-arguments, unused-variable, consider-using-generator
+
+
 import os
 
 import numpy as np
@@ -651,7 +653,7 @@ def dipole_of(
     return dip
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def meanfield(
     symbols,
     coordinates,

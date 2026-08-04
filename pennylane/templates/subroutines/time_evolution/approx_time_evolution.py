@@ -15,7 +15,6 @@ r"""
 Contains the ApproxTimeEvolution template.
 """
 
-# pylint: disable=protected-access
 import copy
 from collections import defaultdict
 
@@ -161,6 +160,7 @@ class ApproxTimeEvolution(Operation):
         super().__init__(*hamiltonian.data, time, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
@@ -174,7 +174,7 @@ class ApproxTimeEvolution(Operation):
         return self
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(*coeffs_and_time, wires, hamiltonian, n):
         r"""Representation of the operator as a product of other operators.
 

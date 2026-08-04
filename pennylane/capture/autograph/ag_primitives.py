@@ -112,7 +112,7 @@ def _assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
@@ -206,7 +206,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
-# pylint: disable=too-many-positional-arguments
+# pylint: disable-next=too-many-positional-arguments, too-many-arguments
 def _call_pennylane_for(
     start,
     stop,
@@ -540,23 +540,27 @@ class PRange:
         return self._py_range
 
     # Interface of the Python range class.
-    # pylint: disable=missing-function-docstring
 
     @property
+    # pylint: disable-next=missing-function-docstring
     def start(self) -> int:  # pragma: no cover
         return self.py_range.start
 
     @property
+    # pylint: disable-next=missing-function-docstring
     def stop(self) -> int:  # pragma: no cover
         return self.py_range.stop
 
     @property
+    # pylint: disable-next=missing-function-docstring
     def step(self) -> int:  # pragma: no cover
         return self.py_range.step
 
+    # pylint: disable-next=missing-function-docstring
     def count(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.count(__value)
 
+    # pylint: disable-next=missing-function-docstring
     def index(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.index(__value)
 
@@ -582,7 +586,7 @@ class PRange:
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class PEnumerate(enumerate):
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.

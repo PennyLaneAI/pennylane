@@ -58,7 +58,6 @@ def _open_circ_options_process(options):
     return new_options
 
 
-# pylint: disable=too-many-arguments
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
@@ -261,6 +260,7 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_layers,

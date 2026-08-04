@@ -13,6 +13,9 @@
 # limitations under the License.
 """A helper method for processing raw samples."""
 
+# pylint: disable=too-many-arguments
+
+
 import numpy as np
 
 from pennylane import math
@@ -23,7 +26,6 @@ from pennylane.typing import Sequence, TensorLike
 from pennylane.wires import WiresLike
 
 
-# pylint: disable=too-many-arguments
 def process_raw_samples(
     mp: MeasurementProcess,
     samples: TensorLike,
@@ -48,6 +50,7 @@ def process_raw_samples(
     This function matches `SampleMP.process_samples`, but does not have a dependence on the measurement process.
 
     """
+    # pylint: disable=protected-access
 
     wire_map = {w: i for i, w in enumerate(wire_order)}
     mapped_wires = [wire_map[w] for w in mp.wires]
@@ -65,7 +68,6 @@ def process_raw_samples(
     num_wires = samples.shape[-1]  # wires is the last dimension
 
     # If we're sampling wires or a list of mid-circuit measurements
-    # pylint: disable=protected-access
     if mp.obs is None and not isinstance(mp.mv, MeasurementValue) and mp._eigvals is None:
         # if no observable was provided then return the raw samples
         samples = samples.astype(dtype) if dtype is not None else samples

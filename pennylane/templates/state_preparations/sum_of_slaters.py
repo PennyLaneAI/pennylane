@@ -1042,7 +1042,9 @@ def _preprocess(v_bits, wires):
     return selected_wires, SoSData(u_bits, b_bits, d, r, m)
 
 
+# pylint: disable-next=too-many-arguments
 def _sos_state_prep_with_wires(
+    # pylint: disable=no-value-for-parameter
     data: tuple[np.ndarray, np.ndarray, SoSData],
     *,
     wires,
@@ -1052,7 +1054,6 @@ def _sos_state_prep_with_wires(
     mcx_cache_wires,
     selected_wires,
 ):
-    # pylint: disable=too-many-arguments, no-value-for-parameter
     coefficients, v_bits, data = data
     identity_encoding = data.r == data.m
     b_bits = data.b_bits
@@ -1102,6 +1103,7 @@ def _sos_state_prep_with_wires(
         # is trivial in this case. This is an additional optimization compared to the paper.
         @for_loop(data.m)
         def encoding(i):
+            # pylint: disable=no-value-for-parameter
             u = u_bits[i]
 
             @for_loop(data.r)
@@ -1134,6 +1136,7 @@ def _sos_state_prep_with_wires(
     # Start the for loop at 1 because we don't need to do anything for 0 anyway
     @for_loop(1, num_entries)
     def uncompute_enumeration(k, prev_bits):
+        # pylint: disable=no-value-for-parameter
         bits = b_bits[:, k]
         flip(bits ^ prev_bits)
         if data.m > 1:

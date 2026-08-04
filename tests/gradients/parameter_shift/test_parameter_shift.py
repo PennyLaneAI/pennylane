@@ -248,7 +248,6 @@ class RX_with_F(qp.RX):
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_par_dep_recipe(qp.RX):
     """RX operation with a parameter-dependent grad recipe."""
 
@@ -279,7 +278,7 @@ class TestGetOperationRecipe:
         c, s = qp.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
         class DummyOp(orig_op):
             """Custom version of original operation with different gradient recipe."""
 
@@ -334,7 +333,7 @@ class TestGetOperationRecipe:
         c, s = qp.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
         class DummyOp(orig_op):
             """Custom version of original operation with different gradient recipe."""
 
@@ -1066,6 +1065,8 @@ class TestParamShift:
 class TestParamShiftRaisesWithBroadcasted:
     """Test that an error is raised with broadcasted tapes."""
 
+    # pylint: disable=too-few-public-methods
+
     def test_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
@@ -1314,9 +1315,11 @@ class TestParamShiftUsingBroadcasting:
 
 
 # The first of the pylint disable is for cost1 through cost6
-# pylint: disable=no-self-argument, not-an-iterable, too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
+
+    # pylint: disable=no-self-argument, not-an-iterable
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
@@ -3250,6 +3253,7 @@ class TestParameterShiftRuleBroadcast:
 @pytest.mark.parametrize(
     "broadcast, expected", [(False, (5, [None] * 5)), (True, (3, [None, 2, 2]))]
 )
+# pylint: disable-next=too-few-public-methods
 class TestParamShiftGradients:
     """Test that the transform is differentiable"""
 

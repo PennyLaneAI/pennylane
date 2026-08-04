@@ -16,6 +16,7 @@ Tests for the Fourier reconstruction transform.
 """
 
 # pylint: disable=too-many-arguments, too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
+
 from functools import reduce
 from inspect import signature
 from itertools import chain
@@ -748,8 +749,8 @@ def qnode_3(X, Y):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
-# pylint: disable=unused-argument
 def qnode_4(x):
+    # pylint: disable=unused-argument
     return qp.expval(qp.PauliX(0))
 
 
@@ -821,11 +822,12 @@ test_cases_qnodes = [
 ]
 
 
-# pylint: disable=cell-var-from-loop
 class TestReconstruct:
     """Tests the integration of ``_reconstruct_equ`` and ``_reconstruct_gen`` via
     the full ``reconstruct`` function as well as the differentiability of the
     reconstructed function with respect to their single scalar argument."""
+
+    # pylint: disable=cell-var-from-loop
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",

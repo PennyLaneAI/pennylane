@@ -405,8 +405,8 @@ class TestDynamicShapes:
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
 
-    # pylint: disable=unused-argument
     def test_dynamic_array_creation(self):
+        # pylint: disable=unused-argument
         """Test that for_loops can create dynamically shaped arrays."""
 
         def f(i, x):
@@ -425,6 +425,7 @@ class TestDynamicShapes:
         allow_array_resizing=False"""
 
         @qp.for_loop(3, allow_array_resizing=False)
+        # pylint: disable=unused-argument
         def f(i, a, b):
             a_size = a.shape[0]
             b_size = b.shape[0]
@@ -443,6 +444,7 @@ class TestDynamicShapes:
 
     def test_error_is_combining_independent_shapes(self):
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
+        # pylint: disable=unused-argument
 
         @qp.for_loop(3, allow_array_resizing=True)
         def f(i, a, b):
@@ -480,6 +482,7 @@ class TestDynamicShapes:
         """Test that if the closure variable has a dynamic shape that matches an input dynamic shape, they
         can be combined."""
 
+        # pylint: disable=unused-argument
         def w(i0):
             c = jnp.arange(i0)
 
@@ -539,6 +542,7 @@ class TestDynamicShapes:
     @pytest.mark.parametrize("allow_array_resizing", ("auto", True))
     def test_independent_resizing(self, allow_array_resizing):
         """Test that two arrays can be resized independently of each other."""
+        # pylint: disable=unused-argument
 
         @qp.for_loop(4, allow_array_resizing=allow_array_resizing)
         def f(i, a, b):
@@ -557,6 +561,7 @@ class TestDynamicShapes:
 
     def test_recombine_after_loop(self):
         """Test that arrays with the same dynamic shape can be recombined after a loop."""
+        # pylint: disable=unused-argument
 
         @qp.for_loop(2)
         def f(i, a, b):
@@ -578,6 +583,7 @@ class TestDynamicShapes:
 
     def test_closure_var_as_dynamic_shape(self):
         """Test that a closure var can be used to produce something with a dynamic shape."""
+        # pylint: disable=unused-argument
 
         def f(sz):
 
@@ -595,6 +601,7 @@ class TestDynamicShapes:
     def test_abstract_shapes_with_const(self):
         """Test that abstract dimensions can be used when consts are used."""
 
+        # pylint: disable=unused-argument
         def w(a):
 
             b = jnp.array([1.0, 2.0])
@@ -618,6 +625,7 @@ class TestDynamicShapes:
         up with consts with tracer values, leading to leaked tracers when integrated with catalyst.
         This just tests that doesn't happen again.
         """
+        # pylint: disable=unused-argument
 
         def w(x):
             @qp.for_loop(x.shape[0])

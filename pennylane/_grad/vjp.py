@@ -15,6 +15,9 @@
 Defines qp.vjp
 """
 
+# pylint: disable=unused-argument
+
+
 from functools import lru_cache
 from importlib.util import find_spec
 
@@ -27,7 +30,6 @@ from .grad import _args_and_argnums, _setup_h, _setup_method
 has_jax = find_spec("jax") is not None
 
 
-# pylint: disable=unused-argument
 @lru_cache
 def _get_vjp_prim():
     if not has_jax:  # pragma: no cover
@@ -87,7 +89,7 @@ def _validate_cotangents(cotangents, out_avals):
             )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
     import jax  # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
@@ -122,7 +124,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     return results, dparams
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 

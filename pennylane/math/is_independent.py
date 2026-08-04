@@ -75,7 +75,6 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
     return True
 
 
-# pylint: disable=import-outside-toplevel
 def _jax_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using JAX.
@@ -109,6 +108,7 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
         This is an experimental function and unknown edge
         cases may exist to this two-stage test.
     """
+    # pylint: disable-next=import-outside-toplevel
     import jax
 
     mapped_func = partial(func, **kwargs)
@@ -216,7 +216,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     return rnd_args
 
 
-# pylint:disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds):
     """Test whether a function returns the same output at random positions.
 
@@ -255,7 +255,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
-# pylint: disable=too-many-positional-arguments
+# pylint: disable-next=too-many-positional-arguments, too-many-arguments
 def is_independent(
     func,
     interface,
@@ -360,8 +360,6 @@ def is_independent(
     This means that ``is_independent`` is a stronger test than simply verifying functions
     have constant output.
     """
-
-    # pylint:disable=too-many-arguments
 
     if interface not in {"autograd", "jax", "tf", "torch", "tensorflow"}:
         raise ValueError(f"Unknown interface: {interface}")

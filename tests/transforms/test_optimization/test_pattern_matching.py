@@ -16,6 +16,7 @@ Unit tests for the optimization transform ``pattern_matching_optimization``.
 """
 
 # pylint: disable=too-many-statements
+
 import pytest
 
 import pennylane as qp

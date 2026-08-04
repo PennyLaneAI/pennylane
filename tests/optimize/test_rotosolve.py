@@ -16,6 +16,7 @@ Unit tests for the ``RotosolveOptimizer``.
 """
 
 # pylint: disable=too-many-arguments,too-few-public-methods
+
 import functools
 
 import pytest
@@ -195,9 +196,16 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
-    # pylint: disable=unused-argument
     def test_number_of_function_calls(
-        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        # pylint: disable=unused-argument
+        self,
+        fun,
+        x_min,
+        param,
+        nums_freq,
+        exp_num_calls,
+        substep_optimizer,
+        substep_kwargs,
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
         # pylint: disable=too-many-arguments
@@ -229,6 +237,7 @@ class TestWithClassicalFunction:
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
+        # pylint: disable=unused-argument
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         # Make only the first argument trainable
@@ -286,6 +295,7 @@ class TestWithClassicalFunction:
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
+        # pylint: disable=unused-argument
         param = tuple(np.array(p, requires_grad=True) for p in param)
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 

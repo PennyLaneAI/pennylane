@@ -16,6 +16,7 @@ Unit tests for functions needed for qubit tapering.
 """
 
 # pylint: disable=too-many-arguments
+
 import functools
 
 import pytest

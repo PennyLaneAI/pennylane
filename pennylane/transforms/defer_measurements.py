@@ -13,6 +13,9 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
+# pylint: disable=too-many-branches, protected-access
+
+
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
@@ -26,8 +29,6 @@ from pennylane.ops.op_math import ctrl
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-# pylint: disable=too-many-branches, protected-access
 
 
 def _check_tape_validity(tape: QuantumScript):
@@ -97,7 +98,6 @@ def null_postprocessing(results):
     return results[0]
 
 
-# pylint: disable=unused-argument
 @transform
 def defer_measurements(
     tape: QuantumScript,
@@ -269,6 +269,7 @@ def defer_measurements(
         There is only one controlled gate with only one control wire.
 
     """
+    # pylint: disable=unused-argument
     if not any(isinstance(o, MidMeasure) for o in tape.operations):
         return (tape,), null_postprocessing
 

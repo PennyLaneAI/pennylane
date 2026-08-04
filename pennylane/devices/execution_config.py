@@ -181,8 +181,8 @@ class MCMConfig:
         return f"MCMConfig(mcm_method={mcm_method}, postselect_mode={postselect_mode})"
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
+# pylint: disable-next=too-many-instance-attributes
 class ExecutionConfig:
     """
     A class to configure the execution of a quantum circuit on a device.

@@ -16,6 +16,7 @@ Tests for capturing measurements.
 """
 
 # pylint: disable=protected-access, wrong-import-position
+
 import numpy as np
 import pytest
 
@@ -293,6 +294,7 @@ def test_primitive_none_behavior():
 
 
 # pylint: disable=unnecessary-lambda
+
 creation_funcs = [
     lambda: qp.state(),
     lambda: qp.density_matrix(wires=(0, 1)),

@@ -16,6 +16,7 @@ Test Expression class and its associated methods
 """
 
 # pylint: disable=unnecessary-dunder-call,protected-access
+
 import pytest
 
 from pennylane.resource.expression import (

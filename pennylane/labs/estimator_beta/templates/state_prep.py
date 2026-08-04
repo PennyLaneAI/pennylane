@@ -13,6 +13,9 @@
 # limitations under the License.
 r"""This module contains resource operators for state preparation templates."""
 
+# pylint: disable=arguments-differ, too-many-arguments
+
+
 import numpy as np
 
 import pennylane.labs.estimator_beta as qre
@@ -24,8 +27,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.wires import WiresLike
-
-# pylint: disable=arguments-differ, too-many-arguments
 
 
 class LabsMottonenStatePreparation(ResourceOperator):

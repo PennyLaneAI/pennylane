@@ -14,6 +14,7 @@
 """Unit tests for the custom capture primitives for the ftqc module"""
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 pytest.importorskip("jax")

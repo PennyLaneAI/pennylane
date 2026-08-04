@@ -17,6 +17,8 @@ with preparing a certain state on the device.
 """
 
 # pylint: disable=too-many-branches, arguments-differ
+
+
 from importlib.util import find_spec
 from warnings import warn
 
@@ -431,8 +433,8 @@ class StatePrep(StatePrepBase):
         else:
             super()._check_batching()
 
-    # pylint: disable=unused-argument
     @staticmethod
+    # pylint: disable-next=unused-argument
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 

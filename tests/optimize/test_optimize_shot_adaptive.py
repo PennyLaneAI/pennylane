@@ -14,6 +14,7 @@
 """Tests for the shot adaptive optimizer"""
 
 # pylint: disable=unused-argument
+
 import pytest
 
 import pennylane as qp

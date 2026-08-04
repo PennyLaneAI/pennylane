@@ -15,6 +15,9 @@
 Unit tests for the debugging module.
 """
 
+# pylint: disable=protected-access
+
+
 from unittest.mock import patch
 
 import numpy as np
@@ -24,7 +27,6 @@ import pennylane as qp
 from pennylane.debugging import PLDB, pldb_device_manager
 
 
-# pylint: disable=protected-access
 class TestPLDB:
     """Test the interactive debugging integration"""
 

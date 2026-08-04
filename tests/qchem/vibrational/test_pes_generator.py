@@ -15,6 +15,9 @@
 This module contains tests for functions needed to compute PES object.
 """
 
+# pylint: disable=too-many-arguments, protected-access, too-many-positional-arguments
+
+
 import os
 from tempfile import TemporaryDirectory
 
@@ -28,7 +31,6 @@ from pennylane.qchem.vibrational.vibrational_class import _single_point
 
 h5py = pytest.importorskip("h5py")
 
-# pylint: disable=too-many-arguments, protected-access, too-many-positional-arguments
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 

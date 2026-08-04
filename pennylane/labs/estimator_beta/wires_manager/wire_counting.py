@@ -13,6 +13,9 @@
 # limitations under the License.
 """This module contains the core logic for wire management."""
 
+# pylint: disable=too-many-arguments, too-many-branches, too-many-statements
+
+
 from collections.abc import Iterable
 
 from pennylane.allocation import AllocateState
@@ -34,7 +37,6 @@ from pennylane.labs.estimator_beta.wires_manager.base_classes import (
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
 def _estimate_auxiliary_wires(
     list_actions: Iterable[GateCount | Allocate | Deallocate],
     scalar: int = 1,

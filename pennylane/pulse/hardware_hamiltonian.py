@@ -472,6 +472,8 @@ def amplitude_and_phase(trig_fn, amp, phase, hz_to_rads=2 * np.pi):
 
 
 # pylint:disable = too-few-public-methods
+
+
 class AmplitudeAndPhase:
     """Class storing combined amplitude and phase callable if either or both
     of amplitude or phase are callable."""

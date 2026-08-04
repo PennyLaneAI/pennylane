@@ -165,7 +165,7 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
     ]
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def _parshift_and_integrate(
     results,
     cjacs,
@@ -284,7 +284,6 @@ def _parshift_and_integrate(
     )
 
 
-# pylint: disable=too-many-arguments
 @partial(transform, final_transform=True)
 def stoch_pulse_grad(
     tape: QuantumScript,
@@ -638,7 +637,7 @@ def stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
 
-# pylint: disable=too-many-positional-arguments
+# pylint: disable-next=too-many-positional-arguments, too-many-arguments
 def _generate_tapes_and_cjacs(
     tape, operation, key, num_split_times, use_broadcasting, par_idx=None
 ):
@@ -863,6 +862,6 @@ def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     It raises an error, so that applying ``stoch_pulse_grad`` to a ``QNode`` directly
     is not supported.
     """
-    # pylint:disable=unused-argument
+    # pylint: disable=unused-argument
     transform_name = "stochastic pulse parameter-shift"
     raise_pulse_diff_on_qnode(transform_name)

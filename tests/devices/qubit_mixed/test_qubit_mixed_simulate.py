@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit tests for simulate in devices/qubit_mixed."""
 
+# pylint: disable=too-few-public-methods
+
+
 import numpy as np
 import pytest
 
@@ -23,7 +26,6 @@ from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, 
 ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
-# pylint: disable=too-few-public-methods
 class TestResultInterface:
     """Test that the result interface is correct."""
 

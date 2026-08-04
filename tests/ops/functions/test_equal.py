@@ -17,6 +17,7 @@ Tests are divided by number of parameters and wires different operators take.
 """
 
 # pylint: disable=too-many-public-methods
+
 import itertools
 import re
 from copy import deepcopy
@@ -251,7 +252,7 @@ def test_assert_equal_types():
 
 
 def test_assert_equal_unspecified():
-    # pylint: disable=too-few-public-methods
+    # pylint: disable-next=too-few-public-methods
     class RandomType:
         """dummy type"""
 
@@ -1467,7 +1468,7 @@ class TestPauliErrorEqual:
             assert_equal(pes[0], pes[1], check_trainability=False)
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestPauliWordsEqual:
     """Tests for qp.equal with PauliSentences."""
 
@@ -2944,15 +2945,18 @@ class TestHilbertSchmidt:
     # pylint: disable=no-self-argument
 
     def v_function1(params):
+        # pylint: disable=no-self-argument
         """Returns a v_function that is used in the HilbertSchmidt operator."""
         return qp.RZ(params[0], wires=1)
 
+    # pylint: disable-next=no-self-argument
     def v_function2(params):
         """Differs from v_function1 by operation type and used parameter."""
         return qp.RX(params[1], wires=1)
 
     def v_function3(params):
         """Differs from v_function1 by the used wire."""
+        # pylint: disable=no-self-argument
         return qp.RZ(params[0], wires=2)
 
     def v_function4(params):
@@ -3067,8 +3071,8 @@ class TestHilbertSchmidt:
 class DepthIncreaseOperator(Operator):
     """Dummy class which increases depth by one"""
 
-    # pylint: disable=super-init-not-called
     def __init__(self, op: Operator):
+        # pylint: disable=super-init-not-called
         self._op = op
 
     @property
@@ -3175,8 +3179,8 @@ def test_select():
     assert qp.equal(op1, op2) is True
 
 
-# pylint: disable=unused-argument
 class TestCompareSubroutines:
+    # pylint: disable=unused-argument
 
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""

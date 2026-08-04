@@ -82,6 +82,9 @@ Other interfaces are capable of calculating the full jacobian in one call, so th
 
 """
 
+# pylint: disable=unused-argument
+
+
 import logging
 from collections.abc import Callable
 
@@ -98,7 +101,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-# pylint: disable=unused-argument
 def autograd_execute(
     tapes: QuantumScriptBatch,
     execute_fn: ExecuteFn,
@@ -180,7 +182,6 @@ def _execute(
     return _to_autograd(execute_fn(tapes))
 
 
-# pylint: disable=unused-argument
 def vjp(
     ans,
     parameters,

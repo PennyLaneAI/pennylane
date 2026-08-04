@@ -198,7 +198,7 @@ class Multiplier(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike):
         r"""Representation of the operator as a product of other operators.
 

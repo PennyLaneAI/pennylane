@@ -13,6 +13,9 @@
 # limitations under the License.
 """This file contains convenience functions for pulse programming."""
 
+# pylint: disable=unused-argument
+
+
 from collections.abc import Callable
 
 import numpy as np
@@ -24,7 +27,6 @@ except ImportError:
     has_jax = False
 
 
-# pylint: disable=unused-argument
 def constant(scalar, time):
     r"""Returns the given ``scalar``, for use in defining a :class:`~.ParametrizedHamiltonian` with a
     trainable coefficient.

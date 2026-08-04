@@ -307,16 +307,18 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
     return (raw_results,)
 
 
-# pylint: disable=too-many-arguments, import-outside-toplevel
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "numpy", None])
 @pytest.mark.parametrize("use_interface_for_results", [True, False])
 class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.parametrize("measure_f", (qp.expval, qp.probs, qp.sample, qp.var))
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
+    # pylint: disable-next=too-many-arguments
     def test_interface_tape_results(  # pylint: disable=unused-argument
         self, shots, n_mcms, measure_f, interface, use_interface_for_results, seed
     ):

@@ -205,7 +205,7 @@ def create_adjoint_op(fn, lazy):
 def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
 
     adjoint_prim = QpPrimitive("adjoint_transform")
@@ -214,6 +214,7 @@ def _get_adjoint_qfunc_prim():
 
     @adjoint_prim.def_impl
     def _impl(*args, jaxpr, lazy, n_consts):
+        # pylint: disable=import-outside-toplevel
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
@@ -289,7 +290,6 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
 
 
 class Adjoint(SymbolicOp):
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     """
     The Adjoint of an operator.
 
@@ -341,8 +341,8 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, base, **kwargs):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
@@ -401,6 +401,7 @@ class Adjoint(SymbolicOp):
         return moveaxis(conj(base_matrix), -2, -1)
 
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 
@@ -423,6 +424,7 @@ class Adjoint(SymbolicOp):
         return conj(self.base.eigvals())
 
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -430,6 +432,7 @@ class Adjoint(SymbolicOp):
         return self.base.diagonalizing_gates()
 
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_adjoint(self):
         return True
 
@@ -444,7 +447,6 @@ class Adjoint(SymbolicOp):
 
 
 class AdjointOperation(Adjoint, Operation):
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
 
@@ -497,6 +499,7 @@ class AdjointOperation(Adjoint, Operation):
         return self.base.parameter_frequencies
 
     @property
+    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_generator(self):
         return self.base.has_generator
 

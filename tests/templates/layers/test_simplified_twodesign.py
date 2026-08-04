@@ -16,6 +16,7 @@ Unit tests for the SimplifiedTwoDesign template.
 """
 
 # pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 

@@ -1087,11 +1087,12 @@ class TestCostHamiltonians:
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestUtils:
     """Tests that the utility functions are working properly"""
 
     # pylint: disable=protected-access
+
     @pytest.mark.parametrize(
         ("hamiltonian", "value"),
         (
@@ -1237,8 +1238,8 @@ class TestIntegration:
             qaoa.mixer_layer(alpha, mixer_h)
 
         # Repeatedly applies layers of the QAOA ansatz
-        # pylint: disable=unused-argument
         def circuit(params, **kwargs):
+            # pylint: disable=unused-argument
             for w in wires:
                 qp.Hadamard(wires=w)
 
@@ -1277,8 +1278,8 @@ class TestIntegration:
             qaoa.mixer_layer(alpha, mixer_h)
 
         # Repeatedly applies layers of the QAOA ansatz
-        # pylint: disable=unused-argument
         def circuit(params, **kwargs):
+            # pylint: disable=unused-argument
             for w in wires:
                 qp.Hadamard(wires=w)
 
@@ -1299,7 +1300,7 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestCycles:
     """Tests that ``cycle`` module functions are behaving correctly"""
 
@@ -1873,6 +1874,7 @@ class TestCycles:
     def test_out_flow_constraint_raises(self):
         """Test the out-flow constraint function may raise an error."""
 
+        # pylint: disable=too-few-public-methods
         class OtherDirectedGraph(nx.DiGraph):
             def __init__(self, *args, **kwargs):
                 pass
@@ -1895,8 +1897,8 @@ class TestCycles:
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qp.device("default.qubit", wires=wires)
 
-        # pylint: disable=unused-argument
         def states(basis_state, **kwargs):
+            # pylint: disable=unused-argument
             qp.BasisState(basis_state, wires=range(wires))
 
         @qp.qnode(dev)
@@ -1998,6 +2000,7 @@ class TestCycles:
 
     def test_net_flow_constraint_undirected_raises_error(self):
         """Test the net-flow constraint function may raise an error."""
+        # pylint: disable=too-few-public-methods
 
         class OtherDirectedGraph(nx.DiGraph):
             def __init__(self, *args, **kwargs):
@@ -2022,8 +2025,8 @@ class TestCycles:
         # Find the energies corresponding to each possible bitstring
         dev = qp.device("default.qubit", wires=wires)
 
-        # pylint: disable=unused-argument
         def states(basis_state, **kwargs):
+            # pylint: disable=unused-argument
             qp.BasisState(basis_state, wires=range(wires))
 
         @qp.qnode(dev)

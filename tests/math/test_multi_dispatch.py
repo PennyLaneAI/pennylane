@@ -14,6 +14,7 @@
 """Assertion test for multi_dispatch function/decorator"""
 
 # pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods,wrong-import-order
+
 import autoray
 import numpy as onp
 import pytest

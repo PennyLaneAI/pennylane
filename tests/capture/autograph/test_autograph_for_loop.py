@@ -14,7 +14,8 @@
 
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, too-many-public-methods
+# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports
+
 from unittest import mock
 
 import numpy as np
@@ -33,7 +34,6 @@ from jax import numpy as jnp
 from jax.core import eval_jaxpr
 from malt.operators import py_builtins as ag_py_builtins
 
-# pylint: disable=ungrouped-imports
 from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim, for_loop_prim
@@ -689,9 +689,8 @@ class TestPennyLaneForLoops:
     def test_cond_if_for_loop_for(self):
         """Test Python conditionals and loops together with their PennyLane counterparts."""
 
-        # pylint: disable=cell-var-from-loop
-
         def f(x):
+            # pylint: disable=cell-var-from-loop
             acc = 0
             if x < 3:
 

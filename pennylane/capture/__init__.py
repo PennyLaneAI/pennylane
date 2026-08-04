@@ -167,6 +167,9 @@ If needed, developers can also override the implementation method of the primiti
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
 
+# pylint: disable=import-outside-toplevel
+
+
 from typing import Type, TYPE_CHECKING
 from collections.abc import Callable
 
@@ -191,7 +194,6 @@ if TYPE_CHECKING:
     from .primitives import AbstractMeasurement, AbstractOperator, qnode_prim
 
 
-# pylint: disable=import-outside-toplevel
 def __getattr__(key):
     if key == "QpPrimitive":
         from .custom_primitives import QpPrimitive

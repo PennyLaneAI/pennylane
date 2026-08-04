@@ -443,7 +443,6 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
-    # pylint: disable=arguments-renamed
     def __init__(
         self,
         H: Operator | Sequence[Operator],
@@ -456,6 +455,7 @@ class ShadowExpvalMP(MeasurementTransform):
         super().__init__()
 
     @classmethod
+    # pylint: disable-next=arguments-renamed
     def _primitive_bind_call(
         cls,
         H: Operator | Sequence,

@@ -14,6 +14,7 @@
 """Tests for pennylane/labs/phase_polynomials/parity_matrix.py"""
 
 # pylint: disable = no-self-use
+
 from itertools import permutations
 
 import numpy as np

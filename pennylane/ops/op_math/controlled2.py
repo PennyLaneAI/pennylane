@@ -14,6 +14,9 @@
 
 """Defines the base class for controlled operators."""
 
+# pylint: disable=unused-argument, protected-access, no-value-for-parameter
+
+
 from collections.abc import Sequence
 from inspect import signature
 from textwrap import dedent
@@ -47,8 +50,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
-
-# pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):
@@ -315,7 +316,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_matrix(base, control_wires, control_values, **_):
         base_matrix = base.matrix()
         interface = math.get_interface(base_matrix)
@@ -346,7 +347,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
         target_matrix = _get_sparse_matrix(base)
 
@@ -544,7 +545,7 @@ class ControlledOp2(Controlled2):
             return
 
         if self.base.tracer is None:
-            # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
             self.base._bind_primitive()
             # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
             # In that case, there is nothing to do, so return early.
@@ -732,7 +733,6 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -782,8 +782,8 @@ def _ctrl_single_work_wire_resource(
     }
 
 
-# pylint: disable=unused-argument
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
+# pylint: disable-next=unused-argument
 def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:

@@ -208,7 +208,7 @@ def handle_jaxpr_error(
     raise e
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class _CalculateLoopAbstractedAxes:
     """A helper class for accumulating information about abstract axes for loop functions."""
 
@@ -243,7 +243,6 @@ class _CalculateLoopAbstractedAxes:
         self.abstracted_axes.append(arg_abstracted_axes)
 
 
-# pylint: disable=import-outside-toplevel
 def loop_determine_abstracted_axes(
     args, allow_array_resizing: bool = False
 ) -> tuple[Any, list[TensorLike], list[list[AbstractShapeLocation]]]:
@@ -300,6 +299,7 @@ def loop_determine_abstracted_axes(
 
 
     """
+    # pylint: disable-next=import-outside-toplevel
     import jax
 
     args, structure = jax.tree_util.tree_flatten(args)

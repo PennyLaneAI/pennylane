@@ -13,6 +13,9 @@
 # limitations under the License.
 """Test the VibrationalHamiltonian class"""
 
+# pylint: disable=no-self-use
+
+
 import itertools
 
 import numpy as np
@@ -22,8 +25,6 @@ from scipy.sparse import csr_array
 
 from pennylane.labs.trotter_error.fragments import vibrational_fragments
 from pennylane.labs.trotter_error.realspace import HOState, RealspaceSum
-
-# pylint: disable=no-self-use
 
 
 def _vibrational_hamiltonian(modes, freqs, taylor_coeffs):

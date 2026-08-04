@@ -16,6 +16,9 @@ This module contains tests for class needed to map PennyLane operations to their
 operator.
 """
 
+# pylint: disable=no-self-use
+
+
 import numpy as np
 import pytest
 
@@ -26,8 +29,6 @@ import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.core.operator import Operation
 from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
-
-# pylint: disable= no-self-use
 
 
 class TestMapToResourceOp:

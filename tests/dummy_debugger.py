@@ -15,10 +15,12 @@
 This file provides a dummy debugger for device tests.
 """
 
+# pylint: disable=too-few-public-methods
+
+
 import pennylane as qp
 
 
-# pylint: disable=too-few-public-methods
 class Debugger:
     """A dummy debugger class"""
 

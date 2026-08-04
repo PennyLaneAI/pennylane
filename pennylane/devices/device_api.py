@@ -15,6 +15,9 @@
 This module contains the Abstract Base Class for the next generation of devices.
 """
 
+# pylint: disable=unused-argument, no-self-use
+
+
 import abc
 import warnings
 from collections.abc import Iterable
@@ -53,7 +56,6 @@ from .preprocess import (
 from .tracker import Tracker
 
 
-# pylint: disable=unused-argument, no-self-use
 class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.

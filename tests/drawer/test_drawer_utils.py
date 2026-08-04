@@ -187,7 +187,7 @@ class TestConvertWireOrder:
 class TestUnwrapControls:
     """Tests the ``unwrap_controls`` utility function."""
 
-    # pylint:disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize(
         "op,expected_control_wires,expected_control_values,expected_base_cls",

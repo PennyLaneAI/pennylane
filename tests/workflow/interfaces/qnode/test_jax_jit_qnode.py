@@ -14,6 +14,7 @@
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
 # pylint: disable=too-many-arguments
+
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
@@ -3354,8 +3355,8 @@ class TestSubsetArgnums:
 class TestSinglePrecision:
     """Tests for compatibility with single precision mode."""
 
-    # pylint: disable=import-outside-toplevel
     def test_type_conversion_fallback(self):
+        # pylint: disable=import-outside-toplevel
         """Test that if the type isn't int, float, or complex, we still have a fallback."""
         from pennylane.workflow.interfaces.jax_jit import _jax_dtype
 

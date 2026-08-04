@@ -130,9 +130,10 @@ class TestQFT:
 
 @pytest.mark.jax
 @pytest.mark.capture
-# pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
+
+    # pylint: disable=protected-access
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qft_plxpr(self):

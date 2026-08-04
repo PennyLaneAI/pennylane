@@ -12,6 +12,9 @@
 # limitations under the License.
 """Transform for adding a noise model to a quantum circuit or device"""
 
+# pylint: disable=too-many-branches
+
+
 from copy import copy
 from functools import lru_cache
 
@@ -29,7 +32,6 @@ from pennylane.workflow import construct_execution_config, resolution
 from pennylane.workflow.qnode import _make_execution_config
 
 
-# pylint: disable=too-many-branches
 @transform
 def add_noise(tape, noise_model, level="user"):
     """Insert operations according to a provided noise model.
@@ -552,6 +554,8 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
 
 # pylint:disable = protected-access
+
+
 @add_noise.custom_qnode_transform
 def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     """QNode execution wrapper for supporting ``add_noise`` with levels"""

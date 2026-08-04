@@ -15,6 +15,8 @@
 """Tests for the decomposition rule qp.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp"""
 
 # pylint: disable=no-value-for-parameter
+
+
 import numpy as np
 import pytest
 

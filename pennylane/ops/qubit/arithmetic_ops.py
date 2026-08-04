@@ -17,6 +17,8 @@ arithmetic operations on their input states.
 """
 
 # pylint: disable=arguments-differ
+
+
 from collections import Counter
 from copy import copy
 
@@ -483,7 +485,6 @@ class IntegerComparator(Operation):
     ):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
         control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
@@ -525,6 +526,7 @@ class IntegerComparator(Operation):
          [0. 0. 0. 0. 0. 0. 1. 0.]
          [0. 0. 0. 0. 0. 0. 0. 1.]]
         """
+        # pylint: disable=unused-argument
 
         if value is None:
             raise ValueError("The value to compare to must be specified.")
@@ -586,6 +588,7 @@ class IntegerComparator(Operation):
         3: ─╰X────╰X────╰X────┤
 
         """
+        # pylint: disable=unused-argument
 
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")

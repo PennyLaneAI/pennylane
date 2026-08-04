@@ -15,6 +15,9 @@
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
 
+# pylint: disable=unnecessary-dunder-call
+
+
 from multiprocessing.dummy import Pool as ThreadPool
 
 import numpy as np
@@ -25,7 +28,6 @@ from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
 
 
-# pylint: disable=unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
 

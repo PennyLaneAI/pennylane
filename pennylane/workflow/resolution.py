@@ -83,11 +83,11 @@ def _validate_jax_version() -> None:
         )
 
 
-# pylint: disable=import-outside-toplevel
 # TensorFlow tests were disabled during deprecation
 def _use_tensorflow_autograph() -> bool:  # pragma: no cover
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
+        # pylint: disable-next=import-outside-toplevel
         import tensorflow as tf
     except ImportError as e:  # pragma: no cover
         raise QuantumFunctionError(  # pragma: no cover
@@ -109,6 +109,7 @@ def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBa
     Returns:
         Interface: resolved interface
     """
+    # pylint: disable=import-outside-toplevel
     interface = Interface(interface)
 
     if interface == Interface.AUTO:
@@ -130,8 +131,8 @@ def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBa
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
-        # pylint: disable=unused-import
         try:  # pragma: no cover
+            # pylint: disable-next=unused-import
             import jax
         except ImportError as e:  # pragma: no cover
             raise QuantumFunctionError(  # pragma: no cover

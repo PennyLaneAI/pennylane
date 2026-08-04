@@ -201,6 +201,8 @@ def _apply_diagonalizing_gates(
 
 
 # pylint:disable = too-many-arguments
+
+
 def measure_with_samples(
     measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,

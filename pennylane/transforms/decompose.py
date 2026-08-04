@@ -84,6 +84,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
         """
 
         # pylint: disable=too-many-arguments
+
         def __init__(
             self,
             *,
@@ -800,6 +801,8 @@ def decompose(  # pylint: disable=too-many-arguments
 
 
 # pylint: disable=too-many-arguments,too-many-branches
+
+
 def _operator_decomposition_gen(
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
@@ -990,6 +993,8 @@ def _resolve_gate_set(
 
 
 # pylint: disable=too-many-arguments
+
+
 def _construct_and_solve_decomp_graph(
     operations,
     target_gates,

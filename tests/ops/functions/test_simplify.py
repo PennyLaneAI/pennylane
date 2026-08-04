@@ -16,6 +16,7 @@ Unit tests for the qp.simplify function
 """
 
 # pylint: disable=too-few-public-methods
+
 import pytest
 
 import pennylane as qp

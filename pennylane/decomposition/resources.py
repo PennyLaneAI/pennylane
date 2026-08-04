@@ -333,7 +333,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     return CompressedResourceOp(op_type, params)
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def controlled_resource_rep(
     base_class: type[Operator],
     base_params: dict,
@@ -455,7 +455,7 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
     compute_op = abstractify(compute_op)
@@ -523,7 +523,7 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
     return "zeroed"
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def _controlled_qubit_unitary_rep(
     base_class,
     base_params,
@@ -561,7 +561,7 @@ def _controlled_qubit_unitary_rep(
     )
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def _controlled_x_rep(
     base_class,
     base_params,

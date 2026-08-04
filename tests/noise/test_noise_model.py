@@ -100,8 +100,8 @@ class TestNoiseModels:
             + ")"
         )
 
-    # pylint: disable=comparison-with-callable
     def test_add_noise_models(self):
+        # pylint: disable=comparison-with-callable
         """Test that noise models can be added and manipulated"""
 
         fcond = qp.noise.op_eq(qp.X) | qp.noise.op_eq(qp.Y)
@@ -153,8 +153,8 @@ class TestNoiseModels:
         sub_model1 = noise_model - qp.NoiseModel({fcond1: noise1}, meas={m_fcond: m_noise}, t2=0.02)
         assert qp.NoiseModel({fcond: noise}, t1=0.04) == sub_model1
 
-    # pylint: disable=unused-argument
     def test_eq_noise_models(self):
+        # pylint: disable=unused-argument
         """Test that noise models can be subtracted and manipulated"""
 
         fcond = qp.noise.op_eq(qp.X) | qp.noise.op_eq(qp.Y)

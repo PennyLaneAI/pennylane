@@ -17,13 +17,15 @@ r"""
 Contains concurrent executor abstractions for task-based workloads backed by mpi4py.
 """
 
+# pylint: disable=import-outside-toplevel
+
+
 from collections.abc import Callable, Sequence
 from typing import Any
 
 from pennylane.concurrency.executors.base import ExecBackendConfig, ExtExec
 
 
-# pylint: disable=import-outside-toplevel
 class MPIPoolExec(ExtExec):  # pragma: no cover
     r"""
     MPIPoolExecutor abstraction class executor.
@@ -120,7 +122,6 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         return MPIPoolExecutor
 
 
-# pylint: disable=import-outside-toplevel
 class MPICommExec(ExtExec):  # pragma: no cover
     r"""
     MPICommExecutor abstraction class functor. To be used if dynamic process spawning

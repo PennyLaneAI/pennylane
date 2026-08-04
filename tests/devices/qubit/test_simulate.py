@@ -44,8 +44,8 @@ ml_frameworks_list = [
 ]
 
 
+# pylint: disable=too-few-public-methods
 class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -111,7 +111,7 @@ class TestSparsePipeline:
         assert qp.math.allclose(res, expected)
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 

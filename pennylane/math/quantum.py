@@ -662,7 +662,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def mutual_info(
     state,
     indices0,
@@ -736,7 +736,7 @@ def mutual_info(
     )
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def _compute_mutual_info(
     state,
     indices0,
@@ -859,7 +859,7 @@ def expectation_value(
     return expval
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def vn_entanglement_entropy(
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):

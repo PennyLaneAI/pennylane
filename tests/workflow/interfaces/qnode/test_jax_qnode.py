@@ -101,9 +101,16 @@ class TestQNode:
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
-    # pylint: disable=unused-argument
     def test_changing_trainability(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
+        # pylint: disable=unused-argument
+        self,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        device_vjp,
+        interface,
+        tol,
+        seed,
     ):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
@@ -266,9 +273,15 @@ class TestQNode:
             )
             assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=unused-argument
     def test_jacobian_options(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed
+        # pylint: disable=unused-argument
+        self,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        device_vjp,
+        interface,
+        seed,
     ):
         """Test setting jacobian options"""
         if diff_method != "finite-diff":

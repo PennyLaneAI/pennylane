@@ -17,6 +17,8 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 """
 
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
+
+
 import numpy as np
 import scipy as sp
 
@@ -148,8 +150,8 @@ class FirstQuantization(Operation):
             ("vectors", self.vectors),
         )
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, n, eta, **kwargs):
         return cls._primitive.bind(n, eta, **kwargs)
 

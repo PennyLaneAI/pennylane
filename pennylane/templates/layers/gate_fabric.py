@@ -246,7 +246,7 @@ class GateFabric(Operation):
         }
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(weights, wires, init_state, include_pi):
         r"""Representation of the operator as a product of other operators.
 

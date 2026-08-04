@@ -16,6 +16,8 @@ build an active space and generate single and double excitations.
 """
 
 # pylint: disable=too-many-locals
+
+
 import os
 import re
 from shutil import copyfile
@@ -72,6 +74,7 @@ def read_structure(filepath, outpath="."):
     return symbols, np.array(coordinates) / BOHR_TO_ANG
 
 
+# pylint: disable-next=too-many-branches
 def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbitals=None):
     r"""Build the active space for a given number of active electrons and active orbitals.
 
@@ -127,7 +130,6 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     >>> print(active) # active orbitals
     [1, 2]
     """
-    # pylint: disable=too-many-branches
 
     if active_electrons is None:
         ncore_orbs = 0

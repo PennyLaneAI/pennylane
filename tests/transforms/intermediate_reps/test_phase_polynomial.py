@@ -14,6 +14,7 @@
 """Tests for pennylane/labs/phase_polynomials/phase_polynomial.py"""
 
 # pylint: disable = no-self-use
+
 import numpy as np
 import pytest
 

@@ -57,7 +57,7 @@ class TestModExp:
             ([0, 1, 2], [3, 4, 5], 5, 6, [6, 7, 8, 9, 10], 3, 0),
         ],
     )
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def test_operation_result(self, x_wires, output_wires, base, mod, work_wires, x, k):
         """Test the correctness of the ModExp template output."""
         dev = qp.device("default.qubit")
@@ -139,7 +139,7 @@ class TestModExp:
             ),
         ],
     )
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def test_wires_error(self, x_wires, output_wires, base, mod, work_wires, msg_match):
         """Test an error is raised when some wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):

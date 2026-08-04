@@ -293,7 +293,7 @@ def for_loop(
 def _get_for_loop_qfunc_prim():
     """Get the loop_for primitive for quantum functions."""
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
 
     for_loop_prim = QpPrimitive("for_loop")
@@ -330,8 +330,8 @@ def _get_for_loop_qfunc_prim():
         setup_env=setup_env,
     )
 
-    # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
+    # pylint: disable-next=too-many-arguments
     def _impl(
         start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
     ):
@@ -352,8 +352,8 @@ def _get_for_loop_qfunc_prim():
 
         return fn_res
 
-    # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
+    # pylint: disable-next=unused-argument
     def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
         args_slice = slice(*args_slice)
         abstract_shapes_slice = slice(*abstract_shapes_slice)

@@ -16,6 +16,7 @@ Tests for the AllSinglesDoubles template.
 """
 
 # pylint: disable=too-many-arguments, too-few-public-methods
+
 import numpy as np
 import pytest
 

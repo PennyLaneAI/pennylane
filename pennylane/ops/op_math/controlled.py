@@ -268,7 +268,6 @@ def _is_empty_or_all_true(control_values):
     )
 
 
-# pylint: disable=unused-argument
 @functools.singledispatch
 def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_type) -> Operator:
     """Dispatch a ``qp.ctrl`` call to return a custom operator.
@@ -295,6 +294,7 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
     CY(wires=[1, 0])
 
     """
+    # pylint: disable=unused-argument
     return NotImplemented
 
 
@@ -1049,9 +1049,9 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     )
 
 
-# pylint: disable=too-many-return-statements
 def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     """Custom handling for decomposing a controlled operation"""
+    # pylint: disable=too-many-return-statements
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
     ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()

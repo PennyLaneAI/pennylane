@@ -76,7 +76,6 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument, too-many-arguments
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -103,6 +102,8 @@ class DefaultQubitLegacy(QubitDevice):
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
     """
+
+    # pylint: disable=unused-argument
 
     name = "Default qubit PennyLane plugin (Legacy)"
     short_name = "default.qubit.legacy"
@@ -203,6 +204,7 @@ class DefaultQubitLegacy(QubitDevice):
         "Evolution",
     }
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         wires,
@@ -277,7 +279,7 @@ class DefaultQubitLegacy(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def _get_batch_size(self, tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""

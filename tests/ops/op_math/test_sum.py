@@ -87,10 +87,10 @@ def _get_pw(w, pauli_op):
     return qp.pauli.PauliWord({w: pauli_op})
 
 
-# pylint: disable=unused-argument
 def sum_using_dunder_method(*summands):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
+
     return sum(summands)
 
 
@@ -276,6 +276,7 @@ class TestInitialization:
     )
     def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
         """Test that calling Prod.terms does not queue anything."""
+        # pylint: disable=unused-argument
         with qp.queuing.AnnotatedQueue() as q:
             qp.apply(op)
             _, _ = op.terms()
@@ -1302,7 +1303,7 @@ class TestIntegration:
         assert tape.trainable_params == [1]
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestArithmetic:
     """Test arithmetic decomposition methods."""
 

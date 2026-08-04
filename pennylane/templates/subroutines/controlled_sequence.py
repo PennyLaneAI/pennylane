@@ -229,9 +229,9 @@ def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires
     return resources
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_ctrl_seq_decomposition_resources)
 def _ctrl_seq_decomposition(*_, base=None, control_wires=None, **__):
+    # pylint: disable=no-value-for-parameter
     powers_of_two = [2**i for i in range(len(control_wires))]
 
     @for_loop(len(powers_of_two) - 1, -1, -1)

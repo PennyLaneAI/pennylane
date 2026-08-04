@@ -105,7 +105,7 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
         ),
     ],
 )
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def test_bb_quantum(data, control_wires, target_wires, work_wires, address, probabilities):
 
     if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
@@ -243,7 +243,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def test_bbqram_decomposition_new(
     data,
     control_wires,
@@ -265,7 +265,7 @@ def test_bbqram_decomposition_new(
 
 
 @qnode(dev)
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def hybrid_quantum(data, control_wires, target_wires, work_wires, k, address):
     BasisEmbedding(address, wires=control_wires)
     HybridQRAM(
@@ -490,7 +490,7 @@ def hybrid_quantum(data, control_wires, target_wires, work_wires, k, address):
         ),
     ],
 )
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def test_hybrid_quantum(
     data,
     control_wires,
@@ -577,7 +577,7 @@ def test_hybrid_quantum(
         ),
     ],
 )
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def test_hybrid_decomposition_new(
     data,
     control_wires,
@@ -691,7 +691,7 @@ def test_hybrid_raises(params, error, match):
 
 
 @qnode(dev)
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def select_only_quantum(data, control_wires, target_wires, select_wires, select_value, address):
     BasisEmbedding(address, wires=control_wires)
     SelectOnlyQRAM(
@@ -990,7 +990,7 @@ def select_only_quantum(data, control_wires, target_wires, select_wires, select_
         ),
     ],
 )
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def test_select_only_quantum(
     data,
     control_wires,

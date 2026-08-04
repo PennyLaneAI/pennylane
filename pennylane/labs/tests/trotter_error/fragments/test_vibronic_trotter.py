@@ -13,6 +13,9 @@
 # limitations under the License.
 """Tests for Vibronic Hamiltonian"""
 
+# pylint: disable=no-self-use
+
+
 import math
 from itertools import product
 
@@ -29,8 +32,6 @@ from pennylane.labs.trotter_error.realspace import (
     RealspaceSum,
     VibronicHO,
 )
-
-# pylint: disable=no-self-use
 
 
 def _vibronic_hamiltonian(states, modes, freqs, taylor_coeffs):

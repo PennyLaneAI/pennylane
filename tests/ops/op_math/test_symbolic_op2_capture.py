@@ -14,6 +14,7 @@
 """Tests for capturing symbolic ``Operator2`` instances into plxpr."""
 
 # pylint: disable=wrong-import-position
+
 from functools import partial
 
 import pytest

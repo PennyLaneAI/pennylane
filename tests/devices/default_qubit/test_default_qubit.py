@@ -86,11 +86,11 @@ def test_snapshot_multiprocessing_qnode():
         qp.snapshots(circuit)()
 
 
-# pylint: disable=protected-access
 def test_applied_modifiers():
     """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
+    # pylint: disable=protected-access
     dev = DefaultQubit()
     assert dev._applied_modifiers == [
         qp.devices.modifiers.single_tape_support,
@@ -1950,6 +1950,7 @@ class TestPostselection:
     ):
         """Test that qp.sample and qp.classical_shadow work correctly.
         Separate test because their shape is non-deterministic."""
+        # pylint: disable=protected-access
 
         if use_jit:
             pytest.skip("Cannot JIT while mocking function.")

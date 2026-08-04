@@ -46,7 +46,7 @@ def test_expval_identity_nowires_LQ():
         _ = qnode()
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestExpval:
     """Tests for the expval function"""
 

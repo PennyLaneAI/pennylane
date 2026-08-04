@@ -13,6 +13,9 @@
 
 """Tests for the Controlled2 class."""
 
+# pylint: disable=unused-argument
+
+
 import copy
 import pickle
 from typing import override
@@ -29,8 +32,6 @@ from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, OneWireDynOp
-
-# pylint: disable=unused-argument
 
 
 class CustomBase(Operator2):

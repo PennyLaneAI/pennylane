@@ -13,12 +13,13 @@
 # limitations under the License.
 """Tests for the algebraic prerequisites such as rings and matrices for Clifford+T decomposition."""
 
+# pylint: disable=too-few-public-methods
+
+
 import numpy as np
 import pytest
 
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
-
-# pylint: disable=too-few-public-methods
 
 
 class TestZSqrtTwo:
@@ -35,7 +36,7 @@ class TestZSqrtTwo:
         assert z_sqrt_two.b == b
 
         assert repr(z_sqrt_two) == f"ZSqrtTwo(a={a}, b={b})"
-        # pylint:disable=condition-evals-to-constant
+        # pylint: disable=condition-evals-to-constant
         assert (
             str(z_sqrt_two)
             == (f"{a}" if a else "" + " + " if a and b else "" + f"{b}√2" if b else "")

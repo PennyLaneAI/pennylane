@@ -14,6 +14,9 @@
 
 """Defines the decomp_inspector transform."""
 
+# pylint: disable=protected-access, too-few-public-methods
+
+
 from collections.abc import Sequence
 from functools import partial
 from typing import override
@@ -30,7 +33,6 @@ from pennylane.typing import PostprocessingFn
 from .decompose import _resolve_gate_set
 
 
-# pylint: disable=protected-access,too-few-public-methods
 class _DecompInGraphInfo(_DecompInfo):
     """Information about a decomposition rule in a graph for inspection."""
 
@@ -188,7 +190,7 @@ class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=to
         return f"#### {title}"
 
 
-# pylint: disable=protected-access,too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class DecompGraphInspector:
     """Interactive object that queries a solved decomposition graph.
 

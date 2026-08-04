@@ -16,6 +16,7 @@ Integration tests for the capture of pennylane operations into jaxpr.
 """
 
 # pylint: disable=protected-access
+
 import numpy as np
 import pytest
 
@@ -68,7 +69,6 @@ def test_operators_constructed_when_plxpr_enabled():
 def test_fallback_if_primitive_still_None():
     """Test that if the primitive is None (no jax or something went wrong) that the instance is simply created."""
 
-    # pylint: disable=too-few-public-methods
     class MyOp(qp.operation.Operator):
         """A dummy operator."""
 

@@ -14,6 +14,8 @@
 """Adaptive optimizer"""
 
 # pylint: disable=not-callable
+
+
 import copy
 
 from pennylane import math

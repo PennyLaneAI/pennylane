@@ -121,7 +121,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         out = cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
         return tuple(out) if isinstance(out, list) else out
 
-    # pylint: disable=unused-argument
     @classmethod
     def _abstract_eval(
         cls,
@@ -155,6 +154,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         ((50,), <class 'float'>)
 
         """
+        # pylint: disable=unused-argument
         return (), float
 
     def _flatten(self):
@@ -406,7 +406,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         """
         return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
-    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
         the given wire map.
@@ -417,6 +416,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         Returns:
             .MeasurementProcess: new measurement process
         """
+        # pylint: disable=protected-access
         new_measurement = copy.copy(self)
         if self.mv is not None:
             new_measurement.mv = (

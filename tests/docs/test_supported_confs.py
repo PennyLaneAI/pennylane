@@ -25,6 +25,7 @@ A configuration is supported if gradients can be computed for the
 QNode without an exception being raised."""
 
 # pylint: disable=too-many-arguments
+
 import pytest
 
 import pennylane as qp
@@ -188,7 +189,6 @@ def get_density_matrix_cost_fn(circuit):
     return cost_fn
 
 
-# pylint: disable=too-many-return-statements
 def compute_gradient(x, interface, circuit, return_type, complex=False):
     """Return an interface-specific gradient or jacobian using the
     provided parameters:
@@ -204,6 +204,7 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
     the jacobian of the state directly. The latter is tested by the
     StateVector return type.
     """
+    # pylint: disable=too-many-return-statements
     if return_type == "StateCost":
         cost_fn = get_state_cost_fn(circuit)
     elif return_type == "DensityMatrix":

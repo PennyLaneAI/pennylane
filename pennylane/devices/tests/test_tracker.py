@@ -14,6 +14,7 @@
 """Tests that the device uses a tracker properly if it is supported."""
 
 # pylint: disable=no-self-use
+
 import pytest
 
 import pennylane as qp

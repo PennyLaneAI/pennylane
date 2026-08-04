@@ -382,7 +382,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
+            # pylint: disable-next=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -423,7 +423,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
+            # pylint: disable-next=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -633,7 +633,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             )
             return qp.probs(estimation_wires)
 
-        # pylint:disable=unsubscriptable-object
+        # pylint: disable-next=unsubscriptable-object
         phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
         res = (1 - np.cos(np.pi * phase_estimated)) / 2
         expected = 0.3086582838174551
@@ -775,8 +775,8 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         """Test the TwoLocalSwapNetwork template."""
         dev = device(3)
 
-        # pylint: disable=unused-argument
         def acquaintances(index, wires, param=None):
+            # pylint: disable=unused-argument
             return qp.CNOT(index)
 
         @qp.qnode(dev, shots=shots)

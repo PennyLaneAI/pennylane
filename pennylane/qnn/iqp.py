@@ -85,7 +85,7 @@ def _generators(gates, n_qubits):
     return jnp.array(generators)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _op_expval_indep(
     gates: list,
     n_qubits: int,
@@ -217,7 +217,7 @@ def _ini_spin_sym(ops_sum, samples_sum, samples_len, spin_sym):
     return 1
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _op_expval_batch(
     gates: list,
     params: list,
@@ -269,7 +269,7 @@ def _op_expval_batch(
     return expvals
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def iqp_expval(
     ops: list,
     weights: list[float],

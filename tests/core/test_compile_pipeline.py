@@ -115,7 +115,7 @@ class TestUtilityHelpers:
         assert out2 == (4.0, 9.0)
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable-next=too-many-public-methods
 class TestCompilePipelineDunders:
     """Test the dunder methods."""
 
@@ -782,9 +782,11 @@ class TestCompilePipelineDunders:
     def test_str_adds_ellipses(self):
         """Tests that the string representation uses ellipses for long kwargs."""
 
-        # pylint:disable=unused-argument
         def verbose_transform(
-            tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
+            # pylint: disable=unused-argument
+            tape: QuantumScript,
+            verbose_arg: str,
+            verbose_kwarg: str | None = None,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             return [tape], lambda x: x
@@ -1819,6 +1821,8 @@ class TestCompilePipelineIntegration:
 
 class TestMarkers:
     """Tests markers in a compile pipeline"""
+
+    # pylint: disable=too-many-public-methods
 
     def test_add_marker(self):
         """Tests that add_marker method works."""

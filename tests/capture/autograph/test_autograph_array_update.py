@@ -14,6 +14,7 @@
 """Test autograph support for standard Python item array updates with operations."""
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 pytestmark = pytest.mark.capture

@@ -45,8 +45,8 @@ def _to_bool_cond_fn(cond_fn):
 
 
 def _body_consts_extracted_cond(cond_fn):
-    # pylint: disable=unused-argument
     def new_cond_fn(args, body_consts):
+        # pylint: disable=unused-argument
         return cond_fn(*args)
 
     return new_cond_fn
@@ -241,7 +241,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 def _get_while_loop_qfunc_prim():
     """Get the while_loop primitive for quantum functions."""
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
 
     while_loop_prim = QpPrimitive("while_loop")

@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ, too-many-arguments
+
 
 import functools
 import math as builtin_math

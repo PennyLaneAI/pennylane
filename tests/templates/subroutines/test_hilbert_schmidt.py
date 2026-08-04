@@ -15,6 +15,9 @@
 Unit tests for the Hilbert-Schmidt templates.
 """
 
+# pylint: disable=protected-access
+
+
 import copy
 
 import numpy as np
@@ -26,7 +29,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 
 
-# pylint: disable=protected-access
 @pytest.mark.jax
 @pytest.mark.parametrize("op_type", (qp.HilbertSchmidt, qp.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
@@ -74,7 +76,7 @@ class TestHilbertSchmidt:
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
+            # pylint: disable-next=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -470,7 +472,7 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
+            # pylint: disable-next=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -633,8 +635,8 @@ class TestLocalHilbertSchmidt:
             qp.LocalHilbertSchmidt(V, U)
             return qp.probs()
 
-        # pylint: disable=unsubscriptable-object
         def cost_lhst(V, U):
+            # pylint: disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * qp.numpy.pi / 2, 3 * qp.numpy.pi / 2, qp.numpy.pi / 2]

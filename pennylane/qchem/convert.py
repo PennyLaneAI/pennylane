@@ -16,6 +16,8 @@ This module contains the functions for converting an external operator to a Penn
 """
 
 # pylint: disable=import-outside-toplevel
+
+
 import warnings
 from itertools import product
 

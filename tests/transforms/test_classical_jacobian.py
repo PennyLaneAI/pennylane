@@ -14,6 +14,7 @@
 """Tests for the qp.gradients.classical_jacobian function."""
 
 # pylint: disable=too-many-arguments
+
 import numpy as np
 import pytest
 

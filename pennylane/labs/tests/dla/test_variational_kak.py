@@ -14,6 +14,8 @@
 """Tests for pennylane/labs/dla/variational_kak.py functionality"""
 
 # pylint: disable=too-few-public-methods, protected-access, no-self-use, import-outside-toplevel
+
+
 import numpy as np
 import pytest
 

@@ -169,10 +169,12 @@ def _collect_recipes(tape, argnum, method_map, diagonal_shifts, off_diagonal_shi
 
 
 # pylint: disable = too-many-positional-arguments
+
+
+# pylint: disable-next=too-many-arguments
 def _generate_offdiag_tapes(tape, idx, first_order_recipes, add_unshifted, tapes, coeffs):
     r"""Combine two univariate first order recipes and create
     multi-shifted tapes to compute the off-diagonal entry of the Hessian."""
-    # pylint: disable=too-many-arguments
 
     recipe_i = first_order_recipes[idx[0]]
     recipe_j = first_order_recipes[idx[1]]
@@ -203,10 +205,12 @@ def _generate_offdiag_tapes(tape, idx, first_order_recipes, add_unshifted, tapes
 
 
 # pylint: disable = too-many-positional-arguments
+
+
+# pylint: disable-next=too-many-arguments
 def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
     """Create the required parameter-shifted tapes for a single diagonal entry of
     the Hessian using precomputed second-order shift rules."""
-    # pylint: disable=too-many-arguments
     # Obtain the recipe for the diagonal.
     c, m, s = diag_recipes[idx].T
     if s[0] == 0 and m[0] == 1.0:
@@ -266,6 +270,9 @@ def _all_zero_hessian(tape):
 
 
 # pylint: disable = too-many-positional-arguments
+
+
+# pylint: disable-next=too-many-arguments
 def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_diagonal_shifts, f0):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
@@ -299,7 +306,6 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
         function to be applied to the results of the evaluated tapes
         in order to obtain the Hessian matrix.
     """
-    # pylint: disable=too-many-arguments
     h_dim = tape.num_params
 
     unshifted_coeffs = {}
@@ -439,7 +445,6 @@ def contract_qjac_with_cjac(qhess, cjac, tape):
     return hessians[0] if has_single_arg else tuple(hessians)
 
 
-# pylint: disable=unused-argument
 def _expand_transform_hessian(
     tape: QuantumScript,
     argnum=None,
@@ -448,6 +453,7 @@ def _expand_transform_hessian(
     f0=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
+    # pylint: disable=unused-argument
     return _expand_transform_param_shift(tape)
 
 

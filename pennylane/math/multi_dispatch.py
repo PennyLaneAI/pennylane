@@ -13,7 +13,12 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 
-# pylint: disable=import-outside-toplevel,too-many-return-statements,wrong-import-order
+# pylint: disable=redefined-outer-name
+# pylint: disable=import-outside-toplevel
+# pylint: disable=too-many-return-statements
+# pylint: disable=wrong-import-order
+
+
 import functools
 from collections.abc import Sequence
 from operator import attrgetter
@@ -28,7 +33,6 @@ from .interface_utils import get_interface
 from .utils import cast, cast_like, requires_grad
 
 
-# pylint:disable=redefined-outer-name
 def array(*args, like=None, **kwargs):
     """Creates an array or tensor object of the target framework.
 
@@ -728,8 +732,8 @@ def scatter(indices, array, new_dims, like=None):
     return np.scatter(indices, array, new_dims, like=like)
 
 
-# pylint: disable=too-many-arguments
 @multi_dispatch(argnum=[0, 2])
+# pylint: disable-next=too-many-arguments
 def scatter_element_add(
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
 ):
@@ -979,10 +983,10 @@ def svd(tensor, like=None, **kwargs):
     return svd(tensor, **kwargs)
 
 
-# pylint: disable=unused-argument
 def _flat_autograd_norm(tensor, **kwargs):
     """Helper function for computing the norm of an autograd tensor when the order or axes are not
     specified. This is used for differentiability."""
+    # pylint: disable=unused-argument
     x = np.ravel(tensor)
     sq_norm = np.dot(x, np.conj(x))
     return np.real(np.sqrt(sq_norm))

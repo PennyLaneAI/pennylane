@@ -16,6 +16,7 @@ Tests for the TrotterProduct template and helper functions.
 """
 
 # pylint: disable=private-access, too-many-arguments
+
 import copy
 from functools import partial, reduce
 
@@ -1075,8 +1076,8 @@ class TestTrotterizedQfuncInitialization:
         """Test that an error is raised if the named kwargs for the qfunc match the
         names of the kwargs of the TrotterizedQfunc class."""
 
-        # pylint: disable=unused-argument
         def my_dummy_qfunc(time, wires, **kwargs):
+            # pylint: disable=unused-argument
             qp.RZ(time, wires[0])
 
         for special_key in ["n", "order", "qfunc", "reverse"]:

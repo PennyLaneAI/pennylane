@@ -13,7 +13,9 @@
 # limitations under the License.
 """Utility functions"""
 
-# pylint: disable=wrong-import-order,import-outside-toplevel
+# pylint: disable=wrong-import-order, import-outside-toplevel
+
+
 import autoray as ar
 import numpy as _np
 import scipy as sp

@@ -16,6 +16,7 @@ Unit tests for the ``decompose`` function.
 """
 
 # pylint: disable=too-many-arguments
+
 import os
 
 import numpy as np

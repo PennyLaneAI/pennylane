@@ -15,7 +15,6 @@
 LinearCombination class
 """
 
-# pylint: disable=protected-access
 import itertools
 import numbers
 from copy import copy
@@ -115,8 +114,8 @@ class LinearCombination(Sum):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], _grouping_indices=metadata[0])
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
         leaves, structure = flatten(observables, is_leaf=lambda x: isinstance(x, Operator))
 
@@ -498,7 +497,10 @@ class LinearCombination(Sum):
         return new_op
 
 
+# pylint: disable=protected-access
+
 if LinearCombination._primitive is not None:
+    # pylint: disable=protected-access
 
     @LinearCombination._primitive.def_impl
     def _(*args, n_obs, **kwargs):
@@ -508,7 +510,7 @@ if LinearCombination._primitive is not None:
 
 
 # this just exists for the docs build for now, since we're waiting until the next PR to fix the docs
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class Hamiltonian:
     r"""Returns an operator representing a Hamiltonian.
 

@@ -99,6 +99,8 @@ def _convert_to_prod(op_or_func):
 
 
 # pylint: disable=inconsistent-return-statements
+
+
 def change_op_basis(
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
@@ -395,6 +397,8 @@ add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
 
 
 # pylint: disable=unused-argument, too-many-arguments
+
+
 def _controlled_change_op_basis_resources(
     *_,
     num_control_wires,
@@ -442,6 +446,8 @@ def _controlled_change_op_basis_decomposition(
 
 
 # pylint: disable=unused-argument
+
+
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:

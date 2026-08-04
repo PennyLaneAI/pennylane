@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit tests for utility functions of Pauli arithmetic."""
 
+# pylint: disable=too-many-public-methods
+
+
 import warnings
 
 import numpy as np
@@ -95,7 +98,6 @@ hamiltonian_ps = (
 )
 
 
-# pylint: disable=too-many-public-methods
 class TestDecomposition:
     """Tests the pauli_decompose function"""
 

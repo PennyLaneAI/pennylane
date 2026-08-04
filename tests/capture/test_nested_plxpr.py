@@ -16,6 +16,7 @@ Tests for capturing nested plxpr.
 """
 
 # pylint: disable=protected-access, wrong-import-position
+
 import pytest
 
 import pennylane as qp
@@ -95,8 +96,9 @@ class TestAdjointQfunc:
     def test_multiple_ops_and_classical_processing(self, eqn_out):
         """Tests applying the adjoint transform with multiple operations and classical processing."""
 
-        # pylint: disable=inconsistent-return-statements
+        # pylint: disable-next=inconsistent-return-statements
         def func(x, w):
+
             qp.X(w)
             qp.IsingXX(2 * x + 1, (w, w + 1))
             if eqn_out is None:

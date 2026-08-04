@@ -16,6 +16,7 @@ Unit tests for the HardwareHamiltonian class.
 """
 
 # pylint: disable=redefined-outer-name, too-many-arguments, import-outside-toplevel
+
 import numpy as np
 import pytest
 

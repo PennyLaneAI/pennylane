@@ -13,6 +13,9 @@
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 
+# pylint: disable=unused-argument
+
+
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -29,7 +32,6 @@ from pennylane.wires import Wires
 
 
 # TODO ladder operators once there is qudit support
-# pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
     return s_prod(0.5, X(wire)) + s_prod(0.5j, Y(wire))
@@ -40,7 +42,7 @@ def ad(wire, d=2):
     return s_prod(0.5, X(wire)) + s_prod(-0.5j, Y(wire))
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def transmon_interaction(
     qubit_freq: float | list,
     connections: list,
@@ -421,6 +423,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
 
 # pylint:disable = too-few-public-methods,too-many-return-statements
+
+
 class AmplitudeAndPhaseAndFreq:
     """Class storing combined amplitude, phase and freq callables"""
 

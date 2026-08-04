@@ -15,6 +15,7 @@
 """Test autograph support for standard Python item assignment with JAX Arrays."""
 
 # pylint: disable=wrong-import-position
+
 import pytest
 
 pytestmark = pytest.mark.capture

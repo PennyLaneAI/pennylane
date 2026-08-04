@@ -13,7 +13,8 @@
 # limitations under the License.
 """Transforms for interacting with PyZX, framework for ZX calculus."""
 
-# pylint: disable=too-many-return-statements,too-many-arguments
+# pylint: disable=too-many-return-statements, too-many-arguments
+
 
 from collections import OrderedDict
 from fractions import Fraction

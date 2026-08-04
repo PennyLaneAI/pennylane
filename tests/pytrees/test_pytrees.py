@@ -37,7 +37,7 @@ def test_structure_repr_str():
 def test_register_new_class():
     """Test that new objects can be registered, flattened, and unflattened."""
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable-next=too-few-public-methods
     class MyObj:
         """a dummy object."""
 

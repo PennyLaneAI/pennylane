@@ -499,8 +499,8 @@ class QSVT(Operation):
         data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
         return data, tuple()
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, UA, projectors, **kwargs):  # kwarg is id
         return cls._primitive.bind(UA, *projectors, **kwargs)
 
@@ -573,7 +573,7 @@ class QSVT(Operation):
         return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(*_data, UA, projectors, **_kwargs):
         r"""Representation of the operator as a product of other operators.
 
@@ -709,7 +709,9 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 add_decomps(QSVT, _QSVT_decomposition)
 
 # pylint: disable=protected-access
+
 if QSVT._primitive is not None:
+    # pylint: disable=protected-access
 
     @QSVT._primitive.def_impl
     def _(UA, *projectors, **kwargs):  # kwarg might be id
@@ -911,8 +913,8 @@ def _qsp_iterate_broadcast(phis, x, interface):
     Returns:
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
-    # pylint: disable=import-outside-toplevel
     try:
+        # pylint: disable-next=import-outside-toplevel
         from jax import vmap
 
         interface = "jax"
@@ -940,10 +942,11 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     Returns:
         tuple[tensor_like, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
     """
+    # pylint: disable=import-outside-toplevel
     parity = degree % 2
 
-    # pylint: disable=import-outside-toplevel
     try:
+        # pylint: disable-next=import-outside-toplevel
         from jax import jacobian
 
         interface = "jax"
@@ -962,8 +965,8 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     def obj_function(phi):
         # Equation (23) in https://arxiv.org/pdf/2002.11649
 
-        # pylint: disable=import-outside-toplevel
         try:
+            # pylint: disable-next=import-outside-toplevel
             from jax import jit, vmap
 
             qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
@@ -1329,7 +1332,7 @@ def transform_angles(angles, routine1, routine2):
     )
 
 
-# pylint: disable=unused-argument,too-many-return-statements,too-many-branches
+# pylint: disable-next=too-many-return-statements, too-many-branches
 def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP),
@@ -1411,6 +1414,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
             P(x) =        0.19610666666666668
 
     """
+    # pylint: disable=unused-argument
 
     poly = math.trim_zeros(math.array(poly, like="numpy"), trim="b")
 

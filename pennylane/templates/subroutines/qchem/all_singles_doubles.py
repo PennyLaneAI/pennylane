@@ -15,7 +15,6 @@ r"""
 Contains the AllSinglesDoubles template.
 """
 
-# pylint: disable=protected-access
 import copy
 from collections.abc import Sequence
 
@@ -178,7 +177,7 @@ class AllSinglesDoubles(Operation):
         super().__init__(weights, wires=wires)
 
     @classmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, weights, wires, hf_state, singles=None, doubles=None):
         singles = math.array(singles) if singles is not None else math.array(((),))
         doubles = math.array(doubles) if doubles is not None else math.array(((),))
@@ -196,6 +195,7 @@ class AllSinglesDoubles(Operation):
         }
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         for key in ["singles", "doubles"]:
@@ -209,7 +209,7 @@ class AllSinglesDoubles(Operation):
         return 1
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(weights, wires, hf_state, singles, doubles):
         r"""Representation of the operator as a product of other operators.
 
@@ -274,7 +274,10 @@ class AllSinglesDoubles(Operation):
         return shape_
 
 
+# pylint: disable=protected-access
+
 if AllSinglesDoubles._primitive is not None:
+    # pylint: disable=protected-access
 
     @AllSinglesDoubles._primitive.def_impl
     def _(*args, **kwargs):  # pylint: disable=unused-argument

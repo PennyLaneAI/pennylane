@@ -15,5 +15,5 @@
 The previous location for pennylane/core/qscript.py
 """
 
-# pylint: disable=wildcard-import, unused-wildcard-import
+# pylint: disable-next=wildcard-import, unused-wildcard-import
 from pennylane.core.qscript import *  # tach-ignore

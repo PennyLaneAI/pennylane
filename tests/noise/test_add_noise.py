@@ -279,8 +279,8 @@ class TestAddNoiseInterface:
 
         assert np.allclose(f1(w1, w2), f2(w1, w2))
 
-    # pylint: disable=unused-argument
     def test_add_noise_with_non_qwc_obs_and_mid_meas(self):
+        # pylint: disable=unused-argument
         """Test that the add_noise transform catches and reports errors from the enclosed function."""
 
         dev = qp.device("default.qubit", wires=5)

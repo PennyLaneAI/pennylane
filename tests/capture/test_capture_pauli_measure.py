@@ -14,6 +14,7 @@
 """Tests for capturing Pauli product measurements."""
 
 # pylint: disable=wrong-import-order, wrong-import-position
+
 import pytest
 
 import pennylane as qp

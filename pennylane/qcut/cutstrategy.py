@@ -27,6 +27,7 @@ SupportedDeviceAPIs = Device | LegacyDevice
 
 
 @dataclass()
+# pylint: disable-next=too-many-instance-attributes
 class CutStrategy:
     """
     A circuit-cutting distribution policy for executing (large) circuits on available (comparably
@@ -78,8 +79,6 @@ class CutStrategy:
     ... )
 
     """
-
-    # pylint: disable=too-many-instance-attributes
 
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
     devices: InitVar[SupportedDeviceAPIs | Sequence[SupportedDeviceAPIs]] = None

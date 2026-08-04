@@ -15,14 +15,15 @@
 This file contains functions to create spin Hamiltonians.
 """
 
+# pylint: disable=too-many-arguments
+
+
 from pennylane import math, qchem
 from pennylane.fermi import FermiWord
 from pennylane.ops import X, Y, Z
 from pennylane.ops.identity import I
 
 from .lattice import Lattice, generate_lattice
-
-# pylint: disable=too-many-arguments
 
 
 def transverse_ising(

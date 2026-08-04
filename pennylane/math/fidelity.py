@@ -252,7 +252,7 @@ def _compute_fidelity_vjp1(dm0, dm1, grad_out):
     """
     Compute the VJP of fidelity with respect to the second density matrix
     """
-    # pylint: disable=arguments-out-of-order
+    # pylint: disable-next=arguments-out-of-order
     return _compute_fidelity_vjp0(dm1, dm0, grad_out)
 
 

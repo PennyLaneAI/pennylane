@@ -32,9 +32,9 @@ def test_standard_validity():
     qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
+    # pylint: disable=protected-access
     wires = qp.wires.Wires((0, 1, 2))
     op = qp.BasisEmbedding(features=[1, 1, 1], wires=wires)
     data, metadata = op._flatten()

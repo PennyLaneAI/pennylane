@@ -13,11 +13,12 @@
 # limitations under the License.
 """Contains methods for computing Fourier coefficients and frequency spectra of quantum functions."""
 
+# pylint: disable=too-many-arguments
+
+
 from itertools import product
 
 import numpy as np
-
-# pylint:disable=too-many-arguments
 
 
 def coefficients(

@@ -223,8 +223,8 @@ class QuantumPhaseEstimation(Operation):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
 
-    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["unitary"] = ops.functions.map_wires(
@@ -244,6 +244,7 @@ class QuantumPhaseEstimation(Operation):
         return self
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(*_, unitary, estimation_wires, **__):
         r"""Representation of the QPE circuit as a product of other operators.
 
@@ -261,7 +262,6 @@ class QuantumPhaseEstimation(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        # pylint: disable=arguments-differ
         op_list = [ops.Hadamard(w) for w in estimation_wires]
         pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
         op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires, strict=True))

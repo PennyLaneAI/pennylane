@@ -15,7 +15,6 @@ r"""
 Contains the UCCSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 from collections import Counter
 from collections.abc import Sequence
@@ -193,6 +192,7 @@ class UCCSD(Operation):
 
     resource_keys = {"num_wires", "n_repeats", "num_d_wires", "num_s_wires"}
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         weights: TensorLike,
@@ -254,6 +254,7 @@ class UCCSD(Operation):
         super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["s_wires"] = tuple(
@@ -281,7 +282,7 @@ class UCCSD(Operation):
         return 1
 
     @staticmethod
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ, too-many-arguments
     def compute_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
         r"""Representation of the operator as a product of other operators.
 
@@ -342,6 +343,7 @@ def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
 
 
 @register_resources(_UCCSD_resources)
+# pylint: disable-next=too-many-arguments
 def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
     BasisState(init_state, wires=wires)
 

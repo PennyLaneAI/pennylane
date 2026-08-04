@@ -17,6 +17,7 @@ Tests the `single_tape_support` device modifier.
 """
 
 # pylint: disable=missing-class-docstring
+
 import pennylane as qp
 from pennylane.devices.modifiers import single_tape_support
 

@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit Tests for the Bosonic representation classes."""
 
+# pylint: disable=too-many-public-methods
+
+
 import pickle
 from copy import copy, deepcopy
 
@@ -104,7 +107,6 @@ bw21 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+"
 bw22 = BoseWord({(0, 0): "-", (1, 0): "+"})
 
 
-# pylint: disable=too-many-public-methods
 class TestBoseWord:
     """
     Tests for BoseWord

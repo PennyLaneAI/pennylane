@@ -14,6 +14,7 @@
 """Unit tests for the QNode"""
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
+
 import copy
 import warnings
 from dataclasses import replace
@@ -45,7 +46,6 @@ def dummyfunc():
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
@@ -268,7 +268,6 @@ class TestInitialization:
         assert f.execute_kwargs["cache"] == "auto"
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -474,9 +473,10 @@ class TestValidation:
         assert len(record) == 0
 
 
-# pylint: disable=unnecessary-lambda
 class TestPyTreeStructure:
     """Tests for preservation of pytree structure through execution"""
+
+    # pylint: disable=unnecessary-lambda
 
     @pytest.mark.parametrize(
         "measurement",
@@ -858,7 +858,7 @@ class TestIntegration:
             (qp.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
         ],
     )
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def test_defer_meas_if_mcm_unsupported(
         self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):
@@ -897,6 +897,7 @@ class TestIntegration:
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qp.sample and mid-circuit measurements
         returns the expected results."""
+        # pylint: disable=unused-argument
         dev = qp.device("default.qubit", wires=3)
 
         first_par = np.pi
@@ -1759,6 +1760,8 @@ class TestMCMConfiguration:
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
+    # pylint: disable=unused-argument
+
     @pytest.mark.parametrize(
         "diff_method,grad_on_execution",
         [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
@@ -1966,7 +1969,7 @@ class TestPrivateFunctions:
         assert config == expected_config
 
 
-class TestSetShots:
+class TestSetShots:  # pylint: disable=too-many-public-methods
     """Tests for the set_shots decorator functionality."""
 
     def test_shots_initialization(self):

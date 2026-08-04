@@ -15,7 +15,6 @@ r"""
 Contains the k-UpCCGSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
@@ -265,6 +264,7 @@ class kUpCCGSD(Operation):
         super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["s_wires"] = [
@@ -290,7 +290,7 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ, too-many-arguments
     def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 
@@ -312,6 +312,7 @@ class kUpCCGSD(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
+        # pylint: disable=unused-argument
         op_list = []
 
         op_list.append(BasisEmbedding(init_state, wires=wires))

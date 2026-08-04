@@ -117,8 +117,8 @@ def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
     return jnp.where(ops == 1, 3, 0).astype(jnp.int32)
 
 
-# pylint: disable=too-many-arguments
 @partial(jax.jit, static_argnames=["n_samples", "sqrt_loss"])
+# pylint: disable-next=too-many-arguments
 def _compute_single_mmd(
     model_expvals: jnp.ndarray,
     model_expvals_std_err: jnp.ndarray,
@@ -141,7 +141,6 @@ def _compute_single_mmd(
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
 
 
-# pylint: disable=too-many-arguments
 @partial(
     jax.jit,
     static_argnames=[
@@ -153,6 +152,7 @@ def _compute_single_mmd(
         "expval_func",
     ],
 )
+# pylint: disable-next=too-many-arguments
 def _compute_loss_for_bandwidth(
     bandwidth: float,
     subkey: jnp.ndarray,

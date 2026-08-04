@@ -13,14 +13,15 @@
 # limitations under the License.
 """Unit tests for the sample module"""
 
+# pylint: disable=protected-access, no-member, too-many-public-methods
+
+
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
-
-# pylint: disable=protected-access, no-member, too-many-public-methods
 
 
 class TestSample:

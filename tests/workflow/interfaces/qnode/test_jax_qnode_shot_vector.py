@@ -14,6 +14,7 @@
 """Integration tests for using the jax interface with shot vectors and with a QNode"""
 
 # pylint: disable=too-many-arguments,too-many-public-methods
+
 import pytest
 from flaky import flaky
 

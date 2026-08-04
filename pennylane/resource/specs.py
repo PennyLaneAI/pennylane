@@ -72,10 +72,15 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
 
 
 def _specs_qjit_device_level_tracking(
-    qjit, original_qnode, compute_depth, *args, **kwargs
-) -> SpecsResources:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
+    qjit,
+    original_qnode,
+    compute_depth,
+    *args,
+    **kwargs,
+) -> SpecsResources:  # pragma: no cover
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    # pylint: disable-next=import-outside-toplevel
     from catalyst import QJIT
 
     from ..devices import NullQubit

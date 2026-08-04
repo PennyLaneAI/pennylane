@@ -14,6 +14,9 @@
 """This module contains functions to calculate potential energy surfaces
 per normal modes on a grid."""
 
+# pylint: disable=too-many-arguments, too-many-function-args, too-many-positional-arguments
+
+
 import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -31,8 +34,6 @@ from pennylane.qchem.vibrational.vibrational_class import (
     _single_point,
     optimize_geometry,
 )
-
-# pylint: disable=too-many-arguments,too-many-function-args,too-many-positional-arguments
 
 # constants
 # TODO: Make this code work in atomic units only.

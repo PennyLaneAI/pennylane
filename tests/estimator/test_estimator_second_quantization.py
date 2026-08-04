@@ -16,6 +16,7 @@ Unit tests for functions needed for resource estimation with the double factoriz
 """
 
 # pylint: disable=too-many-arguments
+
 import pytest
 
 import pennylane as qp

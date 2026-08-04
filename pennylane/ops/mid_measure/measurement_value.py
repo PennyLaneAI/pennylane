@@ -71,7 +71,6 @@ class MeasurementValue:
     def postselected_items(self) -> Generator:
         """A generator representing all the possible outcomes of the MeasurementValue,
         taking postselection into account."""
-        # pylint: disable=stop-iteration-return
         ps = {i: p for i, m in enumerate(self.measurements) if (p := m.postselect) is not None}
         num_non_ps = len(self.measurements) - len(ps)
         if num_non_ps == 0:
@@ -84,7 +83,8 @@ class MeasurementValue:
             non_ps_branch_iter = iter(non_ps_branch)
             # Extend the branch to include postselected measurements
             full_branch = tuple(
-                ps[j] if j in ps else next(non_ps_branch_iter)
+                # pylint: disable-next=stop-iteration-return
+                (ps[j] if j in ps else next(non_ps_branch_iter))
                 for j in range(len(self.measurements))
             )
             # Return the reduced non-postselected branch and the procesing function
@@ -122,7 +122,7 @@ class MeasurementValue:
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""
         if isinstance(other, MeasurementValue):
-            # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
             return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
         # if `other` is not a MeasurementValue then apply it to each branch
         return self._apply(lambda v: base_bin(v, other))

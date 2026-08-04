@@ -148,6 +148,9 @@ Qubit Mixed-State Simulation Tools
 
 """
 
+# pylint: disable=undefined-variable
+
+
 from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
@@ -168,7 +171,6 @@ from ._legacy_device import Device as LegacyDevice
 from ._qubit_device import QubitDevice
 
 
-# pylint: disable=undefined-variable
 def __getattr__(name):
     if name == "plugin_devices":
         return device_constructor.plugin_devices

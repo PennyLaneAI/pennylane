@@ -186,7 +186,7 @@ def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transf
     )
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable-next=too-many-instance-attributes
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -501,7 +501,7 @@ class QNode:
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         func: Callable,
@@ -689,6 +689,7 @@ class QNode:
         >>> new_circuit(1)
         tensor(0.5403, dtype=torch.float64)
         """
+        # pylint: disable=protected-access
         if not kwargs:
             valid_params = set(self._init_args.copy()) | qp.gradients.SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
@@ -719,13 +720,13 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
-        # pylint: disable=protected-access
         if updated_qn.shots != old_shots:
+            # pylint: disable-next=protected-access
             updated_qn._set_shots(old_shots)
         if self._shots_override_device:
             updated_qn._shots_override_device = True
 
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
         return updated_qn
 
@@ -743,7 +744,7 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the shots attribute directly
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         updated_qn._set_shots(shots)
 
         return updated_qn
@@ -766,7 +767,7 @@ class QNode:
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.debugging import pldb_device_manager
 
         with pldb_device_manager(self.device):
@@ -828,10 +829,10 @@ qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 
 
-# pylint: disable=protected-access
 @Transform.generic_register
 def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
+    # pylint: disable=protected-access
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)

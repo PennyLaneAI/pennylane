@@ -13,6 +13,9 @@
 # limitations under the License.
 """The RealspaceMatrix class"""
 
+# pylint: disable=protected-access
+
+
 from __future__ import annotations
 
 import math
@@ -25,8 +28,6 @@ from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.realspace import HOState, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 from pennylane.labs.trotter_error.realspace.realspace_operator import RealspaceSum
-
-# pylint: disable=protected-access
 
 
 class RealspaceMatrix(Fragment):

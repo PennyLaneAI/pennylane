@@ -14,6 +14,7 @@
 """Unit tests for the QuantumTape"""
 
 # pylint: disable=protected-access,too-few-public-methods
+
 import copy
 
 import numpy as np

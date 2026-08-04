@@ -67,8 +67,8 @@ class BasisEmbedding(BasisState):
     """
 
     # renames from state to features so needs to be overwritten
-    # pylint: disable=arguments-renamed
     @classmethod
+    # pylint: disable-next=arguments-renamed
     def _primitive_bind_call(cls, features, wires, **kwargs):
         return super()._primitive_bind_call(features, wires, **kwargs)
 

@@ -16,6 +16,7 @@ Contains unit tests for the LegacyDeviceFacade class.
 """
 
 # pylint: disable=protected-access
+
 import copy
 
 import numpy as np
@@ -139,12 +140,12 @@ def test_shot_distribution(execution_config):
     class DummyJacobianDevice(DummyDevice):
         _capabilities = {"provides_jacobian": True}
 
-        # pylint: disable=unused-argument
         def new_gradient(self, circuit):
+            # pylint: disable=unused-argument
             return 0
 
-        # pylint: disable=unused-argument
         def jacobian(self, circuit):
+            # pylint: disable=unused-argument
             return 1
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
@@ -399,8 +400,8 @@ class TestGradientSupport:
 
         gradient_method = "adjoint"
 
-        # pylint: disable=unnecessary-lambda-assignment
         class AdjointDev(DummyDevice):
+            # pylint: disable=unnecessary-lambda-assignment
             """A dummy device that supports adjoint diff"""
 
             _capabilities = {"returns_state": True}

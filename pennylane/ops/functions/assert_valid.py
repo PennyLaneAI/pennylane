@@ -438,9 +438,9 @@ def _check_copy(op, skip_deepcopy):
             raise AssertionError("deep copied op must also be equal") from e
 
 
-# pylint: disable=import-outside-toplevel, protected-access
 def _check_pytree(op):
     """Check that the operator is a pytree."""
+    # pylint: disable=import-outside-toplevel, protected-access
     data, metadata = op._flatten()
     try:
         assert hash(metadata), "metadata must be hashable"
@@ -500,6 +500,7 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
+    # pylint: disable=import-outside-toplevel
     if isinstance(op, qp.templates.SubroutineOp):
         return
     try:
@@ -519,6 +520,7 @@ def _check_capture(op):
         data, struct = jax.tree_util.tree_flatten(op)
 
         def test_fn(*args):
+            # pylint: disable=protected-access
             op = jax.tree_util.tree_unflatten(struct, args)
             if isinstance(op, Operator2):
                 op._bind_primitive()
@@ -621,7 +623,7 @@ def _get_signature(op):
     return op.data, {"wires": op.wires, **op.hyperparameters}
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _assert_valid_operator2(
     op: qp.core.Operator2,
     skip_deepcopy=False,
@@ -694,7 +696,7 @@ def _assert_valid_operator2(
     _check_bind_new_parameters_op2(op)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def assert_valid(
     op: qp.core.Operator,
     *,

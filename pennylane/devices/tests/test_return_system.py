@@ -14,6 +14,7 @@
 """Tests that a device gives the correct output for multiple measurement."""
 
 # pylint: disable=no-self-use
+
 import pytest
 
 import pennylane as qp

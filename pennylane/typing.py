@@ -13,7 +13,8 @@
 # limitations under the License.
 """This file contains different PennyLane types."""
 
-# pylint: disable=import-outside-toplevel,too-few-public-methods
+# pylint: disable=import-outside-toplevel, too-few-public-methods
+
 
 from __future__ import annotations
 

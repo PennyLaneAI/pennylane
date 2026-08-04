@@ -15,7 +15,11 @@
 Tests for the MPS template.
 """
 
+# pylint: disable=protected-access
+
+
 # pylint: disable=too-many-arguments
+
 import numpy as np
 import pytest
 
@@ -23,7 +27,6 @@ import pennylane as qp
 from pennylane.templates.tensornetworks.mps import MPS, compute_indices_MPS
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
 

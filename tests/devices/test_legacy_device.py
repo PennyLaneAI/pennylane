@@ -15,6 +15,9 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
+# pylint: disable=no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
+
+
 from collections import OrderedDict
 
 import numpy as np
@@ -28,8 +31,6 @@ from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
-
-# pylint: disable=no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
 
 
 @pytest.fixture(scope="function")
@@ -189,8 +190,8 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
-# pylint: disable=pointless-statement
 def test_invalid_attribute_in_devices_raises_error():
+    # pylint: disable=pointless-statement
     with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
         qp.devices.blabla
 
@@ -217,9 +218,8 @@ def test_gradients_record():
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
-    # pylint: disable=no-self-use, redefined-outer-name
-
     def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
+        # pylint: disable=no-self-use, redefined-outer-name
         """Checks that device.supports_operations returns the correct result
         when passed both string and Operation class arguments"""
 
@@ -288,8 +288,8 @@ class TestDeviceSupportedLogic:
 class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
-    # pylint: disable=unnecessary-dunder-call
     def test_repr(self, mock_device_supporting_paulis):
+        # pylint: disable=unnecessary-dunder-call
         """Tests the __repr__ function"""
         dev = mock_device_supporting_paulis()
         assert "<Device device (wires=1, shots=1000) at " in dev.__repr__()
@@ -579,7 +579,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert len(recwarn) == 0
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestClassmethods:
     """Test the classmethods of Device"""
 
@@ -593,8 +593,8 @@ class TestClassmethods:
 class TestOperations:
     """Tests the logic related to operations"""
 
-    # pylint: disable=protected-access
     def test_shots_setter(self, mock_device):
+        # pylint: disable=protected-access
         """Tests that the property setter of shots changes the number of shots."""
         dev = mock_device()
 
@@ -616,8 +616,8 @@ class TestOperations:
         ):
             dev.shots = shots
 
-    # pylint: disable=pointless-statement
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
+        # pylint: disable=pointless-statement
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
 
@@ -739,8 +739,8 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
+        # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
 
@@ -841,8 +841,8 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
-    # pylint: disable=pointless-statement
     def test_parameters_accessed_outside_execution_context(self, mock_device):
+        # pylint: disable=pointless-statement
         """Tests that a call to parameters outside the execution context raises the correct error"""
         dev = mock_device()
 

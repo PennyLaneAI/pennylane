@@ -15,9 +15,11 @@
 This module contains the :class:`QubitDevice` abstract base class.
 """
 
+# pylint: disable=arguments-differ, too-many-branches, no-member, arguments-renamed
+
+
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ,too-many-branches,no-member,arguments-renamed
 import abc
 import inspect
 import itertools
@@ -67,6 +69,7 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
+# pylint: disable-next=too-many-public-methods
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
 
@@ -106,8 +109,6 @@ class QubitDevice(Device):
         r_dtype: Real floating point precision type.
         c_dtype: Complex floating point precision type.
     """
-
-    # pylint: disable=too-many-public-methods
 
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
@@ -287,7 +288,7 @@ class QubitDevice(Device):
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
-                # pylint: disable=bad-reversed-sequence
+                # pylint: disable-next=bad-reversed-sequence
                 self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
@@ -573,7 +574,6 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    # pylint: disable=too-many-statements
     def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
@@ -620,6 +620,7 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
+        # pylint: disable=too-many-statements
         measurements = circuit.measurements
         results = []
 
@@ -663,7 +664,7 @@ class QubitDevice(Device):
                     self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
-                    # pylint: disable=bad-reversed-sequence
+                    # pylint: disable-next=bad-reversed-sequence
                     self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
@@ -1109,7 +1110,7 @@ class QubitDevice(Device):
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
         finally:
             self.shots = original_shots
-            # pylint: disable=attribute-defined-outside-init
+            # pylint: disable-next=attribute-defined-outside-init
             self._shot_vector = original_shot_vector
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
@@ -1642,7 +1643,7 @@ class QubitDevice(Device):
 
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
-        # pylint: disable=unnecessary-lambda-assignment
+        # pylint: disable-next=unnecessary-lambda-assignment
         dot_product_real = lambda b, k: self._real(qpsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
@@ -1765,7 +1766,7 @@ class QubitDevice(Device):
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
-        # pylint:disable=no-self-use
+        # pylint: disable-next=no-self-use
         return circuit.diagonalizing_gates
 
     def _is_lightning_device(self):

@@ -114,8 +114,8 @@ class GQSP(Operation):
         # Data contains (angles, derived_data_from_unitary, unitary)
         return cls(angles=data[0], unitary=data[-1], control=metadata[0])
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, unitary, angles, control):
         return super()._primitive_bind_call(unitary, angles, wires=control)
 
@@ -222,7 +222,9 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 add_decomps(GQSP, _GQSP_decomposition)
 
 # pylint: disable=protected-access
+
 if GQSP._primitive is not None:
+    # pylint: disable=protected-access
 
     @GQSP._primitive.def_impl
     def _(*args, n_wires, **kwargs):

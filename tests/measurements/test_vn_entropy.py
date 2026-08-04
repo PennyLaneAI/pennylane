@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit tests for the vn_entropy module"""
 
+# pylint: disable=no-member
+
+
 import copy
 
 import numpy as np
@@ -22,8 +25,6 @@ import pennylane as qp
 from pennylane.exceptions import DeviceError
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
-
-# pylint: disable=no-member
 
 
 def expected_entropy_ising_xx(param):

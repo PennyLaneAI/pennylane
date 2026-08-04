@@ -361,8 +361,8 @@ class TestMiscMethods:
         assert isinstance(diag_gate, qp.RY)
         assert qp.math.allclose(diag_gate.data[0], -np.pi / 4)
 
-    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
+        # pylint: disable=protected-access
         """Test the flatten and unflatten methods."""
 
         class CustomOp(qp.operation.Operator):

@@ -15,6 +15,7 @@
 """Unit tests for the `run` helper function on the 'jax' interface"""
 
 # pylint: disable=no-name-in-module
+
 from dataclasses import replace
 
 import numpy as np

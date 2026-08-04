@@ -181,9 +181,9 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-# pylint: disable=unused-arguments
 @debug_logger
 @qnode_prim.def_impl
+# pylint: disable-next=unused-arguments
 def _(*args, **kwargs):
     raise NotImplementedError
 
@@ -225,7 +225,7 @@ def custom_staging_rule(
 pe.custom_staging_rules[qnode_prim] = custom_staging_rule
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _qnode_batching_rule(
     batched_args,
     batch_dims,

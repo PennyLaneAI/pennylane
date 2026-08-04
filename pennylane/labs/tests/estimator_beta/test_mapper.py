@@ -15,13 +15,14 @@
 Test the mapping functionality overrides operators as exected.
 """
 
+# pylint: disable=protected-access
+
+
 import pytest
 
 import pennylane.estimator as pl_qre
 import pennylane.labs.estimator_beta as qre
 from pennylane.templates.subroutines.qrom import QROM
-
-# pylint: disable=protected-access
 
 
 @pytest.mark.parametrize("clean", [True, False])

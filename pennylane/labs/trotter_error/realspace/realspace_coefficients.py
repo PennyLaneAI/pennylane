@@ -202,7 +202,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
     5 * (alpha[idx0,idx1])
     """
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    # pylint: disable-next=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         node_type: _NodeType,
@@ -421,8 +421,8 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         return str(self._str(indices))
 
-    # pylint: disable=protected-access
     def _str(self, indices) -> str:
+        # pylint: disable=protected-access
         if self.node_type == _NodeType.TENSOR:
             return f"{self.label}[{','.join(indices)}]"
         if self.node_type == _NodeType.FLOAT:

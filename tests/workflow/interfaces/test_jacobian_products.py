@@ -16,6 +16,7 @@ Tests for the jacobian product calculator classes.
 """
 
 # pylint: disable=protected-access
+
 from functools import partial
 
 import numpy as np

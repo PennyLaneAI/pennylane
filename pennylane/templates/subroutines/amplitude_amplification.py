@@ -16,7 +16,6 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 import copy
 
 import numpy as np
@@ -135,6 +134,7 @@ class AmplitudeAmplification(Operation):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self, U, O, iters=1, fixed_point=False, work_wire=None, p_min=0.9, reflection_wires=None
     ):
@@ -251,6 +251,7 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
 
 
 @register_resources(_amplitude_amplification_resources)
+# pylint: disable-next=too-many-arguments
 def _amplitude_amplification_decomposition(
     *_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__
 ):

@@ -15,7 +15,11 @@
 Tests for the TTN template.
 """
 
+# pylint: disable=protected-access
+
+
 # pylint: disable=too-many-arguments, too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -23,7 +27,6 @@ import pennylane as qp
 from pennylane.templates.tensornetworks.ttn import TTN, compute_indices
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten_methods():
     """Tests the _flatten and _unflatten methods."""
 

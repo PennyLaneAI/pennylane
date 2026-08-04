@@ -15,6 +15,8 @@
 """Tests for ``labs.transforms.make_rz_to_phase_gradient_decomp``"""
 
 # pylint: disable=no-value-for-parameter, disable=too-many-arguments
+
+
 import numpy as np
 import pytest
 
@@ -198,7 +200,7 @@ def test_integration_multi_wire(seed):
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     import jax
     import jax.numpy as jnp
 

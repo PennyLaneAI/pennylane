@@ -62,6 +62,7 @@ class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit in qubit devices."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
+
     @property
     def has_matrix(self):
         return False
@@ -74,6 +75,7 @@ class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when expected."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
+
     @property
     def has_matrix(self):
         return False

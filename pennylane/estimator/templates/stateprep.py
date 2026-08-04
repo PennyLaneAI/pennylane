@@ -13,6 +13,9 @@
 # limitations under the License.
 r"""Resource operators for state preparation templates."""
 
+# pylint: disable=signature-differs, arguments-differ
+
+
 import math
 
 import pennylane.estimator as qre
@@ -27,8 +30,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable= signature-differs, arguments-differ
 
 
 class UniformStatePrep(ResourceOperator):

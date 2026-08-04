@@ -497,12 +497,16 @@ class TestParamShift:
 
 
 # The first line of pylint disable is for cost1 through cost6
-# pylint: disable=no-self-argument, not-an-iterable, too-many-public-methods
+# pylint: disable=not-an-iterable
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("broadcast", [False, True])
 class TestParameterShiftRule:
     """Unit tests for the param_shift function used with a device that has a
     shot vector defined"""
+
+    # pylint: disable=no-self-argument, too-many-public-methods
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
@@ -1834,6 +1838,7 @@ class TestParameterShiftRule:
         for gradF in all_gradF:
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
+    # pylint: disable-next=no-self-argument
     def cost1(x):
         """Perform rotation and return a scalar expectation value."""
         qp.Rot(*x, wires=0)
@@ -1841,19 +1846,23 @@ class TestParameterShiftRule:
 
     def cost2(x):
         """Perform rotation and return an expectation value in a 1d array."""
+        # pylint: disable=no-self-argument
         qp.Rot(*x, wires=0)
         return [qp.expval(qp.PauliZ(0))]
 
     def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
+        # pylint: disable=no-self-argument
         qp.Rot(*x, wires=0)
         return [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
 
     def cost4(x):
         """Perform rotation and return probabilities."""
+        # pylint: disable=no-self-argument
         qp.Rot(*x, wires=0)
         return qp.probs([0, 1])
 
+    # pylint: disable-next=no-self-argument
     def cost5(x):
         """Perform rotation and return probabilities in a 2d object."""
         qp.Rot(*x, wires=0)
@@ -1944,7 +1953,6 @@ class TestParameterShiftRule:
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
         class DeviceSupporingSpecialObservable(DefaultQubitLegacy):
             """A custom device that supports the above SpecialObservable."""
 

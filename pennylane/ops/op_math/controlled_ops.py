@@ -198,7 +198,7 @@ class ControlledQubitUnitary(ControlledOp):
             work_wire_type=work_wire_type,
         )
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable-next=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         base,
@@ -271,13 +271,13 @@ def _to_general_c_qu_resource(num_target_wires, **kwargs):
     }
 
 
-# pylint: disable=too-many-arguments
 @qp.register_condition(lambda num_target_wires, **_: num_target_wires > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
+    # pylint: disable=too-many-arguments
     num_target_wires = len(wires) - len(control_wires)
     qp.ops.Controlled(
         qp.QubitUnitary(U, wires=wires[-num_target_wires:]),
@@ -435,8 +435,8 @@ class CY(Controlled2):
         super().__init__(qp.Y(wires[1:]), wires[:1])
 
     @override
-    # pylint: disable=unused-argument
     def __abstract_init__(self, wires: WiresLike):
+        # pylint: disable=unused-argument
         # `wires` is abstract here and carries no information beyond its fixed
         # size of 2, which always splits into one control and one target wire.
         super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
@@ -446,8 +446,9 @@ class CY(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ
     def compute_matrix(wires: WiresLike | None = None):
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -487,9 +488,9 @@ def _cy(wires: WiresLike, **__):
     qp.S(wires=wires[0])
 
 
-# pylint: disable=unused-argument
 def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
+    # pylint: disable=unused-argument
     resources = defaultdict(int)
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
     resources[resource_rep(qp.PauliRot, pauli_word=p0)] += 1
@@ -768,8 +769,8 @@ class CSWAP(Controlled2):
         )
 
 
-# pylint: disable=unused-argument
 def _cswap_to_toffoli_resources(wires: WiresLike = None):
+    # pylint: disable=unused-argument
     return {qp.CNOT: 2, qp.Toffoli: 1}
 
 
@@ -780,8 +781,8 @@ def _cswap(wires: WiresLike, **__):
     qp.CNOT([wires[2], wires[1]])
 
 
-# pylint: disable=unused-argument
 def _cswap_to_ppr_resource(wires: WiresLike = None):
+    # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="ZZZ"): 1,
         resource_rep(qp.PauliRot, pauli_word="ZYY"): 1,

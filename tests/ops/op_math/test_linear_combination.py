@@ -16,6 +16,7 @@ Tests for the LinearCombination class.
 """
 
 # pylint: disable=too-many-public-methods
+
 from collections.abc import Iterable
 from copy import copy
 
@@ -1952,13 +1953,13 @@ class TestLinearCombinationDifferentiation:
             grad_fn(coeffs, param)
 
 
-# pylint: disable=protected-access
 @pytest.mark.capture
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
 
     from pennylane.capture.primitives import operator_p
 
+    # pylint: disable=protected-access
     def f(a, b):
         op1 = qp.X._primitive.impl(0, n_wires=1)
         op2 = operator_p.impl(

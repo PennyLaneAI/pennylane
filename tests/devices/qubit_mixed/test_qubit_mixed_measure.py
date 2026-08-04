@@ -57,8 +57,8 @@ def get_expval(op, state):
 
 
 @pytest.mark.parametrize("mp", [qp.sample(), qp.counts(), qp.sample(wires=0), qp.counts(wires=0)])
+# pylint: disable=too-few-public-methods
 class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self, mp, two_qubit_state):
         """Test sample-only measurements raise a NotImplementedError."""
         with pytest.raises(NotImplementedError):
@@ -725,7 +725,7 @@ class TestSumOfTermsDifferentiability:
         assert qp.math.allclose(expected_gradient, gradient)
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class TestReadoutErrors:
     """Test that readout errors are correctly applied to measurements."""
 

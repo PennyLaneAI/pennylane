@@ -14,13 +14,17 @@
 """This module contains functions and classes to generate data needed to construct a
 vibrational Hamiltonian for a given molecule."""
 
+# pylint: disable=import-outside-toplevel
+# pylint: disable=unused-variable
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-arguments
+
+
 from dataclasses import dataclass
 
 import numpy as np
 
 from pennylane.qchem.openfermion_pyscf import _import_pyscf
-
-# pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
 
 @dataclass
