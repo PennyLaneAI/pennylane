@@ -219,8 +219,8 @@ class ParticleConservingU2(Operation):
         >>> from pprint import pprint
         >>> pprint(ops)
         [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
-        RZ(tensor(0.3000), wires=['a']),
-        RZ(tensor(1.), wires=['b']),
+        RZ(0.3000..., wires=['a']),
+        RZ(1.0, wires=['b']),
         CNOT(wires=['a', 'b']),
         CRX(0.4000000059604645, wires=['b', 'a']),
         CNOT(wires=['a', 'b'])]
@@ -293,7 +293,6 @@ def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_
 
     @for_loop(n_layers)
     def layers_loop(l):
-
         @for_loop(len(wires))
         def rz_loop(j):
             wires_ = wires[j]
