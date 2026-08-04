@@ -1035,9 +1035,16 @@ def _sos_state_prep_resources(
     return resources
 
 
-def _sos_state_prep_work_wires(num_entries, num_bits, num_wires):
+def _sos_state_prep_work_wires(coefficients, wires, enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, indices):
     """See SumOfSlatersPrep.required_register_sizes for details."""
     # pylint: disable-next=protected-access
+    num_wires = len(wires)
+    v_bits = math.int_to_binary(np.array(indices), num_wires).T
+    selector_ids, _ = select_sos_rows(v_bits)
+
+    num_entries = len(indices)
+    num_bits = len(selector_ids)
+
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
     return {"zeroed": sum(sizes.values()) - num_wires}
 

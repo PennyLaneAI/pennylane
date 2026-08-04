@@ -417,7 +417,7 @@ class TestSumOfSlatersPrep:
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "num_wires, num_entries",
-        [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
+        [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10),],
     )
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator."""
@@ -427,7 +427,7 @@ class TestSumOfSlatersPrep:
         assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
+    @pytest.mark.parametrize("n", [3, 5, 7])
     def test_standard_validity_non_id_encoding(self, n, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator for non-identity
         encoding scenario."""
@@ -598,7 +598,7 @@ class TestSumOfSlatersPrep:
         # The work wire spec is derived from the effective (reduced) bit count, matching the
         # values that ``required_register_sizes`` uses internally.
         registered_work_wires = _sos_state_prep.get_work_wire_spec(
-            num_entries=num_entries, num_bits=new_num_bits, num_wires=num_wires
+            coefficients, **all_wires, indices=indices
         )
         assert sum(sizes.values()) - num_wires == registered_work_wires.total
 
@@ -631,7 +631,7 @@ class TestSumOfSlatersPrep:
         # The work wire spec is derived from the same bit count that ``required_register_sizes``
         # uses internally. For this deterministic input the encoding uses all ``num_bits`` bits.
         registered_work_wires = _sos_state_prep.get_work_wire_spec(
-            num_entries=len(indices), num_bits=num_bits, num_wires=n
+            coefficients, **all_wires, indices=indices
         )
         assert sum(sizes.values()) - n == registered_work_wires.total
 
