@@ -1464,7 +1464,7 @@ class TestPauliErrorEqual:
         pes = [qp.PauliError("XY", x1, (0, 1)), qp.PauliError("XY", 0.5, (0, 1))]
 
         assert qp.equal(pes[0], pes[1]) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Parameters differ in trainability"):
             assert_equal(pes[0], pes[1])
 
         with pytest.raises(AssertionError, match="Parameters have different interfaces"):
@@ -3183,7 +3183,6 @@ def test_select():
 
 # pylint: disable=unused-argument
 class TestCompareSubroutines:
-
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 

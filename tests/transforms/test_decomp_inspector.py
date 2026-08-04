@@ -151,7 +151,7 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 1 |
+            | Controlled(RZ, control_wires=AbstractWires(3)) | 1 |
             | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 |
 
             | Full Expansion | Count |
@@ -259,7 +259,7 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 1 |
+            | Controlled(RZ, control_wires=AbstractWires(3)) | 1 |
             | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 |
 
             | Full Expansion | Count |
