@@ -848,6 +848,7 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
+  [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   - Multi-qubit, parametric operators are ported:
     - `~.DiagonalQubitUnitary`
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
