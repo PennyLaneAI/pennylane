@@ -661,6 +661,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
+  [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
@@ -840,13 +843,20 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Non-parametric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
+  [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
+  - Parametric operators are ported:
+    - `~.RZ`, `~.CRZ`
+  [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
+  - Multi-qubit, parametric operators are ported:
+    - `~.DiagonalQubitUnitary`
+  [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   - Templates are ported:
     - `~.BasisRotation`, `~.QROM`, `~.QFT`, `~.FlipSign`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)

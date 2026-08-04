@@ -635,7 +635,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     resources = {
         resource_rep(TemporaryAND): num_ands + flag.get(resource_rep(TemporaryAND), 0),
         resource_rep(PauliMeasure): num_measurements,
-        resource_rep(CZ): num_cz,
+        CZ: num_cz,
         resource_rep(CNOT): L - 1,
         resource_rep(BasisState, num_wires=num_target_wires): L,
         resource_rep(X): L + flag.get(resource_rep(X), 0),

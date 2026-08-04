@@ -115,7 +115,10 @@ def _flip_sign_decomposition(state: tuple[int], wires: WiresLike):
     if state[-1] == 0:
         X(wires[-1])
 
-    ctrl(Z(wires[-1]), control=wires[:-1], control_values=state[:-1])
+    if len(wires) == 1:
+        Z(wires[-1])
+    else:
+        ctrl(Z(wires[-1]), control=wires[:-1], control_values=values_state[:-1])
 
     if state[-1] == 0:
         X(wires[-1])

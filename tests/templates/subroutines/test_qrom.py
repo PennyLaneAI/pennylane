@@ -38,19 +38,6 @@ from pennylane.templates.subroutines.qrom import (
 from pennylane.templates.subroutines.select import _select_decomp_unary
 from pennylane.typing import AbstractArray, Int, Wire
 
-clifford_t_measure = {
-    qp.H,
-    qp.T,
-    qp.S,
-    qp.X,
-    qp.Y,
-    qp.Z,
-    qp.CNOT,
-    qp.CZ,
-    qp.Hadamard,
-    PauliMeasure,
-}
-
 has_jax = True
 try:
     from jax import numpy as jnp
@@ -621,7 +608,7 @@ class TestMeasurementQROM:
         """Test that the general resource estimate contains the expected gate types."""
         res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
         assert res[qp.resource_rep(PauliMeasure)] > 0
-        assert res[qp.resource_rep(qp.CZ)] > 0
+        assert res[qp.CZ] > 0
 
     def test_resources_from_base_params(self):
         """Test that resources are extracted from ``base_params`` (Adjoint path)."""
@@ -754,7 +741,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -796,7 +783,7 @@ class TestMeasurementQROM:
         x_state /= np.linalg.norm(x_state)
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
@@ -853,7 +840,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -897,7 +884,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
