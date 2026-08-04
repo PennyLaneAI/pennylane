@@ -54,7 +54,7 @@ def _wire_layout(M, N, n, aleph):
     return mu_wires, nu_wires, sup_work, edge_flag, work_wires
 
 
-def _reconstruct_distribution(M, N, zeta, t_ell, n, aleph): # pylint: disable=too-many-arguments
+def _reconstruct_distribution(M, N, zeta, t_ell, n, aleph):  # pylint: disable=too-many-arguments
     """Exact distribution over |mu>|nu> prepared by ``alias_sampling_thc``.
 
     This is the THC analogue of ``_reconstruct_amplitudes`` in
