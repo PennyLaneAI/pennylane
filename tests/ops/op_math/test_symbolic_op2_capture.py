@@ -196,6 +196,17 @@ class TestControlledCapture:
         eqn = _single_op_eqn(jaxpr)
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
+    def test_dynamic_control_values(self, ctrl_fn):
+        """Test that abstract control values are not converted to Python booleans."""
+        values = jax.numpy.array([True, False])
+        jaxpr = jax.make_jaxpr(
+            lambda x: ctrl_fn(RX2(0.5, wires=2), [0, 1], control_values=x).tracer
+        )(values)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jax.numpy.logical_not(values))
+        expected = ControlledOp2(RX2(0.5, wires=2), [0, 1], [False, True])
+        qp.assert_equal(op, expected)
+
     def test_multiple_control_wires(self, ctrl_fn):
         """Test that multiple control wires are recorded in ``n_ctrls`` and inputs."""
         jaxpr = jax.make_jaxpr(
