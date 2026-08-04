@@ -372,9 +372,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     3: ─├●─├●────────├●─┤
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
-    First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2}
-    Full Expansion Gates: {CNOT: 76, GlobalPhase: 80, MidMeasure: 4, RX: 24, RY: 16, RZ: 84}
-    Weighted Cost: 204.0
+    First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2}
+    Full Expansion Gates: {CNOT: 76, GlobalPhase: 83, MidMeasure: 4, RX: 27, RY: 16, RZ: 84}
+    Weighted Cost: 207.0
+
     In addition to the operators at the top level of the circuit, we can also inspect the graph
     for how intermediate operators are decomposed. For example, let's look at the single-controlled
     ``MultiRZ`` produced in the decomposition of the controlled ``MultiRZ`` (notice how ``num_work_wires``
@@ -498,9 +499,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ─├●─├●────────├●─┤
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
-        First-Level Expansion Gates: {Controlled(RZ, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool, weak_type=True)): 2}
-        Full Expansion Gates: {CNOT: 96, GlobalPhase: 218, MidMeasure: 6, RX: 50, RY: 54, RZ: 170}
-        Weighted Cost: 376.0
+        First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool, weak_type=True)): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool, weak_type=True)): 2}
+        Full Expansion Gates: {CNOT: 96, GlobalPhase: 222, MidMeasure: 6, RX: 54, RY: 54, RZ: 170}
+        Weighted Cost: 380.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
 
