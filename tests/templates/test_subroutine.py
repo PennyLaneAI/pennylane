@@ -22,8 +22,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import resource_rep
-from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
+from pennylane.core.operator import abstractify
+from pennylane.ops import CNOT, Adjoint, PauliX
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
     CollectedSubroutine,
@@ -64,7 +64,7 @@ class TestInitialization:
 
         resources = S.compute_resources(0.5, wires=0)
         expected = defaultdict(int)
-        expected[qp.resource_rep(qp.RX)] = 1
+        expected[abstractify(qp.RX)] = 1
         assert resources == expected
 
     def test_wire_argnames(self):
@@ -270,7 +270,7 @@ class TestSubroutineOp:
 
         assert (
             repr(self.op1)
-            == "<Example1(x=0.5, y=0.6, reg1=Wires([0, 'a']), reg2=Wires(['a', 1]), pauli_words=('XY', 'YZ'))>"
+            == "<Example1(x=0.5, y=0.6, reg1=[0, 'a'], reg2=['a', 1], pauli_words=('XY', 'YZ'))>"
         )
 
     def test_set_wires(self):
@@ -648,7 +648,7 @@ class TestTapePLIntegration:
             return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         specs = qp.specs(c, level="top")(0.5, 1.2)
-        assert specs.resources.gate_types["Tester"] == 1
+        assert specs.resources.quantum_operations["Tester"] == 1
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -691,7 +691,7 @@ class TestGraphDecomposition:
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             partial(f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)),
-            resource_rep(qp.PauliX),
+            abstractify(qp.PauliX),
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
@@ -734,24 +734,17 @@ class TestGraphDecomposition:
     def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
 
-        rr = change_op_basis_subroutine_resource_rep(
-            qp.PauliZ(0),
-            resource_rep(qp.PauliX),
-        )
+        rr = change_op_basis_subroutine_resource_rep(qp.PauliZ(0), abstractify(qp.PauliX))
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "PauliZ"
-        assert rr.params["compute_op"].op_type == PauliZ
+        assert rr.params["compute_op"] == qp.Z(AbstractWires(1))
 
         assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "PauliX"
         assert rr.params["target_op"].op_type == PauliX
 
-        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
-        assert rr.params["uncompute_op"].op_type == Adjoint
+        assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(AbstractWires(1)))
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
@@ -762,7 +755,7 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            resource_rep(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
+            abstractify(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"

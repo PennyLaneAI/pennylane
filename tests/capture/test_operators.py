@@ -25,6 +25,9 @@ import pennylane as qp
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
+from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
+    assert_eqn_matches_op,
+)
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -242,6 +245,23 @@ def test_parametrized_op():
 
 class TestSpecialOps:
 
+    def test_diagonal_qubit_unitary(self):
+        """Test Operator2 capture and list canonicalization for DiagonalQubitUnitary."""
+
+        def qfunc(D, wires):
+            qp.DiagonalQubitUnitary(D, wires)
+
+        D = [1.0, 1.0j, -1.0, -1.0j]
+        wires = [0, 1]
+        jaxpr = jax.make_jaxpr(qfunc)(D, wires)
+
+        eqn = jaxpr.eqns[-1]
+        assert_eqn_matches_op(eqn, qp.DiagonalQubitUnitary)
+        assert eqn.invars[0].aval == jax.core.ShapedArray((4,), complex)
+        assert eqn.invars[1:] == jaxpr.jaxpr.invars[-2:]
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
     def test_pauli_rot(self):
         """Test a special operation that has positional metadata and overrides binding."""
 
@@ -330,7 +350,7 @@ class TestTemplates:
         assert len(jaxpr.eqns) == 6
 
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Z._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
@@ -517,7 +537,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -539,7 +559,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -560,7 +580,7 @@ class TestAbstractDunders:
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
 
-        assert jaxpr.eqns[0].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.Y)
 
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[1].invars[0].val == 2

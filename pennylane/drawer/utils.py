@@ -25,6 +25,7 @@ from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
+from pennylane.wires import Wires
 
 
 def dynamic_wire_connections(layers: list[list], wire_map: dict) -> tuple[dict, dict]:
@@ -230,33 +231,21 @@ def unwrap_controls(op):
     Returns:
         Wires, List: The control wires of the operation, along with any associated
         control values.
+
     """
-    # Get wires and control values of base operation; need to make a copy of
-    # control values, otherwise it will modify the list in the operation itself.
-    control_wires = getattr(op, "control_wires", [])
-    control_values = getattr(op, "hyperparameters", {}).get("control_values", None)
 
-    if isinstance(control_values, list):
-        control_values = control_values.copy()
+    control_wires = Wires([])
+    control_values = []
 
-    next_ctrl = op
-    if isinstance(op, Controlled):
-        while hasattr(next_ctrl, "base"):
-            if isinstance(next_ctrl.base, Controlled):
-                base_control_wires = getattr(next_ctrl.base, "control_wires", [])
-                control_wires += base_control_wires
+    if not isinstance(op, Controlled):
+        return control_wires, control_values, op
 
-                base_control_values = next_ctrl.base.hyperparameters.get(
-                    "control_values", [True] * len(base_control_wires)
-                )
+    control_wires = op.control_wires
+    control_values = op.control_values
+    base = op.base
 
-                if control_values is not None:
-                    control_values.extend(base_control_values)
-
-            next_ctrl = next_ctrl.base
-
-    control_values = [bool(int(i)) for i in control_values] if control_values else control_values
-    return control_wires, control_values, next_ctrl
+    base_ctrl_wires, base_ctrl_values, base_base = unwrap_controls(base)
+    return control_wires + base_ctrl_wires, control_values + base_ctrl_values, base_base
 
 
 # pylint: disable=unused-argument

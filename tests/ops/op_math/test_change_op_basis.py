@@ -25,7 +25,7 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
-from pennylane.core.queuing import AnnotatedQueue
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -33,6 +33,7 @@ from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
@@ -215,16 +216,25 @@ def test_change_op_basis_with_mixed_types():
     qp.assert_equal(cob.operands[0], qp.adjoint(f)(0.1, Wires([0]), Wires([1])))
 
 
+@pytest.mark.parametrize(
+    "compute_op, target_op, uncompute_op",
+    (
+        (qp.X, qp.Z, qp.X),  # Operator1 only
+        (NonParametricOp, NonParametricOp, NonParametricOp),  # Operator2 only
+        (qp.X, NonParametricOp, qp.X),  # Operator1 compute and Operator2 target
+        (NonParametricOp, qp.X, NonParametricOp),  # Operator2 compute and Operator1 target
+    ),
+)
 @pytest.mark.capture
-def test_change_op_basis_capture():
-    """Tests that a change_op_basis can be captured."""
+def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
+    """Tests that Operator1 and Operator2 operands are captured in argument order."""
 
     def circuit():
-        qp.change_op_basis(qp.X(0), qp.Y(0), qp.X(0))
+        qp.change_op_basis(compute_op(0), target_op(1), uncompute_op(0))
 
     jaxpr = qp.capture.make_plxpr(circuit)()
     tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
-    assert tape.operations == [qp.X(0), qp.Y(0), qp.X(0)]
+    assert tape.operations == [compute_op(0), target_op(1), uncompute_op(0)]
 
 
 class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
@@ -388,9 +398,9 @@ class TestDecomposition:
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
         assert change_op_basis_op.resource_params == {
-            "compute_op": resource_rep(qp.X),
-            "target_op": resource_rep(qp.Y),
-            "uncompute_op": resource_rep(qp.X),
+            "compute_op": abstractify(qp.X),
+            "target_op": abstractify(qp.Y),
+            "uncompute_op": abstractify(qp.X),
         }
 
     def test_registered_decomp(self):
@@ -400,12 +410,12 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
 
         resource_obj = default_decomp.compute_resources(
-            compute_op=resource_rep(qp.X),
+            compute_op=abstractify(qp.X),
             target_op=resource_rep(qp.MultiRZ, num_wires=2),
-            uncompute_op=resource_rep(qp.X),
+            uncompute_op=abstractify(qp.X),
         )
 
         assert resource_obj.num_gates == 3
@@ -439,13 +449,12 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
-        """Test the qfunc decomposition."""
+        """Test that capture applies each decomposition operand in order."""
 
-        with AnnotatedQueue() as q:
-            change_op_basis(*ops_lst)
+        jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
-        for i, op in enumerate(q.queue):
-            assert op == ops_lst[i]
+        assert tape.operations == list(ops_lst)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_controlled_decomposition_new(self, ops_lst):

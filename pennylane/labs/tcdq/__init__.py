@@ -12,10 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Phase optimization with JAX: Train Classically Deploy Quantum (TCDQ)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This module contains features to enable Train Classical, Deploy Quantum (TCDQ) workflows.
+
+The supported workflows include fast optimization of instantaneous quantum polynomial (IQP) circuits and their extensions.
+See `arXiv:2501.04776 <https://arxiv.org/abs/2501.04776>`_ and `arXiv:2607.06675 <https://arxiv.org/abs/2607.06675>`_ for theoretical details.
 
 .. currentmodule:: pennylane.labs.tcdq
+
+.. warning::
+
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
+
+Core classes and functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -27,7 +37,6 @@ Phase optimization with JAX: Train Classically Deploy Quantum (TCDQ)
     ~build_expval_func
     ~build_qudit_expval_func
     ~build_qudit_mmd_loss
-    ~bitflip_expval
     ~mmd_loss
     ~median_heuristic
     ~train
@@ -40,8 +49,6 @@ Phase optimization with JAX: Train Classically Deploy Quantum (TCDQ)
 Circuit construction utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.tcdq
-
 .. autosummary::
     :toctree: api
 
@@ -50,19 +57,14 @@ Circuit construction utilities
     ~create_random_gates
     ~generate_pauli_observables
 
+Workflows
+~~~~~~~~~~
 
-Workflow
-~~~~~~~~
 
-``pennylane.labs.tcdq`` provides a compact toolkit for constructing and
-simulating phase optimization circuits with JAX. The usual workflow is:
+The following examples demonstrate several of the key workflows supported by this module.
 
-#. Use helpers in :mod:`pennylane.labs.tcdq.utils` to assemble gates and
-   observables.
-#. Configure the circuit with :class:`~pennylane.labs.tcdq.CircuitConfig`.
-#. Build an expectation-value function with
-   :func:`~pennylane.labs.tcdq.build_expval_func` and evaluate it for
-   different parameter sets.
+Estimating expectation values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -75,15 +77,19 @@ simulating phase optimization circuits with JAX. The usual workflow is:
        generate_pauli_observables,
    )
 
+   # Define a 3×3 lattice of qubits with nearest-neighbour gates
    n_rows, n_cols = 3, 3
    n_qubits = n_rows * n_cols
-
    gates = create_lattice_gates(n_rows, n_cols, distance=1, max_weight=2)
+
+   # Choose two-body ZZ observables
    observables = generate_pauli_observables(n_qubits, orders=[2], bases=["Z"])
 
+   # Initialize random circuit parameters
    key = jax.random.PRNGKey(0)
    params = jax.random.uniform(key, shape=(len(gates),))
 
+   # Bundle everything into a circuit configuration
    config = CircuitConfig(
        gates=gates,
        observables=observables,
@@ -92,15 +98,16 @@ simulating phase optimization circuits with JAX. The usual workflow is:
        n_qubits=n_qubits,
    )
 
+   # Build and JIT-compile the estimator, then evaluate
    expval_fn = jax.jit(build_expval_func(config))
    expvals, std_errs = expval_fn(params)
 
 
-Training
-~~~~~~~~
+Training with a custom loss
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Below is a small training loop that minimizes the sum of all two-body ``Z``
-correlators on the same ``3x3`` lattice. The loss function reuses the
+Below is a training loop that minimizes the sum of all two-body ``Z``
+correlators on the same ``3×3`` lattice. The loss function reuses the
 compiled ``expval_fn`` from above.
 
 .. code-block:: python
@@ -113,26 +120,36 @@ compiled ``expval_fn`` from above.
        expvals, _ = expval_fn(current_params)
        return jnp.sum(expvals)
 
+   options = TrainingOptions(unroll_steps=10, random_state=1234)
+
    result = train(
        optimizer="Adam",
        loss=loss_fn,
        stepsize=0.05,
        n_iters=200,
        loss_kwargs={"params": params},
-       options=TrainingOptions(unroll_steps=10, random_state=1234),
+       options=options,
    )
 
    print("Final loss:", float(result.losses[-1]))
    print("Optimized parameters:", result.final_params)
 
 
-Maximum Mean Discrepancy (MMD) Loss
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Training with MMD loss (distribution matching)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To train a circuit to reproduce a target probability distribution (e.g., a dataset
-of bitstrings), you can use the built-in MMD loss utilities. This integrates
-seamlessly with the ``train`` function using the :class:`~pennylane.labs.tcdq.MMDConfig`
-dataclass.
+To train a circuit so that its output distribution reproduces a target
+dataset of bitstrings, use the built-in Maximum Mean Discrepancy (MMD)
+loss. The MMD is a kernel-based distance between probability distributions.
+Smaller values mean the circuit output is closer to the target data.
+
+The ``bandwidth`` parameter controls how sensitive the loss is to
+fine-grained versus broad differences between distributions. A good
+default is the median pairwise distance of the dataset, computed with
+:func:`~median_heuristic`.
+
+For more detail on how the loss is constructed, see
+`Section IV B, Loss functions via graph-Fourier kernels. <https://arxiv.org/pdf/2607.06675>`_
 
 .. code-block:: python
 
@@ -158,16 +175,128 @@ dataclass.
        stepsize=0.01,
        n_iters=100,
        loss_kwargs=loss_kwargs,
-       options=TrainingOptions(unroll_steps=10)
+       options=TrainingOptions(unroll_steps=10),
    )
 
    print("Final MMD loss:", float(mmd_result.losses[-1]))
+
+
+Qudit circuits
+^^^^^^^^^^^^^^
+
+The same workflow applies to qudit circuits (``d > 2``). Replace
+:class:`~CircuitConfig` with :class:`~QuditCircuitConfig` and
+:func:`~build_expval_func` with :func:`~build_qudit_expval_func`.
+Gate vectors now have length ``n_qudits`` with entries in
+:math:`\{0, \ldots, d-1\}` specifying the power of :math:`Z` on each
+qudit.
+
+.. code-block:: python
+
+   import jax
+   import jax.numpy as jnp
+
+   from pennylane.labs.tcdq import QuditCircuitConfig, build_qudit_expval_func
+
+   d = 3  # qutrit
+   n_qudits = 4
+
+   # Single-qudit and nearest-neighbour two-qudit gates
+   gates = {
+       0: [[1, 0, 0, 0]],
+       1: [[0, 1, 0, 0]],
+       2: [[0, 0, 1, 0]],
+       3: [[0, 0, 0, 1]],
+       4: [[1, 1, 0, 0]],
+       5: [[0, 1, 1, 0]],
+       6: [[0, 0, 1, 1]],
+   }
+
+   # Observables: displacement operators O(l, m) with m = 0
+   l_vecs = jnp.array([[1, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0]], dtype=jnp.int32)
+   m_vecs = jnp.zeros_like(l_vecs)
+
+   config = QuditCircuitConfig(
+       d=d,
+       n_qudits=n_qudits,
+       gates=gates,
+       observables=(l_vecs, m_vecs),
+       n_samples=5000,
+       key=jax.random.PRNGKey(0),
+   )
+
+   expval_fn = build_qudit_expval_func(config)
+   params = jnp.zeros(len(gates))
+   expvals, cov = expval_fn(params)
+
+
+Training qudit circuits with MMD loss
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Qudit distribution matching uses
+:func:`~build_qudit_mmd_loss`, which returns a reusable loss function
+based on a graph-kernel MMD. The ``graph_type`` parameter selects the
+kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
+``"complete"`` treats all levels symmetrically.
+
+.. code-block:: python
+
+   import jax
+   import jax.numpy as jnp
+
+   from pennylane.labs.tcdq import (
+       QuditCircuitConfig,
+       QuditMMDConfig,
+       build_qudit_mmd_loss,
+       TrainingOptions,
+       train,
+   )
+
+   d = 3
+   n_qudits = 4
+
+   # Define single-qudit and nearest-neighbour two-qudit gates
+   gates = {
+       0: [[1, 0, 0, 0]],
+       1: [[0, 1, 0, 0]],
+       2: [[0, 0, 1, 0]],
+       3: [[0, 0, 0, 1]],
+       4: [[1, 1, 0, 0]],
+       5: [[0, 1, 1, 0]],
+       6: [[0, 0, 1, 1]],
+   }
+
+   circuit_config = QuditCircuitConfig(
+       d=d,
+       n_qudits=n_qudits,
+       gates=gates,
+       n_samples=2000,
+       key=jax.random.PRNGKey(0),
+   )
+
+   # Build the MMD loss with a cycle-graph kernel
+   mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
+   loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
+
+   # Generate synthetic target data and train
+   target_data = jax.random.randint(jax.random.PRNGKey(99), (500, n_qudits), 0, d)
+   params = jnp.zeros(len(gates))
+
+   result = train(
+       optimizer="Adam",
+       loss=loss_fn,
+       stepsize=0.01,
+       n_iters=100,
+       loss_kwargs={"params": params, "target_data": target_data},
+       options=TrainingOptions(unroll_steps=10),
+   )
+
+   print("Final MMD loss:", float(result.losses[-1]))
 
 """
 
 from .expval_functions import (
     CircuitConfig,
-    bitflip_expval,
     build_expval_func,
 )
 from .qudit_expval_functions import (
@@ -189,7 +318,6 @@ __all__ = [
     "QuditCircuitConfig",
     "MMDConfig",
     "QuditMMDConfig",
-    "bitflip_expval",
     "build_expval_func",
     "build_qudit_expval_func",
     "mmd_loss",

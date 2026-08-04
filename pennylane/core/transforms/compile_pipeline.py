@@ -910,7 +910,7 @@ class CompilePipeline:
         processing_fns_stack = []
 
         for bound_transform in self:
-            transform, targs, tkwargs, cotransform, _, _, _ = bound_transform
+            transform, targs, tkwargs, cotransform, _, _ = bound_transform
             tkwargs = {
                 key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
             }
@@ -975,19 +975,6 @@ class CompilePipeline:
         # Reset classical jacobians
         return tuple(tapes), postprocessing_fn
 
-    def __call_jaxpr(
-        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
-    ) -> jax.extend.core.ClosedJaxpr:
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        cur_jaxpr = jax.extend.core.ClosedJaxpr(jaxpr, consts)
-        for container in self:
-            _, targs, tkwargs, _, plxpr_transform, _, _ = container
-            cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
-
-        return cur_jaxpr
-
     def __call_generic(self, obj):
         """Apply the transform program to a generic object (QNode, device, callable, etc.).
 
@@ -1028,9 +1015,6 @@ class CompilePipeline:
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
 
     def __call__(self, *args, **kwargs):
-        if type(args[0]).__name__ == "Jaxpr":
-            return self.__call_jaxpr(*args, **kwargs)
-
         first_arg = args[0]
 
         # Sequence of QuantumScripts: QuantumScriptBatch

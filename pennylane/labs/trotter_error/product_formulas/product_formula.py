@@ -16,8 +16,7 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Hashable
-from typing import Sequence
+from collections.abc import Hashable, Sequence
 
 
 class ProductFormula:

@@ -158,7 +158,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
 @dataclasses.dataclass
@@ -192,7 +192,7 @@ def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     )
 
 
-def _to_jax(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
+def _to_jax(result: ResultBatch) -> ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays

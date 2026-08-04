@@ -174,8 +174,16 @@ def test_differentiability_tensorflow():
     assert qp.math.isclose(grad2, 0.0)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "TestPyPI Catalyst does not yet preserve Operator2 results used as observables during "
+        "capture. The expectation measurement is misrouted through the MCM path and emits a "
+        "zero-operand quantum.mcmobs, which has no runtime lowering. Remove this xfail once "
+        "Catalyst's Operator2-observable handling is released."
+    ),
+)
 @pytest.mark.catalyst
-@pytest.mark.external
 def test_catalyst_integration():
     """Test that combine_global_phases works with catalyst."""
 
@@ -198,4 +206,4 @@ def test_catalyst_integration():
         return qp.expval(qp.Z(0))
 
     specs = qp.specs(circuit)()
-    assert specs.resources.gate_counts["GlobalPhase"] == 1
+    assert specs.resources.quantum_operations["GlobalPhase"] == 1

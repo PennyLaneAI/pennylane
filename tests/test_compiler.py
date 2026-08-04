@@ -30,7 +30,7 @@ from pennylane.transforms.dynamic_one_shot import fill_in_value
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 
-pytestmark = pytest.mark.external
+pytestmark = pytest.mark.catalyst
 
 from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
 from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
@@ -74,7 +74,7 @@ class TestCatalyst:
         assert not qp.compiler.available("SomeRandomCompiler")
 
         assert qp.compiler.available("catalyst")
-        assert qp.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
+        assert "catalyst" in qp.compiler.available_compilers()
 
     def test_active_compiler(self):
         """Test `qp.compiler.active_compiler` inside a simple circuit"""

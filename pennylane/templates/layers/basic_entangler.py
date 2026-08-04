@@ -17,8 +17,8 @@ Contains the BasicEntanglerLayers template.
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.operator import Operation, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, RX, cond
 
 
@@ -223,13 +223,13 @@ class BasicEntanglerLayers(Operation):
 
 
 def _basic_entangler_resources(repeat, num_wires, rotation):
-    resources = {resource_rep(rotation): repeat * num_wires}
+    resources = {abstractify(rotation): repeat * num_wires}
 
     if num_wires == 2:
-        resources[resource_rep(CNOT)] = repeat
+        resources[CNOT] = repeat
 
     elif num_wires > 2:
-        resources[resource_rep(CNOT)] = repeat * num_wires
+        resources[CNOT] = repeat * num_wires
 
     return resources
 

@@ -15,20 +15,18 @@ r"""
 Contains the SelectPauliRot template.
 """
 
-from collections import defaultdict
-
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math import Prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.wires import Wires
 
@@ -190,8 +188,8 @@ class SelectPauliRot(Operation):
 
 def _select_pauli_rot_resource(num_wires, rot_axis):
     prod_res = {
-        resource_rep(RZ): 2 ** (num_wires - 1),
-        resource_rep(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
+        abstractify(RZ): 2 ** (num_wires - 1),
+        abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
     }
     if rot_axis == "Z":
         return prod_res
@@ -199,22 +197,16 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
     if rot_axis == "X":
         return {
             change_op_basis_resource_rep(
-                resource_rep(Hadamard),
-                resource_rep(Prod, resources=defaultdict(int, prod_res)),
-                resource_rep(Hadamard),
+                Hadamard, resource_rep(Prod, resources=prod_res), Hadamard
             ): 1,
         }
 
-    prod_rep1 = resource_rep(
-        Prod, resources=defaultdict(int, {resource_rep(Hadamard): 1, adjoint_resource_rep(S): 1})
-    )
-    prod_rep2 = resource_rep(
-        Prod, resources=defaultdict(int, {resource_rep(S): 1, resource_rep(Hadamard): 1})
-    )
+    prod_rep1 = resource_rep(Prod, resources={abstractify(Hadamard): 1, _adjoint_abstract(S): 1})
+    prod_rep2 = resource_rep(Prod, resources={abstractify(S): 1, abstractify(Hadamard): 1})
 
     return {
         change_op_basis_resource_rep(
-            prod_rep1, resource_rep(Prod, resources=defaultdict(int, prod_res)), prod_rep2
+            prod_rep1, resource_rep(Prod, resources=prod_res), prod_rep2
         ): 1,
     }
 

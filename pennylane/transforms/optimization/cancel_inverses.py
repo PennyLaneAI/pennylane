@@ -202,7 +202,7 @@ def cancel_inverses(
           - :class:`qp.SWAP <pennylane.SWAP>`
           - :class:`qp.Toffoli <pennylane.Toffoli>`
 
-        .. code-block:: python
+        .. code-block:: python3
 
             dev = qp.device("lightning.qubit", wires=1)
 
@@ -215,19 +215,19 @@ def cancel_inverses(
                 qp.Hadamard(wires=0)
                 return qp.expval(qp.PauliZ(0))
 
-        >>> print(qp.specs(circuit, level=1)())
+        >>> print(qp.specs(circuit, level=1)())  # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
         Level: cancel-inverses
         <BLANKLINE>
-        Wire allocations: 1
-        Total gates: 1
-        Gate counts:
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 1
+          - RX: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Wire allocations: 1
+        Circuit Depth: Not computed
 
         Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.

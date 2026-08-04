@@ -24,12 +24,15 @@ from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 if TYPE_CHECKING:
-    from .operator2 import Operator2
+    from pennylane.decomposition.resources import CompressedResourceOp
+
+    from .base import Operator
 
 
 @singledispatch
-def abstractify(val) -> AbstractArray | AbstractWires | Operator2:
+def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedResourceOp:
     """Convert the provided value into an abstract type."""
+
     # pylint: disable-next=import-outside-toplevel
     from .operator2 import Operator2
 
@@ -52,7 +55,6 @@ def _abstractify_type(val: type) -> AbstractArray:
     """Abstractify a type."""
     if issubclass(val, Number):
         return AbstractArray((), val)
-
     raise NotImplementedError(f"Cannot abstractify type '{val}'")
 
 
@@ -63,8 +65,6 @@ def _abstractify_wires(val: Wires) -> AbstractWires:
 
 
 @abstractify.register(AbstractArray | AbstractWires)
-def _abstractify_abstract_type(
-    val: AbstractArray | AbstractWires,
-) -> AbstractArray | AbstractWires:
+def _abstractify_abstract_type(val: AbstractArray | AbstractWires) -> AbstractArray | AbstractWires:
     """Abstractify an abstract type, i.e., do nothing."""
     return val

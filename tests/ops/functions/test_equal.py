@@ -337,7 +337,8 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+
+        with pytest.raises(AssertionError, match="have different values"):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
@@ -418,7 +419,7 @@ class TestEqual:
             is False
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="differ in trainability"):
             assert_equal(
                 op1(param_qp, wires=wire),
                 op1(param_qp_1, wires=wire),
@@ -1333,7 +1334,7 @@ class TestEqual:
             is True
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+        with pytest.raises(AssertionError, match="have different interfaces"):
             assert_equal(
                 op1(pl_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
@@ -1348,6 +1349,36 @@ class TestEqual:
 
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths"):
+            assert_equal(op1, op2)
+
+    def test_equal_subclass_returns_false(self):
+        """Test that a strict subclass is not equal to its parent operator."""
+
+        # pylint: disable=too-few-public-methods
+        class MyPauliX(qp.X):
+            pass
+
+        op1 = qp.X(0)
+        op2 = MyPauliX(0)
+
+        assert qp.equal(op1, op2) is False
+        assert qp.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
+            assert_equal(op1, op2)
+
+    def test_equal_identity_subclass_returns_false(self):
+        """Test that a subclass of Identity is not equal to Identity itself."""
+
+        # pylint: disable=too-few-public-methods
+        class MyIdentity(qp.Identity):
+            pass
+
+        op1 = qp.Identity(0)
+        op2 = MyIdentity(0)
+
+        assert qp.equal(op1, op2) is False
+        assert qp.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
             assert_equal(op1, op2)
 
     def test_equal_with_unsupported_nested_operators_returns_false(self):
@@ -1434,7 +1465,7 @@ class TestPauliErrorEqual:
         pes = [qp.PauliError("XY", x1, (0, 1)), qp.PauliError("XY", 0.5, (0, 1))]
 
         assert qp.equal(pes[0], pes[1]) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Parameters differ in trainability"):
             assert_equal(pes[0], pes[1])
 
         with pytest.raises(AssertionError, match="Parameters have different interfaces"):
@@ -2875,7 +2906,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qp.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="have different data"):
+        with pytest.raises(AssertionError, match="have different values"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2989,7 +3020,6 @@ class TestHilbertSchmidt:
     def test_non_equal_data(self, op, other_op):
         """Test that differing data is found."""
         assert qp.equal(op, other_op) is False
-        other_op.data = op.data
 
         v_ops = op.hyperparameters["V"]
         op_params = qp.tape.QuantumScript(v_ops).get_parameters()
@@ -3154,7 +3184,6 @@ def test_select():
 
 # pylint: disable=unused-argument
 class TestCompareSubroutines:
-
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 

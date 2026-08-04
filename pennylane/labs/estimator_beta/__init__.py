@@ -31,6 +31,8 @@ Resource Estimation
 
     ~estimate
     ~LabsResourceConfig
+    ~mark_subroutine
+    ~ResourceQfunc
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,6 +159,8 @@ from .ops import (
     mcx_one_clean_aux_resource_decomp,
     mcx_one_dirty_aux_resource_decomp,
     mcx_many_clean_aux_resource_decomp,
+    mark_subroutine,
+    ResourceQfunc,
 )
 
 Adder = LabsAdder
@@ -203,7 +207,7 @@ def _(op: qp.QROM):
     bitstrings = op.data[0]
     num_bitstrings = bitstrings.shape[0]
     size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
-    op_wires = op.hyperparameters["control_wires"] + op.hyperparameters["target_wires"]
+    op_wires = op.control_wires + op.target_wires
     return LabsQROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,

@@ -78,7 +78,7 @@ class StaticOp(Operator2):
         super().__init__(label, wires=wires)
 
 
-class CompOp(Operator2):
+class CompilableOp(Operator2):
     """Operator with a compilable static argument."""
 
     compilable_argnames = ("n",)

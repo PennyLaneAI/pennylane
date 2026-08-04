@@ -86,7 +86,6 @@ _INSTANCES_TO_TEST = [
     (qp.exp(qp.PauliX(0), 1.1), {}),
     (qp.pow(qp.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qp.ops.Evolution(qp.PauliX(0), 5.2), {}),
-    (qp.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
     (qp.estimator.FirstQuantization(1, 2, 1), {}),
     (qp.prod(qp.RX(1.1, 0), qp.RY(2.2, 0), qp.RZ(3.3, 1)), {}),
     (qp.Snapshot(measurement=qp.expval(qp.Z(0)), tag="hi"), {}),
@@ -138,10 +137,6 @@ _INSTANCES_TO_FAIL = [
     (
         qp.PauliError("X", 0.5, wires=0),
         DeviceError,  # not supported with default.qubit and does not provide a decomposition
-    ),
-    (
-        qp.THermitian(np.eye(3), wires=0),
-        (AssertionError, ValueError),  # qutrit ops fail validation
     ),
     (
         qp.ops.qubit.special_unitary.TmpPauliRot(1.1, "X", [0]),

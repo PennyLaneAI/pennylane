@@ -17,6 +17,7 @@
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
@@ -26,6 +27,9 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 @pytest.mark.unit
@@ -44,8 +48,8 @@ class TestResources:
         with pytest.raises(AssertionError):
             Resources(
                 gate_counts={
-                    CompressedResourceOp(qp.RX, {}): 2,
-                    CompressedResourceOp(qp.RZ, {}): -1,
+                    abstractify(qp.RX): 2,
+                    abstractify(qp.RZ): -1,
                 }
             )
 
@@ -54,7 +58,7 @@ class TestResources:
         with pytest.raises(AssertionError):
             Resources(
                 gate_counts={
-                    CompressedResourceOp(qp.RX, {}): 2,
+                    abstractify(qp.RX): 2,
                 },
                 weighted_cost=-2.0,
             )
@@ -63,20 +67,20 @@ class TestResources:
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 2, CompressedResourceOp(qp.RZ, {}): 1},
+            gate_counts={abstractify(qp.RX): 2, abstractify(qp.RZ): 1},
             weighted_cost=6.0,
         )
         resources2 = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 1, CompressedResourceOp(qp.RY, {}): 1},
+            gate_counts={abstractify(qp.RX): 1, abstractify(qp.RY): 1},
             weighted_cost=2.0,
         )
 
         resources = resources1 + resources2
         assert resources.num_gates == 5
         assert resources.gate_counts == {
-            CompressedResourceOp(qp.RX, {}): 3,
-            CompressedResourceOp(qp.RZ, {}): 1,
-            CompressedResourceOp(qp.RY, {}): 1,
+            abstractify(qp.RX): 3,
+            abstractify(qp.RZ): 1,
+            abstractify(qp.RY): 1,
         }
         assert resources.weighted_cost == 8.0
 
@@ -84,25 +88,23 @@ class TestResources:
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            gate_counts={CompressedResourceOp(qp.RX, {}): 2, CompressedResourceOp(qp.RZ, {}): 1},
+            gate_counts={abstractify(qp.RX): 2, abstractify(qp.RZ): 1},
             weighted_cost=2.0,
         )
 
         resources = resources * 2
         assert resources.num_gates == 6
         assert resources.gate_counts == {
-            CompressedResourceOp(qp.RX, {}): 4,
-            CompressedResourceOp(qp.RZ, {}): 2,
+            abstractify(qp.RX): 4,
+            abstractify(qp.RZ): 2,
         }
         assert resources.weighted_cost == 4
 
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
-        resources = Resources(
-            {CompressedResourceOp(qp.RX, {}): 2, CompressedResourceOp(qp.RZ, {}): 1}, 5.0
-        )
-        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, weighted_cost=5.0>"
+        resources = Resources({abstractify(qp.RX): 2, qp.S(Wire[1]): 1}, 5.0)
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, S: 1}, weighted_cost=5.0>"
 
 
 class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -213,7 +215,7 @@ class TestCompressedResourceOp:
         assert op1 == op2
 
         op1 = CompressedResourceOp(qp.RX, {})
-        op2 = CompressedResourceOp(qp.RZ, {})
+        op2 = abstractify(qp.RZ)
         assert op1 != op2
 
         op1 = CompressedResourceOp(qp.MultiRZ, {"num_wires": 3})
@@ -262,9 +264,9 @@ class TestCompressedResourceOp:
     @pytest.mark.parametrize(
         "op, expected_name",
         [
-            (resource_rep(qp.RX), "RX"),
-            (adjoint_resource_rep(qp.RX, {}), "Adjoint(RX)"),
-            (controlled_resource_rep(qp.T, {}, 1, 0, 0), "C(T)"),
+            (abstractify(qp.RX), "RX"),
+            (_adjoint_abstract(qp.RX), "Adjoint(RX)"),
+            (_ctrl_abstract(qp.T, Wire[1]), "C(T)"),
             (pow_resource_rep(qp.RX, {}, 2), "Pow(RX)"),
         ],
     )

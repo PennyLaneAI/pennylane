@@ -321,6 +321,34 @@ def test_convert_predicate_to_bool():
     assert jaxpr.eqns[2].invars[1].aval.dtype == jax.numpy.bool
 
 
+def test_no_predicate_for_else_branch():
+    """Test that the else branch does not have a Literal True predicate."""
+
+    def w(pred0, pred1):
+        @qp.cond(pred0)
+        def f():
+            return 1
+
+        @f.else_if(pred1)
+        def _elif():
+            return 2
+
+        @f.otherwise
+        def _else():
+            return 3
+
+        return f()
+
+    jaxpr = jax.make_jaxpr(w)(True, False)
+
+    assert jaxpr.eqns[0].primitive == cond_prim
+    cond_eqn = jaxpr.eqns[0]
+    assert len(cond_eqn.invars) == 2
+    assert len(cond_eqn.params["jaxpr_branches"]) == 3
+    assert isinstance(cond_eqn.invars[0], jax._src.core.Var)  # pylint: disable=protected-access
+    assert isinstance(cond_eqn.invars[1], jax._src.core.Var)  # pylint: disable=protected-access
+
+
 def test_keyword_argument():
     """Test that keyword arguments are treated as traceable inputs."""
 
@@ -538,6 +566,7 @@ def circuit_branches(pred, arg1, arg2):
     return qp.expval(qp.Z(wires=0))
 
 
+# pylint: disable=unused-argument
 @qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
@@ -546,11 +575,11 @@ def circuit_with_returned_operator(pred, arg1, arg2):
 
     def true_fn(arg1, arg2):
         qp.RY(arg1, wires=0)
-        return 7, 4.6, qp.RY(arg2, wires=0), True
+        return 7, 4.6, qp.S(wires=0), True
 
     def false_fn(arg1, arg2):
         qp.RZ(arg2, wires=0)
-        return 2, 2.2, qp.RZ(arg1, wires=0), False
+        return 2, 2.2, qp.T(wires=0), False
 
     qp.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
     qp.RX(0.10, wires=0)
@@ -644,12 +673,14 @@ class TestCondCircuits:
         for branch in jaxpr.eqns[-1].params["jaxpr_branches"]:
             assert branch.outvars == []
 
-    def test_circuit_with_returned_operator(self):
-        """Test circuit with returned operators in the branches."""
+    def test_circuit_with_returned_operator_raises_error(self):
+        """Test circuit with returned operators in the branches raises an error."""
 
         args = [1, 0.5, 0.6]
-        jaxpr = jax.make_jaxpr(circuit_with_returned_operator)(*args)
-        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
+        with pytest.raises(
+            ValueError, match="Operator2 instances cannot be returned from conditional branches"
+        ):
+            _ = jax.make_jaxpr(circuit_with_returned_operator)(*args)
 
     def test_circuit_multiple_cond(self):
         """Test circuit with returned operators in the branches."""

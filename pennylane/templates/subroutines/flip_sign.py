@@ -18,13 +18,10 @@ Contains the FlipSign template.
 from functools import reduce
 
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import X, Z, cond, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 class FlipSign(Operation):
@@ -74,7 +71,7 @@ class FlipSign(Operation):
         return tuple(), (self.wires, hyperparameters)
 
     def __repr__(self):
-        return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
+        return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires})"
 
     def __init__(self, n, wires):
         if not isinstance(wires, int) and len(wires) == 0:
@@ -150,7 +147,11 @@ class FlipSign(Operation):
         if arr_bin[-1] == 0:
             op_list.append(X(wires[-1]))
 
-        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
+        op_list.append(
+            Z(wires[-1])
+            if len(wires) == 1
+            else ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
+        )
 
         if arr_bin[-1] == 0:
             op_list.append(X(wires[-1]))
@@ -159,16 +160,18 @@ class FlipSign(Operation):
 
 
 def _flip_sign_resources(num_wires, arr_bin):
-    res = {
-        controlled_resource_rep(
+    controlled_z = (
+        Z
+        if num_wires == 1
+        else _ctrl_abstract(
             Z,
-            {},
-            num_control_wires=num_wires - 1,
+            Wire[num_wires - 1],
             num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), arr_bin[:-1], 0),
-        ): 1
-    }
+        )
+    )
+    res = {controlled_z: 1}
     if arr_bin[-1] == 0:
-        res[resource_rep(X)] = 2
+        res[X] = 2
 
     return res
 
@@ -177,7 +180,10 @@ def _flip_sign_resources(num_wires, arr_bin):
 def _flip_sign_decomposition(wires, arr_bin):
     cond(arr_bin[-1] == 0, X)(wires[-1])
 
-    ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
+    if len(wires) == 1:
+        Z(wires[-1])
+    else:
+        ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
 
     cond(arr_bin[-1] == 0, X)(wires[-1])
 

@@ -21,7 +21,6 @@ from pennylane.ops import MeasurementValue, PauliMeasure
 from pennylane.wires import Wires
 
 
-@pytest.mark.external
 @pytest.mark.catalyst
 def test_pauli_measure_catalyst_dispatch():
     """Test that qp.pauli_measure can be used with qjit and capture disabled."""

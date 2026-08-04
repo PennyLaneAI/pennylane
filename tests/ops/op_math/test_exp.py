@@ -109,7 +109,7 @@ class TestProperties:
     """Test of the properties of the Exp class."""
 
     def test_data(self):
-        """Test intializaing and accessing the data property."""
+        """Test that Exp data is read-only."""
 
         phi = np.array(1.234)
         coeff = np.array(2.345)
@@ -119,13 +119,8 @@ class TestProperties:
 
         assert op.data == (coeff, phi)
 
-        new_phi = np.array(0.1234)
-        new_coeff = np.array(3.456)
-        op.data = (new_coeff, new_phi)
-
-        assert op.data == (new_coeff, new_phi)
-        assert op.base.data == (new_phi,)
-        assert op.scalar == new_coeff
+        with pytest.raises(AttributeError, match="property 'data' of 'Exp' object has no setter"):
+            setattr(op, "data", (np.array(3.456), np.array(0.1234)))
 
     def test_is_verified_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
@@ -734,7 +729,6 @@ class TestIntegration:
         assert qp.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_catalyst_qnode(self):
         """Test with Catalyst interface"""
 

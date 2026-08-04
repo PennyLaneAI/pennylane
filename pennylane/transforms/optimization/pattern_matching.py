@@ -188,10 +188,10 @@ def pattern_matching_optimization(
         In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
         optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
 
-        >>> qp.specs(qnode)()["resources"].gate_types["CNOT"]
+        >>> qp.specs(qnode)().resources.quantum_operations["CNOT"]
         4
 
-        >>> qp.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
+        >>> qp.specs(optimized_qnode)().resources.quantum_operations["CNOT"]
         3
 
         >>> print(qp.draw(qnode)())

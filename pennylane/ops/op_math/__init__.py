@@ -105,13 +105,23 @@ Control Decompositions
     ~ctrl_decomp_zyz
     ~ctrl_decomp_bisect
 
+Other Functions
+~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~custom_ctrl_dispatch
+
 """
 
 from .adjoint import Adjoint, adjoint
 from .adjoint2 import Adjoint2
 from .composite import CompositeOp
 from .condition import Conditional, cond
-from .controlled import Controlled, ControlledOp, ctrl
+from .controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from .controlled2 import Controlled2, ControlledOp2
 from .controlled_ops import (
     CCZ,

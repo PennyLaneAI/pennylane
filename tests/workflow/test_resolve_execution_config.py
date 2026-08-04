@@ -49,17 +49,6 @@ def test_metric_tensor_lightning_edge_case():
     assert resolved_config.gradient_method == "adjoint"
 
 
-def test_param_shift_cv_kwargs():
-    """Test resolving an ExecutionConfig with parameter-shift and validating gradient keyword arguments."""
-    dev = qp.device("default.gaussian", wires=1)
-    tape = qp.tape.QuantumScript([qp.Displacement(0.5, 0.0, wires=0)])
-    execution_config = ExecutionConfig(gradient_method="parameter-shift")
-
-    resolved_config = _resolve_execution_config(execution_config, dev, [tape])
-
-    assert resolved_config.gradient_keyword_arguments["dev"] == dev
-
-
 def test_mcm_config_validation():
     """Test validation of MCMConfig within an ExecutionConfig."""
     mcm_config = MCMConfig(postselect_mode="hw-like")

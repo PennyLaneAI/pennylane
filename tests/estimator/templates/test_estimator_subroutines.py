@@ -332,7 +332,7 @@ class TestHybridQRAM:
                 and op.name.startswith("C(X")
                 or name == "CH"
                 and op.name.startswith("C(H")
-                or name == "2C(SWAP)"
+                or name == "C(SWAP)"  # C(C(SWAPs are now merged
                 and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
                 or name == "CZ"
                 and op.name.startswith("C(Z")
@@ -340,7 +340,7 @@ class TestHybridQRAM:
                 return True
             return name == op.name
 
-        for ty, count in specs.resources.gate_types.items():
+        for ty, count in specs.resources.quantum_operations.items():
             found = False
             i = 0
             total = 0
@@ -559,7 +559,7 @@ class TestSelectOnlyQRAM:
 
         specs = qp.specs(circuit)()
 
-        for ty, count in specs.resources.gate_types.items():
+        for ty, count in specs.resources.quantum_operations.items():
             found = False
             i = 0
             while not found and i < len(expected):

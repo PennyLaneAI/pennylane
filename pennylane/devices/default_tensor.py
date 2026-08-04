@@ -672,8 +672,8 @@ class DefaultTensor(Device):
                 # so we raise a more informative error here
                 raise WireError(
                     "Mismatch between circuit and device wires. "
-                    f"Circuit has wires {circuit.wires.tolist()}. "
-                    f"Tensor on device has wires {self.wires.tolist()}"
+                    f"Circuit has wires {circuit.wires}. "
+                    f"Tensor on device has wires {self.wires}"
                 )
             circuit = circuit.map_to_standard_wires()
             results.append(self.simulate(circuit))

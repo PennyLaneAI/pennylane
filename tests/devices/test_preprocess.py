@@ -301,9 +301,7 @@ class TestValidateObservables:
 
     def test_invalid_observable(self):
         """Test that expand_fn throws an error when an observable is invalid."""
-        tape = QuantumScript(
-            ops=[qp.PauliX(0)], measurements=[qp.expval(qp.GellMann(wires=0, index=1))]
-        )
+        tape = QuantumScript(ops=[qp.PauliX(0)], measurements=[qp.expval(qp.PauliZ(0))])
         with pytest.raises(DeviceError, match=r"not supported on abc"):
             validate_observables(tape, lambda obs: obs.name == "PauliX", name="abc")
 
@@ -311,7 +309,7 @@ class TestValidateObservables:
         """Test that expand_fn throws an error when a tensor includes invalid obserables"""
         tape = QuantumScript(
             ops=[qp.PauliX(0), qp.PauliY(1)],
-            measurements=[qp.expval(qp.PauliX(0) @ qp.GellMann(wires=1, index=2))],
+            measurements=[qp.expval(qp.PauliX(0) @ qp.PauliZ(1))],
         )
         with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
@@ -385,23 +383,23 @@ class TestValidateMeasurements:
 
 
 @qp.register_resources({qp.H: 6, qp.RX: 1})
-def dummy_rz_decomp_0(theta, wires):
+def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
     qp.H(wires)
     qp.H(wires)
-    qp.RX(theta, wires)
+    qp.RX(phi, wires)
     qp.H(wires)
     qp.H(wires)
     qp.H(wires)
 
 
 @qp.register_resources({qp.RX: 1})
-def dummy_rz_decomp_1(theta, wires):
-    qp.RX(theta, wires)
+def dummy_rz_decomp_1(phi, wires):
+    qp.RX(phi, wires)
 
 
 @qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
-def dummy_rz_decomp_2(theta, wires):
+def dummy_rz_decomp_2(phi, wires):
     # pylint: disable=unused-argument
     qp.H(wires)
 
@@ -754,7 +752,7 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
-    # pylint: disable=unnecessary-lambda
+    # pylint: disable=unnecessary-lambda, too-many-arguments
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )

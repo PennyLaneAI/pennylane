@@ -16,8 +16,8 @@ This file contains the base classes for the profiler feature
 """
 
 from collections import defaultdict
+from collections.abc import Callable
 from decimal import Decimal
-from typing import Callable
 
 from pennylane.labs.estimator_beta import CompressedResourceOp, T
 

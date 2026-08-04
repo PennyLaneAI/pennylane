@@ -85,7 +85,7 @@ class PauliMeasure(Operator):
         return type.__call__(cls, *args, **kwargs)
 
     def __repr__(self) -> str:
-        return f"PauliMeasure('{self.pauli_word}', wires={self.wires.tolist()})"
+        return f"PauliMeasure('{self.pauli_word}', wires={self.wires})"
 
     def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
         """How the pauli-product measurement is represented in diagrams and drawings."""
@@ -224,15 +224,15 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
     >>> print(qp.specs(circuit)()['resources'])
-    Wire allocations: 3
-    Total gates: 4
-    Gate counts:
-    - Hadamard: 2
-    - PauliMeasure: 1
-    - Conditional(PauliX): 1
-    Measurements:
+    Quantum operations:
+    - Total: 4
+      - Hadamard: 2
+      - PauliMeasure: 1
+      - Conditional(PauliX): 1
+    Measurement processes:
     - expval(PauliZ): 1
-    Depth: 3
+    Wire allocations: 3
+    Circuit Depth: 3
     """
 
     if capture_enabled():

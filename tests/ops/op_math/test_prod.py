@@ -23,7 +23,7 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
@@ -966,26 +966,6 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
-    def test_qutrit_eigvals(self):
-        """Test that the eigvals can be computed with qutrit observables."""
-
-        op1 = qp.GellMann(wires=0)
-        op2 = qp.GellMann(index=8, wires=1)
-
-        prod_op = qp.prod(op1, op2)
-        eigs = prod_op.eigvals()
-
-        mat_eigs = np.linalg.eigvals(prod_op.matrix())
-
-        sorted_eigs = np.sort(eigs)
-        sorted_mat_eigs = np.sort(mat_eigs)
-        assert qp.math.allclose(sorted_eigs, sorted_mat_eigs)
-
-        # pylint: disable=import-outside-top-level
-        from pennylane.ops.functions.assert_valid import _check_eigendecomposition
-
-        _check_eigendecomposition(prod_op)
-
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -1673,7 +1653,7 @@ class TestDecomposition:
         """Test that the resource keys of `Prod` are op_reps."""
         assert Prod.resource_keys == frozenset({"resources"})
         product = qp.X(0) @ qp.Y(1) @ qp.X(2)
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.Y): 1}
+        resources = {abstractify(qp.X): 2, abstractify(qp.Y): 1}
         assert product.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
@@ -1683,7 +1663,7 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.X(1), qp.X(2), qp.MultiRZ(0.5, wires=(0, 1))]
-        resources = {qp.resource_rep(qp.X): 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
 
         resource_obj = default_decomp.compute_resources(resources=resources)
 
@@ -1744,7 +1724,8 @@ class TestDecomposition:
         for rule in qp.list_decomps("C(Prod)"):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.external
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
         [(3, 1), (3, 2), (4, 1), (5, 3)],
@@ -1765,8 +1746,6 @@ class TestDecomposition:
         """
 
         from catalyst.device.decomposition import catalyst_decompose
-
-        qp.decomposition.enable_graph()
 
         gate_set = {
             "X": 1,

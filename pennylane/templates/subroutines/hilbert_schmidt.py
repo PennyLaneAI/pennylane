@@ -21,7 +21,7 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -117,6 +117,17 @@ class HilbertSchmidt(Operation):
         # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
         V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
+
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        V = tuple(_get_tracer(op) for op in V)
+        U = tuple(_get_tracer(op) for op in U)
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
@@ -134,7 +145,7 @@ class HilbertSchmidt(Operation):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -143,7 +154,6 @@ class HilbertSchmidt(Operation):
         V: Operator | Iterable[Operator],
         U: Operator | Iterable[Operator],
     ) -> None:
-
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
         if not all(isinstance(op, Operator) for op in u_ops):
             raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
@@ -175,16 +185,6 @@ class HilbertSchmidt(Operation):
     def data(self):
         r"""Flattened list of operator data in this HilbertSchmidt operation."""
         return tuple(datum for op in self._operators for datum in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
-        # assign the HilbertSchmidt data to an empty tuple (since no positional arguments are provided).
-        if new_data:
-            for op in self._operators:
-                if op.num_params > 0:
-                    op.data = new_data[: op.num_params]
-                    new_data = new_data[op.num_params :]
 
     def __copy__(self):
         # Override Operator.__copy__() to avoid setting the "data" property before the new instance
@@ -397,7 +397,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -432,10 +432,7 @@ def _hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range * 2,
-            resource_rep(CNOT): min(num_first_range, num_second_range) * 2,
-        }
+        {Hadamard: num_first_range * 2, CNOT: min(num_first_range, num_second_range) * 2}
     )
 
     for op_rep in u_reps:
@@ -456,10 +453,7 @@ def _local_hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range + 1,
-            resource_rep(CNOT): min(num_first_range, num_second_range) + 1,
-        }
+        {Hadamard: num_first_range + 1, CNOT: min(num_first_range, num_second_range) + 1}
     )
 
     for op_rep in u_reps:
@@ -480,13 +474,11 @@ def _up_to_last_layer(
     v_ops = (V,) if isinstance(V, Operator) else tuple(V)
 
     def collect_wires_in_order(ops):
-
         accumulator = []
         for operator in ops:
             for wire_index in range(  # pylint: disable=consider-using-enumerate
                 len(operator.wires)
             ):
-
                 if capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
                 else:

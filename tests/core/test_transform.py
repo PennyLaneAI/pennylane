@@ -37,7 +37,7 @@ with QuantumTape() as tape_circuit:
     qp.expval(qp.PauliZ(wires=0))
 
 
-def qfunc_circuit(a: qp.typing.TensorLike):
+def qfunc_circuit(a: TensorLike):
     """Qfunc circuit/"""
     qp.Hadamard(wires=0)
     qp.CNOT(wires=[0, 1])
@@ -213,15 +213,12 @@ class TestBoundTransform:
             qp.transform(first_valid_transform), args=[0], kwargs={}
         )
 
-        q_transform, args, kwargs, cotransform, plxpr_transform, is_informative, final_transform = (
-            container
-        )
+        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
 
         assert q_transform is first_valid_transform
         assert args == (0,)
         assert kwargs == {}
         assert cotransform is None
-        assert plxpr_transform is not None  # fallback
         assert not is_informative
         assert not final_transform
 
@@ -229,7 +226,6 @@ class TestBoundTransform:
         assert container.args == (0,)
         assert not container.kwargs
         assert container.classical_cotransform is None
-        assert container.plxpr_transform is not None  # tape fallback
         assert not container.is_informative
         assert not container.is_final_transform
 
@@ -344,7 +340,6 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_error_on_qjit(self):
         """Test that an error is raised on when applying a transform to a qjit object."""
 

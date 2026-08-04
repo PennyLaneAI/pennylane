@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=too-many-arguments,too-few-public-methods
-"""Tests for the qudit MMD loss function."""
+"""Reference and regression tests for the qudit MMD loss."""
 
 import itertools
 
@@ -42,13 +42,13 @@ def _call_qudit_mmd_loss(
     target_data,
     key=None,
 ):
-    """One-shot loss evaluation using the qudit MMD loss factory."""
+    """Construct the loss function and evaluate it once."""
     loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
     return loss_fn(params, target_data, key)
 
 
 def _qudit_phi_g_z(gen, z, d):
-    """Phi_g(z) = prod_j sqrt(2) cos(2 pi z_j g_j / d + pi/4)."""
+    """Reference implementation of the per-gate eigenvalue factor."""
     n = len(z)
     val = 1.0
     for j in range(n):
@@ -57,7 +57,7 @@ def _qudit_phi_g_z(gen, z, d):
 
 
 def _flatten_gates(gates, n_qudits):
-    """Expand a gate dict into parallel lists of generators and parameter values."""
+    """Flatten the gate dictionary into generators plus parameter indices."""
     flat_gens, flat_pidx = [], []
     for pidx in sorted(gates.keys()):
         for g in gates[pidx]:
@@ -68,7 +68,7 @@ def _flatten_gates(gates, n_qudits):
 
 
 def _qudit_circuit_probs(gates, params, n_qudits, d):
-    """Exact probability vector of a qudit IQP circuit (brute force)."""
+    """Return the exact circuit output distribution by exhaustive enumeration."""
     params = np.asarray(params, dtype=float)
     flat_gens, flat_pidx = _flatten_gates(gates, n_qudits)
     omega = np.exp(2j * np.pi / d)
@@ -96,7 +96,7 @@ def _qudit_circuit_probs(gates, params, n_qudits, d):
 
 
 def _qudit_expval_exact(gates, params, l_vec, n_qudits, d):
-    """Exact <O(l, 0)> by summing over all z in Z_d^n."""
+    """Return one exact observable moment by summing over all basis states."""
     params = np.asarray(params, dtype=float)
     flat_gens, flat_pidx = _flatten_gates(gates, n_qudits)
     all_states = list(itertools.product(range(d), repeat=n_qudits))
@@ -116,14 +116,14 @@ def _qudit_expval_exact(gates, params, l_vec, n_qudits, d):
 
 
 def _qudit_kernel_1d(delta, marginal, d):
-    """1-D kernel kappa_1(delta) = sum_l P_1(l) omega^{l delta}."""
+    """Return the one-site kernel value used by the exact MMD reference."""
     omega = np.exp(2j * np.pi / d)
     # index is k in the notes
     return np.real(sum(marginal[index] * omega ** (index * delta) for index in range(d)))
 
 
 def _qudit_kernel_matrix(X1, X2, marginal, d):
-    """Product kernel K[i,j] = prod_k kappa_1(x1_{ik} - x2_{jk} mod d)."""
+    """Build the product kernel matrix used by the exact MMD reference."""
     n1, n2 = len(X1), len(X2)
     K = np.ones((n1, n2))
     for i in range(n1):
@@ -134,7 +134,7 @@ def _qudit_kernel_matrix(X1, X2, marginal, d):
 
 
 def _exact_qudit_mmd2_kernel(model_probs, data, d, bandwidth, graph_type, n_qudits):
-    """Exact MMD^2 via kernel matrices (V-stat for model, U-stat for data)."""
+    """Compute exact MMD² from dense kernel matrices for small systems."""
     all_states = np.array(list(itertools.product(range(d), repeat=n_qudits)))
     marginal = (
         _cycle_marginal_probs(d, bandwidth)
@@ -157,7 +157,7 @@ def _exact_qudit_mmd2_kernel(model_probs, data, d, bandwidth, graph_type, n_qudi
 
 
 def _exact_qudit_mmd2_operators(gates, params, data, d, bandwidth, graph_type, n_qudits):
-    """Exact MMD^2 via operator decomposition (enumerates all l in Z_d^n)."""
+    """Compute exact MMD² by summing the observable expansion explicitly."""
     marginal = (
         _cycle_marginal_probs(d, bandwidth)
         if graph_type == "cycle"
@@ -179,11 +179,6 @@ def _exact_qudit_mmd2_operators(gates, params, data, d, bandwidth, graph_type, n
         total += w * (np.abs(mu_q) ** 2 - 2.0 * np.real(np.conj(mu_p) * mu_q) + pp_l)
 
     return float(np.real(total))
-
-
-# ---------------------------------------------------------------------------
-#  Tests
-# ---------------------------------------------------------------------------
 
 
 class TestMarginalProbs:

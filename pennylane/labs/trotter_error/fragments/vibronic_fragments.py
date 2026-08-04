@@ -16,8 +16,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from itertools import product
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from pennylane.labs.trotter_error.realspace import (
     RealspaceCoeffs,
@@ -29,9 +31,25 @@ from pennylane.labs.trotter_error.realspace.realspace_matrix import _next_pow_2
 
 
 def vibronic_fragments(
-    states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
+    states: int,
+    modes: int,
+    freqs: ArrayLike,
+    taylor_coeffs: Sequence[ArrayLike],
+    scheme: str = "blocks",
 ) -> list[RealspaceMatrix]:
     """Returns a list of fragments summing to a vibronic Hamiltonian.
+
+    Two different fragmentation schemes
+    are available.
+
+    1. The ``blocks`` scheme is taken from Section III of `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_ and
+    groups the fragments by their electronic-block structure such that all potential terms sharing the same
+    electronic coupling pattern are grouped together into a single fragment.
+
+    2. The ``modes`` scheme constructs fragments based on the vibrational modes and operator types, then
+    merges the fragments that commute electronically.
+
+    Both fragmentation schemes additionally return a fragment containing the kinetic term.
 
     Args:
         states (int): the number of electronic states
@@ -40,6 +58,7 @@ def vibronic_fragments(
         taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the
             Taylor expansion. The ith entry in the sequence corresponds to the ith degree Taylor coefficients
             and has shape (states, states) + (modes)*i.
+        scheme (str): the fragmentation scheme to use. Valid options are ``blocks`` and ``modes``, defaults to ``blocks``.
 
     Returns:
         list[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of the vibronic Hamiltonian.
@@ -62,6 +81,20 @@ def vibronic_fragments(
     """
     _validate_input(states, modes, freqs, taylor_coeffs)
 
+    match scheme:
+        case "blocks":
+            return _og_frags(states, modes, freqs, taylor_coeffs)
+        case "modes":
+            return _mode_frags(states, modes, freqs, taylor_coeffs)
+        case _:
+            raise ValueError(
+                f"Fragmentation scheme must be either 'blocks' or 'modes', got {scheme} instead."
+            )
+
+
+def _og_frags(
+    states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
+) -> list[RealspaceMatrix]:
     frags = [
         _position_fragment(i, states, modes, freqs, taylor_coeffs)
         for i in range(_next_pow_2(states))
@@ -72,7 +105,7 @@ def vibronic_fragments(
 
 
 def _position_fragment(
-    i: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
+    i: int, states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
 ) -> RealspaceMatrix:
     """Return the ``i``th position fragment"""
     blocks = {
@@ -82,7 +115,7 @@ def _position_fragment(
     return RealspaceMatrix(states, modes, blocks)
 
 
-def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> RealspaceMatrix:
+def _momentum_fragment(states: int, modes: int, freqs: ArrayLike) -> RealspaceMatrix:
     """Return the fragment consisting only of momentum operators."""
     term = RealspaceOperator(
         modes,
@@ -97,7 +130,7 @@ def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> RealspaceM
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 def _realspace_sum(
-    i: int, j: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
+    i: int, j: int, states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
 ) -> RealspaceSum:
     """Return a RealspaceSum representation of the ``(i, j)`` block in the RealspaceMatrix"""
     if i > states - 1 or j > states - 1:
@@ -126,8 +159,130 @@ def _realspace_sum(
     return RealspaceSum(modes, realspace_ops)
 
 
+def _mode_frags(
+    states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
+) -> list[RealspaceMatrix]:
+    """Returns the mode based fragmentation scheme"""
+
+    if len(taylor_coeffs) != 3:
+        raise ValueError(
+            "Mode-based fragmentation is only compatible with quadratic Taylor coefficients."
+        )
+
+    _, alphas, betas = taylor_coeffs
+
+    quadratic_frags = [
+        _mode_quadratic(states, modes, index, freqs, betas)
+        for index in product(range(modes), repeat=2)
+    ]
+    linear_frags = [_mode_linear(states, modes, index, alphas) for index in range(modes)]
+
+    frags = _group_commuting(quadratic_frags + linear_frags)
+    momentum = _momentum_fragment(states, modes, freqs)
+    potential = _mode_potential_fragment(states, modes, taylor_coeffs)
+    frags.append(momentum + potential)
+
+    return frags
+
+
+def _mode_quadratic(states, modes, index, freqs, betas) -> tuple[RealspaceMatrix, np.ndarray]:
+    """Returns the quadratic terms of the mode based fragmentation scheme"""
+    m1, m2 = index
+
+    frag = RealspaceMatrix.zero(states, modes)
+    mat = np.zeros((states, states))
+
+    for i, j in product(range(states), repeat=2):
+        h = betas[i, j, m1, m2]
+
+        if i == j and m1 == m2:
+            h += freqs[m1] / 2
+
+        if np.isclose(h, 0, atol=1e-10):
+            continue
+
+        coeffs = np.zeros((modes, modes))
+        coeffs[m1, m2] = h
+        op = RealspaceOperator(
+            modes, ("Q", "Q"), RealspaceCoeffs(coeffs, label=f"beta[{m1}, {m2}][{i}, {j}]")
+        )
+        frag.set_block(i, j, RealspaceSum(modes, [op]))
+        mat[i, j] = h
+
+    return frag, mat
+
+
+def _mode_linear(states, modes, index, alphas) -> tuple[RealspaceMatrix, np.ndarray]:
+    """Returns the linear terms of the mode based fragmentation scheme"""
+    frag = RealspaceMatrix.zero(states, modes)
+    mat = np.zeros((states, states))
+
+    for i, j in product(range(states), repeat=2):
+        h = alphas[i, j, index]
+
+        if np.isclose(h, 0):
+            continue
+
+        coeffs = np.zeros(modes)
+        coeffs[index] = h
+        op = RealspaceOperator(
+            modes, ("Q",), RealspaceCoeffs(coeffs, label=f"alpha[{index}][{i}, {j}]")
+        )
+        frag.set_block(i, j, RealspaceSum(modes, [op]))
+        mat[i, j] = h
+
+    return frag, mat
+
+
+def _group_commuting(frags: list[tuple[RealspaceMatrix, np.ndarray]]) -> list[RealspaceMatrix]:
+    """Sums the commuting fragments. This operation is order dependent."""
+    remaining = frags
+    groups = []
+
+    while remaining:
+        cur_frag, cur_mat = remaining[0]
+        commuting_frags = [cur_frag]
+        commuting_mats = [cur_mat]
+        non_commuting = []
+
+        for frag, mat in remaining[1:]:
+            if all(_commute(mat, m) for m in commuting_mats):
+                commuting_frags.append(frag)
+                commuting_mats.append(mat)
+            else:
+                non_commuting.append((frag, mat))
+
+        groups.append(commuting_frags)
+        remaining = non_commuting
+
+    states = cur_frag.states
+    modes = cur_frag.modes
+    summed_groups = [sum(group, RealspaceMatrix.zero(states, modes)) for group in groups]
+
+    return summed_groups
+
+
+def _mode_potential_fragment(
+    states: int, modes: int, taylor_coeffs: Sequence[ArrayLike]
+) -> RealspaceMatrix:
+    """Returns the potential fragment in the mode based fragmentation scheme"""
+    frag = RealspaceMatrix.zero(states, modes)
+
+    for i, j in product(range(states), repeat=2):
+        lambdas = taylor_coeffs[0][i, j]
+        op = RealspaceOperator(modes, (), RealspaceCoeffs(lambdas, label=f"lambda[{i}, {j}]"))
+        frag.set_block(i, j, RealspaceSum(modes, [op]))
+
+    return frag
+
+
+def _commute(a: np.ndarray, b: np.ndarray) -> bool:
+    c = a @ b - b @ a
+    return np.allclose(c, np.zeros_like(c))
+
+
 def _validate_input(
-    states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
+    states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
 ) -> None:
     """Validate that the shapes of the harmonic frequencies and the Taylor coefficients are
     correct."""

@@ -27,6 +27,7 @@ from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -230,11 +231,11 @@ class Adder(Operation):
 
 
 def _adder_decomposition_resources(num_x_wires, mod) -> dict:
-    qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
+    num_qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires),
-            resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
+            QFT(Wire[num_qft_wires]),
+            resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
         ): 1,
     }
 
@@ -257,7 +258,7 @@ def _increment_resources(num_wires, num_control=0):
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[resource_rep(PauliX)] += 1
+            counts[PauliX] += 1
         else:
             counts[
                 resource_rep(
@@ -297,8 +298,8 @@ def _adder_arithmetic_resources(num_x_wires, mod, **__) -> dict:
         counts[rep] += 4 * count
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
-    counts[resource_rep(CNOT)] += 2
-    counts[resource_rep(PauliX)] += 2
+    counts[CNOT] += 2
+    counts[PauliX] += 2
     return dict(counts)
 
 

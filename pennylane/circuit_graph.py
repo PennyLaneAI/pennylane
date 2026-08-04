@@ -185,7 +185,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(op.wires.tolist())
+            serialization_string += str(op.wires)
 
         # Adding a distinct separating string that could not occur by any combination of the
         # name of the operation and wires
@@ -202,7 +202,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(obs.wires.tolist())
+            serialization_string += str(obs.wires)
         return serialization_string
 
     @property
