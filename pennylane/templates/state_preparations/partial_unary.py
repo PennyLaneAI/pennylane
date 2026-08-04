@@ -700,7 +700,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
     num_work_wires = max(num_work_wires, n_subspace - 1, 1)
-    resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=range(n_subspace))] += 1
+    resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=Wire[n_subspace])] += 1
 
     R = num_wires - n_subspace
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))

@@ -32,10 +32,12 @@ class MultiplexerStatePreparation(Operator2):
         state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on
             :math:`n` wires.
         wires (Sequence[int]): The wires on which to prepare the state.
+        check (bool): whether to check that the input state vector has norm 1.0. Defaults to ``False``.
 
     Raises:
         ValueError: If the length of the input state vector array is not :math:`2^n`, where
-            :math:`n` is the number of wires, or if the norm of the input state is not unity.
+            :math:`n` is the number of wires, or if ``check=True`` and the norm of the input
+            state is not unity.
 
     **Example**
 
@@ -65,12 +67,12 @@ class MultiplexerStatePreparation(Operator2):
     """
 
     dynamic_argnames = ("state_vector",)
+    compilable_argnames = ("check",)
 
     arg_specs = {"state_vector": Complex[-1], "wires": Wire[-1]}
     wire_sizes = (None,)
 
-    # pylint: disable=too-many-positional-arguments, too-many-arguments
-    def __init__(self, state_vector, wires):
+    def __init__(self, state_vector, wires, check=False):
 
         wires = Wires(wires)
         n_amplitudes = math.shape(state_vector)[0]
@@ -79,18 +81,26 @@ class MultiplexerStatePreparation(Operator2):
                 f"State vector must be of length {2 ** len(wires)}; got length {n_amplitudes}."
             )
 
+        if check and not math.is_abstract(state_vector):
+            norm = math.linalg.norm(state_vector)
+            if not math.allclose(norm, 1.0, atol=1e-3):
+                raise ValueError(
+                    f"State vector must have norm 1.0; the input state vector has norm {norm}"
+                )
+
         super().__init__(state_vector, wires=wires)
 
 
 # pylint: disable=unused-argument
-def _multiplexer_state_prep_decomposition_resources(state_vector, wires) -> dict:
+def _multiplexer_state_prep_decomposition_resources(state_vector, wires, check=False) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
+    num_wires = len(wires)
+
     resources = dict.fromkeys(
-        [resource_rep(qp.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(len(wires))],
+        [resource_rep(qp.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)],
         1,
     )
 
-    num_wires = len(wires)
     resources[qp.DiagonalQubitUnitary(Complex[2**num_wires], wires=Wire[num_wires])] = 1
 
     return resources

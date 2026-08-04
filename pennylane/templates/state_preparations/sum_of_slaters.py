@@ -980,7 +980,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    resources[qp.MultiplexerStatePreparation(Complex[2**d], wires=range(d))] += 1
+    resources[qp.MultiplexerStatePreparation(Complex[2**d], wires=Wire[d])] += 1
 
     # Step 2 in paper (p.7)
     resources[
