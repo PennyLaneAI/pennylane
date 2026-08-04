@@ -210,9 +210,9 @@ class TestAliasSamplingTHC:
         (2, 2, 2, 1),  # 21 wires, ~1 s
         (2, 2, 2, 2),  # 24 wires, ~5 s
         (3, 2, 2, 2),  # 25 wires, ~12 s
-        # (2, 2, 2, 3),  # 27 wires, ~48 s -- over the 40 s budget
-        # (2, 2, 2, 4),  # 30 wires, ~17 GB RAM
-        # (3, 2, 3, 5),  # 38 wires, infeasible on a single machine
+        # (2, 2, 2, 3),
+        # (2, 2, 2, 4),
+        # (3, 2, 3, 5),
     ]
 
     @pytest.mark.parametrize(("M", "N", "n", "aleph"), _INSTANCES)

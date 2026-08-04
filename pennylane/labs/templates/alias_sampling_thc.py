@@ -16,7 +16,7 @@ oracle (``PREPARE``) in tensor hypercontraction (THC) qubitization."""
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.templates import LeftQuantumComparator
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.wires import Wires
@@ -131,7 +131,7 @@ def _build_thc_pairs(M, N, zeta, t_ell):
 def _build_qrom_data(
     M, N, zeta, t_ell, num_index_wires, aleph
 ):  # pylint: disable=too-many-arguments
-    r"""Pack the alias tables into the bitstrings consumed by ``qml.QROM``.
+    r"""Pack the alias tables into the bitstrings consumed by ``qp.QROM``.
 
     The QROM is addressed by the contiguous two-body index
     ``s = mu + nu (nu + 1) / 2`` (matching :func:`_first_arithmetic_op`). Each
@@ -185,10 +185,10 @@ def _first_arithmetic_op(M, N, mu_wires, nu_wires, work_wires):
     """
     n_d = int(np.ceil(np.log2(N // 2 + (M * (M + 1) / 2)))) + 1
     OutSquare(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d], output_wires_zeroed=True)
-    qml.SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
+    qp.SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
     for i in reversed(range(n_d - 1)):
-        qml.SWAP(wires=[work_wires[i], work_wires[i + 1]])
-    qml.SemiAdder(mu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
+        qp.SWAP(wires=[work_wires[i], work_wires[i + 1]])
+    qp.SemiAdder(mu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
 
 
 def alias_sampling_thc(  # pylint: disable=too-many-arguments
@@ -248,7 +248,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
     .. code-block:: python
 
         import numpy as np
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.labs.templates import SuperpositionTHC, alias_sampling_thc
 
         M, N, n, aleph = 2, 2, 2, 6
@@ -268,15 +268,15 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
         num_work = n_d + 2 * n + 3 * aleph + 4
         work_wires = list(range(sup_work[-1] + 1, sup_work[-1] + 1 + num_work))
 
-        dev = qml.device("lightning.qubit", wires=work_wires[-1] + 1)
+        dev = qp.device("lightning.qubit", wires=work_wires[-1] + 1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
             alias_sampling_thc(
                 M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
             )
-            return qml.probs(wires=mu_wires + nu_wires)
+            return qp.probs(wires=mu_wires + nu_wires)
     """
     mu_wires = list(Wires(mu_wires))
     nu_wires = list(Wires(nu_wires))
@@ -326,7 +326,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
 
     # 2. Load the alias data (signs, alternate indices, keep threshold, alt_edge).
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
-    qml.QROM(
+    qp.QROM(
         data,
         control_wires=work_wires[:n_d],
         target_wires=work_wires[n_d : n_d + 2 * n + aleph + 2] + [alt_edge_flag],
@@ -335,36 +335,36 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
 
     # 3. Draw a uniform aleph-bit sample and compare it against the keep threshold.
     for w in sample_reg:
-        qml.Hadamard(wires=w)
+        qp.Hadamard(wires=w)
 
     LeftQuantumComparator(keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<")
 
     # 4. Phase the sign of the kept / alternate entries onto the amplitudes.
-    qml.CZ([keep_flag, work_wires[n_d + 1]])  # alt_sign, applied when keeping
-    qml.X(keep_flag)
-    qml.CZ([keep_flag, work_wires[n_d]])  # sign, applied when swapping to the alternate
-    qml.X(keep_flag)
+    qp.CZ([keep_flag, work_wires[n_d + 1]])  # alt_sign, applied when keeping
+    qp.X(keep_flag)
+    qp.CZ([keep_flag, work_wires[n_d]])  # sign, applied when swapping to the alternate
+    qp.X(keep_flag)
 
     # 5. If we do not keep, swap in the alternate (mu_alt, nu_alt) and alt_edge.
     for i in range(n):
-        qml.CSWAP([keep_flag, mu_wires[i], work_wires[n_d + 2 + i]])
+        qp.CSWAP([keep_flag, mu_wires[i], work_wires[n_d + 2 + i]])
     for i in range(n):
-        qml.CSWAP([keep_flag, nu_wires[i], work_wires[n_d + 2 + n + i]])
-    qml.CSWAP([keep_flag, edge_flag, alt_edge_flag])
+        qp.CSWAP([keep_flag, nu_wires[i], work_wires[n_d + 2 + n + i]])
+    qp.CSWAP([keep_flag, edge_flag, alt_edge_flag])
 
     # 6. Uncompute the comparator, leaving the keep decision imprinted on the state.
-    qml.adjoint(LeftQuantumComparator)(
+    qp.adjoint(LeftQuantumComparator)(
         keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<"
     )
-    qml.H(swap_flag)
+    qp.H(swap_flag)
 
     # 7. Symmetrize: on the flagged subspace, swap the mu and nu registers so the
     #    prepared distribution covers both (mu, nu) and (nu, mu). The one-body block
     #    (edge_flag == 1) is excluded via a zero-control, leaving edge_flag untouched
     #    so it can be uncomputed by the adjoint of the input state preparation.
     for i in range(n):
-        qml.ctrl(
-            qml.SWAP([mu_wires[i], nu_wires[i]]),
+        qp.ctrl(
+            qp.SWAP([mu_wires[i], nu_wires[i]]),
             control=[swap_flag, edge_flag],
             control_values=[1, 0],
         )
