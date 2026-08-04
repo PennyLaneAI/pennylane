@@ -488,7 +488,7 @@ class PauliRot(Operation):
         if set(pauli_word) == {"I"}:
             return qp.GlobalPhase.compute_eigvals(0.5 * theta, n_wires=len(pauli_word))
 
-        return MultiRZ.compute_eigvals(theta, len(pauli_word))
+        return MultiRZ.compute_eigvals(theta, list(range(len(pauli_word))))
 
     @staticmethod
     def compute_decomposition(
