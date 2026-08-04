@@ -1296,7 +1296,6 @@ class U1(Operator2):
     arg_specs = {"phi": Float, "wires": Wire[1]}
 
     grad_method = "A"
-    parameter_frequencies = [(1,)]
 
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
@@ -1452,7 +1451,6 @@ class U2(Operator2):
     arg_specs = {"phi": Float, "delta": Float, "wires": Wire[1]}
 
     grad_method = "A"
-    parameter_frequencies = [(1,), (1,)]
 
     def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike):
         super().__init__(phi, delta, wires=wires)
@@ -1629,7 +1627,6 @@ class U3(Operator2):
     arg_specs = {"theta": Float, "phi": Float, "delta": Float, "wires": Wire[1]}
 
     grad_method = "A"
-    parameter_frequencies = [(1,), (1,), (1,)]
 
     def __init__(
         self,
