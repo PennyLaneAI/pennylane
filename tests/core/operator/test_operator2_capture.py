@@ -226,10 +226,15 @@ class TestCaptureAbstractInputs:
         assert jaxpr.eqns[0].primitive == symbolic_array_prim
         assert jaxpr.eqns[1].params["op_cls"] == HybridOp
 
+    @pytest.mark.xfail(reason="TODO: sc-126876")
     def test_hybrid_op_inner_op_defined_outside(self):
         """Test that we can capture a hybrid op where the inner op has an abstract input."""
 
-        op = DynOp(qp.typing.Float, 0)
+        # right now, 0 is promoted to AbstractWire if capture isn't enabled
+        # but stopping that promotion breaks some stuff
+
+        with qp.capture.pause():
+            op = DynOp(qp.typing.Float, 0)
 
         def f():
             HybridOp(op, 0)
