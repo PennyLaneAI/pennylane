@@ -90,7 +90,7 @@ def _multiplexer_state_prep_decomposition_resources(state_vector, wires) -> dict
         1,
     )
 
-    resources[resource_rep(qp.DiagonalQubitUnitary, num_wires=len(wires))] = 1
+    resources[qp.DiagonalQubitUnitary(Complex[2**num_wires], wires=Wire[num_wires])] = 1
 
     return resources
 
