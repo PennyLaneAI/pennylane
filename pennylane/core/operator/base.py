@@ -102,6 +102,11 @@ def _get_abstract_operator() -> type:
             return qp.prod(*args)
 
         @staticmethod
+        def _rmatmul(a, b):
+            """Preserve operand order when ``@`` falls back to the captured right operand."""
+            return qp.prod(b, a)
+
+        @staticmethod
         def _mul(a, b):
             return qp.s_prod(b, a)
 
