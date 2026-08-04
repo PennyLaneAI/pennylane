@@ -1512,7 +1512,7 @@ class TestResourcesTracker:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
+        "qs_shots_wires, expected_resource", list(zip(qs_shots_wires_data, expected_resources))
     )
     def test_tracker_single_execution(self, qs_shots_wires, expected_resource):
         """Test that the tracker accurately tracks resources in a single execution"""

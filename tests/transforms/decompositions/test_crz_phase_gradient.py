@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ``labs.transforms.make_crz_to_phase_gradient_decomp``"""
+"""Tests for ``qp.transforms.decompositions.make_crz_to_phase_gradient_decomp``"""
 
 import numpy as np
 
