@@ -265,8 +265,6 @@ def register_resources(
         For example, the number of gates in the decomposition for ``qp.MultiRZ`` changes based
         on the number of wires it acts on, in contrast to the decomposition for ``qp.Z``:
 
-        >>> qp.Z.resource_keys
-        set()
         >>> qp.MultiRZ.resource_keys
         {'num_wires'}
 
