@@ -186,6 +186,11 @@ def compile(
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
 
+    if basis_set is not None and not all(isinstance(op, str) for op in basis_set):
+        raise ValueError(
+            "basis_set must only contain strings. "
+            "Please provide the operation names rather than the operations themselves."
+        )
     # Expand the tape; this is done to unroll any templates that may be present,
     # as well as to decompose over a specified basis set
     # First, though, we have to stop whatever tape may be recording so that we
