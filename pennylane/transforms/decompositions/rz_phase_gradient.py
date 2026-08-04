@@ -17,7 +17,6 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 
 import pennylane as qp
 from pennylane.decomposition import change_op_basis_resource_rep
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.typing import Int, Wire
 from pennylane.wires import WireError, Wires
@@ -132,11 +131,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             num_y_wires=len(phase_grad_wires),
             num_work_wires=len(work_wires),
         )
-        compute_op = uncompute_op = _ctrl_abstract(
-            qp.BasisState(Int[precision], Wire[precision]),
-            Wire[1],
-            num_zero_control_values=0,
-        )
+        compute_op = uncompute_op = qp.ctrl(qp.BasisState(Int[precision], Wire[precision]), Wire[1])
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
         return {change_basis_rep: 1, qp.GlobalPhase: 1}
 
