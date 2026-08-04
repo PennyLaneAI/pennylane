@@ -3,7 +3,7 @@
   "hooks": {
     "afterFileEdit": [
       {
-        "command": ".cursor/hooks/format.sh",
+        "command": "bash scripts/format-hook.sh",
         "failClosed": false
       }
     ]
