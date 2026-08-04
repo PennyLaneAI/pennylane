@@ -13,6 +13,7 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
+from functools import partial
 from textwrap import dedent
 from typing import override
 
@@ -226,7 +227,15 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     )
     def _impl(base):
         # pylint: disable=protected-access
-        qp.adjoint(base_rule._impl)(**base.arguments)
+        # Bind static metadata before tracing the adjoint callable.
+        static_arguments = base.static_args | base.compilable_args
+        traceable_arguments = {
+            name: value for name, value in base.arguments.items() if name not in static_arguments
+        }
+        base_decomp = (
+            partial(base_rule._impl, **static_arguments) if static_arguments else base_rule._impl
+        )
+        qp.adjoint(base_decomp)(**traceable_arguments)
 
     _impl._source = (
         dedent(_impl._source).strip()
