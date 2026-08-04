@@ -1159,28 +1159,18 @@ def _sos_state_prep_with_wires(
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
 def _sos_state_prep(coefficients, wires, indices, **__):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
-    n = len(wires)
+    n = len(all_wires["wires"])
     num_entries = len(indices)
-    v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+    v_bits = qp.math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
     if num_entries == 1:
-        # This is only correct up to a global phase that might be contained in coefficients
-        qp.BasisState(v_bits[:, 0], wires=wires)
+        qp.BasisState(v_bits[:, 0], wires=all_wires["wires"])
         return
     assert v_bits.shape == (n, num_entries)
 
-    selected_wires, data = _preprocess(v_bits, wires)
-    # pylint: disable-next=protected-access
-    sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data.r, n)
-    all_allocate_wires = sum(sizes.values()) - n
-    with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
-        start = 0
-        # There is no implementation of QROM with allocate yet, so we allocate its work wires here
-        names = ["enumeration_wires", "identification_wires", "qrom_work_wires", "mcx_cache_wires"]
-        all_wires = {name: allocated[start : (start := start + sizes[name])] for name in names}
-        all_wires["wires"] = wires
-        all_wires["selected_wires"] = selected_wires
-        data = (coefficients, v_bits, data)
-        _sos_state_prep_with_wires(data, **all_wires)
+    selected_wires, *data = _preprocess(v_bits, all_wires["wires"])
+    all_wires["selected_wires"] = selected_wires
+    data = (coefficients, v_bits, *data)
+    _sos_state_prep_with_wires(data, **all_wires)
 
 
 add_decomps(SumOfSlatersPrep, _sos_state_prep)
