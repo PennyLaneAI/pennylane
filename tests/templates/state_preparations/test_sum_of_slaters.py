@@ -442,6 +442,7 @@ class TestSumOfSlatersPrep:
         op = SumOfSlatersPrep(coefficients, **all_wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("use_qjit", [False, True])
     @pytest.mark.parametrize(
         "num_wires,num_entries",
