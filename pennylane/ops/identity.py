@@ -15,19 +15,19 @@
 This module contains the Identity operation that is common to qubit computing paradigms in PennyLane.
 """
 
-from collections.abc import Sequence
 from functools import lru_cache
 
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike
 
 
@@ -233,7 +233,7 @@ add_decomps("C(Identity)", null_decomp)
 add_decomps("Pow(Identity)", null_decomp)
 
 
-class GlobalPhase(Operation):
+class GlobalPhase(Operator2):
     r"""A global phase operation that multiplies all components of the state by :math:`e^{-i \phi}`.
 
     **Details:**
@@ -286,25 +286,14 @@ class GlobalPhase(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-
-    resource_keys = set()
-
-    @classmethod
-    def _primitive_bind_call(
-        cls, phi, wires: WiresLike = (), **kwargs
-    ):  # pylint: disable=arguments-differ
-        return super()._primitive_bind_call(phi, wires=wires, **kwargs)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[1]}
 
     def __init__(self, phi, wires: WiresLike = ()):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
+    def compute_eigvals(phi, wires):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -326,6 +315,7 @@ class GlobalPhase(Operation):
         >>> qp.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17-1.j, 6.123234e-17-1.j])
         """
+        n_wires = len(wires)
         if (
             qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -339,7 +329,7 @@ class GlobalPhase(Operation):
         return qp.math.tensordot(exp, ones, axes=0)
 
     @staticmethod
-    def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+    def compute_matrix(phi, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
@@ -355,6 +345,7 @@ class GlobalPhase(Operation):
         array([[0.70710678-0.70710678j, 0.        +0.j        ],
                [0.        +0.j        , 0.70710678-0.70710678j]])
         """
+        n_wires = len(wires)
         interface = qp.math.get_interface(phi)
         eye = qp.math.eye(2**n_wires, like=phi)
         exp = qp.math.exp(-1j * qp.math.cast(phi, complex))
@@ -370,15 +361,14 @@ class GlobalPhase(Operation):
         return qp.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
-    def compute_sparse_matrix(phi, n_wires=1, format="csr"):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(phi, wires, format="csr"):  # pylint: disable=arguments-differ
+        n_wires = len(wires)
         if qp.math.ndim(phi) > 0:
             raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        phi, wires, n_wires=1
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(phi, wires):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -403,51 +393,6 @@ class GlobalPhase(Operation):
         """
         return []
 
-    @staticmethod
-    def compute_decomposition(
-        phi, wires: WiresLike = ()
-    ):  # pylint:disable=arguments-differ,unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. note::
-
-            The ``GlobalPhase`` operation decomposes to an empty list of operations.
-            Support for global phase
-            was added in v0.33 and was ignored in earlier versions of PennyLane. Setting
-            global phase to decompose to nothing allows existing devices to maintain
-            current support for operations which now have ``GlobalPhase`` in the
-            decomposition pipeline.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.GlobalPhase.decomposition`.
-
-        Args:
-            phi (TensorLike): the global phase
-            wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.GlobalPhase.compute_decomposition(1.23)
-        []
-
-        """
-        return []
-
-    def eigvals(self):
-        return self.compute_eigvals(self.data[0], n_wires=len(self.wires))
-
-    def matrix(self, wire_order: Sequence = None):
-        n_wires = len(self.wires) if wire_order is None else len(wire_order)
-        return self.compute_matrix(self.data[0], n_wires=n_wires)
-
-    def sparse_matrix(self, wire_order: Sequence = None, format="csr"):
-        n_wires = len(self.wires) if wire_order is None else len(wire_order)
-        return self.compute_sparse_matrix(self.data[0], n_wires=n_wires, format=format)
-
     def adjoint(self):
         return GlobalPhase(-1 * self.data[0], self.wires)
 
@@ -458,10 +403,6 @@ class GlobalPhase(Operation):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle Identity with no wires, see PR #5194
         return qp.s_prod(-1, qp.I(self.wires))
-
-
-add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
-add_decomps("Pow(GlobalPhase)", pow_rotation)
 
 
 def _controlled_g_phase_resource(
@@ -509,4 +450,6 @@ def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, wo
         qp.PauliX(w)
 
 
+add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
+add_decomps("Pow(GlobalPhase)", pow_rotation2)
 add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
