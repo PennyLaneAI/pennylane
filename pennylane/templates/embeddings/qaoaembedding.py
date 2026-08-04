@@ -259,9 +259,9 @@ class QAOAEmbedding(Operation):
         >>> weights = torch.tensor([[0.1, -0.3, 1.3], [0.9, -0.2, -2.1]])
         >>> qp.QAOAEmbedding.compute_decomposition(features, weights, wires=["a", "b"], local_field=qp.RY)
         [RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
-        MultiRZ(0.10000000149011612, wires=['a', 'b']), RY(tensor(-0.3000), wires=['a']), RY(tensor(1.3000), wires=['b']),
+        MultiRZ(..., wires=['a', 'b']), RY(tensor(-0.3000), wires=['a']), RY(tensor(1.3000), wires=['b']),
         RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
-        MultiRZ(0.8999999761581421, wires=['a', 'b']), RY(tensor(-0.2000), wires=['a']), RY(tensor(-2.1000), wires=['b']),
+        MultiRZ(..., wires=['a', 'b']), RY(tensor(-0.2000), wires=['a']), RY(tensor(-2.1000), wires=['b']),
         RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b'])]
         """
         wires = Wires(wires)
