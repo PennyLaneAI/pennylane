@@ -265,9 +265,14 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
+@register_resources({SingleExcitation: 1})
+def _pow_single_excitation(base, z):
+    return SingleExcitation(base.phi * z, base.wires)
+
+
 add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
-add_decomps("Pow(SingleExcitation)", pow_rotation)
+add_decomps("Pow(SingleExcitation)", _pow_single_excitation)
 
 
 class SingleExcitationMinus(Operation):
