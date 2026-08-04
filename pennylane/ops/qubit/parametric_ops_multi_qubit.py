@@ -312,7 +312,6 @@ class PauliRot(Operator2):
     wire_sizes = (None,)
     arg_specs = {"theta": Float, "wires": Wire[-1]}
 
-    grad_method = "A"
     grad_recipe = (None,)
 
     _ALLOWED_CHARACTERS = "IXYZ"
