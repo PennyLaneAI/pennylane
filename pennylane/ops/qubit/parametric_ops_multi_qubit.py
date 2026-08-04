@@ -676,7 +676,7 @@ class PCPhase(Operation):
     >>> op_13 = qp.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
     >>> print(qp.draw(op_13.decomposition)())
     1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤
-    2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤
+    2: ─╰U1(-2.46)─├●───────────├GlobalPhase(-1.23)─┤
     3: ────────────├○───────────├GlobalPhase(-1.23)─┤
     4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 
@@ -831,7 +831,7 @@ class PCPhase(Operation):
         >>> op_13 = qp.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
         >>> print(qp.draw(op_13.decomposition)())
         1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤
-        2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤
+        2: ─╰U1(-2.46)─├●───────────├GlobalPhase(-1.23)─┤
         3: ────────────├○───────────├GlobalPhase(-1.23)─┤
         4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
 

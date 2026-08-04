@@ -910,7 +910,8 @@ class TestPowMethod:
 
         assert len(op_pow) == 1
         assert isinstance(op_pow[0], qp.ops.ControlledOp)
-        assert isinstance(op_pow[0].base, qp.PhaseShift)
+        # ``ControlledPhaseShift`` is now an ``Operator2`` wrapping a ``U1`` base.
+        assert isinstance(op_pow[0].base, qp.U1)
         assert qp.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
     @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
