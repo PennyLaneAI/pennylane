@@ -25,10 +25,10 @@ from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import WireError, Wires
 
-from .decomp_rz_phase_gradient import validate_phase_gradient_wires
+from .rz_phase_gradient import validate_phase_gradient_wires
 
 
 # pylint: disable=too-many-arguments
@@ -118,7 +118,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.labs.transforms import make_selectpaulirot_to_phase_gradient_decomp
+        from pennylane.transforms.decompositions import make_selectpaulirot_to_phase_gradient_decomp
         import numpy as np
 
         qp.decomposition.enable_graph()
@@ -188,13 +188,12 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                     return {qp.RZ: 1}
 
         # 1. QROM compressed rep
-        qrom_rep = resource_rep(
-            qp.QROM,
+        qrom_rep = qp.QROM(
+            data=Int[2**num_control_wires, len(angle_wires)],
+            control_wires=Wire[num_control_wires],
+            target_wires=Wire[len(angle_wires)],
+            work_wires=Wire[num_control_wires - 1],
             clean=True,
-            num_bitstrings=2**num_control_wires,
-            num_control_wires=num_control_wires,
-            num_target_wires=len(angle_wires),
-            num_work_wires=num_control_wires - 1,
         )
 
         # 2. ctrl(X, control=target_wire, control_values=[0])
@@ -245,9 +244,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     @qp.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
-
         if len(control_wires) == 0:
-
             match rot_axis:
                 case "X":
                     qp.RX(angles[0], target_wire)
