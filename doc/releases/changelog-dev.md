@@ -268,6 +268,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.compile`'s `basis_set` argument now accepts Operator subclasses (e.g. ``qml.RX``) in addition to
+  string gate names, and raises a clear ``ValueError`` for invalid entries.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 * Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
   [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)
 
@@ -1233,3 +1236,4 @@ Dennis Wayo,
 David Wierichs,
 Jake Zaia,
 Zinan Zhou.
+Rohit David Paul

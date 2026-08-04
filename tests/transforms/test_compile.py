@@ -220,6 +220,18 @@ class TestCompileIntegration:
         [transformed_tape], _ = qp.compile(tape, basis_set=[])
         assert not any(op.name in decomposable_ops for op in transformed_tape.operations)
 
+    def test_compile_basis_set_invalid_type_raises_error(self):
+        """Test that basis_set with a non-string, non-class value raises ValueError."""
+        tape = qp.tape.QuantumScript([qp.Hadamard(0)])
+        with pytest.raises(ValueError, match="Elements of basis_set"):
+            qp.compile(tape, basis_set=[42])
+
+    def test_compile_basis_set_class_not_operator_raises_error(self):
+        """Test that a class which is not an Operator subclass raises ValueError."""
+        tape = qp.tape.QuantumScript([qp.Hadamard(0)])
+        with pytest.raises(ValueError, match="not an Operator subclass"):
+            qp.compile(tape, basis_set=[int])
+
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""

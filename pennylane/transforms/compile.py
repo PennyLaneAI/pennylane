@@ -43,9 +43,9 @@ def compile(
 
     .. note::
 
-        While ``qp.compile`` is useful for initial exploration by appliying a default set of
-        transforms, the new :class:`~.CompilePipeline` class is the recommended tool for
-        constructing large & modular compilation pipelines in a natural way.
+            While ``qp.compile`` is useful for initial exploration by appliying a default set of
+            transforms, the new :class:`~.CompilePipeline` class is the recommended tool for
+            constructing large & modular compilation pipelines in a natural way.
 
     The default set of transforms includes (in order):
 
@@ -64,7 +64,8 @@ def compile(
             :func:`~.transforms.commute_controlled`,
             :func:`~.cancel_inverses`, and
             :func:`~.transforms.merge_rotations`.
-        basis_set (list[str]): A list of basis gates. When expanding the tape,
+        basis_set (list[str | type[Operator]): A list of basis gates, accepted as strings
+            as well as valid operator classes/subclasses. When expanding the tape,
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of
             ``pennylane.ops.__all__`` will be used. This decomposes templates and
@@ -194,6 +195,19 @@ def compile(
     with QueuingManager.stop_recording():
         if basis_set is None:
             basis_set = gate_sets.ALL_OPS
+
+        for op in basis_set:
+            if isinstance(op, str):
+                pass  # or just don't write anything, valid case
+            elif isinstance(op, type):
+                if issubclass(op, qp.operation.Operator):
+                    pass
+                else:
+                    raise ValueError(f"Elements of basis_set must be strings or Operator subclasses, "
+                                     f"got class {(op.__name__)} which is not an Operator subclass")
+            else:
+                raise ValueError(f"Elements of basis_set must be strings or Operator subclasses, {type(op).__name__} was neither")
+
 
         def stop_at(obj):
             if not isinstance(obj, qp.operation.Operator):
