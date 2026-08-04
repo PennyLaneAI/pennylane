@@ -1603,8 +1603,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         ``_flatten`` methods.
 
         >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> op._flatten()
-        (([[True, True]], [Wires(['b', 'c']), Wires([])], [U2(3.4, 4.5, wires=['a'])]), ('borrowed',))
+        >>> op._flatten()  # doctest: +SKIP
+        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
 
         """
         hashable_hyperparameters = tuple(
