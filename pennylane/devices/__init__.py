@@ -122,7 +122,7 @@ to handle a single circuit. See the documentation for each modifier for more det
 >>> out
 0.0
 >>> import pprint
->>> pprint.pprint(dev.tracker.history)  # doctest: +SKIP
+>>> pprint.pprint(dev.tracker.history)
 {'batches': [1],
  'executions': [1],
  'resources': [SpecsResources(counts={'S': 1},

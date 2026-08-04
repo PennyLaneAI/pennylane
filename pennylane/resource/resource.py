@@ -829,7 +829,7 @@ class CircuitSpecs:
 
     def _get_table_format(
         self, flat_resources: dict[str, SpecsResources]
-    ) -> tuple[int, int, dict[str, None], dict[str, None], dict[str, None]]:
+    ) -> tuple[int, int, dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
         # This is the length of the longest metric name (currently "Measurement processes") plus padding
@@ -839,7 +839,6 @@ class CircuitSpecs:
         # Use dict for these since they are sorted by default unlike a set
         all_quantum_operations = {}
         all_meas_types = {}
-        all_pbc_keys = {}
 
         # This iteration order will present the gates in the order in which they appear
         for res in flat_resources.values():
@@ -857,14 +856,7 @@ class CircuitSpecs:
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
                 )
-            if res.pbc_depth is not None:
-                for key, value in res.pbc_depth.items():
-                    all_pbc_keys[key] = True
-                    max_metric_length = max(max_metric_length, len(key) + 2)
-                    max_column_size = max(
-                        max_column_size,
-                        len(_count_to_str(value, extra_compact=True)) + 1,
-                    )
+
             max_column_size = max(
                 max_column_size,
                 len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
@@ -977,24 +969,6 @@ class CircuitSpecs:
                     for r in flat_resources.values()
                 )
             )
-        if all_pbc_keys:
-            lines.append("Depths:".ljust(max_metric_length) + " |")
-            for key in all_pbc_keys:
-                lines.append(
-                    f"- {key.replace('_', ' ').capitalize()}".ljust(max_metric_length)
-                    + " |"
-                    + " |".join(
-                        (
-                            _count_to_str(
-                                res.pbc_depth[key],
-                                extra_compact=True,
-                            )
-                            if res.pbc_depth is not None and key in res.pbc_depth
-                            else " "
-                        ).rjust(max_column_size)
-                        for res in flat_resources.values()
-                    )
-                )
 
         return "\n".join(lines).rstrip("\n")
 
@@ -1035,16 +1009,12 @@ class CircuitSpecs:
 
         all_quantum_operations: dict[str, None] = {}
         all_meas_types: dict[str, None] = {}
-        all_pbc_keys: dict[str, None] = {}
         for res in flat_resources.values():
             # Flatten nested operation/measurement dicts into dotted keys of arbitrary depth
             for gate in _flatten_dict(res.quantum_operations):
                 all_quantum_operations[gate] = None
             for meas in _flatten_dict(res.measurement_processes):
                 all_meas_types[meas] = None
-            if res.pbc_depth is not None:
-                for key in res.pbc_depth:
-                    all_pbc_keys[key] = None
 
         def data_row(label, values):
             return f"| {label} | " + " | ".join(str(v) for v in values) + " |"

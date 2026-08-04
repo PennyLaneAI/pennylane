@@ -221,7 +221,7 @@ def simulator_tracking(cls: type) -> type:
     ...     dev.execute((t, ) )
     (0.0,)
     >>> import pprint
-    >>> pprint.pprint(dev.tracker.history)  # doctest: +SKIP
+    >>> pprint.pprint(dev.tracker.history)
     {'batches': [1],
      'executions': [2],
      'resources': [SpecsResources(counts={'S': 1},

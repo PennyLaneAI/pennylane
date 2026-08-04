@@ -340,7 +340,7 @@ def quantum_monte_carlo(
 
         >>> specs = qp.specs(qmc, level="device")()
         >>> from pprint import pprint
-        >>> pprint(specs)  # doctest: +SKIP
+        >>> pprint(specs)
         CircuitSpecs(device_name='default.qubit',
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),

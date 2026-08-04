@@ -84,10 +84,6 @@ def _mlir_resources_to_specs_resources(
     # This method would not benefit from being broken up further, the parsing logic just requires
     # several branches
 
-    # pylint: disable=too-many-branches
-    # This method would not benefit from being broken up further, the parsing logic just requires
-    # several branches
-
     if focus in fn_resources:
         return
 
@@ -218,7 +214,7 @@ def _execute_analysis_pass(
     compile_options,
     *args,
     **kwargs,
-):  # pragma: no cover
+) -> None:  # pragma: no cover
     """
     Helper function to compile the QNode with the resource analysis pass inserted, which will output
     the necessary JSON files for MLIR analysis.

@@ -268,9 +268,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Pauli-Based Computation (PBC) depth data can now be returned from :func:`~.specs`.
-  [(#9703)](https://github.com/PennyLaneAI/pennylane/pull/9703)
-
 * Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
   [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)
 
