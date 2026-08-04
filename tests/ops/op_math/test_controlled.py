@@ -1664,7 +1664,7 @@ custom_ctrl_ops = [
         [1],
         qp.CRot(0.123, 0.234, 0.456, wires=[1, 0]),
     ),
-    (qp.PhaseShift(0.123, wires=0), [1], qp.ControlledPhaseShift(0.123, wires=[1, 0])),
+    (qp.U1(0.123, wires=0), [1], qp.ControlledPhaseShift(0.123, wires=[1, 0])),
     (
         qp.QubitUnitary(np.array([[0, 1], [1, 0]]), wires=0),
         [1, 2],
@@ -2335,7 +2335,10 @@ class TestTapeExpansionWithControlled:
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [
-            (qp.templates.QFT, [], 2, 11),
+            # ``ControlledPhaseShift`` now wraps a ``U1`` base, adding one extra decomposition
+            # layer (``U1`` -> ``PhaseShift``) for its multi-controlled form. At ``max_expansion=2``
+            # one ``Controlled(PhaseShift)`` therefore remains un-expanded (10 instead of 11 gates).
+            (qp.templates.QFT, [], 2, 10),
             (qp.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
         ],
     )

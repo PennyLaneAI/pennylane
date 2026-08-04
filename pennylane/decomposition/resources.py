@@ -381,6 +381,10 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     custom_controlled_map = qp.ops.op_math.controlled.base_to_custom_ctrl_op()
     custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
     if num_zero_control_values == 0 and custom_ctrl:
+        # ``Operator2`` custom controlled ops (e.g. ``ControlledPhaseShift``) do not define
+        # ``resource_keys`` and are represented abstractly rather than as a ``CompressedResourceOp``.
+        if issubclass(custom_ctrl, Operator2):
+            return abstractify(custom_ctrl)
         return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
 
     # When the base class is a custom controlled op, update the base to the base of the op.
@@ -497,7 +501,6 @@ def custom_ctrl_op_to_base():
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
         qp.CRot: qp.Rot,
-        qp.ControlledPhaseShift: qp.PhaseShift,
     }
 
 

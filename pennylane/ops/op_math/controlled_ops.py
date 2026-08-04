@@ -2587,7 +2587,7 @@ def _adjoint_crot(phi, theta, omega, wires, **_):
 add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
-class ControlledPhaseShift(ControlledOp):
+class ControlledPhaseShift(Controlled2):
     r"""A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -2613,6 +2613,16 @@ class ControlledPhaseShift(ControlledOp):
 
     """
 
+    wire_argnames = ("wires",)
+
+    dynamic_argnames = ("phi",)
+
+    wire_sizes = (2,)
+
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+
+    name = "ControlledPhaseShift"
+
     num_wires = 2
     """int: Number of wires the operator acts on."""
 
@@ -2622,40 +2632,31 @@ class ControlledPhaseShift(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        # ``U1`` shares its matrix with ``PhaseShift`` but, unlike the legacy ``PhaseShift``,
+        # is an ``Operator2`` and therefore compatible with the ``Controlled2`` machinery
+        # (queuing, capture, and abstract-wire construction).
+        super().__init__(qp.U1(phi, wires=wires[1:]), control_wires=wires[:1])
 
-    name = "ControlledPhaseShift"
-    parameter_frequencies = [(1,)]
-
-    def __init__(self, phi, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.PhaseShift, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+    @override
+    # pylint: disable=unused-argument
+    def __abstract_init__(self, phi: TensorLike, wires: WiresLike):
+        # ``wires`` is abstract here and carries no information beyond its fixed size of 2,
+        # which always splits into one control and one target wire.
+        super().__abstract_init__(qp.U1(phi, wires=Wire[1]), control_wires=Wire[1])
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
 
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, wires):
-        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
+    @override
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return self.base.label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
+
     @staticmethod
-    def compute_matrix(phi):  # pylint: disable=arguments-differ
+    def compute_matrix(phi, wires=None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2775,7 +2776,8 @@ class ControlledPhaseShift(ControlledOp):
         ]
 
 
-def _cphase_rz_resource():
+# pylint: disable=unused-argument
+def _cphase_rz_resource(phi, wires):
     return {qp.RZ: 3, qp.CNOT: 2, qp.GlobalPhase: 1}
 
 
@@ -2789,7 +2791,8 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.GlobalPhase(-phi / 4)
 
 
-def _cphase_to_ppr_resource():
+# pylint: disable=unused-argument
+def _cphase_to_ppr_resource(phi, wires):
     return {
         qp.GlobalPhase: 1,
         resource_rep(qp.PauliRot, pauli_word="Z"): 2,
@@ -2806,7 +2809,7 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
-add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
-add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
+add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation2)
+add_decomps("Pow(ControlledPhaseShift)", pow_rotation2)
 
 CPhase = ControlledPhaseShift

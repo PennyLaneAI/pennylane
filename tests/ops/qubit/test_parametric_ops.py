@@ -4177,14 +4177,16 @@ control_data = [
     (qp.IsingZZ(1.234, wires=(0, 1)), Wires([])),
     (qp.PSWAP(1.234, wires=(0, 1)), Wires([])),
     # Controlled Ops
-    (qp.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
+    # ``Operator2`` controlled ops (e.g. ``ControlledPhaseShift``, ``CRZ``) model control via
+    # ``ControlledOp2`` rather than legacy ``Operation`` attributes, so ADR 094 expects ``Wires([])``.
+    (qp.ControlledPhaseShift(1.234, wires=(0, 1)), Wires([])),
     (qp.CPhaseShift00(1.234, wires=(0, 1)), Wires(0)),
     (qp.CPhaseShift01(1.234, wires=(0, 1)), Wires(0)),
     (qp.CPhaseShift10(1.234, wires=(0, 1)), Wires(0)),
-    (qp.CPhase(1.234, wires=(0, 1)), Wires(0)),
+    (qp.CPhase(1.234, wires=(0, 1)), Wires([])),
     (qp.CRX(1.234, wires=(0, 1)), Wires(0)),
     (qp.CRY(1.234, wires=(0, 1)), Wires(0)),
-    (qp.CRZ(np.array([1.234, 0.219]), wires=(0, 1)), Wires(0)),
+    (qp.CRZ(np.array([1.234, 0.219]), wires=(0, 1)), Wires([])),
     (qp.CRot(1.234, 2.2345, 3.456, wires=(0, 1)), Wires(0)),
 ]
 
