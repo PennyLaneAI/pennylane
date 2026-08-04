@@ -83,7 +83,6 @@ class MultiRZ(Operator2):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
-    parameter_frequencies = [(1,)]
 
     def __init__(self, theta: TensorLike, wires: WiresLike):
         wires = Wires(wires)
@@ -104,14 +103,14 @@ class MultiRZ(Operator2):
 
         Args:
             theta (TensorLike): rotation angle
-            wires (Sequence[int]): wires the rotation acts on
+            num_wires (int): number of wires the rotation acts on
 
         Returns:
             TensorLike: canonical matrix
 
         **Example**
 
-        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), wires=(0, 1))
+        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), (0, 1))
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
@@ -160,14 +159,14 @@ class MultiRZ(Operator2):
 
         Args:
             theta (TensorLike): rotation angle
-            wires (Sequence[int]): wires the rotation acts on
+            num_wires (int): number of wires the rotation acts on
 
         Returns:
             TensorLike: eigenvalues
 
         **Example**
 
-        >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), wires=[0,1,2])
+        >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
         tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
         num_wires = 1 if isinstance(wires, int) else len(wires)
