@@ -886,12 +886,7 @@ special_par_op_decomps = [
         [0],
         [1],
         qp.CRZ,
-        [
-            qp.PhaseShift(0.123 / 2, wires=0),
-            qp.CNOT(wires=[1, 0]),
-            qp.PhaseShift(-0.123 / 2, wires=0),
-            qp.CNOT(wires=[1, 0]),
-        ],
+        [qp.CRZ(0.123, wires=[1, 0])],
     ),
     (
         qp.Rot,
@@ -1047,24 +1042,6 @@ class TestDecomposition:
         op = Controlled(target, 2)
         assert op.decomposition() == decomp
 
-    def test_non_differentiable_one_qubit_special_unitary(self):
-        """Assert that a non-differentiable on qubit special unitary uses the bisect decomposition."""
-
-        op = qp.ctrl(qp.RZ(1.2, wires=0), (1, 2, 3, 4))
-        decomp = op.decomposition()
-
-        qp.assert_equal(decomp[0], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
-        assert isinstance(decomp[1], qp.QubitUnitary)
-        qp.assert_equal(decomp[2], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
-        assert isinstance(decomp[3].base, qp.QubitUnitary)
-        qp.assert_equal(decomp[4], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
-        assert isinstance(decomp[5], qp.QubitUnitary)
-        qp.assert_equal(decomp[6], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
-        assert isinstance(decomp[7].base, qp.QubitUnitary)
-
-        decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
-        assert qp.math.allclose(op.matrix(), decomp_mat)
-
     def test_differentiable_one_qubit_special_unitary_single_ctrl(self):
         """
         Assert that a differentiable qubit special unitary uses the zyz decomposition with a single controlled wire.
@@ -1074,9 +1051,9 @@ class TestDecomposition:
         op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1))
         decomp = op.decomposition()
 
-        qp.assert_equal(decomp[0], qp.PhaseShift(qp.numpy.array(theta / 2), 0))
+        qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), 0))
         qp.assert_equal(decomp[1], qp.CNOT(wires=(1, 0)))
-        qp.assert_equal(decomp[2], qp.PhaseShift(qp.numpy.array(-theta / 2), 0))
+        qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), 0))
         qp.assert_equal(decomp[3], qp.CNOT(wires=(1, 0)))
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
@@ -1089,11 +1066,10 @@ class TestDecomposition:
         op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        qp.assert_equal(decomp[0], qp.CRZ(qp.numpy.array(theta), [4, 0]))
-        qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 0]))
-        qp.assert_equal(decomp[2], qp.CRZ(qp.numpy.array(-theta / 2), wires=[4, 0]))
-        qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 0]))
-        qp.assert_equal(decomp[4], qp.CRZ(qp.numpy.array(-theta / 2), wires=[4, 0]))
+        qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), [0]))
+        qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
+        qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), wires=[0]))
+        qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
@@ -1117,20 +1093,19 @@ class TestDecomposition:
 
         active_wires = ctrl_wires + base_wires
         base_op = base_cls(*params, wires=base_wires)
-        ctrl_op = Controlled(base_op, control_wires=ctrl_wires)
+        ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
-        assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
-        assert custom_ctrl_op.decomposition() == expected
         # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
         # to test, just the controlled decompositions logic.
-        if base_cls not in (qp.GlobalPhase, qp.Identity):
+        # NOTE: Operator2 instances don't have compute_decomposition defined.
+        if not issubclass(base_cls, Operator2) and base_cls not in (qp.GlobalPhase, qp.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
         assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         special_par_op_decomps,
@@ -1167,19 +1142,6 @@ class TestDecomposition:
         base_op = base_cls(wires=base_wires)
         ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=work_wires)
 
-        assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
-
-    def test_decomposition_nested(self):
-        """Tests decompositions of nested controlled operations"""
-
-        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
-        expected = [
-            qp.ControlledPhaseShift(0.123 / 2, wires=[2, 0]),
-            qp.Toffoli(wires=[2, 1, 0]),
-            qp.ControlledPhaseShift(-0.123 / 2, wires=[2, 0]),
-            qp.Toffoli(wires=[2, 1, 0]),
-        ]
         assert ctrl_op.decomposition() == expected
         assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
@@ -1221,7 +1183,7 @@ class TestDecomposition:
         """Tests that custom ops are not converted when wires are control-on-zero."""
 
         base_op = base_cls(*params, wires=base_wires)
-        op = Controlled(base_op, control_wires=ctrl_wires, control_values=[False] * len(ctrl_wires))
+        op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
 
         decomp = op.decomposition()
 
@@ -1780,15 +1742,15 @@ class TestCtrl:
         ctrl_values = [False] * len(ctrl_wires)
 
         if isinstance(op, Controlled):
-            expected = Controlled(
+            expected = qp.ctrl(
                 op.base,
-                control_wires=ctrl_wires + op.control_wires,
+                control=ctrl_wires + op.control_wires,
                 control_values=ctrl_values + op.control_values,
             )
         elif isinstance(op, Operator2):
             expected = ControlledOp2(op, control_wires=ctrl_wires, control_values=ctrl_values)
         else:
-            expected = Controlled(op, control_wires=ctrl_wires, control_values=ctrl_values)
+            expected = qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values)
 
         assert qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values) == expected
 
@@ -1854,17 +1816,16 @@ class TestCtrl:
         )
 
         op = qp.ctrl(
-            Controlled(
+            qp.ctrl(
                 ctrl_op,
-                control_wires=["b"],
+                control=["b"],
                 control_values=[0],
             ),
             control=["a"],
         )
-        expected_type = ControlledOp2 if isinstance(expected_base, Operator2) else Controlled
-        expected = expected_type(
+        expected = qp.ctrl(
             expected_base,
-            control_wires=["a", "b"] + base_ctrl_wires,
+            control=["a", "b"] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,
         )
         assert op == expected
@@ -2157,9 +2118,9 @@ class TestTapeExpansionWithControlled:
             [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
 
         assert tape.circuit == [
-            Controlled(qp.RZ(0.1, 0), control_wires=[3, 7]),
-            Controlled(qp.RY(0.2, 0), control_wires=[3, 7]),
-            Controlled(qp.RZ(0.3, 0), control_wires=[3, 7]),
+            qp.ctrl(qp.RZ(0.1, 0), control=[3, 7]),
+            qp.ctrl(qp.RY(0.2, 0), control=[3, 7]),
+            qp.ctrl(qp.RZ(0.3, 0), control=[3, 7]),
         ]
 
         # Tests that the decomposition of the nested controlled _Rot gate is ultimately

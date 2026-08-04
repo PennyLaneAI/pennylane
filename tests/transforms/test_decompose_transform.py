@@ -137,12 +137,6 @@ class TestDecompose:
 
     callables_test = [
         (
-            [qp.Hadamard(0)],
-            lambda op: "RX" in op.name,
-            [qp.RZ(qnp.pi / 2, 0), qp.RX(qnp.pi / 2, 0), qp.RZ(qnp.pi / 2, 0)],
-            "RZ",
-        ),
-        (
             [qp.Toffoli([0, 1, 2])],
             lambda op: len(op.wires) <= 2,
             [

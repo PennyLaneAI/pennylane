@@ -41,7 +41,6 @@ class _DecompInGraphInfo(_DecompInfo):
         num_work_wires: int | None,
         solution: DecompGraphSolution,
     ) -> None:
-
         decomp_node = solution._graph[decomp_node_idx]
         assert isinstance(decomp_node, _DecompositionNode)
 
@@ -244,7 +243,6 @@ class DecompGraphInspector:
         return _DecompInGraphInfoCollection(rule_infos, show_not_applicable, chosen_idx)
 
     def _find_op_node(self, op: Operator, num_work_wires: int | None = 0) -> _OperatorNode | str:
-
         if isinstance(op, type) and issubclass(op, Operator):
             raise TypeError(
                 "The inspect_decomps function takes a concrete operator instance as its "
@@ -662,7 +660,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         <BLANKLINE>
         Decomposition 11 (name: _mcx_to_cnot_or_toffoli)
         Not applicable (provided operator instance does not meet all conditions for this rule).
-
     """
 
     if not enabled_graph():
