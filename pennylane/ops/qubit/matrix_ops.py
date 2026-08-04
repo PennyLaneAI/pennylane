@@ -585,7 +585,9 @@ def _diagonal_qu_decomp(D, wires):
         qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-def _diagonal_mux_on_aux_resources(num_wires):
+# pylint: disable=unused-argument
+def _diagonal_mux_on_aux_resources(D, wires):
+    num_wires = len(wires)
     return {
         qp.SelectPauliRot(
             Float[2**num_wires],
