@@ -283,7 +283,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     # Tests that the decomposition produces the same matrix
     if op.has_matrix and not skip_decomp_matrix_check and not _decomp_contains_mcm(rule, params):
         # Add projector to the additional wires (work wires) on the tape
-        work_wires = tape.wires - op.wires
+        work_wires = [w for w in tape.wires if w not in op.wires]
         all_wires = op.wires + work_wires
         if work_wires:
             op = op @ qp.Projector([0] * len(work_wires), wires=work_wires)
