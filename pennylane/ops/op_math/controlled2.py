@@ -160,7 +160,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if len(control_values) != len(control_wires):
             raise ValueError("control_values should be the same length as control_wires")
 
-        control_values = [bool(v) for v in control_values]
+        # Python bool conversion is invalid for abstract tracer values.
+        if any(math.is_abstract(v) for v in control_values):
+            control_values = math.stack(control_values)
+        else:
+            control_values = [bool(v) for v in control_values]
 
         self._base = base
         self._control_wires = control_wires
