@@ -1787,7 +1787,7 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-      
+
     def test_qft(self):
         """Test the primitive bind call of QFT."""
 
