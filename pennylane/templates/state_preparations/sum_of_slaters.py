@@ -882,19 +882,21 @@ class SumOfSlatersPrep(Operation):
 
     """
 
-    resource_keys = {"num_entries", "num_bits", "num_wires"}
+    dynamic_argnames = ("coefficients",)
+    wires_argnames = ("wires", "enumeration_wires", "identification_wires", "qrom_work_wires", "mcx_cache_wires")
+    compilable_argnames = ("indices",)
 
-    @property
-    def resource_params(self):
-        indices = self.hyperparameters["indices"]
-        n = len(self.wires)
-        v_bits = math.int_to_binary(np.array(indices), n).T
-        selector_ids, _ = select_sos_rows(v_bits)
-        return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": n}
-
-    def __init__(self, coefficients, wires, indices):
-        super().__init__(coefficients, wires)
-        self.hyperparameters["indices"] = indices
+    def __init__(
+        self,
+        coefficients,
+        wires,
+        enumeration_wires,
+        identification_wires,
+        qrom_work_wires,
+        mcx_cache_wires,
+        indices,
+    ):  # pylint: disable=too-many-arguments
+        super().__init__(coefficients, wires, enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, indices)
 
     @staticmethod
     def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
@@ -967,9 +969,25 @@ class SumOfSlatersPrep(Operation):
         }
 
 
-def _sos_state_prep_resources(num_entries, num_bits, num_wires):
+def _sos_state_prep_resources(
+    coefficients,
+    wires,
+    enumeration_wires,
+    identification_wires,
+    qrom_work_wires,
+    mcx_cache_wires,
+    indices,
+):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
+    n = len(wires)
+    v_bits = math.int_to_binary(np.array(indices), n).T
+    selector_ids, _ = select_sos_rows(v_bits)
+    
+    num_entries = len(indices)
+    num_bits = len(selector_ids)
+    num_wires = n
+    
     if num_entries == 1:
         return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
     d = math.ceil_log2(num_entries)
@@ -1157,7 +1175,7 @@ def _sos_state_prep_with_wires(
 
 
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-def _sos_state_prep(coefficients, wires, indices, **__):
+def _sos_state_prep(coefficients, wires, indices, **all_wires):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     n = len(all_wires["wires"])
     num_entries = len(indices)
