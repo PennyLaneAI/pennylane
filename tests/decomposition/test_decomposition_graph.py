@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import DecompositionGraph, pow_resource_rep, resource_rep
+from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.exceptions import DecompositionError, DecompositionWarning
