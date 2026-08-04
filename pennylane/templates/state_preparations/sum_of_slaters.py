@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, for_loop, math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import Int, Wire
@@ -632,7 +632,7 @@ def compute_sos_encoding(bits):
     return U, b
 
 
-class SumOfSlatersPrep(Operation):
+class SumOfSlatersPrep(Operator2):
     r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
 
     This operation prepares an arbitrary state
@@ -883,7 +883,7 @@ class SumOfSlatersPrep(Operation):
     """
 
     dynamic_argnames = ("coefficients",)
-    wires_argnames = ("wires", "enumeration_wires", "identification_wires", "qrom_work_wires", "mcx_cache_wires")
+    wire_argnames = ("wires", "enumeration_wires", "identification_wires", "qrom_work_wires", "mcx_cache_wires")
     compilable_argnames = ("indices",)
 
     def __init__(
@@ -983,7 +983,7 @@ def _sos_state_prep_resources(
     n = len(wires)
     v_bits = math.int_to_binary(np.array(indices), n).T
     selector_ids, _ = select_sos_rows(v_bits)
-    
+
     num_entries = len(indices)
     num_bits = len(selector_ids)
     num_wires = n
@@ -1175,7 +1175,7 @@ def _sos_state_prep_with_wires(
 
 
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-def _sos_state_prep(coefficients, wires, indices, **all_wires):
+def _sos_state_prep(coefficients, *_, indices, **all_wires):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     n = len(all_wires["wires"])
     num_entries = len(indices)

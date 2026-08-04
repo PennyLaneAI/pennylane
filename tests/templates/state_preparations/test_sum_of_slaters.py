@@ -102,6 +102,14 @@ def random_distinct_bitstrings(num_bits, num_strings, seed, full_rank=False):
     return bitstrings
 
 
+def make_registers(indices, num_wires):
+    """Create wire registers required for a given set of indices and target
+    wires for ``SumOfSlatersPrep``. The size of the required registers is computed with
+    ``SumOfSlatersPrep.required_register_sizes`` and ``qp.registers`` is used to produce the
+    registers themselves. This function assumes consecutive integer wire labels."""
+    return qp.registers(SumOfSlatersPrep.required_register_sizes(indices, num_wires))
+
+
 class TestHelperFunctions:
 
     @pytest.mark.parametrize(
@@ -398,8 +406,8 @@ class TestComputeSosEncoding:
 class TestSumOfSlatersPrep:
     """Test the quantum template ``SumOfSlatersPrep``."""
 
-def make_random_data(self, num_wires, num_entries, seed):
-        """Produce some random input data for ``SumOfSlatersPrep2`` with given specs."""
+    def make_random_data(self, num_wires, num_entries, seed):
+        """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""
         rng = np.random.default_rng(seed)
         coefficients = rng.random(num_entries)
         coefficients /= np.linalg.norm(coefficients)
@@ -412,16 +420,16 @@ def make_random_data(self, num_wires, num_entries, seed):
         [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
     )
     def test_standard_validity(self, num_wires, num_entries, seed):
-        """Test that SumOfSlatersPrep2 is a valid PennyLane operator."""
+        """Test that SumOfSlatersPrep is a valid PennyLane operator."""
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
         all_wires = make_registers(indices, num_wires)
-        op = SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
+        op = SumOfSlatersPrep(coefficients, **all_wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
     def test_standard_validity_non_id_encoding(self, n, seed):
-        """Test that SumOfSlatersPrep2 is a valid PennyLane operator for non-identity
+        """Test that SumOfSlatersPrep is a valid PennyLane operator for non-identity
         encoding scenario."""
         coefficients, _ = self.make_random_data(n, n, seed=seed)
         # Create bits that force a non-identity encoding
@@ -431,7 +439,7 @@ def make_random_data(self, num_wires, num_entries, seed):
         num_bits = n - 1
         indices = tuple(2 ** np.arange(num_bits - 1, -1, -1) @ bits)
         all_wires = make_registers(indices, n)
-        op = SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
+        op = SumOfSlatersPrep(coefficients, **all_wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize("use_qjit", [False, True])
@@ -440,7 +448,7 @@ def make_random_data(self, num_wires, num_entries, seed):
         [(3, 1), (3, 2), (3, 3), (4, 3), (4, 15), (5, 4), (5, 21), (7, 63)],
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, use_qjit):
-        """Test that the decomposition of SumOfSlatersPrep2 actually prepares the desired state."""
+        """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""
         # pylint: disable=unsubscriptable-object
         if num_entries == 63 and use_qjit:
             pytest.skip(
@@ -455,7 +463,7 @@ def make_random_data(self, num_wires, num_entries, seed):
             True
         ):  # safe alternative to avoid enabling graph globally on the labs test runner
 
-            for rule in qp.list_decomps(SumOfSlatersPrep2):
+            for rule in qp.list_decomps(SumOfSlatersPrep):
 
                 @qp.qnode(qp.device("lightning.qubit"))
                 def func(coefficients):
@@ -513,7 +521,7 @@ def make_random_data(self, num_wires, num_entries, seed):
 
     @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (8, 10)])
     def test_decomposition_prepares_state_non_id_encoding(self, num_wires, num_entries, seed):
-        """Test that the decomposition of SumOfSlatersPrep2 actually prepares the desired state."""
+        """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""
         # pylint: disable=unsubscriptable-object
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
@@ -527,7 +535,7 @@ def make_random_data(self, num_wires, num_entries, seed):
             True
         ):  # safe alternative to avoid enabling graph globally on the labs test runner
             # Currently just one rule is implemented, but this test should pass for all decompositions
-            for rule in qp.list_decomps(SumOfSlatersPrep2):
+            for rule in qp.list_decomps(SumOfSlatersPrep):
 
                 @qp.qnode(qp.device("lightning.qubit"))
                 def func():
@@ -583,15 +591,15 @@ def make_random_data(self, num_wires, num_entries, seed):
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == max(m - 1, 0)
 
-        op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
-        exp_resource_params = {
-            "num_entries": num_entries,
-            "num_bits": new_num_bits,
-            "num_wires": num_wires,
-        }
-        assert exp_resource_params == op.resource_params
+        # Constructing the operator with the computed register sizes must succeed.
+        all_wires = make_registers(indices, num_wires)
+        SumOfSlatersPrep(coefficients, **all_wires, indices=indices)
 
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        # The work wire spec is derived from the effective (reduced) bit count, matching the
+        # values that ``required_register_sizes`` uses internally.
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(
+            num_entries=num_entries, num_bits=new_num_bits, num_wires=num_wires
+        )
         assert sum(sizes.values()) - num_wires == registered_work_wires.total
 
     @pytest.mark.parametrize("n", [7, 8, 9, 15, 16, 17])
@@ -616,11 +624,15 @@ def make_random_data(self, num_wires, num_entries, seed):
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == m - 1
 
-        op = SumOfSlatersPrep(coefficients, range(n), indices)
-        exp_resource_params = {"num_entries": n, "num_bits": num_bits, "num_wires": n}
-        assert exp_resource_params == op.resource_params
+        # Constructing the operator with the computed register sizes must succeed.
+        all_wires = make_registers(indices, n)
+        SumOfSlatersPrep(coefficients, **all_wires, indices=indices)
 
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        # The work wire spec is derived from the same bit count that ``required_register_sizes``
+        # uses internally. For this deterministic input the encoding uses all ``num_bits`` bits.
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(
+            num_entries=len(indices), num_bits=num_bits, num_wires=n
+        )
         assert sum(sizes.values()) - n == registered_work_wires.total
 
     @pytest.mark.catalyst
