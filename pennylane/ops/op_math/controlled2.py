@@ -52,6 +52,7 @@ from pennylane.wires import Wires, WiresLike
 from .symbolicop2 import SymbolicOp2
 
 
+# pylint: disable-next=too-many-public-methods
 class Controlled2(SymbolicOp2, is_baseclass=True):
     """The base class for controlled operators.
 
@@ -303,6 +304,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
     def work_wires(self) -> Wires:
         """Auxiliary wires that can be used in the decomposition."""
         return self._work_wires
+
+    @property
+    @override
+    def grad_method(self):
+        return self.base.grad_method
 
     @property
     def work_wire_type(self):

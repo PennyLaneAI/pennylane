@@ -386,23 +386,23 @@ class TestValidateMeasurements:
 
 
 @qp.register_resources({qp.H: 6, qp.RX: 1})
-def dummy_rz_decomp_0(theta, wires):
+def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
     qp.H(wires)
     qp.H(wires)
-    qp.RX(theta, wires)
+    qp.RX(phi, wires)
     qp.H(wires)
     qp.H(wires)
     qp.H(wires)
 
 
 @qp.register_resources({qp.RX: 1})
-def dummy_rz_decomp_1(theta, wires):
-    qp.RX(theta, wires)
+def dummy_rz_decomp_1(phi, wires):
+    qp.RX(phi, wires)
 
 
 @qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
-def dummy_rz_decomp_2(theta, wires):
+def dummy_rz_decomp_2(phi, wires):
     # pylint: disable=unused-argument
     qp.H(wires)
 

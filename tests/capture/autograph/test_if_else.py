@@ -15,7 +15,7 @@
 """PyTests for the AutoGraph source-to-source transformation feature for
 converting if/else statements to qp.cond."""
 
-# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports
+# pylint: disable=wrong-import-position,wrong-import-order
 
 import pytest
 
@@ -29,6 +29,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
+# pylint: disable=ungrouped-imports
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim
 from pennylane.exceptions import AutoGraphError

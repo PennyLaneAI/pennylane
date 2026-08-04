@@ -405,7 +405,15 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> Result:
           n_consts=0
           qfunc_jaxpr={ lambda ; e:f64[]. let
               _:AbstractOperator() = RX[n_wires=1] e 0:i64[]
-              f:AbstractOperator() = PauliZ[n_wires=1] 0:i64[]
+              f:AbstractOperator() = operator[
+                adjoint=False
+                forward_mask=()
+                hybrid_lens=()
+                hybrid_trees=()
+                n_ctrls=0
+                op_cls=<class 'pennylane.ops.qubit.non_parametric_ops.PauliZ'>
+                wire_lens=(1,)
+              ] 0:i64[]
               g:AbstractMeasurement(n_wires=None) = expval_obs f
               h:AbstractMeasurement(n_wires=0) = probs_wires
             in (g, h) }

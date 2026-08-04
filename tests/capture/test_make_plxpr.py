@@ -32,6 +32,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax import numpy as jnp
 
+# pylint: disable=ungrouped-imports
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from tests.capture.capture_utils import extract_all_primitives
 

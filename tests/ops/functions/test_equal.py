@@ -336,7 +336,8 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+
+        with pytest.raises(AssertionError, match="have different values"):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
@@ -417,7 +418,7 @@ class TestEqual:
             is False
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="differ in trainability"):
             assert_equal(
                 op1(param_qp, wires=wire),
                 op1(param_qp_1, wires=wire),
@@ -1332,7 +1333,7 @@ class TestEqual:
             is True
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+        with pytest.raises(AssertionError, match="have different interfaces"):
             assert_equal(
                 op1(pl_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
@@ -1461,7 +1462,7 @@ class TestPauliErrorEqual:
         pes = [qp.PauliError("XY", x1, (0, 1)), qp.PauliError("XY", 0.5, (0, 1))]
 
         assert qp.equal(pes[0], pes[1]) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Parameters differ in trainability"):
             assert_equal(pes[0], pes[1])
 
         with pytest.raises(AssertionError, match="Parameters have different interfaces"):

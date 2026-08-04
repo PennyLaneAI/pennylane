@@ -14,7 +14,7 @@
 
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports
+# pylint: disable=wrong-import-position,wrong-import-order
 
 import pytest
 
@@ -28,6 +28,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
+# pylint: disable=ungrouped-imports
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from pennylane.exceptions import AutoGraphError
