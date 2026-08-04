@@ -661,6 +661,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
+  [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
@@ -849,6 +852,9 @@
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
+  - Parametric operators are ported:
+    - `~.RZ`, `~.CRZ`
+  [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   - Multi-qubit, parametric operators are ported:
     - `~.DiagonalQubitUnitary`
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
