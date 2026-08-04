@@ -32,3 +32,5 @@ datasets/*
 .benchmarks/*
 *.h5
 *.hdf5
+CLAUDE.local.md
+AGENTS.local.md
