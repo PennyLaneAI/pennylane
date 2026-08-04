@@ -181,6 +181,30 @@ def test_meas_qinfo_clifford(meas_op):
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
+def test_mutual_info_clifford_subtracts_joint_entropy():
+    """Mutual information on ``default.clifford`` must subtract the joint entropy.
+
+    Regression test for a bug where ``I(A:B)`` was computed as ``S(A) + S(B)``
+    without the ``- S(AB)`` term, giving double the correct value for correlated
+    subsystems (PennyLaneAI/pennylane#9610). For a GHZ state the mutual
+    information between two qubits is ``ln(2)``, not ``2 * ln(2)``.
+    """
+    dev_c = qp.device("default.clifford", wires=3)
+    dev_q = qp.device("default.qubit", wires=3)
+
+    def circuit_fn():
+        qp.Hadamard(0)
+        qp.CNOT(wires=[0, 1])
+        qp.CNOT(wires=[1, 2])
+        return qp.mutual_info(wires0=[0], wires1=[1])
+
+    clifford_mi = qp.QNode(circuit_fn, dev_c)()
+    qubit_mi = qp.QNode(circuit_fn, dev_q)()
+
+    assert np.allclose(clifford_mi, np.log(2))
+    assert np.allclose(clifford_mi, qubit_mi)
+
+
 @pytest.mark.parametrize("shots", [None, 1_000_000])
 @pytest.mark.parametrize(
     "ops",

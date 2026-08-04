@@ -1117,6 +1117,11 @@
 * Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
 
+* Fixed a bug in `default.clifford` where `qml.mutual_info` omitted the joint-subsystem entropy
+  term, returning `S(A) + S(B)` instead of `S(A) + S(B) - S(AB)` and therefore double the correct
+  value for correlated subsystems.
+  [(#9668)](https://github.com/PennyLaneAI/pennylane/pull/9668)
+
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
@@ -1216,6 +1221,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Vincent Gao,
 Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
