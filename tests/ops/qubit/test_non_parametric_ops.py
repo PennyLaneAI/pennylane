@@ -1070,8 +1070,8 @@ class TestControlledMethod:
     # pylint: disable=protected-access
 
     def test_PauliZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qp.PauliZ(0)._controlled("a")
+        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
+        out = qp.ctrl(qp.PauliZ(0), "a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
 
     def test_CNOT(self):
@@ -1086,8 +1086,8 @@ class TestControlledMethod:
         qp.assert_equal(original, out)
 
     def test_CZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qp.CZ(wires=[0, 1])._controlled("a")
+        """Test the CZ ctrl dispatch produces CCZ."""
+        out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
         qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 

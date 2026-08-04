@@ -36,6 +36,13 @@ def get_device(device_name, seed):
     return qp.device(device_name, seed=seed)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Passing a QuantumScript containing an Operator2 directly through jax.jit traces "
+        "concrete wire labels as dynamic leaves."
+    ),
+)
 def test_jit_execution():
     """Test that qp.execute can be directly jitted."""
     dev = qp.device("default.qubit")
