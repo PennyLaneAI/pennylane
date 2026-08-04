@@ -3323,18 +3323,6 @@ class TestMultiRZ:
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
-    def test_MultiRZ_decomposition_qjit_old(self, n):
-        """Test that the decomposition with qjit with the old decomposition system
-        produces the correct matrix."""
-        wires = tuple(range(n))
-        theta = 0.8362
-        mat_fn = qp.qjit(qp.matrix(qp.MultiRZ.compute_decomposition, wires), static_argnums=[1])
-        mat = mat_fn(theta, wires)
-        exp_mat = qp.MultiRZ.compute_matrix(theta, wires)
-        assert np.allclose(mat, exp_mat)
-
-    @pytest.mark.catalyst
-    @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_new(self, n):
         """Test that the decomposition with qjit with the new decomposition system
         produces the correct matrix."""
