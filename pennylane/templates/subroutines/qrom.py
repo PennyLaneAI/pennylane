@@ -36,7 +36,6 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import AbstractArray, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -51,7 +50,6 @@ def _multi_swap(wires1, wires2):
 
 
 def _new_ops(depth, target_wires, control_wires, swap_wires, data):
-
     with QueuingManager.stop_recording():
         ops_new = [BasisState(bits, wires=target_wires) for bits in data]
         ops_identity_new = ops_new + [qp_ops.I(target_wires)] * int(
@@ -213,7 +211,6 @@ class QROM(Operator2):
         work_wires: WiresLike,
         clean=True,
     ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
-
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
 
@@ -254,7 +251,7 @@ class QROM(Operator2):
 
         super().__init__(data, control_wires, target_wires, work_wires, clean)
 
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ, too-many-arguments
     def __abstract_init__(
         self,
         data: AbstractArray | TensorLike | Sequence[str],
@@ -324,7 +321,6 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
 def _qrom_decomposition_resources(
     data, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=too-many-branches
-
     num_bitstrings = len(data)
     num_control_wires = len(control_wires)
     num_target_wires = len(target_wires)
@@ -668,7 +664,6 @@ def _flag_resources(n_extra, num_target_wires):
 def _qrom_measurement_condition(
     data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
 ):  # pylint: disable=unused-argument
-
     if base is not None:
         num_bitstrings = len(base.data)
         num_work_wires = len(base.work_wires)

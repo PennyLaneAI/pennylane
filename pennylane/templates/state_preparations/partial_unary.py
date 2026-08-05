@@ -21,7 +21,6 @@ import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.decomposition import controlled_resource_rep
 from pennylane.typing import Int, Wire
 from pennylane.wires import Wires
 

@@ -17,7 +17,6 @@ with preparing a certain state on the device.
 """
 
 from collections.abc import Sequence
-from importlib.util import find_spec
 
 # pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
@@ -31,8 +30,6 @@ from pennylane import math
 from pennylane.core.operator import Operation, Operator, StatePrepBase, StatePrepBase2
 from pennylane.decomposition import (
     add_decomps,
-    pow_resource_rep,
-    register_condition,
     register_resources,
 )
 from pennylane.exceptions import WireError
@@ -171,7 +168,9 @@ class BasisState(StatePrepBase2):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(state: AbstractArray, wires: AbstractWires):
+def _basis_state_decomp_resources(
+    state: AbstractArray, wires: AbstractWires
+):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
