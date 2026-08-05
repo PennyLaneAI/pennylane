@@ -154,22 +154,35 @@ class Operator2(metaclass=OperatorMeta):
         >>> op
         MyOp(pauli_string=XYZ, angle_array=[0.1 0.2 0.3], wires=[0, 1, 2], rot_wire=[3])
 
-        For ``MyOp`` to be a usable quantum operator, it must define a decomposition with
-        :func:`~.add_decomps` or a ``compute_matrix`` method (for state-vector simulation).
+        In practice, for ``MyOp`` to be a usable quantum operator it should define a decomposition
+        using :func:`~.add_decomps`, though a ``compute_matrix`` method could be sufficient for most
+        state-vector simulations.
 
         **Decomposing Operators**
+
+        More information and specifics on how to define decomposition rules for operators is found
+        in the :mod:`pennylane.decomposition` module. A brief synopsis is offered here.
+
+        Adding a decomposition rule to an existing or a custom operator can be done by defining two
+        functions:
+
+        * A "resource" function, which contains the resources comprising the decomposition rule.
+        * The decomposition rule itself, structured as a quantum function.
+
+        Both the resource function and the decomposition rule **must** have the same call signature
+        as the operator.
+
+        Consider this example using the custom operator `MyOp`.
 
         .. code-block:: python
 
             from collections import defaultdict
 
-            pauli_map = {"X": qp.X, "Y": qp.Y, "Z": qp.Z}
-
             def _my_op_resources(pauli_string, angle_array, wires, rot_wire):
                 resources = defaultdict(int)
 
                 for char in pauli_string:
-                    resources[pauli_map[char]] += 1
+                    resources[getattr(qp, char)] += 1
 
                 resources[qp.Rot] = 1
                 return resources
@@ -182,32 +195,49 @@ class Operator2(metaclass=OperatorMeta):
 
             qp.add_decomps(MyOp, _my_op_decomp)
 
-        **static_argnames vs. compilable_argnames**
+        Resource functions are "registered" to the decomposition rule by decorating with
+        :func:`~.register_resources`. Adding the decomposition rule to the operator officially is
+        done via :func:`~.add_decomps`. To verify, we can inspect that the decomposition rule
+        created as been added to `MyOp` as follows.
 
-        .. note::
+        .. code-block:: python
 
-            An operator can only specify :attr:`static_argnames <Operator2.static_argnames>` or
-            :attr:`compilable_argnames <Operator2.compilable_argnames>`, but not both; if **any**
-            static arguments cannot be lowered to the IR, then all static arguments must be treated
-            as not lowerable.
+            num_wires = 4
+            @qp.qnode(qp.device("null.qubit", wires=4))
+            def f():
+                MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
+                return qp.expval(qp.Z(0))
+
+        >>> inspector = qp.decomp_inspector(f)()
+        >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
+        CHOSEN: Decomposition 0 (name: _my_op_decomp)
+        0: ──X───────────────────┤
+        1: ──Y───────────────────┤
+        2: ──Y───────────────────┤
+        3: ──Rot(0.10,0.20,0.30)─┤
+        First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
+        Full Expansion Gates: {Rot: 1, PauliY: 2, PauliX: 1}
+        Weighted Cost: 4.0
+
+        **Downstream effects of static_argnames, compilable_argnames**
 
         Static and *compilable static* arguments are similar, but have key differences to note that
         dictate how certain arguments are treated when compiled down to MLIR.
 
-        Both ``static_argnames`` and ``compilable_argnames`` denote data that cannot be dynamic. In
+        Both `static_argnames` and `compilable_argnames` denote data that cannot be dynamic. In
         other words, they both represent concrete data whose values are known when tracing the
         program. The distinction in their behaviour comes at compile-time.
 
-        Arguments in ``compilable_argnames`` denote data that *can* be concretely accessed and
+        Arguments in `compilable_argnames` denote data that *can* be concretely accessed and
         inspected at compile-time (it can be compiled and represented concretely in MLIR), including
         numeric values, strings, lists, tuples, and dictionaries.
 
-        In the example above with ``MyOp``, the ``pauli_string`` argument is part of
-        ``compilable_argnames``. Its concrete (static) value will be accessible at compile time,
+        In the example above with `MyOp`, the `pauli_string` argument is part of
+        `compilable_argnames`. Its concrete (static) value will be accessible at compile time,
         being represented at the MLIR level as follows, where the concrete value of
-        ``pauli_string`` is captured in the ``static_data`` attribute in MLIR:
+        `pauli_string` is captured in the `static_data` attribute in MLIR:
 
-        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
+        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,)) # doctest: +SKIP
 
         .. code-block:: mlir
 
@@ -215,15 +245,14 @@ class Operator2(metaclass=OperatorMeta):
               static_data = {pauli_string = "XYZ"}
               param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
 
-
-        Arguments in ``static_argnames`` denote data that *cannot* be concretely accessed and
+        Arguments in `static_argnames` denote data that *cannot* be concretely accessed and
         inspected at compile-time (it cannot be compiled and represented concretely in MLIR),
         including arbitrary Python objects, Python functions, and custom classes. Static data will
         be reduced to a Unique Identifier (UID) at the MLIR level.
 
-        In the example above with ``MyOp``, if the ``pauli_string`` argument was part of
-        ``static_argnames``, ``MyOp`` would be represented in MLIR as follows, where the concrete
-        value of ``pauli_string`` is reduced to a UID in MLIR:
+        In the example above with `MyOp`, if the `pauli_string` argument was part of
+        `static_argnames`, `MyOp` would be represented in MLIR as follows, where the concrete
+        value of `pauli_string` is reduced to a UID in MLIR:
 
         .. code-block:: mlir
 
@@ -234,9 +263,10 @@ class Operator2(metaclass=OperatorMeta):
               UID(234567)
               param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
 
-        **hybrid_argnames**
+        .. note::
 
-        TODO: [sc-120453] Fill docstring
+            If `hyrbid_argnames` cannot be lowered to MLIR, the above behaviour also occurs
+            downstream; the hybrid data is reduced to a UID in MLIR.
     """
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
