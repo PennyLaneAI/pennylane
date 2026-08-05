@@ -22,8 +22,9 @@ from itertools import combinations
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 has_jax = True
@@ -250,23 +251,23 @@ class IQPEmbedding(Operation):
         >>> from pprint import pprint
         >>> pprint(qp.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern))
         [H(0),
-         RZ(1.0, wires=[0]),
-         H(1),
-         RZ(2.0, wires=[1]),
-         H(2),
-         RZ(3.0, wires=[2]),
-         MultiRZ(tensor(2.), wires=[0, 1]),
-         MultiRZ(tensor(3.), wires=[0, 2]),
-         MultiRZ(tensor(6.), wires=[1, 2]),
-         H(0),
-         RZ(1.0, wires=[0]),
-         H(1),
-         RZ(2.0, wires=[1]),
-         H(2),
-         RZ(3.0, wires=[2]),
-         MultiRZ(tensor(2.), wires=[0, 1]),
-         MultiRZ(tensor(3.), wires=[0, 2]),
-         MultiRZ(tensor(6.), wires=[1, 2])]
+        RZ(1.0, wires=[0]),
+        H(1),
+        RZ(2.0, wires=[1]),
+        H(2),
+        RZ(3.0, wires=[2]),
+        MultiRZ(2.0, wires=[0, 1]),
+        MultiRZ(3.0, wires=[0, 2]),
+        MultiRZ(6.0, wires=[1, 2]),
+        H(0),
+        RZ(1.0, wires=[0]),
+        H(1),
+        RZ(2.0, wires=[1]),
+        H(2),
+        RZ(3.0, wires=[2]),
+        MultiRZ(2.0, wires=[0, 1]),
+        MultiRZ(3.0, wires=[0, 2]),
+        MultiRZ(6.0, wires=[1, 2])]
         """
         wires = Wires(wires)
         op_list = []
@@ -293,7 +294,7 @@ def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
     return {
         RZ: n_repeats * num_wires,
         H: n_repeats * num_wires,
-        resource_rep(MultiRZ, num_wires=2): pattern_size * n_repeats,
+        MultiRZ(Float, Wire[2]): pattern_size * n_repeats,
     }
 
 
