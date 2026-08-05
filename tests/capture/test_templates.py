@@ -233,8 +233,8 @@ unmodified_templates_cases = [
     (qp.FFQRAM, (jnp.array([0.3, 0.7]),), {"wires": (0, 1, 2), "address": ((0, 0), (1, 1))}),
     (
         qp.SumOfSlatersPrep,
-        (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
-        {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
+        (np.array([0.65351078, 0.62516158, 0.42672786]),),
+        {"wires": [0, 1, 2], "indices": (6, 3, 0), "enumeration_wires": Wires([3, 4]), "identification_wires": Wires([]), "qrom_work_wires": Wires([5]), "mcx_cache_wires": Wires([6]),},
     ),
     (
         qp.PartialUnaryStatePreparation,
