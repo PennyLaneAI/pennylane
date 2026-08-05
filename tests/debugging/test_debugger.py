@@ -114,3 +114,22 @@ class TestQueuePollution:
 
         expected = self._create_circuit()
         assert np.allclose(circuit(), expected())
+class TestDebugProbsMeasurementValue:
+    """Regression test for issue #9652: debug_probs should accept a MeasurementValue as
+    `op` instead of raising due to an incorrect truthiness check on MeasurementValue.__bool__."""
+
+    def test_debug_probs_accepts_measurement_value(self):
+        """Tests that debug_probs(op=<MeasurementValue>) returns a valid probability
+        distribution instead of raising ValueError."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circuit():
+            qp.RX(1.23, wires=0)
+            m0 = qp.measure(0)
+            result = debug_probs(op=m0)
+            assert result is not None
+            assert len(result) == 2
+            assert np.isclose(sum(result), 1.0)
+            return qp.expval(qp.Z(0))
+
+        circuit()

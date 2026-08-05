@@ -1104,8 +1104,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.debug_probs` no longer raises when `op` is a `MeasurementValue`, fixing an `if op:`
+  truthiness check that incorrectly evaluated `MeasurementValue.__bool__`.
+  [(#9652)](https://github.com/PennyLaneAI/pennylane/issues/9652)
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
+
 
 * Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires
   were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors.
@@ -1241,4 +1245,5 @@ Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
 Jake Zaia,
-Zinan Zhou.
+Zinan Zhou,
+Vedant Mahadik.
