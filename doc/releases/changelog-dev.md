@@ -1214,7 +1214,7 @@
 * Added a :func:`~.pennylane.labs.templates.mps_synthesis` template that
   synthesizes a right-canonical matrix product state into a quantum circuit via
   generalized flag decompositions.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9971)](https://github.com/PennyLaneAI/pennylane/pull/9971)
 
 <h3>Contributors ✍️</h3>
 
