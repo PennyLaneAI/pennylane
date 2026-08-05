@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
 from pennylane.templates.state_preparations.sum_of_slaters import (

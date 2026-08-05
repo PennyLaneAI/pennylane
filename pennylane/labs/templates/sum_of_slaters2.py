@@ -287,6 +287,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
     @property
     def resource_params(self):
+        """Return the resource parameters for the SumOfSlatersPrep2 template."""
         indices = self.hyperparameters["indices"]
         num_wires = len(self.wires)
         v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
@@ -304,11 +305,15 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         mcx_cache_wires,
         indices,
     ):  # pylint: disable=too-many-arguments
-        super().__init__(coefficients, wires, indices)
-        self.hyperparameters["enumeration_wires"] = Wires(enumeration_wires)
-        self.hyperparameters["identification_wires"] = Wires(identification_wires)
-        self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
-        self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
+        super().__init__(
+            coefficients,
+            wires,
+            enumeration_wires,
+            identification_wires,
+            qrom_work_wires,
+            mcx_cache_wires,
+            indices,
+        )
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)
