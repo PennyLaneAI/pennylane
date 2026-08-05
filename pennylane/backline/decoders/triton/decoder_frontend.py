@@ -131,9 +131,6 @@ def build_css_decoder(
     )
 
 
-build_decoder = build_css_decoder
-
-
 def _normalize_h(H: ArrayLike) -> np.ndarray:
     """
     Ensure matrix is compliant: 2 dimensional of size, filled with 1s and 0s
