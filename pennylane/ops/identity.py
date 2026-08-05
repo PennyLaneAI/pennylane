@@ -286,9 +286,10 @@ class GlobalPhase(Operator2):
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[0]}
 
+    grad_method = "A"
+
     def __init__(self, phi, wires: WiresLike = ()):  # pylint: disable=unused-argument
-        # NOTE: Always canonicalize to empty wires
-        super().__init__(phi, wires=())
+        super().__init__(phi, wires)
 
     @staticmethod
     def compute_eigvals(phi, wires=()):  # pylint: disable=arguments-differ
