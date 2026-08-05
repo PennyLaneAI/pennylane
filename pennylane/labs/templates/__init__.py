@@ -26,6 +26,7 @@ This module contains templates, which are pre-coded routines that can be used in
     ~SumOfSlatersPrep2
     ~trotter_fragmented
     ~mps_synthesis
+    ~mps_preparation
 """
 
 from .left_classical_comparator import LeftClassicalComparator

@@ -13,4 +13,4 @@
 # limitations under the License.
 """Matrix-product-state preparation scripts."""
 
-from .mps_synthesis import mps_preparation
+from .mps_synthesis import mps_preparation, mps_synthesis
