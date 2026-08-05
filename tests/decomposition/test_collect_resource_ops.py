@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -54,8 +54,8 @@ class TestCollectResourceOps:
         assert ops == {
             abstractify(qp.RX),
             abstractify(qp.CNOT),
-            qp.resource_rep(qp.MultiRZ, num_wires=2),
-            qp.resource_rep(qp.MultiRZ, num_wires=3),
+            qp.MultiRZ(Float, Wire[2]),
+            qp.MultiRZ(Float, Wire[3]),
         }
 
     @pytest.mark.unit
@@ -89,7 +89,7 @@ class TestCollectResourceOps:
         assert len(ops) == 5
         assert ops == {
             abstractify(qp.RX),
-            qp.resource_rep(qp.MultiRZ, num_wires=3),
+            qp.MultiRZ(Float, Wire[3]),
             qp.resource_rep(CustomOp, x=0),
             qp.resource_rep(CustomOp, x=0.5),
             qp.resource_rep(CustomOp, x=1),
@@ -116,7 +116,7 @@ class TestCollectResourceOps:
         assert ops == {
             _ctrl_abstract(qp.X, Wire[1]),
             _ctrl_abstract(qp.RX, Wire[1]),
-            qp.decomposition.controlled_resource_rep(qp.MultiRZ, {"num_wires": 3}, 1, 0, 0),
+            qp.ctrl(qp.MultiRZ(Float, Wire[3]), Wire[1]),
         }
 
     @pytest.mark.unit
@@ -140,7 +140,7 @@ class TestCollectResourceOps:
         assert ops == {
             _adjoint_abstract(qp.X),
             _adjoint_abstract(qp.RX),
-            qp.decomposition.adjoint_resource_rep(qp.MultiRZ, {"num_wires": 3}),
+            _adjoint_abstract(qp.MultiRZ(Float, Wire[3])),
         }
 
     @pytest.mark.unit
