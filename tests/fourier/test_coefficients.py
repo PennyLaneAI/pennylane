@@ -70,8 +70,7 @@ class TestExceptions:
             coefficients(self.dummy_fn, n_inputs, 2, True, filter_threshold=threshold)
 
 
-# pylint: disable-next=too-few-public-methods
-class TestFourierCoefficientSingleVariable:
+class TestFourierCoefficientSingleVariable:  # pylint: disable=too-few-public-methods
     """Test that the Fourier coefficients of a single-variable function are computed correctly"""
 
     @pytest.mark.parametrize(

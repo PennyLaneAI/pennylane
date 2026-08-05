@@ -105,8 +105,8 @@ class Hadamard(Operator2):
     @staticmethod
     @override
     @lru_cache
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -128,16 +128,16 @@ class Hadamard(Operator2):
     @staticmethod
     @override
     @lru_cache
-    # pylint: disable=arguments-differ,unused-argument
     def compute_sparse_matrix(wires: WiresLike = None, format="csr") -> sparse.spmatrix:
+        # pylint: disable=arguments-differ,unused-argument
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]]).asformat(
             format=format
         )
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -221,10 +221,7 @@ Args:
 """
 
 
-# pylint: disable=unused-argument
-
-
-def _hadamard_rz_rx_resources(wires: WiresLike):
+def _hadamard_rz_rx_resources(wires: WiresLike):  # pylint: disable=unused-argument
     return {qp.RZ: 2, qp.RX: 1, qp.GlobalPhase: 1}
 
 
@@ -236,10 +233,7 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qp.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-# pylint: disable=unused-argument
-
-
-def _hadamard_rz_ry_resources(wires: WiresLike):
+def _hadamard_rz_ry_resources(wires: WiresLike):  # pylint: disable=unused-argument
     return {qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1}
 
 
@@ -250,10 +244,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qp.GlobalPhase(-np.pi / 2)
 
 
-# pylint: disable=unused-argument
-
-
-def _hadamard_ppm_resources(wires: WiresLike):
+def _hadamard_ppm_resources(wires: WiresLike):  # pylint: disable=unused-argument
     return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
 
 
@@ -273,6 +264,7 @@ add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory2)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_h_resources(base, control_wires, work_wires, work_wire_type, **_):
     if len(control_wires) == 1:
         return {qp.CH: 1}
@@ -675,8 +667,8 @@ class PauliY(Operator2):
         return base_label or "Y"
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -697,13 +689,13 @@ class PauliY(Operator2):
 
     @staticmethod
     @lru_cache
-    # pylint: disable=unused-argument,arguments-differ
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
+        # pylint: disable=unused-argument,arguments-differ
         return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike | None = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -910,8 +902,8 @@ class PauliZ(Operator2):
         return base_label or "Z"
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -932,13 +924,13 @@ class PauliZ(Operator2):
 
     @staticmethod
     @lru_cache
-    # pylint: disable=unused-argument,arguments-differ
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
+        # pylint: disable=unused-argument,arguments-differ
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike | None = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -963,10 +955,10 @@ class PauliZ(Operator2):
         return qp.pauli.pauli_eigs(1)
 
     @staticmethod
-    # pylint: disable=unused-argument
     def compute_diagonalizing_gates(
         wires: WiresLike,
     ) -> list[qp.operation.Operator]:
+        # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1165,8 +1157,8 @@ class S(Operator2):
 
     @staticmethod
     @lru_cache
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1186,8 +1178,8 @@ class S(Operator2):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1224,10 +1216,7 @@ class S(Operator2):
         )
 
 
-# pylint: disable=unused-argument
-
-
-def _s_phaseshift_resources(wires: WiresLike = None):
+def _s_phaseshift_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
     return {qp.PhaseShift: 1}
 
 
@@ -1311,8 +1300,8 @@ class T(Operator2):
 
     @staticmethod
     @lru_cache
-    # pylint: disable=arguments-differ, unused-argument
     def compute_matrix(wires=None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1332,8 +1321,8 @@ class T(Operator2):
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
     def compute_eigvals(wires=None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1370,10 +1359,7 @@ class T(Operator2):
         )
 
 
-# pylint: disable=unused-argument
-
-
-def _t_phaseshift_resources(wires=None):
+def _t_phaseshift_resources(wires=None):  # pylint: disable=unused-argument
     return {qp.PhaseShift: 1}
 
 
@@ -1443,8 +1429,8 @@ class SX(Operator2):
     _matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1464,8 +1450,8 @@ class SX(Operator2):
         return SX._matrix
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike = None) -> np.ndarray:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1497,10 +1483,7 @@ class SX(Operator2):
         return super().pow(z_mod4)
 
 
-# pylint: disable=unused-argument
-
-
-def _sx_to_rx_resources(wires: WiresLike = None):
+def _sx_to_rx_resources(wires: WiresLike = None):  # pylint: disable=unused-argument
     return {qp.RX: 1, qp.GlobalPhase: 1}
 
 
@@ -1583,6 +1566,7 @@ class SWAP(Operator2):
     @override
     @lru_cache
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1606,8 +1590,8 @@ class SWAP(Operator2):
     @staticmethod
     @override
     @lru_cache
-    # pylint: disable=arguments-differ
     def compute_sparse_matrix(wires: WiresLike = None, format="csr") -> sparse.spmatrix:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1653,10 +1637,7 @@ def _ctrl_swap(base: SWAP, control, control_values, *_):
     return NotImplemented
 
 
-# pylint: disable=unused-argument
-
-
-def _swap_to_cnot_resources(wires: WiresLike):
+def _swap_to_cnot_resources(wires: WiresLike):  # pylint: disable=unused-argument
     return {qp.CNOT: 3}
 
 
@@ -1667,10 +1648,7 @@ def _swap_to_cnot(wires, **_):
     qp.CNOT(wires=[wires[0], wires[1]])
 
 
-# pylint: disable=unsue-argument
-
-
-def _swap_to_ppr_resource(wires: WiresLike):
+def _swap_to_ppr_resource(wires: WiresLike):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="XX"): 1,
         resource_rep(qp.PauliRot, pauli_word="YY"): 1,
@@ -1775,6 +1753,7 @@ class ECR(Operator2):
     @staticmethod
     @override
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1811,6 +1790,7 @@ class ECR(Operator2):
     @staticmethod
     @override
     def compute_eigvals(wires: WiresLike = None) -> np.ndarray:
+        # pylint: disable=unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1845,10 +1825,7 @@ class ECR(Operator2):
         return super().pow(z % 2)
 
 
-# pylint: disable=unused-argument
-
-
-def _ecr_decomp_resources(wires: WiresLike):
+def _ecr_decomp_resources(wires: WiresLike):  # pylint: disable=unused-argument
     return {Z: 1, qp.CNOT: 1, SX: 1, qp.RX: 2, qp.RY: 1}
 
 
@@ -1919,6 +1896,7 @@ class ISWAP(Operator2):
     @override
     @lru_cache
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1942,6 +1920,7 @@ class ISWAP(Operator2):
     @staticmethod
     @override
     def compute_eigvals(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1976,10 +1955,7 @@ class ISWAP(Operator2):
         return super().pow(z_mod4)
 
 
-# pylint: disable=unused-argument
-
-
-def _iswap_decomp_resources(wires: WiresLike):
+def _iswap_decomp_resources(wires: WiresLike):  # pylint: disable=unused-argument
     return {qp.S: 2, qp.Hadamard: 2, qp.CNOT: 2}
 
 
@@ -1993,10 +1969,7 @@ def _iswap_decomp(wires):
     Hadamard(wires=wires[1])
 
 
-# pylint: disable=unused-argument
-
-
-def _iswap_to_ppr_resource(wires: WiresLike):
+def _iswap_to_ppr_resource(wires: WiresLike):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="XX"): 1,
         resource_rep(qp.PauliRot, pauli_word="YY"): 1,
@@ -2014,16 +1987,13 @@ add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
 @register_resources(lambda **_: {qp.SISWAP: 1})
-def _pow_iswap_to_siswap(base, z):
+def _pow_iswap_to_siswap(base, z):  # pylint: disable=unused-argument
     qp.SISWAP(wires=base.wires)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
 @register_resources(lambda **_: {qp.Z: 2})
-# pylint: disable=unused-argument
-
-
-def _pow_iswap_to_zz(base, z):
+def _pow_iswap_to_zz(base, z):  # pylint: disable=unused-argument
     qp.Z(wires=base.wires[0])
     qp.Z(wires=base.wires[1])
 
@@ -2085,6 +2055,7 @@ class SISWAP(Operator2):
     @override
     @lru_cache
     def compute_matrix(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2121,6 +2092,7 @@ class SISWAP(Operator2):
     @staticmethod
     @override
     def compute_eigvals(wires: WiresLike = None) -> np.ndarray:  # pylint: disable=arguments-differ
+        # pylint: disable=unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2155,10 +2127,7 @@ class SISWAP(Operator2):
         return super().pow(z_mod8)
 
 
-# pylint: disable=unused-argument
-
-
-def _siswap_decomp_resources(wires: WiresLike):
+def _siswap_decomp_resources(wires: WiresLike):  # pylint: disable=unused-argument
     return {SX: 6, qp.RZ: 4, qp.CNOT: 2}
 
 
@@ -2178,10 +2147,7 @@ def _siswap_decomp(wires):
     SX(wires=wires[1])
 
 
-# pylint: disable=unused-argument
-
-
-def _siswap_to_ppr_resource(wires: WiresLike):
+def _siswap_to_ppr_resource(wires: WiresLike):  # pylint: disable=unused-argument
     return {
         resource_rep(qp.PauliRot, pauli_word="XX"): 1,
         resource_rep(qp.PauliRot, pauli_word="YY"): 1,
@@ -2199,19 +2165,13 @@ add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 2))
 @register_resources(lambda **_: {qp.ISWAP: 1})
-# pylint: disable=unused-argument
-
-
-def _pow_siswap_to_iswap(base, z):
+def _pow_siswap_to_iswap(base, z):  # pylint: disable=unused-argument
     qp.ISWAP(base.wires)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 4))
 @register_resources(lambda **_: {qp.Z: 2})
-# pylint: disable=unused-argument
-
-
-def _pow_siswap_to_zz(base, z):
+def _pow_siswap_to_zz(base, z):  # pylint: disable=unused-argument
     qp.Z(wires=base.wires[0])
     qp.Z(wires=base.wires[1])
 

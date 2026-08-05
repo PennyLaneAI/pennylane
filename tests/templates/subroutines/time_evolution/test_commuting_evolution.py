@@ -264,9 +264,9 @@ class TestGradients:
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
     def test_four_term_case(self):
-        # pylint: disable=not-callable
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
+        # pylint: disable=not-callable
 
         n_wires = 2
         dev = qp.device("default.qubit", wires=n_wires)
@@ -290,8 +290,8 @@ class TestGradients:
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
     def test_differentiable_hamiltonian(self):
-        # pylint: disable=not-callable
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
+        # pylint: disable=not-callable
 
         n_wires = 2
         dev = qp.device("default.qubit", wires=n_wires)

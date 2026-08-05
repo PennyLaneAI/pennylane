@@ -311,8 +311,8 @@ class TestAdjointJacobian:
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
     def test_provide_starting_state(self, tol, dev):
-        # pylint: disable=protected-access
         """Tests provides correct answer when provided starting state."""
+        # pylint: disable=protected-access
         x, y, z = [0.5, 0.3, -0.7]
 
         with qp.queuing.AnnotatedQueue() as q:

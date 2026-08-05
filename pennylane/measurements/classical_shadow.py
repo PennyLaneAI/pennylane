@@ -455,7 +455,6 @@ class ShadowExpvalMP(MeasurementTransform):
         super().__init__()
 
     @classmethod
-    # pylint: disable-next=arguments-renamed
     def _primitive_bind_call(
         cls,
         H: Operator | Sequence,
@@ -463,12 +462,13 @@ class ShadowExpvalMP(MeasurementTransform):
         k: int = 1,
         **kwargs,
     ):
+        # pylint: disable=arguments-renamed
         if cls._obs_primitive is None:  # pragma: no cover
             return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
-        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel# tach-ignore
             ClassicalShadow,
         )
 
@@ -523,7 +523,7 @@ class ShadowExpvalMP(MeasurementTransform):
             wires=self.wires, seed=self.seed
         ).process_density_matrix_with_shots(state, wire_order, shots, rng=rng)
         # tach-ignore
-        from pennylane.shadows import (  # tach-ignore  # pylint: disable=import-outside-toplevel
+        from pennylane.shadows import (  # tach-ignore pylint: disable=import-outside-toplevel
             ClassicalShadow,
         )
 

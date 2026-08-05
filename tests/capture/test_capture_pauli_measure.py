@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for capturing Pauli product measurements."""
 
-# pylint: disable=wrong-import-order, wrong-import-position
+# pylint: disable=wrong-import-order,wrong-import-position
 
 import pytest
 

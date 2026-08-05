@@ -12,7 +12,7 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=protected-access, unbalanced-tuple-unpacking, wrong-import-position
+# pylint: disable=protected-access,unbalanced-tuple-unpacking,wrong-import-position
 
 import pytest
 from operator2_utils import (
@@ -34,6 +34,7 @@ from pennylane.capture import PlxprInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
+# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
 from pennylane.pytrees import unflatten
 

@@ -222,8 +222,7 @@ class TestPWC_from_function:
 class TestIntegration:
     """Test integration of pwc functions with the pulse module."""
 
-    # pylint: disable-next=too-many-arguments
-    def integral_pwc(
+    def integral_pwc(  # pylint:disable = too-many-arguments
         self, t1, t2, num_bins, integration_bounds, fn, params, pwc_from_function=False
     ):
         """Helper function that integrates a pwc function."""

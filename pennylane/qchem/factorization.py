@@ -15,9 +15,6 @@
 This module contains the functions needed for two-electron tensor factorization.
 """
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-
-
 from functools import partial
 
 import numpy as np
@@ -35,6 +32,8 @@ try:  # pragma: no cover
     from jax import value_and_grad
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_jax_optax = False
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 
 def factorize(

@@ -413,8 +413,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         ValueError: <cancel-inverses()> without a tape definition occurs before tape transform <defer_measurements()>.
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __new__(
+    def __new__(  # pylint: disable=too-many-arguments
         cls,
         tape_transform: Callable | None = None,
         pass_name: None | str = None,
@@ -447,8 +446,9 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 # NOTE: Prepend "qnode" as an argument to the docstring
                 # so that it's consistent with tape based transform signatures.
                 @wraps(setup_inputs)
-                def _modified_setup_inputs(qnode, *args, **kwargs):
-                    # pylint: disable=unused-argument
+                def _modified_setup_inputs(
+                    qnode, *args, **kwargs
+                ):  # pylint: disable=unused-argument
                     return setup_inputs(*args, **kwargs)  # pragma: no cover
 
                 orig_sig = signature(setup_inputs)
@@ -463,7 +463,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
-    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         tape_transform: Callable | None = None,
@@ -476,6 +475,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         final_transform: bool = False,
         use_argnum_in_expand: bool = False,
     ):
+        # pylint: disable=too-many-arguments
         if tape_transform is not None and not callable(tape_transform):
             raise TransformError(
                 f"The function to register, {tape_transform}, does "
@@ -628,7 +628,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
 
         if self.expand_transform:
-            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
+            from .compile_pipeline import CompilePipeline
 
             return CompilePipeline(self, other)
 
@@ -638,7 +639,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     def __mul__(self, n):
         """Multiply by an integer to create a compile pipeline with this transform repeated."""
         if self.expand_transform:
-            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
+            from .compile_pipeline import CompilePipeline
 
             return CompilePipeline(self) * n
 
@@ -927,7 +929,8 @@ class BoundTransform:
             return NotImplemented
 
         # Import here to avoid circular import
-        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from .compile_pipeline import CompilePipeline
 
         if self.is_final_transform and other.is_final_transform:
             raise TransformError(

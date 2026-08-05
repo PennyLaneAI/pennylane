@@ -87,7 +87,8 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     2: ────────╰X────┤ ╰State
 
     """
-    import pyzx  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import pyzx
 
     pyzx_graph = to_zx(tape)
     pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)

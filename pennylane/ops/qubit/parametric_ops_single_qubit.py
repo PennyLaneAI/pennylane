@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
 
-# pylint: disable=arguments-differ, too-many-arguments
-
+# pylint: disable=arguments-differ
 
 import functools
 import math as builtin_math
@@ -555,8 +555,8 @@ class RZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
     def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -594,15 +594,15 @@ class RZ(Operator2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_sparse_matrix(phi, wires=None, format="csr"):
         return sp.sparse.csr_matrix(
             [[np.exp(-1j * phi / 2), 0], [0, np.exp(1j * phi / 2)]]
         ).asformat(format)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
     def compute_eigvals(phi: TensorLike, wires=None) -> TensorLike:
+        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -663,8 +663,7 @@ def _ctrl_rz(base: RZ, control, control_values, *_):
     return NotImplemented
 
 
-# pylint: disable=unused-argument
-def _rz_to_ps_resources(phi, wires):
+def _rz_to_ps_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
 
@@ -674,8 +673,7 @@ def _rz_to_ps(phi, wires: WiresLike):
     qp.GlobalPhase(phi / 2)
 
 
-# pylint: disable=unused-argument
-def _rz_to_rot_resources(phi, wires):
+def _rz_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
 
@@ -684,8 +682,7 @@ def _rz_to_rot(phi, wires: WiresLike):
     qp.Rot(0, 0, phi, wires=wires)
 
 
-# pylint: disable=unused-argument
-def _rz_to_ry_rx_resources(phi, wires):
+def _rz_to_ry_rx_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.RX: 1}
 
 
@@ -696,8 +693,7 @@ def _rz_to_ry_rx(phi, wires: WiresLike):
     qp.RY(-np.pi / 2, wires=wires)
 
 
-# pylint: disable=unused-argument
-def _rz_to_rx_cliff_resources(phi, wires):
+def _rz_to_rx_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     return {change_op_basis_resource_rep(qp.Hadamard, qp.RX, qp.Hadamard): 1}
 
 
@@ -706,8 +702,7 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.Hadamard(wires), qp.RX(phi, wires), qp.Hadamard(wires))
 
 
-# pylint: disable=unused-argument
-def _rz_to_ry_cliff_resources(phi, wires):
+def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     return {
         change_op_basis_resource_rep(
             resource_rep(
@@ -732,8 +727,7 @@ def _rz_to_ry_cliff(phi, wires: WiresLike):
     )
 
 
-# pylint: disable=unused-argument
-def _rz_to_ppr_resources(phi, wires):
+def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {resource_rep(qp.PauliRot, pauli_word="Z"): 1}
 
 
@@ -747,6 +741,7 @@ add_decomps("Adjoint(RZ)", adjoint_rotation2)
 add_decomps("Pow(RZ)", pow_rotation2)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_rz_resource(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CRZ: 1}
@@ -763,6 +758,7 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 
 
 @register_resources(_controlled_rz_resource)
+# pylint: disable-next=unused-argument
 def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = control_wires + base.wires
     if len(control_wires) == 1:

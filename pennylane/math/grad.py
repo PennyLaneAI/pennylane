@@ -15,9 +15,6 @@
 This submodule defines grad and jacobian for differentiating circuits in an interface-independent way.
 """
 
-# pylint: disable=import-outside-toplevel
-
-
 from collections.abc import Callable, Sequence
 
 from pennylane._grad import grad as _autograd_grad
@@ -64,6 +61,7 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     RuntimeError: element 0 of tensors does not require grad and does not have a grad_fn
 
     """
+    # pylint: disable=import-outside-toplevel
 
     argnums_integer = False
     if isinstance(argnums, int):
@@ -107,7 +105,7 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
 
 def _torch_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via torch."""
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from torch.autograd.functional import jacobian as _torch_jac
 
     argnums_torch = (argnums,) if isinstance(argnums, int) else argnums
@@ -135,8 +133,7 @@ def _tensorflow_jac(
     f, argnums, args, kwargs
 ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Calculate a jacobian via tensorflow"""
-    # pylint: disable-next=import-outside-toplevel
-    import tensorflow as tf
+    import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
     with tf.GradientTape() as tape:
         y = f(*args, **kwargs)
@@ -228,6 +225,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     <tf.Tensor: shape=(), dtype=float32, numpy=8.0>) of type <class 'tuple'>.
 
     """
+    # pylint: disable=import-outside-toplevel
 
     def compute_jacobian(*args, **kwargs):
         interface = get_interface(*args)

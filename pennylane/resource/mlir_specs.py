@@ -52,7 +52,6 @@ def _update_resource_dict(
 PBCDepth = namedtuple("PBCDepth", ["any_commuting_depth", "qubit_disjoint_depth"])
 
 
-# pylint: disable-next=too-many-branches
 def _mlir_resources_to_specs_resources(
     all_data: dict[str, Any],
     focus: str,
@@ -82,6 +81,7 @@ def _mlir_resources_to_specs_resources(
             names in the output. (modified in-place by this function)
     """
 
+    # pylint: disable=too-many-branches
     # This method would not benefit from being broken up further, the parsing logic just requires
     # several branches
 
@@ -223,9 +223,9 @@ def _execute_analysis_pass(
     This function will stop compilation before lowering to LLVM, avoiding the typical Catalyst
     compilation strategy.
     """
-    # pylint: disable=protected-access, import-outside-toplevel
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
+    # pylint: disable=import-outside-toplevel,protected-access
     try:
         from catalyst import QJIT
     except ImportError as e:
@@ -257,7 +257,6 @@ def _execute_analysis_pass(
         )
 
 
-# pylint: disable-next=too-many-arguments
 def resources_from_analysis_pass(
     qjit,
     original_qnode,
@@ -296,7 +295,8 @@ def resources_from_analysis_pass(
         dict[str, SpecsResources | list[SpecsResources]]: A mapping from level name to the
             corresponding resource information.
     """
-    # pylint: disable=protected-access
+
+    # pylint: disable=protected-access,too-many-arguments
 
     new_qnode = copy.deepcopy(original_qnode)
     iter_pipeline = new_qnode._compile_pipeline

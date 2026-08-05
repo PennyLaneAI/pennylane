@@ -13,9 +13,6 @@
 # limitations under the License.
 """Transform function for the Clifford+T decomposition."""
 
-# pylint: disable=import-outside-toplevel, global-statement
-
-
 import math
 import warnings
 from functools import lru_cache, partial
@@ -78,6 +75,7 @@ _CATALYST_SKIP_OP_TYPES = ()
 
 def _add_catalyst_skip_op_types():
     """Delayed addition of PennyLane-Catalyst skip op types."""
+    # pylint: disable=import-outside-toplevel,global-statement
     global _CATALYST_SKIP_OP_TYPES
     try:
         from catalyst.api_extensions.quantum_operators import MidCircuitMeasure
@@ -197,8 +195,8 @@ def _simplify_param(theta, gate):
     return None
 
 
-# pylint: disable-next=too-many-branches
 def _rot_decompose(op):
+    # pylint: disable=too-many-branches
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
     :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
     :class:`~.S`, and :class:`~.Hadamard`.
@@ -433,7 +431,6 @@ class _CachedCallable:
 
 
 @transform
-# pylint: disable-next=too-many-branches, too-many-statements
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
@@ -442,6 +439,7 @@ def clifford_t_decomposition(
     cache_eps_rtol=None,
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    # pylint: disable=too-many-branches,too-many-statements
     r"""Decomposes a circuit into the Clifford+T basis.
 
     This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.T`, :class:`~.RZ` and

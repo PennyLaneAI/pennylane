@@ -353,11 +353,11 @@ class TestMultipleReturns:
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, shots):
         """Return multiple different measurements."""
+        # pylint: disable=too-many-arguments
 
         dev = DefaultQubitLegacy(wires=2)
 

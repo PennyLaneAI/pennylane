@@ -187,8 +187,9 @@ class StronglyEntanglingLayers(Operation):
         return 1
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(weights, wires, ranges, imprimitive=CNOT):
+    def compute_decomposition(
+        weights, wires, ranges, imprimitive=CNOT
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

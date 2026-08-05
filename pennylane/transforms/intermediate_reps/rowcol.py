@@ -249,7 +249,7 @@ def _eliminate(P: TensorLike, connectivity, idx: int, mode: str):
 
     cnots = []
     # i.1.1/i.2.1 Find Steiner tree within S (S').
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from networkx.algorithms.approximation import steiner_tree
 
     T = steiner_tree(connectivity, list(S))

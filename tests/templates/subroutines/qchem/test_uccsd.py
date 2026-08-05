@@ -15,9 +15,9 @@
 Tests for the UCCSD template.
 """
 
-# pylint: disable=too-many-arguments
-
 import numpy as np
+
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp

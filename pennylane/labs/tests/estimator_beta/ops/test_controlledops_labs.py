@@ -13,9 +13,6 @@
 # limitations under the License.
 """Tests for controlled resource operators."""
 
-# pylint: disable=no-self-use
-
-
 from collections import defaultdict
 
 import pytest
@@ -31,6 +28,8 @@ from pennylane.labs.estimator_beta import (
     resource_rep,
 )
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
+
+# pylint: disable= no-self-use
 
 
 class TestLabsCH:

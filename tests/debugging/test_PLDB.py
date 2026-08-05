@@ -15,9 +15,6 @@
 Unit tests for the debugging module.
 """
 
-# pylint: disable=protected-access
-
-
 from unittest.mock import patch
 
 import numpy as np
@@ -29,6 +26,8 @@ from pennylane.debugging import PLDB, pldb_device_manager
 
 class TestPLDB:
     """Test the interactive debugging integration"""
+
+    # pylint: disable=protected-access
 
     def test_pldb_init(self):
         """Test that PLDB initializes correctly"""
@@ -205,7 +204,7 @@ def test_measure(mock_method, measurement_process):
     with qp.queuing.AnnotatedQueue() as queue:
         ops = [qp.X(0), qp.Y(1), qp.Z(0)] + [qp.Hadamard(i) for i in range(3)]
         measurements = [qp.expval(qp.X(2)), qp.state(), qp.probs(), qp.var(qp.Z(3))]
-        qp.debugging.debugger._measure(measurement_process)
+        qp.debugging.debugger._measure(measurement_process)  # pylint: disable=protected-access
 
     executed_tape = qp.tape.QuantumScript.from_queue(queue)
     expected_tape = qp.tape.QuantumScript(ops, measurements)

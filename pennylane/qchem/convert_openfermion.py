@@ -27,7 +27,8 @@ from pennylane.qchem.convert import _openfermion_to_pennylane, _pennylane_to_ope
 def _import_of():
     """Import openfermion."""
     try:
-        import openfermion  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import openfermion
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermion. "

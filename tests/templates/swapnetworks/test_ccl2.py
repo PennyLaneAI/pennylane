@@ -15,9 +15,6 @@
 Tests for the TwoLocalSwapNetwork template.
 """
 
-# pylint: disable=protected-access
-
-
 import pytest
 
 import pennylane as qp
@@ -26,6 +23,7 @@ from pennylane import numpy as np
 
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     def acquaintances(index, *_, use_CNOT=True, **__):
         return qp.CNOT(index) if use_CNOT else qp.CZ(index)
@@ -56,6 +54,8 @@ def test_flatten_unflatten():
 
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
+
+    # pylint: disable=too-many-arguments
 
     @pytest.mark.parametrize(
         ("wires", "acquaintances", "weights", "fermionic", "shift"),
@@ -191,7 +191,6 @@ class TestDecomposition:
             ),
         ],
     )
-    # pylint: disable-next=too-many-arguments
     def test_ccl2(self, num_wires, acquaintances, weights, fermionic, shift, exp_state):
         """Test that the TwoLocalSwapNetwork template works correctly by asserting the prepared state."""
 
@@ -225,8 +224,6 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    # pylint: disable=too-many-arguments
-
     @pytest.mark.parametrize(
         ("wires", "acquaintances", "weights", "fermionic", "shift", "msg_match"),
         [
@@ -256,6 +253,7 @@ class TestInputs:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_ccl2_exceptions(self, wires, acquaintances, weights, fermionic, shift, msg_match):
         """Test that TwoLocalSwapNetwork throws an exception if the parameters have illegal
         shapes, types or values."""
@@ -479,8 +477,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-# pylint: disable-next=too-few-public-methods
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Test that the parameter-shift rule for this template matches that of backprop."""
 
     def test_ps_rule_gradient(self, tol):

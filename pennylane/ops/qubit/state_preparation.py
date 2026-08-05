@@ -16,10 +16,9 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 
-# pylint: disable=too-many-branches, arguments-differ
-
-
 from importlib.util import find_spec
+
+# pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
 import numpy as np
@@ -434,8 +433,8 @@ class StatePrep(StatePrepBase):
             super()._check_batching()
 
     @staticmethod
-    # pylint: disable-next=unused-argument
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.

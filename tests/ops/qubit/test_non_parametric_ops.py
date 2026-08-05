@@ -1066,8 +1066,9 @@ class TestPowMethod:
 class TestControlledMethod:
     """Tests for the _controlled method of non-parametric operations."""
 
+    # pylint: disable=protected-access
+
     def test_PauliX(self):
-        # pylint: disable=protected-access
         """Test the PauliX _controlled method."""
         out = qp.PauliX(0)._controlled("a")
         qp.assert_equal(out, qp.CNOT(("a", 0)))
@@ -1079,13 +1080,11 @@ class TestControlledMethod:
 
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
-        # pylint: disable=protected-access
         out = qp.CNOT((0, 1))._controlled("a")
         qp.assert_equal(out, qp.Toffoli(("a", 0, 1)))
 
     def test_Barrier(self):
         """Tests the _controlled behavior of Barrier."""
-        # pylint: disable=protected-access
         original = qp.Barrier((0, 1, 2), only_visual=True)
         out = original._controlled("a")
         qp.assert_equal(original, out)
@@ -1335,7 +1334,7 @@ class TestPauliRep:
     )
     def test_lazy_implementation(self, op, _):
         """Checks if the ._pauli_rep attribute is only computed when needed."""
-        # pylint: disable=unused-variable, protected-access
+        # pylint: disable=unused-variable,protected-access
         assert op._pauli_rep is None
         pauli_rep = op.pauli_rep
         assert op._pauli_rep is not None

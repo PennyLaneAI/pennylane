@@ -15,9 +15,6 @@
 This module contains tests for classes needed to track auxilliary wires.
 """
 
-# pylint: disable=no-self-use
-
-
 import copy
 
 import pytest
@@ -28,6 +25,8 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate, WireResource
 
 class TestWireResourceManager:
     """Test the methods and attributes of the WireResourceManager class"""
+
+    # pylint: disable=no-self-use
 
     wire_manager_quantities = (
         WireResourceManager(zeroed=2),

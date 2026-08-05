@@ -73,8 +73,7 @@ tape = qp.tape.QuantumScript.from_queue(q_tape)
 def test_error_if_unsupported_object_in_tape():
     """Test an error is raised if there's an unsupported object in the tape."""
 
-    # pylint: disable-next=too-few-public-methods
-    class DummyObj:
+    class DummyObj:  # pylint: disable=too-few-public-methods
         wires = qp.wires.Wires(2)
 
     _tape = qp.tape.QuantumScript([DummyObj()], [])
@@ -83,7 +82,7 @@ def test_error_if_unsupported_object_in_tape():
         qp.drawer.tape_text(_tape)
 
 
-class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-positional-arguments
+class TestHelperFunctions:  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(

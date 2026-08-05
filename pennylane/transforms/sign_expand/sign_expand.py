@@ -148,8 +148,9 @@ def calculate_xi_decomposition(hamiltonian):
     return dEs, mus, times, projs
 
 
-# pylint: disable-next=too-many-arguments
-def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
+def construct_sgn_circuit(  # pylint: disable=too-many-arguments
+    hamiltonian, tape, mus, times, phis, controls
+):
     """
     Takes a tape with state prep and ansatz and constructs the individual tapes
     approximating/estimating the individual terms of your decomposition
@@ -356,8 +357,7 @@ def sign_expand(
 
         tapes.append(new_tape)
 
-    def processing_fn(res):
-        # pylint: disable=function-redefined
+    def processing_fn(res):  # pylint: disable=function-redefined
         return (
             qp.math.sum(res)
             if isinstance(tape.measurements[0], qp.measurements.ExpectationMP)

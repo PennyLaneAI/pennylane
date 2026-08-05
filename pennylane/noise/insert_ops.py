@@ -15,9 +15,6 @@
 Provides transforms for inserting operations into quantum circuits.
 """
 
-# pylint: disable=too-many-branches
-
-
 from collections.abc import Callable, Sequence
 from types import FunctionType
 
@@ -30,6 +27,8 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import Adjoint
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
+
+# pylint: disable=too-many-branches
 
 
 def _check_position(position):

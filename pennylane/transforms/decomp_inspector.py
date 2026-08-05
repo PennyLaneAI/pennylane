@@ -14,9 +14,6 @@
 
 """Defines the decomp_inspector transform."""
 
-# pylint: disable=protected-access, too-few-public-methods
-
-
 from collections.abc import Sequence
 from functools import partial
 from typing import override
@@ -33,8 +30,10 @@ from pennylane.typing import PostprocessingFn
 from .decompose import _resolve_gate_set
 
 
-class _DecompInGraphInfo(_DecompInfo):
+class _DecompInGraphInfo(_DecompInfo):  # pylint: disable=too-few-public-methods
     """Information about a decomposition rule in a graph for inspection."""
+
+    # pylint: disable=protected-access
 
     def __init__(
         self,
@@ -176,21 +175,20 @@ class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=to
 
     @override
     def _title(self, index, rule) -> str:
-        title = f"Decomposition {index} (name: {rule._name})"
+        title = f"Decomposition {index} (name: {rule._name})"  # pylint: disable=protected-access
         if index == self._chosen_idx:
             title = "CHOSEN: " + title
         return title
 
     @override
     def _title_md(self, index, rule) -> str:
-        title = f"Decomposition {index} (name: {rule._name})"
+        title = f"Decomposition {index} (name: {rule._name})"  # pylint: disable=protected-access
         if index == self._chosen_idx:
             return f"#### **CHOSEN:** {title}"
         return f"#### {title}"
 
 
-# pylint: disable-next=too-few-public-methods
-class DecompGraphInspector:
+class DecompGraphInspector:  # pylint: disable=too-few-public-methods
     """Interactive object that queries a solved decomposition graph.
 
     .. seealso::
@@ -199,6 +197,8 @@ class DecompGraphInspector:
         transform for how this object is used.
 
     """
+
+    # pylint: disable=protected-access
 
     def __init__(self, decomp_graph: DecompositionGraph, solution: DecompGraphSolution) -> None:
         self._decomp_graph = decomp_graph

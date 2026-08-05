@@ -82,9 +82,6 @@ Other interfaces are capable of calculating the full jacobian in one call, so th
 
 """
 
-# pylint: disable=unused-argument
-
-
 import logging
 from collections.abc import Callable
 
@@ -133,6 +130,7 @@ def autograd_execute(
     -0.0998...
 
     """
+    # pylint: disable=unused-argument
     tapes = tuple(tapes)
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
@@ -179,6 +177,7 @@ def _execute(
             for the input tapes.
 
     """
+    # pylint: disable=unused-argument
     return _to_autograd(execute_fn(tapes))
 
 
@@ -205,6 +204,7 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
+    # pylint: disable=unused-argument
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given

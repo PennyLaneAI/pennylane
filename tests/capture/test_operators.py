@@ -15,9 +15,9 @@
 Integration tests for the capture of pennylane operations into jaxpr.
 """
 
-# pylint: disable=protected-access
-
 import numpy as np
+
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp
@@ -71,8 +71,6 @@ def test_fallback_if_primitive_still_None():
 
     class MyOp(qp.operation.Operator):
         """A dummy operator."""
-
-        num_wires = 1
 
     MyOp._primitive = None
 

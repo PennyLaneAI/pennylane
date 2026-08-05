@@ -15,8 +15,7 @@
 Tests for mitigation transforms.
 """
 
-# pylint: disable=no-self-use, protected-access
-
+# pylint:disable=no-self-use,protected-access
 
 import pytest
 from packaging import version
@@ -76,7 +75,6 @@ class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
     # pylint:disable = unnecessary-lambda-assignment
-
     folding = lambda *args, **kwargs: tape_base
     extrapolate = lambda *args, **kwargs: [3.141]
 
@@ -230,8 +228,8 @@ class TestMitigateWithZNE:
         )
 
     def test_zne_with_noise_models(self):
-        # pylint: disable=not-callable
         """Test that mitigate_with_zne transform works with noise models"""
+        # pylint: disable=not-callable
         fcond = qp.noise.wires_in([0, 1])
         noise = qp.noise.partial_wires(qp.AmplitudeDamping, 0.05)
         noise_model = qp.NoiseModel({fcond: noise})
@@ -253,8 +251,8 @@ class TestMitigateWithZNE:
         assert qp.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
 
     def test_zne_error_with_channels(self):
-        # pylint: disable=not-callable
         """Test that mitigate_with_zne transform raises correct error with channels"""
+        # pylint: disable=not-callable
         fcond = qp.noise.wires_in([0, 1])
         noise = qp.noise.partial_wires(qp.AmplitudeDamping, 0.05)
         noise_model = qp.NoiseModel({fcond: noise})

@@ -15,11 +15,7 @@
 This module contains the qp.equal function.
 """
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-return-statements
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-positional-arguments
-
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches,too-many-positional-arguments
 
 from collections.abc import Iterable
 from functools import singledispatch

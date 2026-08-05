@@ -81,7 +81,8 @@ class TestStandardValidityBasisState:
     @pytest.mark.parametrize("wires_traced", [True, False])
     def test_jit_compatibility(self, state_traced, wires_traced):
         """Test compatibility with jax.jit."""
-        import jax  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import jax
 
         state = np.array([0, 1, 0])
         closure_state = state  # We can use a closure variable to avoid automatic tracing

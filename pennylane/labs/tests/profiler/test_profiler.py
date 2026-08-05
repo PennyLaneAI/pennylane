@@ -15,9 +15,6 @@
 Test the profiler functionality.
 """
 
-# pylint: disable=no-self-use, too-few-public-methods
-
-
 from collections import defaultdict
 
 import pytest
@@ -26,6 +23,8 @@ import pennylane as qp
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resources_base import Resources
 from pennylane.labs.profiler import ProfileNode, export_flame_graph_data, profile
+
+# pylint: disable=no-self-use,too-few-public-methods
 
 
 def _basic_circuit():

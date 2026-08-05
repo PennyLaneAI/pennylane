@@ -15,9 +15,6 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 
-# pylint: disable=unnecessary-lambda
-
-
 import functools
 import itertools
 import uuid
@@ -38,6 +35,7 @@ else:
     jax = None
 
 if jax_available:
+    # pylint: disable=unnecessary-lambda
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
@@ -285,7 +283,6 @@ class Wires(Sequence):
         """
         return set(self.labels)
 
-    # pylint: disable-next=arguments-differ
     def index(self, wire):
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
 
@@ -296,6 +293,7 @@ class Wires(Sequence):
         Returns:
             int: index of the input
         """
+        # pylint: disable=arguments-differ
 
         if isinstance(wire, Wires):
             if len(wire) != 1:

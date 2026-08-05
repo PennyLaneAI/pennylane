@@ -264,7 +264,6 @@ unsupported_operations = [
 ]
 
 
-# pylint: disable-next=too-many-return-statements
 def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting using a lookup table.
 
@@ -291,6 +290,7 @@ def is_commuting(operation1, operation2):
     >>> qp.is_commuting(qp.X(0), qp.Z(0))
     False
     """
+    # pylint: disable=too-many-return-statements
 
     # operations are disjoints
     if not intersection(operation1.wires, operation2.wires):

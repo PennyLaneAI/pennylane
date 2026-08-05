@@ -1005,12 +1005,12 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], (np.ndarray, np.float64))
         assert res[1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
+        # pylint: disable=too-many-arguments
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -1274,12 +1274,12 @@ class TestIntegrationMultipleReturnsTensorflow:
         assert isinstance(res[1], tf.Tensor)
         assert res[1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
+        # pylint: disable=too-many-arguments
         import tensorflow as tf
 
         dev = qp.device(device, wires=2)
@@ -1534,12 +1534,12 @@ class TestIntegrationMultipleReturnsTorch:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
+        # pylint: disable=too-many-arguments
         import torch
 
         dev = qp.device(device, wires=2)
@@ -1795,12 +1795,12 @@ class TestIntegrationMultipleReturnJax:
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
+        # pylint: disable=too-many-arguments
         import jax
 
         dev = qp.device(device, wires=2)
@@ -2007,10 +2007,10 @@ class TestIntegrationShotVectors:
         assert len(res) == all_shots
         assert all(r.shape == () for r in res)
 
-    # pylint: disable=unused-argument
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
+        # pylint: disable=unused-argument
         dev = qp.device("default.qubit", wires=2)
         shot_vector = qp.measurements.Shots(shot_vector)
 
@@ -2109,11 +2109,11 @@ class TestIntegrationSameMeasurementShotVector:
         (qp.Hermitian(herm, wires=[3, 2]), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1", probs_data)
     @pytest.mark.parametrize("op2,wires2", list(reversed(probs_data2)))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
+        # pylint: disable=too-many-arguments
         dev = qp.device(device, wires=4)
 
         def circuit(x):

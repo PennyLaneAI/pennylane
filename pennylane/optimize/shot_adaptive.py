@@ -15,7 +15,6 @@
 
 # pylint: disable=too-many-instance-attributes
 
-
 from copy import copy
 
 import numpy as np
@@ -337,8 +336,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return grads
 
-    # pylint: disable-next=arguments-renamed
-    def compute_grad(self, objective_fn, args, kwargs):
+    def compute_grad(self, objective_fn, args, kwargs):  # pylint: disable=arguments-renamed
         r"""Compute the gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 

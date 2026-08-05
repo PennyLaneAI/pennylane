@@ -164,6 +164,5 @@ def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
 
 
 @evolve.register
-# pylint: disable-next=missing-function-docstring
-def evolution(op: Operator, coeff: float = 1):
+def evolution(op: Operator, coeff: float = 1):  # pylint: disable=missing-function-docstring
     return Evolution(op, coeff)

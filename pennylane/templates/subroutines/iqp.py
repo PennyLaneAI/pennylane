@@ -108,8 +108,8 @@ class IQP(Operation):
         super().__init__(wires=wires)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
     def compute_matrix(weights, num_wires, pattern, spin_sym) -> TensorLike:
+        # pylint: disable=arguments-differ
         layers = []
 
         if spin_sym:

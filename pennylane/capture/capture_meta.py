@@ -98,6 +98,5 @@ class CaptureMeta(type):
         return type.__call__(cls, *args, **kwargs)
 
 
-# pylint: disable-next=abstract-method
-class ABCCaptureMeta(CaptureMeta, ABCMeta):
+class ABCCaptureMeta(CaptureMeta, ABCMeta):  # pylint: disable=abstract-method
     """A combination of the capture meta and ABCMeta"""

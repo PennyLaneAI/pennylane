@@ -12,9 +12,6 @@
 # limitations under the License.
 """Transform for adding a noise model to a quantum circuit or device"""
 
-# pylint: disable=too-many-branches
-
-
 from copy import copy
 from functools import lru_cache
 
@@ -247,6 +244,7 @@ def add_noise(tape, noise_model, level="user"):
         )
 
     """
+    # pylint: disable=too-many-branches
     if not hasattr(noise_model, "model_map") or not hasattr(noise_model, "metadata"):
         raise ValueError(
             f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."
@@ -553,12 +551,10 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
     return full_transform_program[level]
 
 
-# pylint:disable = protected-access
-
-
 @add_noise.custom_qnode_transform
 def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     """QNode execution wrapper for supporting ``add_noise`` with levels"""
+    # pylint: disable=protected-access
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
 

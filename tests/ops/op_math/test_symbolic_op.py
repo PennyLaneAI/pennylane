@@ -77,7 +77,7 @@ def test_map_wires():
     """Test the map_wires method."""
     base = Operator("a")
     op = SymbolicOp(base)
-    # pylint: disable=protected-access
+    # pylint:disable=protected-access
     op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
     mapped_op = op.map_wires(wire_map=wire_map)

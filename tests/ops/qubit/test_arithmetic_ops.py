@@ -245,8 +245,8 @@ class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
     def test_flatten_unflatten(self):
-        # pylint: disable=protected-access
         """Tests the flatten and unflatten methods"""
+        # pylint: disable=protected-access
         wires = qp.wires.Wires((0, 1, 2, 3))
         work_wires = qp.wires.Wires(4)
         op = qp.IntegerComparator(

@@ -700,9 +700,9 @@ def test_consistent_taper_ops(operation, op_gen):
         state = functools.reduce(np.kron, [l if s else o for s in hf_state])
         state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
         evolved_state = np.matmul(qp.matrix(operation, wire_order=range(len(hf_state))), state)
-        # pylint: disable=not-an-iterable
         ob_tap_mat = functools.reduce(
             np.matmul,
+            # pylint: disable-next=not-an-iterable
             [qp.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],
         )
         evolved_state_tapered = np.matmul(ob_tap_mat, state_tapered)

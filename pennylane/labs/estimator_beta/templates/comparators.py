@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Resource operators for PennyLane comparison templates."""
 
-# pylint: disable=signature-differs, arguments-differ
-
-
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -24,6 +21,8 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.wires import WiresLike
+
+# pylint: disable= signature-differs,arguments-differ
 
 
 class OutOfPlaceIntegerComparator(ResourceOperator):

@@ -14,13 +14,13 @@
 
 """Unit tests for the `run` helper function on the 'torch' interface"""
 
-# pylint: disable=no-name-in-module
-
 from dataclasses import replace
 
 import pytest
 
 import pennylane as qp
+
+# pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 

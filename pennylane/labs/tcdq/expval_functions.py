@@ -156,7 +156,6 @@ def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndar
     return bitflips, mask_XY, y_phase
 
 
-# pylint: disable-next=too-many-arguments
 def _core_expval_execution(
     gates_params: ArrayLike,
     phase_fn_params: ArrayLike | None,
@@ -169,6 +168,7 @@ def _core_expval_execution(
     vmapped_phase_func: Callable | None,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Evaluate the Monte Carlo integrand and return means with standard errors."""
+    # pylint: disable=too-many-arguments
     bitflips, mask_XY, y_phase = obs_data
 
     s_f = samples.astype(jnp.float32)
@@ -280,7 +280,6 @@ def build_expval_func(
     default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
     default_obs_data = None if config.observables is None else _prep_observables(config.observables)
 
-    # pylint: disable-next=too-many-arguments
     def expval_execution(
         gates_params: ArrayLike,
         phase_fn_params: ArrayLike | None = None,
@@ -315,6 +314,7 @@ def build_expval_func(
             tuple[jnp.ndarray, jnp.ndarray]: Estimated expectation values and
             their standard errors.
         """
+        # pylint: disable=too-many-arguments
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key
             _n = n_samples if n_samples is not None else config.n_samples

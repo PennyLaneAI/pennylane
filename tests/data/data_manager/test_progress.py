@@ -15,9 +15,6 @@
 Tests for :class:`pennylane.data.progress`
 """
 
-# pylint: disable=redefined-outer-name
-
-
 import shutil
 
 import pytest
@@ -26,6 +23,8 @@ import pennylane.data.data_manager.progress
 import pennylane.data.data_manager.progress._default
 from pennylane.data.data_manager.progress import Progress, Task
 from pennylane.data.data_manager.progress._default import term
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture

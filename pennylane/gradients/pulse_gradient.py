@@ -165,7 +165,6 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
     ]
 
 
-# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def _parshift_and_integrate(
     results,
     cjacs,
@@ -196,6 +195,7 @@ def _parshift_and_integrate(
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
 
     def _contract(coeffs, res, cjac):
         """Contract three tensors, the first two like a standard matrix multiplication
@@ -637,7 +637,6 @@ def stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
 
-# pylint: disable-next=too-many-positional-arguments, too-many-arguments
 def _generate_tapes_and_cjacs(
     tape, operation, key, num_split_times, use_broadcasting, par_idx=None
 ):
@@ -662,6 +661,7 @@ def _generate_tapes_and_cjacs(
         float: Prefactor for the Monte Carlo estimate of the integral in the stochastic shift rule.
         tensor_like: Parameter-shift coefficients for the shift rule of the indicated term.
     """
+    # pylint: disable=too-many-positional-arguments,too-many-arguments
     op, op_idx, term_idx = operation
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
     if par_idx is None:
@@ -862,6 +862,6 @@ def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     It raises an error, so that applying ``stoch_pulse_grad`` to a ``QNode`` directly
     is not supported.
     """
-    # pylint: disable=unused-argument
+    # pylint:disable=unused-argument
     transform_name = "stochastic pulse parameter-shift"
     raise_pulse_diff_on_qnode(transform_name)

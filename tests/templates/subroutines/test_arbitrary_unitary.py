@@ -15,9 +15,9 @@
 Tests for the ArbitraryUnitary template.
 """
 
-# pylint: disable=too-few-public-methods
-
 import numpy as np
+
+# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp

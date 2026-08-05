@@ -15,9 +15,6 @@
 Test the core resource estimation functionality.
 """
 
-# pylint: disable=no-self-use, arguments-differ
-
-
 import math
 from collections import defaultdict
 
@@ -52,6 +49,8 @@ from pennylane.estimator.templates.subroutines import QFT
 from pennylane.estimator.templates.trotter import TrotterVibrational
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
+
+# pylint: disable= no-self-use,arguments-differ
 
 
 def _circuit_w_expval(circ):
@@ -737,8 +736,7 @@ class TestEstimateResources:
     def test_custom_adjoint_decomposition(self):
         """Test that a custom adjoint decomposition can be set and used."""
 
-        def custom_adj_RZ(target_resource_params):
-            # pylint: disable=unused-argument
+        def custom_adj_RZ(target_resource_params):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(Z))]
 
         rc = ResourceConfig()
@@ -778,8 +776,9 @@ class TestEstimateResources:
     def test_custom_controlled_decomposition(self):
         """Test that a custom controlled decomposition can be set and used."""
 
-        def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params):
-            # pylint: disable=unused-argument
+        def custom_ctrl_RZ(
+            num_ctrl_wires, num_zero_ctrl, target_resource_params
+        ):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(X), count=3)]
 
         rc = ResourceConfig()

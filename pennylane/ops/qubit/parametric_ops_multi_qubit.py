@@ -19,7 +19,6 @@ core parametrized gates.
 
 # pylint: disable=arguments-differ
 
-
 import functools
 from collections import Counter
 from operator import matmul
@@ -180,8 +179,9 @@ class MultiRZ(Operation):
         return math.exp(math.outer(-0.5j * theta, eigs))
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(theta: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
+    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
+        theta: TensorLike, wires: WiresLike, **kwargs
+    ) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -202,7 +202,6 @@ class MultiRZ(Operation):
         [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
 
         """
-        # pylint: disable=unused-argument
         ops = [
             qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1], strict=True)
         ]
@@ -962,8 +961,9 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values,
     }
 
 
-# pylint: disable-next=too-many-arguments
-def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values, work_wires):
+def _ctrl_phase_shift(
+    phi, target_wire, subspace, control_wires, control_values, work_wires
+):  # pylint: disable=too-many-arguments
     r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
     target qubit/wire.
 

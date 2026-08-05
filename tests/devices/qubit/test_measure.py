@@ -29,8 +29,7 @@ from pennylane.devices.qubit.measure import (
 )
 
 
-# pylint: disable=too-few-public-methods
-class TestCurrentlyUnsupportedCases:
+class TestCurrentlyUnsupportedCases:  # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 

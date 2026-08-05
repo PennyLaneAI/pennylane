@@ -61,10 +61,11 @@ rydberg_settings = RydbergSettings(atom_coordinates, 1)
 
 
 class TestHardwareHamiltonian:
-    """Unit tests for the properties of the HardwareHamiltonian class."""  # pylint: disable=comparison-with-callable
+    """Unit tests for the properties of the HardwareHamiltonian class."""
 
     def test_initialization(self):
         """Test the HardwareHamiltonian class is initialized correctly."""
+        # pylint: disable=comparison-with-callable
         rm = HardwareHamiltonian(coeffs=[], observables=[])
 
         assert rm.pulses == []

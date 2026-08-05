@@ -47,8 +47,7 @@ repos:
         [
           "-rn", # Only display messages
           "-sn", # Don't display the score
-          "--rcfile",
-          ".pylintrc", # Link to your config file
+          "--rcfile=.pylintrc", # Link to your config file
         ]
       files: ^pennylane/
     - id: pylint-test
@@ -60,8 +59,7 @@ repos:
         [
           "-rn", # Only display messages
           "-sn", # Don't display the score
-          "--rcfile",
-          "tests/.pylintrc", # Link to your config file
+          "--rcfile=tests/.pylintrc", # Link to your config file
         ]
       files: ^tests/
     - id: labs-pylint-test
@@ -73,7 +71,6 @@ repos:
         [
           "-rn", # Only display messages
           "-sn", # Don't display the score
-          "--rcfile", 
-          "tests/.pylintrc" # Link to your config file
+          "--rcfile=tests/.pylintrc", # Link to your config file
         ]
       files: ^pennylane/labs/tests/

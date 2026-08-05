@@ -50,9 +50,8 @@ def patch_h5py(monkeypatch):
     monkeypatch.setattr(hdf5, "h5py", MagicMock())
 
 
-def test_open_hdf5_s3(mock_fsspec):
+def test_open_hdf5_s3(mock_fsspec):  # pylint: disable=redefined-outer-name
     """Test that open_hdf5_s3 calls fsspec.open() with the expected arguments."""
-    # pylint: disable=redefined-outer-name
 
     ret = hdf5.open_hdf5_s3("/bucket")
 

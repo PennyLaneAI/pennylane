@@ -62,7 +62,7 @@ def _pauli_measure_prim(self, *wires, pauli_word, postselect):  # pylint: disabl
 
 
 @CollectResourceOps.register_primitive(qnode_prim)
-# pylint: disable-next=too-many-arguments, unused-argument
+# pylint: disable-next=too-many-arguments,unused-argument
 def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
 
@@ -80,9 +80,10 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)
-def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
+def _adjoint_transform_prim(
+    self, *invals, jaxpr, lazy, n_consts
+):  # pylint: disable=unused-argument
     """Collect all operations in the base plxpr and create adjoint resource ops with them."""
-    # pylint: disable=unused-argument
     consts = invals[:n_consts]
     args = invals[n_consts:]
     child = CollectResourceOps()

@@ -15,9 +15,6 @@
 Tests for parametric single qubit resource operators.
 """
 
-# pylint: disable=no-self-use
-
-
 import copy
 
 import pytest
@@ -33,6 +30,8 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
     _rotation_resources,
 )
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+
+# pylint: disable=no-self-use
 
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 

@@ -15,9 +15,9 @@
 Tests for the classical and quantum fisher information matrix in the module pennylane.gradients
 """
 
-# pylint: disable=no-self-use, import-outside-toplevel, bad-continuation
-
 import numpy as np
+
+# pylint: disable=no-self-use,import-outside-toplevel,bad-continuation
 import pytest
 
 import pennylane as qp

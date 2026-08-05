@@ -13,9 +13,6 @@
 # limitations under the License.
 """Unit Tests for the Bosonic representation classes."""
 
-# pylint: disable=too-many-public-methods
-
-
 import pickle
 from copy import copy, deepcopy
 
@@ -337,7 +334,7 @@ class TestBoseWord:
         assert bw.adjoint() == bw_dag
 
 
-class TestBoseWordArithmetic:
+class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
     WORDS_MUL = (
         (
             bw1,
@@ -864,7 +861,7 @@ class TestBoseSentence:
         assert bs.adjoint() == bs_dag
 
 
-class TestBoseSentenceArithmetic:
+class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
     tup_bs_mult = (  # computed by hand
         (
             bs1,

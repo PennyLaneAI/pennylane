@@ -252,17 +252,17 @@ def test_decomposition_with_abstract_wires(rule_name, registers, expected_primit
         ),
     ],
 )
-# pylint: disable-next=too-many-arguments
 def test_signed_out_multiplier_correct(
     x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-):
+):  # pylint: disable=too-many-arguments
     """Tests with a few examples that the Template yields correct results."""
 
     dev = device("default.qubit", wires=x_wires + y_wires + work_wires + output_wires)
 
     @qnode(dev)
-    # pylint: disable-next=too-many-arguments
-    def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed):
+    def signed_multiply(
+        x_wires, y_wires, work_wires, output_wires, init_state, zeroed
+    ):  # pylint: disable=too-many-arguments
         BasisEmbedding(
             init_state,
             x_wires + y_wires + work_wires + output_wires,

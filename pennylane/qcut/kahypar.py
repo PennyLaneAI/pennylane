@@ -15,9 +15,6 @@
 Functions for partitioning a graph using KaHyPar.
 """
 
-# pylint: disable=too-many-positional-arguments
-
-
 from collections.abc import Sequence
 from itertools import compress
 from pathlib import Path
@@ -29,7 +26,6 @@ from pennylane import math
 from pennylane.core.operator import Operation
 
 
-# pylint: disable-next=too-many-arguments
 def kahypar_cut(
     graph,
     num_fragments: int,
@@ -100,7 +96,7 @@ def kahypar_cut(
     >>> cut_edges
     [(Wrapped(CNOT(wires=[0, 'a'])), Wrapped(RZ(0.24, wires=[0])), 0)]
     """
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=too-many-positional-arguments,too-many-arguments,import-outside-toplevel
     try:
         import kahypar
     except ImportError as e:

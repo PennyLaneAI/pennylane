@@ -231,8 +231,7 @@ class TestCollectRecipes:
         assert qp.math.allclose(offdiag[2], self.four_term_recipe)
 
 
-# pylint: disable-next=too-few-public-methods
-class TestGenerateOffDiagTapes:
+class TestGenerateOffDiagTapes:  # pylint: disable=too-few-public-methods
     """Test some special features of `_generate_offdiag_tapes`."""
 
     @pytest.mark.parametrize("add_unshifted", [True, False])
@@ -796,8 +795,7 @@ class TestParameterShiftHessian:
             qp.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
 
 
-# pylint: disable-next=too-many-public-methods
-class TestParameterShiftHessianQNode:
+class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
     """Test the general functionality of the param_shift_hessian method
     with QNodes on the default interface (autograd)"""
 

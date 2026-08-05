@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 
-# pylint: disable=arguments-differ, super-init-not-called, signature-differs
-
-
 from collections.abc import Iterable
 from functools import singledispatch
 
@@ -28,6 +25,8 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=arguments-differ,super-init-not-called,signature-differs
 
 
 class Adjoint(ResourceOperator):
@@ -726,7 +725,9 @@ class Prod(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, cmpr_factors_and_counts, num_wires: int):
+    def resource_decomp(
+        cls, cmpr_factors_and_counts, num_wires: int
+    ):  # pylint: disable=unused-argument
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -746,7 +747,6 @@ class Prod(ResourceOperator):
             in the decomposition.
 
         """
-        # pylint: disable=unused-argument
         return [GateCount(cmpr_op, count) for cmpr_op, count in cmpr_factors_and_counts]
 
 

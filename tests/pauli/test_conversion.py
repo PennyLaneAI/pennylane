@@ -13,9 +13,6 @@
 # limitations under the License.
 """Unit tests for utility functions of Pauli arithmetic."""
 
-# pylint: disable=too-many-public-methods
-
-
 import warnings
 
 import numpy as np
@@ -98,7 +95,7 @@ hamiltonian_ps = (
 )
 
 
-class TestDecomposition:
+class TestDecomposition:  # pylint: disable=too-many-public-methods
     """Tests the pauli_decompose function"""
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
@@ -157,11 +154,11 @@ class TestDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
+        # pylint: disable=consider-using-generator
         decomposed_coeff, decomposed_obs = qp.pauli_decompose(hamiltonian).terms()
 
         linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
@@ -617,11 +614,11 @@ class TestPhasedDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
+        # pylint: disable=consider-using-generator
         decomposed_coeff, decomposed_obs = qp.pauli_decompose(
             hamiltonian, check_hermitian=False
         ).terms()

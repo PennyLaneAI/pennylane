@@ -13,8 +13,7 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 
-# pylint: disable=protected-access
-
+# pylint:disable=protected-access
 
 import warnings
 from copy import copy

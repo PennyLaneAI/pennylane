@@ -51,7 +51,6 @@ class TestTensorExpval:
 
         return {"atol": tol, "rtol": 0}
 
-    # pylint: disable-next=too-many-arguments
     def test_tensor_product(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product ZxZ gives the same result as simply
         using an Hermitian matrix"""
@@ -77,7 +76,6 @@ class TestTensorExpval:
     def test_combine_tensor_with_non_tensor(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product along with a non-tensor product
         continues to function correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -105,7 +103,6 @@ class TestTensorExpval:
 
     def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -122,7 +119,6 @@ class TestTensorExpval:
     @pytest.mark.autograd
     def test_paulix_tensor_pauliy_gradient(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -139,7 +135,6 @@ class TestTensorExpval:
 
     def test_pauliz_tensor_identity(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -155,7 +150,6 @@ class TestTensorExpval:
 
     def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -171,7 +165,6 @@ class TestTensorExpval:
 
     def test_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving an Hermitian matrix works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         A = np.array(
@@ -201,7 +194,6 @@ class TestTensorExpval:
 
     def test_hermitian_tensor_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         A1 = np.array([[1, 2], [2, 4]])
@@ -251,10 +243,9 @@ class TestTensorExpval:
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
-        # pylint: disable=unused-argument
         @qp.set_shots(shots)
         @qp.qnode(dev)
-        def circuit(a, b, c):
+        def circuit(a, b, c):  # pylint: disable=unused-argument
             qp.RY(a, wires=0)
             qp.RY(b, wires=1)
             qp.CNOT(wires=[0, 1])
@@ -275,8 +266,6 @@ class TestTensorExpval:
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
-    # pylint: disable=too-many-arguments
-
     @pytest.fixture
     def tolerance(self, shots, tol):
         if shots is not None:
@@ -284,9 +273,9 @@ class TestTensorVar:
 
         return {"atol": tol, "rtol": 0}
 
+    # pylint: disable-next=too-many-arguments
     def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -307,9 +296,9 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, **tolerance)
 
+    # pylint: disable-next=too-many-arguments
     def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-        # pylint: disable=too-many-arguments
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
@@ -328,6 +317,7 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, **tolerance)
 
+    # pylint: disable-next=too-many-arguments
     def test_tensor_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving qp.Hermitian works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -391,8 +381,8 @@ class TestTensorSample:
     """Tests for samples of tensor observables"""
 
     def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol_stochastic, seed):
-        # pylint: disable=unused-argument
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
+        # pylint: disable=unused-argument
         dev = qp.device("default.qubit", wires=2, seed=seed)
 
         @qp.set_shots(1_000_000)
@@ -423,7 +413,6 @@ class TestTensorSample:
 
     def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol_stochastic, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(1_000_000)
@@ -437,10 +426,9 @@ class TestTensorSample:
         # s1 should only contain 1 and -1
         assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
+    # pylint: disable-next=unused-argument
     def test_tensor_hermitian(self, theta, phi, varphi, tol_stochastic, seed):
         """Test that a tensor product involving qp.Hermitian works correctly"""
-        # pylint: disable=unused-argument
-
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         A = np.array(

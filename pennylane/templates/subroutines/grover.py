@@ -145,8 +145,9 @@ class GroverOperator(Operation):
         return 0
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(wires: WiresLike, work_wires: WiresLike, **kwargs):
+    def compute_decomposition(
+        wires: WiresLike, work_wires: WiresLike, **kwargs
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -163,7 +164,6 @@ class GroverOperator(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        # pylint: disable=unused-argument
         ctrl_values = [0] * (len(wires) - 1)
 
         op_list = []

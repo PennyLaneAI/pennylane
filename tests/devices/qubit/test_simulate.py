@@ -44,8 +44,7 @@ ml_frameworks_list = [
 ]
 
 
-# pylint: disable=too-few-public-methods
-class TestCurrentlyUnsupportedCases:
+class TestCurrentlyUnsupportedCases:  # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -111,8 +110,7 @@ class TestSparsePipeline:
         assert qp.math.allclose(res, expected)
 
 
-# pylint: disable-next=too-few-public-methods
-class TestStatePrepBase:
+class TestStatePrepBase:  # pylint: disable=too-few-public-methods
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -1347,12 +1345,12 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert qp.math.allclose(result, qp.math.array([0.5, 0.5]))
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs, qp.sample, qp.var])
     @pytest.mark.parametrize("meas_obj", [qp.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"])
+    # pylint: disable-next=too-many-arguments
     def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
@@ -1493,7 +1491,8 @@ class TestMidMeasurements:
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
-        """Test that tree traversal works numerically with different interfaces"""  # pylint:disable = singleton-comparison
+        """Test that tree traversal works numerically with different interfaces"""
+        # pylint:disable = singleton-comparison
 
         qscript = qp.tape.QuantumScript(
             [

@@ -279,10 +279,9 @@ class TestSnapshotGeneral:
 class TestSnapshotSupportedQNode:
     """Test the Snapshot instruction for simulators."""
 
-    # pylint: disable=protected-access
-
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_default_qubit_with_backprob_and_adjoint(self, diff_method):
+        # pylint: disable=protected-access
         dev = qp.device("default.qubit")
 
         assert qp.debugging.snapshot._is_snapshot_compatible(dev)
@@ -309,10 +308,10 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_mixed(self, method):
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
+        # pylint: disable=protected-access
         dev = qp.device("default.mixed", wires=2)
 
         assert qp.debugging.snapshot._is_snapshot_compatible(dev)

@@ -89,9 +89,6 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     )  # pragma: no cover
 
 
-# pylint: disable = too-many-branches
-
-
 def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     """
     Evaluates an assignment.
@@ -105,6 +102,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     Returns:
         any: The updated left hand side.
     """
+    # pylint: disable=too-many-branches
     match operator:
         case "=":
             lhs = value
@@ -139,7 +137,6 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
-# pylint: disable-next=too-many-return-statements
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
@@ -150,6 +147,7 @@ def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
          rhs (any): the second operand.
          line (int): the line number the operation occurs on.
     """
+    # pylint: disable=too-many-return-statements,too-many-branches
     match operator:
         case "==":
             return lhs == rhs
@@ -502,12 +500,13 @@ class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
-# pylint: disable-next=too-many-public-methods
-class QasmInterpreter:
+class QasmInterpreter:  # pylint: disable=too-many-public-methods
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
     visitor function on each node.
     """
+
+    # pylint: disable=unused-argument,no-self-use
 
     def __init__(self):
         """
@@ -1230,7 +1229,6 @@ class QasmInterpreter:
         Returns:
             complex: a complex number corresponding to the imaginary literal.
         """
-        # pylint: disable=unused-argument
         return 1j * node.value
 
     @visit.register(ast.DiscreteSet)
@@ -1688,5 +1686,4 @@ class QasmInterpreter:
         Returns:
             The value of the literal.
         """
-        # pylint: disable=unused-argument
         return node.value

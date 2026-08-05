@@ -33,8 +33,8 @@ class TestMarkedOp:
     """Tests for the 'MarkedOp' operator."""
 
     def test_flatten_unflatten(self):
-        # pylint: disable=protected-access
         """Tests the unflatten and flatten methods."""
+        # pylint: disable=protected-access
 
         op = MarkedOp(qp.X(0), marker="my-x")
         data, metadata = op._flatten()

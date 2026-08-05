@@ -13,11 +13,6 @@
 # limitations under the License.
 """Unit tests for Controlled"""
 
-# pylint: disable=too-many-arguments
-# pylint: disable=expression-not-assigned
-# pylint: disable=protected-access
-
-
 import pickle
 from copy import copy
 from functools import partial
@@ -53,6 +48,10 @@ from pennylane.transforms import decompose
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
+
+# pylint: disable=protected-access
+# pylint: disable=expression-not-assigned
+# pylint: disable=too-many-arguments
 
 
 def equal_list(lhs, rhs):
@@ -584,6 +583,8 @@ class TestControlledMiscMethods:
 
 class TestControlledOperationProperties:
     """Test ControlledOp specific properties."""
+
+    # pylint:disable=no-member
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
@@ -1282,7 +1283,7 @@ class TestDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()
+        loss.backward()  # pylint:disable=no-member
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2
@@ -2391,7 +2392,7 @@ class TestCtrlTransformDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()
+        loss.backward()  # pylint:disable=no-member
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2

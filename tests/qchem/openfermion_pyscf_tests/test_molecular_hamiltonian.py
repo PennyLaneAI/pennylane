@@ -15,7 +15,7 @@
 Unit tests for molecular Hamiltonians.
 """
 
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments,protected-access
 
 import pytest
 

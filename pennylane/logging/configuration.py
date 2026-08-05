@@ -37,7 +37,7 @@ def _add_trace_level():
 
         # Due to limitations in how the logging module exposes support for custom levels,
         # accessing the private method `_log` has no alternative.
-        # pylint: disable-next=protected-access
+        # pylint: disable=protected-access
         self._log(TRACE, message, args, **kws)
 
     logging.addLevelName(TRACE, "TRACE")
@@ -101,7 +101,8 @@ def show_system_config():
     """
     This function opens the logging configuration file in the system-default browser.
     """
-    import webbrowser  # pylint: disable=import-outside-toplevel
+    # pylint:disable = import-outside-toplevel
+    import webbrowser
 
     webbrowser.open(config_path())
 

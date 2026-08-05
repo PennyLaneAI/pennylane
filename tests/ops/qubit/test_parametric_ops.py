@@ -178,10 +178,10 @@ class TestOperations:
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_flatten_unflatten(self, op):
         """Test that the flatten and unflatten methods work as expected."""
+        # pylint: disable=protected-access
         _, metadata = op._flatten()
         assert hash(metadata)
 
@@ -2880,7 +2880,7 @@ class TestPauliRot:
         self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
     ):
         """Test PauliRot matrix correctly accounts for identities."""
-        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         res = qp.PauliRot.compute_matrix(theta, pauli_word)
         expected = qp.math.expand_matrix(

@@ -17,9 +17,6 @@ r"""
 Contains concurrent executor abstractions for task-based workloads backed by mpi4py.
 """
 
-# pylint: disable=import-outside-toplevel
-
-
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -32,6 +29,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
     This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_ class, and provides support for execution using multiple processes launched using MPI.
     For an example script ``my_script.py``, and an installed mpi4py library with the active MPI environment, the executor can be used as follows:
+    # pylint: disable=import-outside-toplevel
 
     .. code-block:: console
 
@@ -56,7 +54,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
         # Imports will initialise the MPI environment.
         # Handle set-up upon object creation only.
-        from mpi4py import MPI
+        from mpi4py import MPI  # pylint: disable=import-outside-toplevel
 
         self._size = max_workers
         self._comm = MPI.COMM_WORLD
@@ -117,7 +115,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
     @classmethod
     def _exec_backend(cls):
-        from mpi4py.futures import MPIPoolExecutor
+        from mpi4py.futures import MPIPoolExecutor  # pylint: disable=import-outside-toplevel
 
         return MPIPoolExecutor
 
@@ -129,6 +127,7 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
     This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_ class, and provides support for execution using multiple processes launched using MPI.
     For an example script ``my_script.py``, and an installed mpi4py library with the active MPI environment, the executor can be used as follows:
+    # pylint: disable=import-outside-toplevel
 
     .. code-block:: console
 
@@ -146,6 +145,7 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
         super().__init__(max_workers=max_workers, **kwargs)
 
+        # pylint: disable-next=import-outside-toplevel
         from mpi4py import MPI  # Required to call MPI_Init
 
         self._comm = MPI.COMM_WORLD
@@ -207,6 +207,6 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
     @classmethod
     def _exec_backend(cls):
-        from mpi4py.futures import MPICommExecutor
+        from mpi4py.futures import MPICommExecutor  # pylint: disable=import-outside-toplevel
 
         return MPICommExecutor

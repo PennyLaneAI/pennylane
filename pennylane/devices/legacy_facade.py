@@ -16,10 +16,9 @@ Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
 
-# pylint: disable=not-callable
-
-
 import warnings
+
+# pylint: disable=not-callable
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
@@ -217,21 +216,20 @@ class LegacyDeviceFacade(Device):
     def wires(self) -> Wires:
         return self._device.wires
 
-    # pylint: disable=protected-access
     @property
     def shots(self) -> Shots:
+        # pylint: disable=protected-access
         if self._device._shot_vector:
             return Shots(self._device._raw_shot_sequence)
         return Shots(self._device.shots)
 
     @property
     def _debugger(self):
-        # pylint: disable=protected-access
-        return self._device._debugger
+        return self._device._debugger  # pylint: disable=protected-access
 
     @_debugger.setter
     def _debugger(self, new_debugger):
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         self._device._debugger = new_debugger  # pragma: no cover
 
     def preprocess_transforms(

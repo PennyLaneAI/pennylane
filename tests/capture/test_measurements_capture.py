@@ -15,9 +15,9 @@
 Tests for capturing measurements.
 """
 
-# pylint: disable=protected-access, wrong-import-position
-
 import numpy as np
+
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp
@@ -38,8 +38,11 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
+# pylint: disable-next=wrong-import-position
 from pennylane.capture.primitives import AbstractMeasurement, operator_p
-from tests.capture.capture_utils import assert_eqn_matches_op
+from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
+    assert_eqn_matches_op,
+)
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -294,7 +297,6 @@ def test_primitive_none_behavior():
 
 
 # pylint: disable=unnecessary-lambda
-
 creation_funcs = [
     lambda: qp.state(),
     lambda: qp.density_matrix(wires=(0, 1)),

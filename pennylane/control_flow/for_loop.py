@@ -293,7 +293,7 @@ def for_loop(
 def _get_for_loop_qfunc_prim():
     """Get the loop_for primitive for quantum functions."""
 
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
 
     for_loop_prim = QpPrimitive("for_loop")
@@ -331,10 +331,10 @@ def _get_for_loop_qfunc_prim():
     )
 
     @for_loop_prim.def_impl
-    # pylint: disable-next=too-many-arguments
     def _impl(
         start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
     ):
+        # pylint: disable=too-many-arguments
         # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
         consts_slice = slice(*consts_slice)
         args_slice = slice(*args_slice)

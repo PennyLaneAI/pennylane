@@ -17,8 +17,6 @@ Tests for capturing value_and_grad into jaxpr.
 Note some tests on the errors exist in test_capture_diff.py
 """
 
-# pylint: disable=wrong-import-position
-
 import pytest
 
 import pennylane as qp
@@ -28,6 +26,7 @@ pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
+# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import value_and_grad_prim
 
 

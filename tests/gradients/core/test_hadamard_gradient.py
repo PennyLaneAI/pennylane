@@ -547,8 +547,7 @@ class TestDifferentModes:
         _ = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=1, device_wires=qp.wires.Wires(0))
 
 
-# pylint: disable-next=too-many-public-methods
-class TestHadamardGrad:
+class TestHadamardGrad:  # pylint: disable=too-many-public-methods
     """Unit tests for the hadamard_grad function"""
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])

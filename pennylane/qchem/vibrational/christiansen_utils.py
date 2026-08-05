@@ -13,9 +13,6 @@
 # limitations under the License.
 """Utility functions related to the construction of the taylor form Hamiltonian."""
 
-# pylint: disable=too-many-positional-arguments
-
-
 import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -24,6 +21,8 @@ import numpy as np
 from scipy.special import factorial
 
 from pennylane import concurrency
+
+# pylint: disable=too-many-positional-arguments
 
 try:
     import h5py

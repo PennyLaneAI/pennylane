@@ -15,8 +15,7 @@
 Tests for the gradients.pulse_odegen module.
 """
 
-# pylint: disable=import-outside-toplevel
-
+# pylint:disable=import-outside-toplevel
 
 import copy
 
@@ -1475,12 +1474,10 @@ class TestPulseOdegenIntegration:
 
 
 @pytest.mark.jax
-class TestPulseOdegenDiff:
+class TestPulseOdegenDiff:  # pylint: disable=too-few-public-methods
     """Test that pulse_odegen is differentiable, i.e. that computing
     the derivative with pulse_odegen is differentiable a second time,
     yielding the Hessian."""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.slow
     def test_jax(self):

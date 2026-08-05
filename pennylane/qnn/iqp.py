@@ -85,7 +85,6 @@ def _generators(gates, n_qubits):
     return jnp.array(generators)
 
 
-# pylint: disable-next=too-many-arguments
 def _op_expval_indep(
     gates: list,
     n_qubits: int,
@@ -100,6 +99,7 @@ def _op_expval_indep(
     Batch evaluate an array of ops in the same way as self.op_expval_batch, but using independent randomness
     for each estimator. The estimators for each op are therefore uncorrelated.
     """
+    # pylint: disable=too-many-arguments
 
     def update(carry, op):
         key1, key2 = jax.random.split(carry, 2)
@@ -217,7 +217,6 @@ def _ini_spin_sym(ops_sum, samples_sum, samples_len, spin_sym):
     return 1
 
 
-# pylint: disable-next=too-many-arguments
 def _op_expval_batch(
     gates: list,
     params: list,
@@ -229,6 +228,7 @@ def _op_expval_batch(
     sparse: bool = False,
     indep_estimates: bool = False,
 ) -> list:
+    # pylint: disable=too-many-arguments
 
     if indep_estimates:
         return _op_expval_indep(
@@ -269,7 +269,6 @@ def _op_expval_batch(
     return expvals
 
 
-# pylint: disable-next=too-many-arguments
 def iqp_expval(
     ops: list,
     weights: list[float],
@@ -283,6 +282,7 @@ def iqp_expval(
     max_batch_ops: int = None,
     max_batch_samples: int = None,
 ) -> list:
+    # pylint: disable=too-many-arguments
     r"""Estimates the expectation values of a batch of Pauli-Z type operators for a parameterized :class:`~.IQP` circuit.
 
     The expectation values are estimated using a randomized method (Monte Carlo method) whose precision

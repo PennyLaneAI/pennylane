@@ -33,12 +33,10 @@ from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resour
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the adjoint of a decomposition rule."""
 
-    # pylint: disable=unused-argument
-    def _condition_fn(base_class, base_params):
+    def _condition_fn(base_class, base_params):  # pylint: disable=unused-argument
         return base_decomposition.is_applicable(**base_params)
 
-    # pylint: disable=unused-argument
-    def _resource_fn(base_class, base_params):
+    def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
 
         # pylint: disable=import-outside-toplevel
         from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -79,11 +77,8 @@ def _cancel_adjoint_resource(base_class, base_params):
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=unused-argument
-
-
 @register_resources(_cancel_adjoint_resource)
-def cancel_adjoint(*params, wires, base):
+def cancel_adjoint(*params, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of an operator."""
     qp.apply(base.base)
 
@@ -92,11 +87,8 @@ def _adjoint_rotation_resource(base_class, base_params):
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=unused-argument
-
-
 @register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(phi, wires, base):
+def adjoint_rotation(phi, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     qp.ops.functions.bind_new_parameters(base, (-phi,))
 
@@ -106,14 +98,12 @@ def is_integer(x):
     return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
 
 
-# pylint: disable=unused-argument
-
-
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
 @register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
 def repeat_pow_base(*params, wires, base, z, **__):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
+    # pylint: disable=unused-argument
 
     @qp.for_loop(0, z)
     def _loop(i):
@@ -122,10 +112,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=unused-argument
-
-
-def _merge_powers_resource(base_class, base_params, z):
+def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     return {
         pow_resource_rep(
             base_params["base_class"],
@@ -135,19 +122,13 @@ def _merge_powers_resource(base_class, base_params, z):
     }
 
 
-# pylint: disable=unused-argument
-
-
 @register_resources(_merge_powers_resource)
-def merge_powers(*params, wires, base, z, **__):
+def merge_powers(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
 
 
-# pylint: disable=unused-argument
-
-
-def _flip_pow_adjoint_resource(base_class, base_params, z):
+def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     return {
@@ -157,11 +138,8 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):
     }
 
 
-# pylint: disable=unused-argument
-
-
 @register_resources(_flip_pow_adjoint_resource)
-def flip_pow_adjoint(*params, wires, base, z, **__):
+def flip_pow_adjoint(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     qp.adjoint(qp.pow(base.base, z))
@@ -170,8 +148,7 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
 def make_pow_decomp_with_period(period) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
-    # pylint: disable=unused-argument
-    def _condition_fn(base_class, base_params, z):
+    def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
         return math.shape(z) == () and z % period != z
 
     def _resource_fn(base_class, base_params, z):
@@ -199,18 +176,12 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 pow_involutory = make_pow_decomp_with_period(2)
 
 
-# pylint: disable=unused-argument
-
-
-def _pow_rotation_resource(base_class, base_params, z):
+def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=unused-argument
-
-
 @register_resources(_pow_rotation_resource)
-def pow_rotation(phi, wires, base, z, **__):
+def pow_rotation(phi, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     qp.ops.functions.bind_new_parameters(base, (phi * z,))
 
@@ -219,11 +190,8 @@ def _decomp_to_base_legacy_res(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=unused-argument
-
-
 @register_resources(_decomp_to_base_legacy_res)
-def decompose_to_base_legacy(*params, wires, base, **__):
+def decompose_to_base_legacy(*params, wires, base, **__):  # pylint: disable=unused-argument
     """Decompose a symbolic operator to its base."""
     qp.apply(base)
 
@@ -357,9 +325,6 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
     return _impl
 
 
-# pylint: disable=too-many-arguments
-
-
 def _flip_control_adjoint_resource(
     base_class,
     base_params,
@@ -367,7 +332,8 @@ def _flip_control_adjoint_resource(
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-):
+):  # pylint: disable=too-many-arguments
+    # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(
@@ -381,15 +347,13 @@ def _flip_control_adjoint_resource(
     return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
 
 
-# pylint: disable=too-many-arguments
-
-
 @register_resources(_flip_control_adjoint_resource)
 def flip_control_adjoint(
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
+    # pylint: disable=too-many-arguments
     qp.adjoint(
         qp.ctrl(
             base.base,
@@ -412,11 +376,9 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
     }
 
 
-# pylint: disable=unused-argument
-
-
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
+# pylint: disable-next=unused-argument
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as work_wires:

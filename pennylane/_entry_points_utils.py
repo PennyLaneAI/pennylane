@@ -64,7 +64,7 @@ def _setup_entry_points(module_name, group_name):  # pragma: no cover
 
         if current_module.__name__ == "pennylane":
             if name == "plugin_devices":
-                # pylint: disable-next=import-outside-toplevel
+                # pylint: disable=import-outside-toplevel
                 from pennylane.devices.device_constructor import plugin_devices
 
                 return plugin_devices

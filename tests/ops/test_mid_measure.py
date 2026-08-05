@@ -13,9 +13,6 @@
 # limitations under the License.
 """Unit tests for the mid_measure module"""
 
-# pylint: disable=too-many-public-methods
-
-
 from itertools import product
 
 import pytest
@@ -25,6 +22,8 @@ import pennylane.numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
+
+# pylint: disable=too-many-public-methods
 
 
 @pytest.mark.catalyst

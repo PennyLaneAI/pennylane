@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
-# pylint: disable=signature-differs, arguments-differ, too-many-arguments
-
-
 from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.ops.op_math.controlled_ops import MultiControlledX, Toffoli
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
@@ -32,6 +29,8 @@ from pennylane.estimator.templates.stateprep import PrepTHC
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=signature-differs,arguments-differ,too-many-arguments
 
 
 class QubitizeTHC(ResourceOperator):

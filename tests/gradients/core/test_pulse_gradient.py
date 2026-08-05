@@ -60,8 +60,8 @@ class TestSplitEvolOps:
         (ham_single_q_const, [0.3], 2.3, qp.dot([1.9], [qp.PauliZ(0)]), "Z"),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("ham, params, time, ob, word", split_evol_ops_test_cases_pauliword)
+    # pylint: disable-next=too-many-arguments
     def test_with_pauliword(self, ham, params, time, ob, word, seed):
         """Test that _split_evol_ops returns the right ops with correct
         relations to the input operation for a Pauli word as ``ob``."""
@@ -1756,10 +1756,8 @@ class TestStochPulseGradIntegration:
 
 
 @pytest.mark.jax
-class TestStochPulseGradDiff:
+class TestStochPulseGradDiff:  # pylint: disable=too-few-public-methods
     """Test that stoch_pulse_grad is differentiable."""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.slow
     def test_jax(self):

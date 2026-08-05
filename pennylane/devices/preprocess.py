@@ -15,8 +15,7 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 
-# pylint: disable=protected-access, too-many-arguments
-
+# pylint: disable=protected-access,too-many-arguments
 
 import os
 import warnings
@@ -267,7 +266,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(  # pylint: disable=too-many-positional-arguments
+def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[Operator], bool],
     stopping_condition_shots: Callable[[Operator], bool] | None = None,

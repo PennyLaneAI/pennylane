@@ -15,12 +15,12 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
-# pylint: disable=unused-argument
-
 import string
 from pickle import PicklingError
 
 import numpy as np
+
+# pylint: disable=unused-argument
 import pytest
 import scipy.sparse
 
@@ -781,8 +781,7 @@ class TestOperator2AssertValid:
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
-            def __init__(self, phi, wires):
-                # pylint: disable=unused-argument
+            def __init__(self, phi, wires):  # pylint: disable=unused-argument
                 super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)

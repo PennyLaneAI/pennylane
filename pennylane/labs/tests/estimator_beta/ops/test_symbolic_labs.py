@@ -13,9 +13,6 @@
 # limitations under the License.
 """Tests for symbolic resource operators in the estimator_beta module."""
 
-# pylint: disable=no-self-use, too-few-public-methods
-
-
 from collections import defaultdict
 from functools import partial
 
@@ -29,6 +26,8 @@ from pennylane.labs.estimator_beta.ops.op_math.symbolic import (
     _generate_name,
     mark_subroutine,
 )
+
+# pylint: disable=no-self-use,too-few-public-methods
 
 
 class TestGenerateName:
@@ -46,8 +45,7 @@ class TestGenerateName:
     def test_no_include_params(self, args, kwargs):
         """Test that the bare function name is returned when no params are included."""
 
-        def my_func(arg1, arg2, kwarg1="a"):
-            # pylint: disable-next=unused-argument
+        def my_func(arg1, arg2, kwarg1="a"):  # pylint: disable=unused-argument
             return
 
         assert _generate_name(my_func, None, *args, **kwargs) == "my_func"
@@ -64,8 +62,7 @@ class TestGenerateName:
     def test_include_params_positional_and_keyword(self, args, kwargs):
         """Test that selected positional and keyword params are formatted into the name."""
 
-        def my_func(arg1, arg2, kwarg1="a"):
-            # pylint: disable-next=unused-argument
+        def my_func(arg1, arg2, kwarg1="a"):  # pylint: disable=unused-argument
             return
 
         name = _generate_name(
@@ -79,8 +76,7 @@ class TestGenerateName:
     def test_kwargs_edge_case(self):
         """Test that the parameters and hyperparameters are properly bound"""
 
-        def f(a, *args, k="kd"):
-            # pylint: disable-next=unused-argument
+        def f(a, *args, k="kd"):  # pylint: disable=unused-argument
             return a, k
 
         name1 = _generate_name(f, ["k"], 1, 2)

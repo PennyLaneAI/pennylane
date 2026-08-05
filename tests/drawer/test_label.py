@@ -33,8 +33,8 @@ class TestLabelledOp:
     """Tests for the 'LabelledOp' operator."""
 
     def test_flatten_unflatten(self):
-        # pylint: disable=protected-access
         """Tests the unflatten and flatten methods."""
+        # pylint: disable=protected-access
 
         op = LabelledOp(qp.X(0), custom_label="my-x")
         data, metadata = op._flatten()

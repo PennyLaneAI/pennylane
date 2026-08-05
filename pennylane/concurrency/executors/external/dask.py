@@ -17,9 +17,6 @@ r"""
 Contains concurrent executor abstractions for task-based workloads based on support provided by Dask's distributed backend.
 """
 
-# pylint: disable=import-outside-toplevel
-
-
 import os
 from collections.abc import Callable, Sequence
 from typing import Union
@@ -34,6 +31,7 @@ class DaskExec(ExtExec):  # pragma: no cover
     This executor relies on `Dask's distributed interface <https://distributed.dask.org/en/stable/>`_ to offload task execution to either a local or configured remote cluster backend.
 
     Args:
+    # pylint: disable=import-outside-toplevel
         max_workers:    the maximum number of concurrent units (threads, processes) to use. The serial backend defaults to 1 and will return a ``RuntimeError`` if more are requested.
         persist:        allow the executor backend to persist between executions. This is ignored for the serial backend.
         client_provider (str, dask.distributed.deploy.Cluster): provide an existing dask distributed cluster via a URL (str) or object to be used for job submission. When ``None``, creates an internal ``LocalCluster`` object using processes for job submission. Defaults to ``None``. Cluster backend documentation available at `Dask Distrubuted - Deploy Dask Clusters <https://docs.dask.org/en/stable/deploying.html>`_.
@@ -50,8 +48,8 @@ class DaskExec(ExtExec):  # pragma: no cover
     ):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         try:
-            from dask.distributed import LocalCluster
-            from dask.distributed.deploy import Cluster
+            from dask.distributed import LocalCluster  # pylint: disable=import-outside-toplevel
+            from dask.distributed.deploy import Cluster  # pylint: disable=import-outside-toplevel
         except ImportError as ie:
             raise RuntimeError(
                 "Dask Distributed cannot be found.\nPlease install via ``pip install dask distributed``"
@@ -108,6 +106,6 @@ class DaskExec(ExtExec):  # pragma: no cover
 
     @classmethod
     def _exec_backend(cls):
-        from dask.distributed import Client
+        from dask.distributed import Client  # pylint: disable=import-outside-toplevel
 
         return Client

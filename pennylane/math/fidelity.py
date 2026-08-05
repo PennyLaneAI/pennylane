@@ -252,7 +252,7 @@ def _compute_fidelity_vjp1(dm0, dm1, grad_out):
     """
     Compute the VJP of fidelity with respect to the second density matrix
     """
-    # pylint: disable-next=arguments-out-of-order
+    # pylint: disable=arguments-out-of-order
     return _compute_fidelity_vjp0(dm1, dm0, grad_out)
 
 
@@ -299,7 +299,8 @@ def _register_jax_vjp():
     """
     Register the custom VJP for JAX
     """
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
 
     @jax.custom_vjp
     def _compute_fidelity_jax(dm0, dm1):
@@ -325,7 +326,8 @@ def _register_torch_vjp():
     """
     Register the custom VJP for torch
     """
-    import torch  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import torch
 
     class _TorchFidelity(torch.autograd.Function):
         @staticmethod
@@ -352,7 +354,8 @@ def _register_tf_vjp():  # pragma: no cover (TensorFlow tests were disabled duri
     """
     Register the custom VJP for tensorflow
     """
-    import tensorflow as tf  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import tensorflow as tf
 
     @tf.custom_gradient
     def _compute_fidelity_tf(dm0, dm1):

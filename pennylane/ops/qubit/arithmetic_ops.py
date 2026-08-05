@@ -16,10 +16,9 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 
-# pylint: disable=arguments-differ
-
-
 from collections import Counter
+
+# pylint: disable=arguments-differ
 from copy import copy
 
 import numpy as np
@@ -489,6 +488,7 @@ class IntegerComparator(Operation):
     def compute_matrix(
         control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
     ) -> TensorLike:
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -526,7 +526,6 @@ class IntegerComparator(Operation):
          [0. 0. 0. 0. 0. 0. 1. 0.]
          [0. 0. 0. 0. 0. 0. 0. 1.]]
         """
-        # pylint: disable=unused-argument
 
         if value is None:
             raise ValueError("The value to compare to must be specified.")
@@ -563,6 +562,7 @@ class IntegerComparator(Operation):
         work_wires: WiresLike | None = None,
         **kwargs,
     ) -> list[qp.operation.Operator]:
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -588,7 +588,6 @@ class IntegerComparator(Operation):
         3: ─╰X────╰X────╰X────┤
 
         """
-        # pylint: disable=unused-argument
 
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")

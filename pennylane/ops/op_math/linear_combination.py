@@ -17,6 +17,8 @@ LinearCombination class
 
 import itertools
 import numbers
+
+# pylint: disable=protected-access
 from copy import copy
 
 import pennylane as qp
@@ -497,10 +499,7 @@ class LinearCombination(Sum):
         return new_op
 
 
-# pylint: disable=protected-access
-
 if LinearCombination._primitive is not None:
-    # pylint: disable=protected-access
 
     @LinearCombination._primitive.def_impl
     def _(*args, n_obs, **kwargs):
@@ -510,8 +509,7 @@ if LinearCombination._primitive is not None:
 
 
 # this just exists for the docs build for now, since we're waiting until the next PR to fix the docs
-# pylint: disable-next=too-few-public-methods
-class Hamiltonian:
+class Hamiltonian:  # pylint: disable=too-few-public-methods
     r"""Returns an operator representing a Hamiltonian.
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,

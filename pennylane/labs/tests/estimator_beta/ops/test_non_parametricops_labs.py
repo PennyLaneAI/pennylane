@@ -13,15 +13,14 @@
 # limitations under the License.
 """Tests for non parametric resource operators."""
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
-
-
 from collections import defaultdict
 
 import pytest
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.labs.estimator_beta import GateCount, resource_rep
+
+# pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
 
 class TestHadamard:

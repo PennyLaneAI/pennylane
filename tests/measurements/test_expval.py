@@ -46,8 +46,7 @@ def test_expval_identity_nowires_LQ():
         _ = qnode()
 
 
-# pylint: disable-next=too-many-public-methods
-class TestExpval:
+class TestExpval:  # pylint: disable=too-many-public-methods
     """Tests for the expval function"""
 
     @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])

@@ -15,9 +15,6 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
-# pylint: disable=no-self-use, too-many-arguments
-
-
 import math
 
 import numpy as np
@@ -30,6 +27,8 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
+
+# pylint: disable=no-self-use,too-many-arguments
 
 
 class TestResourceOutOfPlaceSquare:
@@ -2171,9 +2170,9 @@ class TestResourceQROM:
         )
 
     def test_t_select_swap_width(self):
-        # pylint: disable=protected-access
         """Test that the private function doesn't give negative or
         fractional values for the depth"""
+        # pylint: disable=protected-access
         num_bitstrings = 8
         size_bitstring = 17
 

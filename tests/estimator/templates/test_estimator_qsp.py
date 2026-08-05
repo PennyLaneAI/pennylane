@@ -13,13 +13,12 @@
 # limitations under the License.
 """Tests for Quantum Signal Processing (QSP) resource operators."""
 
-# pylint: disable=no-self-use
-
-
 import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, ResourceOperator
+
+# pylint: disable=no-self-use
 
 
 class DummyOp(ResourceOperator):

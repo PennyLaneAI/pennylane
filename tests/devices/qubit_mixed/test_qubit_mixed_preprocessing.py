@@ -61,10 +61,8 @@ def test_mid_circuit_measurement_preprocessing():
 class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit in qubit devices."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
     def decomposition(self):
@@ -74,10 +72,8 @@ class NoMatOp(qp.operation.Operation):
 class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
 

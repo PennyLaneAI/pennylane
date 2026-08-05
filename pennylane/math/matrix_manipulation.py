@@ -333,7 +333,7 @@ def get_batch_size(tensor, expected_shape, expected_size):
         if ndim > len(expected_shape) or size > expected_size:
             return size // expected_size
 
-    except Exception as err:  # pragma: no cover,  # pylint:disable=broad-except
+    except Exception as err:  # pragma: no cover, pylint:disable=broad-except
         # This except clause covers the usage of tf.function
         if not math.is_abstract(tensor):
             raise err

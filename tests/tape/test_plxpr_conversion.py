@@ -15,8 +15,6 @@
 Tests for CollectOpsandMeas and plxpr_to_tape
 """
 
-# pylint: disable=wrong-import-position
-
 from functools import partial
 
 import pytest
@@ -28,6 +26,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
+# pylint: disable=wrong-import-position
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 

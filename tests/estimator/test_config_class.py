@@ -29,9 +29,8 @@ class DummyOp(ResourceOperator):
     num_wires = 1
 
 
-def dummy_decomp_func(**kwargs):
+def dummy_decomp_func(**kwargs):  # pylint: disable=unused-argument
     """Dummy decomposition function for testing."""
-    # pylint: disable=unused-argument
     return []
 
 

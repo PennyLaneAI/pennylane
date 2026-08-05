@@ -15,9 +15,6 @@
 This submodule contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 
-# pylint: disable=unused-argument, too-many-arguments
-
-
 import inspect
 import numbers
 import warnings
@@ -47,6 +44,7 @@ def _get_jacobian_prim():
     """Create a primitive for gradient computations.
     This primitive is used when capturing ``qp.grad``.
     """
+    # pylint: disable=unused-argument,too-many-arguments
     if not has_jax:  # pragma: no cover
         return None
 
@@ -181,7 +179,7 @@ def _setup_method(method):
 
 def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
     """Capture-compatible gradient computation."""
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)
@@ -229,8 +227,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     return new_func
 
 
-# pylint: disable-next=too-many-instance-attributes
-class grad:
+class grad:  # pylint: disable=too-many-instance-attributes
     """Returns the gradient as a callable function of hybrid quantum-classical functions.
     :func:`~.qjit` and Autograd compatible.
 
@@ -306,7 +303,7 @@ class grad:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
-            # pylint: disable-next=unexpected-keyword-arg, no-value-for-parameter
+            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
         # need to preserve input siganture for use in catalyst AOT compilation, but
@@ -346,7 +343,7 @@ class grad:
             argnums = argnums[0]
 
         # Known pylint issue with function signatures and decorators:
-        # pylint: disable-next=unexpected-keyword-arg, no-value-for-parameter
+        # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
         return self._grad_with_forward(self._func, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):
@@ -443,8 +440,7 @@ def _get_argnum(args):
     return argnum
 
 
-# pylint: disable-next=too-few-public-methods
-class jacobian:
+class jacobian:  # pylint: disable=too-few-public-methods
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
     This function is compatible with Autograd and :func:`~.qjit`.
 

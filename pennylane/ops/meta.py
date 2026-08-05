@@ -16,10 +16,9 @@ This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
 
-# pylint: disable=arguments-differ
-
-
 from collections.abc import Hashable, Sequence
+
+# pylint: disable=arguments-differ
 from copy import copy
 from typing import Literal
 

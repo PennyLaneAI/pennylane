@@ -18,7 +18,6 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 
 # pylint: disable=too-many-boolean-expressions
 
-
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -485,7 +484,6 @@ def split_non_commuting(
     return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
 
 
-# pylint: disable-next=too-many-branches
 def _split_ham_with_grouping(
     tape: qp.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
 ):
@@ -493,6 +491,7 @@ def _split_ham_with_grouping(
     It also assigns to each new tape the correct number of shots according to the
     shot distribution function defining the strategy for shot allocation.
     """
+    # pylint:disable=too-many-branches
 
     obs = tape.measurements[0].obs
     if obs.grouping_indices is None:

@@ -141,8 +141,8 @@ class Hermitian(Operator):
         return A
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(A, format="csr") -> csr_matrix:
+        # pylint: disable=arguments-differ
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
 
     @property
@@ -376,8 +376,8 @@ class SparseHamiltonian(Operator):
         return H.toarray()
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
+        # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -663,8 +663,9 @@ class BasisStateProjector(Projector, Operation):
         return []
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_sparse_matrix(basis_state: TensorLike, format="csr") -> spmatrix:
+    def compute_sparse_matrix(  # pylint: disable=arguments-differ
+        basis_state: TensorLike, format="csr"
+    ) -> spmatrix:
         """
         Computes the sparse CSR matrix representation of the projector onto the basis state.
 

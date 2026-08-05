@@ -17,7 +17,6 @@ Unit tests for the SumOfSlatersPrep2 template.
 
 # pylint: disable=missing-kwoa
 
-
 import numpy as np
 import pytest
 
@@ -80,8 +79,8 @@ class TestSumOfSlatersPrep2:
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, use_qjit):
         """Test that the decomposition of SumOfSlatersPrep2 actually prepares the desired state."""
+        # pylint: disable=unsubscriptable-object
         if num_entries == 63 and use_qjit:
-            # pylint: disable-next=unsubscriptable-object
             pytest.skip(
                 reason="This test case takes over a minute and does not provide unique value"
             )
@@ -90,14 +89,15 @@ class TestSumOfSlatersPrep2:
         wires = list(range(num_wires))
         all_wires = make_registers(indices, num_wires)
 
-        # safe alternative to avoid enabling graph globally on the labs test runner
-        with qp.decomposition.toggle_graph_ctx(True):
+        with qp.decomposition.toggle_graph_ctx(
+            True
+        ):  # safe alternative to avoid enabling graph globally on the labs test runner
 
-            # pylint: disable=cell-var-from-loop
             for rule in qp.list_decomps(SumOfSlatersPrep2):
 
                 @qp.qnode(qp.device("lightning.qubit"))
                 def func(coefficients):
+                    # pylint: disable=cell-var-from-loop
                     # Make sure that the output state length is at least 2**num_wires
                     qp.Identity(wires)
                     rule(coefficients, **all_wires, indices=indices)
@@ -152,8 +152,8 @@ class TestSumOfSlatersPrep2:
     @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (8, 10)])
     def test_decomposition_prepares_state_non_id_encoding(self, num_wires, num_entries, seed):
         """Test that the decomposition of SumOfSlatersPrep2 actually prepares the desired state."""
+        # pylint: disable=unsubscriptable-object
 
-        # pylint: disable-next=unsubscriptable-object
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         # Add indices (powers of two) that force many bits to be required,
         # avoiding the identity encoding case
@@ -169,8 +169,8 @@ class TestSumOfSlatersPrep2:
 
                 @qp.qnode(qp.device("lightning.qubit"))
                 def func():
+                    # pylint: disable=cell-var-from-loop
                     # Make sure that the output state length is at least 2**num_wires
-                    # pylint: disable-next=cell-var-from-loop
                     qp.Identity(wires)
                     rule(coefficients, **all_wires, indices=indices)
                     return qp.state()

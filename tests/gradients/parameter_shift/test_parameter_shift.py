@@ -278,8 +278,7 @@ class TestGetOperationRecipe:
         c, s = qp.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        # pylint: disable-next=too-few-public-methods
-        class DummyOp(orig_op):
+        class DummyOp(orig_op):  # pylint: disable=too-few-public-methods
             """Custom version of original operation with different gradient recipe."""
 
             grad_recipe = (recipe,)
@@ -333,8 +332,7 @@ class TestGetOperationRecipe:
         c, s = qp.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        # pylint: disable-next=too-few-public-methods
-        class DummyOp(orig_op):
+        class DummyOp(orig_op):  # pylint: disable=too-few-public-methods
             """Custom version of original operation with different gradient recipe."""
 
             grad_recipe = (recipe,)
@@ -1062,10 +1060,8 @@ class TestParamShift:
 
 # Remove the following and unskip the class below once broadcasted
 # tapes are fully supported with gradient transforms. See #4462 for details.
-class TestParamShiftRaisesWithBroadcasted:
+class TestParamShiftRaisesWithBroadcasted:  # pylint: disable=too-few-public-methods
     """Test that an error is raised with broadcasted tapes."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
@@ -1315,11 +1311,10 @@ class TestParamShiftUsingBroadcasting:
 
 
 # The first of the pylint disable is for cost1 through cost6
-# pylint: disable-next=too-many-public-methods
-class TestParameterShiftRule:
+class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     """Tests for the parameter shift implementation"""
 
-    # pylint: disable=no-self-argument, not-an-iterable
+    # pylint: disable=no-self-argument,not-an-iterable
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
@@ -2591,9 +2586,8 @@ class TestParameterShiftRule:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.array(arr)
 
             def __init__(self, *args, **kwargs):
@@ -3253,8 +3247,7 @@ class TestParameterShiftRuleBroadcast:
 @pytest.mark.parametrize(
     "broadcast, expected", [(False, (5, [None] * 5)), (True, (3, [None, 2, 2]))]
 )
-# pylint: disable-next=too-few-public-methods
-class TestParamShiftGradients:
+class TestParamShiftGradients:  # pylint: disable=too-few-public-methods
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd

@@ -15,10 +15,10 @@
 Integration tests for the capture of PennyLane templates into plxpr.
 """
 
-# pylint: disable=protected-access
-
 import inspect
 from itertools import combinations
+
+# pylint: disable=protected-access
 from typing import Any
 
 import numpy as np
@@ -342,8 +342,7 @@ tested_modified_templates = [
 ]
 
 
-# pylint: disable-next=too-many-public-methods
-class TestModifiedTemplates:
+class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     """Test that templates with custom primitive binds are captured as expected."""
 
     def test_basis_embedding_is_basis_state(self):

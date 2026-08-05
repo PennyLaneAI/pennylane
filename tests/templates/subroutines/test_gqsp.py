@@ -15,7 +15,7 @@
 Tests for the GQSP template.
 """
 
-# pylint: disable=import-outside-toplevel, no-self-use
+# pylint: disable=import-outside-toplevel,no-self-use
 
 import pytest
 from numpy.linalg import matrix_power

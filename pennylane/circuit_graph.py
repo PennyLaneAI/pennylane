@@ -103,8 +103,7 @@ def _construct_graph_from_queue(queue, all_wires):
     return graph, inds_for_objs, nodes_on_wires
 
 
-# pylint: disable-next=too-many-instance-attributes
-class CircuitGraph:
+class CircuitGraph:  # pylint: disable=too-many-instance-attributes
     """Represents a quantum circuit as a directed acyclic graph.
 
     In this representation the :class:`~.Operator` instances are the nodes of the graph,
@@ -447,8 +446,7 @@ class CircuitGraph:
             ] + self.operations  # add identity wire to end the graph
         operation_graph, _, _ = _construct_graph_from_queue(ops_with_initial_I, self.wires)
 
-        # pylint: disable-next=unused-argument
-        def weight_fn(in_idx, out_idx, w):
+        def weight_fn(in_idx, out_idx, w):  # pylint: disable=unused-argument
             return 1
 
         return rx.dag_longest_path_length(operation_graph, weight_fn=weight_fn)

@@ -58,7 +58,7 @@ class PennyLaneTransformer(PyToPy):
         elif inspect.isfunction(fn) or inspect.ismethod(fn):
             pass
         elif callable(obj):
-            # pylint: disable-next=unnecessary-lambda, unnecessary-lambda-assignment
+            # pylint: disable=unnecessary-lambda,unnecessary-lambda-assignment
             fn = lambda *args, **kwargs: obj(*args, **kwargs)
         else:
             raise AutoGraphError(f"Unsupported object for transformation: {type(fn)}")

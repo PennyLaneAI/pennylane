@@ -3356,8 +3356,8 @@ class TestSinglePrecision:
     """Tests for compatibility with single precision mode."""
 
     def test_type_conversion_fallback(self):
-        # pylint: disable=import-outside-toplevel
         """Test that if the type isn't int, float, or complex, we still have a fallback."""
+        # pylint: disable=import-outside-toplevel
         from pennylane.workflow.interfaces.jax_jit import _jax_dtype
 
         assert _jax_dtype(bool) == jax.numpy.dtype(bool)

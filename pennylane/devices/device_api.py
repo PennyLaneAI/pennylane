@@ -15,9 +15,6 @@
 This module contains the Abstract Base Class for the next generation of devices.
 """
 
-# pylint: disable=unused-argument, no-self-use
-
-
 import abc
 import warnings
 from collections.abc import Iterable
@@ -151,6 +148,8 @@ class Device(abc.ABC):
         * ``mcm_config``: Options for methods of handling mid-circuit-measures.
 
     """
+
+    # pylint: disable=unused-argument,no-self-use
 
     config_filepath: str | None = None
     """A device can use a `toml` file to specify the capabilities of the backend device. If this

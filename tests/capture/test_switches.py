@@ -64,7 +64,8 @@ def test_switches_without_jax():
     """Test switches and status reporting function."""
     # We want to skip the test if jax is installed
     try:
-        import jax  # pylint: disable=import-outside-toplevel, unused-import
+        # pylint: disable=import-outside-toplevel,unused-import
+        import jax
     except ImportError:
 
         assert qp.capture.enabled() is False

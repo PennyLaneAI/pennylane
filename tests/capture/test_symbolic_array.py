@@ -14,8 +14,6 @@
 Tests for symbolic_array
 """
 
-# pylint: disable=wrong-import-position
-
 import numpy as np
 import pytest
 
@@ -25,7 +23,9 @@ pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-from pennylane.capture.primitives import symbolic_array_prim
+from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
+    symbolic_array_prim,
+)
 
 
 def test_error_without_capture():
@@ -56,6 +56,7 @@ def test_error_if_bad_dimesion(bad_dimension):
         jax.make_jaxpr(f)()
 
 
+# pylint: disable=protected-access
 @pytest.mark.parametrize("shape", [(), (4, 3), (5, 2, 1)])
 @pytest.mark.parametrize(
     "dtype, converted_dtype",
@@ -69,7 +70,6 @@ def test_error_if_bad_dimesion(bad_dimension):
 @pytest.mark.parametrize("eager_constant_folding", [True, False])
 def test_capturing_symbolic_array(shape, dtype, converted_dtype, eager_constant_folding):
     """Test capturing symbolic_array's into jaxpr."""
-    # pylint: disable=protected-access
 
     def f():
         return qp.capture.symbolic_array(shape, dtype)

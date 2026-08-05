@@ -17,7 +17,6 @@ This module contains the base quantum tape.
 
 # pylint: disable=protected-access
 
-
 import copy
 import warnings
 from collections.abc import Sequence

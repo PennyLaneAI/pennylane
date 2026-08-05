@@ -62,7 +62,6 @@ result object.
 
 # pylint: disable=protected-access
 
-
 import inspect
 import logging
 
@@ -200,7 +199,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
-def execute(tapes, execute_fn, jpc, device=None):
+def execute(tapes, execute_fn, jpc, device=None):  # pylint: disable=unused-argument
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:
@@ -212,7 +211,6 @@ def execute(tapes, execute_fn, jpc, device=None):
         TensorLike: A nested tuple of tape results. Each element in
         the returned tuple corresponds in order to the provided tapes.
     """
-    # pylint: disable=unused-argument
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             "Entry with args=(tapes=%s, execute_fn=%s, jpc=%s",

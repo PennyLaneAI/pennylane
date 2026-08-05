@@ -594,10 +594,10 @@ class TestMiscMethods:
         op = Exp(qp.PauliX(0), 3)
         assert repr(op) == "Exp(3 PauliX)"
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op_class", [Exp, Evolution])
     def test_flatten_unflatten(self, op_class):
         """Tests the _unflatten and _flatten methods for the Exp and Evolution operators."""
+        # pylint: disable=protected-access
         base = qp.RX(1.2, wires=0)
         op = op_class(base, 2.5)
 

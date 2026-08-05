@@ -231,8 +231,8 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
 
 
 @lru_cache(maxsize=400)
-# pylint: disable-next=too-many-return-statements
 def _primality_test(n: int) -> bool:
+    # pylint: disable=too-many-return-statements
     r"""Determines whether an integer is prime or not.
 
     This function implements the deterministic variant of `Miller-Rabin primality test
@@ -365,8 +365,8 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
     return r
 
 
-# pylint: disable-next=too-many-return-statements
 def _solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
+    # pylint: disable=too-many-return-statements
     r"""Solve the Diophantine equation :math:`t^* t = \xi` for :math:`t \in \mathbb{Z}[\omega]`
     and :math:`\xi \in \mathbb{Z}[\sqrt{2}]`.
 

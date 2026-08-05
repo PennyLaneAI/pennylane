@@ -58,9 +58,8 @@ class StateMP(StateMeasurement):
         num_wires = len(self.wires) if self.wires else num_device_wires
         return (2**num_wires,)
 
-    def process_state(
-        self, state: Sequence[complex], wire_order: Wires
-    ):  # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         def cast_to_complex(state):
             # pylint: disable=redefined-outer-name
             dtype = str(state.dtype)
@@ -105,7 +104,7 @@ class StateMP(StateMeasurement):
         return cast_to_complex(state)
 
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
-        # pylint: disable=redefined-outer-name
+        # pylint:disable=redefined-outer-name
         raise ValueError("Processing from density matrix to state is not supported.")
 
 
@@ -138,7 +137,7 @@ class DensityMatrixMP(StateMP):
         return (dim, dim)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        # pylint: disable=redefined-outer-name
+        # pylint:disable=redefined-outer-name
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
@@ -147,7 +146,7 @@ class DensityMatrixMP(StateMP):
         return math.reduce_statevector(state, **kwargs)
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        # pylint: disable=redefined-outer-name
+        # pylint:disable=redefined-outer-name
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}

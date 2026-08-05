@@ -101,7 +101,6 @@ to have to perform this extra call.
 
 # pylint: disable=unused-argument
 
-
 import inspect
 import logging
 import warnings
@@ -238,7 +237,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     res = _to_tensors(execute_fn(numpy_tapes), dtype=dtype, complex_safe=True)
 
     @tf.custom_gradient
-    def custom_gradient_execute(*parameters):  # pylint: disable=unused-argument
+    def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument
         """An execution of tapes with VJP's registered with tensorflow.
 
         Args:

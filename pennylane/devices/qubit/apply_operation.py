@@ -15,7 +15,6 @@
 
 # pylint: disable=unused-argument
 
-
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -114,8 +113,9 @@ def _align_torch_interfaces(params, state0, state1, state_interface, param_inter
     return params, state0, state1
 
 
-# pylint: disable-next=too-many-arguments
-def _prepare_batched_params(params, state, state0, state1, axis, n_dim, is_state_batched):
+def _prepare_batched_params(  # pylint: disable=too-many-arguments
+    params, state, state0, state1, axis, n_dim, is_state_batched
+):
     """Prepare parameters and state slices for batched parametric operations.
 
     Args:
@@ -381,7 +381,8 @@ def apply_conditional(
     prng_key = execution_kwargs.get("prng_key", None)
     interface = math.get_deep_interface(state)
     if interface == "jax":
-        from jax.lax import cond  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from jax.lax import cond
 
         return cond(
             op.meas_val.concretize(mid_measurements),
@@ -456,7 +457,8 @@ def apply_mid_measure(
             prob0 = prob0 / norm
 
     if prng_key is not None:
-        from jax.random import binomial  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from jax.random import binomial
 
         def binomial_fn(n, p):
             return binomial(prng_key, n, p).astype(int)
@@ -640,8 +642,9 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
-# pylint: disable-next=too-many-return-statements
-def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
+def _apply_rotation_1q(  # pylint: disable=too-many-return-statements
+    op, state, is_state_batched, compute_coeffs
+):
     """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
 
     Args:
@@ -959,12 +962,12 @@ def _evolve_state_vector_under_parametrized_evolution(
     Returns:
         TensorLike[complex]: output state
     """
-    # pylint: disable=import-outside-toplevel
 
     try:
-        import jax
-        from jax.experimental.ode import odeint
+        import jax  # pylint: disable=import-outside-toplevel
+        from jax.experimental.ode import odeint  # pylint: disable=import-outside-toplevel
 
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
     except ImportError as e:  # pragma: no cover

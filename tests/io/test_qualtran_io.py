@@ -1157,8 +1157,8 @@ class TestToBloqDecomposition:
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
     def test_initialization_with_tuple(self, qubits, dtypes):
-        # pylint: disable=redefined-outer-name, protected-access
         """Tests standard initialization with a tuple of qubits."""
+        # pylint: disable=redefined-outer-name,protected-access
         q0, q1 = qubits
         _, dtype_uint = dtypes
         qubits_tuple = (q0, q1)
@@ -1172,8 +1172,8 @@ class TestToBloqDecomposition:
         assert qreg._initialized is True
 
     def test_initialization_with_single_qubit(self, qubits, dtypes):
-        # pylint: disable=redefined-outer-name
         """Tests that a single qubit is correctly wrapped in a tuple."""
+        # pylint: disable=redefined-outer-name
         q0, _ = qubits
         dtype_bit, _ = dtypes
 
@@ -1185,8 +1185,8 @@ class TestToBloqDecomposition:
         assert qreg.dtype == dtype_bit
 
     def test_immutability_raises_error_on_attribute_change(self, qubits, dtypes):
-        # pylint: disable=redefined-outer-name
         """Tests that changing an attribute after initialization raises an AttributeError."""
+        # pylint: disable=redefined-outer-name
         q0, q1 = qubits
         dtype_bit, dtype_uint = dtypes
         qreg = _QReg(qubits=(q0,), dtype=dtype_bit)
@@ -1201,8 +1201,8 @@ class TestToBloqDecomposition:
             qreg.new_attr = "some_value"
 
     def test_equality_ignores_dtype(self, qubits, dtypes):
-        # pylint: disable=redefined-outer-name
         """Tests the core feature: equality should only depend on qubits, not dtype."""
+        # pylint: disable=redefined-outer-name
         q0, _ = qubits
         dtype_bit, dtype_uint = dtypes
 
@@ -1212,8 +1212,8 @@ class TestToBloqDecomposition:
         assert qreg1 == qreg2
 
     def test_hash_ignores_dtype(self, qubits, dtypes):
-        # pylint: disable=redefined-outer-name
         """Tests that the hash also only depends on the qubits."""
+        # pylint: disable=redefined-outer-name
         q0, _ = qubits
         dtype_bit, dtype_uint = dtypes
 
@@ -1223,8 +1223,8 @@ class TestToBloqDecomposition:
         assert hash(qreg1) == hash(qreg2)
 
     def test_inequality_for_different_qubits(self, qubits, dtypes):
-        # pylint: disable=redefined-outer-name
         """Tests that instances with different qubits are not equal."""
+        # pylint: disable=redefined-outer-name
         q0, q1 = qubits
         dtype_bit, _ = dtypes
 
@@ -1236,8 +1236,8 @@ class TestToBloqDecomposition:
         assert qreg1 != qreg3
 
     def test_inequality_for_different_types(self, qubits, dtypes):
-        # pylint: disable=redefined-outer-name
         """Tests that comparison with other types returns NotImplemented/False."""
+        # pylint: disable=redefined-outer-name
         q0, _ = qubits
         dtype_bit, _ = dtypes
         qreg = _QReg(qubits=(q0,), dtype=dtype_bit)

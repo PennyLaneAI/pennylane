@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for capturing symbolic ``Operator2`` instances into plxpr."""
 
-# pylint: disable=wrong-import-position
-
 from functools import partial
 
 import pytest
@@ -28,6 +26,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
+# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
 from tests.core.operator.operator2_utils import NonParametricOp
 

@@ -36,13 +36,9 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 
 
 def _tf_jac(
-    # pylint: disable=unused-argument
-    # pylint: disable=import-outside-toplevel
-    classical_function,
-    argnums,
-    *args,
-    **kwargs,
+    classical_function, argnums, *args, **kwargs
 ) -> TensorLike:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+    # pylint: disable=import-outside-toplevel,unused-argument
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
@@ -53,8 +49,7 @@ def _tf_jac(
 
 
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
-    # pylint: disable=unused-argument
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel,unused-argument
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     from torch.autograd.functional import jacobian
@@ -63,7 +58,7 @@ def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 
 
 def _jax_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     import jax
 
     if argnums is None:
@@ -82,13 +77,13 @@ _jac_map = {
 }
 
 
+# pylint: disable-next=unused-argument
 def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None, **kwargs):
     """Returns the trainable gate parameters for a given QNode input.
 
     While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
     it cleanly works with all interfaces.
     """
-    # pylint: disable=unused-argument
     # tach-ignore
     from pennylane.workflow import (  # tach-ignore # pylint: disable=import-outside-toplevel
         construct_tape,
@@ -239,7 +234,6 @@ class CotransformCache:
         [{0, 2}, {0, 2}]
 
         """
-        # pylint: disable=protected-access
         transform_index = self._get_idx_for_transform(transform)
         interface = _get_interface(self.qnode, self.args, self.kwargs)
         if interface not in ["jax", "jax-jit"]:
@@ -258,6 +252,7 @@ class CotransformCache:
 
         argnums = [0] if argnums is None else argnums
         argnums = [argnums] if isinstance(argnums, int) else argnums
+        # pylint: disable=protected-access
         if (transform._use_argnum or transform.classical_cotransform) and argnums:
             subprogram = self._program[:transform_index]
             params = _jax_argnums_to_tape_trainable(

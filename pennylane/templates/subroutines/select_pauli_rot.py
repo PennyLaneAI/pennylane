@@ -234,9 +234,7 @@ def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
 
 # pylint: disable=protected-access
-
 if SelectPauliRot._primitive is not None:
-    # pylint: disable=protected-access
 
     @SelectPauliRot._primitive.def_impl
     def _(*args, n_wires, **kwargs):

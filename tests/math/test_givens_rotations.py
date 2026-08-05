@@ -299,8 +299,6 @@ def test_givens_matrix_jaxpr():
 
 
 # pylint:disable = too-many-arguments
-
-
 @pytest.mark.parametrize(
     ("use_jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [
@@ -385,8 +383,6 @@ def test_set_unitary_matrix_real(
 
 
 # pylint:disable = too-many-arguments
-
-
 @pytest.mark.parametrize(
     ("use_jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [

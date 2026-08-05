@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
-# pylint: disable=unused-argument, too-many-arguments, arguments-differ
-
-
 import pytest
 
 import pennylane as qp
@@ -34,6 +31,8 @@ from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
     estimate_wires_from_resources,
 )
 from pennylane.wires import Wires
+
+# pylint: disable=unused-argument,too-many-arguments,arguments-differ
 
 any_state = AllocateState.ANY
 

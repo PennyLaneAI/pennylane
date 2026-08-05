@@ -15,9 +15,6 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
-# pylint: disable=no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
-
-
 from collections import OrderedDict
 
 import numpy as np
@@ -31,6 +28,8 @@ from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
+
+# pylint: disable=no-self-use,redefined-outer-name,invalid-name,missing-function-docstring
 
 
 @pytest.fixture(scope="function")
@@ -218,8 +217,9 @@ def test_gradients_record():
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
+    # pylint: disable=no-self-use,redefined-outer-name
+
     def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
-        # pylint: disable=no-self-use, redefined-outer-name
         """Checks that device.supports_operations returns the correct result
         when passed both string and Operation class arguments"""
 
@@ -289,8 +289,8 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
     def test_repr(self, mock_device_supporting_paulis):
-        # pylint: disable=unnecessary-dunder-call
         """Tests the __repr__ function"""
+        # pylint: disable=unnecessary-dunder-call
         dev = mock_device_supporting_paulis()
         assert "<Device device (wires=1, shots=1000) at " in dev.__repr__()
 
@@ -579,8 +579,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert len(recwarn) == 0
 
 
-# pylint: disable-next=too-few-public-methods
-class TestClassmethods:
+class TestClassmethods:  # pylint: disable=too-few-public-methods
     """Test the classmethods of Device"""
 
     def test_capabilities(self, mock_device_with_capabilities):
@@ -594,8 +593,8 @@ class TestOperations:
     """Tests the logic related to operations"""
 
     def test_shots_setter(self, mock_device):
-        # pylint: disable=protected-access
         """Tests that the property setter of shots changes the number of shots."""
+        # pylint: disable=protected-access
         dev = mock_device()
 
         assert dev._shots == 1000
@@ -617,8 +616,8 @@ class TestOperations:
             dev.shots = shots
 
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
-        # pylint: disable=pointless-statement
         """Tests that a call to op_queue outside the execution context raises the correct error"""
+        # pylint: disable=pointless-statement
         dev = mock_device()
 
         with pytest.raises(
@@ -739,9 +738,10 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
+    # pylint: disable-next=no-self-use
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
-        # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
         """Tests that a call to op_queue outside the execution context raises the correct error"""
+        # pylint: disable=redefined-outer-name,pointless-statement
         dev = mock_device()
 
         with pytest.raises(
@@ -842,8 +842,8 @@ class TestParameters:
     """Test for checking device parameter mappings"""
 
     def test_parameters_accessed_outside_execution_context(self, mock_device):
-        # pylint: disable=pointless-statement
         """Tests that a call to parameters outside the execution context raises the correct error"""
+        # pylint: disable=pointless-statement
         dev = mock_device()
 
         with pytest.raises(
@@ -987,9 +987,11 @@ class TestBatchExecution:
 
 
 class TestGrouping:
-    """Tests for the use_grouping option for devices."""  # pylint: disable=unused-argument, missing-class-docstring
+    """Tests for the use_grouping option for devices."""
 
+    # pylint: disable-next=missing-class-docstring
     class SomeDevice(qp.devices.LegacyDevice):
+        # pylint: disable=unused-argument
         name = ""
         short_name = ""
         pennylane_requires = ""
@@ -1010,13 +1012,13 @@ class TestGrouping:
         def supports_observable(self, *args, **kwargs):
             return True
 
-    # pylint: disable=attribute-defined-outside-init
     @pytest.mark.parametrize("use_grouping", (True, False))
     def test_batch_transform_checks_use_grouping_property(self, use_grouping, mocker):
         """If the device specifies `use_grouping=False`, the batch transform
         method won't expand the hamiltonian when the measured hamiltonian has
         grouping indices.
         """
+        # pylint: disable=attribute-defined-outside-init
 
         H = qp.Hamiltonian([1.0, 1.0], [qp.PauliX(0), qp.PauliY(0)], grouping_type="qwc")
         qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])

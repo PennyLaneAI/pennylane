@@ -708,6 +708,6 @@ def pulse_odegen_qnode_wrapper(self, qnode, targs, tkwargs):
     It raises an error, so that applying ``pulse_odegen`` to a ``QNode`` directly
     is not supported.
     """
-    # pylint: disable=unused-argument
+    # pylint:disable=unused-argument
     transform_name = "pulse generator parameter-shift"
     raise_pulse_diff_on_qnode(transform_name)

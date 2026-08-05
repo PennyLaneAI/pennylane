@@ -277,8 +277,7 @@ class TestTransformExtension:
     def test_generic_register(self, explicit_type):
         """Test that generic_register can register behavior for a new object."""
 
-        # pylint: disable-next=too-few-public-methods
-        class Subroutine:
+        class Subroutine:  # pylint: disable=too-few-public-methods
             def __init__(self, ops):
                 self.ops = ops
 
@@ -659,9 +658,8 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     def test_first_positional_arg_a_sequence(self):
         """Test that a BoundTransform is still created when the first positional arg is a sequence."""
 
-        # pylint: disable=unused-argument
         @qp.transform
-        def f(tape, param):
+        def f(tape, param):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         bound_t = f("abcd")
@@ -986,8 +984,7 @@ class TestSetupInputs:
     def test_eager_error_on_bad_input(self):
         """Test that an eager error is provided on binding a transform with bad inputs."""
 
-        def f(tape, val=1):
-            # pylint: disable=unused-argument
+        def f(tape, val=1):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         def setup_inputs(val=1):
@@ -1004,8 +1001,7 @@ class TestSetupInputs:
     def test_eager_error_on_bad_input_dispatch(self, target):
         """Test that an eager error is provided on binding a transform with bad inputs when dispatched onto various objects.."""
 
-        def f(tape, val=1):
-            # pylint: disable=unused-argument
+        def f(tape, val=1):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         def setup_inputs(val=1):
@@ -1024,8 +1020,7 @@ class TestSetupInputs:
                 raise ValueError("not an int")
             return (x,), {}
 
-        def func(tape, x):
-            # pylint: disable=unused-argument
+        def func(tape, x):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         t = qp.transform(func, setup_inputs=setup_inputs)

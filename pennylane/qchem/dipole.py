@@ -323,7 +323,6 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None, mapping="jordan_w
     return _dipole
 
 
-# pylint: disable-next=too-many-arguments
 def molecular_dipole(
     molecule,
     method="dhf",
@@ -334,7 +333,7 @@ def molecular_dipole(
     wires=None,
     args=None,
     cutoff=1.0e-16,
-):
+):  # pylint: disable=too-many-arguments,protected-access
     r"""Generate the dipole moment operator for a molecule in the Pauli basis.
 
     The dipole operator in the second-quantized form is
@@ -430,7 +429,6 @@ def molecular_dipole(
       + 0.24190977644645698 * Z(5)
     )
     """
-    # pylint: disable=protected-access
 
     method = method.strip().lower()
     if method not in ["dhf", "openfermion"]:

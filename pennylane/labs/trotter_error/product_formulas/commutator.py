@@ -332,8 +332,9 @@ def _separate_by_order(d: dict[ASTNode, float], max_order: int) -> list[dict[AST
     return ret
 
 
-# pylint: disable-next=too-many-return-statements
-def is_mergeable(node1: ASTNode, node2: ASTNode, index: int):
+def is_mergeable(
+    node1: ASTNode, node2: ASTNode, index: int
+):  # pylint: disable=too-many-return-statements
     """
     Check if two nodes are mergeable at `index`.
 

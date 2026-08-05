@@ -15,10 +15,7 @@
 This submodule tests transforms with program capture
 """
 
-# pylint: disable=unused-argument
-
-
-# pylint: disable=protected-access, wrong-import-position
+# pylint: disable=protected-access
 
 import pytest
 
@@ -27,6 +24,7 @@ from pennylane.core.transforms import CompilePipeline
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
+# pylint: disable=wrong-import-position
 import pennylane as qp
 from pennylane.capture.primitives import (
     qnode_prim,
@@ -39,7 +37,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 @transform
-def z_to_hadamard(tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None):
+def z_to_hadamard(
+    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
+):  # pylint: disable=unused-argument
     """Transform that converts Z gates to H gates."""
     new_ops = [qp.H(wires=op.wires) if isinstance(op, qp.Z) else op for op in tape.operations]
     return [tape.copy(operations=new_ops)], lambda res: res[0]
@@ -62,10 +62,11 @@ def shift_rx_to_end(tape):
 
 
 @transform
-def expval_z_obs_to_x_obs(tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None):
+def expval_z_obs_to_x_obs(
+    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
+):  # pylint: disable=unused-argument
     """Transform that converts Z observables for expectation values to X observables.
     This transform works natively with plxpr."""
-    # pylint: disable=unused-argument
     new_measurements = [
         (
             qp.expval(qp.X(mp.wires))

@@ -21,7 +21,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from conftest import atol_for_shots, get_device, test_matrix  # pylint: disable=no-name-in-module
+
+# pylint: disable=no-name-in-module
+from conftest import atol_for_shots, get_device, test_matrix
 from pennylane import numpy as pnp
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 

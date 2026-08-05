@@ -125,8 +125,7 @@ def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
     return tapes_plus + tapes_minus, calculate_omegas
 
 
-# pylint: disable-next=too-many-instance-attributes
-class RiemannianGradientOptimizer:
+class RiemannianGradientOptimizer:  # pylint: disable=too-many-instance-attributes
     r"""Riemannian gradient optimizer.
 
     Riemannian gradient descent algorithms can be used to optimize a function directly on a Lie group
@@ -330,5 +329,5 @@ class RiemannianGradientOptimizer:
             array: array of omegas for each direction in the Lie algebra.
         """
 
-        # pylint: disable-next=not-callable
+        # pylint: disable=not-callable
         return algebra_commutator(self.circuit, self.lie_algebra_basis_names, self.nqubits)()

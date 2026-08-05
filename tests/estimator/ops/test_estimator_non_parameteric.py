@@ -13,15 +13,14 @@
 # limitations under the License.
 """Tests for non parametric resource operators."""
 
-# pylint: disable=no-self-use
-
-
 import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.exceptions import ResourcesUndefinedError
+
+# pylint: disable=no-self-use
 
 
 class TestHadamard:

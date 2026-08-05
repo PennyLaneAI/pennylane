@@ -192,7 +192,7 @@ class OutAdder(Operation):
         for key in ["x_wires", "y_wires", "output_wires", "work_wires"]:
             self.hyperparameters[key] = Wires(locals()[key])
 
-        # pylint: disable-next=consider-using-generator
+        # pylint: disable=consider-using-generator
         all_wires = sum(
             [self.hyperparameters[key] for key in ["x_wires", "y_wires", "output_wires"]], start=[]
         )
@@ -247,8 +247,9 @@ class OutAdder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires):
+    def compute_decomposition(
+        x_wires, y_wires, output_wires, mod, work_wires
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:

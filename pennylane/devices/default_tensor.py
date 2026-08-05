@@ -17,7 +17,6 @@ This module contains the default.tensor device to perform tensor network simulat
 
 # pylint: disable=protected-access
 
-
 import copy
 import warnings
 from collections.abc import Callable
@@ -192,7 +191,6 @@ def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
 
 @simulator_tracking
 @single_tape_support
-# pylint: disable-next=too-many-instance-attributes
 class DefaultTensor(Device):
     """A PennyLane device to perform tensor network simulations of quantum circuits using
     `quimb <https://github.com/jcmgray/quimb/>`_.
@@ -370,6 +368,8 @@ class DefaultTensor(Device):
             using the ``MPS`` method of the ``default.tensor`` device is approximately three orders of magnitude slower.
             Similarly, using the ``default.qubit`` device results in a much slower simulation.
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     _device_options = (
         "contract",
@@ -786,9 +786,8 @@ class DefaultTensor(Device):
         obs = measurementprocess.obs
         return expval_core(obs, self)
 
-    def state(self, measurementprocess: MeasurementProcess):
+    def state(self, measurementprocess: MeasurementProcess):  # pylint: disable=unused-argument
         """Returns the state vector."""
-        # pylint: disable=unused-argument
         return self._quimb_circuit.psi.to_dense().ravel()
 
     def var(self, measurementprocess: MeasurementProcess) -> float:

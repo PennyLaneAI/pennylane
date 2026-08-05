@@ -149,7 +149,8 @@ class QNGOptimizerQJIT:
             the ``optax``-like interface for all Jax-based quantum-specific optimizers.
 
         """
-        # pylint: disable=unused-argument
+        # pylint:disable=unused-argument
+        # pylint:disable=no-self-use
         return None
 
     def step(self, qnode, params, state, **kwargs):

@@ -313,15 +313,14 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
 class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,import-outside-toplevel
 
     @pytest.mark.parametrize("measure_f", (qp.expval, qp.probs, qp.sample, qp.var))
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
-    # pylint: disable-next=too-many-arguments
-    def test_interface_tape_results(  # pylint: disable=unused-argument
+    def test_interface_tape_results(
         self, shots, n_mcms, measure_f, interface, use_interface_for_results, seed
-    ):
+    ):  # pylint: disable=unused-argument
         """Test that the simulation results of a tape are correct with interface parameters"""
         if interface == "jax":
             from jax.random import PRNGKey

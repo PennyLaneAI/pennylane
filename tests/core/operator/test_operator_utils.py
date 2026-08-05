@@ -12,9 +12,6 @@
 # limitations under the License.
 """Tests for ``pennylane.core.operator.utils``."""
 
-# pylint: disable=too-few-public-methods
-
-
 import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
@@ -25,6 +22,8 @@ from pennylane.core.operator.utils import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
+
+# pylint: disable=too-few-public-methods
 
 
 class TestAbstractifyBasics:

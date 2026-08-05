@@ -970,8 +970,9 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
 class _DecompInfoCollection:
     """A collection of _DecompInfo."""
 
+    # pylint: disable=protected-access
+
     def __init__(
-        # pylint: disable=protected-access
         self,
         rule_infos: Sequence[_DecompInfo],
         show_not_applicable: bool = True,
@@ -984,11 +985,9 @@ class _DecompInfoCollection:
         self._rules = list(indexed_rule_infos)
 
     def _title(self, index, rule) -> str:
-        # pylint: disable=protected-access
         return f"Decomposition {index} (name: {rule._name})"
 
     def _title_md(self, index, rule) -> str:
-        # pylint: disable=protected-access
         return f"#### Decomposition {index} (name: {rule._name})"
 
     def __str__(self) -> str:

@@ -13,9 +13,6 @@
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
 
-# pylint: disable=too-many-public-methods
-
-
 import pickle
 from copy import copy, deepcopy
 
@@ -34,6 +31,8 @@ from pennylane.fermi.fermionic import (
     _to_string,
     from_string,
 )
+
+# pylint: disable=too-many-public-methods
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw1_dag = FermiWord({(0, 1): "+", (1, 0): "-"})

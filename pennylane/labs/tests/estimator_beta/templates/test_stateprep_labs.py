@@ -15,9 +15,6 @@
 Tests for the state preparation subroutines resource operators.
 """
 
-# pylint: disable=no-self-use, too-many-arguments, undefined-variable, unused-variable
-
-
 import re
 
 import pytest
@@ -25,6 +22,8 @@ import pytest
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
+
+# pylint: disable=no-self-use,too-many-arguments,undefined-variable,unused-variable
 
 
 class TestMottonenStatePreparation:

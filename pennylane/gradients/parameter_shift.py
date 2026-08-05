@@ -16,9 +16,6 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 
-# pylint: disable=too-many-arguments, unused-argument
-
-
 import warnings
 from functools import partial, singledispatch
 
@@ -62,6 +59,9 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
     reorder_grads,
 )
+
+# pylint: disable=too-many-arguments,unused-argument
+
 
 NONINVOLUTORY_OBS = {
     "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
@@ -338,10 +338,10 @@ def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
     return tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
 
 
-# pylint: disable-next=too-many-positional-arguments
 def expval_param_shift(
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
 ):
+    # pylint: disable=too-many-positional-arguments
     r"""Generate the parameter-shift tapes and postprocessing methods required
         to compute the gradient of a gate parameter with respect to an
         expectation value.
@@ -592,7 +592,6 @@ def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
     return tuple(var_grad)
 
 
-# pylint: disable-next=too-many-positional-arguments
 def _create_variance_proc_fn(
     tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices
 ):
@@ -611,6 +610,7 @@ def _create_variance_proc_fn(
         non_involutory_indices (list): the indices in the measurement queue of all non-involutory
             observables
     """
+    # pylint: disable=too-many-positional-arguments
 
     def processing_fn(results):
         f0 = results[0]
@@ -789,7 +789,6 @@ def _inplace_set_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-# pylint: disable-next=too-many-positional-arguments
 def _expand_transform_param_shift(
     tape: QuantumScript,
     argnum=None,
@@ -800,6 +799,7 @@ def _expand_transform_param_shift(
     broadcast=False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
+    # pylint: disable=too-many-positional-arguments
     [new_tape], postprocessing = decompose(
         tape,
         gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
@@ -827,7 +827,6 @@ def _expand_transform_param_shift(
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-# pylint: disable-next=too-many-positional-arguments
 def param_shift(
     tape: QuantumScript,
     argnum=None,
@@ -837,6 +836,7 @@ def param_shift(
     f0=None,
     broadcast=False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    # pylint: disable=too-many-positional-arguments
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 

@@ -107,10 +107,10 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_k
 
     dev = qp.device("default.qubit", wires=device_wires)
 
-    # pylint: disable=too-many-return-statements
     @qp.set_shots(shots)
     @qp.qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
     def circuit(x):
+        # pylint: disable=too-many-return-statements
         for i, wire_label in enumerate(wire_labels[:-1]):
             qp.Hadamard(wires=wire_label)
             qp.RX(x[i], wires=wire_label)

@@ -15,9 +15,9 @@
 Tests for the Fourier reconstruction transform.
 """
 
-# pylint: disable=too-many-arguments, too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
-
 from functools import reduce
+
+# pylint: disable=too-many-arguments,too-few-public-methods,unnecessary-lambda-assignment,consider-using-dict-items
 from inspect import signature
 from itertools import chain
 
@@ -749,8 +749,7 @@ def qnode_3(X, Y):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
-def qnode_4(x):
-    # pylint: disable=unused-argument
+def qnode_4(x):  # pylint: disable=unused-argument
     return qp.expval(qp.PauliX(0))
 
 

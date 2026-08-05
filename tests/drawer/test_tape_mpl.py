@@ -17,7 +17,7 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
-# pylint: disable=protected-access, expression-not-assigned
+# pylint: disable=protected-access,expression-not-assigned
 
 import warnings
 

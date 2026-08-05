@@ -13,8 +13,7 @@
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
 
-# pylint: disable=no-member, too-many-arguments, use-dict-literal
-
+# pylint: disable=no-member,too-many-arguments,use-dict-literal
 
 import autograd
 import autograd.numpy as anp

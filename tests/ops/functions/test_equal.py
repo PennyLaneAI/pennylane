@@ -16,10 +16,10 @@ Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
 
-# pylint: disable=too-many-public-methods
-
 import itertools
 import re
+
+# pylint: disable=too-many-public-methods
 from copy import deepcopy
 from functools import partial
 
@@ -252,8 +252,7 @@ def test_assert_equal_types():
 
 
 def test_assert_equal_unspecified():
-    # pylint: disable-next=too-few-public-methods
-    class RandomType:
+    class RandomType:  # pylint: disable=too-few-public-methods
         """dummy type"""
 
         def __init__(self):
@@ -1469,8 +1468,7 @@ class TestPauliErrorEqual:
             assert_equal(pes[0], pes[1], check_trainability=False)
 
 
-# pylint: disable-next=too-few-public-methods
-class TestPauliWordsEqual:
+class TestPauliWordsEqual:  # pylint: disable=too-few-public-methods
     """Tests for qp.equal with PauliSentences."""
 
     @pytest.mark.parametrize("pw1, pw2, res, error_match", equal_pauli_words)
@@ -2946,18 +2944,15 @@ class TestHilbertSchmidt:
     # pylint: disable=no-self-argument
 
     def v_function1(params):
-        # pylint: disable=no-self-argument
         """Returns a v_function that is used in the HilbertSchmidt operator."""
         return qp.RZ(params[0], wires=1)
 
-    # pylint: disable-next=no-self-argument
     def v_function2(params):
         """Differs from v_function1 by operation type and used parameter."""
         return qp.RX(params[1], wires=1)
 
     def v_function3(params):
         """Differs from v_function1 by the used wire."""
-        # pylint: disable=no-self-argument
         return qp.RZ(params[0], wires=2)
 
     def v_function4(params):
@@ -3072,8 +3067,7 @@ class TestHilbertSchmidt:
 class DepthIncreaseOperator(Operator):
     """Dummy class which increases depth by one"""
 
-    def __init__(self, op: Operator):
-        # pylint: disable=super-init-not-called
+    def __init__(self, op: Operator):  # pylint: disable=super-init-not-called
         self._op = op
 
     @property
@@ -3181,8 +3175,6 @@ def test_select():
 
 
 class TestCompareSubroutines:
-    # pylint: disable=unused-argument
-
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 
@@ -3205,7 +3197,7 @@ class TestCompareSubroutines:
         """Test they are different if they have different static args."""
 
         @partial(qp.templates.Subroutine, static_argnames=("a",))
-        def f(a, wires):
+        def f(a, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)("val1", 0)[0]
@@ -3219,7 +3211,7 @@ class TestCompareSubroutines:
         """Test they are different if their wires are different."""
 
         @partial(qp.templates.Subroutine, wire_argnames=("reg1", "reg2"))
-        def f(reg1, reg2):
+        def f(reg1, reg2):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)((0,), (1,))[0]
@@ -3232,7 +3224,7 @@ class TestCompareSubroutines:
         """Test that if the pytrees for an input are different, the ops are different."""
 
         @qp.templates.Subroutine
-        def f(x, wires):
+        def f(x, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)((0.5,), 0)[0]
@@ -3253,7 +3245,7 @@ class TestCompareSubroutines:
         """Test that if there is different data, they are different operators."""
 
         @qp.templates.Subroutine
-        def f(x, wires):
+        def f(x, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)(np.array(0.5), 0)[0]

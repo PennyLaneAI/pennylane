@@ -12,10 +12,7 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=too-many-public-methods
-
-
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-few-public-methods
 
 # TODO: [sc-120817] Add interface tests
 # TODO: [sc-120982] Add integration tests
@@ -49,7 +46,7 @@ from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires
 
 
-class TestInitSubclass:
+class TestInitSubclass:  # pylint: disable=too-many-public-methods
     """Tests for the validation performed in ``Operator2.__init_subclass__``."""
 
     def test_str_argnames_converted_to_tuple(self):
@@ -79,9 +76,8 @@ class TestInitSubclass:
             static_argnames = ("s2", "s1")
             hybrid_argnames = ("h2", "h1")
 
-            def __init__(
-                self, a, reg1, s1, h1, b, reg2, s2, h2
-            ):  # pylint: disable=too-many-arguments
+            # pylint: disable-next=too-many-arguments
+            def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
                 super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
 
         assert DummyOp.wire_argnames == ("reg1", "reg2")
@@ -516,8 +512,7 @@ class TestOperatorInit:
             dynamic_argnames = ("phi",)
             static_argnames = ("method",)
 
-            def __init__(self, phi, wires, method="auto"):
-                # pylint: disable=unused-argument
+            def __init__(self, phi, wires, method="auto"):  # pylint: disable=unused-argument
                 super().__init__(phi, Wires(wires))
 
         op = Op(0.5, wires=0)
@@ -1949,8 +1944,7 @@ class TestHasRepresentations:
         assert WithGen.has_generator is True
 
 
-# pylint: disable-next=too-many-public-methods
-class TestRepresentations:
+class TestRepresentations:  # pylint: disable=too-many-public-methods
     """Tests for the various operator representation methods
     (and their corresponding ``compute_**`` static methods)."""
 
@@ -2464,9 +2458,9 @@ class TestStatePrepBase:
         assert op.label(base_label="|x⟩") == "|x⟩"
 
     def test_interface_not_implemented(self):
-        """Tests that an error is raised if an interface isn't implemented."""  # pylint: disable=abstract-method
+        """Tests that an error is raised if an interface isn't implemented."""
 
-        class BadStatePrep(StatePrepBase2):
+        class BadStatePrep(StatePrepBase2):  # pylint: disable=abstract-method
             wire_argnames = ("wires",)
 
             def __init__(self, wires):
@@ -2497,7 +2491,7 @@ class TestLegacyGradMethodProperty:
     def test_generator_gives_frequencies(self):
         """Tests that a generator can create parameter frequencies which returns analytic."""
 
-        class GenOp(DynOp):  # pylint: disable=too-few-public-methods
+        class GenOp(DynOp):
             @override
             def generator(self):
                 return -0.5 * qp.Z(0)

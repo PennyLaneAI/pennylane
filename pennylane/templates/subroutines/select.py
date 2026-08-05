@@ -365,8 +365,7 @@ class Select(Operation):
         )
 
     @classmethod
-    # pylint: disable-next=arguments-differ
-    def _primitive_bind_call(cls, ops, control, **kwargs):
+    def _primitive_bind_call(cls, ops, control, **kwargs):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(*ops, wires=control, **kwargs)
 
     @classmethod
@@ -979,8 +978,8 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     return ops_decomp
 
 
+# pylint: disable-next=unused-argument
 def _unary_condition(op_reps, num_control_wires, partial, num_work_wires):
-    # pylint: disable=unused-argument
     return num_work_wires >= num_control_wires - 1
 
 
@@ -1080,8 +1079,8 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
     return dict(resources)
 
 
+# pylint: disable-next=unused-argument
 def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
-    # pylint: disable=unused-argument
     return num_work_wires >= 1
 
 
@@ -1133,9 +1132,7 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 add_decomps(Select, _select_decomp_multi_control_work_wire)
 
 # pylint: disable=protected-access
-
 if Select._primitive is not None:
-    # pylint: disable=protected-access
 
     @Select._primitive.def_impl
     def _(*args, n_wires, **kwargs):

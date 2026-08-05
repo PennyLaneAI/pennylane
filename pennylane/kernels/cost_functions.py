@@ -23,7 +23,6 @@ from pennylane.math import frobenius_inner_product
 from .utils import square_kernel_matrix
 
 
-# pylint: disable-next=too-many-arguments
 def polarity(
     X,
     Y,
@@ -89,6 +88,7 @@ def polarity(
     >>> qp.kernels.polarity(X, Y, kernel)
     np.float64(0.2196...)
     """
+    # pylint: disable=too-many-arguments
     K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
     if rescale_class_labels:

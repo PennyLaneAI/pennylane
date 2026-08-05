@@ -15,8 +15,6 @@
 Unit tests for the composite operator class of Operator2 instances.
 """
 
-# pylint: disable=wrong-import-position
-
 import pytest
 
 import pennylane as qp
@@ -25,6 +23,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.capture]
 
+# pylint: disable=wrong-import-position
 from pennylane.ops.op_math.change_op_basis import ChangeOpBasis
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 

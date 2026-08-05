@@ -140,12 +140,10 @@ def test_shot_distribution(execution_config):
     class DummyJacobianDevice(DummyDevice):
         _capabilities = {"provides_jacobian": True}
 
-        def new_gradient(self, circuit):
-            # pylint: disable=unused-argument
+        def new_gradient(self, circuit):  # pylint: disable=unused-argument
             return 0
 
-        def jacobian(self, circuit):
-            # pylint: disable=unused-argument
+        def jacobian(self, circuit):  # pylint: disable=unused-argument
             return 1
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
@@ -401,8 +399,9 @@ class TestGradientSupport:
         gradient_method = "adjoint"
 
         class AdjointDev(DummyDevice):
-            # pylint: disable=unnecessary-lambda-assignment
             """A dummy device that supports adjoint diff"""
+
+            # pylint: disable=unnecessary-lambda-assignment
 
             _capabilities = {"returns_state": True}
 

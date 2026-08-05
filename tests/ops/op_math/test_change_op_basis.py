@@ -15,12 +15,12 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
-# pylint: disable=unused-argument
-
 import re
 from functools import partial
 
 import numpy as np
+
+# pylint:disable=unused-argument
 import pytest
 
 import pennylane as qp

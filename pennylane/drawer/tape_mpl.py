@@ -345,7 +345,6 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     ]
 
 
-# pylint: disable-next=too-many-arguments
 def tape_mpl(
     tape: QuantumScript,
     wire_order: Sequence | None = None,
@@ -555,6 +554,7 @@ def tape_mpl(
             :width: 60%
             :target: javascript:void(0);
     """
+    # pylint: disable=too-many-arguments
 
     restore_params = {}
     if update_style := (has_mpl and style != "rcParams"):

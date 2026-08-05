@@ -88,11 +88,9 @@ def mock_device(monkeypatch):
         yield qp.devices.LegacyDevice(wires=2)
 
 
-# pylint: disable=protected-access
-
-
 @pytest.fixture
 def tear_down_hermitian():
+    # pylint: disable=protected-access
     yield None
     qp.Hermitian._eigs = {}
 
@@ -211,8 +209,7 @@ except ImportError as e:
     jax_available = False
 
 
-def pytest_generate_tests(metafunc):
-    # pylint: disable=unused-argument
+def pytest_generate_tests(metafunc):  # pylint: disable=unused-argument
     if jax_available:
         jax.config.update("jax_enable_x64", True)
 

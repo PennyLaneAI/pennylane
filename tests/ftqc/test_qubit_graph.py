@@ -14,9 +14,6 @@
 
 """Unit tests for the qubit_graph module"""
 
-# pylint: disable=too-few-public-methods
-
-
 import re
 import uuid
 
@@ -27,6 +24,8 @@ import rustworkx as rx
 import pennylane as qp
 from pennylane.ftqc import QubitGraph
 from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
+
+# pylint: disable=too-few-public-methods
 
 
 class TestQubitGraphsInitialization:
@@ -254,9 +253,9 @@ class TestQubitGraphsInitialization:
 
     def test_init_graph_with_invalid_type_raises_type_error(self):
         """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
+        # pylint: disable=missing-class-docstring
 
         class NotAGraph:
-            # pylint: disable=missing-class-docstring
             pass
 
         class SomethingWithOnlyNodes:
@@ -747,9 +746,9 @@ class TestQubitGraphsWarnings:
         """Test that initializing a QubitGraph with a graph-like object that is not a networkx.Graph
         object emits a UserWarning.
         """
+        # pylint: disable=missing-class-docstring
 
         class CustomGraph:
-            # pylint: disable=missing-class-docstring
             def __init__(self):
                 self.nodes = []
                 self.edges = []

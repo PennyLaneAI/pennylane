@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
-# pylint: disable=import-outside-toplevel, protected-access, no-member
-
 import copy
+
+# pylint: disable=import-outside-toplevel,protected-access,no-member
 import warnings
 from dataclasses import replace
 from functools import partial
@@ -858,10 +858,9 @@ class TestIntegration:
             (qp.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
         ],
     )
-    # pylint: disable-next=too-many-arguments
     def test_defer_meas_if_mcm_unsupported(
         self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
-    ):
+    ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
@@ -894,10 +893,9 @@ class TestIntegration:
         assert spy.call_count == 2
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
-    def test_sampling_with_mcm(self, basis_state, mocker):
+    def test_sampling_with_mcm(self, basis_state, mocker):  # pylint: disable=unused-argument
         """Tests that a QNode with qp.sample and mid-circuit measurements
         returns the expected results."""
-        # pylint: disable=unused-argument
         dev = qp.device("default.qubit", wires=3)
 
         first_par = np.pi
@@ -1089,7 +1087,8 @@ class TestIntegration:
     def test_qnode_default_interface(self):
         """Tests that the default interface is set correctly for a QNode."""
 
-        import networkx as nx  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
 
         @qp.qnode(qp.device("default.qubit"))
         def circuit(graph: nx.Graph):
@@ -1106,7 +1105,8 @@ class TestIntegration:
     def test_qscript_default_interface(self):
         """Tests that the default interface is set correctly for a QuantumScript."""
 
-        import networkx as nx  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
 
         dev = qp.device("default.qubit")
 
@@ -1760,8 +1760,6 @@ class TestMCMConfiguration:
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
-    # pylint: disable=unused-argument
-
     @pytest.mark.parametrize(
         "diff_method,grad_on_execution",
         [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
@@ -1840,7 +1838,7 @@ class TestTapeExpansion:
             assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):
+    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
 

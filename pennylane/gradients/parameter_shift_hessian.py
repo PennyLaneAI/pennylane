@@ -168,13 +168,11 @@ def _collect_recipes(tape, argnum, method_map, diagonal_shifts, off_diagonal_shi
     return diag_recipes, partial_offdiag_recipes
 
 
-# pylint: disable = too-many-positional-arguments
-
-
-# pylint: disable-next=too-many-arguments
+# pylint: disable-next=too-many-positional-arguments
 def _generate_offdiag_tapes(tape, idx, first_order_recipes, add_unshifted, tapes, coeffs):
     r"""Combine two univariate first order recipes and create
     multi-shifted tapes to compute the off-diagonal entry of the Hessian."""
+    # pylint: disable=too-many-arguments
 
     recipe_i = first_order_recipes[idx[0]]
     recipe_j = first_order_recipes[idx[1]]
@@ -204,13 +202,11 @@ def _generate_offdiag_tapes(tape, idx, first_order_recipes, add_unshifted, tapes
     return add_unshifted, unshifted_coeff
 
 
-# pylint: disable = too-many-positional-arguments
-
-
-# pylint: disable-next=too-many-arguments
+# pylint: disable-next=too-many-positional-arguments
 def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
     """Create the required parameter-shifted tapes for a single diagonal entry of
     the Hessian using precomputed second-order shift rules."""
+    # pylint: disable=too-many-arguments
     # Obtain the recipe for the diagonal.
     c, m, s = diag_recipes[idx].T
     if s[0] == 0 and m[0] == 1.0:
@@ -269,11 +265,8 @@ def _all_zero_hessian(tape):
     return [], lambda _: tuple(zeros_list)
 
 
-# pylint: disable = too-many-positional-arguments
-
-
-# pylint: disable-next=too-many-arguments
 def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_diagonal_shifts, f0):
+    # pylint: disable=too-many-positional-arguments
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
     post-processing function to combine the results of evaluating the tapes into the Hessian.
@@ -306,6 +299,7 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
         function to be applied to the results of the evaluated tapes
         in order to obtain the Hessian matrix.
     """
+    # pylint: disable=too-many-arguments
     h_dim = tape.num_params
 
     unshifted_coeffs = {}

@@ -15,9 +15,6 @@
 Unit tests for :mod:`pennylane.wires`.
 """
 
-# pylint: disable=too-many-public-methods
-
-
 import re
 from importlib import import_module, util
 
@@ -36,7 +33,7 @@ else:
     jax = None
 
 
-class TestWires:
+class TestWires:  # pylint: disable=too-many-public-methods
     """Tests for the ``Wires`` class."""
 
     def test_error_if_wires_none(self):
@@ -383,8 +380,8 @@ class TestWires:
         assert (1, 5, 3) != Wires([1, 2, 3])
 
     def test_hash_cached(self):
-        # pylint: disable=protected-access
         """Test that the hash of a Wires object is being cached."""
+        # pylint: disable=protected-access
         wires = Wires([0, 1])
         assert wires._hash is None
         h = hash(wires)

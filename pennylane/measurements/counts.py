@@ -291,10 +291,8 @@ class CountsMP(SampleMeasurement):
                 outcome_counts[outcome_binary] = 0
 
 
-# pylint: disable=protected-access
-
+# pylint: disable=protected-access,unused-argument
 if CountsMP._wires_primitive is not None:
-    # pylint: disable=protected-access
 
     CountsMP._wires_primitive.multiple_results = True
 
@@ -303,14 +301,12 @@ if CountsMP._wires_primitive is not None:
         raise NotImplementedError("Counts has no execution implementation with program capture.")
 
     def _keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
-        # pylint: disable=unused-argument
         if shots is None:
             raise ValueError("finite shots are required to use CountsMP")
         n_wires = n_wires or num_device_wires
         return (2**n_wires,), int
 
     def _values_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
-        # pylint: disable=unused-argument
         if shots is None:
             raise ValueError("finite shots are required to use CountsMP")
         n_wires = n_wires or num_device_wires
@@ -331,10 +327,8 @@ if CountsMP._wires_primitive is not None:
         return keys, values
 
 
-# pylint: disable=protected-access
-
+# pylint: disable=protected-access,unused-argument
 if CountsMP._mcm_primitive is not None:
-    # pylint: disable=protected-access
 
     CountsMP._mcm_primitive.multiple_results = True
 
@@ -343,13 +337,11 @@ if CountsMP._mcm_primitive is not None:
         raise NotImplementedError("Counts has no execution implementation with program capture.")
 
     def _mcm_keys_eval(n_wires, has_eigvals=False, shots=None, num_device_wires=0):
-        # pylint: disable=unused-argument
         if shots is None:
             raise ValueError("finite shots are required to use CountsMP")
         return (2**n_wires,), int
 
     def _mcm_values_eval(n_wires, has_eigvals=False, shots=None, num_device_wires=0):
-        # pylint: disable=unused-argument
         if shots is None:
             raise ValueError("finite shots are required to use CountsMP")
         return (2**n_wires,), int
@@ -358,7 +350,6 @@ if CountsMP._mcm_primitive is not None:
 
     @CountsMP._mcm_primitive.def_abstract_eval
     def _mcm_abstract_eval(*mcms, single_mcm, all_outcomes=False):
-        # pylint: disable=unused-argument
         keys = abstract_mp(_mcm_keys_eval, n_wires=len(mcms), has_eigvals=False)
         values = abstract_mp(_mcm_values_eval, n_wires=len(mcms), has_eigvals=False)
         return keys, values

@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Core resource estimation logic."""
 
-# pylint: disable=too-many-arguments
-
-
 from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
@@ -30,6 +27,8 @@ from pennylane.workflow.qnode import QNode
 
 from .resource_config import LabsResourceConfig
 from .wires_manager.wire_counting import estimate_wires_from_circuit, estimate_wires_from_resources
+
+# pylint: disable=too-many-arguments
 
 
 def _update_counts_from_compressed_res_op(

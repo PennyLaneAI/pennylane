@@ -113,8 +113,8 @@ class HilbertSchmidt(Operation):
     resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
-    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
+        # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
         V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
 
@@ -217,13 +217,13 @@ class HilbertSchmidt(Operation):
         return self
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
     def compute_decomposition(
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
+        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -268,9 +268,7 @@ class HilbertSchmidt(Operation):
 
 
 # pylint: disable=protected-access
-
 if HilbertSchmidt._primitive is not None:
-    # pylint: disable=protected-access
 
     @HilbertSchmidt._primitive.def_impl
     def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
@@ -416,9 +414,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
 
 # pylint: disable=protected-access
-
 if LocalHilbertSchmidt._primitive is not None:
-    # pylint: disable=protected-access
 
     @LocalHilbertSchmidt._primitive.def_impl
     def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
@@ -534,12 +530,12 @@ def _up_to_last_layer(
 
 
 @register_resources(_hilbert_schmidt_resources)
-def _hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
+def _hilbert_schmidt_decomposition(
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):
+):  # pylint: disable=unused-argument
     _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
 
     @for_loop(min(len(first_range), len(second_range)))
@@ -556,12 +552,12 @@ def _hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
 
 
 @register_resources(_local_hilbert_schmidt_resources)
-def _local_hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
+def _local_hilbert_schmidt_decomposition(
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):
+):  # pylint: disable=unused-argument
     n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
 
     CNOT(wires=[wires[0], wires[n_wires // 2]])

@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
-# pylint: disable=import-outside-toplevel, protected-access, no-member
-
 import copy
+
+# pylint: disable=import-outside-toplevel,protected-access,no-member
 import warnings
 from functools import partial
 
@@ -979,8 +979,6 @@ class CustomDevice(qp.devices.Device):
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
-    # pylint: disable=unused-argument
-
     @pytest.mark.parametrize(
         "diff_method,mode",
         [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
@@ -1023,10 +1021,9 @@ class TestTapeExpansion:
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
     @pytest.mark.autograd
-    def test_no_gradient_expansion(self, mocker):
+    def test_no_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
-        # pylint: disable=unused-argument
         dev = DefaultQubitLegacy(wires=1)
 
         class UnsupportedOp(qp.operation.Operation):
@@ -1060,7 +1057,7 @@ class TestTapeExpansion:
             assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):
+    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
         dev = DefaultQubitLegacy(wires=1)

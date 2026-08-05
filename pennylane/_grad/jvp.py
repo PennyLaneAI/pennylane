@@ -36,6 +36,7 @@ def _get_shape(x):
 
 @lru_cache
 def _get_jvp_prim():
+    # pylint: disable=unused-argument
     if not has_jax:  # pragma: no cover
         return None
 
@@ -47,7 +48,6 @@ def _get_jvp_prim():
 
     @jvp_prim.def_impl
     def _jvp_impl(*args, jaxpr, fn, method, h, argnums):
-        # pylint: disable=unused-argument
         params = list(args[: len(jaxpr.invars)])
         dparams = list(args[len(jaxpr.invars) :])
 
@@ -63,7 +63,6 @@ def _get_jvp_prim():
 
     @jvp_prim.def_abstract_eval
     def _jvp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
-        # pylint: disable=unused-argument
         return 2 * [v.aval for v in jaxpr.outvars]
 
     return jvp_prim
@@ -136,7 +135,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     return results, dresults
 
 
-# pylint: disable-next=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments,too-many-positional-arguments
 def jvp(f, params, tangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
 

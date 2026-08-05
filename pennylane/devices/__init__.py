@@ -148,9 +148,6 @@ Qubit Mixed-State Simulation Tools
 
 """
 
-# pylint: disable=undefined-variable
-
-
 from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
@@ -172,6 +169,7 @@ from ._qubit_device import QubitDevice
 
 
 def __getattr__(name):
+    # pylint: disable=undefined-variable
     if name == "plugin_devices":
         return device_constructor.plugin_devices
     raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

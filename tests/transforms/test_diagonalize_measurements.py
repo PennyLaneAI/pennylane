@@ -16,9 +16,6 @@ Tests for the transform diagonalize_measurements, which diagonalizes unsupported
 observables in measurements on a tape.
 """
 
-# pylint: disable=protected-access
-
-
 import numpy as np
 import pytest
 
@@ -35,6 +32,8 @@ from pennylane.transforms.diagonalize_measurements import (
     diagonalize_measurements,
     null_postprocessing,
 )
+
+# pylint: disable=protected-access
 
 
 class TestDiagonalizeObservable:

@@ -37,7 +37,8 @@ def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:
         return (None,) * num
-    from jax.random import split  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from jax.random import split
 
     return split(prng_key, num=num)
 
@@ -200,9 +201,6 @@ def _apply_diagonalizing_gates(
     return state
 
 
-# pylint:disable = too-many-arguments
-
-
 def measure_with_samples(
     measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
@@ -233,6 +231,7 @@ def measure_with_samples(
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
+    # pylint: disable=too-many-arguments
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
 
@@ -301,6 +300,7 @@ def _measure_with_samples_diagonalizing_gates(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
+    # pylint: disable=too-many-arguments
     # apply diagonalizing gates
     state = _apply_diagonalizing_gates(mps, state, is_state_batched)
 
@@ -362,7 +362,7 @@ def _measure_classical_shadow(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument,too-many-arguments
 
     # the list contains only one element based on how we group measurements
     mp = mp[0]
@@ -383,6 +383,7 @@ def _measure_hamiltonian_with_samples(
     rng=None,
     prng_key=None,
 ):
+    # pylint: disable=too-many-arguments
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
@@ -414,6 +415,7 @@ def _measure_sum_with_samples(
     rng=None,
     prng_key=None,
 ):
+    # pylint: disable=too-many-arguments
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
@@ -462,6 +464,7 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
+    # pylint: disable=too-many-arguments
 
     total_indices = len(state.shape) - is_state_batched
     state_wires = qp.wires.Wires(range(total_indices))
@@ -477,6 +480,7 @@ def sample_state(
     return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key)
 
 
+# pylint: disable-next=too-many-arguments
 def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
     Sample from given probabilities, dispatching between JAX and NumPy implementations.
@@ -532,6 +536,7 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     return (states_sampled_base_ten > 0).astype(np.int64)
 
 
+# pylint: disable-next=too-many-arguments
 def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, seed=None):
     """
     Returns a series of samples of a state for the JAX interface based on the PRNG.

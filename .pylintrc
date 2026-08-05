@@ -18,11 +18,12 @@ ignored-modules=jax,numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.num
 ignored-classes=jax,numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,autograd.numpy.builtins,packaging,torch,LazyLoader,networkx,networkx.dag,math,pennylane.numpy,pennylane.numpy.random,pennylane.numpy.linalg,pennylane.numpy.builtins,pennylane.operation,rustworkx,kahypar
 
 [MESSAGES CONTROL]
+enable=useless-suppression
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time.
-enable=useless-suppression
+#enable=
 
 # Disable the message, report, category or checker with the given id(s). You
 # can either give multiple identifier separated by comma (,) or put this option

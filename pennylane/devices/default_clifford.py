@@ -417,7 +417,6 @@ class DefaultClifford(Device):
         """The name of the device."""
         return "default.clifford"
 
-    # pylint:disable = too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         wires=None,
@@ -427,6 +426,7 @@ class DefaultClifford(Device):
         seed="global",
         max_workers=None,
     ) -> None:
+        # pylint: disable=too-many-arguments,too-many-positional-arguments
         if not has_stim:
             raise ImportError(
                 "This feature requires stim, a fast stabilizer circuit simulator. "
@@ -915,7 +915,8 @@ class DefaultClifford(Device):
 
         return entropy / math.log(log_base)
 
-    def _measure_probability(self, meas, _, **kwargs):  # pylint: disable=too-many-branches
+    def _measure_probability(self, meas, _, **kwargs):
+        # pylint: disable=too-many-branches
         r"""Measure the probability of each computational basis state.
 
         Computes the probability for each of the computational basis state vector iteratively
@@ -1086,7 +1087,7 @@ class DefaultClifford(Device):
     def _sample_expval_shadow(self, meas, stim_circuit, shots, seed):
         """Measures expectation value of a Pauli observable using
         classical shadows from the state of simulator device."""
-        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel# tach-ignore
             ClassicalShadow,
         )
 

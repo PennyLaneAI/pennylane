@@ -807,8 +807,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
 
 
+# pylint: disable-next=unused-argument
 def _pui_state_prep_provided_work_wires_condition(num_entries, num_wires, num_work_wires):
-    # pylint: disable=unused-argument
     if num_entries == 1:
         return True
     return num_work_wires >= max(math.ceil_log2(num_entries) - 1, 1)

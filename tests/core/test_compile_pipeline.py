@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit and integration tests for the compile pipeline."""
 
-# pylint: disable=no-member, protected-access
+# pylint: disable=no-member,protected-access
 
 from copy import copy
 
@@ -115,8 +115,7 @@ class TestUtilityHelpers:
         assert out2 == (4.0, 9.0)
 
 
-# pylint: disable-next=too-many-public-methods
-class TestCompilePipelineDunders:
+class TestCompilePipelineDunders:  # pylint: disable=too-many-public-methods
     """Test the dunder methods."""
 
     def test_bool(self):
@@ -783,12 +782,10 @@ class TestCompilePipelineDunders:
         """Tests that the string representation uses ellipses for long kwargs."""
 
         def verbose_transform(
-            # pylint: disable=unused-argument
-            tape: QuantumScript,
-            verbose_arg: str,
-            verbose_kwarg: str | None = None,
+            tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
+            # pylint: disable=unused-argument
             return [tape], lambda x: x
 
         _CURRENT_THRESHOLD = 50
@@ -1819,10 +1816,8 @@ class TestCompilePipelineIntegration:
         assert pipeline[1].tape_transform is second_valid_transform
 
 
-class TestMarkers:
+class TestMarkers:  # pylint: disable=too-many-public-methods
     """Tests markers in a compile pipeline"""
-
-    # pylint: disable=too-many-public-methods
 
     def test_add_marker(self):
         """Tests that add_marker method works."""

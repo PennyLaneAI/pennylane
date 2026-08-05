@@ -13,13 +13,6 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
-# pylint: disable=arguments-differ
-# pylint: disable=too-many-arguments
-# pylint: disable=unused-argument
-# pylint: disable=super-init-not-called
-# pylint: disable=signature-differs
-
-
 import math
 from collections import defaultdict
 
@@ -37,6 +30,8 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called,signature-differs
 
 
 class OutOfPlaceSquare(ResourceOperator):
@@ -2753,11 +2748,11 @@ class QROM(ResourceOperator):
         restored: bool = True,
     ):
         r"""The resource decomposition for QROM controlled on a single wire."""
-        # pylint: disable=protected-access
         if select_swap_depth:
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
+        # pylint: disable-next=protected-access
         W_opt = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -3013,7 +3008,6 @@ class QROM(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        # pylint: disable=protected-access
 
         num_bitstrings = target_resource_params["num_bitstrings"]
         size_bitstring = target_resource_params["size_bitstring"]
@@ -3031,6 +3025,7 @@ class QROM(ResourceOperator):
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
+        # pylint: disable-next=protected-access
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )

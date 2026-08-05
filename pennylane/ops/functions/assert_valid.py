@@ -440,7 +440,7 @@ def _check_copy(op, skip_deepcopy):
 
 def _check_pytree(op):
     """Check that the operator is a pytree."""
-    # pylint: disable=import-outside-toplevel, protected-access
+    # pylint: disable=import-outside-toplevel,protected-access
     data, metadata = op._flatten()
     try:
         assert hash(metadata), "metadata must be hashable"
@@ -500,11 +500,10 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
-    # pylint: disable=import-outside-toplevel
     if isinstance(op, qp.templates.SubroutineOp):
         return
     try:
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "assert_valid(..., skip_capture=False) requires JAX to validate program capture. "
@@ -520,10 +519,9 @@ def _check_capture(op):
         data, struct = jax.tree_util.tree_flatten(op)
 
         def test_fn(*args):
-            # pylint: disable=protected-access
             op = jax.tree_util.tree_unflatten(struct, args)
             if isinstance(op, Operator2):
-                op._bind_primitive()
+                op._bind_primitive()  # pylint: disable=protected-access
                 return op.tracer
             return op
 
@@ -623,7 +621,6 @@ def _get_signature(op):
     return op.data, {"wires": op.wires, **op.hyperparameters}
 
 
-# pylint: disable-next=too-many-arguments
 def _assert_valid_operator2(
     op: qp.core.Operator2,
     skip_deepcopy=False,
@@ -647,6 +644,7 @@ def _assert_valid_operator2(
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
     """
+    # pylint: disable=too-many-arguments
 
     # Note: these attributes are in the spec but not the implementation yet.
     # assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -696,7 +694,6 @@ def _assert_valid_operator2(
     _check_bind_new_parameters_op2(op)
 
 
-# pylint: disable-next=too-many-arguments
 def assert_valid(
     op: qp.core.Operator,
     *,
@@ -761,6 +758,7 @@ def assert_valid(
     AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
+    # pylint: disable=too-many-arguments
 
     if isinstance(op, qp.core.Operator2):
         _assert_valid_operator2(

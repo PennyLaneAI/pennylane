@@ -14,9 +14,6 @@
 
 """Defines the base class for controlled operators."""
 
-# pylint: disable=unused-argument, protected-access, no-value-for-parameter
-
-
 from collections.abc import Sequence
 from inspect import signature
 from textwrap import dedent
@@ -51,9 +48,10 @@ from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
 
+# pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
-# pylint: disable-next=too-many-public-methods
-class Controlled2(SymbolicOp2, is_baseclass=True):
+
+class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
     """The base class for controlled operators.
 
     This class acts as a common interface for all operators that can be considered controlled
@@ -551,7 +549,7 @@ class ControlledOp2(Controlled2):
             return
 
         if self.base.tracer is None:
-            # pylint: disable-next=protected-access
+            # pylint: disable=protected-access
             self.base._bind_primitive()
             # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
             # In that case, there is nothing to do, so return early.
@@ -739,6 +737,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
 
+    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,

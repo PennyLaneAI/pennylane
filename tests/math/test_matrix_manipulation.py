@@ -534,9 +534,8 @@ class TestExpandMatrix:
 
             num_wires = 2
 
-            # pylint: disable=arguments-differ
             @staticmethod
-            def compute_matrix():
+            def compute_matrix():  # pylint: disable=arguments-differ
                 """Compute the matrix of the DummyOp."""
                 return self.base_matrix_2_broadcasted
 

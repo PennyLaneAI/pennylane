@@ -16,8 +16,7 @@ This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
 
-# pylint: disable=arguments-differ
-
+# pylint:disable=arguments-differ
 
 import warnings
 
@@ -302,13 +301,13 @@ class QubitUnitary(Operation):
         return qp.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
+        # pylint: disable=arguments-renamed,invalid-overridden-method
         return self._issparse
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_matrix(self) -> bool:
+        # pylint: disable=arguments-renamed,invalid-overridden-method
         return not self._issparse
 
     @property
@@ -408,8 +407,8 @@ def _pow_qubit_unitary(U, wires, z, **_):
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
-    # pylint: disable=unused-argument
     return {
         resource_rep(
             qp.ControlledQubitUnitary, num_target_wires=base_params["num_wires"], **kwargs
@@ -469,6 +468,7 @@ class DiagonalQubitUnitary(Operator2):
 
     @staticmethod
     def compute_matrix(D: TensorLike, wires: WiresLike = None) -> TensorLike:
+        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -488,7 +488,6 @@ class DiagonalQubitUnitary(Operator2):
         tensor([[ 1,  0],
                 [ 0, -1]])
         """
-        # pylint: disable=unused-argument
         D = qp.math.asarray(D)
 
         if not qp.math.is_abstract(D) and not qp.math.allclose(
@@ -504,6 +503,7 @@ class DiagonalQubitUnitary(Operator2):
 
     @staticmethod
     def compute_eigvals(D: TensorLike, wires: WiresLike = None) -> TensorLike:
+        # pylint: disable=unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -528,7 +528,6 @@ class DiagonalQubitUnitary(Operator2):
         >>> qp.DiagonalQubitUnitary.compute_eigvals(torch.tensor([1, -1]))
         tensor([ 1, -1])
         """
-        # pylint: disable=unused-argument
         D = qp.math.asarray(D)
 
         if not (
@@ -554,8 +553,7 @@ class DiagonalQubitUnitary(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(D, wires):
-    # pylint: disable=unused-argument
+def _diagonal_qu_resource(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1, qp.GlobalPhase: 1}
@@ -579,8 +577,7 @@ def _diagonal_qu_decomp(D, wires):
         qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-def _diagonal_mux_on_aux_resources(D, wires):
-    # pylint: disable=unused-argument
+def _diagonal_mux_on_aux_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {resource_rep(qp.SelectPauliRot, num_wires=num_wires + 1, rot_axis="Z"): 1}
 
@@ -734,15 +731,15 @@ class BlockEncode(Operation):
         self._issparse = sp.sparse.issparse(A)
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         """bool: Whether the operator has a sparse matrix representation."""
+        # pylint: disable=arguments-renamed,invalid-overridden-method
         return self._issparse
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_matrix(self) -> bool:
         """bool: Whether the operator has a sparse matrix representation."""
+        # pylint: disable=arguments-renamed,invalid-overridden-method
         return not self._issparse
 
     def _flatten(self) -> FlatPytree:

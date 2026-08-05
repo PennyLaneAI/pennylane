@@ -533,7 +533,6 @@ def _remove_existing_cuts(graph):
     return uncut_graph
 
 
-# pylint: disable-next=too-many-branches
 def fragment_graph(graph):
     """
     Fragments a graph into a collection of subgraphs as well as returning
@@ -593,6 +592,7 @@ def fragment_graph(graph):
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e27f0>],
      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e26a0>)
     """
+    # pylint: disable=too-many-branches
 
     graph_copy = graph.copy()
 
@@ -605,7 +605,7 @@ def fragment_graph(graph):
             cut_edges.append((node1, node2, wire_key))
             graph_copy.remove_edge(node1, node2, key=wire_key)
 
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from networkx import MultiDiGraph, weakly_connected_components
 
     subgraph_nodes = weakly_connected_components(graph_copy)
@@ -661,7 +661,6 @@ def fragment_graph(graph):
     return subgraphs_connected_to_measurements, communication_graph
 
 
-# pylint: disable-next=too-many-positional-arguments, too-many-arguments
 def _is_valid_cut(
     fragments,
     num_cuts,
@@ -671,6 +670,7 @@ def _is_valid_cut(
     max_free_wires,
 ):
     """Helper function for determining if a cut is a valid canditate."""
+    # pylint: disable=too-many-positional-arguments,too-many-arguments
 
     k = len(fragments)
     key = (k, max_frag_degree)

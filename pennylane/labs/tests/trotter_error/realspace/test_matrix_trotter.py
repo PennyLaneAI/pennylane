@@ -13,9 +13,6 @@
 # limitations under the License.
 """Test matrix operations"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments, no-self-use
-
-
 import numpy as np
 import pytest
 
@@ -26,6 +23,8 @@ from pennylane.labs.trotter_error.realspace import (
     RealspaceSum,
 )
 from pennylane.labs.trotter_error.realspace.matrix import _op_norm
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments,no-self-use
 
 
 def _coeffs(states: int, modes: int, order: int):

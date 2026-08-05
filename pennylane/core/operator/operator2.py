@@ -78,11 +78,12 @@ ARGNAME_CATEGORIES = (
 )
 
 
-# pylint: disable-next=too-many-instance-attributes, too-many-public-methods
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
     """
+
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
     _operator_version = 2
 
@@ -435,7 +436,7 @@ class Operator2(metaclass=OperatorMeta):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        # pylint: disable-next=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from pennylane.gradients import parameter_frequencies
 
         if self.num_params == 0:
@@ -670,6 +671,7 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
     # ----------------------- Operator representations -----------------------
     # ------------------------------------------------------------------------
+    # pylint: disable=no-self-use
 
     @staticmethod
     def compute_matrix(*args, **kwargs) -> TensorLike:
@@ -1505,8 +1507,8 @@ def _init_arg_types(op: Operator2) -> None:
         # spec in 'arg_specs' in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
             new_argval = AbstractArray(arg_shape, exp_type.dtype)
+            # pylint: disable=protected-access
             # FIX: Hacky way to set attribute of a frozen dataclass
-            # pylint: disable-next=protected-access
             object.__setattr__(new_argval, "_weak_type", exp_type._weak_type)
             op.arguments[name] = new_argval
 
@@ -1664,9 +1666,7 @@ if has_jax:
     operator_p.prim_type = "operator"
 
     @operator_p.def_impl
-    # pylint: disable-next=too-many-arguments
     def _op_impl(
-        # pylint: disable=unused-argument
         *all_args,
         op_cls,
         wire_lens,
@@ -1677,6 +1677,7 @@ if has_jax:
         adjoint=False,
         **static_args,
     ):
+        # pylint: disable=too-many-arguments,unused-argument
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1742,7 +1743,7 @@ def pop_op_eqns(ops: Iterable):
 
     for op in ops:
         if op.tracer is not None:
-            # pylint: disable-next=protected-access
+            # pylint: disable=protected-access
             frame = op.tracer._trace.frame
             assert frame.auto_dce is False  # eqns are stored differently if this is enabled
 

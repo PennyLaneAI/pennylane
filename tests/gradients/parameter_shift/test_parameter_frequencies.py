@@ -13,9 +13,6 @@
 # limitations under the License.
 """Tests for the gradients.parameter_frequencies single dispatch function and handlers."""
 
-# pylint: disable=too-few-public-methods
-
-
 import numpy as np
 import pytest
 
@@ -26,6 +23,8 @@ from pennylane.gradients import parameter_frequencies
 from pennylane.ops import Exp, Hermitian, PauliZ
 from pennylane.ops.functions import eigvals, generator
 from pennylane.wires import WiresLike
+
+# pylint: disable=too-few-public-methods
 
 
 class TestParameterFrequencies:

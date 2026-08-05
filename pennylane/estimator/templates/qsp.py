@@ -15,9 +15,6 @@
 Contains templates for Quantum Signal Processing (QSP) based subroutines.
 """
 
-# pylint: disable=arguments-differ, super-init-not-called
-
-
 import scipy.special as sps
 
 import pennylane.numpy as qnp
@@ -31,6 +28,8 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
 )
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=arguments-differ,super-init-not-called
 
 
 class GQSP(ResourceOperator):

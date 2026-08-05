@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
 
-# pylint: disable=too-many-public-methods, protected-access
+# pylint: disable=too-many-public-methods,protected-access
 
 import pickle
 from copy import copy, deepcopy
@@ -128,8 +128,8 @@ class TestPauliWord:
             pw.update({3: Z})  # trying to add to a pw after instantiation is prohibited
 
     def test_hash(self):
-        # pylint: disable=unnecessary-dunder-call
         """Test that a unique hash exists for different PauliWords."""
+        # pylint: disable=unnecessary-dunder-call
         pw_1 = PauliWord({0: I, 1: X, 2: Y})
         pw_2 = PauliWord({0: I, 1: X, 2: Y})  # same as 1
         pw_3 = PauliWord({1: X, 2: Y, 0: I})  # same as 1 but reordered
@@ -140,8 +140,8 @@ class TestPauliWord:
         assert pw_1.__hash__() != pw_4.__hash__()
 
     def test_hash_caches(self):
-        # pylint: disable=unnecessary-dunder-call
         """Test that hashes are cached correctly and not recomputed."""
+        # pylint: disable=unnecessary-dunder-call
         pw = PauliWord({0: I, 1: X, 2: Y})
 
         assert pw._hashval is None  # hash should not be computed until __hash__ is called
@@ -1005,10 +1005,10 @@ class TestPauliSentence:
 
         qp.assert_equal(op, id)
 
-    # pylint: disable=W0621
     @pytest.mark.parametrize("coeff0", [qp.math.array([0.6, 0.2, 4.3])])
     @pytest.mark.parametrize("coeff1", [qp.math.array([1.2, -0.9, 2.7])])
     def test_operation_array_input(self, coeff0, coeff1):
+        # pylint: disable=redefined-outer-name
         pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
         pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
@@ -1064,10 +1064,10 @@ class TestPauliSentence:
             }
         )
 
-    # pylint: disable=W0621
     @pytest.mark.parametrize("coeff0", [[0.6, 0.2, 4.3], -0.7])
     @pytest.mark.parametrize("coeff1", [[1.2, -0.9, 2.7], -0.7])
     def test_to_mat_with_broadcasting(self, coeff0, coeff1):
+        # pylint: disable=redefined-outer-name
         wire_order = [0, 1, "a", "b"]
         pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
         pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})

@@ -13,8 +13,7 @@
 # limitations under the License.
 """Contains functions for computing classical and quantum fisher information matrices."""
 
-# pylint: disable=import-outside-toplevel, not-callable
-
+# pylint: disable=import-outside-toplevel,not-callable
 
 from functools import partial
 
@@ -400,8 +399,7 @@ def quantum_fisher(
 
     res = adjoint_metric_tensor(tape, *args, **kwargs)
 
-    def processing_fn_multiply(r):
-        # pylint: disable=function-redefined
+    def processing_fn_multiply(r):  # pylint: disable=function-redefined
         r = math.stack(r)
         return 4 * r
 

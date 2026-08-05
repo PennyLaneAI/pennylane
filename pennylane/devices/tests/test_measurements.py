@@ -157,10 +157,8 @@ class TestSupportedObservables:
 
 
 @flaky(max_runs=10)
-class TestHamiltonianSupport:
+class TestHamiltonianSupport:  # pylint: disable=too-few-public-methods
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_hamiltonian_diff(self, device_kwargs, tol, shots):
         """Tests a simple VQE gradient using parameter-shift rules."""
@@ -1238,8 +1236,7 @@ class TestTensorSample:
 
 
 @flaky(max_runs=10)
-# pylint: disable-next=too-few-public-methods
-class TestSumExpval:
+class TestSumExpval:  # pylint: disable=too-few-public-methods
     """Test expectation values of Sum observables."""
 
     def test_sum_containing_identity_on_no_wires(self, device, tol, shots):

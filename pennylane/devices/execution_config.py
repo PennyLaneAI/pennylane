@@ -182,8 +182,7 @@ class MCMConfig:
 
 
 @dataclass(frozen=True)
-# pylint: disable-next=too-many-instance-attributes
-class ExecutionConfig:
+class ExecutionConfig:  # pylint: disable=too-many-instance-attributes
     """
     A class to configure the execution of a quantum circuit on a device.
 

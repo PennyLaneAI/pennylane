@@ -13,9 +13,9 @@
 # limitations under the License.
 """Tests for the qp.gradients.classical_jacobian function."""
 
-# pylint: disable=too-many-arguments
-
 import numpy as np
+
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp

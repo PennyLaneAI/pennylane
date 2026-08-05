@@ -166,6 +166,7 @@ def _multipar_stopping_fn(obj):
 
 
 def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validation_kwargs=None):
+    # pylint: disable=too-many-statements
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits,
     including classical preprocessing.
 
@@ -403,7 +404,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         preprocessed non-linearly in the gate ``qp.RX(0.5*x**2, wires=0)`` that is marked with ``"x"``.
 
     """
-    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-branches
     validation_kwargs = validation_kwargs or {}
     encoding_args, argnum = _process_ids(encoding_args, argnum, qnode)
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
@@ -411,7 +412,6 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     arg_name_map = dict(enumerate(encoding_args))
 
     @wraps(qnode)
-    # pylint: disable-next=too-many-branches
     def wrapper(*args, **kwargs):
         old_interface = qnode.interface
 

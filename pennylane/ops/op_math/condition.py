@@ -128,8 +128,8 @@ class Conditional(SymbolicOp, Operation):
         then_op (Operation): the PennyLane operation to apply conditionally
     """
 
-    # pylint: disable-next=super-init-not-called
     def __init__(self, expr, then_op: Operation):
+        # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op
@@ -165,7 +165,7 @@ class Conditional(SymbolicOp, Operation):
         return self.base.matrix(wire_order=wire_order)
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -176,8 +176,7 @@ class Conditional(SymbolicOp, Operation):
         return self.base.eigvals()
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_adjoint
 
     def adjoint(self):
@@ -802,7 +801,7 @@ def _validate_jaxpr_returns(jaxpr_branches, false_fn):
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
 
     cond_prim = QpPrimitive("cond")

@@ -225,8 +225,8 @@ def _check_convergence(losses: jnp.ndarray, convergence_interval: int) -> bool:
     return cond1 or cond2
 
 
-# pylint: disable-next=too-many-arguments
 def _update_step_scan(carry, _, opt, loss_fn, loss_kwargs, val_kwargs, validation, optimizer_name):
+    # pylint: disable=too-many-arguments
     """Run one optimizer step inside the scanned training loop.
 
     Args:
@@ -359,7 +359,6 @@ def training_iterator(
         yield result
 
 
-# pylint: disable-next=too-many-arguments
 def train(
     optimizer: str,
     loss: Callable,
@@ -368,6 +367,7 @@ def train(
     loss_kwargs: dict[str, Any],
     options: TrainingOptions | None = None,
 ) -> TrainingResult:
+    # pylint: disable=too-many-arguments
     """Run a complete optimization loop with automatic convergence detection.
 
     This is the high-level training entry point. It provides progress-bar display,

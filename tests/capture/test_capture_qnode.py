@@ -15,7 +15,7 @@
 Tests for capturing a qnode into jaxpr.
 """
 
-# pylint: disable=protected-access, wrong-import-position
+# pylint: disable=protected-access,wrong-import-position
 
 import pytest
 
@@ -549,8 +549,7 @@ class TestDifferentiation:
             jax.grad(circuit)(0.5)
 
 
-# pylint: disable-next=too-many-public-methods
-class TestQNodeVmapIntegration:
+class TestQNodeVmapIntegration:  # pylint: disable=too-many-public-methods
     """Tests for integrating JAX vmap with the QNode primitive."""
 
     @pytest.mark.parametrize(
@@ -803,7 +802,8 @@ class TestQNodeVmapIntegration:
     def test_simple_multidim_case_2(self):
         """Test vmap over a simple multidimensional case with a scalar and constant argument."""
 
-        from scipy.stats import unitary_group  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from scipy.stats import unitary_group
 
         const = jnp.array(2.0)
 

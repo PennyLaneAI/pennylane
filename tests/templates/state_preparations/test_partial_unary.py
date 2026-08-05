@@ -15,9 +15,6 @@
 Unit tests for the PartialUnaryStatePreparation template.
 """
 
-# pylint: disable=protected-access
-
-
 import numpy as np
 import pytest
 
@@ -29,6 +26,8 @@ from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
 )
+
+# pylint: disable=protected-access
 
 
 def random_distinct_integers(high, size, rng):

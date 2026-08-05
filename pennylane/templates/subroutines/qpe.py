@@ -244,7 +244,6 @@ class QuantumPhaseEstimation(Operation):
         return self
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
     def compute_decomposition(*_, unitary, estimation_wires, **__):
         r"""Representation of the QPE circuit as a product of other operators.
 
@@ -262,6 +261,7 @@ class QuantumPhaseEstimation(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
+        # pylint: disable=arguments-differ
         op_list = [ops.Hadamard(w) for w in estimation_wires]
         pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
         op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires, strict=True))

@@ -33,8 +33,8 @@ def test_is_verified_hermitian():
 @pytest.mark.parametrize("wires", op_wires)
 class TestIdentity:
     def test_flatten_unflatten(self, wires):
-        # pylint: disable=protected-access
         """Test the flatten and unflatten methods of identity."""
+        # pylint: disable=protected-access
         op = Identity(wires)
         data, metadata = op._flatten()
         assert data == tuple()

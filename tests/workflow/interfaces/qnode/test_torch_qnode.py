@@ -13,7 +13,8 @@
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
 
-# pylint: disable=too-many-arguments, no-member, comparison-with-callable, unnecessary-lambda-assignment, use-dict-literal
+# pylint: disable=too-many-arguments,no-member,comparison-with-callable
+# pylint: disable=unnecessary-lambda-assignment,use-dict-literal
 
 import numpy as np
 import pytest
@@ -1666,7 +1667,7 @@ qubit_device_and_diff_method_and_grad_on_execution = [
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
 
-    # pylint: disable=too-many-public-methods
+    # pylint:disable=too-many-public-methods
 
     def test_grad_single_measurement_param(
         self, dev, diff_method, grad_on_execution, device_vjp, shots

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=protected-access
 """
 This module contains the qp.mutual_info measurement.
 """
@@ -54,8 +55,7 @@ class MutualInfoMP(StateMeasurement):
         super().__init__(wires=wires)
 
     @classmethod
-    # pylint: disable-next=arguments-differ
-    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
+    def _primitive_bind_call(cls, wires: Sequence, **kwargs):  # pylint: disable=arguments-differ
         if cls._wires_primitive is None:  # pragma: no cover
             # just a safety check
             return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover
@@ -79,7 +79,6 @@ class MutualInfoMP(StateMeasurement):
         return float
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_measurement = copy(self)
         new_measurement._wires = [
             Wires([wire_map.get(wire, wire) for wire in wires]) for wires in self.raw_wires
@@ -109,10 +108,7 @@ class MutualInfoMP(StateMeasurement):
         )
 
 
-# pylint: disable=protected-access
-
 if MutualInfoMP._wires_primitive is not None:
-    # pylint: disable=protected-access
 
     @MutualInfoMP._wires_primitive.def_impl
     def _(*all_wires, n_wires0, **kwargs):

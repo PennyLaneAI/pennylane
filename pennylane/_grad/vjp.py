@@ -15,9 +15,6 @@
 Defines qp.vjp
 """
 
-# pylint: disable=unused-argument
-
-
 from functools import lru_cache
 from importlib.util import find_spec
 
@@ -32,6 +29,7 @@ has_jax = find_spec("jax") is not None
 
 @lru_cache
 def _get_vjp_prim():
+    # pylint: disable=unused-argument
     if not has_jax:  # pragma: no cover
         return None
 
@@ -124,7 +122,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     return results, dparams
 
 
-# pylint: disable-next=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments,too-many-positional-arguments
 def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 

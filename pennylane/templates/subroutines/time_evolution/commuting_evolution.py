@@ -131,11 +131,12 @@ class CommutingEvolution(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys())}
+        return {
+            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
+        }
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
-
-        # pylint: disable-next=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -173,8 +174,9 @@ class CommutingEvolution(Operation):
         return self
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(time, *_, wires, hamiltonian, **__):
+    def compute_decomposition(
+        time, *_, wires, hamiltonian, **__
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -211,9 +213,9 @@ def _commuting_evolution_resources(words: tuple[PauliWord]):
 
 
 @register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
+def _commuting_evolution_decomposition(
     time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
-):
+):  # pylint: disable=unused-argument
     if capture.enabled() and isinstance(hamiltonian, Operator1):
         # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
         # ``ApproxTimeEvolution`` below, so it is not collected as a separate circuit operation.

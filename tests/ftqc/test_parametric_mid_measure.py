@@ -492,7 +492,7 @@ class TestMeasureFunctions:
         assert mp.postselect == postselect
         assert isinstance(mp, MidMeasure)
 
-    # pylint: disable=too-many-positional-arguments, too-many-arguments
+    # pylint: disable=too-many-positional-arguments,too-many-arguments
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, np.pi / 2, "XY")]

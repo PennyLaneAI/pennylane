@@ -102,16 +102,8 @@ class TestQNode:
         assert grad.shape == ()
 
     def test_changing_trainability(
-        # pylint: disable=unused-argument
-        self,
-        dev_name,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-        interface,
-        tol,
-        seed,
-    ):
+        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
+    ):  # pylint:disable=unused-argument
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -274,15 +266,8 @@ class TestQNode:
             assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_options(
-        # pylint: disable=unused-argument
-        self,
-        dev_name,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-        interface,
-        seed,
-    ):
+        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed
+    ):  # pylint:disable=unused-argument
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")

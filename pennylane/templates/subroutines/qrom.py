@@ -72,8 +72,9 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
     return new_ops
 
 
-# pylint: disable-next=too-many-arguments
-def _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires):
+def _select_ops(
+    control_wires, depth, target_wires, swap_wires, data, select_work_wires
+):  # pylint:disable=too-many-arguments
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
@@ -211,7 +212,7 @@ class QROM(Operator2):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-    ):
+    ):  # pylint: disable=disable=too-many-positional-arguments
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -253,7 +254,6 @@ class QROM(Operator2):
 
         super().__init__(data, control_wires, target_wires, work_wires, clean)
 
-    # pylint: disable-next=arguments-differ
     def __abstract_init__(
         self,
         data: AbstractArray | TensorLike | Sequence[str],
@@ -262,6 +262,7 @@ class QROM(Operator2):
         work_wires: AbstractArray | WiresLike,
         clean=True,
     ):
+        # pylint: disable=arguments-differ
         if isinstance(data, Sequence) and isinstance(data[0], str):
             data = AbstractArray(shape=(len(data), len(data[0])), dtype=np.int64)
         super().__abstract_init__(

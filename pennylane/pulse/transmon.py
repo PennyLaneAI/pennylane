@@ -13,9 +13,6 @@
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 
-# pylint: disable=unused-argument
-
-
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -32,17 +29,16 @@ from pennylane.wires import Wires
 
 
 # TODO ladder operators once there is qudit support
-def a(wire, d=2):
+def a(wire, d=2):  # pylint: disable=unused-argument
     """creation operator"""
     return s_prod(0.5, X(wire)) + s_prod(0.5j, Y(wire))
 
 
-def ad(wire, d=2):
+def ad(wire, d=2):  # pylint: disable=unused-argument
     """annihilation operator"""
     return s_prod(0.5, X(wire)) + s_prod(-0.5j, Y(wire))
 
 
-# pylint: disable-next=too-many-arguments
 def transmon_interaction(
     qubit_freq: float | list,
     connections: list,
@@ -51,6 +47,7 @@ def transmon_interaction(
     anharmonicity=None,
     d=2,
 ):
+    # pylint: disable=too-many-arguments
     r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a
     superconducting transmon system.
 
@@ -422,11 +419,10 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     return HardwareHamiltonian(coeffs, observables, pulses=pulses, reorder_fn=_reorder_AmpPhaseFreq)
 
 
-# pylint:disable = too-few-public-methods,too-many-return-statements
-
-
-class AmplitudeAndPhaseAndFreq:
+class AmplitudeAndPhaseAndFreq:  # pylint: disable=too-few-public-methods
     """Class storing combined amplitude, phase and freq callables"""
+
+    # pylint: disable=too-many-return-statements
 
     def __init__(self, trig_fn, amp, phase, freq, hz_to_rads=2 * np.pi):
         self.amp_is_callable = callable(amp)

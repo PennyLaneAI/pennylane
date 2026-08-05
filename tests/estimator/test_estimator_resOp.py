@@ -15,15 +15,6 @@
 This submodule tests the base classes for resource operators.
 """
 
-# pylint: disable=protected-access
-# pylint: disable=no-self-use
-# pylint: disable=unused-argument
-# pylint: disable=arguments-differ
-# pylint: disable=no-member
-# pylint: disable=comparison-with-itself
-# pylint: disable=signature-differs
-
-
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
@@ -36,6 +27,8 @@ import pennylane.estimator.ops as qre_ops
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
+
+# pylint: disable=protected-access,no-self-use,unused-argument,disable=arguments-differ,no-member,comparison-with-itself
 
 
 class DummyX(ResourceOperator):
@@ -340,6 +333,7 @@ class DummyOp_decomps(ResourceOperator):
         return [GateCount(rx, max_register_size)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -350,7 +344,7 @@ class DummyOp_decomps(ResourceOperator):
         return [GateCount(cnot, max_register_size), GateCount(rx, max_register_size)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params):
+    def adjoint_resource_decomp(cls, target_resource_params):  # pylint: disable=signature-differs
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
         """
@@ -360,6 +354,7 @@ class DummyOp_decomps(ResourceOperator):
         return [GateCount(rx, max_register_size), GateCount(h, 2 * max_register_size)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z, target_resource_params):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.

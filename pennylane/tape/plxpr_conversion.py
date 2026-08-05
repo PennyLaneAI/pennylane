@@ -218,9 +218,10 @@ def _jvp_primitive(self, *invals, jaxpr, **params):
 
 
 @CollectOpsandMeas.register_primitive(qnode_prim)
-def _qnode_primitive(  # pylint: disable=too-many-arguments, unused-argument
+def _qnode_primitive(
     self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
-):
+):  # pylint: disable=too-many-arguments
+    # pylint: disable=unused-argument
     consts = invals[shots_len : shots_len + n_consts]
     args = invals[shots_len + n_consts :]
 
@@ -249,8 +250,7 @@ def _deallocate_primitive(self, *wires):
 
 
 @CollectOpsandMeas.register_primitive(quantum_subroutine_prim)
-# pylint: disable-next=unused-argument
-def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
+def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):  # pylint: disable=unused-argument
     child = CollectOpsandMeas()
     with queuing.QueuingManager.stop_recording():
         out = child.eval(jaxpr.jaxpr, jaxpr.consts, *args)
@@ -261,8 +261,7 @@ def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
 
 
 @CollectOpsandMeas.register_primitive(jax.lax.convert_element_type_p)
-def _convert_element_type(self, operand, **kwargs):
-    # pylint: disable=unused-argument
+def _convert_element_type(self, operand, **kwargs):  # pylint: disable=unused-argument
     if isinstance(operand, MeasurementValue):
         return operand
     return jax.lax.convert_element_type_p.bind(operand, **kwargs)

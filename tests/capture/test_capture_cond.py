@@ -15,7 +15,8 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name, no-self-use, unbalanced-tuple-unpacking, wrong-import-position
+# pylint: disable=redefined-outer-name
+# pylint: disable=no-self-use,unbalanced-tuple-unpacking
 
 from functools import partial
 
@@ -31,6 +32,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
+# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
 from tests.capture.capture_utils import (
     extract_all_primitives,
@@ -567,10 +569,10 @@ def circuit_branches(pred, arg1, arg2):
 @qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
+    # pylint: disable=unused-argument
 
     qp.RX(0.10, wires=0)
 
-    # pylint: disable=unused-argument
     def true_fn(arg1, arg2):
         qp.RY(arg1, wires=0)
         return 7, 4.6, qp.S(wires=0), True
@@ -594,15 +596,13 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     def true_fn_1(arg):
         return True, qp.RX(arg, wires=0)
 
-    def false_fn_1(arg):
-        # pylint: disable=unused-argument
+    def false_fn_1(arg):  # pylint: disable=unused-argument
         return False, qp.RY(0.1, wires=0)
 
     def true_fn_2(arg):
         return qp.RX(arg, wires=0)
 
-    def false_fn_2(arg):
-        # pylint: disable=unused-argument
+    def false_fn_2(arg):  # pylint: disable=unused-argument
         return qp.RY(0.1, wires=0)
 
     dyn_pred_2, _ = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)

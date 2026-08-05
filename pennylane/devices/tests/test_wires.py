@@ -42,8 +42,7 @@ def make_simple_circuit_expval(device, wires, shots):
 # =====
 
 
-# pylint: disable-next=too-few-public-methods
-class TestWiresIntegration:
+class TestWiresIntegration:  # pylint: disable=too-few-public-methods
     """Test that the device integrates with PennyLane's wire management."""
 
     @pytest.mark.parametrize(
@@ -57,8 +56,9 @@ class TestWiresIntegration:
         ],
     )
     @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval])
-    # pylint: disable-next=too-many-arguments
-    def test_wires_expval(self, device, circuit_factory, wires1, wires2, shots, tol):
+    def test_wires_expval(
+        self, device, circuit_factory, wires1, wires2, shots, tol
+    ):  # pylint: disable=too-many-arguments
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)
         dev2 = device(wires2)

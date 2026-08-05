@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
 
-# pylint: disable=protected-access
-
 import numpy as np
+
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp

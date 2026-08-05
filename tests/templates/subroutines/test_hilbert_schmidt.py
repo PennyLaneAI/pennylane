@@ -15,9 +15,6 @@
 Unit tests for the Hilbert-Schmidt templates.
 """
 
-# pylint: disable=protected-access
-
-
 import copy
 
 import numpy as np
@@ -33,6 +30,7 @@ from pennylane.transforms import decompose
 @pytest.mark.parametrize("op_type", (qp.HilbertSchmidt, qp.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     U = (qp.Identity("a"), qp.Identity("b"))
     V = (qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=1))
@@ -76,7 +74,7 @@ class TestHilbertSchmidt:
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint: disable-next=unsubscriptable-object
+            # pylint:disable=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -472,7 +470,7 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint: disable-next=unsubscriptable-object
+            # pylint:disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]

@@ -13,11 +13,11 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint: disable=protected-access, import-outside-toplevel, unnecessary-lambda, wrong-import-order
-
+# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
 
 from importlib import import_module
 
+# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as np
 import scipy as sp
@@ -82,7 +82,8 @@ ar.register_function("scipy", "ndim", np.ndim)
 def sparse_matrix_power(A, n):
     """Dispatch to the appropriate sparse matrix power function."""
     try:  # pragma: no cover
-        from scipy.sparse.linalg import matrix_power  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from scipy.sparse.linalg import matrix_power
 
         # added in scipy 1.12.0
 
@@ -925,8 +926,7 @@ ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 
 
-def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):
-    # pylint: disable=unused-argument
+def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):  # pylint: disable=unused-argument
     return _i("jax").numpy.array(x, dtype=dtype, **kwargs)
 
 
@@ -957,7 +957,7 @@ ar.register_function(
     lambda x, index, value, **kwargs: x.at[tuple(index)].add(value, **kwargs),
 )
 ar.register_function("jax", "unstack", list)
-# pylint: disable-next=unnecessary-lambda
+# pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
 ar.register_function(
     "jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x), axis=-1)

@@ -35,8 +35,7 @@ def run_before_and_after_tests():
     torch.set_default_dtype(torch.float32)
 
 
-# pylint: disable-next=too-few-public-methods
-class TestCaching:
+class TestCaching:  # pylint: disable=too-few-public-methods
     """Tests for caching behaviour"""
 
     @pytest.mark.skip("caching is not implemented for torch")

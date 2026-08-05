@@ -16,9 +16,6 @@ Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
 
-# pylint: disable=too-many-arguments
-
-
 from __future__ import annotations
 
 import inspect
@@ -174,6 +171,7 @@ def execute(
      [ 0.01983384 -0.97517033  0.        ]
      [ 0.          0.         -0.95533649]]
     """
+    # pylint: disable=too-many-arguments
     if not isinstance(device, qp.devices.Device):
         device = qp.devices.LegacyDeviceFacade(device)
 

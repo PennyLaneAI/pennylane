@@ -15,12 +15,7 @@
 Tests for the trotter_fragmented module (CGF scheme only).
 """
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-nested-blocks
-# pylint: disable=redefined-outer-name
-# pylint: disable=too-few-public-methods
 # pylint: disable=no-value-for-parameter
-
 
 import itertools
 import math
@@ -32,6 +27,8 @@ from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane.labs.templates.trotter_fragmented import trotter_fragmented
+
+# pylint: disable=too-many-arguments,too-many-nested-blocks,redefined-outer-name,too-few-public-methods
 
 
 def _random_orthogonal(n, rng):

@@ -15,7 +15,6 @@
 
 # pylint: disable=unused-argument
 
-
 from functools import singledispatch
 from string import ascii_letters as alphabet
 

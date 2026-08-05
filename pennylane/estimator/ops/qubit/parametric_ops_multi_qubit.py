@@ -13,15 +13,15 @@
 # limitations under the License.
 r"""Resource operators for parametric multi qubit operations."""
 
-# pylint: disable=arguments-differ, signature-differs
-
-
 from collections import Counter
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=arguments-differ,signature-differs
+
 
 PAULI_ROT_SPECIAL_CASES = {
     "X": lambda eps: [GateCount(qre.resource_rep(qre.RX, {"precision": eps}))],

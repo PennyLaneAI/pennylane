@@ -609,11 +609,11 @@ class TestLinearCombination:
         res = H1 - H2
         qp.assert_equal(qp.simplify(res), true_res)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     @pytest.mark.parametrize("grouping_type", (None, "qwc"))
     def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for LinearCombinations"""
+        # pylint: disable=protected-access
 
         if any(not qp.pauli.is_pauli_word(t) for t in ops) and grouping_type:
             pytest.skip("grouping type must be none if a term is not a pauli word.")
@@ -1956,10 +1956,10 @@ class TestLinearCombinationDifferentiation:
 @pytest.mark.capture
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
+    # pylint: disable=protected-access
 
     from pennylane.capture.primitives import operator_p
 
-    # pylint: disable=protected-access
     def f(a, b):
         op1 = qp.X._primitive.impl(0, n_wires=1)
         op2 = operator_p.impl(

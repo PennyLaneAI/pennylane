@@ -420,8 +420,7 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
 
 
 @register_resources(_calculate_resources)
-# pylint: disable-next=unused-argument
-def _Subroutine_decomp(*data, wires, decomposition):
+def _Subroutine_decomp(*data, wires, decomposition):  # pylint: disable=unused-argument
     _ = [queuing.apply(op) for op in decomposition]
 
 
@@ -430,8 +429,7 @@ add_decomps(SubroutineOp, _Subroutine_decomp)
 P = ParamSpec("P")
 
 
-# pylint: disable-next=too-many-instance-attributes
-class Subroutine:
+class Subroutine:  # pylint: disable=too-many-instance-attributes
     """The definition of a Subroutine, compatible both with program capture and backwards
     compatible with operators.
 
@@ -711,13 +709,14 @@ class Subroutine:
 
     """
 
+    # pylint: disable=too-many-arguments
+
     def __repr__(self):
         return f"<Subroutine: {self.name}>"
 
     def __instancecheck__(self, instance) -> bool:
         return isinstance(instance, SubroutineOp) and instance.subroutine is self
 
-    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         definition: Callable[P, Any],
@@ -862,8 +861,7 @@ class CollectedSubroutine(Operation):
         return CollectedSubroutine(metadata, data)
 
     @classmethod
-    # pylint: disable-next=arguments-differ
-    def _primitive_bind_call(cls, name, decomp):
+    def _primitive_bind_call(cls, name, decomp):  # pylint: disable=arguments-differ
         return cls._primitive.bind(name=name, decomp=decomp)
 
     def __repr__(self) -> str:

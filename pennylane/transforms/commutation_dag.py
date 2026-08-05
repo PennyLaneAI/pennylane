@@ -122,7 +122,6 @@ def _merge_no_duplicates(*iterables):
             yield val
 
 
-# pylint: disable-next=too-many-instance-attributes, too-few-public-methods
 class CommutationDAGNode:
     r"""Class to store information about a quantum operation in a node of the
     commutation DAG.
@@ -136,6 +135,10 @@ class CommutationDAGNode:
         reachable (bool): Attribute used to check reachability by pairwise commutation.
     """
 
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-few-public-methods
+
     __slots__ = [
         "op",
         "wires",
@@ -147,7 +150,6 @@ class CommutationDAGNode:
         "reachable",
     ]
 
-    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         op=None,
@@ -369,9 +371,9 @@ class CommutationDAG:
         """Draw the DAG object.
 
         Args:
+        # pylint: disable=no-member
             filename (str): The file name which is in PNG format. Default = 'dag.png'
         """
-        # pylint: disable=unused-variable, unused-argument
         import networkx as nx  # pylint: disable=import-outside-toplevel
 
         draw_graph = nx.MultiDiGraph()
@@ -396,9 +398,11 @@ class CommutationDAG:
         for edge in self.get_edges():
             draw_graph.add_edge(edge[0], edge[1])
 
-        from networkx.drawing.nx_pydot import to_pydot  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from networkx.drawing.nx_pydot import to_pydot
 
         dot = to_pydot(draw_graph)
+        dot.write_png(filename)  # pylint: disable=no-member
 
     def _pred_update(self, node_id):
         self.get_node(node_id).predecessors = []

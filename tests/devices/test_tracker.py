@@ -84,8 +84,7 @@ class TestTrackerCoreBehavior:
     def test_device_assignment(self):
         """Assert gets assigned to device"""
 
-        # pylint: disable-next=too-few-public-methods
-        class TempDevice:
+        class TempDevice:  # pylint: disable=too-few-public-methods
             short_name = "temp"
 
             def __init__(self):
@@ -100,8 +99,7 @@ class TestTrackerCoreBehavior:
     def test_incompatible_device_assignment_no_tracker(self):
         """Assert exception raised when `supports_tracker` not True"""
 
-        # pylint: disable-next=too-few-public-methods
-        class TempDevice:
+        class TempDevice:  # pylint: disable=too-few-public-methods
             short_name = "temp"
 
             def capabilities(self):
@@ -115,8 +113,7 @@ class TestTrackerCoreBehavior:
     def test_incompatible_device_assignment_explicit_false(self):
         """Assert exception raised when `supports_tracker` is False"""
 
-        # pylint: disable-next=too-few-public-methods
-        class TempDevice:
+        class TempDevice:  # pylint: disable=too-few-public-methods
             short_name = "temp"
 
         temp = TempDevice()
@@ -184,8 +181,7 @@ class TestTrackerCoreBehavior:
         assert tracker.latest == {"a": 2, "b": "b2", "c": 1}
 
     def test_record_callback(self, mocker):
-        # pylint: disable-next=too-few-public-methods
-        class callback_wrapper:
+        class callback_wrapper:  # pylint: disable=too-few-public-methods
             @staticmethod
             def callback(totals, history, latest):
                 pass
@@ -224,8 +220,7 @@ class TestDefaultTrackerIntegration:
     def test_single_execution_default(self, mocker):
         """Test correct behavior with single circuit execution"""
 
-        # pylint: disable-next=too-few-public-methods
-        class callback_wrapper:
+        class callback_wrapper:  # pylint: disable=too-few-public-methods
             @staticmethod
             def callback(totals=None, history=None, latest=None):
                 pass
@@ -256,8 +251,7 @@ class TestDefaultTrackerIntegration:
     def test_shots_execution_default(self, mocker):
         """Test correct tracks shots as well."""
 
-        # pylint: disable-next=too-few-public-methods
-        class callback_wrapper:
+        class callback_wrapper:  # pylint: disable=too-few-public-methods
             @staticmethod
             def callback(totals=None, history=None, latest=None):
                 pass
@@ -295,8 +289,7 @@ class TestDefaultTrackerIntegration:
     def test_batch_execution(self, mocker):
         """Tests that batch execute also updates information stored."""
 
-        # pylint: disable-next=too-few-public-methods
-        class callback_wrapper:
+        class callback_wrapper:  # pylint: disable=too-few-public-methods
             @staticmethod
             def callback(totals=None, history=None, latest=None):
                 pass

@@ -287,10 +287,10 @@ class TestRydbergSettings:
         assert settings10.interaction_coeff == 2.0
 
     def test_raises_error_two_interaction_terms(
-        # pylint: disable=unused-variable
         self,
     ):
         """Raises error when attempting to add two non-trivial RydbergSettings"""
+        # pylint: disable=unused-variable
         settings0 = RydbergSettings(register0)
         settings1 = RydbergSettings(register1)
         with pytest.raises(ValueError, match="Cannot add two"):

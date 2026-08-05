@@ -205,7 +205,7 @@ def create_adjoint_op(fn, lazy):
 def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
 
     adjoint_prim = QpPrimitive("adjoint_transform")
@@ -214,7 +214,6 @@ def _get_adjoint_qfunc_prim():
 
     @adjoint_prim.def_impl
     def _impl(*args, jaxpr, lazy, n_consts):
-        # pylint: disable=import-outside-toplevel
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
@@ -341,8 +340,7 @@ class Adjoint(SymbolicOp):
         return cls(data[0])
 
     @classmethod
-    # pylint: disable-next=arguments-differ
-    def _primitive_bind_call(cls, base, **kwargs):
+    def _primitive_bind_call(cls, base, **kwargs):  # pylint: disable=arguments-differ
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
@@ -400,8 +398,8 @@ class Adjoint(SymbolicOp):
         return moveaxis(conj(base_matrix), -2, -1)
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
+        # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_sparse_matrix
 
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -423,7 +421,7 @@ class Adjoint(SymbolicOp):
         return conj(self.base.eigvals())
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -431,8 +429,7 @@ class Adjoint(SymbolicOp):
         return self.base.diagonalizing_gates()
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -501,8 +498,7 @@ class AdjointOperation(Adjoint, Operation):
         return parameter_frequencies(self.base)
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):

@@ -40,9 +40,10 @@ def test_error_raised_graph_disabled():
 class TestInspectDecompGraph:
     """Tests the decomp_inspector transform."""
 
+    # pylint: disable=protected-access
+
     def test_non_existent_op(self):
         """Tests that the correct message is produced for a non existent op."""
-        # pylint: disable=protected-access
 
         @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
         @qp.qnode(qp.device("default.qubit"))
@@ -76,7 +77,6 @@ class TestInspectDecompGraph:
 
     def test_work_wire_budget_mismatch(self):
         """Tests that a correct message is produced when the work wire budget is wrong."""
-        # pylint: disable=protected-access
 
         @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=1)
         @qp.qnode(qp.device("default.qubit"))
@@ -97,7 +97,6 @@ class TestInspectDecompGraph:
 
     def test_work_wire_budget(self):
         """Tests that the correct output is produced according to the work wire budget."""
-        # pylint: disable=protected-access
 
         @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=0)
         @qp.qnode(qp.device("default.qubit"))
@@ -169,7 +168,6 @@ class TestInspectDecompGraph:
 
     def test_work_wires_available(self):
         """Tests that the correct output is produced when there are available work wires."""
-        # pylint: disable=protected-access
 
         @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
@@ -343,7 +341,6 @@ class TestInspectDecompGraph:
 
     def test_missing_ops(self):
         """Tests that missing operators are correctly reported."""
-        # pylint: disable=protected-access
 
         @decomp_inspector(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
@@ -402,7 +399,6 @@ class TestInspectDecompGraph:
 
     def test_inexact_count(self):
         """Tests that the output is correct when the gate count is inexact."""
-        # pylint: disable=protected-access
 
         @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit"))
@@ -585,7 +581,6 @@ class TestInspectDecompGraph:
 
     def test_gate_set(self):
         """Tests that the output is correct when querying an op in the gate set."""
-        # pylint: disable=protected-access
 
         @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit"))

@@ -575,10 +575,10 @@ def _build_generator(operation, wire_order, op_gen=None):
     return op_gen
 
 
-# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def taper_operation(
     operation, generators, paulixops, paulix_sector, wire_order, op_wires=None, op_gen=None
 ):
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,inconsistent-return-statements
     r"""Transform a gate operation with a Clifford operator and then taper qubits.
 
     The qubit operator for the generator of the gate operation is computed either internally or can be provided
@@ -733,7 +733,6 @@ def taper_operation(
             gen_tapered = pauli_sentence(gen_tapered)
         gen_tapered.prune()
 
-    # pylint: disable-next=inconsistent-return-statements
     def _tapered_op(params):
         r"""Applies the tapered operation for the specified parameter value whenever
         queing context is active, otherwise returns it as a list."""

@@ -15,14 +15,13 @@
 Tests for select resource operators.
 """
 
-# pylint: disable=no-self-use, too-many-arguments
-
-
 import re
 
 import pytest
 
 import pennylane.estimator as qre
+
+# pylint: disable=no-self-use,too-many-arguments
 
 
 class TestSelectTHC:

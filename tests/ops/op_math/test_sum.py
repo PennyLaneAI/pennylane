@@ -15,8 +15,7 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 
-# pylint: disable=eval-used
-
+# pylint: disable=eval-used,unused-argument
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -90,7 +89,6 @@ def _get_pw(w, pauli_op):
 def sum_using_dunder_method(*summands):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
-
     return sum(summands)
 
 
@@ -276,7 +274,6 @@ class TestInitialization:
     )
     def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
         """Test that calling Prod.terms does not queue anything."""
-        # pylint: disable=unused-argument
         with qp.queuing.AnnotatedQueue() as q:
             qp.apply(op)
             _, _ = op.terms()
@@ -1303,8 +1300,7 @@ class TestIntegration:
         assert tape.trainable_params == [1]
 
 
-# pylint: disable-next=too-few-public-methods
-class TestArithmetic:
+class TestArithmetic:  # pylint: disable=too-few-public-methods
     """Test arithmetic decomposition methods."""
 
     def test_adjoint(self):

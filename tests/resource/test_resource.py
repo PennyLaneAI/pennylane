@@ -15,9 +15,9 @@
 Test base Resource class and its associated methods
 """
 
-# pylint: disable=protected-access, disallowed-name
-
 import dataclasses
+
+# pylint: disable=protected-access,disallowed-name
 import textwrap
 from dataclasses import FrozenInstanceError
 
@@ -879,8 +879,7 @@ class TestPBCSpecsResources:
             TypeError,
             match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",
         ):
-            # pylint: disable=missing-kwoa
-            PBCSpecsResources(
+            PBCSpecsResources(  # pylint: disable=missing-kwoa
                 counts={"Hadamard": 1, "CNOT": 2},
                 measurement_processes={"expval(PauliZ)": 1},
                 num_allocs=2,

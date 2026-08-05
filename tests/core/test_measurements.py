@@ -13,9 +13,6 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
-# pylint: disable=too-few-public-methods
-
-
 import numpy as np
 import pytest
 
@@ -46,6 +43,8 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.wires import Wires
+
+# pylint: disable=too-few-public-methods
 
 
 def test_measurements_module_getattr():
@@ -374,14 +373,15 @@ class TestProperties:
     def test_measurement_value_map_wires(self):
         """Test that MeasurementProcess.map_wires works correctly when mp.mv
         is not None."""
-        # pylint: disable=protected-access
         m0 = qp.measure("a")
         m1 = qp.measure("b")
         m2 = qp.measure(0)
         m3 = qp.measure(1)
+        # pylint: disable-next=protected-access
         m2.measurements[0]._hyperparameters["meas_uid"] = m0.measurements[0]._hyperparameters[
             "meas_uid"
         ]
+        # pylint: disable-next=protected-access
         m3.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
             "meas_uid"
         ]

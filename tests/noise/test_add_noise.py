@@ -280,8 +280,8 @@ class TestAddNoiseInterface:
         assert np.allclose(f1(w1, w2), f2(w1, w2))
 
     def test_add_noise_with_non_qwc_obs_and_mid_meas(self):
-        # pylint: disable=unused-argument
         """Test that the add_noise transform catches and reports errors from the enclosed function."""
+        # pylint: disable=unused-argument
 
         dev = qp.device("default.qubit", wires=5)
 
@@ -319,9 +319,9 @@ class TestAddNoiseInterface:
 
         assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
 
-    # pylint:disable = cell-var-from-loop
     def test_add_noise_with_readout_errors(self):
         """Test that a add_noise works with readout errors."""
+        # pylint: disable=cell-var-from-loop
         dev = qp.device("default.mixed", wires=2)
 
         fc, fn = qp.noise.op_in([qp.RY, qp.RZ]), qp.noise.partial_wires(qp.AmplitudeDamping, 0.4)

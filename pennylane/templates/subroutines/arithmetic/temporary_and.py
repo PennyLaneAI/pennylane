@@ -269,8 +269,8 @@ def _temporary_and_to_toffoli(wires: WiresLike, **kwargs):
 add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
 
 
+# pylint: disable-next=unused-argument
 def _adjoint_temporary_and_resources(base_class=None, base_params=None):
-    # pylint: disable=unused-argument
     return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: _number_xs}
 
 

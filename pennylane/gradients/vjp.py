@@ -16,10 +16,9 @@ This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
 
-# pylint: disable=too-many-branches
-
-
 import autograd
+
+# pylint: disable=too-many-branches
 import numpy as np
 
 from pennylane import math
@@ -148,8 +147,8 @@ def compute_vjp_single(dy, jac, num=None):
             jac = math.reshape(math.stack(jac), (1, -1))
             try:
                 res = dy_row @ jac
+            # pylint: disable=broad-except
             except (
-                # pylint: disable-next=broad-except
                 Exception
             ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 res = math.tensordot(jac, dy_row, [[0], [0]])
@@ -159,8 +158,8 @@ def compute_vjp_single(dy, jac, num=None):
             jac = math.reshape(math.stack(jac), (-1, num))
             try:
                 res = jac @ dy_row
+            # pylint: disable=broad-except
             except (
-                # pylint: disable-next=broad-except
                 Exception
             ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 res = math.tensordot(jac, dy_row, [[1], [0]])
@@ -357,8 +356,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
 
-            def func(_, num=None):
-                # pylint: disable=unused-argument
+            def func(_, num=None):  # pylint: disable=unused-argument
                 res = math.convert_like(np.zeros([num_params]), dy)
                 multi = len(tape.measurements) > 1
                 if multi:

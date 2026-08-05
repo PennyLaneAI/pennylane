@@ -15,16 +15,6 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
-# pylint: disable=no-self-use
-# pylint: disable=no-member
-# pylint: disable=protected-access
-# pylint: disable=redefined-outer-name
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-public-methods
-# pylint: disable=unused-argument
-# pylint: disable=unnecessary-lambda-assignment
-
-
 import copy
 from collections.abc import Callable
 
@@ -46,6 +36,9 @@ from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
+
+# pylint: disable=no-self-use,no-member,protected-access,redefined-outer-name,too-few-public-methods
+# pylint: disable=too-many-public-methods,unused-argument,unnecessary-lambda-assignment
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -368,7 +361,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires):  # pylint: disable=super-init-not-called
+            def __init__(self, wires):  # pylint:disable=super-init-not-called
                 pass
 
         op = MyOp(wires=0)
@@ -383,7 +376,7 @@ class TestOperatorConstruction:
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):  # pylint: disable=super-init-not-called
+            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]
@@ -663,7 +656,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):  # pylint: disable=arguments-differ
+            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
                 return [qp.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -742,7 +735,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):  # pylint: disable=arguments-differ
+            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -1519,7 +1512,7 @@ class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):  # pylint: disable=arguments-differ
+    def compute_matrix(theta):  # pylint:disable=arguments-differ
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -1555,7 +1548,7 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):  # pylint: disable=arguments-differ
+            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]

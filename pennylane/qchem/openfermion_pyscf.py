@@ -13,8 +13,8 @@
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``."""
 
-# pylint: disable=too-many-arguments, unused-variable, consider-using-generator
-
+# pylint: disable=too-many-arguments,unused-variable
+# pylint: disable=consider-using-generator
 
 import os
 
@@ -47,7 +47,8 @@ def _import_of():
 def _import_pyscf():
     """Import pyscf."""
     try:
-        import pyscf  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import pyscf
     except ImportError as Error:
         raise ImportError(
             "This feature requires pyscf. It can be installed with: pip install pyscf."
@@ -619,7 +620,8 @@ def dipole_of(
     hf = openfermion.MolecularData(filename=hf_file.strip())
 
     # Load dipole matrix elements in the atomic basis
-    from pyscf import gto  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from pyscf import gto
 
     mol = gto.M(
         atom=hf.geometry, basis=hf.basis, charge=hf.charge, spin=0.5 * (hf.multiplicity - 1)
@@ -653,7 +655,6 @@ def dipole_of(
     return dip
 
 
-# pylint: disable-next=too-many-arguments
 def meanfield(
     symbols,
     coordinates,
@@ -663,7 +664,7 @@ def meanfield(
     basis="sto-3g",
     package="pyscf",
     outpath=".",
-):
+):  # pylint: disable=too-many-arguments
     r"""Generates a file from which the mean field electronic structure
     of the molecule can be retrieved.
 
@@ -738,7 +739,8 @@ def meanfield(
     molecule = openfermion.MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
     if package == "pyscf":
-        from openfermionpyscf import run_pyscf  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from openfermionpyscf import run_pyscf
 
         run_pyscf(molecule, run_scf=1, verbose=0)
 

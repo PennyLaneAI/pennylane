@@ -29,10 +29,8 @@ from pennylane.exceptions import DecompositionWarning, DeviceError
 class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
     def decomposition(self):
@@ -42,10 +40,8 @@ class NoMatOp(qp.operation.Operation):
 class MatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def decomposition(self):
@@ -110,17 +106,16 @@ class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
 
 class HasDiagonalizingGatesOp(qp.operation.Operator):
-    """Dummy observable that has diagonalizing gates."""  # pylint: disable=no-self-argument
+    """Dummy observable that has diagonalizing gates."""
 
     @classproperty
+    # pylint: disable-next=no-self-argument
     def has_diagonalizing_gates(cls):
         return True
 
@@ -130,14 +125,12 @@ class CustomizedSparseOp(qp.operation.Operator):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self) -> bool:
+        # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
-    # pylint: disable-next=arguments-differ
-    def compute_sparse_matrix(self, U):
-        # pylint: disable=unused-argument
+    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument,arguments-differ
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -454,9 +447,8 @@ class TestPreprocessing:
             def generator(self):
                 return qp.PauliX(0)
 
-            # pylint: disable=arguments-renamed, invalid-overridden-method
             @property
-            def has_matrix(self):
+            def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
                 return True
 
         @qp.register_resources({qp.RX: 1})
@@ -1146,14 +1138,12 @@ class TestAdjointDiffTapeValidation:
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestDefaultQubitGraphModeExclusive:
+class TestDefaultQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
     """Tests for DefaultQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
 
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
     """
-
-    # pylint: disable=too-few-public-methods
 
     def test_insufficient_work_wires_causes_fallback(self):
         """Test that if a decomposition requires more work wires than available on default.qubit,

@@ -13,16 +13,13 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 
-# pylint: disable=redefined-outer-name
-# pylint: disable=import-outside-toplevel
-# pylint: disable=too-many-return-statements
-# pylint: disable=wrong-import-order
-
+# pylint: disable=import-outside-toplevel,too-many-return-statements,redefined-outer-name
 
 import functools
 from collections.abc import Sequence
 from operator import attrgetter
 
+# pylint: disable=wrong-import-order
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -706,7 +703,7 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
 
 
 @multi_dispatch(argnum=[1])
-def scatter(indices, array, new_dims, like=None):
+def scatter(indices, array, new_dims, like=None):  # pylint: disable=redefined-outer-name
     """Scatters an array into a tensor of shape new_dims according to indices.
 
     This operation is similar to scatter_element_add, except that the tensor
@@ -733,7 +730,6 @@ def scatter(indices, array, new_dims, like=None):
 
 
 @multi_dispatch(argnum=[0, 2])
-# pylint: disable-next=too-many-arguments
 def scatter_element_add(
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
 ):
@@ -773,6 +769,7 @@ def scatter_element_add(
     tensor([[ 0.1000, 20.2000,  0.3000],
             [ 0.4000,  0.5000, 10.6000]])
     """
+    # pylint: disable=too-many-arguments
     if len(np.shape(tensor)) == 0 and index == ():
         return tensor + value
 
@@ -983,10 +980,9 @@ def svd(tensor, like=None, **kwargs):
     return svd(tensor, **kwargs)
 
 
-def _flat_autograd_norm(tensor, **kwargs):
+def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
     """Helper function for computing the norm of an autograd tensor when the order or axes are not
     specified. This is used for differentiability."""
-    # pylint: disable=unused-argument
     x = np.ravel(tensor)
     sq_norm = np.dot(x, np.conj(x))
     return np.real(np.sqrt(sq_norm))
@@ -1058,7 +1054,7 @@ def detach(tensor, like=None):
 
 
 @multi_dispatch(tensor_list=[1])
-def set_index(array, idx, val, like=None):
+def set_index(array, idx, val, like=None):  # pylint: disable=redefined-outer-name
     """Set the value at a specified index in an array.
     Calls ``array[idx]=val`` and returns the updated array unless JAX.
 

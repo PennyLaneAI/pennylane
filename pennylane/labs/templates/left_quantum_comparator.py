@@ -172,8 +172,9 @@ class LeftQuantumComparator(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(x_wires, y_wires, target_wire, work_wires, comparator):
+    def compute_decomposition(
+        x_wires, y_wires, target_wire, work_wires, comparator
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -215,7 +216,6 @@ def _left_quantum_comparator_resources(num_y_wires, comparator):
 
 @register_resources(_left_quantum_comparator_resources, exact=True)
 def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparator, **_):
-    # pylint: disable=no-value-for-parameter
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]
@@ -235,6 +235,7 @@ def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparat
         y_wires = math.array(y_wires, like="jax")
         used_work_wires = math.array(used_work_wires, like="jax")
 
+    # pylint: disable=no-value-for-parameter
     @for_loop(1, len(x_wires))
     def _loop(i):
         CNOT(wires=[x_wires[i], y_wires[i]])

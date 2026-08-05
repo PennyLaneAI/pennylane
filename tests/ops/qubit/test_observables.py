@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for qubit observables."""
 
-# pylint: disable=protected-access, function-redefined
+# pylint: disable=protected-access,function-redefined
 
 import functools
 import pickle

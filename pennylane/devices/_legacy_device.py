@@ -17,7 +17,6 @@ This module contains the :class:`Device` abstract base class.
 
 # pylint: disable=use-maxsplit-arg
 
-
 import abc
 import warnings
 from collections import OrderedDict
@@ -68,7 +67,6 @@ class _LegacyMeta(abc.ABCMeta):
         return super().__instancecheck__(instance)
 
 
-# pylint: disable-next=too-many-instance-attributes, too-many-public-methods
 class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
@@ -80,8 +78,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=unused-argument
-
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
@@ -366,7 +363,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         return cls._capabilities
 
-    # pylint: disable-next=too-many-branches
+    # pylint: disable-next=unused-argument
     def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -390,6 +387,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         Returns:
             array[float]: measured value(s)
         """
+        # pylint: disable=too-many-branches
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables
@@ -835,8 +833,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
 
         class MockContext:
-            # pylint: disable-next=no-self-use
             """Mock class as a default for the with statement in execute()."""
+
+            # pylint: disable=no-self-use
 
             def __enter__(self):
                 pass
@@ -889,8 +888,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             "The given observable must either be a pennylane.operation.Operator class or a string."
         )
 
-    # pylint: disable-next=too-many-branches
-    def check_validity(self, queue, observables):
+    def check_validity(self, queue, observables):  # pylint: disable=too-many-branches
         """Checks whether the operations and observables in queue are all supported by the device.
 
         Args:

@@ -13,9 +13,6 @@
 # limitations under the License.
 """Functions for retrieving effective error from fragments"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-
-
 import copy
 import math
 from collections import defaultdict
@@ -35,6 +32,8 @@ from pennylane.labs.trotter_error.product_formulas.commutator import (
     SymbolNode,
 )
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 
 def effective_hamiltonian(
@@ -163,7 +162,6 @@ class ImportanceConfig:
        is modified to include the convergence history."""
 
 
-# pylint: disable-next=too-many-branches
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
@@ -174,6 +172,7 @@ def perturbation_error(
     backend: str = "serial",
     importance: ImportanceConfig = None,
 ) -> list[float] | list[dict[int, dict]]:
+    # pylint: disable=too-many-branches
     r"""Computes the perturbation theory error using the effective Hamiltonian
     :math:`\hat{H}_{eff} = \hat{H} + \hat{\epsilon}` for a  given product formula.
 

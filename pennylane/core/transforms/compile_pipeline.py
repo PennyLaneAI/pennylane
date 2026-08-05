@@ -684,12 +684,12 @@ class CompilePipeline:
         Args:
             obj (BoundTransform or Transform): The object to remove from the program.
         """
-        # pylint: disable=protected-access
         if not isinstance(obj, (Transform, BoundTransform)):
             raise TypeError("Only BoundTransform or Transform can be removed.")
 
         i = len(self) - 1
         while i >= 0:
+            # pylint: disable=protected-access
             if (isinstance(obj, Transform) and obj == self[i]._transform) or self[i] == obj:
                 removed = self._compile_pipeline.pop(i)
                 self._markers = {k: (v - 1 if v > i else v) for k, v in self._markers.items()}
@@ -995,8 +995,8 @@ class CompilePipeline:
         # NOTE: Duck type a QNode object so we don't have to import it here
         if hasattr(result, "compile_pipeline"):
             offset = len(result.compile_pipeline) - len(self)
+            # pylint: disable=protected-access
             for name, pos in self._markers.items():
-                # pylint: disable-next=protected-access
                 result.compile_pipeline._markers[name] = pos + offset
 
         return result

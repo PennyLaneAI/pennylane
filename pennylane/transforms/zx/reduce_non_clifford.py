@@ -104,7 +104,8 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
     - Aleks Kissinger, John van de Wetering (2020), "Reducing T-count with the ZX-calculus", `arXiv:1903.10477 <https://arxiv.org/abs/1903.10477>`__.
 
     """
-    import pyzx  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import pyzx
 
     zx_graph = to_zx(tape)
 

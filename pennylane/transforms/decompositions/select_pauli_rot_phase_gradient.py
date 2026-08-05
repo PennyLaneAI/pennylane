@@ -15,9 +15,6 @@ r"""
 Decomposition rule for SelectPauliRot in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
 """
 
-# pylint: disable=too-many-arguments
-
-
 import numpy as np
 
 import pennylane as qp
@@ -45,6 +42,7 @@ def _select_pauli_rot_phase_gradient(
     """Function that transforms the SelectPauliRot gate to the phase gradient circuit
     The precision is implicitly defined by the length of ``angle_wires``
     """
+    # pylint: disable=too-many-arguments
 
     precision = len(angle_wires)
     binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)

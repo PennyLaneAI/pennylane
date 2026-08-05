@@ -15,9 +15,6 @@
 Tests for the basic default behavior of the Device API.
 """
 
-# pylint: disable=unused-argument, unused-variable, protected-access
-
-
 import pytest
 
 import pennylane as qp
@@ -32,6 +29,8 @@ from pennylane.devices.capabilities import (
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
+
+# pylint:disable=unused-argument,unused-variable,protected-access
 
 
 def test_execute_method_abstract():
@@ -762,7 +761,6 @@ class TestProvidingDerivatives:
         """Tests default logic for a device with a jvp provided."""
 
         class WithJvp(Device):
-            # pylint: disable=unused-argnument
             """A device with a jvp."""
 
             def execute(self, circuits, execution_config: ExecutionConfig = None):
@@ -782,7 +780,6 @@ class TestProvidingDerivatives:
         """Tests default logic for a device with a vjp provided."""
 
         class WithVjp(Device):
-            # pylint: disable=unused-argnument
             """A device with a vjp."""
 
             def execute(self, circuits, execution_config: ExecutionConfig = None):

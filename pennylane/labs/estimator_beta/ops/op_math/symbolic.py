@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 
-# pylint: disable=keyword-arg-before-vararg, arguments-differ
-
-
 from collections.abc import Callable, Iterable
 from functools import wraps
 from inspect import signature
@@ -30,8 +27,15 @@ from pennylane.labs.estimator_beta import (
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
+# pylint: disable=arguments-differ
 
-def _generate_name(qfunc, include_params: Iterable[str] | None = None, *args, **kwargs):
+
+def _generate_name(
+    qfunc,
+    include_params: Iterable[str] | None = None,
+    *args,
+    **kwargs,
+):  # pylint: disable=keyword-arg-before-vararg
     r"""Make a string representing the name of a function from its signature.
 
     Args:
@@ -247,10 +251,9 @@ class ResourceQfunc(ResourceOperator):
 
     resource_keys = {"name", "num_wires", "cmpr_ops"}
 
-    # pylint: disable-next=super-init-not-called
     def __init__(
         self, name_, resource_decomp_fn_, *resource_args, num_wires_=None, **resource_kwargs
-    ):
+    ):  # pylint: disable=super-init-not-called
         self.name = name_
 
         with QueuingManager.stop_recording():

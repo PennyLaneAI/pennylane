@@ -13,9 +13,6 @@
 # limitations under the License.
 """Unit tests for the QuantumScript"""
 
-# pylint: disable=protected-access
-
-
 import copy
 
 import numpy as np
@@ -29,6 +26,8 @@ from pennylane.core.shots import Shots
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
+
+# pylint: disable=protected-access
 
 
 def test_process_queue_error_if_not_operator_or_measurement():
@@ -191,8 +190,8 @@ class TestUpdate:
         assert qs._specs is None
 
     def test_update_circuit_info_wires(self):
-        # pylint: disable=superfluous-parens
         """Test that on construction wires and num_wires are set."""
+        # pylint: disable=superfluous-parens
         prep = [qp.BasisState([1, 1], wires=(-1, -2))]
         ops = [qp.S(0), qp.T("a"), qp.S(0)]
         measurement = [qp.probs(wires=("a"))]

@@ -113,10 +113,9 @@ class SymbolicOp(Operator):
     def num_params(self):
         return self.base.num_params
 
-    # pylint:disable = missing-function-docstring
     @property
     @handle_recursion_error
-    def basis(self):
+    def basis(self):  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -130,8 +129,7 @@ class SymbolicOp(Operator):
         return len(self.wires)
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_matrix
 
     @property

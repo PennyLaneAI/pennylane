@@ -272,9 +272,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
 add_decomps(Reflection, _reflection_decomposition)
 
 # pylint: disable=protected-access
-
 if Reflection._primitive is not None:
-    # pylint: disable=protected-access
 
     @Reflection._primitive.def_impl
     def _(*args, n_wires, **kwargs):

@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Resource operators for PennyLane arithmetic subroutines."""
 
-# pylint: disable=arguments-differ, signature-differs
-
-
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -23,6 +20,8 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
 )
 from pennylane.wires import WiresLike
+
+# pylint: disable=arguments-differ,signature-differs
 
 
 class LabsPhaseAdder(ResourceOperator):

@@ -120,12 +120,13 @@ class _InitArg:  # pylint: disable=too-few-public-methods
     """Sentinel value returned by ``_init_arg()``."""
 
 
-def _init_arg(default: Any, alias: str | None = None, kw_only: bool = False) -> Any:
+def _init_arg(  # pylint: disable=unused-argument
+    default: Any, alias: str | None = None, kw_only: bool = False
+) -> Any:
     """This function exists only for the benefit of the type checker. It is used to
     annotate attributes on ``Dataset`` that are not part of the data model, but
     should appear in the generated ``__init__`` method.
     """
-    # pylint: disable=unused-argument
     return _InitArg
 
 

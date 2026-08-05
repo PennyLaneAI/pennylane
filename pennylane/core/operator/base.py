@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=protected-access
 """
 Defines the base class for Operator and Operation.
 """
@@ -189,8 +190,7 @@ def _process_data(op):
     return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-# pylint: disable-next=abstract-method
-class _GiveOperatorMeta(ABCCaptureMeta):
+class _GiveOperatorMeta(ABCCaptureMeta):  # pylint: disable=abstract-method
     """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
 
     def __new__(mcs, name, bases, attrs):
@@ -255,7 +255,6 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
-# pylint: disable-next=too-many-instance-attributes, too-many-public-methods
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
@@ -534,6 +533,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
 
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
+
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
@@ -641,8 +642,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op._data = copy.copy(self.data)
+        # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
-            # pylint: disable-next=attribute-defined-outside-init
             copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
             if attr not in {"_data", "_hyperparameters"}:
@@ -710,13 +711,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise MatrixUndefinedError
 
     @classproperty
-    # pylint: disable-next=no-self-argument
     def has_matrix(cls) -> bool:
+        # pylint: disable=no-self-argument,comparison-with-callable
         r"""Bool: Whether or not the Operator returns a defined matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        # pylint: disable=comparison-with-callable
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
@@ -776,13 +776,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise SparseMatrixUndefinedError
 
     @classproperty
-    # pylint: disable-next=no-self-argument
     def has_sparse_matrix(cls) -> bool:
+        # pylint: disable=no-self-argument,comparison-with-callable
         r"""Bool: Whether the Operator returns a defined sparse matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        # pylint: disable=comparison-with-callable
         return (
             cls.compute_sparse_matrix != Operator.compute_sparse_matrix
             or cls.sparse_matrix != Operator.sparse_matrix
@@ -1313,13 +1312,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return {}
 
     @classproperty
-    # pylint: disable-next=no-self-argument
     def has_diagonalizing_gates(cls) -> bool:
+        # pylint: disable=no-self-argument,comparison-with-callable
         r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        # pylint: disable=comparison-with-callable
         # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
         # Currently, those are mostly classes from the operator arithmetic module.
         return (
@@ -1374,8 +1372,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         )
 
     @classproperty
-    # pylint: disable-next=no-self-argument
     def has_generator(cls) -> bool:
+        # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns a defined generator.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1446,8 +1444,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @classproperty
-    # pylint: disable-next=no-self-argument
     def has_adjoint(cls) -> bool:
+        # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1501,7 +1499,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             .Operator: new operator
         """
         new_op = copy.copy(self)
-        # pylint: disable=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         if (p_rep := self.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)

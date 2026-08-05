@@ -15,7 +15,7 @@
 Tests for the Select template.
 """
 
-# pylint: disable=import-outside-toplevel, no-self-use
+# pylint: disable=import-outside-toplevel,no-self-use
 
 import copy
 

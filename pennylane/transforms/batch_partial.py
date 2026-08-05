@@ -121,7 +121,6 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
            [ 0.        ,  0.        , -0.11236432,  0.        ],
            [ 0.        ,  0.        ,  0.        , -0.12819986]])
     """
-    # pylint: disable=not-callable
     qnode = qp.batch_params(qnode, all_operations=all_operations)
 
     preprocess = {} if preprocess is None else preprocess
@@ -156,6 +155,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
     @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
+        # pylint: disable=not-callable
 
         # raise an error if keyword arguments are passed, since the
         # arguments are passed to the lambda statement instead of the QNode

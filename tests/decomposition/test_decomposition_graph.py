@@ -14,9 +14,6 @@
 
 """Unit tests for the decomposition graph."""
 
-# pylint: disable=protected-access, unused-argument
-
-
 import warnings
 from unittest.mock import patch
 
@@ -40,6 +37,8 @@ from tests.core.operator.operator2_utils import (
     ParametrizedHybridOp,
 )
 from tests.decomposition.conftest import decompositions, to_resources
+
+# pylint: disable=protected-access,unused-argument
 
 
 class CustomOp(Operation):

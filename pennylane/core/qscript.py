@@ -16,8 +16,7 @@ This module defines the QuantumScript object responsible for storing quantum ope
 executed by a device.
 """
 
-# pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
-
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-public-methods
 
 import contextlib
 import copy
@@ -724,7 +723,7 @@ class QuantumScript:
         [-0.1, 0.2, 0.5]
         """
 
-        # pylint: disable-next=import-outside-toplevel # tach-ignore
+        # pylint: disable=import-outside-toplevel# tach-ignore
         from pennylane.ops.functions import (
             bind_new_parameters,
         )
@@ -887,7 +886,7 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
-        from pennylane.ops import adjoint  # pylint: disable=import-outside-toplevel # tach-ignore
+        from pennylane.ops import adjoint  # pylint: disable=import-outside-toplevel# tach-ignore
 
         warnings.warn(
             "Using QuantumScript.adjoint is deprecated "
@@ -922,7 +921,7 @@ class QuantumScript:
         Returns:
             .CircuitGraph: the circuit graph object
         """
-        from pennylane.circuit_graph import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        from pennylane.circuit_graph import (  # pylint: disable=import-outside-toplevel# tach-ignore
             CircuitGraph,
         )
 
@@ -962,7 +961,7 @@ class QuantumScript:
                        total_quantum_operations=6)
         """
         if self._specs is None:
-            # pylint: disable-next=import-outside-toplevel # tach-ignore
+            # pylint: disable=import-outside-toplevel# tach-ignore
             from pennylane.resource.resource import (
                 resources_from_tape,
             )
@@ -993,7 +992,7 @@ class QuantumScript:
         Returns:
             str: the circuit representation of the quantum script
         """
-        from pennylane.drawer import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        from pennylane.drawer import (  # pylint: disable=import-outside-toplevel# tach-ignore
             tape_text,
         )
 
@@ -1153,7 +1152,7 @@ def _get_base_obs(observables):
 
     overlapping_ops_observables = []
 
-    from pennylane.ops.op_math import (  # pylint: disable=import-outside-toplevel # tach-ignore
+    from pennylane.ops.op_math import (  # pylint: disable=import-outside-toplevel# tach-ignore
         CompositeOp,
         SymbolicOp,
     )

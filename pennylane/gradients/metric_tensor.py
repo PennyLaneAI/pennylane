@@ -59,7 +59,7 @@ def _mt_cjac_tdot(mt, c):
     return math.tensordot(c, math.tensordot(mt, c, axes=[[-1], [0]]), axes=[[0], [0]])
 
 
-def _contract_metric_tensor_with_cjac(mt, cjac, tape):
+def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument
     """Execute the contraction of pre-computed classical Jacobian(s)
     and the metric tensor of a tape in order to obtain the hybrid
     metric tensor of a QNode.
@@ -74,7 +74,6 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):
         for which the classical Jacobian was computed, the tensor shape(s)
         depend on the shape of these QNode arguments.
     """
-    # pylint: disable=unused-argument
     if isinstance(mt, tuple) and len(mt) == 1:
         mt = mt[0]
     if isinstance(cjac, tuple):
@@ -104,7 +103,6 @@ def _expand_nonunitary_gen_stop_at(obj):
     return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
 
 
-# pylint: disable-next=too-many-positional-arguments, too-many-arguments
 def _expand_metric_tensor(
     tape: QuantumScript,
     argnum=None,
@@ -114,7 +112,7 @@ def _expand_metric_tensor(
     device_wires=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=unused-argument
+    # pylint: disable=too-many-positional-arguments,unused-argument,too-many-arguments
 
     if not allow_nonunitary and approx is None:
         [new_tape], postprocessing = decompose(
@@ -138,8 +136,7 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-# pylint: disable-next=too-many-arguments, too-many-positional-arguments
-def metric_tensor(
+def metric_tensor(  # pylint:disable=too-many-arguments,too-many-positional-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,
@@ -476,7 +473,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return mt_fn
 
 
-def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
+def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too-many-statements
     r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
@@ -506,7 +503,6 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
     which the tensor is computed to be Hermitian. This is the case for unitary single-parameter
     operations.
     """
-    # pylint: disable=too-many-statements
     # get the circuit graph
     graph = tape.graph
 
@@ -701,7 +697,9 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
+def _metric_tensor_hadamard(
+    tape, argnum, allow_nonunitary, aux_wire, device_wires
+):  # pylint: disable=too-many-statements
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
@@ -724,7 +722,6 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
         list[pennylane.tape.QuantumTape]: Tapes to evaluate the metric tensor
         callable: processing function to obtain the metric tensor from the tape results
     """
-    # pylint: disable=too-many-statements
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
     (

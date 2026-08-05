@@ -59,8 +59,8 @@ JAX 0.7.x only has ``DynamicJaxprTrace`` — the ``StagingJaxprTrace`` from olde
 JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 """
 
-# pylint: disable=too-many-arguments, protected-access, possibly-used-before-assignment
-
+# pylint: disable=too-many-arguments
+# pylint: disable=protected-access,possibly-used-before-assignment
 
 has_jax = True
 try:
@@ -123,8 +123,9 @@ def _add_make_eqn_helper():
         Returns:
             (eqn, out_tracers): TracingEqn and output tracers
         """
+        # pylint: disable=too-many-function-args
         source_info = source_info or source_info_util.new_source_info()
-        ctx = ctx or JaxprEqnContext(  # pylint: disable=too-many-function-args
+        ctx = ctx or JaxprEqnContext(
             compute_on.current_compute_type(),
             jax_config.threefry_partitionable.value,
             xla_metadata_lib.current_xla_metadata(),

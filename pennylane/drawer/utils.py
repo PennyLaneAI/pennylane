@@ -249,8 +249,7 @@ def unwrap_controls(op):
 
 
 @singledispatch
-# pylint: disable-next=unused-argument
-def _get_meas(op, bit_map, wire_map):
+def _get_meas(op, bit_map, wire_map):  # pylint: disable=unused-argument
     return [], None
 
 

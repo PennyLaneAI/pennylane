@@ -43,6 +43,7 @@ def _generator_hamiltonian(gen, op):
 
 
 def _generator_prefactor(gen):
+    # pylint: disable=no-member
     r"""Return the generator as ```(obs, prefactor)`` representing
     :math:`G=p \hat{O}`, where
 
@@ -51,7 +52,6 @@ def _generator_prefactor(gen):
       :class:`~.SparseHamiltonian`, or a tensor product
       of Pauli words.
     """
-    # pylint: disable=no-member
 
     prefactor = 1.0
 

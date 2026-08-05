@@ -15,8 +15,7 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 
-# pylint: disable=protected-access, unused-argument
-
+# pylint:disable=protected-access,unused-argument
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -523,8 +522,7 @@ def test_empty_repr():
     assert repr(Prod()) == "Prod()"
 
 
-# pylint: disable-next=too-many-public-methods
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     """Test matrix-related methods."""
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops)

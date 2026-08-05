@@ -15,9 +15,6 @@ r"""
 This file contains the core algorithm for extracting the profile.
 """
 
-# pylint: disable=too-many-arguments
-
-
 from collections.abc import Callable
 from functools import singledispatch, wraps
 
@@ -35,6 +32,8 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
 from .resource_profile import ProfileNode, add_dicts
+
+# pylint: disable=too-many-arguments
 
 
 def profile(

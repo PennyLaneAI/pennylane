@@ -13,9 +13,6 @@
 # limitations under the License.
 r"""Core resource estimation logic."""
 
-# pylint: disable=too-many-arguments
-
-
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
@@ -39,6 +36,8 @@ from .resource_mapping import _map_to_resource_op
 from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
+
+# pylint: disable=too-many-arguments
 
 _SYMBOLIC_DECOMP_MAP = {
     Adjoint: ("adj_custom_decomps", "adjoint_resource_decomp"),

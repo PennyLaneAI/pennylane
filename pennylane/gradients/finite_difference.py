@@ -16,13 +16,12 @@ This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
 
-# pylint: disable=too-many-arguments, too-many-branches, too-many-statements, unused-argument
-
-
 import functools
 from collections.abc import Callable
 from functools import partial
 from typing import Literal
+
+# pylint: disable=too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn
 
 import numpy as np
@@ -282,7 +281,6 @@ def _finite_diff_stopping_condition(op) -> bool:
     return True
 
 
-# pylint: disable-next=too-many-positional-arguments
 def _expand_transform_finite_diff(
     tape: QuantumScript,
     argnum=None,
@@ -294,6 +292,7 @@ def _expand_transform_finite_diff(
     validate_params: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before finite difference."""
+    # pylint: disable=too-many-positional-arguments
     [new_tape], postprocessing = decompose(
         tape,
         target_gates=gate_sets.ROTATIONS_PLUS_CNOT,
@@ -309,13 +308,13 @@ def _expand_transform_finite_diff(
     return [new_tape], postprocessing
 
 
+# pylint: disable=too-many-positional-arguments
 @partial(
     transform,
     expand_transform=_expand_transform_finite_diff,
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-# pylint: disable-next=too-many-positional-arguments
 def finite_diff(
     tape: QuantumScript,
     argnum=None,

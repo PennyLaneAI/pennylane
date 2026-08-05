@@ -419,10 +419,8 @@ class TestNumpyIntegration:
         """Test that a tensor is returned if the array ufunc method returns
         multiple results."""
 
-        # pylint: disable=too-few-public-methods
-        class _ufunc:
-            def __init__(self, *args, **kwargs):
-                # pylint: disable=unused-argument
+        class _ufunc:  # pylint: disable=too-few-public-methods
+            def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
                 self.nout = 2
 
             def __call__(self, *args, **kwargs):

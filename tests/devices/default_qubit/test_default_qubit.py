@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for default qubit."""
 
-# pylint: disable=import-outside-toplevel, no-member, too-many-arguments
+# pylint: disable=import-outside-toplevel,no-member,too-many-arguments
 
 from unittest import mock
 
@@ -1950,7 +1950,6 @@ class TestPostselection:
     ):
         """Test that qp.sample and qp.classical_shadow work correctly.
         Separate test because their shape is non-deterministic."""
-        # pylint: disable=protected-access
 
         if use_jit:
             pytest.skip("Cannot JIT while mocking function.")
@@ -1959,7 +1958,7 @@ class TestPostselection:
         # module rather than the functions directly exposed by a local RNG. This makes
         # mocking easier.
         dev = qp.device("default.qubit")
-        dev._rng = None
+        dev._rng = None  # pylint: disable=protected-access
         param = qp.math.asarray(param, like=interface)
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
@@ -2166,7 +2165,8 @@ class TestPostselection:
                     reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
                 )
 
-            import jax  # pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
+            import jax
 
             # We do not raise an error if using jax.jit, because we cannot check whether or not
             # the probability is zero. But, this is only the case with analytic execution because

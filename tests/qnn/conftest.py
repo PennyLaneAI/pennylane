@@ -37,9 +37,8 @@ def get_circuit(n_qubits, output_dim, interface):
         "w7": 1,
     }
 
-    # pylint: disable=too-many-arguments
     @qp.qnode(dev, interface=interface)
-    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):  # pylint: disable=too-many-arguments
         """A circuit that embeds data using the AngleEmbedding and then performs a variety of
         operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
         parameters, w5, are specified as non-trainable."""
@@ -73,9 +72,8 @@ def get_circuit_dm(n_qubits, output_dim, interface):
         "w7": 1,
     }
 
-    # pylint: disable=too-many-arguments
     @qp.qnode(dev, interface=interface)
-    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):  # pylint: disable=too-many-arguments
         """Sample circuit to be used for testing density_matrix() return type."""
         qp.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
         qp.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
@@ -108,10 +106,9 @@ def get_circuit_shots(n_qubits, output_dim, interface, shots):
         "w7": 1,
     }
 
-    # pylint: disable=too-many-arguments
     @qp.set_shots(shots)
     @qp.qnode(dev, interface=interface)
-    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):  # pylint: disable=too-many-arguments
         """A circuit that embeds data using the AngleEmbedding and then performs a variety of
         operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
         parameters, w5, are specified as non-trainable."""

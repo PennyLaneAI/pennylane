@@ -15,9 +15,6 @@
 Unit tests for Operators inheriting from ControlledOp.
 """
 
-# pylint: disable=too-many-public-methods
-
-
 import numpy as np
 import pytest
 from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
@@ -53,7 +50,7 @@ X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
 
 
-class TestControlledQubitUnitary:
+class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
     """Tests specific to the ControlledQubitUnitary operation"""
 
     def test_has_decomposition_sparse_edge_case(self):

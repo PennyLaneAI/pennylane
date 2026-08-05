@@ -15,8 +15,7 @@
 This submodule defines a base class for composite operations.
 """
 
-# pylint: disable=too-many-instance-attributes, invalid-sequence-index
-
+# pylint: disable=invalid-sequence-index
 
 import abc
 import copy
@@ -31,6 +30,8 @@ from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
+
+# pylint: disable=too-many-instance-attributes
 
 
 def handle_recursion_error(func):
@@ -93,8 +94,9 @@ class CompositeOp(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
-    # pylint: disable-next=super-init-not-called
-    def __init__(self, *operands: Operator, _pauli_rep=None):
+    def __init__(
+        self, *operands: Operator, _pauli_rep=None
+    ):  # pylint: disable=super-init-not-called
         self._name = self.__class__.__name__
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
@@ -187,8 +189,7 @@ class CompositeOp(Operator):
 
     @property
     @handle_recursion_error
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return all(op.has_matrix for op in self)
 
     @handle_recursion_error
@@ -287,7 +288,7 @@ class CompositeOp(Operator):
         return self._eigs[self]
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         if self.has_overlapping_wires:
             for ops in self.overlapping_ops:
@@ -388,9 +389,8 @@ class CompositeOp(Operator):
             )
         return self._hash
 
-    # pylint:disable = missing-function-docstring, useless-return
     @property
-    def basis(self):
+    def basis(self):  # pylint: disable=missing-function-docstring,useless-return
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -410,7 +410,7 @@ class CompositeOp(Operator):
 
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
+        # pylint:disable=protected-access
         cls = self.__class__
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)

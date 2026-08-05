@@ -15,9 +15,6 @@
 Defines qp.value_and_grad.
 """
 
-# pylint: disable=unused-argument
-
-
 import inspect
 from functools import lru_cache, wraps
 from importlib.util import find_spec
@@ -34,6 +31,7 @@ _has_jax = find_spec("jax") is not None
 @lru_cache
 def _get_value_and_grad_prim():
     """Create a primitive for value and gradient computations."""
+    # pylint: disable=unused-argument
     if not _has_jax:  # pragma: no cover
         return None
 
@@ -74,7 +72,7 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)
@@ -132,8 +130,7 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     return new_func
 
 
-# pylint: disable-next=too-few-public-methods
-class value_and_grad:
+class value_and_grad:  # pylint: disable=too-few-public-methods
     """A :func:`~.qjit`-compatible transformation for returning the result and jacobian of a
     function.
 
