@@ -53,11 +53,16 @@ def _get_runtime_call_prim():
 def runtime_call(target, *args, signature=None, out_bytes=0, address=None, library=None):
     r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
 
-        qp.runtime_declare("run_rounds", "(ptr, u32) -> u64")
+    A symbol is declared once, then called by name:
 
-        @qp.qjit
-        def program(session):
-            return qp.runtime_call("run_rounds", session, 100000, address="board:9000")
+    .. code-block:: python
+
+        import pennylane as qp
+
+        qp.runtime_declare("example_call_rounds", "(ptr, u32) -> u64")
+
+        def program(session):  # the body of a qjit program
+            return qp.runtime_call("example_call_rounds", session, 100000, address="board:9000")
 
     Passing ``address`` dispatches the call: it is recorded into the program and sent to that
     executor, which invokes the symbol on the machine the runtime lives on. Omitting ``address``

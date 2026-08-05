@@ -94,14 +94,14 @@ class TestDeclare:
 
     def test_declare_then_look_up(self):
         """A declared signature is retrievable by symbol."""
-        signature = qp.runtime_declare("declared_kick", "(ptr) -> i64")
-        assert qp.runtime.signature_of("declared_kick") is signature
-        assert "declared_kick" in qp.runtime.declared_symbols()
+        signature = qp.runtime_declare("declared_symbol", "(ptr) -> i64")
+        assert qp.runtime.signature_of("declared_symbol") is signature
+        assert "declared_symbol" in qp.runtime.declared_symbols()
 
     def test_redeclaring_the_same_signature_is_allowed(self):
         """The same declaration twice is bookkeeping, not a conflict."""
-        first = qp.runtime_declare("redeclared_kick", "(ptr) -> i64")
-        assert qp.runtime_declare("redeclared_kick", "(ptr) -> i64") == first
+        first = qp.runtime_declare("redeclared_symbol", "(ptr) -> i64")
+        assert qp.runtime_declare("redeclared_symbol", "(ptr) -> i64") == first
 
     def test_declare_records_the_library(self):
         """A local symbol's backing library is carried on its signature."""
@@ -110,7 +110,7 @@ class TestDeclare:
 
     def test_declare_without_a_library(self):
         """Without one, the library is None (a dispatched or already-loaded symbol)."""
-        assert qp.runtime_declare("plain_kick", "(ptr) -> i64").library is None
+        assert qp.runtime_declare("unbound_symbol", "(ptr) -> i64").library is None
 
     def test_conflicting_libraries_are_refused(self):
         """Two declarations putting the same symbol in different libraries disagree."""
@@ -181,21 +181,21 @@ class TestRecordedCalls:
     def test_a_64_bit_value_needs_x64(self):
         """A narrowed pointer would be a different address, so it is refused, not warned about."""
         jax = pytest.importorskip("jax")
-        signature = CSignature.parse("kick", "(ptr, u32) -> i32")
+        signature = CSignature.parse("some_symbol", "(ptr, u32) -> i32")
         with jax.experimental.disable_x64():
             with pytest.raises(TypeError, match="jax_enable_x64 is off"):
                 operands.operands_for(signature, (0x7FAB1234, 0))
 
     def test_a_dispatched_call_records_its_symbol_and_address(self, x64):
         """The recorded call names the C symbol itself, and where to run it."""
-        qp.runtime_declare("kick_rounds", "(ptr, u64) -> i32")
+        qp.runtime_declare("run_rounds", "(ptr, u64) -> i32")
 
-        jaxpr = x64.make_jaxpr(lambda h: qp.runtime_call("kick_rounds", h, 4, address="h:1"))(
+        jaxpr = x64.make_jaxpr(lambda h: qp.runtime_call("run_rounds", h, 4, address="h:1"))(
             np.uint64(7)
         )
         calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
         assert len(calls) == 1
-        assert calls[0].params["symbol"] == "kick_rounds"
+        assert calls[0].params["symbol"] == "run_rounds"
         assert calls[0].params["dispatch"] == "h:1"
 
     def test_out_bytes_adds_a_returned_buffer(self, x64):

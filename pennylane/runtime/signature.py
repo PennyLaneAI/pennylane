@@ -119,8 +119,8 @@ class CSignature:
 
     **Example**
 
-    >>> CSignature.parse("__catalyst__transport__kick", "(ptr, u32) -> i32")
-    CSignature('__catalyst__transport__kick', (ptr, u32) -> i32)
+    >>> qp.runtime.CSignature.parse("example_run", "(ptr, u32) -> i32")
+    CSignature('example_run', (ptr, u32) -> i32)
     """
 
     symbol: str
@@ -222,12 +222,14 @@ def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
 
         import pennylane as qp
 
-        qp.runtime_declare("run_rounds", "(ptr, u32) -> i32")
-        rc = qp.runtime_call("run_rounds", session, 1000, address="board:9000")
+        qp.runtime_declare("example_declared_rounds", "(ptr, u32) -> i32")
 
-        # A local symbol from a shared library:
-        qp.runtime_declare("local_symbol", "(buf, u64) -> i32", library="/path/liblocal.so")
-        rc = qp.runtime_call("local_symbol", data, data.size)
+        # ...and a local symbol, from a shared library the program is linked against:
+        qp.runtime_declare("example_local", "(buf, u64) -> i32", library="/path/liblocal.so")
+
+        def program(session, data):
+            qp.runtime_call("example_declared_rounds", session, 1000, address="board:9000")
+            return qp.runtime_call("example_local", data, data.size)
 
     .. seealso:: :func:`~.runtime_call`
     """

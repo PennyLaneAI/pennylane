@@ -47,11 +47,10 @@ Declare a symbol once, then call it:
 
     import pennylane as qp
 
-    qp.runtime_declare("run_rounds", "(ptr, u32) -> u64")
+    qp.runtime_declare("example_run_rounds", "(ptr, u32) -> u64")
 
-    @qp.qjit
     def program(session):
-        return qp.runtime_call("run_rounds", session, 100000, address="board:9000")
+        return qp.runtime_call("example_run_rounds", session, 100000, address="board:9000")
 """
 
 from .runtime_call import runtime_call
