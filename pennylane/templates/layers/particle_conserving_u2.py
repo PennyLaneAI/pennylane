@@ -218,7 +218,7 @@ class ParticleConservingU2(Operation):
         >>> ops = qp.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [BasisState(array([0, 1]), wires=['a', 'b']),
+        [BasisState([0 1], wires=['a', 'b']),
         RZ(0.3000..., wires=['a']),
         RZ(1.0, wires=['b']),
         CNOT(wires=['a', 'b']),

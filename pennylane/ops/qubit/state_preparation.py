@@ -88,7 +88,7 @@ class BasisState(StatePrepBase2):
     >>> print(example_circuit(3))
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     >>> print(np.where(example_circuit(3)))
-    (3,)
+    (array([3]),)
 
     """
 

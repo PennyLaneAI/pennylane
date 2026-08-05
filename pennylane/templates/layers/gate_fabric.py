@@ -275,7 +275,7 @@ class GateFabric(Operation):
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
         >>> qp.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisState(array([0, 1, 0, 1]), wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        [BasisState([0 1 0 1], wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
 
         """
         op_list = []
