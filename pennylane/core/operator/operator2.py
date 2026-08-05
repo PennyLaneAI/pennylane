@@ -78,15 +78,15 @@ class Operator2(metaclass=OperatorMeta):
     child classes are handled when compiling with :func:`~.qjit`.
 
     * :attr:`wire_argnames <Operator2.wire_argnames>` : The names of arguments corresponding to
-      wires. This **must** be defined. Values for these arguments are automatically wrapped in
+      wires. Values for these arguments are automatically wrapped in
       :class:`~.Wires` objects by the ``Operator2`` constructor.
 
     * :attr:`dynamic_argnames <Operator2.dynamic_argnames>` : The names of arguments that are
-      treated as dynamic. This **must** be defined. Inputs for these arguments must be scalars,
+      treated as dynamic. Inputs for these arguments must be scalars,
       arrays, or castable to arrays.
 
     * :attr:`static_argnames <Operator2.static_argnames>` : The names of arguments that are
-      treated as static. This must be defined if
+      treated as static. This should be defined if
       :attr:`compilable_argnames <Operator2.compilable_argnames>` is undefined.
 
     * :attr:`compilable_argnames <Operator2.compilable_argnames>` : The names of arguments that are
