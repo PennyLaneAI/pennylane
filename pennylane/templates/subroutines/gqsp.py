@@ -15,16 +15,13 @@
 Contains the GQSP template.
 """
 
-import copy
 from typing import override
 
 from pennylane import capture, ops
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
-from pennylane.wires import Wires
 
 has_jax = True
 try:
@@ -37,28 +34,31 @@ class GQSP(Operator2):
     r"""
     Implements the generalized quantum signal processing (GQSP) circuit.
 
-    This operation encodes a polynomial transformation of an input unitary operator following the algorithm
-    described in `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`__ as:
+    This operation encodes a polynomial transformation of an input unitary operator following
+    the algorithm described in `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`__ as:
 
     .. math::
-         U
-         \xrightarrow{GQSP}
-         \begin{pmatrix}
-         \text{poly}(U) & * \\
-         * & * \\
-         \end{pmatrix}
+        U
+        \xrightarrow{GQSP}
+        \begin{pmatrix}
+        \text{poly}(U) & * \\
+        * & * \\
+        \end{pmatrix}
 
     The implementation requires one control qubit.
 
     Args:
 
         unitary (Operator): the operator to be encoded by the GQSP circuit
-        angles (tensor[float]): array of angles defining the polynomial transformation. The shape of the array must be `(3, d+1)`, where `d` is the degree of the polynomial.
-        control (Union[Wires, int, str]): control qubit used to encode the polynomial transformation
+        angles (tensor[float]): array of angles defining the polynomial transformation. The
+            shape of the array must be `(3, d+1)`, where `d` is the degree of the polynomial.
+        control (Union[Wires, int, str]): control qubit used to encode the polynomial
+            transformation
 
     .. note::
 
-       The  :func:`~.poly_to_angles` function can be used to calculate the angles for a given polynomial.
+        The :func:`~.poly_to_angles` function can be used to calculate the angles for a
+        given polynomial.
 
     Example:
 
@@ -100,23 +100,6 @@ class GQSP(Operator2):
     @override
     def wires(self):
         return self.control + self.unitary.wires
-
-    def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
-        new_op = copy.deepcopy(self)
-        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op.arguments["unitary"] = ops.functions.map_wires(new_op.arguments["unitary"], wire_map)
-        new_op.arguments["control"] = tuple(
-            wire_map.get(w, w) for w in Wires(new_op.arguments["control"])
-        )
-
-        return new_op
-
-    @override
-    def queue(self, context=QueuingManager):
-        context.remove(self.arguments["unitary"])
-        context.append(self)
-        return self
 
 
 def _GQSP_resources(unitary, angles, **_):
