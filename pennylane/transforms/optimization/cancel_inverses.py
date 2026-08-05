@@ -16,6 +16,7 @@
 from functools import partial
 
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.math import is_abstract
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
@@ -23,7 +24,6 @@ from pennylane.ops.qubit.attributes import (
     symmetric_over_all_wires,
     symmetric_over_control_wires,
 )
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, TensorLike
 from pennylane.wires import Wires
@@ -221,13 +221,13 @@ def cancel_inverses(
         Shots: Shots(total=None)
         Level: cancel-inverses
         <BLANKLINE>
-        Wire allocations: 1
-        Total gates: 1
-        Gate counts:
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 1
+          - RX: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Wire allocations: 1
+        Circuit Depth: Not computed
 
         Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.

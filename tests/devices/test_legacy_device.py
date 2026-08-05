@@ -16,8 +16,6 @@ Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
 from collections import OrderedDict
-from importlib import metadata, reload
-from sys import version_info
 
 import numpy as np
 import pytest
@@ -450,19 +448,17 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         lifetime is tracked by `num_executions`"""
 
         # test default Gaussian device
-        dev_gauss = qp.device("default.gaussian", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
 
-        def circuit_gauss(mag_alpha, phase_alpha, phi):
-            qp.Displacement(mag_alpha, phase_alpha, wires=0)
-            qp.Rotation(phi, wires=0)
-            return qp.expval(qp.NumberOperator(0))
+        def circuit():
+            return qp.expval(qp.Z(0))
 
-        node_gauss = qp.QNode(circuit_gauss, dev_gauss)
-        num_evals_gauss = 12
+        node = qp.QNode(circuit, dev)
+        num_evals = 12
 
-        for _ in range(num_evals_gauss):
-            node_gauss(0.015, 0.02, 0.005)
-        assert dev_gauss.num_executions == num_evals_gauss
+        for _ in range(num_evals):
+            node()
+        assert dev.num_executions == num_evals
 
     @pytest.mark.parametrize(
         "depth, expanded_ops",
@@ -888,85 +884,6 @@ class TestParameters:
 
 
 class TestDeviceInit:
-    """Tests for device loader in __init__.py"""
-
-    def test_no_device(self):
-        """Test that an exception is raised for a device that doesn't exist"""
-
-        with pytest.raises(DeviceError, match="Device None does not exist"):
-            qp.device("None", wires=0)
-
-    def test_outdated_API(self, monkeypatch):
-        """Test that an exception is raised if plugin that targets an old API is loaded"""
-
-        with monkeypatch.context() as m:
-            m.setattr(qp.devices.device_constructor, "__version__", "0.0.1")
-            with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qp.device("default.qutrit", wires=0)
-
-    def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
-        spied = mocker.spy(qp.devices, "__getattr__")
-
-        qp.devices.plugin_devices
-
-        spied.assert_called_once()
-
-    def test_refresh_entrypoints(self, monkeypatch):
-        """Test that new entrypoints are found by the refresh_devices function"""
-        assert qp.plugin_devices
-
-        with monkeypatch.context() as m:
-            # remove all entry points
-            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
-            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
-
-            # reimporting PennyLane within the context sets qp.plugin_devices to {}
-            reload(qp)
-            reload(qp.devices.device_constructor)
-
-            # since there are no entry points, there will be no plugin devices
-            assert not qp.plugin_devices
-
-        # outside of the context, entrypoints will now be found
-        assert not qp.plugin_devices
-        qp.refresh_devices()
-        assert qp.plugin_devices
-
-        # Test teardown: re-import PennyLane to revert all changes and
-        # restore the plugin_device dictionary
-        reload(qp)
-        reload(qp.devices.device_constructor)
-
-    def test_hot_refresh_entrypoints(self, monkeypatch):
-        """Test that new entrypoints are found by the device loader if not currently present"""
-        assert qp.plugin_devices
-
-        with monkeypatch.context() as m:
-            # remove all entry points
-            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
-            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
-
-            # reimporting PennyLane within the context sets qp.plugin_devices to {}
-            reload(qp.devices)
-            reload(qp.devices.device_constructor)
-
-            m.setattr(qp.devices.device_constructor, "refresh_devices", lambda: None)
-            assert not qp.plugin_devices
-
-            # since there are no entry points, there will be no plugin devices
-            with pytest.raises(DeviceError, match="Device default.qubit does not exist"):
-                qp.device("default.qubit", wires=0)
-
-        # outside of the context, entrypoints will now be found automatically
-        assert not qp.plugin_devices
-        dev = qp.device("default.qubit", wires=0)
-        assert qp.plugin_devices
-        assert dev.name == "default.qubit"
-
-        # Test teardown: re-import PennyLane to revert all changes and
-        # restore the plugin_device dictionary
-        reload(qp)
-        reload(qp.devices.device_constructor)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""

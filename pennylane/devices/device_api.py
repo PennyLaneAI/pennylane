@@ -22,11 +22,11 @@ from dataclasses import replace
 from numbers import Number
 from typing import overload
 
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.core.shots import Shots
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.core.transforms import CompilePipeline, Transform
+from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
 from pennylane.ops import H, X, Y, Z
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms import (
     broadcast_expand,
     defer_measurements,
@@ -35,8 +35,7 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import CompilePipeline, Transform, TransformError
-from pennylane.typing import Result, ResultBatch, TensorLike
+from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 from .capabilities import (
@@ -286,7 +285,7 @@ class Device(abc.ABC):
                 the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A compile pileline that is called before execution, and a configuration
+            CompilePipeline, ExecutionConfig: A compile pipeline that is called before execution, and a configuration
                 with unset specifications filled in.
 
         Raises:
@@ -308,7 +307,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                from pennylane.tape import QuantumScriptBatch
+                from pennylane.core.qscript import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
                 @qp.transform
@@ -336,8 +335,8 @@ class Device(abc.ABC):
         if execution_config is None:
             execution_config = ExecutionConfig()
         execution_config = self.setup_execution_config(execution_config)
-        compile_pileline = self.preprocess_transforms(execution_config)
-        return compile_pileline, execution_config
+        compile_pipeline = self.preprocess_transforms(execution_config)
+        return compile_pipeline, execution_config
 
     def setup_execution_config(
         self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
@@ -388,15 +387,15 @@ class Device(abc.ABC):
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
     ) -> CompilePipeline:
-        """Returns the compile pileline to preprocess a circuit for execution.
+        """Returns the compile pipeline to preprocess a circuit for execution.
 
         Args:
             execution_config (ExecutionConfig): The execution configuration object
 
         Returns:
-            CompilePipeline: A compile pileline that is called before execution
+            CompilePipeline: A compile pipeline that is called before execution
 
-        The compile pileline is composed of a list of individual transforms, which may include:
+        The compile pipeline is composed of a list of individual transforms, which may include:
 
         * Decomposition of operations and measurements to what is supported by the device.
         * Splitting a circuit with measurements of non-commuting observables or Hamiltonians into multiple executions.
@@ -406,12 +405,12 @@ class Device(abc.ABC):
 
         **Example**
 
-        All transforms that are part of the preprocessing compile pileline need to respect the
+        All transforms that are part of the preprocessing compile pipeline need to respect the
         transform contract defined in :func:`pennylane.transform`.
 
         .. code-block:: python
 
-            from pennylane.tape import QuantumScriptBatch
+            from pennylane.core.qscript import QuantumScriptBatch
             from pennylane.typing import PostprocessingFn
 
             @qp.transform
@@ -423,7 +422,7 @@ class Device(abc.ABC):
 
                 return [tape], processing_fn
 
-        A compile pileline can hold an arbitrary number of individual transforms:
+        A compile pipeline can hold an arbitrary number of individual transforms:
 
         .. code-block:: python
 
@@ -439,7 +438,7 @@ class Device(abc.ABC):
         # TODO: this is obviously not pretty but it's a temporary solution to ensure backwards
         #       compatibility. Basically there are three scenarios:
         #       1. The device does not override anything, then this method returns the default
-        #          compile pileline, and preprocess calls this method, all good.
+        #          compile pipeline, and preprocess calls this method, all good.
         #       2. The device overrides preprocess, but not this method, then this method will
         #          return what is returned from the overridden preprocess method.
         #       3. The device overrides this method and not preprocess (recommended and what we
@@ -450,7 +449,7 @@ class Device(abc.ABC):
             return self.preprocess()[0]
 
         if not self.capabilities:
-            # The capabilities are required to construct a default compile pileline.
+            # The capabilities are required to construct a default compile pipeline.
             return CompilePipeline()
 
         if not execution_config:
@@ -633,11 +632,11 @@ class Device(abc.ABC):
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 
-        Default behaviour assumes first order device derivatives for all circuits exist if :meth:`~.compute_derivatives` is overriden.
+        Default behaviour assumes first order device derivatives for all circuits exist if :meth:`~.compute_derivatives` is overridden.
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentation for.
+            circuit (None, QuantumTape): A specific circuit to check differentiation for.
 
         Returns:
             Bool
@@ -685,7 +684,7 @@ class Device(abc.ABC):
 
         If the circuit is not natively supported by the differentiation method but can be converted into a form
         that is supported, it should still return ``True``.  For example, :class:`~.Rot` gates are not natively
-        supported by adjoint differentation, as they do not have a generator, but they can be compiled into
+        supported by adjoint differentiation, as they do not have a generator, but they can be compiled into
         operations supported by adjoint differentiation. Therefore this method may reproduce compilation
         and validation steps performed by :meth:`~.Device.preprocess`.
 
@@ -847,7 +846,7 @@ class Device(abc.ABC):
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentation for.
+            circuit (None, QuantumTape): A specific circuit to check differentiation for.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_jvp` is overridden.
 
@@ -929,36 +928,11 @@ class Device(abc.ABC):
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentation for.
+            circuit (None, QuantumTape): A specific circuit to check differentiation for.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_vjp` is overridden.
         """
         return type(self).compute_vjp != Device.compute_vjp
-
-    def eval_jaxpr(
-        self,
-        jaxpr: "jax.extend.core.Jaxpr",
-        consts: list[TensorLike],
-        *args,
-        execution_config: ExecutionConfig | None = None,
-        shots: Shots = Shots(None),
-    ) -> list[TensorLike]:
-        """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
-
-        Args:
-            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
-            consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
-            *args (TensorLike): the variables to use with the jaxpr.
-
-        Keyword Args:
-            execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
-            shots (Shots): the number of shots to use for the evaluation
-
-        Returns:
-            list[TensorLike]: the result of evaluating the jaxpr with the given parameters.
-
-        """
-        raise NotImplementedError
 
 
 def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
@@ -995,7 +969,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
             self,
             execution_config: ExecutionConfig | None = None,
         ):
-            """This function updates the original device compile pileline to be applied."""
+            """This function updates the original device compile pipeline to be applied."""
             program, config = self.original_device.preprocess(execution_config)
             program = self.transform(program, *self.targs, **self.tkwargs)
             return program, config
@@ -1027,7 +1001,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
             self,
             execution_config: ExecutionConfig | None = None,
         ):
-            """This function updates the original device compile pileline to be applied."""
+            """This function updates the original device compile pipeline to be applied."""
             program = self.original_device.preprocess_transforms(execution_config)
             program = self.transform(program, *self.targs, **self.tkwargs)
             return program

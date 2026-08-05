@@ -222,7 +222,7 @@ obtained of a given state:
 
 .. note::
 
-    The ``__copy__`` method needs to be overriden when new arguments are added into the ``__init__``
+    The ``__copy__`` method needs to be overridden when new arguments are added into the ``__init__``
     method.
 
 The measurement process in this example uses the :func:`~pennylane.counts` function, which is a

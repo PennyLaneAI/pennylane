@@ -14,20 +14,16 @@
 
 """Defines the base class for symbolic operators."""
 
-from typing_extensions import override
+from typing import override
 
 from pennylane.core.operator import Operator2
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 
 
 class SymbolicOp2(Operator2, is_baseclass=True):
     """Developer-facing base class for symbolic operators."""
 
     base: Operator2  # declares the existance of a `base` attribute for static type checking
-
-    wire_argnames = ()  # symbolic ops don't have wire args by default
-
-    hybrid_argnames = ("base",)
 
     @property
     @override

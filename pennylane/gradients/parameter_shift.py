@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import (
     GeneratorUndefinedError,
@@ -33,7 +34,6 @@ from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.ops import Prod, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

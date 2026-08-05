@@ -30,6 +30,7 @@ from functools import singledispatch
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -50,9 +51,8 @@ from pennylane.ops import (
     PauliMeasure,
 )
 from pennylane.pytrees import flatten
-from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
-from pennylane.templates.subroutines import SelectPauliRot, TemporaryAND
+from pennylane.templates.subroutines import QROM, SelectPauliRot, TemporaryAND
 
 
 def _add_cond_grouping_symbols(op, layer_str, config):
@@ -262,6 +262,25 @@ def _add_select_pauli_rot(
     ).replace("\n", "")
     for w in obj.hyperparameters["target_wire"]:
         layer_str[config.wire_map[w]] += target_label
+
+    return layer_str
+
+
+@_add_obj.register
+def _add_qrom(obj: QROM, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    """Updates ``layer_str`` with ``op`` operation of type ``QROM``."""
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+
+    for w in obj.control_wires:
+        layer_str[config.wire_map[w]] += "◑"
+
+    target_label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
+    for w in obj.target_wires:
+        layer_str[config.wire_map[w]] += target_label
+
+    for w in obj.work_wires:
+        layer_str[config.wire_map[w]] += "work"
 
     return layer_str
 

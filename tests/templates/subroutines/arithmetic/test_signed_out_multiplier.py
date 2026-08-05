@@ -94,14 +94,14 @@ def test_assert_valid(x_wires, y_wires, work_wires, output_wires, zeroed):
             [3, 7, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in y_wires should be included in output_wires.",
+            "None of the wires in output_wires should be included in y_wires.",
         ),
         (
             [0, 1, 7],
             [3, 4, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in x_wires should be included in output_wires.",
+            "None of the wires in output_wires should be included in x_wires.",
         ),
     ],
 )

@@ -17,10 +17,8 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 
 import functools
 import itertools
-import types
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
-from dataclasses import dataclass
 from importlib import import_module, util
 
 import numpy as np
@@ -130,6 +128,18 @@ class Wires(Sequence):
     @classmethod
     def _unflatten(cls, data, _metadata):
         """De-serialize flattened representation back into the Wires object."""
+        # This is needed to handle the case where `Wires` are flattened with scalar tracers, but
+        # unflattened after concretization, resulting in scalar tracers being replaced by scalar
+        # arrays, which are not valid wire labels.
+        if math.get_deep_interface(data) == "jax":
+            data = tuple(
+                (
+                    w.item()
+                    if isinstance(w, jax.Array) and not math.is_abstract(w) and w.ndim == 0
+                    else w
+                )
+                for w in data
+            )
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
@@ -169,6 +179,10 @@ class Wires(Sequence):
     def __repr__(self):
         """Method defining the string representation of this class."""
         return f"Wires({list(self._labels)})"
+
+    def __str__(self):
+        """Defines how a wires object is printed."""
+        return str(list(self._labels))
 
     def __eq__(self, other):
         """Method to support the '==' operator.
@@ -739,46 +753,10 @@ class Wires(Sequence):
         """Right-hand version of __xor__."""
         return Wires(set(_process(other)) ^ set(self.labels))
 
-    def __class_getitem__(cls, item) -> "AbstractWires":
-        if not isinstance(item, int) and item != ...:
-            raise TypeError(
-                f"AbstractWires can only be subscripted with integers and Ellipsis. Got {item}."
-            )
-        return AbstractWires(item)
-
-
-@dataclass(frozen=True)
-class AbstractWires:
-    """An abstract representation of a sequence of wires that contains the number
-    of wires, useful for resource calculations.
-
-    Args:
-        num_wires (int): The number of wires
-    """
-
-    num_wires: int | types.EllipsisType
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, AbstractWires):
-            return self.num_wires == other.num_wires
-
-        raise TypeError("Tried to check equality against an abstract wire register.")
-
-    @property
-    def shape(self) -> tuple[int]:
-        """The number of wires expressed as shape ``(num_wires, )``."""
-        return (self.num_wires,)
-
-    @property
-    def dtype(self):
-        """np.int64.  The dtype of wires when used with Catalyst."""
-        return np.int64
-
-    def __hash__(self):
-        return hash(("AbstractWires", self.num_wires))
-
-    def __len__(self) -> int:
-        return self.num_wires
+    def __class_getitem__(cls, item):
+        raise TypeError(
+            f"'{cls.__name__}[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?"
+        )
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable

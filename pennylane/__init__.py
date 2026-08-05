@@ -21,7 +21,8 @@ import warnings
 from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
-from pennylane.queuing import QueuingManager, apply
+from pennylane import queuing
+from pennylane.core.queuing import QueuingManager, apply
 
 from pennylane import compiler
 from pennylane.compiler import qjit
@@ -79,7 +80,6 @@ from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.configuration import Configuration, default_config
 from pennylane.registers import registers
 from pennylane.measurements import (
     counts,

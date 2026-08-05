@@ -60,7 +60,7 @@ class TestMutualInfoUnitTests:
         assert repr(m1) == "MutualInfo(wires0=[0], wires1=[1], log_base=None)"
 
     def test_hash(self):
-        """Test the hash property includes the log_base property and the separation of the wires into two subsytems."""
+        """Test the hash property includes the log_base property and the separation of the wires into two subsystems."""
         m1 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=2)
         m2 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=10)
         assert hash(m1) != hash(m2)

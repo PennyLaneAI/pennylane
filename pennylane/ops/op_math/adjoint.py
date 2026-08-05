@@ -25,9 +25,10 @@ from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.queuing import QueuingManager
 
 from .adjoint2 import Adjoint2
 from .symbolicop import SymbolicOp
@@ -279,6 +280,8 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
+            if isinstance(op, Operator2):
+                _ = pop_op_eqns((op,))
             QueuingManager.remove(op)
             QueuingManager.append(adj)
         return adj
@@ -357,6 +360,12 @@ class Adjoint(SymbolicOp):
             return object.__new__(AdjointOperation)
 
         return object.__new__(Adjoint)
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Adjoint2:
+            return True
+        return NotImplemented
 
     def __init__(self, base=None):
         self._name = f"Adjoint({base.name})"
@@ -454,6 +463,12 @@ class AdjointOperation(Adjoint, Operation):
     def __new__(cls, *_, **__):
         return object.__new__(cls)
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Adjoint2:
+            return True
+        return NotImplemented
+
     @property
     def name(self):
         return self._name
@@ -494,7 +509,11 @@ class AdjointOperation(Adjoint, Operation):
 
 
 def _make_adjoint_op(op: Operator) -> Adjoint | Adjoint2:
-    return Adjoint2(op) if isinstance(op, Operator2) else Adjoint(op)
+    if isinstance(op, Operator2):
+        _ = pop_op_eqns((op,))
+        return Adjoint2(op)
+
+    return Adjoint(op)
 
 
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access

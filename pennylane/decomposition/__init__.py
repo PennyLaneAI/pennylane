@@ -185,7 +185,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qp.IsingXX(0.5, wires=[0, 1])
         return qp.state()
 
->>> qp.specs(circuit)()["resources"].gate_types
+>>> qp.specs(circuit)()["resources"].quantum_operations
 {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
 
 To register alternative decomposition rules under an operator to be used globally, use

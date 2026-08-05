@@ -131,7 +131,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     .. code-block:: python
 
         from pennylane.devices.qubit_mixed import measure_final_state
-        from pennylane.tape import QuantumScript
+        from pennylane.core.qscript import QuantumScript
 
         # Define a circuit with a PauliZ measurement
         circuit = QuantumScript(
@@ -237,7 +237,7 @@ def simulate(
     .. code-block:: python
 
         from pennylane.devices.qubit_mixed import simulate
-        from pennylane.tape import QuantumScript
+        from pennylane.core.qscript import QuantumScript
 
         # Define a quantum script
         circuit = QuantumScript(

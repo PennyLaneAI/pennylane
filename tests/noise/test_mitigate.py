@@ -21,6 +21,7 @@ from packaging import version
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.qscript import QuantumScript
 from pennylane.noise.insert_ops import insert
 from pennylane.noise.mitigate import (
     _polyfit,
@@ -29,7 +30,6 @@ from pennylane.noise.mitigate import (
     mitigate_with_zne,
     richardson_extrapolate,
 )
-from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, decompose
 
 with qp.queuing.AnnotatedQueue() as q_tape:

@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.tape import QuantumScript
+from pennylane.core.qscript import QuantumScript
 
 
 def build_op():

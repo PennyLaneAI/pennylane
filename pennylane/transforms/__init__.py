@@ -358,7 +358,7 @@ first and only result.
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @qp.transform
@@ -392,7 +392,7 @@ the form of a decorator in order to turn the custom function into a quantum tran
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @qp.transform
@@ -418,12 +418,12 @@ for a comprehensive overview of transforms and core functionalities, consult the
 """
 
 # Leave as alias for backwards-compatibility
-from pennylane.tape import make_qscript as make_tape
+from pennylane.core.qscript import make_qscript as make_tape
+from pennylane.core.transforms import CompilePipeline, transform, Transform
 from pennylane.exceptions import TransformError
 from pennylane._entry_points_utils import _setup_entry_points
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform, CompilePipeline
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial

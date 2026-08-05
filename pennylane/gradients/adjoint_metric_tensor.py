@@ -21,13 +21,13 @@ from itertools import chain
 import numpy as np
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.devices.qubit import apply_operation, create_initial_state
 from pennylane.exceptions import TermsUndefinedError
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.ops import StatePrep, adjoint
 from pennylane.ops.functions import generator, map_wires
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

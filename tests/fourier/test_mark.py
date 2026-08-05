@@ -15,8 +15,18 @@
 Tests for the 'mark' functionality.
 """
 
+import pytest
+
 import pennylane as qp
+from pennylane.core import Operator
+from pennylane.decomposition.resources import resource_rep
 from pennylane.fourier.mark import MarkedOp, mark
+from pennylane.typing import Float, Wire
+from tests.core.operator.operator2_utils import DynOp
+
+
+class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+    pass
 
 
 class TestMarkedOp:
@@ -56,6 +66,31 @@ class TestMarkedOp:
         op = MarkedOp(qp.X(0), marker="my-x")
         assert hasattr(op, "marker")
         assert op.marker == "my-x"
+
+    def test_resource_params(self):
+        """Tests the resource params of a label op."""
+
+        op = MarkedOp(CustomOp(0), marker="custom")
+        assert op.resource_params == {"base": resource_rep(CustomOp)}
+
+        op2 = MarkedOp(DynOp(0.5, wires=[0, 1]), marker="custom2")
+        assert op2.resource_params == {"base": DynOp(Float, Wire[2])}
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+@pytest.mark.parametrize("op", [CustomOp(0), DynOp(0.5, wires=[0])])
+def test_decomposition(op):
+    """Tests that the decomposition of label op works."""
+
+    @qp.decompose(gate_set={type(op)})
+    @qp.qnode(qp.device("default.qubit"))
+    def circuit():
+        qp.fourier.mark(op, "foo")
+        return qp.probs()
+
+    tape = qp.workflow.construct_tape(circuit, level="user")()
+    assert tape.operations == [op]
 
 
 def test_mark():

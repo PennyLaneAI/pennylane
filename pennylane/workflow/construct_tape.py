@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 from .construct_batch import construct_batch
 
 if TYPE_CHECKING:
-    from pennylane.tape import QuantumScript
+    from pennylane.core.qscript import QuantumScript
 
     from .qnode import QNode
 

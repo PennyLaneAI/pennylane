@@ -15,6 +15,7 @@
 Unit tests for :mod:`pennylane.wires`.
 """
 
+import re
 from importlib import import_module, util
 
 import numpy as np
@@ -22,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
-from pennylane.wires import AbstractWires, Wires
+from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -54,10 +55,7 @@ class TestWires:
             [qp.RX, qp.RY],
             [qp.PauliX],
             (None, qp.expval),
-            (
-                qp.device("default.qubit", wires=range(3)),
-                qp.device("default.gaussian", wires=[qp.RX, 3]),
-            ),
+            (qp.device("default.qubit", wires=range(3)),),
         ],
     )
     def test_creation_from_iterables_of_exotic_elements(self, iterable):
@@ -200,7 +198,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
         wires_repr = repr(Wires([1, 2, 3]))
-        assert wires_str == "Wires([1, 2, 3])"
+        assert wires_str == "[1, 2, 3]"
         assert wires_repr == "Wires([1, 2, 3])"
 
     def test_array_representation(self):
@@ -404,6 +402,34 @@ class TestWires:
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
 
+    @pytest.mark.jax
+    def test_wires_pytree_with_array_leaves(self):
+        """Test that unflattening wire pytrees with leaves containing scalar arrays
+        is possible and correct."""
+        import jax.numpy as jnp
+        from jax.tree import flatten, unflatten
+
+        wires = Wires([0, 1, 2, 3])
+        leaves, tree = flatten(wires)
+        inner_arr_leaves = [jnp.array(l, dtype=int) for l in leaves]
+        unflattened_wires = unflatten(tree, inner_arr_leaves)
+
+        assert wires == unflattened_wires
+
+    def test_class_index(self):
+        """Test that indexing the class raises."""
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[3]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[3]
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[Ellipsis]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[...]
+
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
         [
@@ -591,56 +617,3 @@ class TestWiresJax:
         wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
-
-
-class TestAbstractWires:
-    """Test for the AbstractWires class."""
-
-    def test_basic(self):
-        """Basic tests for the AbstractWires class."""
-
-        a = AbstractWires(3)
-        assert a.num_wires == 3
-        assert len(a) == 3
-
-    def test_comparison(self):
-        """Test for equality and comparison."""
-        a = AbstractWires(3)
-        assert a == AbstractWires(3)
-        assert a != AbstractWires(4)
-        assert hash(a) == hash(AbstractWires(3))
-        assert hash(a) != hash(AbstractWires(4))
-
-        with pytest.raises(
-            TypeError, match="Tried to check equality against an abstract wire register."
-        ):
-            _ = a == 2
-
-    def test_ellipsis(self):
-        """Test that number of wires can be specified by an ellipsis."""
-
-        a = AbstractWires(...)
-        assert a.num_wires == ...
-
-    def test_wires_getitem(self):
-        """Test that AbstractWires can created by indexing into Wires."""
-
-        a = qp.wires.Wires[4]
-        assert isinstance(a, AbstractWires)
-        assert a.num_wires == 4
-
-        b = qp.wires.Wires[...]
-        assert isinstance(b, AbstractWires)
-        assert b.num_wires == ...
-
-        with pytest.raises(
-            TypeError, match="AbstractWires can only be subscripted with integers and Ellipsis."
-        ):
-            _ = qp.wires.Wires[2, 3, 4]
-
-    def test_shape_and_dtype(self):
-        """Test that AbstractWires have a shape and dtype."""
-
-        a = qp.wires.AbstractWires(3)
-        assert a.shape == (3,)
-        assert a.dtype == np.int64

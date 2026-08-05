@@ -16,10 +16,10 @@ Contains the PrepSelPrep template.
 """
 
 # pylint: disable=arguments-differ
-import copy
-
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane import ops as qp_ops
+from pennylane.core.operator import Operation, abstractify
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -29,7 +29,6 @@ from pennylane.decomposition import (
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
-from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires, WiresLike
 
@@ -90,7 +89,7 @@ class PrepSelPrep(Operation):
     @property
     def resource_params(self):
         ops = self.lcu.terms()[1]
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        op_reps = tuple(abstractify(op) for op in ops)
         return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None
@@ -161,28 +160,13 @@ class PrepSelPrep(Operation):
 
     def __copy__(self):
         """Copy this op"""
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-
-        new_data = copy.copy(self.data)
-
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
-
-        copied_op.data = new_data
-
-        return copied_op
+        with QueuingManager.stop_recording():
+            return qp_ops.functions.bind_new_parameters(self, self.data)
 
     @property
     def data(self):
         """Create data property"""
         return self.lcu.data
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        self.hyperparameters["lcu"].data = new_data
 
     @property
     def lcu(self):
@@ -223,7 +207,7 @@ class PrepSelPrep(Operation):
 
 def _prepselprep_resources(op_reps, num_control):
     prod_reps = tuple(
-        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
+        resource_rep(Prod, resources={abstractify(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     return {
         change_op_basis_resource_rep(

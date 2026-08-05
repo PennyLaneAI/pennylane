@@ -19,8 +19,8 @@ from collections.abc import Callable
 from functools import partial
 
 from pennylane import ops, transforms
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.measurements import ExpectationMP
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires

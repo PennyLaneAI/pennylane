@@ -18,10 +18,10 @@ import warnings
 import numpy as np
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.ops import LinearCombination, PauliRot
 from pennylane.ops.functions import evolve
 from pennylane.pauli import pauli_group, pauli_word_to_string
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.templates import ApproxTimeEvolution
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

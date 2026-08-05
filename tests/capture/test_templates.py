@@ -236,6 +236,11 @@ unmodified_templates_cases = [
         (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
         {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
     ),
+    (
+        qp.PartialUnaryStatePreparation,
+        (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
+        {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17), "work_wires": [5, 6]},
+    ),
 ]
 
 
@@ -1786,12 +1791,8 @@ _, all_templates = zip(*inspect.getmembers(qp.templates, filter_fn))
 
 unmodified_templates = [template for template, *_ in unmodified_templates_cases]
 unsupported_templates = [
-    qp.CVNeuralNetLayers,
-    qp.DisplacementEmbedding,
-    qp.Interferometer,
     qp.PrepSelPrep,
     qp.QutritBasisStatePreparation,
-    qp.SqueezingEmbedding,
     qp.TrotterizedQfunc,  # TODO: add support in follow up PR
     qp.templates.SubroutineOp,
     qp.templates.Subroutine,

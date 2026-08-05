@@ -24,7 +24,7 @@ arXiv:1212.0506, arXiv, 2013. doi:10.48550/arXiv.1212.0506.
 """
 
 import pennylane as qp
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

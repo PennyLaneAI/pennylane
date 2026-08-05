@@ -16,11 +16,11 @@
 from functools import partial
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import gate_sets
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -159,13 +159,13 @@ def merge_rotations(
         Shots: Shots(total=None)
         Level: merge-rotations
         <BLANKLINE>
-        Wire allocations: 1
-        Total gates: 1
-        Gate counts:
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 1
+          - RX: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Wire allocations: 1
+        Circuit Depth: Not computed
 
         Additionally, the ``merge_rotations`` transform supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.

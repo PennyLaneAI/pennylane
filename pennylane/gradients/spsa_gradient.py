@@ -21,8 +21,8 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

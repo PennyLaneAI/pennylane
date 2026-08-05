@@ -324,10 +324,9 @@ class TestBroadcasting:
         assert len(res) == 2
         assert np.allclose(res, expected, atol=0.05)
 
-    def test_broadcasting_with_extra_measurement_wires(self, mocker, subspace):
+    def test_broadcasting_with_extra_measurement_wires(self, subspace):
         """Test that broadcasting works when the operations don't act on all wires."""
         # I can't mock anything in `simulate` because the module name is the function name
-        spy = mocker.spy(qp, "map_wires")
         x = np.array([0.8, 1.0, 1.2, 1.4])
         qs = self.get_quantum_script(x, subspace, extra_wire=True)
         res = simulate(qs)
@@ -336,7 +335,6 @@ class TestBroadcasting:
         assert len(res) == 3
         assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1:], self.get_expectation_values(x, subspace))
-        assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
 
 
 @pytest.mark.parametrize("extra_wires", [1, 3])

@@ -22,16 +22,34 @@ from itertools import product
 from pennylane import ops
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ExpectationMP, SampleMP, expval, sample
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
-from pennylane.queuing import QueuingManager, WrappedObj
-from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 from .ops import MeasureNode, PrepareNode
+
+
+class _WrappedObj:
+    """Wraps an object to make its hash dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        if not isinstance(other, _WrappedObj):
+            return False
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return f"_Wrapped({self.obj.__repr__()})"
 
 
 def tape_to_graph(tape: QuantumScript):
@@ -215,7 +233,7 @@ def _add_operator_node(graph, op: Operator, order: int, wire_latest_node: dict):
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
-    node = WrappedObj(op)
+    node = _WrappedObj(op)
     graph.add_node(node, order=order)
     for wire in op.wires:
         if wire_latest_node[wire] is not None:

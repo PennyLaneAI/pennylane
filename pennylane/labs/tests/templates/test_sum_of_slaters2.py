@@ -72,17 +72,6 @@ class TestSumOfSlatersPrep2:
         op = SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
-    def test_old_decomposition_system_disabled(self):
-        """We are using ``qp.allocate`` in the decomposition, so the validation for
-        decomposition in the old system breaks. Hence we manually deactivated the fallback
-        of compute_decomposition to the new decomp system."""
-        num_wires = 5
-        coefficients, indices = self.make_random_data(num_wires, 13, seed=141)
-        all_wires = make_registers(indices, num_wires)
-        op = SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
-        # In this case, assert_valid actually asserts that compute_decomposition raises an error.
-        assert op.has_decomposition is False
-
     @pytest.mark.parametrize("use_qjit", [False, True])
     @pytest.mark.parametrize(
         "num_wires,num_entries",

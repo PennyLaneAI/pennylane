@@ -20,6 +20,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
 
 
 @pytest.mark.jax
@@ -191,16 +192,14 @@ class TestAdder:
             qp.Adder(k, x_wires, mod, work_wires)
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that decomposition works as expected."""
 
         k = 2
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [3, 4]
         adder_decomposition = (
-            qp.Adder(k, x_wires, mod, work_wires)
-            .compute_decomposition(k, x_wires, mod, work_wires)[0]
-            .decomposition()
+            qp.Adder(k, x_wires, mod, work_wires).decomposition()[0].decomposition()
         )
 
         op_list = []
@@ -244,7 +243,7 @@ class TestAdder:
 
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
-        """Tests the decomposition rule implemented with the new system."""
+        """Tests the decomposition rules implemented with the new system."""
 
         k = 4
         x_wires = [2, 3, 4]
@@ -252,6 +251,27 @@ class TestAdder:
         op = qp.Adder(k, x_wires, mod, work_wires)
         for rule in qp.list_decomps(qp.Adder):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        ("k", "x_wires", "mod", "work_wires"),
+        [
+            (4, [2, 3, 4], 8, []),
+            (4, [2, 3, 4], 7, [0, 1]),
+            (6, [0, 1, 2, 3], 11, [4, 5]),
+            (-3, [0, 1, 2], 5, [3, 4]),
+        ],
+    )
+    def test_arithmetic_matches_qft(self, k, x_wires, mod, work_wires):
+        """The arithmetic decomposition rule produces the same unitary as the QFT-based rule."""
+        op = qp.Adder(k, x_wires, mod, work_wires)
+        all_wires = x_wires + work_wires
+        mat_op = qp.matrix(op, wire_order=all_wires)
+
+        mat_arith = qp.matrix(_adder_arithmetic_decomposition, wire_order=all_wires)(
+            *op.data, wires=op.wires, **op.hyperparameters
+        )
+
+        assert qp.math.allclose(mat_op, mat_arith)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

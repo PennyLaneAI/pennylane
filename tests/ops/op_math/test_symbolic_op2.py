@@ -45,9 +45,13 @@ class RX2(Operator2):
 class CustomSymbolicOp(SymbolicOp2):  # pylint: disable=too-few-public-methods
     """A custom symbolic operator class."""
 
+    hybrid_argnames = ("base",)
+
     dynamic_argnames = ("val",)
 
-    compilable_argnames = ("toggle",)
+    wire_argnames = ()
+
+    static_argnames = ("toggle",)
 
     def __init__(self, val, base, toggle: bool = True):  # pylint: disable=useless-parent-delegation
         super().__init__(val, base, toggle)
@@ -69,7 +73,7 @@ def test_initialization():
     assert not op.has_sparse_matrix
     assert op.arguments == {"val": 0.6, "base": base_op, "toggle": True}
     assert op.dynamic_args == {"val": 0.6}
-    assert op.compilable_args == {"toggle": True}
+    assert op.static_args == {"toggle": True}
     assert op.hybrid_args == {"base": base_op}
     assert op.wire_args == {}
 

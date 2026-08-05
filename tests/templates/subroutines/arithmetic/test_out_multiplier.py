@@ -227,7 +227,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in y_wires should be included in output_wires.",
+                "None of the wires in output_wires should be included in y_wires.",
             ),
             (
                 [0, 1, 7],
@@ -235,7 +235,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in x_wires should be included in output_wires.",
+                "None of the wires in output_wires should be included in x_wires.",
             ),
             (
                 [0, 1, 2],
@@ -377,6 +377,9 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8], 4, [9], [0]),
             ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
             ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+            ([0], [3, 6, 4], [5, 8], 4, [9], [0]),
+            ([0], [3, 6, 4], [5, 8], 4, [9, 10], [0, 1]),
+            ([0], [3, 6, 4], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
@@ -412,7 +415,7 @@ class TestOutMultiplier:
         wires = qp.OutMultiplier(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     def test_qjit_compatible(self):
         """Test that the template is compatible with the QJIT compiler."""
         x, y = 2, 3

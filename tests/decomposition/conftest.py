@@ -17,32 +17,31 @@
 # pylint: disable=too-few-public-methods,protected-access
 
 from collections import defaultdict
+from contextvars import ContextVar
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import Resources
-from pennylane.decomposition.decomposition_rule import auto_wrap
+from pennylane.decomposition.decomposition_rule import DecompCollection
 from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
     pow_involutory,
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
-    qjit_compatible_self_adjoint,
+    pow_rotation,
+    self_adjoint_legacy,
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
 
-decompositions = defaultdict(list)
+_decompositions = defaultdict(DecompCollection)
+decompositions = ContextVar("_test_decompositions", default=_decompositions)
 
 
-def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
+def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources(
-        {auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
-        (
-            sum(count for gate, count in gate_count.items())
-            if weighted_cost is None
-            else weighted_cost
-        ),
-    )
+    if weighted_cost is None:
+        weighted_cost = sum(count for count in gate_count.values())
+    gate_count = {abstractify(op): count for op, count in gate_count.items() if count >= 0}
+    return Resources(gate_count, weighted_cost=weighted_cost)
 
 
 @qp.register_resources({qp.Hadamard: 2, qp.CNOT: 1})
@@ -50,7 +49,7 @@ def _cz_to_cnot(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CZ"] = [_cz_to_cnot]
+decompositions.get()["CZ"].append(_cz_to_cnot)
 
 
 @qp.register_resources({qp.Hadamard: 2, qp.CZ: 1})
@@ -58,7 +57,7 @@ def _cnot_to_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CNOT"] = [_cnot_to_cz]
+decompositions.get()["CNOT"].append(_cnot_to_cz)
 
 
 def _multi_rz_decomposition_resources(num_wires):
@@ -70,7 +69,7 @@ def _multi_rz_decomposition(*_, **__):
     raise NotImplementedError
 
 
-decompositions["MultiRZ"] = [_multi_rz_decomposition]
+decompositions.get()["MultiRZ"].append(_multi_rz_decomposition)
 
 
 @qp.register_resources({qp.RZ: 2, qp.RX: 1, qp.GlobalPhase: 1})
@@ -83,7 +82,8 @@ def _hadamard_to_rz_ry(*_, **__):
     raise NotImplementedError
 
 
-decompositions["Hadamard"] = [_hadamard_to_rz_rx, _hadamard_to_rz_ry]
+decompositions.get()["Hadamard"].append(_hadamard_to_rz_rx)
+decompositions.get()["Hadamard"].append(_hadamard_to_rz_ry)
 
 
 @qp.register_resources({qp.RX: 1, qp.RZ: 2})
@@ -91,7 +91,7 @@ def _ry_to_rx_rz(*_, **__):
     raise NotImplementedError
 
 
-decompositions["RY"] = [_ry_to_rx_rz]
+decompositions.get()["RY"].append(_ry_to_rx_rz)
 
 
 @qp.register_resources({qp.RX: 2, qp.CZ: 2})
@@ -104,7 +104,8 @@ def _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CRX"] = [_crx_to_rx_cz, _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz]
+decompositions.get()["CRX"].append(_crx_to_rx_cz)
+decompositions.get()["CRX"].append(_crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz)
 
 
 @qp.register_resources({qp.RZ: 3, qp.CNOT: 2, qp.GlobalPhase: 1})
@@ -112,7 +113,7 @@ def _cphase_to_rz_cnot(*_, **__):
     raise NotImplementedError
 
 
-decompositions["ControlledPhaseShift"] = [_cphase_to_rz_cnot]
+decompositions.get()["ControlledPhaseShift"].append(_cphase_to_rz_cnot)
 
 
 @qp.register_resources({qp.RZ: 1, qp.GlobalPhase: 1})
@@ -120,7 +121,7 @@ def _phase_shift_to_rz_gp(*_, **__):
     raise NotImplementedError
 
 
-decompositions["PhaseShift"] = [_phase_shift_to_rz_gp]
+decompositions.get()["PhaseShift"].append(_phase_shift_to_rz_gp)
 
 
 @qp.register_resources({qp.RX: 1, qp.GlobalPhase: 1})
@@ -128,7 +129,7 @@ def _x_to_rx(*_, **__):
     raise NotImplementedError
 
 
-decompositions["PauliX"] = [_x_to_rx]
+decompositions.get()["PauliX"].append(_x_to_rx)
 
 
 @qp.register_resources({qp.PhaseShift: 1})
@@ -136,7 +137,7 @@ def _u1_ps(phi, wires, **__):
     qp.PhaseShift(phi, wires=wires)
 
 
-decompositions["U1"] = [_u1_ps]
+decompositions.get()["U1"].append(_u1_ps)
 
 
 @qp.register_resources({qp.PhaseShift: 1})
@@ -144,7 +145,7 @@ def _t_ps(wires, **__):
     raise NotImplementedError
 
 
-decompositions["T"] = [_t_ps]
+decompositions.get()["T"].append(_t_ps)
 
 
 @qp.register_resources({qp.RZ: 3, qp.RY: 2, qp.CNOT: 2})
@@ -152,19 +153,19 @@ def _crot(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CRot"] = [_crot]
+decompositions.get()["CRot"].append(_crot)
 
 ################################################
 # Custom Decompositions For Symbolic Operators #
 ################################################
 
-decompositions["C(PauliX)"] = [_controlled_x_decomp]
-decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
-decompositions["C(Hadamard)"] = [_controlled_hadamard]
-decompositions["Adjoint(Hadamard)"] = [qjit_compatible_self_adjoint]
-decompositions["Pow(Hadamard)"] = [pow_involutory]
-decompositions["Adjoint(RX)"] = [qjit_compatible_adjoint_rotation]
-decompositions["Pow(RX)"] = [qjit_compatible_pow_rotation]
-decompositions["Adjoint(CNOT)"] = [qjit_compatible_self_adjoint]
-decompositions["Adjoint(PhaseShift)"] = [qjit_compatible_adjoint_rotation]
-decompositions["Adjoint(ControlledPhaseShift)"] = [qjit_compatible_adjoint_rotation]
+decompositions.get()["C(PauliX)"].append(_controlled_x_decomp)
+decompositions.get()["C(GlobalPhase)"].append(_controlled_g_phase_decomp)
+decompositions.get()["C(Hadamard)"].append(_controlled_hadamard)
+decompositions.get()["Adjoint(Hadamard)"].append(self_adjoint_legacy)
+decompositions.get()["Pow(Hadamard)"].append(pow_involutory)
+decompositions.get()["Adjoint(RX)"].append(adjoint_rotation)
+decompositions.get()["Pow(RX)"].append(pow_rotation)
+decompositions.get()["Adjoint(CNOT)"].append(self_adjoint_legacy)
+decompositions.get()["Adjoint(PhaseShift)"].append(adjoint_rotation)
+decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint_rotation)

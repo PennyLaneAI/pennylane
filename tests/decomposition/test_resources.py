@@ -17,6 +17,7 @@
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
@@ -26,6 +27,9 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 @pytest.mark.unit
@@ -99,10 +103,8 @@ class TestResources:
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
-        resources = Resources(
-            {CompressedResourceOp(qp.RX, {}): 2, CompressedResourceOp(qp.RZ, {}): 1}, 5.0
-        )
-        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, weighted_cost=5.0>"
+        resources = Resources({CompressedResourceOp(qp.RX, {}): 2, qp.S(Wire[1]): 1}, 5.0)
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, S: 1}, weighted_cost=5.0>"
 
 
 class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -262,9 +264,9 @@ class TestCompressedResourceOp:
     @pytest.mark.parametrize(
         "op, expected_name",
         [
-            (resource_rep(qp.RX), "RX"),
-            (adjoint_resource_rep(qp.RX, {}), "Adjoint(RX)"),
-            (controlled_resource_rep(qp.T, {}, 1, 0, 0), "C(T)"),
+            (abstractify(qp.RX), "RX"),
+            (_adjoint_abstract(qp.RX), "Adjoint(RX)"),
+            (_ctrl_abstract(qp.T, Wire[1]), "C(T)"),
             (pow_resource_rep(qp.RX, {}, 2), "Pow(RX)"),
         ],
     )

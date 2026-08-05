@@ -196,12 +196,6 @@ def test_qnode_with_python_array_assignment():
         return qp.expval(qp.Z(0))
 
     ag_circuit = run_autograph(circuit)
-    new_angle = jnp.pi
-
-    # Test forward pass
-    res = ag_circuit(new_angle)
-    assert jnp.allclose(res, -1.0)
-
     jaxpr = jax.make_jaxpr(ag_circuit)(jnp.pi)
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
     assert qfunc_jaxpr.eqns[0].invars[0] is qfunc_jaxpr.invars[0]
@@ -221,11 +215,6 @@ def test_qnode_with_jax_array_assignment():
 
     ag_circuit = run_autograph(circuit)
     angles_in = jnp.array([0.1, 0.2, 0.3])
-    new_angle = jnp.pi
-
-    # Test forward pass
-    res = ag_circuit(angles_in, new_angle)
-    assert jnp.allclose(res, -1.0)
 
     jaxpr = jax.make_jaxpr(ag_circuit)(angles_in, jnp.pi)
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]

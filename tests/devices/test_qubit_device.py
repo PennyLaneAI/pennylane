@@ -25,6 +25,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScript
 from pennylane.devices import QubitDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
@@ -35,7 +36,6 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.resource import SpecsResources
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
@@ -1492,24 +1492,21 @@ class TestResourcesTracker:
     expected_resources = (
         SpecsResources(
             num_allocs=2,
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={},
-            depth=2,
+            counts={"Hadamard": 1, "CNOT": 1},
+            measurement_processes={},
+            circuit_depth=2,
         ),
         SpecsResources(
             num_allocs=3,
-            gate_types={"PauliZ": 1, "CNOT": 1, "RX": 1},
-            gate_sizes={1: 2, 2: 1},
-            measurements={},
-            depth=2,
+            counts={"PauliZ": 1, "CNOT": 1, "RX": 1},
+            measurement_processes={},
+            circuit_depth=2,
         ),
         SpecsResources(
             num_allocs=2,
-            gate_types={"Hadamard": 3, "RX": 2, "CNOT": 1},
-            gate_sizes={1: 5, 2: 1},
-            measurements={},
-            depth=4,
+            counts={"Hadamard": 3, "RX": 2, "CNOT": 1},
+            measurement_processes={},
+            circuit_depth=4,
         ),
     )
 
@@ -1539,17 +1536,15 @@ class TestResourcesTracker:
 
         exp_res1 = SpecsResources(
             num_allocs=2,
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
-            measurements={},
-            depth=2,
+            counts={"Hadamard": 1, "CNOT": 1},
+            measurement_processes={},
+            circuit_depth=2,
         )
         exp_res2 = SpecsResources(
             num_allocs=3,
-            gate_types={"PauliZ": 1, "CNOT": 1, "RX": 1},
-            gate_sizes={1: 2, 2: 1},
-            measurements={},
-            depth=2,
+            counts={"PauliZ": 1, "CNOT": 1, "RX": 1},
+            measurement_processes={},
+            circuit_depth=2,
         )
 
         dev = DefaultQubitLegacy(shots=10, wires=[0, 1, 2])
@@ -1578,10 +1573,9 @@ class TestResourcesTracker:
         x = pnp.array(0.1, requires_grad=True)
         expected_resources = SpecsResources(
             num_allocs=1,
-            gate_types={"RX": 1},
-            gate_sizes={1: 1},
-            measurements={"expval(PauliZ)": 1},
-            depth=1,
+            counts={"RX": 1},
+            measurement_processes={"expval(PauliZ)": 1},
+            circuit_depth=1,
         )
 
         with qp.Tracker(dev) as tracker:

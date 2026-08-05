@@ -763,7 +763,6 @@ class TestInterfaces:
         assert np.allclose(matrix, expected_matrix)
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_catalyst(self):
         """Test with Catalyst interface"""
 

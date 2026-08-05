@@ -18,7 +18,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec
 
-from pennylane.transforms.core import CompilePipeline
+from pennylane.core.transforms import CompilePipeline
 from pennylane.workflow import construct_execution_config
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 

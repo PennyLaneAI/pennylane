@@ -16,7 +16,7 @@ Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
 
 import pennylane as qp
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires

@@ -41,8 +41,8 @@ from pennylane import (
     measure,
     probs,
     qnode,
-    queuing,
 )
+from pennylane.core import queuing
 from pennylane.ops import (
     Adjoint,
     Controlled,

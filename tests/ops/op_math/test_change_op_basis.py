@@ -25,12 +25,13 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
+from pennylane.core.operator import abstractify
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _validate_callable
-from pennylane.queuing import AnnotatedQueue
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
 
@@ -388,9 +389,9 @@ class TestDecomposition:
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
         assert change_op_basis_op.resource_params == {
-            "compute_op": resource_rep(qp.X),
-            "target_op": resource_rep(qp.Y),
-            "uncompute_op": resource_rep(qp.X),
+            "compute_op": abstractify(qp.X),
+            "target_op": abstractify(qp.Y),
+            "uncompute_op": abstractify(qp.X),
         }
 
     def test_registered_decomp(self):
@@ -400,12 +401,12 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
 
         resource_obj = default_decomp.compute_resources(
-            compute_op=resource_rep(qp.X),
+            compute_op=abstractify(qp.X),
             target_op=resource_rep(qp.MultiRZ, num_wires=2),
-            uncompute_op=resource_rep(qp.X),
+            uncompute_op=abstractify(qp.X),
         )
 
         assert resource_obj.num_gates == 3

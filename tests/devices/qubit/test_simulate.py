@@ -418,10 +418,9 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.cos(x), atol=0.05)
         assert np.allclose(res[1], -np.cos(x), atol=0.05)
 
-    def test_broadcasting_with_extra_measurement_wires(self, mocker):
+    def test_broadcasting_with_extra_measurement_wires(self):
         """Test that broadcasting works when the operations don't act on all wires."""
         # I can't mock anything in `simulate` because the module name is the function name
-        spy = mocker.spy(qp, "map_wires")
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
         ops = [qp.PauliX(wires=2), qp.RY(x, wires=1), qp.CNOT(wires=[1, 2])]
@@ -435,8 +434,6 @@ class TestBroadcasting:
         assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
-        qp.assert_equal(spy.call_args_list[0].args[0], qs)
-        assert spy.call_args_list[0].args[1] == {2: 0, 1: 1, 0: 2}
 
 
 class TestPostselection:

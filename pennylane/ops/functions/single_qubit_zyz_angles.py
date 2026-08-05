@@ -78,7 +78,7 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
             "qp.single_qubit_zyz_angles is not applicable to operators on more than one wire."
         )
 
-    return zyz_rotation_angles(op.matrix(), return_global_phase=True)
+    return zyz_rotation_angles(op.matrix())
 
 
 @single_qubit_zyz_angles.register

@@ -403,20 +403,17 @@ def expand_vector(vector, original_wires, expanded_wires):
     return math.reshape(expanded_tensor, (qudit_order**M,))
 
 
-def convert_to_su2(U, return_global_phase=False):
+def convert_to_su2(U) -> tuple:
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
 
     Args:
         U (array[complex]): A matrix with a batch dimension, presumed to be
             of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
-        return_global_phase (bool): If `True`, the return will include the global phase.
-            If `False`, only the :math:`SU(2)` representation is returned.
 
     Returns:
-        array[complex]:
-            A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is equivalent to U up to a
-            global phase. If ``return_global_phase=True``, a 2-element tuple is returned, with
-            the first element being the :math:`SU(2)` equivalent and the second, the global phase.
+        array[complex], float:
+            A :math:`n \times 2 \times 2` matrix :math:`V\in SU(2)` and the corresponding
+            global phase :math:`\alpha` such that :math:`U=Ve^{i\alpha}`.
 
     """
     # Compute the determinant
@@ -426,29 +423,23 @@ def convert_to_su2(U, return_global_phase=False):
         determinant = math.linalg.det(U)
     global_phase = math.angle(determinant) / 2
     U = math.cast_like(U, determinant)
+    c_phase = math.cast_like(global_phase, 1j)
     if batch_size:
-        c_phase = math.cast_like(global_phase, 1j)
-        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
-        U = U * math.exp(-1j * batched_phase)
-    else:
-        c_phase = math.cast_like(global_phase, 1j)
-        U = U * math.exp(-1j * c_phase)
-    return (U, global_phase) if return_global_phase else U
+        c_phase = math.reshape(c_phase, (batch_size, 1, 1))
+    U = U * math.exp(-1j * c_phase)
+    return U, global_phase
 
 
-def convert_to_su4(U, return_global_phase=False):
+def convert_to_su4(U) -> tuple:
     r"""Convert a 4x4 matrix to :math:`SU(4)`.
 
     Args:
         U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
-        return_global_phase (bool): If `True`, the return will include the global phase.
-            If `False`, only the :math:`SU(4)` representation is returned.
 
     Returns:
-        array[complex]:
-            A :math:`4 \times 4` matrix in :math:`SU(4)` that is equivalent to U up to a global
-            phase. If ``return_global_phase=True``, a 2-element tuple is returned, with the first
-            element being the :math:`SU(4)` equivalent and the second, the global phase.
+        array[complex], float:
+            A :math:`4 \times 4` matrix in :math:`SU(4)` that is equivalent to U up
+            to a global phase, and the global phase.
 
     """
     # Compute the determinant
@@ -457,11 +448,8 @@ def convert_to_su4(U, return_global_phase=False):
     with np.errstate(divide="ignore", invalid="ignore"):
         determinant = math.linalg.det(U)
     global_phase = math.angle(determinant) / 4
+    c_phase = math.cast_like(global_phase, 1j)
     if batch_size:
-        c_phase = math.cast_like(global_phase, 1j)
-        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
-        U = U * math.exp(-1j * batched_phase)
-    else:
-        c_phase = math.cast_like(global_phase, 1j)
-        U = U * math.exp(-1j * c_phase)
-    return (U, global_phase) if return_global_phase else U
+        c_phase = math.reshape(c_phase, (batch_size, 1, 1))
+    U = U * math.exp(-1j * c_phase)
+    return U, global_phase

@@ -21,12 +21,9 @@ from functools import reduce
 import pennylane as qp
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
@@ -393,10 +390,9 @@ def _superposition_resources(num_wires, num_coeffs, bases):
     for basis2, basis1 in perms.items():
         if not qp.math.allclose(basis1, basis2):
             resources[
-                controlled_resource_rep(
-                    base_class=qp.PauliX,
-                    base_params={},
-                    num_control_wires=num_wires,
+                _ctrl_abstract(
+                    qp.PauliX,
+                    Wire[num_wires],
                     num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis1, 0),
                 )
             ] += 1
@@ -409,10 +405,9 @@ def _superposition_resources(num_wires, num_coeffs, bases):
             )
 
             resources[
-                controlled_resource_rep(
-                    base_class=qp.PauliX,
-                    base_params={},
-                    num_control_wires=num_wires,
+                _ctrl_abstract(
+                    qp.PauliX,
+                    Wire[num_wires],
                     num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis2, 0),
                 )
             ] += 1

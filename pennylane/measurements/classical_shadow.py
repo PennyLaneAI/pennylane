@@ -24,9 +24,9 @@ import numpy as np
 from pennylane import math
 from pennylane.core.measurements import MeasurementTransform
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires, WiresLike
 
 

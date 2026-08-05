@@ -21,7 +21,8 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -30,7 +31,6 @@ from pennylane.decomposition import (
 )
 from pennylane.math import is_abstract
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
-from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -134,7 +134,7 @@ class HilbertSchmidt(Operation):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -175,16 +175,6 @@ class HilbertSchmidt(Operation):
     def data(self):
         r"""Flattened list of operator data in this HilbertSchmidt operation."""
         return tuple(datum for op in self._operators for datum in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
-        # assign the HilbertSchmidt data to an empty tuple (since no positional arguments are provided).
-        if new_data:
-            for op in self._operators:
-                if op.num_params > 0:
-                    op.data = new_data[: op.num_params]
-                    new_data = new_data[op.num_params :]
 
     def __copy__(self):
         # Override Operator.__copy__() to avoid setting the "data" property before the new instance
@@ -397,7 +387,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -432,10 +422,7 @@ def _hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range * 2,
-            resource_rep(CNOT): min(num_first_range, num_second_range) * 2,
-        }
+        {Hadamard: num_first_range * 2, CNOT: min(num_first_range, num_second_range) * 2}
     )
 
     for op_rep in u_reps:
@@ -456,10 +443,7 @@ def _local_hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range + 1,
-            resource_rep(CNOT): min(num_first_range, num_second_range) + 1,
-        }
+        {Hadamard: num_first_range + 1, CNOT: min(num_first_range, num_second_range) + 1}
     )
 
     for op_rep in u_reps:

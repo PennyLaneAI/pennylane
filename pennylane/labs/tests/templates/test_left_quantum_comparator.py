@@ -15,6 +15,7 @@
 Tests for the LeftQuantumComparator template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -152,3 +153,49 @@ class TestLeftQuantumComparator:
             qp.labs.templates.LeftQuantumComparator(
                 x_wires, y_wires, target_wire, work_wires, comparator=comparator
             )
+
+    @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "target_wire", "work_wires"),
+        [
+            ([0, 3, 6, 9], [12, 13, 14, 15], 11, [2, 5, 8]),
+            ([0, 3, 6, 9], [12, 13, 14, 15], 11, [2, 5, 8]),
+            ([0, 3, 6], [12, 13, 14], 11, [2, 5]),
+        ],
+    )
+    @pytest.mark.parametrize("seed", [42, 123])
+    def test_no_phase_errors(  # pylint: disable=too-many-arguments
+        self, x_wires, y_wires, target_wire, work_wires, comparator, seed
+    ):
+        """Verify the comparator introduces no complex phases.
+        A correct classical reversible circuit is a real permutation matrix,
+        so a real positive input must produce a real positive output."""
+
+        dev = qp.device("default.qubit")
+
+        @qp.qnode(dev)
+        def circuit(x_state, y_state):
+            qp.StatePrep(x_state, x_wires)
+            qp.StatePrep(y_state, y_wires)
+
+            LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
+            return qp.state()
+
+        num_x = 2 ** len(x_wires)
+        num_y = 2 ** len(y_wires)
+
+        rng = np.random.default_rng(seed)
+
+        # Real positive superposition: all components strictly > 0
+        x_state = rng.random(num_x)
+        x_state /= np.linalg.norm(x_state)
+
+        y_state = rng.random(num_y)
+        y_state /= np.linalg.norm(y_state)
+
+        state = np.asarray(circuit(x_state, y_state))
+
+        # All amplitudes must be real (no imaginary component)
+        assert np.allclose(state.imag, 0.0), "Phase error: imaginary components detected"
+        # All non-zero amplitudes must be non-negative
+        assert np.all(state.real >= -1e-10), "Phase error: negative amplitudes detected"

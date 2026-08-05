@@ -95,8 +95,11 @@ def pause():
     { lambda ; . let  in (2,) }
 
     """
-    disable()
+    originally_enabled = enabled()
+    if originally_enabled:
+        disable()
     try:
         yield
     finally:
-        enable()
+        if originally_enabled:
+            enable()

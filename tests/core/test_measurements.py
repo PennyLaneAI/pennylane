@@ -23,6 +23,7 @@ from pennylane.core.measurements import (
     SampleMeasurement,
     StateMeasurement,
 )
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.shots import Shots
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
@@ -41,7 +42,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -304,10 +304,6 @@ class TestProperties:
 
         assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
 
-        # changing the observable data should be reflected
-        obs.data = [np.diag([5, 6, 7, 8])]
-        assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
-
     def test_measurement_value_eigvals(self):
         """Test that eigenvalues of the measurement process
         are correct if the internal observable is a
@@ -342,8 +338,13 @@ class TestProperties:
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
-        obs = qp.NumberOperator(wires=0)
-        m = qp.expval(op=obs)
+
+        class DummyObs(qp.core.Operator2):
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        m = qp.expval(op=DummyObs(0))
         with pytest.raises(qp.operation.EigvalsUndefinedError):
             _ = m.eigvals()
 

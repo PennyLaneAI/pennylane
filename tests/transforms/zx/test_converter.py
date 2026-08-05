@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.exceptions import DecompositionWarning, QuantumFunctionError
-from pennylane.tape import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
 pytestmark = pytest.mark.external

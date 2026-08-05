@@ -15,7 +15,6 @@
 Utility functions to convert between ``~.PauliSentence`` and other PennyLane operators.
 """
 
-from collections import defaultdict
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
@@ -28,12 +27,25 @@ from pennylane import math
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
+from pennylane.typing import TensorLike
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
 #: Tolerance for checking if a sparse matrix is Hermitian.
 _HERMITIAN_TOLERANCE = 1e-8
+
+#: Map from a single-qubit symplectic ``(x_bit, z_bit)`` pair to its Pauli character.
+_PAULI_FROM_XZ = {(0, 0): I, (1, 0): X, (1, 1): Y, (0, 1): Z}
+
+#: ``i ** k`` lookup table for ``k = 0, 1, 2, 3`` (phase contributed by ``PauliY`` factors).
+_I_POWERS = np.array([1, 1j, -1, -1j], dtype=complex)
+
+#: Coefficients with magnitude below this value are treated as zero and dropped.
+#: Matches the default absolute tolerance of ``np.allclose`` (used by the dense
+#: routine's ``math.allclose(coefficient, 0)`` check), so the sparse and dense
+#: paths discard the same terms.
+_COEFF_TOLERANCE = 1e-8
 
 
 def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):
@@ -80,7 +92,7 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
 
 def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> tuple[qp.typing.TensorLike, list]:
+) -> tuple[TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
 
     This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
@@ -247,16 +259,52 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     return (coeffs, obs)
 
 
+def _fast_walsh_hadamard_transform(vec: np.ndarray) -> np.ndarray:
+    r"""Compute the unnormalised fast Walsh-Hadamard transform of a 1D array.
+
+    Uses the radix-2 butterfly in :math:`O(N \log N)` time. The input array is
+    modified in place.
+
+    Args:
+        vec (np.ndarray): 1D array whose length is a power of two.
+
+    Returns:
+        np.ndarray: the transformed array ``H`` with
+        :math:`H[z] = \sum_r \text{vec}[r]\,(-1)^{\operatorname{popcount}(z\,\&\,r)}`.
+    """
+    length = len(vec)
+    step = 1
+    while step < length:
+        vec = vec.reshape(-1, 2 * step)
+        # Copy the low half: the first in-place assignment below overwrites the
+        # memory it views, but the stale values are still needed for the second.
+        # The high half needs no copy since its memory is only written after
+        # ``low - high`` has been fully evaluated.
+        low = vec[:, :step].copy()
+        high = vec[:, step:]
+        vec[:, :step] = low + high
+        vec[:, step:] = low - high
+        vec = vec.reshape(-1)
+        step *= 2
+    return vec
+
+
 def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,too-many-branches
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> tuple[qp.typing.TensorLike, list]:
+) -> tuple[TensorLike, list]:
     r"""Sparse SciPy implementation of the generalized Pauli decomposition.
 
     This function computes a weighted sum of Pauli words that is equivalent to the input
-    matrix, using a sparsity-aware routine that iterates over the nonzero entries without
-    converting the matrix to a dense array. It supports padding for non-power-of-two or
-    rectangular inputs and returns either operator tensors or Pauli-word data depending on
-    the ``pauli`` flag.
+    matrix without converting it to a dense array. Nonzero entries are grouped by their
+    XOR-difference ``row ^ col`` (which fixes the X-part of the contributing Pauli words),
+    and each group is resolved with a single fast Walsh-Hadamard transform plus a
+    ``PauliY`` phase. This is the sparse analog of the dense routine and runs in
+    :math:`O(\text{num\_groups} \cdot n \cdot 2^n)` instead of expanding every entry into
+    :math:`2^n` words. It supports padding for non-power-of-two or rectangular inputs and
+    returns either operator tensors or Pauli-word data depending on the ``pauli`` flag.
+    See `Georges et al., New J. Phys. 27, 033004 (2025)
+    <https://doi.org/10.1088/1367-2630/adb44d>`__ for the underlying XOR-permute plus
+    Walsh-Hadamard formulation.
 
     Args:
         matrix (scipy.sparse matrix): Any sparse matrix. If its dimension is not
@@ -275,7 +323,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         ``wire_order[0]`` and the rightmost to ``wire_order[-1]``.
 
     Returns:
-        Tuple[qp.typing.TensorLike, list]:
+        Tuple[TensorLike, list]:
             A tuple ``(coeffs, terms)`` where ``coeffs`` is a complex-valued array of coefficients.
             ``terms`` is either a list of operator tensors (if ``pauli=False``) or a list of
             lists of ``(pauli_char, wire)`` pairs (if ``pauli=True``).
@@ -324,52 +372,66 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         shape, wire_order, is_sparse=True
     )
 
-    coeffs_map: dict[str, complex] = defaultdict(complex)
-    rows, cols, data = sparse_matrix.row, sparse_matrix.col, sparse_matrix.data
+    dim = shape[0]
+    inv_dim = 1.0 / (2**num_qubits)
 
-    # Decompose each nonzero matrix entry into Pauli word contributions
-    for row, col, value in zip(rows, cols, data, strict=True):
-        contributions = [("", complex(value))]
+    rows = sparse_matrix.row.astype(np.int64, copy=False)
+    data = np.asarray(sparse_matrix.data, dtype=complex)
 
-        # Process each qubit position (MSB first)
-        for wire in range(num_qubits):
-            bit_index = num_qubits - 1 - wire
-            row_bit = (row >> bit_index) & 1
-            col_bit = (col >> bit_index) & 1
+    # The XOR-difference ``d = row ^ col`` fixes the X-part of every Pauli word an entry
+    # can contribute to: a diagonal qubit (``d`` bit 0) only feeds I/Z, an off-diagonal
+    # qubit (``d`` bit 1) only feeds X/Y. Grouping entries by ``d``, the coefficient of the
+    # Pauli word with symplectic representation ``(x=d, z)`` is
+    #     c(d, z) = 2**-n * i**popcount(z & d) * sum_r M[r, r ^ d] * (-1)**popcount(z & r),
+    # where the inner sum is the (unnormalised) Walsh-Hadamard transform of the
+    # entry values placed at their row index. It mirrors the dense routine (XOR-permute
+    # -> Walsh-Hadamard -> Y-phase) while skipping every empty group, replacing the
+    # per-entry O(nnz * n * 2**n) expansion with an O(num_groups * n * 2**n) transform.
+    # Relative to Georges et al. eq. 8: d = r, z = s, and we scatter by row rather
+    # than column (substituting q -> q ^ r), which flips the paper's i**(-popcount(r & s))
+    # prefactor to the i**(+popcount(z & d)) phase applied below.
+    diffs = rows ^ sparse_matrix.col.astype(np.int64, copy=False)
+    order = np.argsort(diffs, kind="stable")
+    diffs, rows, data = diffs[order], rows[order], data[order]
+    if diffs.size:
+        split = np.flatnonzero(np.diff(diffs)) + 1
+        group_starts = np.concatenate(([0], split))
+        group_ends = np.concatenate((split, [diffs.size]))
+    else:
+        group_starts = group_ends = ()
 
-            # Determine Pauli operators diagonal (I/Z) or off-diagonal (X/Y)
-            if row_bit == col_bit:
-                z_coeff = 0.5 if row_bit == 0 else -0.5
-                options = (("I", 0.5), ("Z", z_coeff))
-            else:
-                if row_bit == 0:
-                    options = (("X", 0.5), ("Y", 0.5j))
-                else:
-                    options = (("X", 0.5), ("Y", -0.5j))
+    # ``z_indices`` enumerates the candidate Z-parts ``z`` of the symplectic label
+    # ``(x=d, z)``: each Pauli word is (up to phase) ``X**d * Z**z`` qubit-wise, so a
+    # bit set only in ``z`` gives Pauli Z, and a bit set in both ``z`` and ``d`` gives
+    # Y (= iXZ), hence ``popcount(z & d)`` counts the Y factors below.
+    z_indices = np.arange(dim, dtype=np.int64)
 
-            # Expand contributions each prefix branches into I/Z or X/Y options
-            new_contributions = []
-            for prefix, coeff in contributions:
-                for pauli_char, factor in options:
-                    new_contributions.append((prefix + pauli_char, coeff * factor))
-            contributions = new_contributions
-
-        for word, coeff in contributions:
-            coeffs_map[word] += coeff
-
-    # Filter out coefficients close to zero
     coeffs = []
+    words = []  # symplectic (x_bits, z_bits) pairs, one per surviving Pauli word
+    for start, end in zip(group_starts, group_ends):
+        d = int(diffs[start])
+        values = np.zeros(dim, dtype=complex)
+        values[rows[start:end]] = data[start:end]
+        transformed = _fast_walsh_hadamard_transform(values)
+        phase = _I_POWERS[np.bitwise_count(z_indices & d) & 0b11]  # i ** (number of Y factors)
+        group_coeffs = inv_dim * phase * transformed
+        for z in np.flatnonzero(np.abs(group_coeffs) > _COEFF_TOLERANCE):
+            coeffs.append(group_coeffs[z])
+            words.append((d, int(z)))
+
+    # Build the Pauli words MSB-first, so ``wire_order[0]`` is the most significant qubit.
     obs_terms = []
-    for word, coeff in coeffs_map.items():
-        if math.allclose(coeff, 0):
-            continue
-        if hide_identity and not all(char == I for char in word):
+    for x_bits, z_bits in words:
+        chars = [
+            _PAULI_FROM_XZ[((x_bits >> bit) & 1, (z_bits >> bit) & 1)]
+            for bit in range(num_qubits - 1, -1, -1)
+        ]
+        if hide_identity and not all(char == I for char in chars):
             observables = [
-                (char, wire) for wire, char in zip(wire_order, word, strict=True) if char != I
+                (char, wire) for wire, char in zip(wire_order, chars, strict=True) if char != I
             ]
         else:
-            observables = [(char, wire) for wire, char in zip(wire_order, word, strict=True)]
-        coeffs.append(coeff)
+            observables = [(char, wire) for wire, char in zip(wire_order, chars, strict=True)]
         obs_terms.append(observables)
 
     if not coeffs:

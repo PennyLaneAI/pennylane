@@ -22,11 +22,11 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.ops import PauliRot, exp
 from pennylane.ops.functions import dot, eigvals
 from pennylane.pauli import is_pauli_word, pauli_word_prefactor, pauli_word_to_string
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 

@@ -15,10 +15,13 @@
 """Tests for the Adjoint2 class."""
 
 import numpy as np
+import pytest
 from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.wires import Wires
 
@@ -144,11 +147,34 @@ def test_attributes():
     assert op2.has_adjoint
 
 
+def test_old_decomp_integartion():
+    """Tests that adjoint2 is compatible with the old decomposition convention."""
+
+    @register_resources({qp.RX: 1})
+    def _sx_to_rx(wires):
+        qp.RX(np.pi / 2, wires=wires)
+
+    with qp.decomposition.local_decomps():
+
+        qp.add_decomps(SX2, _sx_to_rx)
+        op = qp.adjoint(SX2(0))
+        assert op.has_decomposition
+        assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
+
+
 def test_parameter_frequencies():
     """Tests that adjoint2 ops have the correct parameter frequencies."""
 
     op = qp.adjoint(RX2(-0.5, wires=0))
     assert qp.gradients.parameter_frequencies(op) == [(1,)]
+
+
+def test_instance_check():
+    """Tests that Adjoint2 objects are considered instances of Adjoint."""
+
+    op = qp.adjoint(RX2(-0.5, wires=0))
+    assert isinstance(op, Adjoint)
+    assert isinstance(op, AdjointOperation)
 
 
 def test_methods():
@@ -190,11 +216,27 @@ def test_representation():
 
     base_op = RX2(0.5, wires=1)
     op = qp.adjoint(base_op)
-    assert repr(op) == "Adjoint(RX2(theta=0.5, wires=[1]))"
+    assert repr(op) == "Adjoint(RX2(0.5, wires=[1]))"
     assert op.label() == "RX2†"
     assert op.name == "Adjoint(RX2)"
 
     nested_op = qp.adjoint(op)
-    assert repr(nested_op) == "Adjoint(Adjoint(RX2(theta=0.5, wires=[1])))"
+    assert repr(nested_op) == "Adjoint(Adjoint(RX2(0.5, wires=[1])))"
     assert nested_op.label() == "(RX2†)†"
     assert nested_op.name == "Adjoint(Adjoint(RX2))"
+
+
+def test_adjoint_equality():
+    """Tests comparing adjoint operators."""
+
+    base_op = RX2(0.5, wires=1)
+
+    class OldOp(qp.core.operator.Operator1):  # pylint: disable=too-few-public-methods
+        pass
+
+    another_base = OldOp(wires=0)
+
+    assert qp.adjoint(base_op) == Adjoint2(base_op)
+
+    with pytest.raises(AssertionError, match="different base operations"):
+        qp.assert_equal(qp.adjoint(base_op), qp.adjoint(another_base))

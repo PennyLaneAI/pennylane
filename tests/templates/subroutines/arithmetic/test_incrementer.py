@@ -87,7 +87,7 @@ def test_correct(wires, init_state, expected, work_wires):
         Incrementer(wires, work_wires)
         return state()
 
-    result = increment(wires, init_state, work_wires)
+    result = np.array(increment(wires, init_state, work_wires))
 
     expected = np.concatenate([np.array(expected), np.zeros(len(work_wires))])
 
@@ -101,7 +101,6 @@ def test_correct(wires, init_state, expected, work_wires):
 @pytest.mark.parametrize(
     "init_state, expected, work_wires, control_wires, control_values",
     [
-        # enough work wires for our rule
         (
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
@@ -116,10 +115,6 @@ def test_correct(wires, init_state, expected, work_wires):
             [12],
             [1],
         ),
-        # not enough work wires
-        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], [8], [0]),
-        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], [7], [1]),
-        # multiple control wires
         (
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
@@ -150,13 +145,18 @@ def test_correct(wires, init_state, expected, work_wires):
         ),
     ],
 )
-def test_controlled(init_state, expected, work_wires, control_wires, control_values):
+def test_controlled_enough_work_wires(
+    init_state, expected, work_wires, control_wires, control_values
+):
+    """Test decomposition of controlled incrementer where sufficiently many work wires
+    are provided."""
     wires = [0, 1, 2, 3, 4, 5]
 
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
+    gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
 
     # pylint: disable=too-many-arguments
-    @decompose(gate_set={TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1})
+    @decompose(gate_set=gate_set, num_work_wires=0)
     @qnode(dev)
     def controlled_increment(wires, init_state, work_wires, control_wires, control_values):
         BasisEmbedding(init_state, wires)
@@ -166,10 +166,58 @@ def test_controlled(init_state, expected, work_wires, control_wires, control_val
         Controlled(Incrementer(wires, work_wires), control_wires)
         return state()
 
-    result = controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    result = np.array(
+        controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    )
 
     expected = np.concatenate(
         [np.array(expected), np.zeros(len(work_wires)), np.array(control_values)]
+    )
+    value = int(2 ** np.arange(len(expected)) @ expected[::-1])
+    assert np.isclose(result[value], 1)
+    result[value] -= 1
+    assert np.allclose(result, 0)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize(
+    "init_state, expected, work_wires, control_wires, control_values",
+    [
+        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], [8], [0]),
+        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], [7], [1]),
+    ],
+)
+def test_controlled_allocates_work_wires(
+    init_state, expected, work_wires, control_wires, control_values
+):
+    """Test decomposition of controlled incrementer where additional work wires are allocated."""
+    wires = list(range(len(init_state)))
+
+    num_alloc_wires = len(wires) + len(control_wires) - 1 - len(work_wires)
+    gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
+
+    # pylint: disable=too-many-arguments
+    @decompose(gate_set=gate_set, num_work_wires=num_alloc_wires)
+    @qnode(device("default.qubit", wires=len(wires + work_wires + control_wires) + num_alloc_wires))
+    def controlled_increment(wires, init_state, work_wires, control_wires, control_values):
+        BasisEmbedding(init_state, wires)
+        for control_wire, control_value in zip(control_wires, control_values, strict=True):
+            if control_value:
+                PauliX(control_wire)
+        Controlled(Incrementer(wires, work_wires), control_wires)
+        return state()
+
+    result = np.array(
+        controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    )
+
+    expected = np.concatenate(
+        [
+            np.array(expected),
+            np.zeros(len(work_wires)),
+            np.array(control_values),
+            np.zeros(num_alloc_wires),
+        ]
     )
     value = int(2 ** np.arange(len(expected)) @ expected[::-1])
     assert np.isclose(result[value], 1)
@@ -185,53 +233,43 @@ def test_controlled(init_state, expected, work_wires, control_wires, control_val
         # enough work wires for work wire decomp
         ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
         # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (8,),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
         # no work wires
         ((0, 1, 2), tuple(), (3,)),
         # 2 controls
         # enough work wires for work wire decomp
-        (
-            (0, 1, 2, 3, 4, 5),
-            (6, 7, 8, 9, 10, 11),
-            (
-                12,
-                13,
-            ),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12, 13)),
         # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (
-                8,
-                9,
-            ),
-        ),
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8, 9)),
         # no work wires
-        (
-            (0, 1, 2),
-            tuple(),
-            (
-                3,
-                4,
-            ),
-        ),
+        ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
 def test_controlled_decomposition_new(wires, work_wires, controls):
     """Tests the decomposition rule implemented with the new system."""
+    # Work wires only in incrementer
+    op = Controlled(Incrementer(wires, work_wires), controls, control_values=[1] * len(controls))
+    for rule in list_decomps("C(Incrementer)"):
+        _test_decomposition_rule(op, rule)
+    # Split work wires between incrementer and control
+    split = len(work_wires) // 2
     op = Controlled(
-        Incrementer(wires, work_wires), controls, control_values=[1 for _ in range(len(controls))]
+        Incrementer(wires, work_wires[:split]),
+        controls,
+        control_values=[1] * len(controls),
+        work_wires=work_wires[split:],
+        work_wire_type="zeroed",
+    )
+    for rule in list_decomps("C(Incrementer)"):
+        _test_decomposition_rule(op, rule)
+
+    # Work wires only in control
+    op = Controlled(
+        Incrementer(wires, []),
+        controls,
+        control_values=[1] * len(controls),
+        work_wires=work_wires,
+        work_wire_type="zeroed",
     )
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)

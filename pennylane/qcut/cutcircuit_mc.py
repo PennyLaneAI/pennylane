@@ -21,8 +21,8 @@ from functools import partial
 import numpy as np
 
 from pennylane import ops
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.measurements import SampleMP, sample
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
