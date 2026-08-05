@@ -19,12 +19,14 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and,
     _adjoint_temporary_and_to_toffoli,
     _temporary_and_to_toffoli,
 )
+from pennylane.typing import Bool, Wire
 
 
 class TestTemporaryAND:
@@ -62,6 +64,19 @@ class TestTemporaryAND:
             repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
             == "TemporaryAND(wires=[0, 'a', 2], control_values=[False, True])"
         )
+
+    def test_abstract(self):
+        """Tests that abstract TemporaryAND can be created."""
+
+        full = qp.TemporaryAND(Wire[3], Bool[2])
+        assert full.wires == Wire[3]
+        assert full.control_values == Bool[2]
+
+        op = abstractify(qp.TemporaryAND)
+        assert op == full
+
+        op2 = qp.TemporaryAND(Wire[3])
+        assert op2 == full
 
     def test_alias(self):
         """Test that Elbow is an alias of TemporaryAND"""

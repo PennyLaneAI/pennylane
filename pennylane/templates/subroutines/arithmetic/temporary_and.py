@@ -27,7 +27,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import WiresLike
 
 
@@ -137,8 +137,19 @@ class TemporaryAND(Operator2):
         control_values = math.cast(math.asarray(control_values, like=interface), bool)
         super().__init__(wires=wires, control_values=control_values)
 
+    @override
+    # pylint: disable-next=arguments-differ
+    def __abstract_init__(self, wires: AbstractWires, control_values=None):
+        if control_values is None:
+            control_values = Bool[2]
+        super().__init__(wires=wires, control_values=control_values)
+
     def __repr__(self):
-        cvals = self.control_values.tolist()
+        cvals = (
+            self.control_values
+            if isinstance(self.control_values, AbstractArray)
+            else self.control_values.tolist()
+        )
         if all(cvals):
             return f"TemporaryAND(wires={self.wires})"
         return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
