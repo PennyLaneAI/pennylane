@@ -24,7 +24,12 @@ import pennylane as qp
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractOperator, operator_p
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
+    assert_eqn_matches_op,
+)
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -242,6 +247,23 @@ def test_parametrized_op():
 
 class TestSpecialOps:
 
+    def test_diagonal_qubit_unitary(self):
+        """Test Operator2 capture and list canonicalization for DiagonalQubitUnitary."""
+
+        def qfunc(D, wires):
+            qp.DiagonalQubitUnitary(D, wires)
+
+        D = [1.0, 1.0j, -1.0, -1.0j]
+        wires = [0, 1]
+        jaxpr = jax.make_jaxpr(qfunc)(D, wires)
+
+        eqn = jaxpr.eqns[-1]
+        assert_eqn_matches_op(eqn, qp.DiagonalQubitUnitary)
+        assert eqn.invars[0].aval == jax.core.ShapedArray((4,), complex)
+        assert eqn.invars[1:] == jaxpr.jaxpr.invars[-2:]
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
     def test_pauli_rot(self):
         """Test a special operation that has positional metadata and overrides binding."""
 
@@ -252,17 +274,18 @@ class TestSpecialOps:
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
 
-        assert eqn.primitive == qp.PauliRot._primitive
-        assert eqn.params == {"pauli_word": "XY", "n_wires": 2}
+        assert eqn.primitive == operator_p
+        assert eqn.params["op_cls"] is qp.PauliRot
+        assert eqn.params["pauli_word"][0] == ("XY",)
 
         assert len(eqn.invars) == 3  # The rotation parameter and the two wires
         assert jaxpr.jaxpr.invars == eqn.invars
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
 
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.PauliRot(2.5, "XY", (3, 4)))
+        assert len(collector.state["ops"]) == 1
+        qp.assert_equal(collector.state["ops"][0], qp.PauliRot(2.5, "XY", (3, 4)))
 
     def test_GlobalPhase(self):
         """Test that a global phase on no wires can be captured."""
@@ -330,7 +353,7 @@ class TestTemplates:
         assert len(jaxpr.eqns) == 6
 
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Z._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
@@ -517,7 +540,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -539,7 +562,7 @@ class TestAbstractDunders:
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
 
         eqn = jaxpr.eqns[2]
 
@@ -560,7 +583,7 @@ class TestAbstractDunders:
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
 
-        assert jaxpr.eqns[0].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.Y)
 
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[1].invars[0].val == 2

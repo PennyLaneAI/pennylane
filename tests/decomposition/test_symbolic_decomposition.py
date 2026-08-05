@@ -21,7 +21,12 @@ import pytest
 import pennylane as qp
 from pennylane.core import queuing
 from pennylane.core.operator import abstractify
-from pennylane.decomposition.decomposition_rule import register_condition, register_resources
+from pennylane.decomposition.decomposition_rule import (
+    _fix_decomp,
+    list_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -73,12 +78,17 @@ from tests.decomposition.conftest import to_resources
 
 
 class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
-
     resource_keys = {"key"}
 
     @property
     def resource_params(self):
         return {"key": 0}
+
+
+# pylint: disable=too-few-public-methods
+class DummyHadamard(qp.operation.Operator):
+    resource_keys = set({})
+    num_wires = 1
 
 
 @pytest.mark.unit
@@ -196,7 +206,6 @@ class TestAdjointDecompositionRules:
             OneWireDynOp(phi, wires)
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(DynOp, custom_rule)
 
             op = qp.adjoint(DynOp(0.5, wires=0))
@@ -267,13 +276,13 @@ class TestPowDecomposition:
     def test_merge_powers(self):
         """Test the decomposition rule for nested powers."""
 
-        op = qp.pow(qp.pow(qp.H(0), 3), 2)
+        op = qp.pow(qp.pow(DummyHadamard(0), 3), 2)
         with qp.queuing.AnnotatedQueue() as q:
             merge_powers(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qp.pow(qp.H(0), 6)]
+        assert q.queue == [qp.pow(DummyHadamard(0), 6)]
         assert merge_powers.compute_resources(**op.resource_params) == to_resources(
-            {pow_resource_rep(qp.H, {}, 6): 1}
+            {pow_resource_rep(DummyHadamard, {}, 6): 1}
         )
 
     def test_merge_powers2(self):
@@ -284,17 +293,21 @@ class TestPowDecomposition:
             merge_powers2(**op.arguments)
 
         assert q.queue == [pow(qp.S(0), 6)]
-        assert merge_powers2.compute_resources(**op.arguments) == to_resources({qp.S(Wire[1]): 6})
+        assert merge_powers2.compute_resources(**op.arguments) == to_resources(
+            {qp.S(Wire[1]) ** 6: 1}
+        )
 
     def test_repeat_pow_base(self):
         """Tests repeating the same op z number of times."""
 
-        op = qp.pow(qp.H(0), 3)
+        op = qp.pow(DummyHadamard(0), 3)
         with qp.queuing.AnnotatedQueue() as q:
             repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qp.H(0), qp.H(0), qp.H(0)]
-        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qp.H: 3})
+        assert q.queue == [DummyHadamard(0), DummyHadamard(0), DummyHadamard(0)]
+        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources(
+            {DummyHadamard: 3}
+        )
 
     def test_repeat_pow_base2(self):
         """Tests repeating the same op z number of times."""
@@ -341,9 +354,9 @@ class TestPowDecomposition:
     def test_non_integer_pow_not_applicable(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
 
-        op = qp.pow(qp.H(0), 0.5)
+        op = qp.pow(DummyHadamard(0), 0.5)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
-        op = qp.pow(qp.H(0), -1)
+        op = qp.pow(DummyHadamard(0), -1)
         assert not repeat_pow_base.is_applicable(**op.resource_params)
 
     def test_non_integer_pow_not_applicable2(self):
@@ -471,18 +484,45 @@ class TestPowDecomposition:
             {resource_rep(CustomOp, key=0): 1}
         )
 
+    def test_list_pow_decomps2(self):
+        """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
+
+        # a fixed decomposition rule overrides everything else
+        op = pow(DynOp(0.5, wires=0), 2)
+        with qp.decomposition.local_decomps():
+            _fix_decomp(op, repeat_pow_base2)
+            assert list(list_decomps(op)) == [repeat_pow_base2]
+
+        # nested powers list only the merge_powers rule
+        nested = pow(pow(qp.S(0), 3), 2)
+        assert list(list_decomps(nested)) == [merge_powers2]
+
+        # a power of an adjoint lists only the flip_pow_adjoint rule
+        pow_adjoint = pow(qp.adjoint(DynOp(0.5, wires=0)), 2)
+        assert list(list_decomps(pow_adjoint)) == [flip_pow_adjoint2]
+
+        # an integer power appends repeat_pow_base to the custom rules
+        integer_pow = pow(DynOp(0.5, wires=0), 3)
+        assert repeat_pow_base2 in list_decomps(integer_pow)
+
+        # a non-integer power does not append repeat_pow_base
+        fractional_pow = pow(DynOp(0.5, wires=0), 0.5)
+        assert repeat_pow_base2 not in list_decomps(fractional_pow)
+
     def test_pow_abstract2(self):
         """Tests _pow_abstract for both the resource-rep and operator branches."""
 
         # a resource representation abstractifies to a CompressedResourceOp and yields
         # a pow_resource_rep
-        assert _pow_abstract(resource_rep(qp.H), 2) == pow_resource_rep(qp.H, {}, 2)
+        assert _pow_abstract(resource_rep(DummyHadamard), 2) == pow_resource_rep(
+            DummyHadamard, {}, 2
+        )
 
         # a legacy operator type is also abstractified into a CompressedResourceOp
-        assert _pow_abstract(qp.H, 3) == pow_resource_rep(qp.H, {}, 3)
+        assert _pow_abstract(DummyHadamard, 3) == pow_resource_rep(DummyHadamard, {}, 3)
 
         # the default exponent is 1
-        assert _pow_abstract(resource_rep(qp.H)) == pow_resource_rep(qp.H, {}, 1)
+        assert _pow_abstract(resource_rep(DummyHadamard)) == pow_resource_rep(DummyHadamard, {}, 1)
 
         # an (abstract) Operator2 yields a Pow2
         abstract_base = DynOp(Float, wires=Wire[3])
@@ -522,7 +562,7 @@ def _custom_resource(num_wires):
             {"num_wires": num_wires - 1},
             num_control_wires=1,
         ): 1,
-        resource_rep(qp.PauliRot, pauli_word="XYX"): 1,
+        qp.PauliRot(Float, pauli_word="XYX", wires=Wire[3]): 1,
         qp.Z: 1,
         qp.CZ: 1,
     }
@@ -580,9 +620,9 @@ class TestControlledDecomposition:
                 control_wires=[6, 0],
                 work_wires=[7],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6],
+                control=[6],
                 work_wires=[7],
             ),
             qp.CZ(wires=[6, 0]),
@@ -631,12 +671,7 @@ class TestControlledDecomposition:
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.PauliRot,
-                    {"pauli_word": "XYX"},
-                    num_control_wires=1,
-                    num_work_wires=1,
-                ): 1,
+                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[1], Wire[1]): 1,
                 abstractify(qp.CZ): 1,
                 abstractify(qp.CCZ): 1,
             }
@@ -713,30 +748,30 @@ class TestControlledDecomposition:
                 control_values=[1, 1, 1, 0, 1],
                 work_wires=[8, 4],
             ),
-            qp.ops.Controlled(qp.RX(0.5, wires=0), control_wires=[6, 7], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RX(0.5, wires=0), control=[6, 7], work_wires=[8]),
+            qp.ctrl(
                 qp.Rot(0.5, 0.6, 0.7, wires=0),
-                control_wires=[6, 7],
+                control=[6, 7],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(qp.RZ(0.5, wires=[1]), control_wires=[6, 7, 0], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RZ(0.5, wires=[1]), control=[6, 7, 0], work_wires=[8]),
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[0, 1, 2, 3, 4, 5]),
-                control_wires=[6, 7],
+                control=[6, 7],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[1, 2, 3, 4, 5]),
-                control_wires=[6, 7, 0],
+                control=[6, 7, 0],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6, 7],
+                control=[6, 7],
                 work_wires=[8],
             ),
             qp.CCZ(wires=[6, 7, 0]),
-            qp.ops.Controlled(qp.Z(1), control_wires=[6, 7, 0], work_wires=[8]),
+            qp.ctrl(qp.Z(1), control=[6, 7, 0], work_wires=[8]),
             qp.X(6),
         ]
 
@@ -790,14 +825,9 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.PauliRot,
-                    {"pauli_word": "XYX"},
-                    num_control_wires=2,
-                    num_work_wires=1,
-                ): 1,
+                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[2], Wire[1]): 1,
                 abstractify(qp.CCZ): 1,
-                _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
+                _ctrl_abstract(qp.CZ, Wire[2], Wire[1]): 1,
             }
         )
 
@@ -827,30 +857,30 @@ class TestControlledDecomposition:
                 control_values=[1, 1, 1, 1, 0, 1],
                 work_wires=[8, 4],
             ),
-            qp.ops.Controlled(qp.RX(0.5, wires=0), control_wires=[6, 7, 9], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RX(0.5, wires=0), control=[6, 7, 9], work_wires=[8]),
+            qp.ctrl(
                 qp.Rot(0.5, 0.6, 0.7, wires=0),
-                control_wires=[6, 7, 9],
+                control=[6, 7, 9],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(qp.RZ(0.5, wires=[1]), control_wires=[6, 7, 9, 0], work_wires=[8]),
-            qp.ops.Controlled(
+            qp.ctrl(qp.RZ(0.5, wires=[1]), control=[6, 7, 9, 0], work_wires=[8]),
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[0, 1, 2, 3, 4, 5]),
-                control_wires=[6, 7, 9],
+                control=[6, 7, 9],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.MultiRZ(0.5, wires=[1, 2, 3, 4, 5]),
-                control_wires=[6, 7, 9, 0],
+                control=[6, 7, 9, 0],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(
+            qp.ctrl(
                 qp.PauliRot(0.5, "XYX", wires=[0, 1, 2]),
-                control_wires=[6, 7, 9],
+                control=[6, 7, 9],
                 work_wires=[8],
             ),
-            qp.ops.Controlled(qp.Z(0), control_wires=[6, 7, 9], work_wires=[8]),
-            qp.ops.Controlled(qp.Z(1), control_wires=[6, 7, 9, 0], work_wires=[8]),
+            qp.ctrl(qp.Z(0), control=[6, 7, 9], work_wires=[8]),
+            qp.ctrl(qp.Z(1), control=[6, 7, 9, 0], work_wires=[8]),
             qp.X(6),
             qp.X(9),
         ]
@@ -905,14 +935,9 @@ class TestControlledDecomposition:
                     num_control_wires=4,
                     num_work_wires=1,
                 ): 1,
-                qp.decomposition.controlled_resource_rep(
-                    qp.PauliRot,
-                    {"pauli_word": "XYX"},
-                    num_control_wires=3,
-                    num_work_wires=1,
-                ): 1,
+                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[3], Wire[1]): 1,
                 _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.Z, Wire[4], Wire[1]): 1,
+                _ctrl_abstract(qp.CZ, Wire[3], Wire[1]): 1,
             }
         )
 
@@ -928,7 +953,6 @@ class TestControlledDecomposition:
         @qp.register_condition(_condition_fn)
         @qp.register_resources(_resource_fn)
         def _custom_decomp(phi, wires):
-
             @qp.for_loop(0, len(wires))
             def _loop(i):
                 OneWireDynOp(phi, wires[i])

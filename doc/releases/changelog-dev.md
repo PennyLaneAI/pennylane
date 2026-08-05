@@ -266,32 +266,13 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
-* A new operation :class:`~.QutritDensityMatrix` has been added to initialize density matrix states for the device
-  `qp.devices.DefaultQutritMixed`.
-  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
-
-  ```python
-  import pennylane as qp
-  nr_wires = 1
-  rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
-  rho[2, 2] = 1  # initialize the pure state density matrix for the |2><2| state
-
-  dev = qp.device("default.qutrit.mixed", wires=1)
-  @qp.qnode(dev)
-  def circuit():
-      qp.QutritDensityMatrix(rho, wires=[0])
-      return qp.state()
-  ```
-
-  ```pycon
-  >>> circuit()
-  array([[[0.+0.j, 0.+0.j, 0.+0.j],
-          [0.+0.j, 0.+0.j, 0.+0.j],
-          [0.+0.j, 0.+0.j, 1.+0.j]]])
-
-  ```
-
 <h3>Improvements 🛠</h3>
+
+* Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
+  [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)
+
+* Sorts the gate counts in the display of resources produced from decompositions.
+  [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
 
 * Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
   register, `x_wires`, is smaller than the size of the second addend register, `y_wires`.
@@ -438,6 +419,7 @@
 * Added a decomposition of :class:`~.QROM` using `qp.pauli_measure` operators. This decomposition reduces
   the PPM count in the compilation pipeline.
   [(#9531)](https://github.com/PennyLaneAI/pennylane/pull/9531)
+  [(#9853)](https://github.com/PennyLaneAI/pennylane/pull/9853)
 
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
@@ -459,13 +441,6 @@
   contain mid-circuit measurements, also skips applying `adjoint` to decomposition rules that
   contain dynamic wire allocations.
   [(#9629)](https://github.com/PennyLaneAI/pennylane/pull/9629)
-
-* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of
-  any qudit density matrices with constant qudit dimension.
-  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
-
-* Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
-  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
 * :class:`~.Adder` now registers an additional QFT-free, carry-ripple decomposition rule that avoids
   the arbitrarily precise rotations of the existing QFT-based decomposition and supports an arbitrary
@@ -621,6 +596,10 @@
 
   ```
 
+* Created a new ``labs.templates.SuperpositionTHC`` template, used as a subroutine in tensor
+  hypercontraction (THC) qubitization.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+
 * Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for
   their quantum workflows. This contains core functions and classes such as
   :class:`~.pennylane.labs.profiler.ProfileNode`, :func:`~.pennylane.labs.profiler.profile`, and
@@ -671,10 +650,10 @@
 * Added an optional parameter ``phase_fn`` to ``QuditCircuitConfig`` which enables the inclusion of
   a phase layer with trainable weights to a qudit IQP circuit.
   [(#9826)][https://github.com/PennyLaneAI/pennylane/pull/9826]
-  
+
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   [(#9813)][https://github.com/PennyLaneAI/pennylane/pull/9813]
-  
+
 * Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
@@ -682,10 +661,18 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
+  [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+
+* All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
+  still remains.
+  [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
+
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
+  [(#9931)](https://github.com/PennyLaneAI/pennylane/pull/9931)
 
-* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`, 
+* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`,
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
   `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
@@ -840,8 +827,12 @@
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Internal changes ⚙️</h3>
+
+* Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
+  [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
@@ -854,12 +845,27 @@
   [(#9841)](https://github.com/PennyLaneAI/pennylane/pull/9841)
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
-  - Single qubit, non-parameteric operators are ported:
-    - `~.S`, `~.T`, `~.SX`
+  - Non-parametric operators are ported:
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+  [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
+  [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
+  [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
+  - Parametric operators are ported:
+    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`
+  [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
+  [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
+  [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
+  - Multi-qubit, parametric operators are ported:
+  - Templates are ported:
+    - `~.BasisRotation`, `~.QROM`, `~.QFT`
+  [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
+  [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
+  [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -925,6 +931,9 @@
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
   [(#9851)](https://github.com/PennyLaneAI/pennylane/pull/9851)
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
+  [(#9927)](https://github.com/PennyLaneAI/pennylane/pull/9927)
+  [(#9920)](https://github.com/PennyLaneAI/pennylane/pull/9920)
+  [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -947,6 +956,7 @@
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
+    [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
@@ -973,6 +983,7 @@
     [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
     [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
+    [(#9908)](https://github.com/PennyLaneAI/pennylane/pull/9908)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -989,6 +1000,7 @@
     [(#9838)](https://github.com/PennyLaneAI/pennylane/pull/9838)
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
+    [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -1036,8 +1048,8 @@
   Raw numeric literals in `pennylane/math`, `pennylane/ops`, `pennylane/devices`,
   `pennylane/gradients`, `pennylane/pauli`, `pennylane/qchem`, `pennylane/liealg`,
   `pennylane/fourier`, and `pennylane/templates` are now module-level constants with
-  ``#:`` doc-comments explaining their purpose and origin. Unused constants
-  ``eps`` in :mod:`pennylane.math` and ``tolerance`` in ``default_qutrit`` are removed.
+  ``#:`` doc-comments explaining their purpose and origin. Unused constant ``eps`` in
+  :mod:`pennylane.math` is removed.
   [(#9374)](https://github.com/PennyLaneAI/pennylane/pull/9374)
 
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
@@ -1106,8 +1118,11 @@
   :class:`~.Incrementer` were also included in the target wires.
   [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
-* Fixed a bug in :class:~.OutMultiplier` for small output registers.
+* Fixed a bug in :class:`~.OutMultiplier` for small output registers.
   [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
+
+* Fixed a bug in :class:`~.labs.LeftClassicalComparator` for `L = 2^n -1`.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
 
 * Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)

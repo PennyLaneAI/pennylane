@@ -267,10 +267,10 @@ def _(op: qtemps.subroutines.QROM):
 
     num_bit_flips = math.sum(bitstrings)
 
-    num_work_wires = len(op.hyperparameters["work_wires"])
-    size_bitstring = len(op.hyperparameters["target_wires"])
-    num_control_wires = len(op.hyperparameters["control_wires"])
-    clean = op.hyperparameters["clean"]
+    num_work_wires = len(op.work_wires)
+    size_bitstring = len(op.target_wires)
+    num_control_wires = len(op.control_wires)
+    clean = op.clean
 
     if num_control_wires == 0:
         gate_types[qt_gates.XGate()] = num_bit_flips

@@ -663,24 +663,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         expected = 0.125
         assert np.isclose(res, expected, atol=tol)
 
-    def test_QutritBasisStatePreparation(self, device, tol, shots):
-        """Test the QutritBasisStatePreparation template."""
-        dev = device(4)
-        if "qutrit" not in dev.name:
-            pytest.skip("QutritBasisState template only works on qutrit devices")
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(basis_state, obs):
-            qp.QutritBasisStatePreparation(basis_state, wires=range(4))
-            return [qp.expval(qp.THermitian(obs, wires=i)) for i in range(4)]
-
-        basis_state = [0, 1, 1, 0]
-        obs = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-
-        res = circuit(basis_state, obs)
-        expected = np.array([1, -1, -1, 1]) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol)
-
     def test_RandomLayers(self, device, tol, shots):
         """Test the RandomLayers template."""
         dev = device(2)

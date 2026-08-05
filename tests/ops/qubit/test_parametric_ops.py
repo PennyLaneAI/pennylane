@@ -162,7 +162,6 @@ SKIP_ASSERT_VALID = {
 
 
 class TestOperations:
-
     @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_assert_valid(self, op):
@@ -258,7 +257,6 @@ class TestOperations:
 
 
 class TestParameterFrequencies:
-
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not op.has_generator:
@@ -282,15 +280,6 @@ class TestParameterFrequencies:
 
 
 class TestDecompositions:
-
-    @pytest.mark.parametrize("op_class", (qp.RX, qp.RY, qp.RZ))
-    def test_decompositions_undefined(self, op_class):
-        """Test that RX, RY, and RZ don't have Operator.decomposition definitions, even though they
-        have graph decomps."""
-
-        with pytest.raises(qp.exceptions.DecompositionUndefinedError):
-            op_class(0.5, wires=0).decomposition()
-
     @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
     def test_phase_decomposition(self, phi, tol):
         """Tests that the decomposition of the Phase gate is correct"""
@@ -1871,7 +1860,6 @@ class TestEigvals:
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
-
     device_methods = [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
@@ -2840,7 +2828,7 @@ class TestPauliRot:
 
     def test_paulirot_repr(self):
         op = qp.PauliRot(1.234, "XYX", wires=(0, 1, 2))
-        assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
+        assert repr(op) == "PauliRot(theta=1.234, pauli_word=XYX, wires=[0, 1, 2])"
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
@@ -4176,7 +4164,6 @@ control_data = [
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
     (qp.MultiRZ(1.234, wires=(0, 1, 2)), Wires([])),
-    (qp.PauliRot(1.234, "IXY", wires=(0, 1, 2)), Wires([])),
     (qp.PhaseShift(1.234, wires=0), Wires([])),
     (qp.U1(1.234, wires=0), Wires([])),
     (qp.U2(1.234, 2.345, wires=0), Wires([])),

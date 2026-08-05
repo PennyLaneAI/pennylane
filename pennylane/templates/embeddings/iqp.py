@@ -247,15 +247,26 @@ class IQPEmbedding(Operation):
 
         >>> features = torch.tensor([1., 2., 3.])
         >>> pattern = [(0, 1), (0, 2), (1, 2)]
-        >>> qp.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern)
-        [H(0), RZ(tensor(1.), wires=[0]),
-         H(1), RZ(tensor(2.), wires=[1]),
-         H(2), RZ(tensor(3.), wires=[2]),
-         MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2]),
-         H(0), RZ(tensor(1.), wires=[0]),
-         H(1), RZ(tensor(2.), wires=[1]),
-         H(2), RZ(tensor(3.), wires=[2]),
-         MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2])]
+        >>> from pprint import pprint
+        >>> pprint(qp.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern))
+        [H(0),
+         RZ(1.0, wires=[0]),
+         H(1),
+         RZ(2.0, wires=[1]),
+         H(2),
+         RZ(3.0, wires=[2]),
+         MultiRZ(tensor(2.), wires=[0, 1]),
+         MultiRZ(tensor(3.), wires=[0, 2]),
+         MultiRZ(tensor(6.), wires=[1, 2]),
+         H(0),
+         RZ(1.0, wires=[0]),
+         H(1),
+         RZ(2.0, wires=[1]),
+         H(2),
+         RZ(3.0, wires=[2]),
+         MultiRZ(tensor(2.), wires=[0, 1]),
+         MultiRZ(tensor(3.), wires=[0, 2]),
+         MultiRZ(tensor(6.), wires=[1, 2])]
         """
         wires = Wires(wires)
         op_list = []
@@ -286,7 +297,7 @@ def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
     }
 
 
-@register_resources(_iqp_embedding_resources)
+@register_resources(_iqp_embedding_resources, exact=False)
 def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
 
     if has_jax and capture.enabled():
