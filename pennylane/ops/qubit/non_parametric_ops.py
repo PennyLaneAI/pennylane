@@ -30,12 +30,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
@@ -45,7 +40,7 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -1536,9 +1531,9 @@ def _swap_to_cnot(wires, **_):
 
 def _swap_to_ppr_resource(wires: WiresLike):
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
+        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
 
@@ -1850,8 +1845,8 @@ def _iswap_decomp(wires):
 
 def _iswap_to_ppr_resource(wires: WiresLike):
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
+        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
@@ -2025,8 +2020,8 @@ def _siswap_decomp(wires):
 
 def _siswap_to_ppr_resource(wires: WiresLike):
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
+        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 

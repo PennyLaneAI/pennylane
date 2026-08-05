@@ -203,7 +203,10 @@ class TestOperations:
         qp.assert_equal(op_unflattened, op)
 
         if isinstance(op, Operator2):
-            return  # The below test does not work for Operator2
+            # The test below assumes that `op.data` are numerical, which is not necessarily
+            # the case anymore for `Operator2` where `op.data` is anything that is dynamic
+            # and traceable, which could include things like `control_values`
+            return
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
@@ -2833,7 +2836,7 @@ class TestPauliRot:
 
     def test_paulirot_repr(self):
         op = qp.PauliRot(1.234, "XYX", wires=(0, 1, 2))
-        assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
+        assert repr(op) == "PauliRot(theta=1.234, pauli_word=XYX, wires=[0, 1, 2])"
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
@@ -4169,7 +4172,6 @@ control_data = [
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
     (qp.MultiRZ(1.234, wires=(0, 1, 2)), Wires([])),
-    (qp.PauliRot(1.234, "IXY", wires=(0, 1, 2)), Wires([])),
     (qp.PhaseShift(1.234, wires=0), Wires([])),
     (qp.U1(1.234, wires=0), Wires([])),
     (qp.U2(1.234, 2.345, wires=0), Wires([])),
