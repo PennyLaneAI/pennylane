@@ -691,7 +691,6 @@ class TestSample:
         )
 
 
-@pytest.mark.xfail(reason="we don't care")
 def test_shadow_expval(seed):
     """Test that the shadow expval of an observable can be captured."""
 
