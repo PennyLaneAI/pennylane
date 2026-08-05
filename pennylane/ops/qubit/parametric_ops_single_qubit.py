@@ -233,7 +233,7 @@ def _rx_to_rz_cliff(phi, wires: WiresLike, **__):
 
 
 def _rx_to_ppr_resources():
-    return {resource_rep(qp.PauliRot, pauli_word="X"): 1}
+    return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
 
 
 @register_resources(_rx_to_ppr_resources)
@@ -462,7 +462,7 @@ def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
 
 
 def _ry_to_ppr_resources():
-    return {resource_rep(qp.PauliRot, pauli_word="Y"): 1}
+    return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
 
 
 @register_resources(_ry_to_ppr_resources)
@@ -734,9 +734,8 @@ def _rz_to_ry_cliff(phi, wires: WiresLike):
     )
 
 
-# pylint: disable=unused-argument
 def _rz_to_ppr_resources(phi, wires):
-    return {resource_rep(qp.PauliRot, pauli_word="Z"): 1}
+    return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 
 @register_resources(_rz_to_ppr_resources)
@@ -957,7 +956,9 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
 def _cphase_to_ppr_resource(base, control_wires, **_):  # pylint: disable=unused-argument
     num_control_wires = len(control_wires)
     resources = {
-        resource_rep(qp.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
+        qp.PauliRot(Float, pauli_word="Z" * i, wires=Wire[len("Z" * i)]): builtin_math.comb(
+            num_control_wires + 1, i
+        )
         for i in range(1, num_control_wires + 2)
     }
     resources[qp.GlobalPhase] = 1

@@ -1179,7 +1179,7 @@ class TestEqual:
             is False
         )
         with pytest.raises(
-            AssertionError, match="The hyperparameters are not equal for op1 and op2."
+            AssertionError, match="op1 and op2 have different values for 'pauli_word'."
         ):
             assert_equal(
                 op1(param, "Y", wires=wire),
