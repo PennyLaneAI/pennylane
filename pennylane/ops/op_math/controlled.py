@@ -256,8 +256,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
-    control_values = math.array(control_values)
-    return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
+    return math.concatenate([control_values, base_ctrl_values])
 
 
 def _is_empty_or_all_true(control_values):
@@ -302,8 +301,7 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
 def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
-    if not isinstance(control, AbstractWires):
-        control = Wires(control)
+    control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
     elif isinstance(control_values, tuple):

@@ -382,7 +382,7 @@ class TestControlledOp2:
         assert op.base == base
         assert op.wires == Wires([1, 2, 0])
         assert op.control_wires == Wires([1, 2])
-        assert op.control_values.tolist() == [False, True]
+        assert op.control_values == [False, True]
         assert op.target_wires == Wires([0])
         assert op.work_wires == Wires([3])
         assert op.work_wire_type == "zeroed"
@@ -431,7 +431,7 @@ class TestControlledOp2:
 
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1, 2])
-        assert op.control_values.tolist() == [True, True]
+        assert op.control_values == [True, True]
         assert op.work_wires == Wires([])
 
     def test_single_control_value(self):
@@ -439,7 +439,7 @@ class TestControlledOp2:
 
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1], control_values=0)
-        assert op.control_values.tolist() == [False]
+        assert op.control_values == [False]
 
     def test_comparison(self):
         """Tests comparing the equality of controlled operators."""
@@ -557,29 +557,6 @@ class TestControlledOp2:
 
         op = ControlledOp2(DynOp(0.5, 0), control_wires=1)
         assert op == copy_fn(op)
-
-    @pytest.mark.capture
-    def test_control_values_traced(self):
-        """Tests that control values can be traced."""
-
-        import jax  # pylint: disable=import-outside-toplevel
-
-        def circ(cvals):
-            qp.ctrl(qp.H(0), control=[1, 2], control_values=cvals)
-            qp.ctrl(qp.CH([0, 1]), control=[2, 3], control_values=cvals)
-            op = qp.ctrl(qp.H(0), control=[1, 2], control_values=cvals)
-            qp.ctrl(op, control=[3, 4], control_values=[0, 1])
-            op2 = qp.ctrl(qp.H(0), control=[1, 2], control_values=[1, 0])
-            qp.ctrl(op2, control=[3, 4], control_values=cvals)
-
-        jaxpr = jax.make_jaxpr(circ)(jax.numpy.array([True, False]))
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, jax.numpy.array([False, True]))
-        assert tape.operations == [
-            qp.ctrl(qp.H(0), control=[1, 2], control_values=[0, 1]),
-            qp.ctrl(qp.H(1), control=[2, 3, 0], control_values=[0, 1, 1]),
-            qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 0, 1]),
-            qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 1, 0]),
-        ]
 
     def test_old_decomp_integration(self):
         """Tests that ControlledOp2 is compatible with the old decomposition convention."""

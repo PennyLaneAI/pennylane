@@ -120,7 +120,7 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
             Full Expansion Gates: {CNOT: 160, GlobalPhase: 91, RX: 15, RY: 20, RZ: 140}
             Weighted Cost: 335.0
             """).strip()
@@ -151,7 +151,7 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)) | 1 |
+            | Controlled(RZ, control_wires=AbstractWires(3)) | 1 |
             | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 |
 
             | Full Expansion | Count |
@@ -200,7 +200,7 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
             Full Expansion Gates: {CNOT: 72, GlobalPhase: 79, MidMeasure: 4, RX: 19, RY: 24, RZ: 80}
             Weighted Cost: 199.0
             """).strip()
@@ -259,7 +259,7 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)) | 1 |
+            | Controlled(RZ, control_wires=AbstractWires(3)) | 1 |
             | MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed) | 2 |
 
             | Full Expansion | Count |
