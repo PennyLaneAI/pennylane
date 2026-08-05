@@ -976,6 +976,7 @@
     [(#9856)](https://github.com/PennyLaneAI/pennylane/pull/9856)
     [(#9876)](https://github.com/PennyLaneAI/pennylane/pull/9876)
     [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+    [(#9966)](https://github.com/PennyLaneAI/pennylane/pull/9966)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
