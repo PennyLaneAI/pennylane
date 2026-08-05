@@ -284,13 +284,13 @@ class GlobalPhase(Operator2):
     num_wires = None
 
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[-1]}
+    arg_specs = {"phi": Float, "wires": Wire[0]}
 
     def __init__(self, phi, wires: WiresLike = ()):  # pylint: disable=unused-argument
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_eigvals(phi, wires):  # pylint: disable=arguments-differ
+    def compute_eigvals(phi, wires=()):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -309,7 +309,7 @@ class GlobalPhase(Operator2):
 
         **Example**
 
-        >>> qp.GlobalPhase.compute_eigvals(np.pi/2)
+        >>> qp.GlobalPhase.compute_eigvals(np.pi/2, wires=[0])
         array([6.123234e-17-1.j, 6.123234e-17-1.j])
         """
         n_wires = len(wires)
@@ -326,7 +326,7 @@ class GlobalPhase(Operator2):
         return qp.math.tensordot(exp, ones, axes=0)
 
     @staticmethod
-    def compute_matrix(phi, wires):  # pylint: disable=arguments-differ
+    def compute_matrix(phi, wires=()):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
@@ -338,7 +338,7 @@ class GlobalPhase(Operator2):
 
         **Example**
 
-        >>> qp.GlobalPhase.compute_matrix(np.pi/4, n_wires=1)
+        >>> qp.GlobalPhase.compute_matrix(np.pi/4, wires=[0])
         array([[0.70710678-0.70710678j, 0.        +0.j        ],
                [0.        +0.j        , 0.70710678-0.70710678j]])
         """
@@ -358,14 +358,16 @@ class GlobalPhase(Operator2):
         return qp.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
-    def compute_sparse_matrix(phi, wires, format="csr"):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(phi, wires=(), format="csr"):  # pylint: disable=arguments-differ
         n_wires = len(wires)
         if qp.math.ndim(phi) > 0:
             raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    def compute_diagonalizing_gates(phi, wires):  # pylint: disable=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(
+        phi, wires=()
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -391,10 +393,10 @@ class GlobalPhase(Operator2):
         return []
 
     def adjoint(self):
-        return GlobalPhase(-1 * self.data[0], self.wires)
+        return GlobalPhase(-1 * self.phi, self.wires)
 
     def pow(self, z):
-        return [GlobalPhase(z * self.data[0], self.wires)]
+        return [GlobalPhase(z * self.phi, self.wires)]
 
     def generator(self):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
@@ -403,8 +405,11 @@ class GlobalPhase(Operator2):
 
 
 def _controlled_g_phase_resource(
-    *_, num_control_wires, num_zero_control_values, num_work_wires, **__
-):
+    base, control_wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
+    num_control_wires = len(control_wires)
+    num_zero_control_values = len(control_values)
+    num_work_wires = len(work_wires)
     if num_control_wires == 1 and num_zero_control_values == 1:
         return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
@@ -421,16 +426,23 @@ def _controlled_g_phase_resource(
 
 
 @register_resources(_controlled_g_phase_resource)
-def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, work_wires, **__):
+def _controlled_g_phase_decomp(
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
+):
     """The decomposition rule for a controlled global phase."""
+    wires = control_wires + base.wires
 
     if len(control_wires) == 1 and control_values[0]:
-        qp.PhaseShift(-params[0], wires=control_wires[-1])
+        qp.PhaseShift(-base.phi, wires=control_wires[-1])
         return
 
     if len(control_wires) == 1 and not control_values[0]:
-        qp.PhaseShift(params[0], wires=control_wires[-1])
-        qp.GlobalPhase(params[0])
+        qp.PhaseShift(base.phi, wires=control_wires[-1])
+        qp.GlobalPhase(base.phi)
         return
 
     zero_control_wires = [
@@ -439,7 +451,7 @@ def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, wo
     for w in zero_control_wires:
         qp.PauliX(w)
     qp.ctrl(
-        qp.PhaseShift(-params[0], wires=wires[len(control_wires) - 1]),
+        qp.PhaseShift(-base.phi, wires=wires[len(control_wires) - 1]),
         control=wires[: len(control_wires) - 1],
         work_wires=work_wires,
     )
