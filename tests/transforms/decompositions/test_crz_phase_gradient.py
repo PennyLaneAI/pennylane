@@ -51,10 +51,9 @@ def test_valid_decomp(phi, p):
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
     expected as a fixed decomposition and yields the correct resources"""
-    first_free = 2
-    angle_wires = list(range(first_free, first_free + p))
-    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
-    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
+    angle_wires = [f"aux_{i}" for i in range(p)]
+    phase_grad_wires = [f"qft_{i}" for i in range(p)]
+    work_wires = [f"work_{i}" for i in range(p - 1)]
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -82,10 +81,9 @@ def test_as_fixed_decomps(phi, p):
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
     expected as an alternative decomposition and yields the correct resources"""
-    first_free = 2
-    angle_wires = list(range(first_free, first_free + p))
-    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
-    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -119,10 +117,9 @@ def test_integration_multi_wire(seed):
     phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
     wires = [0, 1]
 
-    first_free = 2
-    angle_wires = list(range(first_free, first_free + prec))
-    phase_grad_wires = list(range(first_free + prec, first_free + 2 * prec))
-    work_wires = list(range(first_free + 2 * prec, first_free + 3 * prec - 1))
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
     phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**3) / 2**3) / np.sqrt(2**3)
 
