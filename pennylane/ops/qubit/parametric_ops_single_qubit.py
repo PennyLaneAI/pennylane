@@ -555,8 +555,8 @@ class RZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
-        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -576,6 +576,7 @@ class RZ(Operator2):
         tensor([[0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
+        # pylint: disable=unused-argument
         if (
             qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -601,8 +602,8 @@ class RZ(Operator2):
         ).asformat(format)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_eigvals(phi: TensorLike, wires=None) -> TensorLike:
-        # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -628,6 +629,7 @@ class RZ(Operator2):
         >>> qp.RZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
+        # pylint: disable=unused-argument
         if (
             qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)

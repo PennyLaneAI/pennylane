@@ -1743,7 +1743,7 @@ class SelectCopyQROM(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -1751,7 +1751,6 @@ class SelectCopyQROM(ResourceOperator):
         batch_size: int | None = None,
         bits_per_iter: int | None = None,
     ) -> CompressedResourceOp:
-        # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -1791,7 +1790,7 @@ class SelectCopyQROM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -1799,7 +1798,6 @@ class SelectCopyQROM(ResourceOperator):
         batch_size: int | None = None,
         bits_per_iter: int | None = None,
     ):
-        # pylint: disable=arguments-differ
         r"""Returns a list of ``GateCount`` objects representing the operator's resources.
 
         Args:

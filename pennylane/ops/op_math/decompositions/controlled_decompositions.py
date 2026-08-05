@@ -1019,7 +1019,6 @@ def _ctrl_global_phase(
 
 
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
-    # pylint: disable=no-value-for-parameter
     r"""
     Construct a quantum circuit for creating n-condionally zeroed auxiliary qubits using 3n qubits. This
     implements Fig. 4a of [1]. Each wire is of the same size :math:`n`.
@@ -1033,6 +1032,7 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
+    # pylint: disable=no-value-for-parameter
 
     if compiler.active() or qp.capture.enabled():
         control_wires_x = math.array(control_wires_x, like="jax")

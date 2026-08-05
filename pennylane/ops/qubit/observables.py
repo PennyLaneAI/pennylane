@@ -141,8 +141,7 @@ class Hermitian(Operator):
         return A
 
     @staticmethod
-    def compute_sparse_matrix(A, format="csr") -> csr_matrix:
-        # pylint: disable=arguments-differ
+    def compute_sparse_matrix(A, format="csr") -> csr_matrix:  # pylint: disable=arguments-differ
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
 
     @property
@@ -376,8 +375,8 @@ class SparseHamiltonian(Operator):
         return H.toarray()
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
-        # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

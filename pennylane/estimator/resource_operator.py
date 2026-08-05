@@ -284,7 +284,6 @@ class ResourceOperator(ABC):
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
-        # pylint: disable=import-outside-toplevel
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         For a ``ResourceOperator`` that doesn't define an ``adjoint_resource_decomp`` method, this will
@@ -298,6 +297,7 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
+        # pylint: disable=import-outside-toplevel
         from pennylane.estimator.ops.op_math.symbolic import (
             apply_adj,
         )
@@ -317,7 +317,6 @@ class ResourceOperator(ABC):
         num_zero_ctrl: int,
         target_resource_params: dict | None = None,
     ) -> list[GateCount]:
-        # pylint: disable=import-outside-toplevel
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         For a ``ResourceOperator`` that doesn't define a ``controlled_resource_decomp`` method, this
@@ -335,6 +334,7 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
+        # pylint: disable=import-outside-toplevel
         from pennylane.estimator.ops.op_math.symbolic import (
             apply_controlled,
         )
@@ -440,8 +440,8 @@ class ResourceOperator(ABC):
 
     @classmethod
     def tracking_name(cls, *args, **kwargs) -> str:
-        # pylint: disable=unused-argument
         r"""Returns a name used to track the operator during resource estimation."""
+        # pylint: disable=unused-argument
         return cls.__name__
 
 

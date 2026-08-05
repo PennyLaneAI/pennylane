@@ -455,14 +455,13 @@ class ShadowExpvalMP(MeasurementTransform):
         super().__init__()
 
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-renamed
         cls,
         H: Operator | Sequence,
         seed: int | None = None,
         k: int = 1,
         **kwargs,
     ):
-        # pylint: disable=arguments-renamed
         if cls._obs_primitive is None:  # pragma: no cover
             return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)

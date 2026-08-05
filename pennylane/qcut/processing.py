@@ -217,7 +217,6 @@ def contract_tensors(
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
 ):
-    # pylint: disable=too-many-branches
     r"""Contract tensors according to the edges specified in the communication graph.
 
     .. note::
@@ -296,7 +295,7 @@ def contract_tensors(
     >>> qp.qcut.contract_tensors(tensors, graph, prep, meas)
     38
     """
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=too-many-branches,import-outside-toplevel
     if use_opt_einsum:
         try:
             from opt_einsum import contract, get_symbol

@@ -434,7 +434,6 @@ class StatePrep(StatePrepBase):
 
     @staticmethod
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
-        # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -455,6 +454,7 @@ class StatePrep(StatePrepBase):
         [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
 
         """
+        # pylint: disable=unused-argument
         return [MottonenStatePreparation(state, wires)]
 
     def _flatten(self):

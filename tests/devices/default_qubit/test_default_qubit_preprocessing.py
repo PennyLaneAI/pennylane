@@ -126,8 +126,7 @@ class CustomizedSparseOp(qp.operation.Operator):
         super().__init__(U, wires)
 
     @property
-    def has_matrix(self) -> bool:
-        # pylint: disable=arguments-renamed,invalid-overridden-method
+    def has_matrix(self) -> bool:  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
     def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument

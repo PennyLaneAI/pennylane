@@ -174,7 +174,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step_and_cost(
+    def step_and_cost(  # pylint: disable=arguments-differ
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
         """Update the parameter array :math:`x` with one step of the optimizer and return the
@@ -200,7 +200,6 @@ class QNGOptimizer(GradientDescentOptimizer):
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
             prior to the step
         """
-        # pylint: disable=arguments-differ
         if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "
@@ -229,7 +228,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         return new_args, forward
 
-    def step(
+    def step(  # pylint: disable=arguments-differ
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
         """Update the parameter array :math:`x` with one step of the optimizer.
@@ -253,7 +252,6 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        # pylint: disable=arguments-differ
         new_args, _ = self.step_and_cost(
             qnode,
             *args,

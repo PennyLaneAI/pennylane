@@ -1334,7 +1334,6 @@ def transform_angles(angles, routine1, routine2):
 
 # pylint: disable-next=unused-argument
 def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
-    # pylint: disable=too-many-return-statements,too-many-branches
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP),
     quantum singular value transformation (QSVT) or generalized quantum signal processing (GQSP).
@@ -1415,6 +1414,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
             P(x) =        0.19610666666666668
 
     """
+    # pylint: disable=too-many-return-statements,too-many-branches
 
     poly = math.trim_zeros(math.array(poly, like="numpy"), trim="b")
 

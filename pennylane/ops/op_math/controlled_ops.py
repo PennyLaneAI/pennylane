@@ -1627,14 +1627,13 @@ class MultiControlledX(ControlledOp):
         return qp.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         wires: WiresLike = None,
         work_wires: WiresLike = None,
         control_values=None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         **kwargs,
     ):
-        # pylint: disable=unused-argument,arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1662,6 +1661,7 @@ class MultiControlledX(ControlledOp):
         [Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux']), Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux'])]
 
         """
+        # pylint: disable=unused-argument
         wires = Wires(() if wires is None else wires)
 
         if len(wires) < 2:

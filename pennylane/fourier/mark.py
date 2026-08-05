@@ -71,8 +71,7 @@ class MarkedOp(SymbolicOp):
         return {"base": abstractify(self.base)}
 
     @property
-    def has_generator(self) -> bool:
-        # pylint: disable=arguments-renamed,invalid-overridden-method
+    def has_generator(self) -> bool:  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):

@@ -172,7 +172,6 @@ def perturbation_error(
     backend: str = "serial",
     importance: ImportanceConfig = None,
 ) -> list[float] | list[dict[int, dict]]:
-    # pylint: disable=too-many-branches
     r"""Computes the perturbation theory error using the effective Hamiltonian
     :math:`\hat{H}_{eff} = \hat{H} + \hat{\epsilon}` for a  given product formula.
 
@@ -227,6 +226,7 @@ def perturbation_error(
     >>> print(errors)
      defaultdict(<class 'int'>, {3: np.complex128(0.9189251160920877j)})
     """
+    # pylint: disable=too-many-branches
 
     if not product_formula.symbol_set.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")

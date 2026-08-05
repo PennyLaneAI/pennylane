@@ -301,13 +301,12 @@ class QubitUnitary(Operation):
         return qp.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
 
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
-        # pylint: disable=arguments-renamed,invalid-overridden-method
         return self._issparse
 
     @property
-    def has_matrix(self) -> bool:
-        # pylint: disable=arguments-renamed,invalid-overridden-method
+    def has_matrix(self) -> bool:  # pylint: disable=arguments-renamed,invalid-overridden-method
         return not self._issparse
 
     @property
@@ -468,7 +467,6 @@ class DiagonalQubitUnitary(Operator2):
 
     @staticmethod
     def compute_matrix(D: TensorLike, wires: WiresLike = None) -> TensorLike:
-        # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -488,6 +486,7 @@ class DiagonalQubitUnitary(Operator2):
         tensor([[ 1,  0],
                 [ 0, -1]])
         """
+        # pylint: disable=unused-argument
         D = qp.math.asarray(D)
 
         if not qp.math.is_abstract(D) and not qp.math.allclose(
@@ -503,7 +502,6 @@ class DiagonalQubitUnitary(Operator2):
 
     @staticmethod
     def compute_eigvals(D: TensorLike, wires: WiresLike = None) -> TensorLike:
-        # pylint: disable=unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -528,6 +526,7 @@ class DiagonalQubitUnitary(Operator2):
         >>> qp.DiagonalQubitUnitary.compute_eigvals(torch.tensor([1, -1]))
         tensor([ 1, -1])
         """
+        # pylint: disable=unused-argument
         D = qp.math.asarray(D)
 
         if not (
@@ -731,15 +730,14 @@ class BlockEncode(Operation):
         self._issparse = sp.sparse.issparse(A)
 
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         """bool: Whether the operator has a sparse matrix representation."""
-        # pylint: disable=arguments-renamed,invalid-overridden-method
         return self._issparse
 
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=arguments-renamed,invalid-overridden-method
         """bool: Whether the operator has a sparse matrix representation."""
-        # pylint: disable=arguments-renamed,invalid-overridden-method
         return not self._issparse
 
     def _flatten(self) -> FlatPytree:

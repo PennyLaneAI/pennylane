@@ -350,8 +350,8 @@ class Sum(CompositeOp):
 
     @property
     @handle_recursion_error
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
-        # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     @handle_recursion_error

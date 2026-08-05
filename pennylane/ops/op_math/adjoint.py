@@ -397,8 +397,8 @@ class Adjoint(SymbolicOp):
         return moveaxis(conj(base_matrix), -2, -1)
 
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
-        # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_sparse_matrix
 
     def sparse_matrix(self, wire_order=None, format="csr"):

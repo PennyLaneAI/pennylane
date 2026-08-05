@@ -408,10 +408,9 @@ class ParametricMidMeasure(MidMeasure):
         return hash(fingerprint)
 
     @classmethod
-    def _primitive_bind_call(  # pylint: disable=too-many-arguments
+    def _primitive_bind_call(  # pylint: disable=too-many-arguments,arguments-differ
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, meas_uid=None
     ):
-        # pylint: disable=arguments-differ
         wires = () if wires is None else wires
         return cls._primitive.bind(
             *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, meas_uid=meas_uid

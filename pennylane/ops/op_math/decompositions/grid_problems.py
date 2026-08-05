@@ -722,7 +722,6 @@ class GridIterator:
         num_b: list[bool],
         shift: ZOmega,
     ) -> Iterable[ZOmega]:
-        # pylint: disable=too-many-branches
         r"""Iterates over the solutions to the grid problem for two upright rectangles.
 
         The solutions :math:`u \in Z[\omega]` are such that :math:`u \in A` and
@@ -740,6 +739,7 @@ class GridIterator:
         Returns:
             Iterable[ZOmega]: The list of solutions to the upright grid problem for two rectangles.
         """
+        # pylint: disable=too-many-branches
         e1, e2 = state.e1, state.e2
         Ax0, Ax1, Ay0, Ay1 = bbox1
         Bx0, Bx1, By0, By1 = bbox2

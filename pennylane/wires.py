@@ -283,7 +283,7 @@ class Wires(Sequence):
         """
         return set(self.labels)
 
-    def index(self, wire):
+    def index(self, wire):  # pylint: disable=arguments-differ
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
 
         Args:
@@ -293,7 +293,6 @@ class Wires(Sequence):
         Returns:
             int: index of the input
         """
-        # pylint: disable=arguments-differ
 
         if isinstance(wire, Wires):
             if len(wire) != 1:

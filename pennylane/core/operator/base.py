@@ -702,12 +702,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise MatrixUndefinedError
 
     @classproperty
-    def has_matrix(cls) -> bool:
-        # pylint: disable=no-self-argument,comparison-with-callable
+    def has_matrix(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns a defined matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
+        # pylint: disable=comparison-with-callable
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
@@ -767,12 +767,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise SparseMatrixUndefinedError
 
     @classproperty
-    def has_sparse_matrix(cls) -> bool:
-        # pylint: disable=no-self-argument,comparison-with-callable
+    def has_sparse_matrix(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether the Operator returns a defined sparse matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
+        # pylint: disable=comparison-with-callable
         return (
             cls.compute_sparse_matrix != Operator.compute_sparse_matrix
             or cls.sparse_matrix != Operator.sparse_matrix
@@ -1303,12 +1303,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return {}
 
     @classproperty
-    def has_diagonalizing_gates(cls) -> bool:
-        # pylint: disable=no-self-argument,comparison-with-callable
+    def has_diagonalizing_gates(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
+        # pylint: disable=comparison-with-callable
         # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
         # Currently, those are mostly classes from the operator arithmetic module.
         return (
@@ -1363,8 +1363,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         )
 
     @classproperty
-    def has_generator(cls) -> bool:
-        # pylint: disable=no-self-argument
+    def has_generator(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns a defined generator.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1435,8 +1434,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @classproperty
-    def has_adjoint(cls) -> bool:
-        # pylint: disable=no-self-argument
+    def has_adjoint(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.

@@ -637,7 +637,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         return object.__new__(Controlled)
 
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-differ
         cls,
         base,
         control_wires,
@@ -645,7 +645,6 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         work_wires=None,
         work_wire_type="borrowed",
     ):
-        # pylint: disable=arguments-differ
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))

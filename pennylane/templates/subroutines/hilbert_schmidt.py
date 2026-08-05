@@ -217,13 +217,12 @@ class HilbertSchmidt(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)

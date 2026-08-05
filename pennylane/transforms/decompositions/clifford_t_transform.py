@@ -196,11 +196,11 @@ def _simplify_param(theta, gate):
 
 
 def _rot_decompose(op):
-    # pylint: disable=too-many-branches
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
     :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
     :class:`~.S`, and :class:`~.Hadamard`.
     """
+    # pylint: disable=too-many-branches
     d_ops = []
 
     if isinstance(op, qp.QubitUnitary):
@@ -439,7 +439,6 @@ def clifford_t_decomposition(
     cache_eps_rtol=None,
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    # pylint: disable=too-many-branches,too-many-statements
     r"""Decomposes a circuit into the Clifford+T basis.
 
     This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.T`, :class:`~.RZ` and
@@ -516,6 +515,7 @@ def clifford_t_decomposition(
     True
 
     """
+    # pylint: disable=too-many-branches,too-many-statements
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for initial compilation pass
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES + _SKIP_OP_TYPES]
