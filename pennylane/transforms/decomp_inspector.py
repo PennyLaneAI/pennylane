@@ -376,6 +376,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 76, GlobalPhase: 83, MidMeasure: 4, RX: 27, RY: 16, RZ: 84}
     Weighted Cost: 207.0
 
+    For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
+    whereas the "Full Expansion" refers to the circuit produced by decomposing the operator all the way
+    down to the target gate set. The weighted cost of the decomposition, computed based on the full expansion, is also displayed.
+
     In addition to the operators at the top level of the circuit, we can also inspect the graph
     for how intermediate operators are decomposed. For example, let's look at the single-controlled
     ``MultiRZ`` produced in the decomposition of the controlled ``MultiRZ`` (notice how ``num_work_wires``

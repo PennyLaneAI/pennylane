@@ -478,7 +478,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             return qp.ctrl(
                 simplified_base,
                 control=self.control_wires + self.base.control_wires,
-                control_values=qp.math.array(ctrl_values, dtype="bool"),
+                control_values=math.cast(ctrl_values, bool),
                 work_wires=self.work_wires + self.base.work_wires,
                 work_wire_type=resolve_work_wire_type(
                     self.base.work_wires,
@@ -605,13 +605,13 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values.
         if n_ctrls == 0:
-            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values.tolist()
+            invars = eqns[0].invars + self.control_wires.tolist() + list(self.control_values)
         else:
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
             # need to insert the new control wires before the old ones, and do the same
             # for control values too.
             control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
-            control_values = self.control_values.tolist() + eqns[0].invars[-n_ctrls:]
+            control_values = list(self.control_values) + eqns[0].invars[-n_ctrls:]
             invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
 
         params["n_ctrls"] += len(self.control_wires)
