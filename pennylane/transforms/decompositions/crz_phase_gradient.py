@@ -119,9 +119,6 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
             num_work_wires=len(work_wires),
         )
         fanout = qp.ctrl(qp.BasisState(Int[precision], Wire[precision]), control=Wire[1])
-        if qp.capture.enabled():
-            # two fanouts, one semi adder, two fanouts
-            return {fanout: 4, target_op: 1}
         compute_op = uncompute_op = qp.resource_rep(Prod, resources={fanout: 2})
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
         return {change_basis_rep: 1}
