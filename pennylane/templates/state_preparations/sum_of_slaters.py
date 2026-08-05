@@ -883,7 +883,13 @@ class SumOfSlatersPrep(Operator2):
     """
 
     dynamic_argnames = ("coefficients",)
-    wire_argnames = ("wires", "enumeration_wires", "identification_wires", "qrom_work_wires", "mcx_cache_wires")
+    wire_argnames = (
+        "wires",
+        "enumeration_wires",
+        "identification_wires",
+        "qrom_work_wires",
+        "mcx_cache_wires",
+    )
     compilable_argnames = ("indices",)
 
     def __init__(
@@ -896,7 +902,15 @@ class SumOfSlatersPrep(Operator2):
         mcx_cache_wires,
         indices,
     ):  # pylint: disable=too-many-arguments
-        super().__init__(coefficients, wires, enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, indices)
+        super().__init__(
+            coefficients,
+            wires,
+            enumeration_wires,
+            identification_wires,
+            qrom_work_wires,
+            mcx_cache_wires,
+            indices,
+        )
 
     @staticmethod
     def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
@@ -987,7 +1001,7 @@ def _sos_state_prep_resources(
     num_entries = len(indices)
     num_bits = len(selector_ids)
     num_wires = n
-    
+
     if num_entries == 1:
         return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
     d = math.ceil_log2(num_entries)
@@ -1035,7 +1049,15 @@ def _sos_state_prep_resources(
     return resources
 
 
-def _sos_state_prep_work_wires(coefficients, wires, enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, indices):
+def _sos_state_prep_work_wires(
+    coefficients,
+    wires,
+    enumeration_wires,
+    identification_wires,
+    qrom_work_wires,
+    mcx_cache_wires,
+    indices,
+):
     """See SumOfSlatersPrep.required_register_sizes for details."""
     # pylint: disable-next=protected-access
     num_wires = len(wires)

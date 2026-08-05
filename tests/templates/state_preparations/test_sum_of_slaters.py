@@ -417,7 +417,15 @@ class TestSumOfSlatersPrep:
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "num_wires, num_entries",
-        [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10),],
+        [
+            (2, 1),
+            (2, 2),
+            (2, 4),
+            (4, 3),
+            (4, 6),
+            (10, 3),
+            (10, 10),
+        ],
     )
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator."""
