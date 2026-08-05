@@ -225,7 +225,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         return
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**params)
+    with qp.capture.pause():
+        resources = rule.compute_resources(**params)
     gate_counts = resources.gate_counts
 
     if qp.capture.enabled():
@@ -261,7 +262,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        op_rep = abstractify(_op)
+        with qp.capture.pause():
+            op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
