@@ -199,9 +199,9 @@ class TestDecomposeInterpreter:
         else:
             assert len(recwarn) == 0
 
-        assert_eqn_matches_op(transformed_jaxpr.eqns[0], qp.Z)
-        assert_eqn_matches_op(transformed_jaxpr.eqns[1], qp.X)
-        assert_eqn_matches_op(transformed_jaxpr.eqns[2], qp.PauliY)
+        assert_eqn_matches_op(transformed_jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(transformed_jaxpr.eqns[1], qp.Y)
+        assert_eqn_matches_op(transformed_jaxpr.eqns[2], qp.Z)
         assert transformed_jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -259,9 +259,9 @@ class TestDecomposeInterpreter:
             assert_eqn_matches_op(transformed_jaxpr.eqns[-2], qp.PauliY)
             assert_eqn_matches_op(transformed_jaxpr.eqns[-1], qp.X)
         else:
-            assert_eqn_matches_op(transformed_jaxpr.eqns[0], qp.PauliZ)
-            assert_eqn_matches_op(transformed_jaxpr.eqns[1], qp.PauliX)
-            assert_eqn_matches_op(transformed_jaxpr.eqns[2], qp.PauliY)
+            assert_eqn_matches_op(transformed_jaxpr.eqns[0], qp.PauliX)
+            assert_eqn_matches_op(transformed_jaxpr.eqns[1], qp.PauliY)
+            assert_eqn_matches_op(transformed_jaxpr.eqns[2], qp.PauliZ)
             assert transformed_jaxpr.eqns[3].primitive == qp.ops.Prod._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
