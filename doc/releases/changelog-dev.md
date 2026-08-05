@@ -853,6 +853,9 @@
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
+  - Other
+    - `~.SingleExcitation`
+  [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944))
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   - Parametric operators are ported:
     - `~.RZ`, `~.CRZ`

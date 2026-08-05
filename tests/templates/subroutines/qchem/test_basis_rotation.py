@@ -58,7 +58,6 @@ def test_standard_validity(rotation):
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
-    @pytest.mark.capture
     @pytest.mark.parametrize(
         ("num_wires", "unitary_matrix", "givens", "diags"),
         [
@@ -121,7 +120,6 @@ class TestDecomposition:
         for rule in qp.list_decomps(qp.BasisRotation):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.capture
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix", "givens"),
         [

@@ -31,7 +31,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import Prod, prod
+from pennylane.ops import Prod, SingleExcitation, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
@@ -1340,3 +1340,8 @@ def _handle_operator2(op: Operator2):
 def _handle_adjoint2(op: Adjoint2):
     """Calculates the parameter frequencies for an Adjoint2."""
     return parameter_frequencies(op.base)
+
+
+@parameter_frequencies.register
+def _handle_single_excitation(op: SingleExcitation):
+    return [(0.5, 1.0)]
