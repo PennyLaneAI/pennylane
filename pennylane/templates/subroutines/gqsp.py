@@ -99,7 +99,7 @@ class GQSP(Operator2):
     @property
     @override
     def wires(self):
-        return self.arguments["control"] + self.arguments["unitary"].wires
+        return self.control + self.unitary.wires
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
