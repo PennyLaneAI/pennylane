@@ -257,8 +257,7 @@ def _execute_analysis_pass(
         )
 
 
-# pylint: disable-next=too-many-arguments
-def resources_from_analysis_pass(
+def resources_from_analysis_pass(  # pylint: disable=too-many-arguments
     qjit,
     original_qnode,
     level: int | tuple[int] | list[int],

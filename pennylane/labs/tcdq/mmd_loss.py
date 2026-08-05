@@ -118,8 +118,7 @@ def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
 
 
 @partial(jax.jit, static_argnames=["n_samples", "sqrt_loss"])
-# pylint: disable-next=too-many-arguments
-def _compute_single_mmd(
+def _compute_single_mmd(  # pylint: disable=too-many-arguments
     model_expvals: jnp.ndarray,
     model_expvals_std_err: jnp.ndarray,
     target_data: jnp.ndarray,

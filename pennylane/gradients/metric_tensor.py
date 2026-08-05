@@ -103,8 +103,7 @@ def _expand_nonunitary_gen_stop_at(obj):
     return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
 
 
-# pylint: disable-next=too-many-arguments
-def _expand_metric_tensor(
+def _expand_metric_tensor(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,

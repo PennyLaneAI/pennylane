@@ -500,8 +500,7 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         func: Callable,
         device: SupportedDeviceAPIs,

@@ -255,8 +255,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
-# pylint: disable-next=too-many-arguments
-def is_independent(
+def is_independent(  # pylint: disable=too-many-arguments
     func,
     interface,
     args,

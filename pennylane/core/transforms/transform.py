@@ -463,8 +463,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         tape_transform: Callable | None = None,
         pass_name: None | str = None,

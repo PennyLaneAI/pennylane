@@ -26,8 +26,7 @@ from pennylane import math
 from pennylane.core.operator import Operation
 
 
-# pylint: disable-next=too-many-arguments
-def kahypar_cut(
+def kahypar_cut(  # pylint: disable=too-many-arguments
     graph,
     num_fragments: int,
     imbalance: int = None,

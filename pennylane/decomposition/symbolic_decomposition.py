@@ -349,8 +349,7 @@ def _flip_control_adjoint_resource(
 
 
 @register_resources(_flip_control_adjoint_resource)
-# pylint: disable-next=too-many-arguments
-def flip_control_adjoint(
+def flip_control_adjoint(  # pylint: disable=too-many-arguments
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint

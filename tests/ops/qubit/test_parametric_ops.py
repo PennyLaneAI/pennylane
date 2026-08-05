@@ -2876,8 +2876,7 @@ class TestPauliRot:
             (np.pi / 11, "IIIXYZ", "XYZ", [0, 1, 2, 3, 4, 5], [3, 4, 5]),
         ],
     )
-    # pylint: disable-next=too-many-arguments
-    def test_PauliRot_matrix_identity(
+    def test_PauliRot_matrix_identity(  # pylint: disable=too-many-arguments
         self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
     ):
         """Test PauliRot matrix correctly accounts for identities."""

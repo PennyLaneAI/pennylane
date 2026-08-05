@@ -1128,8 +1128,7 @@ class TestMarginalProb:
     ]
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
-    # pylint: disable-next=too-many-arguments
-    def test_correct_broadcasted_marginals_returned(
+    def test_correct_broadcasted_marginals_returned(  # pylint: disable=too-many-arguments
         self,
         monkeypatch,
         mock_qubit_device_with_original_statistics,
@@ -1149,8 +1148,7 @@ class TestMarginalProb:
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
-    # pylint: disable-next=too-many-arguments
-    def test_correct_broadcasted_marginals_returned_wires_none(
+    def test_correct_broadcasted_marginals_returned_wires_none(  # pylint: disable=too-many-arguments
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, num_wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method when

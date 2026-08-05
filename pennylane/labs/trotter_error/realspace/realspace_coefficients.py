@@ -202,8 +202,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
     5 * (alpha[idx0,idx1])
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         node_type: _NodeType,
         l_child: _RealspaceTree = None,

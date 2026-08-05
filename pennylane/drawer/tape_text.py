@@ -239,8 +239,7 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     return totals
 
 
-# pylint: disable-next=too-many-arguments
-def tape_text(
+def tape_text(  # pylint: disable=too-many-arguments
     tape,
     wire_order=None,
     *,

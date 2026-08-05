@@ -345,8 +345,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     ]
 
 
-# pylint: disable-next=too-many-arguments
-def tape_mpl(
+def tape_mpl(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,

@@ -30,8 +30,7 @@ from pennylane.wires import WireError, Wires
 from .rz_phase_gradient import validate_phase_gradient_wires
 
 
-# pylint: disable-next=too-many-arguments
-def _select_pauli_rot_phase_gradient(
+def _select_pauli_rot_phase_gradient(  # pylint: disable=too-many-arguments
     phis: np.ndarray,
     rot_axis: str,
     control_wires: Wires,

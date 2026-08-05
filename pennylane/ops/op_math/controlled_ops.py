@@ -183,8 +183,7 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
     @classmethod
-    # pylint: disable-next=too-many-arguments
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=too-many-arguments
         cls,
         base,
         wires: WiresLike,
@@ -203,8 +202,7 @@ class ControlledQubitUnitary(ControlledOp):
             work_wire_type=work_wire_type,
         )
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         base,
         wires: WiresLike,

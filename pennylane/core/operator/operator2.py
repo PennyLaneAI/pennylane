@@ -1661,8 +1661,7 @@ if has_jax:
     operator_p.prim_type = "operator"
 
     @operator_p.def_impl
-    # pylint: disable-next=too-many-arguments
-    def _op_impl(
+    def _op_impl(  # pylint: disable=too-many-arguments
         *all_args,
         op_cls,
         wire_lens,

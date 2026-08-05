@@ -62,8 +62,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-# pylint: disable-next=too-many-arguments
-def draw(
+def draw(  # pylint: disable=too-many-arguments
     qnode,
     wire_order=None,
     show_all_wires=False,
@@ -365,8 +364,7 @@ def draw(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
-# pylint: disable-next=too-many-arguments
-def _draw_qnode(
+def _draw_qnode(  # pylint: disable=too-many-arguments
     qnode,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
@@ -419,8 +417,7 @@ def _draw_qnode(
     return wrapper
 
 
-# pylint: disable-next=too-many-arguments
-def draw_mpl(
+def draw_mpl(  # pylint: disable=too-many-arguments
     qnode: QNode | Callable,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
@@ -866,8 +863,7 @@ def draw_mpl(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
-# pylint: disable-next=too-many-arguments
-def _draw_mpl_qnode(
+def _draw_mpl_qnode(  # pylint: disable=too-many-arguments
     qnode,
     wire_order=None,
     show_all_wires=False,

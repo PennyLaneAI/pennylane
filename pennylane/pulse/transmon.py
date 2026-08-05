@@ -39,8 +39,7 @@ def ad(wire, d=2):  # pylint: disable=unused-argument
     return s_prod(0.5, X(wire)) + s_prod(-0.5j, Y(wire))
 
 
-# pylint: disable-next=too-many-arguments
-def transmon_interaction(
+def transmon_interaction(  # pylint: disable=too-many-arguments
     qubit_freq: float | list,
     connections: list,
     coupling: float | list,

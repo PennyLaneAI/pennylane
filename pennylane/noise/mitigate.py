@@ -337,8 +337,7 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
 
 
 @transform
-# pylint: disable-next=too-many-arguments
-def mitigate_with_zne(
+def mitigate_with_zne(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     scale_factors: Sequence[float],
     folding: callable,

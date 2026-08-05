@@ -51,8 +51,7 @@ def _apply_diagonalizing_gates(
     return state
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_with_samples_diagonalizing_gates(
+def _measure_with_samples_diagonalizing_gates(  # pylint: disable=too-many-arguments
     mps: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -111,8 +110,7 @@ def _measure_with_samples_diagonalizing_gates(
     return processed_samples[0]
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_classical_shadow(
+def _measure_classical_shadow(  # pylint: disable=too-many-arguments
     mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
@@ -176,8 +174,7 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None):
     )
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_hamiltonian_with_samples(
+def _measure_hamiltonian_with_samples(  # pylint: disable=too-many-arguments
     mp: list[ExpectationMP],
     state: np.ndarray,
     shots: Shots,
@@ -210,8 +207,7 @@ def _measure_hamiltonian_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_sum_with_samples(
+def _measure_sum_with_samples(  # pylint: disable=too-many-arguments
     mp: list[ExpectationMP],
     state: np.ndarray,
     shots: Shots,
@@ -242,8 +238,7 @@ def _measure_sum_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-# pylint: disable-next=too-many-arguments
-def sample_state(
+def sample_state(  # pylint: disable=too-many-arguments
     state,
     shots: int,
     is_state_batched: bool = False,
@@ -285,8 +280,7 @@ def sample_state(
     return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key)
 
 
-# pylint: disable-next=too-many-arguments
-def measure_with_samples(
+def measure_with_samples(  # pylint: disable=too-many-arguments
     measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,

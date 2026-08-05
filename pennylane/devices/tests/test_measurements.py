@@ -497,8 +497,7 @@ class TestTensorExpval:
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
-    # pylint: disable-next=too-many-arguments
-    def test_wire_order_in_tensor_prod_observables(
+    def test_wire_order_in_tensor_prod_observables(  # pylint: disable=too-many-arguments
         self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):
         """Test that when given a tensor observable the expectation value is the same regardless of the order of terms
@@ -1443,8 +1442,7 @@ class TestTensorVar:
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
-    # pylint: disable-next=too-many-arguments
-    def test_wire_order_in_tensor_prod_observables(
+    def test_wire_order_in_tensor_prod_observables(  # pylint: disable=too-many-arguments
         self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):
         """Test that when given a tensor observable the variance is the same regardless of the order of terms

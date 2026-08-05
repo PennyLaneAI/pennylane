@@ -359,8 +359,7 @@ def training_iterator(
         yield result
 
 
-# pylint: disable-next=too-many-arguments
-def train(
+def train(  # pylint: disable=too-many-arguments
     optimizer: str,
     loss: Callable,
     stepsize: float,

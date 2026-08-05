@@ -730,8 +730,7 @@ def scatter(indices, array, new_dims, like=None):  # pylint: disable=redefined-o
 
 
 @multi_dispatch(argnum=[0, 2])
-# pylint: disable-next=too-many-arguments
-def scatter_element_add(
+def scatter_element_add(  # pylint: disable=too-many-arguments
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
 ):
     """In-place addition of a multidimensional value over various

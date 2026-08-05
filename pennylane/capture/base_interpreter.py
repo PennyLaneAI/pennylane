@@ -506,8 +506,7 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
-# pylint: disable-next=too-many-arguments
-def handle_for_loop(
+def handle_for_loop(  # pylint: disable=too-many-arguments
     self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle a for loop primitive."""
@@ -570,8 +569,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
 
 @PlxprInterpreter.register_primitive(while_loop_prim)
-# pylint: disable-next=too-many-arguments
-def handle_while_loop(
+def handle_while_loop(  # pylint: disable=too-many-arguments
     self,
     *invals,
     jaxpr_body_fn,
@@ -731,8 +729,7 @@ def _quantum_subroutine_eval(self, *invals, jaxpr, **params):  # pylint: disable
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
-# pylint: disable-next=too-many-arguments
-def flatten_while_loop(
+def flatten_while_loop(  # pylint: disable=too-many-arguments
     self,
     *invals,
     jaxpr_body_fn,
@@ -787,8 +784,7 @@ FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
 @FlattenedInterpreter.register_primitive(for_loop_prim)
-# pylint: disable-next=too-many-arguments
-def flattened_for(
+def flattened_for(  # pylint: disable=too-many-arguments
     self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
     """Handle the for loop by a flattened python strategy."""

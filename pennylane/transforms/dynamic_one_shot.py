@@ -323,8 +323,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-# pylint: disable-next=too-many-arguments
-def _handle_measurement_qjit(
+def _handle_measurement_qjit(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,
@@ -353,8 +352,7 @@ def _handle_measurement_qjit(
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
-# pylint: disable-next=too-many-arguments
-def _handle_measurement(
+def _handle_measurement(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,

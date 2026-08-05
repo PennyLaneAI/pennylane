@@ -776,8 +776,7 @@ class TestChangeOpBasis:
             ),
         ),
     )
-    # pylint: disable-next=too-many-arguments
-    def test_controlled_resource_decomp(
+    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
         self, compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res
     ):
         """Test that the controlled resource decomposition is correct."""

@@ -98,8 +98,7 @@ def _convert_to_prod(op_or_func):
     )
 
 
-# pylint: disable-next=inconsistent-return-statements
-def change_op_basis(
+def change_op_basis(  # pylint: disable=inconsistent-return-statements
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
     uncompute_op: Operator | Callable | None = None,

@@ -715,8 +715,7 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
     def __instancecheck__(self, instance) -> bool:
         return isinstance(instance, SubroutineOp) and instance.subroutine is self
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         definition: Callable[P, Any],
         *,

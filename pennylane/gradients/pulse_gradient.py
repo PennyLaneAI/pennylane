@@ -165,8 +165,7 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
     ]
 
 
-# pylint: disable-next=too-many-arguments
-def _parshift_and_integrate(
+def _parshift_and_integrate(  # pylint: disable=too-many-arguments
     results,
     cjacs,
     int_prefactor,
@@ -637,8 +636,7 @@ def stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
 
-# pylint: disable-next=too-many-arguments
-def _generate_tapes_and_cjacs(
+def _generate_tapes_and_cjacs(  # pylint: disable=too-many-arguments
     tape, operation, key, num_split_times, use_broadcasting, par_idx=None
 ):
     """Generate the tapes and compute the classical Jacobians for one given

@@ -146,8 +146,7 @@ class CommutationDAGNode:  # pylint: disable=too-many-instance-attributes,too-fe
         "reachable",
     ]
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         op=None,
         wires=None,

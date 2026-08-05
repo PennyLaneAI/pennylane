@@ -201,8 +201,7 @@ def _apply_diagonalizing_gates(
     return state
 
 
-# pylint: disable-next=too-many-arguments
-def measure_with_samples(
+def measure_with_samples(  # pylint: disable=too-many-arguments
     measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
@@ -273,8 +272,7 @@ def measure_with_samples(
     return sorted_res
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_with_samples_diagonalizing_gates(
+def _measure_with_samples_diagonalizing_gates(  # pylint: disable=too-many-arguments
     mps: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -336,8 +334,7 @@ def _measure_with_samples_diagonalizing_gates(
     return processed_samples[0]
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_classical_shadow(
+def _measure_classical_shadow(  # pylint: disable=too-many-arguments
     mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
@@ -376,8 +373,7 @@ def _measure_classical_shadow(
     return [mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)]
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_hamiltonian_with_samples(
+def _measure_hamiltonian_with_samples(  # pylint: disable=too-many-arguments
     mp: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -408,8 +404,7 @@ def _measure_hamiltonian_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-# pylint: disable-next=too-many-arguments
-def _measure_sum_with_samples(
+def _measure_sum_with_samples(  # pylint: disable=too-many-arguments
     mp: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -440,8 +435,7 @@ def _measure_sum_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-# pylint: disable-next=too-many-arguments
-def sample_state(
+def sample_state(  # pylint: disable=too-many-arguments
     state,
     shots: int,
     is_state_batched: bool = False,

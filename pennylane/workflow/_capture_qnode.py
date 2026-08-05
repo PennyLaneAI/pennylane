@@ -224,8 +224,7 @@ def custom_staging_rule(
 pe.custom_staging_rules[qnode_prim] = custom_staging_rule
 
 
-# pylint: disable-next=too-many-arguments
-def _qnode_batching_rule(
+def _qnode_batching_rule(  # pylint: disable=too-many-arguments
     batched_args,
     batch_dims,
     *,

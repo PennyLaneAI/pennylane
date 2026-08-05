@@ -621,8 +621,7 @@ def _get_signature(op):
     return op.data, {"wires": op.wires, **op.hyperparameters}
 
 
-# pylint: disable-next=too-many-arguments
-def _assert_valid_operator2(
+def _assert_valid_operator2(  # pylint: disable=too-many-arguments
     op: qp.core.Operator2,
     skip_deepcopy=False,
     skip_differentiation=False,
@@ -694,8 +693,7 @@ def _assert_valid_operator2(
     _check_bind_new_parameters_op2(op)
 
 
-# pylint: disable-next=too-many-arguments
-def assert_valid(
+def assert_valid(  # pylint: disable=too-many-arguments
     op: qp.core.Operator,
     *,
     skip_deepcopy=False,

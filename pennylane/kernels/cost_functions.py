@@ -23,8 +23,7 @@ from pennylane.math import frobenius_inner_product
 from .utils import square_kernel_matrix
 
 
-# pylint: disable-next=too-many-arguments
-def polarity(
+def polarity(  # pylint: disable=too-many-arguments
     X,
     Y,
     kernel,

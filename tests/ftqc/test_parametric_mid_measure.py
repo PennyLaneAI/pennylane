@@ -534,8 +534,7 @@ class TestMeasureFunctions:
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
     @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax"])
-    # pylint: disable-next=too-many-arguments
-    def test_arbitrary_basis_with_program_capture(
+    def test_arbitrary_basis_with_program_capture(  # pylint: disable=too-many-arguments
         self, angle, plane, wire, reset, postselect, angle_type
     ):
         """Test that the measure_ functions are captured as expected"""

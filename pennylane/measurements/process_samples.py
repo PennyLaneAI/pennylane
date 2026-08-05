@@ -23,8 +23,7 @@ from pennylane.typing import Sequence, TensorLike
 from pennylane.wires import WiresLike
 
 
-# pylint: disable-next=too-many-arguments
-def process_raw_samples(
+def process_raw_samples(  # pylint: disable=too-many-arguments
     mp: MeasurementProcess,
     samples: TensorLike,
     wire_order: WiresLike,

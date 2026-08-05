@@ -668,8 +668,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
     Class to apply pattern matching in the forward direction.
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self, circuit_dag, pattern_dag, node_id_c, node_id_p, wires, control_wires, target_wires
     ):
         """
@@ -964,8 +963,7 @@ class MatchingScenarios:  # pylint: disable=too-few-public-methods
     Class to represent a matching scenario in the Backward part of the algorithm.
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self, circuit_matched, circuit_blocked, pattern_matched, pattern_blocked, matches, counter
     ):
         """Create a MatchingScenarios class for the Backward match.
@@ -1023,8 +1021,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-pub
     Class BackwardMatch allows to run backward direction part of the pattern matching algorithm.
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         circuit_dag,
         pattern_dag,

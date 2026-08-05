@@ -112,8 +112,7 @@ def _assert_results(results, var_names):
     return results
 
 
-# pylint: disable-next=too-many-arguments
-def if_stmt(
+def if_stmt(  # pylint: disable=too-many-arguments
     pred: bool,
     true_fn: Callable[[], Any],
     false_fn: Callable[[], Any],
@@ -206,8 +205,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
-# pylint: disable-next=too-many-arguments
-def _call_pennylane_for(
+def _call_pennylane_for(  # pylint: disable=too-many-arguments
     start,
     stop,
     step,

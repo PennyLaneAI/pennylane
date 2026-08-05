@@ -662,8 +662,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
-# pylint: disable-next=too-many-arguments
-def mutual_info(
+def mutual_info(  # pylint: disable=too-many-arguments
     state,
     indices0,
     indices1,
@@ -736,8 +735,7 @@ def mutual_info(
     )
 
 
-# pylint: disable-next=too-many-arguments
-def _compute_mutual_info(
+def _compute_mutual_info(  # pylint: disable=too-many-arguments
     state,
     indices0,
     indices1,
@@ -859,8 +857,7 @@ def expectation_value(
     return expval
 
 
-# pylint: disable-next=too-many-arguments
-def vn_entanglement_entropy(
+def vn_entanglement_entropy(  # pylint: disable=too-many-arguments
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
     r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state.

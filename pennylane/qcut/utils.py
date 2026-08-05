@@ -661,8 +661,7 @@ def fragment_graph(graph):
     return subgraphs_connected_to_measurements, communication_graph
 
 
-# pylint: disable-next=too-many-arguments
-def _is_valid_cut(
+def _is_valid_cut(  # pylint: disable=too-many-arguments
     fragments,
     num_cuts,
     max_frag_degree,
