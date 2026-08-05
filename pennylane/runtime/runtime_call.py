@@ -1,0 +1,135 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Calling a runtime, either as an operation on a backend or as a bare symbol."""
+
+from __future__ import annotations
+
+import functools
+
+from . import operands
+from .signature import CSignature, CType, declare, signature_of
+
+
+def _tracing() -> bool:
+    """Whether a JAX trace is open, which is where a recorded call belongs."""
+    try:  # pylint: disable=import-outside-toplevel
+        from jax._src.core import trace_state_clean
+
+        return not trace_state_clean()
+    except ImportError:  # pragma: no cover
+        return True
+
+
+@functools.lru_cache(maxsize=1)
+def _get_runtime_call_prim():
+    """Get the ``runtime_call`` primitive."""
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture.custom_primitives import QpPrimitive
+
+    runtime_call_prim = QpPrimitive("runtime_call")
+    runtime_call_prim.multiple_results = True
+
+    # pylint: disable=unused-argument
+    @runtime_call_prim.def_abstract_eval
+    def _(*args, signature, symbol, out_bytes, dispatch, library):
+        return operands.result_avals(signature, out_bytes)
+
+    return runtime_call_prim
+
+
+def runtime_call(target, *args, signature=None, out_bytes=0, address=None, library=None):
+    r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
+
+        qp.runtime_declare("run_rounds", "(ptr, u32) -> u64")
+
+        @qp.qjit
+        def program(session):
+            return qp.runtime_call("run_rounds", session, 100000, address="board:9000")
+
+    Passing ``address`` dispatches the call: it is recorded into the program and sent to that
+    executor, which invokes the symbol on the machine the runtime lives on. Omitting ``address``
+    makes the call **local**: the symbol is invoked in the process running the compiled program,
+    through the ordinary in-process C ABI.
+
+    Args:
+        target (str | CSignature): the symbol to call, or its signature
+        *args: the arguments, in the order the symbol declares them
+        signature (str | CSignature | None): the signature, for a symbol not yet declared
+        out_bytes (int | Sequence[int]): how big each buffer the symbol fills should be
+        address (str | None): the executor to dispatch to, as ``"host:port"``. ``None`` makes the
+                              call local (in-process).
+        library (str | None): for a local call, the shared library exporting the symbol, recorded so
+                              the driver links it. Overrides the library set at
+                              :func:`~.runtime_declare` time. Ignored for a dispatched call.
+
+    Returns:
+        The symbol's declared result. A symbol with an ``out`` parameter returns
+        ``(result, buffer)``. A local call to a ``void`` symbol returns ``None``.
+
+    .. seealso:: :func:`~.runtime_declare`
+    """
+    resolved = _resolve_signature(target, signature)
+    sizes = operands.out_sizes(resolved, out_bytes)
+    lib = library if library is not None else resolved.library
+
+    return _record(resolved, args, sizes, address, lib)
+
+
+def _record(signature: CSignature, args, sizes, address, library):
+    """Record a call on a declared symbol, dispatched to an executor or invoked in-process.
+
+    A dispatched call (``address`` set) becomes an ``executor.call``, which flattens the arguments
+    into one buffer and invokes the symbol through LLVM ORC's wrapper convention.
+
+    A local call (``address`` is ``None``) becomes an ordinary ``catalyst.custom_call``, which
+    passes each argument as a descriptor pointer (the in-process C ABI) and reaches the symbol
+    resolved at load time.
+    """
+    if not _tracing():
+        raise RuntimeError(
+            f"{signature.symbol} is being called outside a compiled program. A recorded call is "
+            f"only valid inside a qjit function."
+        )
+    if address is not None and signature.result is CType.VOID and not sizes:
+        raise TypeError(
+            f"{signature.symbol}{signature} returns nothing, a dispatched call to it has no result."
+        )
+    results = _get_runtime_call_prim().bind(
+        *operands.operands_for(signature, args, local=address is None),
+        signature=signature,
+        symbol=signature.symbol,
+        out_bytes=sizes,
+        dispatch=address,
+        library=library,
+    )
+    value = None if signature.result is CType.VOID else results[0][0]
+    buffers = results[0 if signature.result is CType.VOID else 1 :]
+    if not sizes:
+        return value
+    return (value, *buffers) if len(buffers) > 1 else (value, buffers[0])
+
+
+def _resolve_signature(symbol, signature) -> CSignature:
+    """Work out which signature a symbol call site means."""
+    if isinstance(symbol, CSignature):
+        if signature is not None:
+            raise ValueError("pass either a CSignature or signature=, not both")
+        return symbol
+    if signature is None:
+        return signature_of(symbol)
+    if isinstance(signature, CSignature):
+        return signature
+    return declare(symbol, signature)
