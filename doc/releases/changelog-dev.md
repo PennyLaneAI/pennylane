@@ -830,6 +830,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The resouce module JSON parser used by :func:`~.specs` to read Catalyst data has been revamped to match the new JSON structure produced by Catalyst.
+  [(#9942)](https://github.com/PennyLaneAI/pennylane/pull/9942)
+  [(#9969)](https://github.com/PennyLaneAI/pennylane/pull/9969)
+
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 

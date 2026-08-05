@@ -791,8 +791,6 @@ class TestSpecsResources:
         assert s["counts"] == s.counts
         assert s["quantum_operations"] == s.quantum_operations
         assert s["measurement_processes"] == s.measurement_processes
-        assert s["num_wires"] == s.num_wires
-        assert s["num_wires"] == s.num_wires
         assert s["depth"] == s.depth
 
         assert s["total_quantum_operations"] == s.total_quantum_operations
@@ -850,7 +848,6 @@ class TestSpecsResources:
         expected = {
             "quantum_operations": {"Hadamard": 2, "CNOT": 1},
             "measurement_processes": {"expval(PauliZ)": 1},
-            "num_wires": 2,
             "num_wires": 2,
             "circuit_depth": 2,
             "total_quantum_operations": 3,
@@ -1496,7 +1493,6 @@ class TestCircuitSpecs:
                 "quantum_operations": {"Hadamard": 2, "CNOT": 1},
                 "measurement_processes": {"expval(PauliZ)": 1},
                 "num_wires": 2,
-                "num_wires": 2,
                 "circuit_depth": 2,
                 "total_quantum_operations": 3,
                 "vars": frozenset(),
@@ -1518,7 +1514,6 @@ class TestCircuitSpecs:
                     "quantum_operations": {"Hadamard": 4, "CNOT": 2},
                     "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_wires": 2,
-                    "num_wires": 2,
                     "circuit_depth": 2,
                     "total_quantum_operations": 6,
                     "vars": frozenset(),
@@ -1529,7 +1524,6 @@ class TestCircuitSpecs:
                         "quantum_operations": {"CNOT": 1},
                         "measurement_processes": {"expval(PauliX)": 1},
                         "num_wires": 2,
-                        "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": 1,
                         "vars": frozenset(),
@@ -1538,7 +1532,6 @@ class TestCircuitSpecs:
                     {
                         "quantum_operations": {"CNOT": 1},
                         "measurement_processes": {"expval(PauliZ)": 1},
-                        "num_wires": 2,
                         "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": 1,
@@ -1566,7 +1559,6 @@ class TestCircuitSpecs:
                     },
                     "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
                     "num_wires": 2,
-                    "num_wires": 2,
                     "circuit_depth": 2,
                     "total_quantum_operations": Expression({("x",): 4, (): 2}),
                     "vars": frozenset({"x"}),
@@ -1577,7 +1569,6 @@ class TestCircuitSpecs:
                         "quantum_operations": {"CNOT": Expression({("x",): 1})},
                         "measurement_processes": {"expval(PauliX)": 1},
                         "num_wires": 2,
-                        "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": Expression({("x",): 1}),
                         "vars": frozenset({"x"}),
@@ -1586,7 +1577,6 @@ class TestCircuitSpecs:
                     {
                         "quantum_operations": {"CNOT": Expression({("x",): 1})},
                         "measurement_processes": {"expval(PauliZ)": 1},
-                        "num_wires": 2,
                         "num_wires": 2,
                         "circuit_depth": 1,
                         "total_quantum_operations": Expression({("x",): 1}),
