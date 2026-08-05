@@ -47,14 +47,27 @@ class CoprocessorFunction:
         return self.name
 
 
-def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
+def css_decoder(
+    Hx: np.ndarray,
+    Hz: np.ndarray,
+    *,
+    bp_variant: str = "sum_product",
+    postprocess: str = "osd",
+    niter: int = 10,
+    prob: float = 0.1,
+    alpha: float = 0.75,
+    platform: str = "hip:gfx90a:64",
+    build_dir: str = "decoder_build_dir",
+    library_name: str = "librdma_triton_decoder.so",
+    num_warps: int = 1,
+    num_stages: int = 1,
+    compiler: str = "",
+    cflags: tuple[str, ...] = (),
+) -> CoprocessorFunction:
     """Compile a CSS code's Tanner graph into a coprocessor decode function.
 
     Accepts the X- and Z-type parity-check matrices of a CSS code and compiles a decoder down to a
     shared library that can be used as a :class:`~.CoprocessorFunction`.
-
-    .. note::
-        Not yet implemented — this is a placeholder for the Triton-based decoder compiler.
 
     Args:
         Hx (np.ndarray): The X parity-check matrix.
@@ -66,7 +79,25 @@ def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
 
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
     """
-    raise NotImplementedError(
-        "css_decoder is not yet implemented; it will compile a CSS code's Tanner graph "
-        "into a CoprocessorFunction via Triton."
+    try:
+        from .decoders.triton.decoder_frontend import build_css_decoder
+    except ImportError as exc:
+        raise ImportError("css_decoder requires Triton support.") from exc
+
+    so_path, symbol_name = build_css_decoder(
+        Hx,
+        Hz,
+        bp_variant=bp_variant,
+        postprocess=postprocess,
+        niter=niter,
+        prob=prob,
+        alpha=alpha,
+        platform=platform,
+        build_dir=build_dir,
+        library_name=library_name,
+        num_warps=num_warps,
+        num_stages=num_stages,
+        compiler=compiler,
+        cflags=cflags,
     )
+    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))

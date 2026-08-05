@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* (Experimental) Added a CSS decoder based on `triton`, which can be instantiated based on its
+  tanner graph.
+
 * (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
   [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
 
