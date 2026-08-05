@@ -20,7 +20,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
@@ -284,7 +284,8 @@ class GlobalPhase(Operator2):
     num_wires = None
 
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[0]}
+    arg_specs = {"phi": Float, "wires": Wire[-1]}
+    wire_sizes = (None,)
 
     grad_method = "A"
 
@@ -464,3 +465,10 @@ def _controlled_g_phase_decomp(
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
 add_decomps("Pow(GlobalPhase)", pow_rotation2)
 add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
+
+
+@abstractify.register(type(GlobalPhase))
+def _abstractify_operator_type(op_type: type[GlobalPhase]) -> Operator2:
+    """Abstractify a subclass of operator."""
+
+    return GlobalPhase(op_type.arg_specs["phi"])

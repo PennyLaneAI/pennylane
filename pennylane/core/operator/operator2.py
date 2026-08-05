@@ -1923,7 +1923,7 @@ def _is_abstract_specifier(val):
     return isinstance(val, AbstractArray) or (isinstance(val, type) and issubclass(val, Number))
 
 
-@abstractify.register(OperatorMeta)
+@abstractify.register(type(Operator2))
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
