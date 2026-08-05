@@ -19,6 +19,7 @@ from pennylane.core import queuing
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
+from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -115,7 +116,7 @@ def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
         1,
     )
 
-    resources[resource_rep(qp.DiagonalQubitUnitary, num_wires=num_wires)] = 1
+    resources[qp.DiagonalQubitUnitary(Complex[2**num_wires], wires=Wire[num_wires])] = 1
 
     return resources
 
