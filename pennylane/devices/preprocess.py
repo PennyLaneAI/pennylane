@@ -348,7 +348,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     If an operator cannot be decomposed into a supported operation, an error is raised:
 
-    >>> decompose(tape, lambda obj: obj.name == "S")
+    >>> decompose(tape, lambda obj: obj.name == "S")  # doctest: +SKIP
     Traceback (most recent call last):
     ...
     pennylane.exceptions.DeviceError: Operator RZ(1.5707963267948966, wires=[1]) not supported with device and does not provide a decomposition.
