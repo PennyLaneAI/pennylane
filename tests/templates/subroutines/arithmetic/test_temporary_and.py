@@ -64,6 +64,10 @@ class TestTemporaryAND:
             repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
             == "TemporaryAND(wires=[0, 'a', 2], control_values=[False, True])"
         )
+        assert (
+            repr(qp.TemporaryAND(wires=Wire[3], control_values=Bool[2]))
+            == "TemporaryAND(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True))"
+        )
 
     def test_abstract(self):
         """Tests that abstract TemporaryAND can be created."""
