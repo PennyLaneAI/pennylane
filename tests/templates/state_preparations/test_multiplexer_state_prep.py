@@ -146,7 +146,7 @@ class TestMultiplexerStatePreparation:
         qs = qp.tape.QuantumScript(
             [
                 qp.MultiplexerStatePreparation(
-                    state,
+                    np.array(state),
                     wires=wires,
                 )
             ],
