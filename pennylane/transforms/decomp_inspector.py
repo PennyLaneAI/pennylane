@@ -360,7 +360,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          |0>├─╰X─╰●─────────────╰X──┤
     First-Level Expansion Gates: {Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
     Wire Allocations: {'zero': 1}
-    Full Expansion Gates: {CNOT: 36, GlobalPhase: 62, MidMeasure: 2, RX: 8, RY: 14, RZ: 60}
+    Full Expansion Gates: {CNOT: 34, GlobalPhase: 64, MidMeasure: 2, RX: 8, RY: 18, RZ: 58}
     Weighted Cost: 120.0
     <BLANKLINE>
     Decomposition 1 (name: to_controlled_qubit_unitary)
@@ -373,7 +373,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
     First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-    Full Expansion Gates: {CNOT: 76, GlobalPhase: 75, MidMeasure: 4, RX: 19, RY: 16, RZ: 84}
+    Full Expansion Gates: {CNOT: 72, GlobalPhase: 79, MidMeasure: 4, RX: 19, RY: 24, RZ: 80}
     Weighted Cost: 199.0
 
     For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
