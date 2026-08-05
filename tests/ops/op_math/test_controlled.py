@@ -1057,9 +1057,9 @@ class TestDecomposition:
 
         ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
         expected = [
-            qp.ControlledPhaseShift(0.123 / 2, wires=[2, 0]),
+            qp.CRZ(0.123 / 2, wires=[2, 0]),
             qp.Toffoli(wires=[2, 1, 0]),
-            qp.ControlledPhaseShift(-0.123 / 2, wires=[2, 0]),
+            qp.CRZ(-0.123 / 2, wires=[2, 0]),
             qp.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
