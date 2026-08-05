@@ -538,12 +538,27 @@ def test_controlled_phase_shift_alias():
 
 
 def test_controlled_phase_shift_label():
-    """Tests the label of ControlledPhaseShift, including the default and a custom base label."""
+    """Tests the label of ControlledPhaseShift.
+
+    ``ControlledPhaseShift`` wraps a ``U1`` base, so its label (and therefore the
+    circuit drawer, which renders a controlled op using the base op's label) reflects
+    the ``U1`` base rather than the legacy ``Rϕ`` symbol.
+    """
     op = qp.ControlledPhaseShift(0.5, wires=[0, 1])
-    assert op.label() == "Rϕ"
-    assert op.label(decimals=2) == "Rϕ\n(0.50)"
+    assert op.label() == "U1"
+    assert op.label(decimals=2) == "U1\n(0.50)"
     assert op.label(base_label="X") == "X"
     assert op.label(base_label="X", decimals=2) == "X\n(0.50)"
+
+    # The label reported above must match what the drawer actually renders.
+    dev = qp.device("default.qubit", wires=2)
+
+    @qp.qnode(dev)
+    def circuit():
+        qp.ControlledPhaseShift(0.5, wires=[0, 1])
+        return qp.state()
+
+    assert qp.draw(circuit)() == ("0: ─╭●────────┤ ╭State\n1: ─╰U1(0.50)─┤ ╰State")
 
 
 def _arbitrary_crot(x, y, z):

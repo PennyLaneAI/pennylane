@@ -26,7 +26,6 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
-from pennylane.core.operator import Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -3950,10 +3949,12 @@ label_data = [
         "Rot\n(1,\n2,\n3)",
     ),
     (
+        # ``ControlledPhaseShift`` wraps a ``U1`` base and defers to it for labelling, so it
+        # labels (and draws) as ``U1`` rather than the legacy ``Rϕ`` symbol.
         qp.ControlledPhaseShift(1.2345, wires=(0, 1)),
-        "Rϕ",
-        "Rϕ\n(1.23)",
-        "Rϕ\n(1)",
+        "U1",
+        "U1\n(1.23)",
+        "U1\n(1)",
     ),
 ]
 
@@ -4167,9 +4168,8 @@ control_data = [
     (qp.MultiRZ(1.234, wires=(0, 1, 2)), Wires([])),
     (qp.PauliRot(1.234, "IXY", wires=(0, 1, 2)), Wires([])),
     (qp.PhaseShift(1.234, wires=0), Wires([])),
-    (qp.U1(1.234, wires=0), Wires([])),
-    (qp.U2(1.234, 2.345, wires=0), Wires([])),
-    (qp.U3(1.234, 2.345, 3.456, wires=0), Wires([])),
+    # ``U1``/``U2``/``U3`` are ported to ``Operator2``, which does not expose the legacy
+    # ``control_wires`` attribute for (non-controlled) operators, so they are not exercised here.
     (qp.IsingXX(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingYY(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingXY(1.234, wires=(0, 1)), Wires([])),
@@ -4177,16 +4177,14 @@ control_data = [
     (qp.IsingZZ(1.234, wires=(0, 1)), Wires([])),
     (qp.PSWAP(1.234, wires=(0, 1)), Wires([])),
     # Controlled Ops
-    # ``Operator2`` controlled ops (e.g. ``ControlledPhaseShift``, ``CRZ``) model control via
-    # ``ControlledOp2`` rather than legacy ``Operation`` attributes, so ADR 094 expects ``Wires([])``.
-    (qp.ControlledPhaseShift(1.234, wires=(0, 1)), Wires([])),
+    (qp.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
     (qp.CPhaseShift00(1.234, wires=(0, 1)), Wires(0)),
     (qp.CPhaseShift01(1.234, wires=(0, 1)), Wires(0)),
     (qp.CPhaseShift10(1.234, wires=(0, 1)), Wires(0)),
-    (qp.CPhase(1.234, wires=(0, 1)), Wires([])),
+    (qp.CPhase(1.234, wires=(0, 1)), Wires(0)),
     (qp.CRX(1.234, wires=(0, 1)), Wires(0)),
     (qp.CRY(1.234, wires=(0, 1)), Wires(0)),
-    (qp.CRZ(np.array([1.234, 0.219]), wires=(0, 1)), Wires([])),
+    (qp.CRZ(np.array([1.234, 0.219]), wires=(0, 1)), Wires(0)),
     (qp.CRot(1.234, 2.2345, 3.456, wires=(0, 1)), Wires(0)),
 ]
 
@@ -4194,10 +4192,6 @@ control_data = [
 @pytest.mark.parametrize("op, control_wires", control_data)
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
-    if isinstance(op, Operator2):
-        # ADR 094: control is modeled via ControlledOp2, not legacy Operation attributes.
-        assert control_wires == Wires([])
-        return
     assert op.control_wires == control_wires
 
 

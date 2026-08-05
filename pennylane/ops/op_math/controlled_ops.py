@@ -2652,9 +2652,6 @@ class ControlledPhaseShift(Controlled2):
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
-        return self.base.label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
-
     @staticmethod
     def compute_matrix(phi, wires=None):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
