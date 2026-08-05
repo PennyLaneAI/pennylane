@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core import queuing
 from pennylane.exceptions import GeneratorUndefinedError
+from pennylane.typing import Float, Wire
 
 from .exp import Exp
 
@@ -155,17 +156,18 @@ class Evolution(Exp):
         return copied
 
 
-def _pauli_rot_decomp_condition(base):
+def _pauli_rot_decomp_condition(base, **__):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
     return qp.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base):
+def _pauli_rot_decomp_resource(base, **__):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    return {qp.resource_rep(qp.PauliRot, pauli_word=qp.pauli.pauli_word_to_string(base)): 1}
+    pauli_word = qp.pauli.pauli_word_to_string(base)
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @qp.register_condition(_pauli_rot_decomp_condition)
