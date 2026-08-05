@@ -408,7 +408,7 @@ def _controlled_g_phase_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):  # pylint: disable=unused-argument
     num_control_wires = len(control_wires)
-    num_zero_control_values = len(control_values)
+    num_zero_control_values = len(control_values or [])
     num_work_wires = len(work_wires)
     if num_control_wires == 1 and num_zero_control_values == 1:
         return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
