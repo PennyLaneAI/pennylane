@@ -2828,7 +2828,7 @@ class TestPauliRot:
 
     def test_paulirot_repr(self):
         op = qp.PauliRot(1.234, "XYX", wires=(0, 1, 2))
-        assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
+        assert repr(op) == "PauliRot(theta=1.234, pauli_word=XYX, wires=[0, 1, 2])"
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
@@ -4166,7 +4166,6 @@ control_data = [
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
     (qp.MultiRZ(1.234, wires=(0, 1, 2)), Wires([])),
-    (qp.PauliRot(1.234, "IXY", wires=(0, 1, 2)), Wires([])),
     (qp.PhaseShift(1.234, wires=0), Wires([])),
     # ``U1``/``U2``/``U3`` are ported to ``Operator2``, which does not expose the legacy
     # ``control_wires`` attribute for (non-controlled) operators, so they are not exercised here.

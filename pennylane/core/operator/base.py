@@ -400,15 +400,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Some examples include arithmetic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
         perform preprocessing during initialization.
 
-        See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
-
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
-
-
     .. details::
         :title: Parameter broadcasting
         :href: parameter-broadcasting
@@ -1622,20 +1613,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
         operation with ``Operator._unflatten``.
-
-        **Example:**
-
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten()
-        ((1.2, 2.3, 3.4), (Wires([0]), ()))
-        >>> qp.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> type(op)._unflatten(*op._flatten())
-        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
 
         """
         hyperparameters_dict = dict(metadata[1])

@@ -496,9 +496,9 @@ def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
     resources = defaultdict(int)
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
-    resources[resource_rep(qp.PauliRot, pauli_word=p0)] += 1
-    resources[resource_rep(qp.PauliRot, pauli_word=p1)] += 1
-    resources[resource_rep(qp.PauliRot, pauli_word=p0 + p1)] += 1
+    resources[qp.PauliRot(Float, pauli_word=p0, wires=Wire[len(p0)])] += 1
+    resources[qp.PauliRot(Float, pauli_word=p1, wires=Wire[len(p1)])] += 1
+    resources[qp.PauliRot(Float, pauli_word=p0 + p1, wires=Wire[len(p0 + p1)])] += 1
     resources[qp.GlobalPhase] += 1
     return dict(resources)
 
@@ -769,13 +769,13 @@ def _cswap(wires: WiresLike, **__):
 # pylint: disable=unused-argument
 def _cswap_to_ppr_resource(wires: WiresLike = None):
     return {
-        resource_rep(qp.PauliRot, pauli_word="ZZZ"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZYY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZXX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 1,
+        qp.PauliRot(Float, pauli_word="ZZZ", wires=Wire[3]): 1,
+        qp.PauliRot(Float, pauli_word="ZYY", wires=Wire[3]): 1,
+        qp.PauliRot(Float, pauli_word="ZXX", wires=Wire[3]): 1,
+        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1,
         qp.GlobalPhase: 1,
     }
 
@@ -1386,11 +1386,11 @@ def _toffoli(wires: WiresLike, **__):
 
 def _toffoli_to_ppr_resource():
     return {
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZX"): 2,
-        resource_rep(qp.PauliRot, pauli_word="ZZX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="X"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 2,
+        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 2,
+        qp.PauliRot(Float, pauli_word="ZZX", wires=Wire[3]): 1,
+        qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
+        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 2,
         qp.GlobalPhase: 1,
     }
 
@@ -1965,8 +1965,8 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
 
 def _crx_to_ppr_resources():
     return {
-        resource_rep(qp.PauliRot, pauli_word="ZX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="X"): 1,
+        qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
     }
 
 
@@ -2156,8 +2156,8 @@ def _cry(phi: TensorLike, wires: WiresLike, **__):
 
 def _cry_to_ppr_resources():
     return {
-        resource_rep(qp.PauliRot, pauli_word="ZY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Y"): 1,
+        qp.PauliRot(Float, pauli_word="ZY", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1,
     }
 
 
@@ -2349,8 +2349,8 @@ def _crz(phi: TensorLike, wires: WiresLike):
 # pylint: disable=unused-argument
 def _crz_to_ppr_resources(phi, wires):
     return {
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 1,
+        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1,
     }
 
 
@@ -2792,8 +2792,8 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 def _cphase_to_ppr_resource(phi, wires):
     return {
         qp.GlobalPhase: 1,
-        resource_rep(qp.PauliRot, pauli_word="Z"): 2,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
+        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 2,
+        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
     }
 
 

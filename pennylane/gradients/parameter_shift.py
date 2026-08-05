@@ -31,7 +31,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import U2, U3, Prod, prod
+from pennylane.ops import U2, U3, PauliRot, Prod, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
@@ -1352,3 +1352,14 @@ def _handle_u2(op: U2):
 def _handle_u3(op: U3):
     """Returns the parameter frequencies for a ``U3`` gate."""
     return [(1,), (1,), (1,)]
+
+
+@parameter_frequencies.register
+def _handle_pauli_rot(op: PauliRot):
+    """Calculates the parameter frequencies for a PauliRot.
+
+    This is needed because if the Pauli word is an identity, then the computed
+    parameter frequencies will be ``[()]``, which breaks parameter shift with
+    ``PauliRot``.
+    """
+    return [(1,)]
