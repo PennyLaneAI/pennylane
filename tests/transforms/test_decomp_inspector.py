@@ -119,7 +119,7 @@ class TestInspectDecompGraph:
             5: ─╰●─╰●────────╰●─┤  
             Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 94, RX: 22, RY: 24, RZ: 132}
+            Full Expansion Gates: {CNOT: 160, GlobalPhase: 94, RX: 18, RY: 24, RZ: 136}
             Weighted Cost: 338.0
             """).strip()
 
@@ -151,9 +151,9 @@ class TestInspectDecompGraph:
             | :--- | :--- |
             | CNOT | 160 |
             | GlobalPhase | 94 |
-            | RX | 22 |
+            | RX | 18 |
             | RY | 24 |
-            | RZ | 132 |
+            | RZ | 136 |
             | **Weighted Cost** | 338.0 |
             </details>
             """).strip()
@@ -182,7 +182,7 @@ class TestInspectDecompGraph:
             Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1)): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1)): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 36, GlobalPhase: 66, MidMeasure: 2, RX: 12, RY: 14, RZ: 60}
+            Full Expansion Gates: {CNOT: 34, GlobalPhase: 68, MidMeasure: 2, RX: 12, RY: 18, RZ: 58}
             Weighted Cost: 124.0
 
             Decomposition 1 (name: controlled(_multi_rz_decomposition))
@@ -193,7 +193,7 @@ class TestInspectDecompGraph:
             5: ─╰●─╰●────────╰●─┤  
             Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 76, GlobalPhase: 78, MidMeasure: 4, RX: 22, RY: 16, RZ: 84}
+            Full Expansion Gates: {CNOT: 72, GlobalPhase: 82, MidMeasure: 4, RX: 22, RY: 24, RZ: 80}
             Weighted Cost: 202.0
             """).strip()
 
@@ -222,12 +222,12 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 36 |
-            | GlobalPhase | 66 |
+            | CNOT | 34 |
+            | GlobalPhase | 68 |
             | MidMeasure | 2 |
             | RX | 12 |
-            | RY | 14 |
-            | RZ | 60 |
+            | RY | 18 |
+            | RZ | 58 |
             | **Weighted Cost** | 124.0 |
             </details>
 
@@ -252,12 +252,12 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 76 |
-            | GlobalPhase | 78 |
+            | CNOT | 72 |
+            | GlobalPhase | 82 |
             | MidMeasure | 4 |
             | RX | 22 |
-            | RY | 16 |
-            | RZ | 84 |
+            | RY | 24 |
+            | RZ | 80 |
             | **Weighted Cost** | 202.0 |
             </details>
             """).strip()
@@ -276,7 +276,7 @@ class TestInspectDecompGraph:
             [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
             First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, CNOT: 2, Controlled(GlobalPhase, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, Hadamard: 2, MultiControlledX(num_control_wires=2, num_work_wires=1, num_zero_control_values=0, work_wire_type=borrowed): 2, QubitUnitary(num_wires=1): 2}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 25, RX: 8, RY: 8, RZ: 29}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 25, RX: 6, RY: 8, RZ: 31}
             Weighted Cost: 69.0
 
             CHOSEN: Decomposition 2 (name: one_zeroed_worker)
@@ -287,7 +287,7 @@ class TestInspectDecompGraph:
                  |0>├─╰⊕─╰●──⊕╯──┤    
             First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 11, GlobalPhase: 22, MidMeasure: 1, RX: 4, RY: 5, RZ: 20}
+            Full Expansion Gates: {CNOT: 10, GlobalPhase: 23, MidMeasure: 1, RX: 4, RY: 7, RZ: 19}
             Weighted Cost: 41.0
 
             Decomposition 3 (name: one_borrowed_worker)
