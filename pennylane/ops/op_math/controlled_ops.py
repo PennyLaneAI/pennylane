@@ -2630,6 +2630,7 @@ class ControlledPhaseShift(Controlled2):
 
     name = "ControlledPhaseShift"
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires):
         super().__init__(qp.PhaseShift(phi, wires[1:]), wires[:1])
