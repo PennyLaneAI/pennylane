@@ -309,8 +309,10 @@ def _unroll_change_op_basis(gate_counts):
     for k, count in gate_counts.items():
         if not isinstance(k, CompressedResourceOp):
             new_gate_counts[k] += count
+            continue
         if k.op_type is not qp.ops.ChangeOpBasis:
             new_gate_counts[k] += count
+            continue
         for p in ("compute_op", "target_op", "uncompute_op"):
             op_rep = k.params[p]
             if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
