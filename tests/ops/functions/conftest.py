@@ -58,6 +58,7 @@ _INSTANCES_TO_TEST = [
         qp.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
         {"skip_differentiation": True},
     ),
+    # Skipping bind_new_parameters test for `MultiControlledX` because it does not make sense for control values
     (qp.MultiControlledX(wires=[0, 1]), {"skip_bind_new_parameters": True}),
     (qp.Projector([1], 0), {"skip_differentiation": True}),
     (qp.Projector([1, 0], 0), {"skip_differentiation": True}),

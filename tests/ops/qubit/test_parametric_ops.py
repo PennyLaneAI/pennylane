@@ -203,7 +203,10 @@ class TestOperations:
         qp.assert_equal(op_unflattened, op)
 
         if isinstance(op, Operator2):
-            return  # The below test does not work for Operator2
+            # The test below assumes that `op.data` are numerical, which is not necessarily
+            # the case anymore for `Operator2` where `op.data` is anything that is dynamic
+            # and traceable, which could include things like `control_values`
+            return
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
