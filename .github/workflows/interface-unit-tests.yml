@@ -486,6 +486,43 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
 
+  catalyst-tests:
+    needs:
+      - setup-ci-load
+      - determine_runner
+      - default-dependency-versions
+      - warnings-as-errors-setup
+    strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+      max-parallel: >-
+        ${{
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).catalyst-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+         }}
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-ci-load.outputs.python-version).catalyst-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
+           }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'catalyst-tests') }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+      job_name: ${{ inputs.job_name_prefix }}catalyst-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+      branch: ${{ inputs.branch }}
+      coverage_artifact_name: catalyst-tests-coverage
+      python_version: ${{ matrix.python-version }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_markers: catalyst
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}catalyst-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      additional_pip_packages: |
+        matplotlib
+        ${{ needs.default-dependency-versions.outputs.jax-version }}
+        ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
+        ${{ inputs.additional_python_packages }}
+
   qcut-tests:
     needs:
       - setup-ci-load
