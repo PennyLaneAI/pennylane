@@ -82,8 +82,6 @@ class MultiRZ(Operator2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-
     def __init__(self, theta: TensorLike, wires: WiresLike):
         wires = Wires(wires)
         super().__init__(theta, wires=wires)
