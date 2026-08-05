@@ -946,6 +946,7 @@ class DefaultClifford(Device):
 
         # Set the target states
         tgt_states = kwargs.get("prob_states", None)
+        select_states = kwargs.get("prob_states", None) is not None
 
         # Obtain the measurement wires for getting the basis states
         mobs_wires = meas.obs.wires if meas.obs else meas.wires
@@ -977,7 +978,16 @@ class DefaultClifford(Device):
         circuit_simulator.do_circuit(diagonalizing_cit)
         if not self._tableau:
             state = self._measure_state(meas, circuit_simulator, circuit=circuit)
-            return meas.process_state(state, wire_order=circuit.wires)
+            probs = meas.process_state(state, wire_order=circuit.wires)
+
+            if select_states:
+                tgt_integs = np.array(
+                    [int("".join(map(str, tgt_state)), 2) for tgt_state in tgt_states]
+                )
+
+                probs = math.take(probs, tgt_integs)
+
+            return probs
 
         if len(meas_wires) >= tgt_states.shape[1]:
             meas_wires = meas_wires[: tgt_states.shape[1]]
