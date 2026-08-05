@@ -117,9 +117,9 @@ def test_integration_multi_wire(seed):
     phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
     wires = [0, 1]
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+    angle_wires = [f"aux_{i}" for i in range(prec)]
+    phase_grad_wires = [f"qft_{i}" for i in range(prec)]
+    work_wires = [f"work_{i}" for i in range(prec - 1)]
 
     phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**3) / 2**3) / np.sqrt(2**3)
 
