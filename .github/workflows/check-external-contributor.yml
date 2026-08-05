@@ -9,7 +9,9 @@ on:
   
 jobs:
   check-external:
-    runs-on: ubuntu-latest
+    runs-on:  
+      group: 'PennyLaneAI-Static-IP-Runners'
+      labels: ['pl-2-core-gh-runner']   
     steps:
       - name: Check PR and label
         with:
