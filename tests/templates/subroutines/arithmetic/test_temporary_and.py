@@ -57,9 +57,10 @@ class TestTemporaryAND:
 
         assert qp.math.allclose(isometry, isometry_toffoli)
 
-    def test_repr(self):
-        """Test the repr of TemporaryAND."""
+    def test_repr_and_str(self):
+        """Test the repr and str of TemporaryAND."""
         assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
+        assert str(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
         assert (
             repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
             == "TemporaryAND(wires=[0, 'a', 2], control_values=[False, True])"
@@ -68,6 +69,7 @@ class TestTemporaryAND:
             repr(qp.TemporaryAND(wires=Wire[3], control_values=Bool[2]))
             == "TemporaryAND(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True))"
         )
+        assert str(qp.TemporaryAND(wires=Wire[3], control_values=Bool[2])) == "TemporaryAND"
 
     def test_abstract(self):
         """Tests that abstract TemporaryAND can be created."""
