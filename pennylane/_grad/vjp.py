@@ -122,7 +122,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     return results, dparams
 
 
-# pylint: disable-next=too-many-arguments,too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 

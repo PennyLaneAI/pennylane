@@ -37,6 +37,7 @@ def _get_shape(x):
 @lru_cache
 def _get_jvp_prim():
     # pylint: disable=unused-argument
+
     if not has_jax:  # pragma: no cover
         return None
 
@@ -99,8 +100,9 @@ def _validate_tangents(params, dparams, argnums):
 
 # pylint: disable-next=too-many-arguments
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
+    from jax.tree_util import tree_leaves, tree_unflatten
 
     if not isinstance(params, Sequence):
         raise ValueError(f"params must be a Sequence in qp.jvp. Got type {type(params)}.")
@@ -135,7 +137,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     return results, dresults
 
 
-# pylint: disable-next=too-many-arguments,too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def jvp(f, params, tangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
 

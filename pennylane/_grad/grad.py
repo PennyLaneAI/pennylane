@@ -45,6 +45,7 @@ def _get_jacobian_prim():
     This primitive is used when capturing ``qp.grad``.
     """
     # pylint: disable=unused-argument,too-many-arguments
+
     if not has_jax:  # pragma: no cover
         return None
 
@@ -70,7 +71,6 @@ def _get_jacobian_prim():
         return jax.tree_util.tree_leaves(res)
 
     @jacobian_prim.def_abstract_eval
-    # pylint: disable-next=unused-argument
     def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")

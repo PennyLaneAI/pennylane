@@ -31,7 +31,7 @@ _has_jax = find_spec("jax") is not None
 @lru_cache
 def _get_value_and_grad_prim():
     """Create a primitive for value and gradient computations."""
-    # pylint: disable=unused-argument
+
     if not _has_jax:  # pragma: no cover
         return None
 
@@ -40,6 +40,8 @@ def _get_value_and_grad_prim():
     value_and_grad_prim = capture.QpPrimitive("value_and_grad")
     value_and_grad_prim.multiple_results = True
     value_and_grad_prim.prim_type = "higher_order"
+
+    # pylint: disable=unused-argument
 
     @value_and_grad_prim.def_impl
     def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):
@@ -54,7 +56,6 @@ def _get_value_and_grad_prim():
         return jax.tree_util.tree_leaves(res)
 
     @value_and_grad_prim.def_abstract_eval
-    # pylint: disable-next=unused-argument
     def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
         in_avals = tuple(args[i] for i in argnums)
         grad_avals = (
