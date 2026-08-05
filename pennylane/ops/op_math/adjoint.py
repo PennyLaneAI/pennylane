@@ -260,7 +260,6 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-
         if qp.capture.enabled():
             return _capture_adjoint_transform(qfunc, lazy=lazy)(*args, **kwargs)
 
@@ -497,7 +496,10 @@ class AdjointOperation(Adjoint, Operation):
 
     @property
     def parameter_frequencies(self):
-        return self.base.parameter_frequencies
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients.parameter_shift import parameter_frequencies
+
+        return parameter_frequencies(self.base)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
