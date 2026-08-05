@@ -1969,7 +1969,10 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
-    return op_cls(**new_args)
+    # need to use __abstract_init__ even if captture is enabled
+    new_op = op_cls.__new__(op_cls, **new_args)
+    new_op.__abstract_init__(**new_args)
+    return new_op
 
 
 class StatePrepBase2(Operator2, is_baseclass=True):
