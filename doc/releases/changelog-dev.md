@@ -834,6 +834,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
+  [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
+
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
   [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
@@ -855,11 +858,11 @@
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   - Parametric operators are ported:
-    - `~.RZ`, `~.CRZ`
+    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
-  - Multi-qubit, parametric operators are ported:
-    - `~.DiagonalQubitUnitary`
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
+  [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
+  - Multi-qubit, parametric operators are ported:
   - Templates are ported:
     - `~.BasisRotation`, `~.QROM`, `~.QFT`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
