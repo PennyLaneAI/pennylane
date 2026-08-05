@@ -174,6 +174,29 @@ def disable_graph_decomposition():
         yield
 
 
+@pytest.fixture(params=[False, True], ids=["capture_disabled", "capture_enabled"])
+def enable_and_disable_capture(request):
+    """
+    A fixture that parametrizes a test to run twice: once with capture
+    disabled and once with it enabled.
+
+    It automatically handles the setup (enabling/disabling) before the
+    test runs and the teardown (always disabling) after the test completes.
+
+    """
+    use_capture = request.param
+
+    if use_capture:
+        qp.capture.enable()
+    else:
+        qp.capture.disable()
+
+    try:
+        yield
+    finally:
+        qp.capture.disable()
+
+
 @pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
 def enable_and_disable_graph_decomp(request):
     """

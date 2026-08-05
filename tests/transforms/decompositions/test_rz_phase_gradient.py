@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
     validate_phase_gradient_wires,
@@ -47,13 +46,15 @@ def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work
         _ = validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires)
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_valid_decomp(phi, p):
     """Test that ``make_rz_to_phase_gradient_decomp`` yields a valid decomposition"""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    first_free = 1
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -183,43 +184,3 @@ def test_integration_multi_wire(seed):
     out_state_expected = np.kron(zeros, out_state_expected)
 
     assert np.allclose(out_state, out_state_expected)
-
-
-@pytest.mark.usefixtures("enable_graph_decomposition")
-@pytest.mark.capture
-def test_capture_compatibility():
-    """Ensures capture compatibility."""
-
-    # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
-
-    from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-    first_free = 1  # 0 used by RZ
-
-    precision = 3
-    angle_wires = jnp.array(list(range(first_free, first_free + precision)))
-    phase_grad_wires = jnp.array(list(range(first_free + precision, first_free + 2 * precision)))
-    work_wires = jnp.array(list(range(first_free + 2 * precision, first_free + 3 * precision - 1)))
-
-    custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
-
-    gate_set = {"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"}
-
-    @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
-    def f(phi):
-        qp.RZ(phi, 0)
-        return qp.state()
-
-    phi_val = jnp.pi
-
-    cjaxpr = jax.make_jaxpr(f)(phi_val)
-
-    collector = CollectOpsandMeas()
-    collector.eval(cjaxpr.jaxpr, cjaxpr.consts, phi_val)
-
-    op_names = {op.name for op in collector.state["ops"]}
-    assert op_names.issubset(
-        gate_set
-    ), f"Following ops are present but not in gateset: {op_names - gate_set}"
