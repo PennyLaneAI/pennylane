@@ -27,6 +27,7 @@ from pennylane.decomposition import (
 from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 from pennylane.ops import RY, BasisState, Controlled, GlobalPhase, Hadamard, MultiControlledX, X, Z
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -355,11 +356,10 @@ def _controlled_rep(base_class, num_control_wires, num_work_wires):
 
 def _controlled_z(num_control_wires, num_work_wires):
     """Resources for a borrowed-work multi-controlled ``Z``."""
-    wires = list(range(num_control_wires + 1 + num_work_wires))
     return ctrl(
-        Z(wires[0]),
-        control=wires[1 : num_control_wires + 1],
-        work_wires=wires[num_control_wires + 1 :],
+        Z(Wire[1]),
+        control=Wire[num_control_wires],
+        work_wires=Wire[num_work_wires],
     )
 
 
