@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
 
-# pylint:disable=protected-access,unused-argument,wrong-import-position
+# pylint: disable=protected-access,unused-argument,wrong-import-position
 
 import pytest
 

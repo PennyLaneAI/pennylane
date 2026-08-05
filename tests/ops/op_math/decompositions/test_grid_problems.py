@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for the grid problems for Clifford+T decomposition."""
 
-# pylint: disable = too-few-public-methods
+# pylint: disable=too-few-public-methods
 
 import inspect
 import math

@@ -22,7 +22,7 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import WiresLike
 
-# pylint: disable= signature-differs,arguments-differ
+# pylint: disable=signature-differs,arguments-differ
 
 
 class OutOfPlaceIntegerComparator(ResourceOperator):

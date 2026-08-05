@@ -15,8 +15,7 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=too-few-public-methods
-# pylint: disable=unbalanced-tuple-unpacking
+# pylint: disable=too-few-public-methods,unbalanced-tuple-unpacking
 
 import numpy as np
 import pytest

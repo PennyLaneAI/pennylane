@@ -860,7 +860,7 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        # pylint:disable = import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         if math.is_abstract(state_probability) and math.get_interface(state_probability) == "jax":
             import jax
 
@@ -1766,7 +1766,7 @@ class QubitDevice(Device):
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
-        # pylint:disable=no-self-use
+        # pylint: disable=no-self-use
         return circuit.diagonalizing_gates
 
     def _is_lightning_device(self):

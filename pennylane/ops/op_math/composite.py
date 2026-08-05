@@ -410,7 +410,7 @@ class CompositeOp(Operator):
 
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
-        # pylint:disable=protected-access
+        # pylint: disable=protected-access
         cls = self.__class__
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)

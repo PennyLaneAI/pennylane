@@ -17,7 +17,7 @@ from itertools import product
 
 import numpy as np
 
-# pylint:disable=too-many-arguments,blacklisted-name
+# pylint: disable=too-many-arguments,blacklisted-name
 
 # Matplotlib is not a hard requirement for PennyLane in general, but it *is*
 # a hard requirement for everything in this module.

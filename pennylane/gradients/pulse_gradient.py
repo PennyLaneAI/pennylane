@@ -860,6 +860,6 @@ def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     It raises an error, so that applying ``stoch_pulse_grad`` to a ``QNode`` directly
     is not supported.
     """
-    # pylint:disable=unused-argument
+    # pylint: disable=unused-argument
     transform_name = "stochastic pulse parameter-shift"
     raise_pulse_diff_on_qnode(transform_name)

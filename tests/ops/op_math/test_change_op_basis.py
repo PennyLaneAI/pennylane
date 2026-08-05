@@ -20,7 +20,7 @@ from functools import partial
 
 import numpy as np
 
-# pylint:disable=unused-argument
+# pylint: disable=unused-argument
 import pytest
 
 import pennylane as qp

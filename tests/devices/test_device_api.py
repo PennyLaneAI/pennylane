@@ -30,7 +30,7 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
-# pylint:disable=unused-argument,unused-variable,protected-access
+# pylint: disable=unused-argument,unused-variable,protected-access
 
 
 def test_execute_method_abstract():

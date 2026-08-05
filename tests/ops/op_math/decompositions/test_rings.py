@@ -35,7 +35,7 @@ class TestZSqrtTwo:
         assert z_sqrt_two.b == b
 
         assert repr(z_sqrt_two) == f"ZSqrtTwo(a={a}, b={b})"
-        # pylint:disable=condition-evals-to-constant
+        # pylint: disable=condition-evals-to-constant
         assert (
             str(z_sqrt_two)
             == (f"{a}" if a else "" + " + " if a and b else "" + f"{b}√2" if b else "")

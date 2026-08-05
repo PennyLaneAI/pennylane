@@ -721,7 +721,7 @@ class TestPhasedDecomposition:
             coeffs = qp.pauli_decompose(mat).coeffs
             assert qp.math.get_interface(coeffs[0]) == interface
 
-    # pylint: disable = superfluous-parens
+    # pylint: disable=superfluous-parens
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(

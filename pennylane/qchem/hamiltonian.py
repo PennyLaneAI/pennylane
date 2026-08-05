@@ -26,8 +26,7 @@ from .hartree_fock import nuclear_energy, scf
 from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable
 
-# pylint: disable=too-many-arguments
-# pylint: disable=consider-using-generator,protected-access
+# pylint: disable=too-many-arguments,consider-using-generator,protected-access
 # pylint: disable=possibly-used-before-assignment
 
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom

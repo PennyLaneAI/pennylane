@@ -26,7 +26,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= arguments-differ,signature-differs
+# pylint: disable=arguments-differ,signature-differs
 
 
 class CH(ResourceOperator):

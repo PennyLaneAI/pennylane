@@ -108,7 +108,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
         Returns:
             array: initial state of the optimizer
         """
-        # pylint:disable=no-self-use
+        # pylint: disable=no-self-use
         return math.zeros_like(params)
 
     def _apply_grad(self, mt, grad, params, state):

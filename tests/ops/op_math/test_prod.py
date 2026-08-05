@@ -15,7 +15,7 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access,unused-argument
+# pylint: disable=protected-access,unused-argument
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np

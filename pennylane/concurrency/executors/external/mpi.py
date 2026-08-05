@@ -29,7 +29,6 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
     This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_ class, and provides support for execution using multiple processes launched using MPI.
     For an example script ``my_script.py``, and an installed mpi4py library with the active MPI environment, the executor can be used as follows:
-    # pylint: disable=import-outside-toplevel
 
     .. code-block:: console
 
@@ -127,7 +126,6 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
     This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_ class, and provides support for execution using multiple processes launched using MPI.
     For an example script ``my_script.py``, and an installed mpi4py library with the active MPI environment, the executor can be used as follows:
-    # pylint: disable=import-outside-toplevel
 
     .. code-block:: console
 

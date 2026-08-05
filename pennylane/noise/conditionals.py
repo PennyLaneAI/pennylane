@@ -40,7 +40,7 @@ from pennylane.ops.functions import map_wires, simplify
 from pennylane.templates import ControlledSequence
 from pennylane.wires import Wires
 
-# pylint: disable = too-many-branches
+# pylint: disable=too-many-branches
 
 
 class WiresIn(BooleanFn):
@@ -334,7 +334,7 @@ def _get_ops(val):
 
 def _check_arithmetic_ops(op1, op2):
     """Helper method for comparing two arithmetic operators based on type check of the bases"""
-    # pylint: disable = unnecessary-lambda-assignment
+    # pylint: disable=unnecessary-lambda-assignment
 
     if isinstance(op1, (Adjoint, Controlled, ControlledSequence)) or isinstance(
         op2, (Adjoint, Controlled, ControlledSequence)

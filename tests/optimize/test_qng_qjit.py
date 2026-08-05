@@ -65,7 +65,7 @@ class TestGradients:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_get_grad_jax(self, dev_name):
         """Test `_get_grad` method with Jax interface."""
-        # pylint:disable=protected-access
+        # pylint: disable=protected-access
         import jax.numpy as jnp
 
         device = qp.device(dev_name, wires=2)
@@ -85,7 +85,7 @@ class TestGradients:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_get_value_and_grad_jax(self, dev_name):
         """Test `_get_value_and_grad` method with Jax interface."""
-        # pylint:disable=protected-access
+        # pylint: disable=protected-access
         import jax.numpy as jnp
 
         device = qp.device(dev_name, wires=2)
@@ -111,7 +111,7 @@ class TestMetricTensor:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_no_approx(self, dev_name):
         """Test that the full metric tensor is computed for `approx=None`."""
-        # pylint:disable=protected-access
+        # pylint: disable=protected-access
         import jax.numpy as jnp
 
         @qp.qnode(qp.device(dev_name))
@@ -140,7 +140,7 @@ class TestMetricTensor:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_with_approx(self, dev_name):
         """Test that the approximated metric tensor is computed for `approx=block-diag` and `approx=diag`."""
-        # pylint:disable=protected-access
+        # pylint: disable=protected-access
         import jax.numpy as jnp
 
         @qp.qnode(qp.device(dev_name))
@@ -173,7 +173,7 @@ class TestMetricTensor:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_lam(self, dev_name):
         """Test that the regularization `lam` is used correctly."""
-        # pylint:disable=protected-access
+        # pylint: disable=protected-access
         import jax.numpy as jnp
 
         @qp.qnode(qp.device(dev_name))

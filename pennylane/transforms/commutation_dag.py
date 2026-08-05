@@ -367,7 +367,6 @@ class CommutationDAG:
         """Draw the DAG object.
 
         Args:
-        # pylint: disable=no-member
             filename (str): The file name which is in PNG format. Default = 'dag.png'
         """
         import networkx as nx  # pylint: disable=import-outside-toplevel

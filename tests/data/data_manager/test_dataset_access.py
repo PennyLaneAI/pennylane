@@ -50,7 +50,7 @@ try:
 except ImportError:
     pass
 
-# pylint:disable=protected-access,redefined-outer-name
+# pylint: disable=protected-access,redefined-outer-name
 
 
 pytestmark = pytest.mark.data

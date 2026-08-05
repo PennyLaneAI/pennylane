@@ -13,7 +13,7 @@
 # limitations under the License.
 """The tests for logical operations in AutoGraph"""
 
-# pylint: disable = wrong-import-position
+# pylint: disable=wrong-import-position
 
 import pytest
 

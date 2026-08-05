@@ -15,7 +15,7 @@
 Code relevant for performing measurements on a qubit mixed state.
 """
 
-# pylint:disable=too-many-branches,import-outside-toplevel,unused-argument
+# pylint: disable=too-many-branches,import-outside-toplevel,unused-argument
 
 from collections.abc import Callable
 

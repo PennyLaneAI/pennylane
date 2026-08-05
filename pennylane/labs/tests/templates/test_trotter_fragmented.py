@@ -28,7 +28,8 @@ from scipy.linalg import expm
 import pennylane as qp
 from pennylane.labs.templates.trotter_fragmented import trotter_fragmented
 
-# pylint: disable=too-many-arguments,too-many-nested-blocks,redefined-outer-name,too-few-public-methods
+# pylint: disable=too-many-arguments,too-many-nested-blocks,redefined-outer-name
+# pylint: disable=too-few-public-methods
 
 
 def _random_orthogonal(n, rng):

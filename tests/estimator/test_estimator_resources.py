@@ -22,7 +22,7 @@ import pytest
 
 from pennylane.estimator.resources_base import Resources
 
-# pylint: disable= too-few-public-methods,comparison-with-itself,protected-access
+# pylint: disable=too-few-public-methods,comparison-with-itself,protected-access
 
 
 @dataclass(frozen=True)

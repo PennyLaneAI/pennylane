@@ -19,7 +19,7 @@ import pytest
 pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 
-# pylint: disable = wrong-import-position
+# pylint: disable=wrong-import-position
 import jax.numpy as jnp
 from jax import make_jaxpr
 from jax.core import eval_jaxpr

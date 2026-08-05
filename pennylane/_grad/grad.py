@@ -303,7 +303,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
-            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+            # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
         # need to preserve input siganture for use in catalyst AOT compilation, but
@@ -343,7 +343,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
             argnums = argnums[0]
 
         # Known pylint issue with function signatures and decorators:
-        # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+        # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
         return self._grad_with_forward(self._func, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):

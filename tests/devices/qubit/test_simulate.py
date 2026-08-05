@@ -1492,7 +1492,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
-        # pylint:disable = singleton-comparison
+        # pylint: disable=singleton-comparison
 
         qscript = qp.tape.QuantumScript(
             [

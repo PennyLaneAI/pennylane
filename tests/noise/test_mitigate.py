@@ -15,7 +15,7 @@
 Tests for mitigation transforms.
 """
 
-# pylint:disable=protected-access
+# pylint: disable=protected-access
 
 import pytest
 from packaging import version

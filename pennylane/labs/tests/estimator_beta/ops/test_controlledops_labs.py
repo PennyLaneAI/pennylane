@@ -29,7 +29,7 @@ from pennylane.labs.estimator_beta import (
 )
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 
-# pylint: disable= no-self-use
+# pylint: disable=no-self-use
 
 
 class TestLabsCH:

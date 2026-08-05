@@ -526,7 +526,7 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
     _validate_level(level)
     if gradient_fn == "unset":
         config = construct_execution_config(qnode, resolve=False)()
-        # pylint: disable = protected-access
+        # pylint: disable=protected-access
         config = resolution._resolve_diff_method(config, qnode.device)
         gradient_fn = config.gradient_method
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))

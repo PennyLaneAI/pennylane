@@ -133,7 +133,7 @@ class RotoselectOptimizer:
         """
         x_flat = np.fromiter(_flatten_np(x), dtype=float)
         # wrap the objective function so that it accepts the flattened parameter array
-        # pylint:disable=unnecessary-lambda-assignment
+        # pylint: disable=unnecessary-lambda-assignment
         objective_fn_flat = lambda x_flat, gen: objective_fn(
             _unflatten_np(x_flat, x), generators=gen, **kwargs
         )

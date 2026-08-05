@@ -21,7 +21,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable= arguments-differ
+# pylint: disable=arguments-differ
 
 
 class BasisState(ResourceOperator):

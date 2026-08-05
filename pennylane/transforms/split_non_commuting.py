@@ -491,7 +491,7 @@ def _split_ham_with_grouping(
     It also assigns to each new tape the correct number of shots according to the
     shot distribution function defining the strategy for shot allocation.
     """
-    # pylint:disable=too-many-branches
+    # pylint: disable=too-many-branches
 
     obs = tape.measurements[0].obs
     if obs.grouping_indices is None:

@@ -15,7 +15,7 @@
 
 import numpy as np
 
-# pylint:disable=no-self-use
+# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qp

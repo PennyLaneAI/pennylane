@@ -406,7 +406,7 @@ class TestProcessSamples:
 
 
 class TestCountsIntegration:
-    # pylint:disable=too-many-public-methods,not-an-iterable
+    # pylint: disable=too-many-public-methods,not-an-iterable
 
     def test_counts_all_outcomes_with_mcm(self):
         """Test that all outcomes are present in results if requested."""

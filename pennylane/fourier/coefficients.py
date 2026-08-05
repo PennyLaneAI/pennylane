@@ -17,7 +17,7 @@ from itertools import product
 
 import numpy as np
 
-# pylint:disable=too-many-arguments
+# pylint: disable=too-many-arguments
 
 
 def coefficients(
