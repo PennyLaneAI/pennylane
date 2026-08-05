@@ -142,17 +142,21 @@ class TemporaryAND(Operator2):
     def __abstract_init__(self, wires: AbstractWires, control_values=None):
         if control_values is None:
             control_values = Bool[2]
-        super().__init__(wires=wires, control_values=control_values)
+        super().__abstract_init__(wires=wires, control_values=control_values)
 
     def __repr__(self):
-        cvals = (
-            self.control_values
-            if isinstance(self.control_values, AbstractArray)
-            else self.control_values.tolist()
-        )
-        if all(cvals):
-            return f"TemporaryAND(wires={self.wires})"
-        return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
+        params = [f"wires={self.wires}"]
+        ctrl_values = self.control_values
+        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+            params.append(f"control_values={ctrl_values}")
+        elif not all(ctrl_values):
+            params.append(f"control_values={ctrl_values.tolist()}")
+        return f"TemporaryAND({", ".join(params)})"
+
+    def __str__(self):
+        if self.is_abstract:
+            return "TemporaryAND"
+        return repr(self)
 
     @staticmethod
     @override
