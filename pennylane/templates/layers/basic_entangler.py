@@ -15,11 +15,25 @@ r"""
 Contains the BasicEntanglerLayers template.
 """
 
+from collections.abc import Sequence
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, RX, cond
+
+
+def _normalize_rotations(rotation):
+    """Return a list of one-parameter single-qubit gate types."""
+    if rotation is None:
+        return [RX]
+    if isinstance(rotation, Sequence) and not isinstance(rotation, (str, bytes)):
+        rotations = list(rotation)
+        if not rotations:
+            raise ValueError("rotation must be a non-empty sequence of gate types")
+        return rotations
+    return [rotation]
 
 
 class BasicEntanglerLayers(Operation):
@@ -50,11 +64,13 @@ class BasicEntanglerLayers(Operation):
             :target: javascript:void(0);
 
     Args:
-        weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
-            for the rotation.
+        weights (tensor_like): Weight tensor of shape ``(L, n_rots * len(wires))``, where ``n_rots``
+            is the number of rotation gate types. Each block of ``len(wires)`` weights is used as
+            parameters for one rotation gate across all wires.
         wires (Iterable): wires that the template acts on
-        rotation (Type[pennylane.operation.Operation]): one-parameter single-qubit gate to use,
-            if ``None``, :class:`~pennylane.ops.RX` is used as default
+        rotation (Type[pennylane.operation.Operation] or Sequence[Type[pennylane.operation.Operation]]):
+            one-parameter single-qubit gate type, or a sequence of such gate types applied in order
+            before the entangling CNOTs. If ``None``, :class:`~pennylane.ops.RX` is used as default.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -66,16 +82,16 @@ class BasicEntanglerLayers(Operation):
 
         .. code-block:: python
 
-            import pennylane as qp
+            import pennylane as qml
             from math import pi
 
             n_wires = 3
-            dev = qp.device('default.qubit', wires=n_wires)
+            dev = qml.device('default.qubit', wires=n_wires)
 
-            @qp.qnode(dev)
+            @qml.qnode(dev)
             def circuit(weights):
-                qp.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qp.expval(qp.Z(i)) for i in range(n_wires)]
+                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
         [np.float64(1.0), np.float64(1.0), np.float64(-1.0)]
@@ -88,7 +104,7 @@ class BasicEntanglerLayers(Operation):
 
         .. code-block:: python
 
-            shape = qp.BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
+            shape = qml.BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
         **No periodic boundary for two wires**
@@ -99,12 +115,12 @@ class BasicEntanglerLayers(Operation):
         .. code-block:: python
 
             n_wires = 2
-            dev = qp.device('default.qubit', wires=n_wires)
+            dev = qml.device('default.qubit', wires=n_wires)
 
-            @qp.qnode(dev)
+            @qml.qnode(dev)
             def circuit(weights):
-                qp.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qp.expval(qp.Z(i)) for i in range(n_wires)]
+                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
         [np.float64(-1.0), np.float64(1.0)]
@@ -116,10 +132,25 @@ class BasicEntanglerLayers(Operation):
 
         .. code-block:: python
 
-            @qp.qnode(dev)
+            @qml.qnode(dev)
             def circuit(weights):
-                qp.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qp.RZ)
-                return [qp.expval(qp.Z(i)) for i in range(n_wires)]
+                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+
+        Multiple rotation gates can be passed as a sequence (similar to Qiskit's ``TwoLocal``).
+        The weight tensor's last dimension must then be ``n_rots * n_wires``:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(weights):
+                qml.BasicEntanglerLayers(
+                    weights=weights, wires=range(n_wires), rotation=[qml.RX, qml.RZ]
+                )
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+
+            shape = qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=n_wires, n_rots=2)
+            weights = np.random.random(size=shape)
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
@@ -133,6 +164,7 @@ class BasicEntanglerLayers(Operation):
         # convert weights to numpy array if weights is list otherwise keep unchanged
         interface = math.get_interface(weights)
         weights = math.asarray(weights, like=interface)
+        rotations = _normalize_rotations(rotation)
 
         shape = math.shape(weights)
         if not (len(shape) == 3 or len(shape) == 2):  # 3 is when batching, 2 is no batching
@@ -141,13 +173,18 @@ class BasicEntanglerLayers(Operation):
                 f"or 3-dimensional if batching; got shape {shape}"
             )
 
-        if shape[-1] != len(wires):
+        expected_last = len(rotations) * len(wires)
+        if shape[-1] != expected_last:
             # index with -1 since we may or may not have batching in first dimension
             raise ValueError(
-                f"Weights tensor must have last dimension of length {len(wires)}; got {shape[-1]}"
+                f"Weights tensor must have last dimension of length {expected_last} "
+                f"(n_rots * n_wires = {len(rotations)} * {len(wires)}); got {shape[-1]}"
             )
 
-        self._hyperparameters = {"rotation": rotation or RX}
+        # Store a single gate type when only one rotation is used for backward compatibility.
+        self._hyperparameters = {
+            "rotation": rotations[0] if len(rotations) == 1 else tuple(rotations)
+        }
         super().__init__(weights, wires=wires)
 
     @property
@@ -171,10 +208,10 @@ class BasicEntanglerLayers(Operation):
         .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
 
         Args:
-            weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
-                for the rotation.
+            weights (tensor_like): Weight tensor of shape ``(L, n_rots * len(wires))``.
             wires (Any or Iterable[Any]): wires that the operator acts on
-            rotation (Type[pennylane.ops.Operation]): one-parameter single-qubit gate to use
+            rotation (Type[pennylane.ops.Operation] or Sequence[Type[pennylane.ops.Operation]]):
+                one-parameter single-qubit gate type(s) to use
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -182,48 +219,59 @@ class BasicEntanglerLayers(Operation):
         **Example**
 
         >>> weights = torch.tensor([[1.2, -0.4], [0.3, -0.2]])
-        >>> qp.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qp.RX)
+        >>> qml.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qml.RX)
         [RX(tensor(1.2000), wires=['a']), RX(tensor(-0.4000), wires=['b']),
         CNOT(wires=['a', 'b']),
         RX(tensor(0.3000), wires=['a']), RX(tensor(-0.2000), wires=['b']),
         CNOT(wires=['a', 'b'])]
         """
+        rotations = _normalize_rotations(rotation)
+        n_wires = len(wires)
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
         repeat = math.shape(weights)[-2]
 
         op_list = []
         for layer in range(repeat):
-            for i in range(len(wires)):
-                op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
+            for r_idx, rot in enumerate(rotations):
+                offset = r_idx * n_wires
+                for i in range(n_wires):
+                    op_list.append(
+                        rot(weights[..., layer, offset + i], wires=wires[i : i + 1])
+                    )
 
-            if len(wires) == 2:
+            if n_wires == 2:
                 op_list.append(CNOT(wires=wires))
 
-            elif len(wires) > 2:
-                for i in range(len(wires)):
+            elif n_wires > 2:
+                for i in range(n_wires):
                     w = wires.subset([i, i + 1], periodic_boundary=True)
                     op_list.append(CNOT(wires=w))
 
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires):
+    def shape(n_layers, n_wires, n_rots=1):
         r"""Returns the shape of the weight tensor required for this template.
 
         Args:
             n_layers (int): number of layers
             n_wires (int): number of qubits
+            n_rots (int): number of single-qubit rotation gate types per layer
 
         Returns:
             tuple[int]: shape
         """
 
-        return n_layers, n_wires
+        return n_layers, n_rots * n_wires
 
 
 def _basic_entangler_resources(repeat, num_wires, rotation):
-    resources = {abstractify(rotation): repeat * num_wires}
+    rotations = _normalize_rotations(rotation)
+    resources = {}
+    for rot in rotations:
+        key = abstractify(rot)
+        resources[key] = resources.get(key, 0) + repeat * num_wires
 
     if num_wires == 2:
         resources[CNOT] = repeat
@@ -236,6 +284,8 @@ def _basic_entangler_resources(repeat, num_wires, rotation):
 
 @register_resources(_basic_entangler_resources)
 def _basic_entangler_decomposition(weights, wires, rotation):
+    rotations = _normalize_rotations(rotation)
+    n_wires = len(wires)
     repeat = math.shape(weights)[-2]
 
     if capture.enabled():
@@ -243,22 +293,25 @@ def _basic_entangler_decomposition(weights, wires, rotation):
 
     @for_loop(repeat)
     def repeat_loop(layer):
+        # Python iteration over a small static list of gate types keeps capture happy
+        # while still supporting multiple rotations per layer.
+        for r_idx, rot in enumerate(rotations):
 
-        @for_loop(len(wires))
-        def wires_loop(i):
-            rotation(weights[..., layer, i], wires=wires[i])
+            @for_loop(n_wires)
+            def wires_loop(i, rot=rot, r_idx=r_idx):
+                rot(weights[..., layer, r_idx * n_wires + i], wires=wires[i])
 
-        wires_loop()  # pylint: disable=no-value-for-parameter
+            wires_loop()  # pylint: disable=no-value-for-parameter
 
         def elif_body():
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                j = (i + 1) % len(wires)
+            for i in range(n_wires):  # pylint: disable=consider-using-enumerate
+                j = (i + 1) % n_wires
                 CNOT(wires=[wires[i], wires[j]])
 
         def true_body():
             CNOT(wires=wires)
 
-        cond(len(wires) == 2, true_body, false_fn=None, elifs=((len(wires) > 2, elif_body),))()
+        cond(n_wires == 2, true_body, false_fn=None, elifs=((n_wires > 2, elif_body),))()
 
     repeat_loop()  # pylint: disable=no-value-for-parameter
 
