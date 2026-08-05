@@ -51,9 +51,9 @@ def test_valid_decomp(phi, p):
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
     expected as a fixed decomposition and yields the correct resources"""
-    angle_wires = [f"aux_{i}" for i in range(p)]
-    phase_grad_wires = [f"qft_{i}" for i in range(p)]
-    work_wires = [f"work_{i}" for i in range(p - 1)]
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
 
     kwargs = {
         "angle_wires": angle_wires,
