@@ -463,10 +463,8 @@ all_ops = [[rot := qp.PauliRot(0.3, "IXZ", [0, 1, "a"])], [rot, qp.RY(0.3, 5), X
 
 
 @pytest.mark.jax
-class TestInsertOp:
+class TestInsertOp:  # pylint: disable=too-few-public-methods
     """Test the utility _insert_op."""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("ops_and_meas, op_idx", ops_meas_and_op_ids)
     @pytest.mark.parametrize("ops", all_ops)

@@ -67,6 +67,7 @@ class _LegacyMeta(abc.ABCMeta):
         return super().__instancecheck__(instance)
 
 
+# pylint: disable-next=too-many-public-methods,too-many-instance-attributes
 class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
@@ -78,7 +79,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""

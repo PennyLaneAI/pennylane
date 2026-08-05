@@ -191,7 +191,7 @@ def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
 
 @simulator_tracking
 @single_tape_support
-class DefaultTensor(Device):
+class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
     """A PennyLane device to perform tensor network simulations of quantum circuits using
     `quimb <https://github.com/jcmgray/quimb/>`_.
 
@@ -368,8 +368,6 @@ class DefaultTensor(Device):
             using the ``MPS`` method of the ``default.tensor`` device is approximately three orders of magnitude slower.
             Similarly, using the ``default.qubit`` device results in a much slower simulation.
     """
-
-    # pylint: disable=too-many-instance-attributes
 
     _device_options = (
         "contract",

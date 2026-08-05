@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for Controlled"""
 
+# pylint: disable=protected-access,expression-not-assigned,too-many-arguments
+
 import pickle
 from copy import copy
 from functools import partial
@@ -48,8 +50,6 @@ from pennylane.transforms import decompose
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
-
-# pylint: disable=protected-access,expression-not-assigned,too-many-arguments
 
 
 def equal_list(lhs, rhs):

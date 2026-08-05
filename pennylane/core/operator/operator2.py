@@ -78,12 +78,11 @@ ARGNAME_CATEGORIES = (
 )
 
 
+# pylint: disable-next=too-many-public-methods,too-many-instance-attributes
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
     """
-
-    # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
     _operator_version = 2
 

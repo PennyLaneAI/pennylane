@@ -45,11 +45,9 @@ class Task:
             self.total = total
 
 
-class TerminalInfo:
+class TerminalInfo:  # pylint: disable=too-few-public-methods
     """Contains information on  the dimensions of
     the terminal."""
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self):
         self.columns, self.lines = shutil.get_terminal_size()

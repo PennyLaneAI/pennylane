@@ -67,7 +67,7 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
-class QubitDevice(Device):
+class QubitDevice(Device):  # pylint: disable=too-many-public-methods
     """Abstract base class for PennyLane qubit devices.
 
     The following abstract method **must** be defined:
@@ -106,8 +106,6 @@ class QubitDevice(Device):
         r_dtype: Real floating point precision type.
         c_dtype: Complex floating point precision type.
     """
-
-    # pylint: disable=too-many-public-methods
 
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)

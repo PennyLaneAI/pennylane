@@ -40,10 +40,8 @@ def fixture_init_state():
     return _init_state
 
 
-class TestProbs:
+class TestProbs:  # pylint: disable=too-many-public-methods
     """Tests for the probs function"""
-
-    # pylint: disable=too-many-public-methods
 
     def test_queue(self):
         """Test that the right measurement class is queued."""

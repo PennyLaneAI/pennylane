@@ -1663,10 +1663,8 @@ qubit_device_and_diff_method_and_grad_on_execution = [
     qubit_device_and_diff_method_and_grad_on_execution,
 )
 @pytest.mark.parametrize("shots", [None, 10000])
-class TestReturn:
+class TestReturn:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
-
-    # pylint: disable=too-many-public-methods
 
     def test_grad_single_measurement_param(
         self, dev, diff_method, grad_on_execution, device_vjp, shots

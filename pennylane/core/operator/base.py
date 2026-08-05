@@ -10,10 +10,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 Defines the base class for Operator and Operation.
 """
+
+# pylint: disable=protected-access
 
 import abc
 import copy
@@ -255,6 +256,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
+# pylint: disable-next=too-many-public-methods,too-many-instance-attributes
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
@@ -523,8 +525,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         one of them (in other words, without the leading underscore) for the first time will
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
-
-    # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
@@ -1322,7 +1322,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise DiagGatesUndefinedError
 
-    def diagonalizing_gates(self) -> list["Operator"]:  # pylint:disable=no-self-use
+    def diagonalizing_gates(self) -> list["Operator"]:  # pylint: disable=no-self-use
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1422,7 +1422,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.adjoint != Operator.adjoint
 
-    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":  # pylint: disable=no-self-use
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
 
@@ -1640,7 +1640,7 @@ class Operation(Operator):
         if self.grad_recipe != [None] * self.num_params:
             return "A"
         try:
-            self.parameter_frequencies  # pylint:disable=pointless-statement
+            self.parameter_frequencies  # pylint: disable=pointless-statement
             return "A"
         except ParameterFrequenciesUndefinedError:
             return "F"

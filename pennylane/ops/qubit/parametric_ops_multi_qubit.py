@@ -198,8 +198,9 @@ class MultiRZ(Operator2):
         return MultiRZ(theta, wires=self.wires)
 
 
-# pylint: disable=unused-argument
-def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
+def _multi_rz_decomposition_resources(  # pylint: disable=unused-argument
+    theta: TensorLike, wires: WiresLike
+):
     num_wires = len(wires)
     return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 

@@ -2412,10 +2412,8 @@ test_sort_data = [
 ]
 
 
-class TestSortFunction:
+class TestSortFunction:  # pylint: disable=too-few-public-methods
     """Test the sort function works across all interfaces"""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("input, test_output", test_sort_data)
     def test_sort(self, input, test_output):
@@ -2453,10 +2451,8 @@ class TestExpm:
         assert qp.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
 
 
-class TestSize:
+class TestSize:  # pylint: disable=too-few-public-methods
     """Test qp.math.size method."""
-
-    # pylint: disable=too-few-public-methods
 
     array_and_size = [
         ([], 0),
