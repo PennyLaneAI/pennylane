@@ -103,6 +103,7 @@ def _expand_nonunitary_gen_stop_at(obj):
     return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
 
 
+# pylint: disable-next=too-many-arguments
 def _expand_metric_tensor(
     tape: QuantumScript,
     argnum=None,
@@ -112,7 +113,7 @@ def _expand_metric_tensor(
     device_wires=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=too-many-positional-arguments,unused-argument,too-many-arguments
+    # pylint: disable=unused-argument
 
     if not allow_nonunitary and approx is None:
         [new_tape], postprocessing = decompose(
@@ -136,7 +137,7 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(  # pylint:disable=too-many-arguments,too-many-positional-arguments
+def metric_tensor(  # pylint:disable=too-many-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,

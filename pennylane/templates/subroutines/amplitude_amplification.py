@@ -16,7 +16,7 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
+# pylint: disable-msg=too-many-arguments
 import copy
 
 import numpy as np

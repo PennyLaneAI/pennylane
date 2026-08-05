@@ -318,8 +318,8 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             return self.decompose_operation(op)
 
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
+    # pylint: disable-next=too-many-arguments
     def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
-        # pylint: disable=too-many-arguments
         consts = invals[:n_consts]
         args = invals[n_consts:-n_control]
         control_wires = invals[-n_control:]

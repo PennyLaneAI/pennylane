@@ -81,7 +81,6 @@ class TestStandardValidityBasisState:
     @pytest.mark.parametrize("wires_traced", [True, False])
     def test_jit_compatibility(self, state_traced, wires_traced):
         """Test compatibility with jax.jit."""
-        # pylint: disable=import-outside-toplevel
         import jax
 
         state = np.array([0, 1, 0])
@@ -120,7 +119,7 @@ class TestStandardValidityBasisState:
         wires = qp.wires.Wires([1, 0, 2])
         closure_wires = wires
         if wires_traced:
-            import jax  # pylint: disable=import-outside-toplevel
+            import jax
 
             wires = jax.numpy.array(wires)
 
@@ -204,7 +203,7 @@ class TestDecomposition:
         state vector when compiled and executed via ``qjit``.  Uses BasisEmbedding
         which delegates to BasisState.compute_decomposition through the abstract
         (traced) path, exercising the GlobalPhase+RX decomposition end-to-end."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         n_wires = len(state)
         dev = qp.device("lightning.qubit", wires=n_wires)
@@ -238,8 +237,8 @@ class TestDecomposition:
         state vector when traced through ``jax.jit``.  Uses ``reference.qubit``
         which decomposes BasisState with abstract parameters, exercising the
         GlobalPhase+RX decomposition end-to-end without requiring Catalyst."""
-        import jax  # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+        import jax
+        import jax.numpy as jnp
 
         n_wires = len(state)
 

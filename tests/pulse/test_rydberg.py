@@ -15,8 +15,6 @@
 Tests for everything related to rydberg system specific functionality.
 """
 
-# pylint: disable=import-outside-toplevel
-
 import numpy as np
 import pytest
 

@@ -809,7 +809,7 @@ class TestIntegration:
         res = circuit(phi)
         assert qp.math.allclose(res, torch.cos(phi))
 
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         assert qp.math.allclose(phi.grad, -torch.sin(phi))
 
     @pytest.mark.autograd
@@ -886,7 +886,7 @@ class TestIntegration:
         expected = 0.5 * (torch.exp(x) + torch.exp(-x))
         assert qp.math.allclose(res, expected)
 
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         expected_grad = 0.5 * (torch.exp(x) - torch.exp(-x))
         assert qp.math.allclose(x.grad, expected_grad)
 

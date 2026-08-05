@@ -15,8 +15,6 @@
 """Tests for ``qp.transforms.decompositions.make_rz_to_phase_gradient_decomp``"""
 
 import numpy as np
-
-# pylint: disable=no-value-for-parameter
 import pytest
 
 import pennylane as qp
@@ -190,7 +188,6 @@ def test_integration_multi_wire(seed):
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
-    # pylint: disable=import-outside-toplevel
     import jax
     import jax.numpy as jnp
 

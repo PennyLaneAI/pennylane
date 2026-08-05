@@ -74,7 +74,6 @@ class TestHilbertSchmidt:
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -470,7 +469,6 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -634,7 +632,6 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint: disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * qp.numpy.pi / 2, 3 * qp.numpy.pi / 2, qp.numpy.pi / 2]

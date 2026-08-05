@@ -15,7 +15,7 @@
 
 import copy
 
-# pylint: disable=import-outside-toplevel,protected-access,no-member
+# pylint: disable=protected-access
 import warnings
 from functools import partial
 

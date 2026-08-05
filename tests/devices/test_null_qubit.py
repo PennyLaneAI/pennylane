@@ -779,7 +779,7 @@ class TestSumOfTermsDifferentiability:
         out = self.f(dev, x, style=style)
         assert out == torch.tensor(0)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         assert x.grad == 0
 
     @pytest.mark.xfail(reason="tf can't track derivatives")
@@ -816,7 +816,7 @@ class TestDeviceDifferentiation:
         [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0
 
         actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, config)
@@ -879,7 +879,7 @@ class TestDeviceDifferentiation:
 
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0.0
 
         actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, config)

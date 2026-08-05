@@ -81,7 +81,6 @@ def _expand_transform_spsa(
     sampler_rng=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
-    # pylint: disable=too-many-positional-arguments
     [expanded_tape], _ = decompose(
         tape,
         gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
@@ -116,7 +115,6 @@ def spsa_grad(
     sampler=_rademacher_sampler,
     sampler_rng=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    # pylint: disable=too-many-positional-arguments
     r"""Transform a circuit to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a

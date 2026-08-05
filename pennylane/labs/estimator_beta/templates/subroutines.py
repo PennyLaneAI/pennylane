@@ -1682,6 +1682,7 @@ class SelectCopyQROM(ResourceOperator):
 
         return (batch_size, bits_per_iter)
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         num_bitstrings: int,
@@ -1691,7 +1692,6 @@ class SelectCopyQROM(ResourceOperator):
         bits_per_iter: int | None = None,
         wires: WiresLike | None = None,
     ) -> None:
-        # pylint: disable=too-many-arguments
 
         self.num_bitstrings = num_bitstrings
         self.size_bitstring = size_bitstring

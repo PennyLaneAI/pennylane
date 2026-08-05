@@ -1365,7 +1365,7 @@ class TestSampleProbs:
         See https://github.com/PennyLaneAI/pennylane/issues/9000 for the report.
         """
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         feature_count = 2
 

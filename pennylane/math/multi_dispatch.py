@@ -730,6 +730,7 @@ def scatter(indices, array, new_dims, like=None):  # pylint: disable=redefined-o
 
 
 @multi_dispatch(argnum=[0, 2])
+# pylint: disable-next=too-many-arguments
 def scatter_element_add(
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
 ):
@@ -769,7 +770,6 @@ def scatter_element_add(
     tensor([[ 0.1000, 20.2000,  0.3000],
             [ 0.4000,  0.5000, 10.6000]])
     """
-    # pylint: disable=too-many-arguments
     if len(np.shape(tensor)) == 0 and index == ():
         return tensor + value
 

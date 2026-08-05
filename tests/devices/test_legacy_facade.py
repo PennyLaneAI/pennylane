@@ -401,8 +401,6 @@ class TestGradientSupport:
         class AdjointDev(DummyDevice):
             """A dummy device that supports adjoint diff"""
 
-            # pylint: disable=unnecessary-lambda-assignment
-
             _capabilities = {"returns_state": True}
 
             _apply_operation = lambda *args, **kwargs: 0

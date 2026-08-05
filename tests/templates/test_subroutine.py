@@ -388,7 +388,7 @@ class TestSubroutineCapture:
     def test_setup_inputs_program_capture(self):
         """Test that setup_inputs can make inputs hashable for use with program capture."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def my_setup_inputs(wires, pauli_words):
             return (), {"wires": wires, "pauli_words": tuple(pauli_words)}
@@ -465,7 +465,7 @@ class TestSubroutineCapture:
     def test_autograph_not_propagated_through(self):
         """Test that autograph would propagate through a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(x, wires):
@@ -484,7 +484,7 @@ class TestSubroutineCapture:
     def test_manual_autograph_use(self):
         """Test that autograph can be manually applied to a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         @qp.capture.run_autograph
@@ -503,7 +503,7 @@ class TestSubroutineCapture:
     def test_stack_wires(self):
         """Test that wire arguments to a subroutine are stacked"""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(wires):

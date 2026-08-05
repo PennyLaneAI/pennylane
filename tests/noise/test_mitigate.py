@@ -15,7 +15,7 @@
 Tests for mitigation transforms.
 """
 
-# pylint:disable=no-self-use,protected-access
+# pylint:disable=protected-access
 
 import pytest
 from packaging import version
@@ -74,7 +74,6 @@ def same_tape(tape1, tape2):
 class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
-    # pylint:disable = unnecessary-lambda-assignment
     folding = lambda *args, **kwargs: tape_base
     extrapolate = lambda *args, **kwargs: [3.141]
 
@@ -220,8 +219,8 @@ class TestMitigateWithZNE:
         )
         rng = np.random.default_rng(seed=seed)
         inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
-        result_orig = mitigated_qnode_orig(inputs)  # pylint: disable=not-callable
-        result_expanded = mitigated_qnode_expanded(inputs)  # pylint: disable=not-callable
+        result_orig = mitigated_qnode_orig(inputs)
+        result_expanded = mitigated_qnode_expanded(inputs)
         # !TODO: double check if this shape mismatch needs to be taken care of from user side PR6684
         assert qp.math.allclose(
             np.array(result_orig).flatten(), np.array(result_expanded).flatten()
@@ -229,7 +228,6 @@ class TestMitigateWithZNE:
 
     def test_zne_with_noise_models(self):
         """Test that mitigate_with_zne transform works with noise models"""
-        # pylint: disable=not-callable
         fcond = qp.noise.wires_in([0, 1])
         noise = qp.noise.partial_wires(qp.AmplitudeDamping, 0.05)
         noise_model = qp.NoiseModel({fcond: noise})
@@ -252,7 +250,6 @@ class TestMitigateWithZNE:
 
     def test_zne_error_with_channels(self):
         """Test that mitigate_with_zne transform raises correct error with channels"""
-        # pylint: disable=not-callable
         fcond = qp.noise.wires_in([0, 1])
         noise = qp.noise.partial_wires(qp.AmplitudeDamping, 0.05)
         noise_model = qp.NoiseModel({fcond: noise})

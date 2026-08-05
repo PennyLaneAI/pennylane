@@ -62,8 +62,6 @@ methods = [
     apply_operation,
 ]
 
-# pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
-
 
 def test_custom_operator_with_matrix():
     """Test that apply_operation works with any operation that defines a matrix."""

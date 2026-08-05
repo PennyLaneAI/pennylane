@@ -36,8 +36,6 @@ class TestSplitEvolOps:
     a ParametrizedEvolution operation at the sampled time, inserting a Pauli rotation about the
     provided Pauli word with angles +- pi/2."""
 
-    # pylint: disable=unnecessary-lambda-assignment
-
     # Need to wrap the Hamiltonians in a callable in order to use `qp.pulse` functions, as
     # the tests would otherwise fail when used without JAX.
     ham_single_q_const = lambda _: qp.pulse.constant * qp.PauliY(0)

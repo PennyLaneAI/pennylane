@@ -742,7 +742,7 @@ class TestProperties:
     def test_is_verified_hermitian_abstract(self):
         """Test that is_verified_hermitian works with abstract coefficients."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def float_arg(x):
             op = x * qp.X(0)

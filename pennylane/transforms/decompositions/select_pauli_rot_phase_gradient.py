@@ -30,6 +30,7 @@ from pennylane.wires import WireError, Wires
 from .rz_phase_gradient import validate_phase_gradient_wires
 
 
+# pylint: disable-next=too-many-arguments
 def _select_pauli_rot_phase_gradient(
     phis: np.ndarray,
     rot_axis: str,
@@ -42,7 +43,6 @@ def _select_pauli_rot_phase_gradient(
     """Function that transforms the SelectPauliRot gate to the phase gradient circuit
     The precision is implicitly defined by the length of ``angle_wires``
     """
-    # pylint: disable=too-many-arguments
 
     precision = len(angle_wires)
     binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)

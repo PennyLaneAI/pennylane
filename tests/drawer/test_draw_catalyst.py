@@ -13,7 +13,7 @@
 # limitations under the License.
 """Test the pennylane drawer with Catalyst."""
 
-# pylint: disable=import-outside-toplevel,protected-access
+# pylint: disable=protected-access
 
 from functools import partial
 
@@ -109,7 +109,7 @@ class TestCatalystDraw:
                 qp.Hadamard(wires=i)
 
             qp.RX(x, wires=0)
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
             qp.RY(y, wires=1)
             qp.RZ(z, wires=2)
             return qp.expval(qp.PauliZ(0))
@@ -231,7 +231,7 @@ class TestCatalystDrawMpl:
                 qp.Hadamard(wires=i)
 
             qp.RX(x, wires=0)
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
             qp.RY(y, wires=1)
             qp.RZ(z, wires=2)
             return qp.expval(qp.PauliZ(0))

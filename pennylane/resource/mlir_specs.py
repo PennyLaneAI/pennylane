@@ -257,6 +257,7 @@ def _execute_analysis_pass(
         )
 
 
+# pylint: disable-next=too-many-arguments
 def resources_from_analysis_pass(
     qjit,
     original_qnode,
@@ -296,7 +297,7 @@ def resources_from_analysis_pass(
             corresponding resource information.
     """
 
-    # pylint: disable=protected-access,too-many-arguments
+    # pylint: disable=protected-access
 
     new_qnode = copy.deepcopy(original_qnode)
     iter_pipeline = new_qnode._compile_pipeline

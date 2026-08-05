@@ -212,7 +212,7 @@ class QROM(Operator2):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-    ):  # pylint: disable=disable=too-many-positional-arguments
+    ):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)

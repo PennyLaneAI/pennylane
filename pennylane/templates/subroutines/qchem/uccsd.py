@@ -15,7 +15,7 @@ r"""
 Contains the UCCSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable-msg=too-many-arguments,protected-access
 import copy
 from collections import Counter
 from collections.abc import Sequence

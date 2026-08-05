@@ -15,7 +15,7 @@
 Unit tests for the ParametrizedEvolution class
 """
 
-# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,protected-access
+# pylint: disable=unused-argument,too-few-public-methods,protected-access
 
 from functools import reduce
 

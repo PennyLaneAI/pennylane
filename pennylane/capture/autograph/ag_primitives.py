@@ -112,6 +112,7 @@ def _assert_results(results, var_names):
     return results
 
 
+# pylint: disable-next=too-many-arguments
 def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
@@ -123,7 +124,6 @@ def if_stmt(
 ):
     """An implementation of the AutoGraph 'if' statement. The interface is defined by AutoGraph,
     here we merely provide an implementation of it in terms of PennyLane primitives."""
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
 
     # Cache the initial state of all modified variables. Required because we trace all branches,
     # and want to restore the initial state before entering each branch.
@@ -206,6 +206,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
+# pylint: disable-next=too-many-arguments
 def _call_pennylane_for(
     start,
     stop,
@@ -218,7 +219,6 @@ def _call_pennylane_for(
     array_iterable=None,
 ):
     """Dispatch to a PennyLane implementation of for loops."""
-    # pylint: disable=too-many-positional-arguments,too-many-arguments
 
     # Ensure iteration arguments are properly initialized. We cannot process uninitialized
     # loop carried values as we need their type information for tracing.

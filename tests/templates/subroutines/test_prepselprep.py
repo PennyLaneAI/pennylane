@@ -15,7 +15,7 @@
 Tests for the PrepSelPrep template.
 """
 
-# pylint: disable=protected-access,import-outside-toplevel
+# pylint: disable=protected-access
 
 import copy
 

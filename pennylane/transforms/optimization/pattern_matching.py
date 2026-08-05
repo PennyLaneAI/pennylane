@@ -636,6 +636,7 @@ def _add_match(match_list, backward_match_list):
             match_list.append(b_match)
 
 
+# pylint: disable-next=too-many-arguments
 def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2):
     """Compare the qubit configurations of two operations. The operations are supposed to be similar up to their
     qubits configuration.
@@ -648,7 +649,6 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         control2 (list(int)): Control wires of the second node.
         target2 (list(int)): Target wires of the second node.
     """
-    # pylint: disable=too-many-arguments
 
     if control1 and set(control1) == set(control2):
         if CONTROL_BASE[node1.op.name] in symmetric_over_all_wires and set(target1) == set(target2):
@@ -668,6 +668,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
     Class to apply pattern matching in the forward direction.
     """
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self, circuit_dag, pattern_dag, node_id_c, node_id_p, wires, control_wires, target_wires
     ):
@@ -679,7 +680,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
             node_id_c (int): index of the first gate matched in the circuit.
             node_id_p (int): index of the first gate matched in the pattern.
         """
-        # pylint: disable=too-many-arguments
 
         # Commutation DAG of the circuit
         self.circuit_dag = circuit_dag
@@ -964,6 +964,7 @@ class MatchingScenarios:  # pylint: disable=too-few-public-methods
     Class to represent a matching scenario in the Backward part of the algorithm.
     """
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self, circuit_matched, circuit_blocked, pattern_matched, pattern_blocked, matches, counter
     ):
@@ -976,7 +977,6 @@ class MatchingScenarios:  # pylint: disable=too-few-public-methods
             matches (list): list of matches.
             counter (int): counter of the number of circuit gates already considered.
         """
-        # pylint: disable=too-many-arguments
 
         self.circuit_matched = circuit_matched
         self.pattern_matched = pattern_matched
@@ -1023,6 +1023,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-pub
     Class BackwardMatch allows to run backward direction part of the pattern matching algorithm.
     """
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         circuit_dag,
@@ -1050,7 +1051,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-pub
             control_wires (list):
             target_wires (list):
         """
-        # pylint: disable=too-many-arguments
 
         self.circuit_dag = circuit_dag
         self.pattern_dag = pattern_dag

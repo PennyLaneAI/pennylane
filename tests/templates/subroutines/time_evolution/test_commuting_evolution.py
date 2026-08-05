@@ -257,7 +257,6 @@ class TestGradients:
 
         x_vals = np.linspace(-np.pi, np.pi, num=10)
 
-        # pylint: disable=not-callable
         grads_finite_diff = [qp.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qp.gradients.param_shift(circuit)(x) for x in x_vals]
 
@@ -266,7 +265,6 @@ class TestGradients:
     def test_four_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
-        # pylint: disable=not-callable
 
         n_wires = 2
         dev = qp.device("default.qubit", wires=n_wires)
@@ -291,7 +289,6 @@ class TestGradients:
 
     def test_differentiable_hamiltonian(self):
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
-        # pylint: disable=not-callable
 
         n_wires = 2
         dev = qp.device("default.qubit", wires=n_wires)

@@ -463,6 +463,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         tape_transform: Callable | None = None,
@@ -475,7 +476,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         final_transform: bool = False,
         use_argnum_in_expand: bool = False,
     ):
-        # pylint: disable=too-many-arguments
         if tape_transform is not None and not callable(tape_transform):
             raise TransformError(
                 f"The function to register, {tape_transform}, does "

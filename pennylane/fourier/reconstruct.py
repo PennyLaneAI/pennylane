@@ -99,6 +99,7 @@ _warn_text_f0_ignored = (
 )
 
 
+# pylint: disable-next=too-many-arguments
 def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
 
@@ -124,7 +125,6 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum`` .
         This function is a purely classical function. Furthermore, it is fully differentiable.
     """
-    # pylint: disable=too-many-arguments
 
     have_f0 = f0 is not None
     have_shifts = shifts is not None
@@ -212,12 +212,12 @@ def _parse_ids(ids, info_dict):
     return ids
 
 
+# pylint: disable-next=too-many-arguments
 def _parse_shifts(shifts, R, arg_name, par_idx, atol, need_f0):
     """Processes shifts for a single reconstruction and determines
     wheter the function at the reconstruction point, ``f0`` will be
     needed.
     """
-    # pylint: disable=too-many-arguments
     _shifts = shifts.get(arg_name)
     if _shifts is not None:
         _shifts = _shifts.get(par_idx)

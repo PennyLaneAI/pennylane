@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for default qubit."""
 
-# pylint: disable=import-outside-toplevel,no-member,too-many-arguments
+# pylint: disable=too-many-arguments
 
 from unittest import mock
 
@@ -903,7 +903,7 @@ class TestSumOfTermsDifferentiability:
         expected_out = self.expected(x2, like="torch")
         assert qp.math.allclose(out, expected_out)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         expected_out.backward()
         assert qp.math.allclose(x.grad, x2.grad)
 
@@ -945,7 +945,7 @@ class TestAdjointDifferentiation:
         expected_grad = -qp.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qp.math.cos(x)
@@ -1022,7 +1022,7 @@ class TestAdjointDifferentiation:
         expected_grad = -qp.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qp.math.cos(x)
@@ -2165,7 +2165,6 @@ class TestPostselection:
                     reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
                 )
 
-            # pylint: disable=import-outside-toplevel
             import jax
 
             # We do not raise an error if using jax.jit, because we cannot check whether or not

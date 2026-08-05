@@ -39,6 +39,7 @@ def ad(wire, d=2):  # pylint: disable=unused-argument
     return s_prod(0.5, X(wire)) + s_prod(-0.5j, Y(wire))
 
 
+# pylint: disable-next=too-many-arguments
 def transmon_interaction(
     qubit_freq: float | list,
     connections: list,
@@ -47,7 +48,6 @@ def transmon_interaction(
     anharmonicity=None,
     d=2,
 ):
-    # pylint: disable=too-many-arguments
     r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a
     superconducting transmon system.
 

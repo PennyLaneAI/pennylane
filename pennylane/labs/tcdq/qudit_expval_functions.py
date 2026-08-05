@@ -331,6 +331,7 @@ def _obs_phase_matrix(
     )
 
 
+# pylint: disable-next=too-many-arguments
 def _build_all_weight_groups(
     gen_np: np.ndarray,
     pm_np: np.ndarray,
@@ -340,7 +341,6 @@ def _build_all_weight_groups(
     d: int,
 ) -> list[WeightGroupData]:
     """Build :class:`WeightGroupData` for each non-zero gate weight."""
-    # pylint: disable=too-many-arguments
     weight_data: list[WeightGroupData] = []
     for omega in sorted(set(gate_weights)):
         if omega == 0:
@@ -358,6 +358,7 @@ def _build_all_weight_groups(
     return weight_data
 
 
+# pylint: disable-next=too-many-arguments
 def _accumulate_phase_diffs(
     gates_params: ArrayLike,
     weight_data: list[WeightGroupData],
@@ -369,7 +370,6 @@ def _accumulate_phase_diffs(
     l_vecs: ArrayLike,
 ) -> jnp.ndarray:
     """Assemble the accumulated phase-difference matrix from all weight groups."""
-    # pylint: disable=too-many-arguments
     accumulated = jnp.zeros((n_obs, n_samples))
     for group in weight_data:
         theta_w = jnp.asarray(gates_params)[group.param_indices]

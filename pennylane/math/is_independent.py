@@ -216,7 +216,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     return rnd_args
 
 
-# pylint: disable-next=too-many-arguments,too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds):
     """Test whether a function returns the same output at random positions.
 
@@ -255,6 +255,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
+# pylint: disable-next=too-many-arguments
 def is_independent(
     func,
     interface,
@@ -359,8 +360,6 @@ def is_independent(
     This means that ``is_independent`` is a stronger test than simply verifying functions
     have constant output.
     """
-
-    # pylint: disable=too-many-positional-arguments,too-many-arguments
 
     if interface not in {"autograd", "jax", "tf", "torch", "tensorflow"}:
         raise ValueError(f"Unknown interface: {interface}")

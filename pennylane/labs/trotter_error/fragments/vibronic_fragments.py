@@ -128,11 +128,11 @@ def _momentum_fragment(states: int, modes: int, freqs: ArrayLike) -> RealspaceMa
     return RealspaceMatrix(states, modes, blocks)
 
 
+# pylint: disable-next=too-many-arguments
 def _realspace_sum(
     i: int, j: int, states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
 ) -> RealspaceSum:
     """Return a RealspaceSum representation of the ``(i, j)`` block in the RealspaceMatrix"""
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     if i > states - 1 or j > states - 1:
         return RealspaceSum.zero(modes)
 

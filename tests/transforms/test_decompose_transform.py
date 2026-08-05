@@ -26,8 +26,6 @@ from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
-# pylint: disable=unnecessary-lambda-assignment
-
 pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 

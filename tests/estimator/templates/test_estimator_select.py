@@ -21,7 +21,7 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=too-many-arguments
 
 
 class TestSelectTHC:

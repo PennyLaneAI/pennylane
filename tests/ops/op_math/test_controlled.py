@@ -584,8 +584,6 @@ class TestControlledMiscMethods:
 class TestControlledOperationProperties:
     """Test ControlledOp specific properties."""
 
-    # pylint:disable=no-member
-
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
@@ -1066,7 +1064,6 @@ class TestDecomposition:
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         custom_ctrl_op_decomps,
@@ -1283,7 +1280,7 @@ class TestDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2
@@ -2392,7 +2389,7 @@ class TestCtrlTransformDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2

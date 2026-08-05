@@ -134,7 +134,6 @@ class TestExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "Obs, Op, expected_fn",
         [
@@ -166,6 +165,7 @@ class TestExpval:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_single_wire_observables_expectation(self, Obs, Op, expected_fn, theta, phi, tol, dev):
         """Test that expectation values for single wire observables are correct"""
 

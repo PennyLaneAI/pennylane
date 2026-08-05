@@ -14,8 +14,6 @@
 
 """Tests for the transform ``qp.transform.split_to_single_terms``"""
 
-# pylint: disable=import-outside-toplevel
-
 import numpy as np
 import pytest
 

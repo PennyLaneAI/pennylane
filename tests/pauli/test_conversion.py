@@ -158,7 +158,6 @@ class TestDecomposition:  # pylint: disable=too-many-public-methods
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        # pylint: disable=consider-using-generator
         decomposed_coeff, decomposed_obs = qp.pauli_decompose(hamiltonian).terms()
 
         linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
@@ -618,7 +617,6 @@ class TestPhasedDecomposition:
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        # pylint: disable=consider-using-generator
         decomposed_coeff, decomposed_obs = qp.pauli_decompose(
             hamiltonian, check_hermitian=False
         ).terms()
@@ -637,8 +635,6 @@ class TestPhasedDecomposition:
 
         assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
-
-    # pylint: disable = consider-using-generator
 
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)

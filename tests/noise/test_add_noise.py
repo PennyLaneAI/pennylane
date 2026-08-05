@@ -24,8 +24,6 @@ from pennylane.core.qscript import QuantumScript
 from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.noise.add_noise import _get_transform_program, add_noise
 
-# pylint:disable = no-member
-
 
 class TestAddNoise:
     """Tests for the add_noise transform using input tapes"""

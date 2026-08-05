@@ -28,7 +28,7 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import OneWireDynOp
 
-# pylint: disable=unused-argument,arguments-differ
+# pylint: disable=unused-argument
 
 
 class SX2(Operator2):

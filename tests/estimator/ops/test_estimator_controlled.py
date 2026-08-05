@@ -37,8 +37,6 @@ from pennylane.estimator.resource_operator import CompressedResourceOp, GateCoun
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=no-self-use
-
 
 class TestCH:
     """Test the Resource CH operation"""

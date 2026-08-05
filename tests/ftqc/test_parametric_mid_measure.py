@@ -492,7 +492,6 @@ class TestMeasureFunctions:
         assert mp.postselect == postselect
         assert isinstance(mp, MidMeasure)
 
-    # pylint: disable=too-many-positional-arguments,too-many-arguments
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, np.pi / 2, "XY")]
@@ -500,6 +499,7 @@ class TestMeasureFunctions:
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
+    # pylint: disable-next=too-many-arguments
     def test_x_and_y_with_program_capture(self, meas_func, angle, plane, wire, reset, postselect):
         """Test that the measure_ functions are captured as expected"""
         import jax
@@ -534,6 +534,7 @@ class TestMeasureFunctions:
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
     @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax"])
+    # pylint: disable-next=too-many-arguments
     def test_arbitrary_basis_with_program_capture(
         self, angle, plane, wire, reset, postselect, angle_type
     ):

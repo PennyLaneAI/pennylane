@@ -239,6 +239,7 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     return totals
 
 
+# pylint: disable-next=too-many-arguments
 def tape_text(
     tape,
     wire_order=None,
@@ -432,7 +433,6 @@ def tape_text(
         New tape offset:  4
 
     """
-    # pylint: disable=too-many-arguments
     tape = transform_deferred_measurements_tape(tape)
     cache = cache or {}
     cache.setdefault("tape_offset", 0)

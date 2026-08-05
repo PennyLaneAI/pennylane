@@ -36,7 +36,6 @@ def test_auto_with_numpy():
 def test_auto_with_tf():
     """Test that 'auto' interface resolves to 'tf' correctly."""
     try:
-        # pylint: disable=import-outside-toplevel
         import tensorflow as tf
     except ImportError:
         pytest.skip("TensorFlow is not installed.")
@@ -63,7 +62,6 @@ def test_auto_with_autograd():
 def test_auto_with_jax():
     """Test that 'auto' interface resolves to 'jax' correctly.."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
@@ -77,7 +75,6 @@ def test_auto_with_jax():
 
 def test_auto_with_unsupported_interface():
     """Test that 'auto' interface resolves to None correctly."""
-    # pylint: disable=import-outside-toplevel
     import networkx as nx
 
     class DummyCustomGraphOp(qp.operation.Operation):
@@ -99,7 +96,6 @@ def test_auto_with_unsupported_interface():
 def test_tf_autograph():
     """Test that 'tf' interface resolves to 'tf-autograph' in graph mode."""
     try:
-        # pylint: disable=import-outside-toplevel
         import tensorflow as tf
     except ImportError:
         pytest.skip("TensorFlow is not installed.")
@@ -117,7 +113,6 @@ def test_tf_autograph():
 def test_jax():
     """Test that non-abstract JAX parameters in tapes resolve to 'jax'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
@@ -136,7 +131,6 @@ def test_jax():
 def test_jax_jit():
     """Test that abstract JAX parameters in tapes resolve to 'jax-jit'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax
         import jax.numpy as jnp
     except ImportError:

@@ -544,7 +544,6 @@ class TestCliffordCompile:
     @pytest.mark.parametrize("method, kwargs", [("sk", {"max_depth": 3}), ("gridsynth", {})])
     def test_clifford_decompose_interfaces(self, method, kwargs):
         """Test that unwrap converts lists to lists and interface variables to numpy."""
-        # pylint: disable=import-outside-toplevel
 
         dev = qp.device("default.qubit")
 
@@ -627,7 +626,7 @@ class TestCliffordCached:
 
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
-        # pylint: disable=protected-access,import-outside-toplevel
+        # pylint: disable=protected-access
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
@@ -682,7 +681,7 @@ class TestCliffordCached:
     def test_cached_with_rtol(self):
         """Test that caches are correctly identified as compatible or
         incompatible with a relative threshold for epsilon."""
-        # pylint: disable=protected-access,import-outside-toplevel
+        # pylint: disable=protected-access
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
@@ -709,7 +708,6 @@ class TestCatalyst:
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
         """Test that the catalyst integration is working correctly."""
-        # pylint: disable=import-outside-toplevel
 
         import catalyst
 

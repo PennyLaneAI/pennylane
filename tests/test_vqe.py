@@ -906,7 +906,7 @@ class TestNewVQE:
         w = torch.tensor(PARAMS, requires_grad=True)
 
         res = circuit(w)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         dc = w.grad.detach().numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)

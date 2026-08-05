@@ -15,8 +15,6 @@
 Unit tests for the ``batch_inputs`` transform.
 """
 
-# pylint: disable=no-value-for-parameter,comparison-with-callable
-
 import pytest
 
 import pennylane as qp

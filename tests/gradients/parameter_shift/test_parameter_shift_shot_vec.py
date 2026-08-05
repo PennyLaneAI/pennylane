@@ -508,9 +508,9 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     @pytest.mark.parametrize("G", [qp.RX, qp.RY, qp.RZ, qp.PhaseShift])
+    # pylint: disable-next=too-many-arguments
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast, seed):
         """Tests that the automatic gradients of Pauli rotations are correct."""
-        # pylint: disable=too-many-arguments
 
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector

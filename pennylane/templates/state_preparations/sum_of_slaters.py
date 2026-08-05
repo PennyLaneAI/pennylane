@@ -1042,6 +1042,7 @@ def _preprocess(v_bits, wires):
     return selected_wires, SoSData(u_bits, b_bits, d, r, m)
 
 
+# pylint: disable-next=too-many-arguments
 def _sos_state_prep_with_wires(
     data: tuple[np.ndarray, np.ndarray, SoSData],
     *,
@@ -1052,7 +1053,7 @@ def _sos_state_prep_with_wires(
     mcx_cache_wires,
     selected_wires,
 ):
-    # pylint: disable=too-many-arguments,no-value-for-parameter
+    # pylint: disable=no-value-for-parameter
     coefficients, v_bits, data = data
     identity_encoding = data.r == data.m
     b_bits = data.b_bits

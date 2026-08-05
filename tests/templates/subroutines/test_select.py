@@ -15,8 +15,6 @@
 Tests for the Select template.
 """
 
-# pylint: disable=import-outside-toplevel,no-self-use
-
 import copy
 
 import numpy as np

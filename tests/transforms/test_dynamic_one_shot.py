@@ -121,7 +121,7 @@ def test_postselect_mode():
 def test_hw_like_with_jax(use_jit, diff_method, seed):
     """Test that invalid shots are replaced with INTEGER_MIN_VAL if
     postselect_mode="hw-like" with JAX"""
-    import jax  # pylint: disable=import-outside-toplevel
+    import jax
 
     shots = 10
     dev = qp.device("default.qubit", seed=jax.random.PRNGKey(seed))
@@ -313,7 +313,7 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
 class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
 
-    # pylint: disable=too-many-arguments,import-outside-toplevel
+    # pylint: disable=too-many-arguments
 
     @pytest.mark.parametrize("measure_f", (qp.expval, qp.probs, qp.sample, qp.var))
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])

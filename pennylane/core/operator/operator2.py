@@ -1661,6 +1661,7 @@ if has_jax:
     operator_p.prim_type = "operator"
 
     @operator_p.def_impl
+    # pylint: disable-next=too-many-arguments
     def _op_impl(
         *all_args,
         op_cls,
@@ -1672,7 +1673,7 @@ if has_jax:
         adjoint=False,
         **static_args,
     ):
-        # pylint: disable=too-many-arguments,unused-argument
+        # pylint: disable=unused-argument
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 

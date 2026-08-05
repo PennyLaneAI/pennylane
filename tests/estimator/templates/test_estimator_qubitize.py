@@ -20,7 +20,7 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator import resource_rep
 
-# pylint: disable=too-many-arguments,no-self-use
+# pylint: disable=too-many-arguments
 
 
 class TestQubitizeTHC:

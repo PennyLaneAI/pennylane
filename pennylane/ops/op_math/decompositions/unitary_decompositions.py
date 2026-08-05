@@ -765,7 +765,6 @@ def _decompose_2_cnots(U, wires, initial_phase):
 
     The final circuit is then constructed by applying these local gates around the V.
     """
-    # pylint: disable=too-many-locals
     # 1. Compute gamma(U)
     u_mag = _multidot(math.cast_like(E_dag, U), U, math.cast_like(E, U))
     gamma_u = math.dot(u_mag, math.T(u_mag))

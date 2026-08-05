@@ -26,8 +26,6 @@ from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use
-
 
 class DummyOp(qre.ResourceOperator):
     resource_keys = {"num_wires"}
@@ -628,7 +626,6 @@ class TestChangeOpBasis:
         cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
         assert cb_op.wires is None
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "compute_op, target_op, uncompute_op, expected_res",
         (
@@ -779,6 +776,7 @@ class TestChangeOpBasis:
             ),
         ),
     )
+    # pylint: disable-next=too-many-arguments
     def test_controlled_resource_decomp(
         self, compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res
     ):

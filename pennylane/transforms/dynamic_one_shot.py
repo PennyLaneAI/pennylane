@@ -323,6 +323,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
+# pylint: disable-next=too-many-arguments
 def _handle_measurement_qjit(
     m: MeasurementProcess,
     m_count: int,
@@ -333,7 +334,6 @@ def _handle_measurement_qjit(
     postselect_mode,
     **_,
 ):
-    # pylint: disable=too-many-arguments
     if m.mv is not None:
         return (
             gather_mcm_qjit(m, mcm_samples, is_valid, postselect_mode=postselect_mode),
@@ -353,6 +353,7 @@ def _handle_measurement_qjit(
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
+# pylint: disable-next=too-many-arguments
 def _handle_measurement(
     m: MeasurementProcess,
     m_count: int,
@@ -364,7 +365,6 @@ def _handle_measurement(
     postselect_mode,
     is_valid,
 ):
-    # pylint: disable=too-many-arguments
     if interface != "jax" and not has_valid:
         return _measurement_with_no_shots(m), m_count + int(m.mv is None)
 

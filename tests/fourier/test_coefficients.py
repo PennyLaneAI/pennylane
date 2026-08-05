@@ -15,8 +15,6 @@
 Unit tests for :mod:`fourier` coefficient and spectra calculations.
 """
 
-# pylint: disable=import-outside-toplevel
-
 from functools import partial
 
 import pytest

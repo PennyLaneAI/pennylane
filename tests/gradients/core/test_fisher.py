@@ -17,7 +17,7 @@ Tests for the classical and quantum fisher information matrix in the module penn
 
 import numpy as np
 
-# pylint: disable=no-self-use,import-outside-toplevel,bad-continuation
+# pylint: disable=bad-continuation
 import pytest
 
 import pennylane as qp

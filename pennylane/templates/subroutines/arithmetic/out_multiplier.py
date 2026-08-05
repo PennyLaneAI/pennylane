@@ -216,7 +216,7 @@ class OutMultiplier(Operation):
         mod=None,
         work_wires: WiresLike = (),
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):  # pylint: disable=too-many-arguments
 
         work_wires = [] if work_wires is None else work_wires
         num_work_wires = len(work_wires)

@@ -50,8 +50,6 @@ from pennylane.estimator.templates.trotter import TrotterVibrational
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable= no-self-use,arguments-differ
-
 
 def _circuit_w_expval(circ):
     circ()

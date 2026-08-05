@@ -15,8 +15,6 @@
 Submodule for sampling a qubit mixed state.
 """
 
-# pylint: disable=too-many-positional-arguments
-
 from collections.abc import Callable
 
 import numpy as np
@@ -53,6 +51,7 @@ def _apply_diagonalizing_gates(
     return state
 
 
+# pylint: disable-next=too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
     mps: list[SampleMeasurement],
     state: np.ndarray,
@@ -82,7 +81,6 @@ def _measure_with_samples_diagonalizing_gates(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    # pylint: disable=too-many-arguments
     # apply diagonalizing gates
     state = _apply_diagonalizing_gates(mps, state, is_state_batched)
 
@@ -113,6 +111,7 @@ def _measure_with_samples_diagonalizing_gates(
     return processed_samples[0]
 
 
+# pylint: disable-next=too-many-arguments
 def _measure_classical_shadow(
     mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
@@ -141,7 +140,7 @@ def _measure_classical_shadow(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    # pylint: disable=unused-argument,too-many-arguments
+    # pylint: disable=unused-argument
 
     # the list contains only one element based on how we group measurements
     mp = mp[0]
@@ -177,6 +176,7 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None):
     )
 
 
+# pylint: disable-next=too-many-arguments
 def _measure_hamiltonian_with_samples(
     mp: list[ExpectationMP],
     state: np.ndarray,
@@ -186,7 +186,6 @@ def _measure_hamiltonian_with_samples(
     prng_key=None,
     readout_errors=None,
 ):
-    # pylint: disable=too-many-arguments
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
@@ -211,6 +210,7 @@ def _measure_hamiltonian_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
+# pylint: disable-next=too-many-arguments
 def _measure_sum_with_samples(
     mp: list[ExpectationMP],
     state: np.ndarray,
@@ -221,7 +221,6 @@ def _measure_sum_with_samples(
     readout_errors: list[Callable] = None,
 ):
     """Compute expectation values of Sum Observables"""
-    # pylint: disable=too-many-arguments
     mp = mp[0]
 
     def _sum_for_single_shot(s, prng_key=None):
@@ -243,6 +242,7 @@ def _measure_sum_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
+# pylint: disable-next=too-many-arguments
 def sample_state(
     state,
     shots: int,
@@ -270,7 +270,6 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    # pylint: disable=too-many-arguments
 
     total_indices = _get_num_wires(state, is_state_batched)
     state_wires = qp.wires.Wires(range(total_indices))
@@ -286,6 +285,7 @@ def sample_state(
     return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key)
 
 
+# pylint: disable-next=too-many-arguments
 def measure_with_samples(
     measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
@@ -315,7 +315,6 @@ def measure_with_samples(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    # pylint: disable=too-many-arguments
     groups, indices = _group_measurements(measurements)
     all_res = []
     for group in groups:

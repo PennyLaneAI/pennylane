@@ -50,7 +50,7 @@ from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
-# pylint: disable=too-few-public-methods,unnecessary-lambda-assignment
+# pylint: disable=too-few-public-methods
 
 
 class TestPennyLaneTransformer:

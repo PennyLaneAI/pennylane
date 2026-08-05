@@ -14,7 +14,7 @@
 
 """Unit tests for the classical shadows class"""
 
-# pylint:disable=no-self-use,import-outside-toplevel,redefined-outer-name,unpacking-non-sequence,too-few-public-methods,not-an-iterable,inconsistent-return-statements
+# pylint:disable=redefined-outer-name,unpacking-non-sequence,too-few-public-methods,not-an-iterable,inconsistent-return-statements
 
 import numpy as onp
 import pytest

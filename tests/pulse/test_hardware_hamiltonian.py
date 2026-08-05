@@ -15,8 +15,6 @@
 Unit tests for the HardwareHamiltonian class.
 """
 
-# pylint: disable=import-outside-toplevel
-
 import numpy as np
 import pytest
 
@@ -65,7 +63,6 @@ class TestHardwareHamiltonian:
 
     def test_initialization(self):
         """Test the HardwareHamiltonian class is initialized correctly."""
-        # pylint: disable=comparison-with-callable
         rm = HardwareHamiltonian(coeffs=[], observables=[])
 
         assert rm.pulses == []

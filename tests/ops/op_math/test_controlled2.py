@@ -119,7 +119,6 @@ class TestControlled2:
     def test_capture(self):
         """Tests that the base operator is removed from the jaxpr."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         from tests.capture.capture_utils import assert_eqn_matches_op

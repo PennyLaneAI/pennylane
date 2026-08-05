@@ -15,7 +15,7 @@
 
 import copy
 
-# pylint: disable=import-outside-toplevel,protected-access,no-member
+# pylint: disable=protected-access
 import warnings
 from dataclasses import replace
 from functools import partial
@@ -843,7 +843,6 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -1087,7 +1086,6 @@ class TestIntegration:
     def test_qnode_default_interface(self):
         """Tests that the default interface is set correctly for a QNode."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         @qp.qnode(qp.device("default.qubit"))
@@ -1105,7 +1103,6 @@ class TestIntegration:
     def test_qscript_default_interface(self):
         """Tests that the default interface is set correctly for a QuantumScript."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         dev = qp.device("default.qubit")
@@ -1649,7 +1646,7 @@ class TestMCMConfiguration:
     def test_defer_measurements_with_jit(self, diff_method, mocker, seed):
         """Test that using mcm_method="deferred" defaults to behaviour like
         postselect_mode="fill-shots" when using jax jit."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1
@@ -1683,7 +1680,7 @@ class TestMCMConfiguration:
     def test_deferred_hw_like_error_with_jit(self, diff_method, seed):
         """Test that an error is raised if attempting to use postselect_mode="hw-like"
         with jax jit with mcm_method="deferred"."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1

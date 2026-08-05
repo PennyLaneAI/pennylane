@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for density matrices functions."""
 
-# pylint: disable=import-outside-toplevel
-
 import numpy as onp
 import pytest
 

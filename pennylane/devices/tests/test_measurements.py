@@ -493,11 +493,11 @@ class TestTensorExpval:
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(res, expected, atol=tol)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
+    # pylint: disable-next=too-many-arguments
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):
@@ -1439,12 +1439,11 @@ class TestTensorVar:
         ) / 4
         assert np.allclose(res, expected, atol=tol)
 
-    # pylint: disable=too-many-arguments
-
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
+    # pylint: disable-next=too-many-arguments
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):

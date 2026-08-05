@@ -738,10 +738,10 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     return ham.normal_order()
 
 
+# pylint: disable-next=too-many-arguments
 def taylor_hamiltonian(
     pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
 ):
-    # pylint: disable=too-many-positional-arguments,too-many-arguments
     r"""Returns Taylor vibrational Hamiltonian.
 
     The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential

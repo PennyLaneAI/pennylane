@@ -509,11 +509,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (2,)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (4,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -588,11 +588,11 @@ class TestVectorValuedQNode:
         assert len(res) == 2
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
+        assert res[0].shape == ()
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -723,11 +723,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
+        assert res[0].shape == ()
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -870,9 +870,9 @@ class TestQubitIntegration:
         assert isinstance(res, tuple)
 
         assert isinstance(res[0], jax.Array)
-        assert res[0].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (10,)
         assert isinstance(res[1], jax.Array)
-        assert res[1].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (10,)
 
     def test_counts(self, dev_name, diff_method, grad_on_execution, device_vjp, seed):
         """Test counts works as expected"""
@@ -1356,7 +1356,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
+            assert res.dtype is np.dtype("complex128")
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 

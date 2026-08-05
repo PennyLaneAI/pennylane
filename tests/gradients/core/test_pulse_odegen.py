@@ -15,8 +15,6 @@
 Tests for the gradients.pulse_odegen module.
 """
 
-# pylint:disable=import-outside-toplevel
-
 import copy
 
 import numpy as np

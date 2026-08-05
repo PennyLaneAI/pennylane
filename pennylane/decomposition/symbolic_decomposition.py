@@ -240,7 +240,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         gate_counts[abstractify(qp.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
-    # pylint: disable=protected-access,too-many-arguments
+    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -248,6 +248,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         exact=base_decomposition.exact_resources,
         name=f"controlled({base_decomposition.name})",
     )
+    # pylint: disable-next=too-many-arguments
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [
             w for w, val in zip(control_wires, control_values, strict=True) if not val
@@ -348,12 +349,12 @@ def _flip_control_adjoint_resource(
 
 
 @register_resources(_flip_control_adjoint_resource)
+# pylint: disable-next=too-many-arguments
 def flip_control_adjoint(
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    # pylint: disable=too-many-arguments
     qp.adjoint(
         qp.ctrl(
             base.base,

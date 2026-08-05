@@ -661,6 +661,7 @@ def fragment_graph(graph):
     return subgraphs_connected_to_measurements, communication_graph
 
 
+# pylint: disable-next=too-many-arguments
 def _is_valid_cut(
     fragments,
     num_cuts,
@@ -670,7 +671,6 @@ def _is_valid_cut(
     max_free_wires,
 ):
     """Helper function for determining if a cut is a valid canditate."""
-    # pylint: disable=too-many-positional-arguments,too-many-arguments
 
     k = len(fragments)
     key = (k, max_frag_degree)

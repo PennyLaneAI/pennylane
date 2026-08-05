@@ -17,8 +17,6 @@
 import warnings
 
 import numpy as np
-
-# pylint: disable=no-value-for-parameter
 import pytest
 
 import pennylane as qp
@@ -230,7 +228,6 @@ def test_integration_multi_wire(rot_axis, seed):
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
-    # pylint: disable=import-outside-toplevel
     import jax
 
     from pennylane.tape.plxpr_conversion import CollectOpsandMeas

@@ -331,10 +331,10 @@ def _get_for_loop_qfunc_prim():
     )
 
     @for_loop_prim.def_impl
+    # pylint: disable-next=too-many-arguments
     def _impl(
         start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
     ):
-        # pylint: disable=too-many-arguments
         # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
         consts_slice = slice(*consts_slice)
         args_slice = slice(*args_slice)

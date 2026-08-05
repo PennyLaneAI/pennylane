@@ -28,7 +28,7 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=too-many-arguments
 
 
 class TestResourceOutOfPlaceSquare:

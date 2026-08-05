@@ -366,8 +366,7 @@ class ParametrizedEvolution(Operation):
     _name = "ParametrizedEvolution"
     grad_method = "A"
 
-    # pylint: disable=too-many-arguments
-
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         H: ParametrizedHamiltonian,

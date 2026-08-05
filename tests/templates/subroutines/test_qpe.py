@@ -319,7 +319,7 @@ class TestDecomposition:
 
             return qp.state()
 
-        assert qp.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
+        assert qp.math.isclose(qpe_circuit()[0], 1)
 
     @pytest.mark.jax
     def test_jit(self):

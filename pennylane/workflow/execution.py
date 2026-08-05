@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from pennylane.workflow.resolution import SupportedDiffMethods
 
 
+# pylint: disable-next=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
@@ -171,7 +172,6 @@ def execute(
      [ 0.01983384 -0.97517033  0.        ]
      [ 0.          0.         -0.95533649]]
     """
-    # pylint: disable=too-many-arguments
     if not isinstance(device, qp.devices.Device):
         device = qp.devices.LegacyDeviceFacade(device)
 

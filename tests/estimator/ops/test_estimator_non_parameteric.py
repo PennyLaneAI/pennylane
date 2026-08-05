@@ -20,8 +20,6 @@ from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=no-self-use
-
 
 class TestHadamard:
     """Tests for Hadamard resource operator"""

@@ -569,11 +569,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (2,)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (4,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
@@ -2155,7 +2155,7 @@ class TestJIT:
 
         def cost(x, y, idx):
             res = circuit(x, y)
-            return res[idx]  # pylint:disable=unsubscriptable-object
+            return res[idx]
 
         x = jax.numpy.array(1.0)
         y = jax.numpy.array(2.0)
@@ -3357,7 +3357,6 @@ class TestSinglePrecision:
 
     def test_type_conversion_fallback(self):
         """Test that if the type isn't int, float, or complex, we still have a fallback."""
-        # pylint: disable=import-outside-toplevel
         from pennylane.workflow.interfaces.jax_jit import _jax_dtype
 
         assert _jax_dtype(bool) == jax.numpy.dtype(bool)

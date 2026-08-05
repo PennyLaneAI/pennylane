@@ -341,7 +341,6 @@ def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
 def expval_param_shift(
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
 ):
-    # pylint: disable=too-many-positional-arguments
     r"""Generate the parameter-shift tapes and postprocessing methods required
         to compute the gradient of a gate parameter with respect to an
         expectation value.
@@ -664,7 +663,6 @@ def _get_non_involuntory_indices(tape, var_indices):
     return non_involutory_indices
 
 
-# pylint: disable-next=too-many-positional-arguments
 def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
@@ -798,7 +796,6 @@ def _expand_transform_param_shift(
     broadcast=False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
-    # pylint: disable=too-many-positional-arguments
     [new_tape], postprocessing = decompose(
         tape,
         gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
@@ -835,7 +832,6 @@ def param_shift(
     f0=None,
     broadcast=False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    # pylint: disable=too-many-positional-arguments
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 

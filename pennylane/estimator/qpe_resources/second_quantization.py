@@ -16,7 +16,7 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 
-# pylint: disable=no-self-use,too-many-arguments,too-many-instance-attributes,too-many-positional-arguments
+# pylint: disable=no-self-use,too-many-arguments,too-many-instance-attributes
 
 import numpy as np
 

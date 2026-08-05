@@ -17,7 +17,7 @@ Unit tests for the available qubit operations for quantum chemistry purposes.
 
 import numpy as np
 
-# pylint: disable=too-few-public-methods,unnecessary-lambda-assignment
+# pylint: disable=too-few-public-methods
 import pytest
 from gate_data import (
     DoubleExcitation,

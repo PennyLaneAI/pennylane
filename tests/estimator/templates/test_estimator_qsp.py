@@ -18,8 +18,6 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, ResourceOperator
 
-# pylint: disable=no-self-use
-
 
 class DummyOp(ResourceOperator):
     def __init__(self, wires):

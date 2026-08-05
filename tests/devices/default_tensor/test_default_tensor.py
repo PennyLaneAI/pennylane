@@ -267,7 +267,7 @@ def test_kahypar_warning_not_raised(recwarn):
     """Test that a warning is not raised if the user does not have kahypar installed when initializing the
     default.tensor device"""
     try:
-        import kahypar  # pylint: disable=import-outside-toplevel,unused-import
+        import kahypar  # pylint: disable=unused-import
 
         pytest.skip(reason="Test is for when kahypar is not installed")
     except ImportError:

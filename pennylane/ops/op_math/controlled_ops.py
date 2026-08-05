@@ -183,6 +183,7 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
     @classmethod
+    # pylint: disable-next=too-many-arguments
     def _primitive_bind_call(
         cls,
         base,
@@ -192,7 +193,7 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type="borrowed",
     ):
-        # pylint: disable=too-many-arguments,unused-argument,too-many-positional-arguments
+        # pylint: disable=unused-argument
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
@@ -202,6 +203,7 @@ class ControlledQubitUnitary(ControlledOp):
             work_wire_type=work_wire_type,
         )
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         base,
@@ -211,7 +213,6 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: str | None = "borrowed",
     ):
-        # pylint: disable=too-many-arguments,too-many-positional-arguments
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Assertion test for multi_dispatch function/decorator"""
 
-# pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods,wrong-import-order
+# pylint: disable=unused-argument,too-few-public-methods,wrong-import-order
 
 import autoray
 import numpy as onp

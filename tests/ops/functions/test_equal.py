@@ -1799,7 +1799,7 @@ class TestMeasurementsEqual:
     def test_abstract_mv_equality(self, mp_fn):
         """Test that equality is verified correctly for measurements collecting statistics for
         abstract mid-circuit measurement values"""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         m1 = True
         m2 = False

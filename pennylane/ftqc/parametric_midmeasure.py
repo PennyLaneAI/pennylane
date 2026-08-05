@@ -360,6 +360,7 @@ class ParametricMidMeasure(MidMeasure):
 
     _shortname = "measure"
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
@@ -370,7 +371,6 @@ class ParametricMidMeasure(MidMeasure):
         postselect: int | None = None,
         meas_uid: str | None = None,
     ):
-        # pylint: disable=too-many-arguments
         self.batch_size = None
         super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, meas_uid=meas_uid)
         self.hyperparameters["plane"] = plane
@@ -409,10 +409,11 @@ class ParametricMidMeasure(MidMeasure):
         return hash(fingerprint)
 
     @classmethod
+    # pylint: disable-next=too-many-arguments
     def _primitive_bind_call(
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, meas_uid=None
     ):
-        # pylint: disable=too-many-positional-arguments,arguments-differ,too-many-arguments
+        # pylint: disable=arguments-differ
         wires = () if wires is None else wires
         return cls._primitive.bind(
             *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, meas_uid=meas_uid

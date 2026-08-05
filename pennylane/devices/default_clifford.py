@@ -417,6 +417,7 @@ class DefaultClifford(Device):
         """The name of the device."""
         return "default.clifford"
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         wires=None,
@@ -426,7 +427,6 @@ class DefaultClifford(Device):
         seed="global",
         max_workers=None,
     ) -> None:
-        # pylint: disable=too-many-arguments,too-many-positional-arguments
         if not has_stim:
             raise ImportError(
                 "This feature requires stim, a fast stabilizer circuit simulator. "

@@ -27,8 +27,6 @@ import pennylane.templates as qtemps
 from pennylane.core.operator import Operation
 from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 
-# pylint: disable= no-self-use
-
 
 class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""

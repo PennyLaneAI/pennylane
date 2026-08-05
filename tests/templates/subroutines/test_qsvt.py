@@ -15,8 +15,6 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 
-# pylint: disable=import-outside-toplevel,no-self-use
-
 from copy import copy
 
 import pytest

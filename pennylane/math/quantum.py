@@ -662,6 +662,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
+# pylint: disable-next=too-many-arguments
 def mutual_info(
     state,
     indices0,
@@ -670,7 +671,6 @@ def mutual_info(
     check_state=False,
     c_dtype="complex128",
 ):
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     r"""Compute the mutual information between two subsystems given a state:
 
     .. math::
@@ -736,6 +736,7 @@ def mutual_info(
     )
 
 
+# pylint: disable-next=too-many-arguments
 def _compute_mutual_info(
     state,
     indices0,
@@ -745,7 +746,6 @@ def _compute_mutual_info(
     c_dtype="complex128",
 ):
     """Compute the mutual information between the subsystems."""
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     all_indices = sorted([*indices0, *indices1])
     vn_entropy_1 = vn_entropy(
         state,
@@ -859,10 +859,10 @@ def expectation_value(
     return expval
 
 
+# pylint: disable-next=too-many-arguments
 def vn_entanglement_entropy(
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state.
 
     .. math::

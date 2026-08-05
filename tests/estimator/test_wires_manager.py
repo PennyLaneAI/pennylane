@@ -26,8 +26,6 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate, WireResource
 class TestWireResourceManager:
     """Test the methods and attributes of the WireResourceManager class"""
 
-    # pylint: disable=no-self-use
-
     wire_manager_quantities = (
         WireResourceManager(zeroed=2),
         WireResourceManager(zeroed=4, any_state=2, algo_wires=20),

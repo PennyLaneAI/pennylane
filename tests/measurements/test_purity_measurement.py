@@ -357,7 +357,7 @@ class TestPurityIntegration:
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         purity = circuit(param)
-        purity.backward()  # pylint: disable=no-member
+        purity.backward()
         grad_purity = param.grad
 
         assert qp.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)

@@ -313,15 +313,12 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
 class TestJaxIntegration:
     """Integration tests for dynamic_one_shot with jax"""
 
-    # pylint: disable=import-outside-toplevel
-
     @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
     @pytest.mark.parametrize("shots", [100, [100, 101], [100, 100, 101]])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     def test_sample_with_prng_key(self, mcm_method, shots, postselect, seed):
         """Test that setting a PRNGKey gives the expected behaviour. With separate calls
         to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
-        # pylint: disable=import-outside-toplevel
         from jax.random import PRNGKey
 
         dev = qp.device("default.qubit", seed=PRNGKey(seed))

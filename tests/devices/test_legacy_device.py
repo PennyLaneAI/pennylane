@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
 
-# pylint: disable=no-self-use,redefined-outer-name,invalid-name,missing-function-docstring
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(scope="function")
@@ -217,7 +217,7 @@ def test_gradients_record():
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
-    # pylint: disable=no-self-use,redefined-outer-name
+    # pylint: disable=redefined-outer-name
 
     def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_operations returns the correct result
@@ -738,7 +738,6 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable-next=no-self-use
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         # pylint: disable=redefined-outer-name,pointless-statement
@@ -989,7 +988,6 @@ class TestBatchExecution:
 class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
-    # pylint: disable-next=missing-class-docstring
     class SomeDevice(qp.devices.LegacyDevice):
         # pylint: disable=unused-argument
         name = ""

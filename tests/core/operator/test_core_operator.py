@@ -37,8 +37,8 @@ from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=no-self-use,no-member,protected-access,redefined-outer-name,too-few-public-methods
-# pylint: disable=too-many-public-methods,unused-argument,unnecessary-lambda-assignment
+# pylint: disable=protected-access,redefined-outer-name,too-few-public-methods
+# pylint: disable=too-many-public-methods,unused-argument
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -656,7 +656,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_decomposition(x, wires=None):
                 return [qp.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -735,7 +735,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_diagonalizing_gates(x, wires=None):
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -1512,7 +1512,7 @@ class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):  # pylint:disable=arguments-differ
+    def compute_matrix(theta):
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -1548,7 +1548,7 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
@@ -2030,7 +2030,7 @@ def test_docstring_example_of_operator_class(tol):
             return (0,)
 
         @staticmethod
-        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+        def compute_decomposition(angle, wires, do_flip):
             op_list = []
             if do_flip:
                 op_list.append(qp.PauliX(wires=wires[1]))

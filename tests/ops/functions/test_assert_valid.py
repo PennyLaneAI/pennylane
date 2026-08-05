@@ -252,7 +252,7 @@ class TestDecompositionErrors:
             def loop(i):
                 qp.S(i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         _test_decomposition_rule(MyOp([0, 1, 2]), rule)
 
@@ -266,7 +266,7 @@ class TestDecompositionErrors:
             def loop(i):
                 OneWireDynOp(phi, wires=i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
 

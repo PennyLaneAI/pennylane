@@ -22,8 +22,6 @@ from scipy.special import factorial
 
 from pennylane import concurrency
 
-# pylint: disable=too-many-positional-arguments
-
 try:
     import h5py
 

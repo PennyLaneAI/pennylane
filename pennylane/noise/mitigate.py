@@ -337,6 +337,7 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
 
 
 @transform
+# pylint: disable-next=too-many-arguments
 def mitigate_with_zne(
     tape: QuantumScript,
     scale_factors: Sequence[float],
@@ -347,7 +348,6 @@ def mitigate_with_zne(
     extrapolate_kwargs: dict[str, Any] | None = None,
     reps_per_factor=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    # pylint: disable=too-many-arguments
     r"""Mitigate an input circuit using zero-noise extrapolation.
 
     Error mitigation is a precursor to error correction and is compatible with near-term quantum

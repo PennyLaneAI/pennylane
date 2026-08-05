@@ -15,8 +15,6 @@
 build an active space and generate single and double excitations.
 """
 
-# pylint: disable=too-many-locals
-
 import os
 import re
 from shutil import copyfile

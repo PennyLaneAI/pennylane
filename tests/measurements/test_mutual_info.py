@@ -460,7 +460,7 @@ class TestIntegration:
 
         param = torch.tensor(param, requires_grad=True)
         out = circuit(param)
-        out.backward()  # pylint: disable=no-member
+        out.backward()
 
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5

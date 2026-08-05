@@ -15,8 +15,6 @@
 Tests that apply to all device modifiers or act on a combination of them together.
 """
 
-# pylint: disable=missing-class-docstring
-
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 

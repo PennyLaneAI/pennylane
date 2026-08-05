@@ -196,9 +196,9 @@ class TestOutMultiplier:
             ([0, 1], [3, 4, 5], [6, 7, 8], None, None),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, seed):
         """Test the correctness of the OutMultiplier template output."""
-        # pylint: disable=too-many-arguments
         all_wires = (x_wires, y_wires, output_wires, work_wires)
         _test_mult_correctness(all_wires, mod, OutMultiplier.compute_decomposition, seed)
 

@@ -31,8 +31,6 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
 )
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 
-# pylint: disable=no-self-use
-
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 
 

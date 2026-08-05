@@ -23,6 +23,7 @@ from pennylane.typing import Sequence, TensorLike
 from pennylane.wires import WiresLike
 
 
+# pylint: disable-next=too-many-arguments
 def process_raw_samples(
     mp: MeasurementProcess,
     samples: TensorLike,
@@ -47,7 +48,6 @@ def process_raw_samples(
     This function matches `SampleMP.process_samples`, but does not have a dependence on the measurement process.
 
     """
-    # pylint: disable=too-many-arguments
 
     wire_map = {w: i for i, w in enumerate(wire_order)}
     mapped_wires = [wire_map[w] for w in mp.wires]

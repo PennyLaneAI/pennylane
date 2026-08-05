@@ -575,10 +575,11 @@ def _build_generator(operation, wire_order, op_gen=None):
     return op_gen
 
 
+# pylint: disable-next=too-many-arguments
 def taper_operation(
     operation, generators, paulixops, paulix_sector, wire_order, op_wires=None, op_gen=None
 ):
-    # pylint: disable=too-many-arguments,too-many-positional-arguments,inconsistent-return-statements
+    # pylint: disable=inconsistent-return-statements
     r"""Transform a gate operation with a Clifford operator and then taper qubits.
 
     The qubit operator for the generator of the gate operation is computed either internally or can be provided

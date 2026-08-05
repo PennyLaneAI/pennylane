@@ -33,7 +33,7 @@ from pennylane.labs.trotter_error.product_formulas.commutator import (
 )
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments
 
 
 def effective_hamiltonian(

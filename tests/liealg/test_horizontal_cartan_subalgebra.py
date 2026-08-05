@@ -14,8 +14,6 @@
 """Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
 
 import numpy as np
-
-# pylint: disable=no-self-use
 import pytest
 from scipy.linalg import sqrtm
 

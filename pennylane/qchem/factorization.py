@@ -33,7 +33,7 @@ try:  # pragma: no cover
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_jax_optax = False
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments
 
 
 def factorize(

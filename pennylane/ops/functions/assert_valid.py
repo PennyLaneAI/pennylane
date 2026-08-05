@@ -621,6 +621,7 @@ def _get_signature(op):
     return op.data, {"wires": op.wires, **op.hyperparameters}
 
 
+# pylint: disable-next=too-many-arguments
 def _assert_valid_operator2(
     op: qp.core.Operator2,
     skip_deepcopy=False,
@@ -644,7 +645,6 @@ def _assert_valid_operator2(
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
     """
-    # pylint: disable=too-many-arguments
 
     # Note: these attributes are in the spec but not the implementation yet.
     # assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -694,6 +694,7 @@ def _assert_valid_operator2(
     _check_bind_new_parameters_op2(op)
 
 
+# pylint: disable-next=too-many-arguments
 def assert_valid(
     op: qp.core.Operator,
     *,
@@ -758,7 +759,6 @@ def assert_valid(
     AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
-    # pylint: disable=too-many-arguments
 
     if isinstance(op, qp.core.Operator2):
         _assert_valid_operator2(

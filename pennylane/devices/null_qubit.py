@@ -232,6 +232,7 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         wires=None,
@@ -241,7 +242,6 @@ class NullQubit(Device):
         compute_depth=None,
         target_device=None,
     ) -> None:
-        # pylint: disable=too-many-arguments
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
 

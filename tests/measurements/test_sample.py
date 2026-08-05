@@ -20,7 +20,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
 
-# pylint: disable=protected-access,no-member,too-many-public-methods
+# pylint: disable=protected-access,too-many-public-methods
 
 
 class TestSample:
@@ -264,7 +264,6 @@ class TestSample:
         assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
 
         # assert first wire is always the same as second
-        # pylint: disable=unsubscriptable-object
         assert np.all(res[0][:, 0] == res[0][:, 1])
         assert np.all(res[1][:, 0] == res[1][:, 1])
         assert np.all(res[2][:, 0] == res[2][:, 1])
@@ -375,7 +374,6 @@ class TestSample:
 
         assert isinstance(binned_samples, tuple)
         assert len(binned_samples) == len(shot_vec)
-        # pylint: disable=unsubscriptable-object
         assert binned_samples[0].shape == (shot_vec[0],)
 
     def test_sample_empty_wires(self):
@@ -395,7 +393,6 @@ class TestSample:
 
         res = circuit()
 
-        # pylint: disable=comparison-with-callable
         assert res.shape == (shots, 3)
 
     def test_new_sample_with_operator_with_no_eigvals(self):

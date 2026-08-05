@@ -17,8 +17,6 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=no-self-use
-
 
 class TestMultiRZ:
     """Test the Resource MultiRZ class."""

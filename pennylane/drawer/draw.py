@@ -62,6 +62,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
+# pylint: disable-next=too-many-arguments
 def draw(
     qnode,
     wire_order=None,
@@ -73,7 +74,6 @@ def draw(
     show_wire_labels=True,
     level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
-    # pylint: disable=too-many-arguments
     r"""Create a function that draws the given QNode or quantum function.
 
     Args:
@@ -365,6 +365,7 @@ def draw(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
+# pylint: disable-next=too-many-arguments
 def _draw_qnode(
     qnode,
     wire_order: Sequence | None = None,
@@ -376,7 +377,6 @@ def _draw_qnode(
     show_wire_labels=True,
     level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
-    # pylint: disable=too-many-arguments
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
@@ -419,6 +419,7 @@ def _draw_qnode(
     return wrapper
 
 
+# pylint: disable-next=too-many-arguments
 def draw_mpl(
     qnode: QNode | Callable,
     wire_order: Sequence | None = None,
@@ -431,7 +432,6 @@ def draw_mpl(
     level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,
 ):
-    # pylint: disable=too-many-arguments
     r"""Draw a qnode with matplotlib
 
     Args:
@@ -866,6 +866,7 @@ def draw_mpl(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
+# pylint: disable-next=too-many-arguments
 def _draw_mpl_qnode(
     qnode,
     wire_order=None,
@@ -877,7 +878,6 @@ def _draw_mpl_qnode(
     fig=None,
     **kwargs,
 ):
-    # pylint: disable=too-many-arguments
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
         tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)

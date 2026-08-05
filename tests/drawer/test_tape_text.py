@@ -15,8 +15,6 @@
 Unit tests for the `pennylane.draw_text` function.
 """
 
-# pylint: disable=import-outside-toplevel
-
 from copy import copy
 
 import pytest
@@ -82,7 +80,7 @@ def test_error_if_unsupported_object_in_tape():
         qp.drawer.tape_text(_tape)
 
 
-class TestHelperFunctions:  # pylint: disable=too-many-arguments,too-many-positional-arguments
+class TestHelperFunctions:  # pylint: disable=too-many-arguments
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(

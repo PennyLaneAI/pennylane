@@ -1782,7 +1782,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         grad = (coeffs.grad, param.grad)
 
         # differentiating a cost that combines circuits with
@@ -1824,7 +1824,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)

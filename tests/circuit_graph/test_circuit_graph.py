@@ -15,8 +15,6 @@
 Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 
-# pylint: disable=no-self-use
-
 import numpy as np
 import pytest
 

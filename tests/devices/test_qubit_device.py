@@ -42,7 +42,7 @@ mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 
-# pylint: disable=no-self-use,redefined-outer-name,invalid-name
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(scope="function")
@@ -277,7 +277,6 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable-next=no-self-use
     def test_obs_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         # pylint: disable=redefined-outer-name,pointless-statement
@@ -1129,6 +1128,7 @@ class TestMarginalProb:
     ]
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
+    # pylint: disable-next=too-many-arguments
     def test_correct_broadcasted_marginals_returned(
         self,
         monkeypatch,
@@ -1141,7 +1141,6 @@ class TestMarginalProb:
     ):
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
-        # pylint: disable=too-many-arguments
         dev = mock_qubit_device_with_original_statistics(num_wires)
         with monkeypatch.context() as m:
             m.setattr(dev, "_get_batch_size", _working_get_batch_size)
@@ -1150,12 +1149,13 @@ class TestMarginalProb:
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
+    # pylint: disable-next=too-many-arguments
     def test_correct_broadcasted_marginals_returned_wires_none(
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, num_wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
-        # pylint: disable=too-many-arguments,unused-argument
+        # pylint: disable=unused-argument
         dev = mock_qubit_device_with_original_statistics(num_wires)
 
         res = dev.marginal_prob(probs, wires=None)

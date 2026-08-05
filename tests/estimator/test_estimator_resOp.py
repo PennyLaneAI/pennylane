@@ -28,7 +28,7 @@ from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 
-# pylint: disable=protected-access,no-self-use,unused-argument,disable=arguments-differ,no-member,comparison-with-itself
+# pylint: disable=protected-access,unused-argument,comparison-with-itself
 
 
 class DummyX(ResourceOperator):
@@ -554,7 +554,7 @@ class TestResourceOperator:
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
         op1 = X
-        assert op1.resource_keys == set()  # pylint: disable=comparison-with-callable
+        assert op1.resource_keys == set()
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""

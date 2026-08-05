@@ -200,7 +200,7 @@ class TestBinaryDecimals:
     )
     def test_binary_decimals_jax(self, phi, p, expected):
         """Test that the binary representation or approximation of the angle is correct for jax arrays"""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         out = jax.jit(math.binary_decimals, static_argnums=[1])(phi, p, unit=1.0)
         assert jnp.array_equal(expected, out), f"\n{expected}\n{out}"
