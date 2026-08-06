@@ -46,27 +46,13 @@ def build_triton_decoder(
         >>> import triton
         >>> import triton.language as tl
         >>> from pennylane.backline.decoders.triton.decoder_frontend import build_triton_decoder
-        >>> # Steane lookup table: syndrome 0 means no correction, and syndromes
-        >>> # 1..7 flip qubits 0..6 in the column order of the Steane parity-check matrix.
-        >>> STEANE_LOOKUP = tl.constexpr(
-        ...     (
-        ...         0b0000000,
-        ...         0b0000001,
-        ...         0b0000010,
-        ...         0b0000100,
-        ...         0b0001000,
-        ...         0b0010000,
-        ...         0b0100000,
-        ...         0b1000000,
-        ...     )
-        ... )
+        >>> # For the standard Steane parity-check matrix ordering, nonzero syndromes
+        >>> # 1..7 already encode which qubit to flip, so the lookup is just a shift.
         >>> @triton.jit
         ... def steane_lookup(syndrome):
-        ...     correction = tl.cast(0, tl.uint64)
-        ...     for i in tl.static_range(len(STEANE_LOOKUP)):
-        ...         if syndrome == i:
-        ...             correction = tl.cast(STEANE_LOOKUP[i], tl.uint64)
-        ...     return correction
+        ...     one = tl.cast(1, tl.uint64)
+        ...     zero = tl.cast(0, tl.uint64)
+        ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
         >>> # For the Steane CSS code, the same lookup rule can be used for both decoder ids.
         >>> so_path, symbol_name = build_triton_decoder(
         ...     (steane_lookup, steane_lookup),
@@ -249,9 +235,6 @@ def _make_css_decoder(
 
     @triton.jit
     def decode(syndrome):
-        return _decode_one(
-            syndrome, h, postprocess=postprocess, prob=prob, NITER=niter
-        )
+        return _decode_one(syndrome, h, postprocess=postprocess, prob=prob, NITER=niter)
 
     return decode
-
