@@ -228,7 +228,7 @@ class TestDynamicDecomposition:
         rot_loop_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == for_loop_prim]
         assert rot_loop_eqn[0].primitive == for_loop_prim
         rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
-        assert rot_inner_eqn[-1].primitive == qp.Rot._primitive
+        assert_eqn_matches_op(rot_inner_eqn[-1], qp.Rot)
 
         cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
         assert_eqn_matches_op(cnot_inner_eqn[-1], qp.CNOT)
