@@ -1060,8 +1060,7 @@ def _obj_function_optax(phi, x, y):
     Returns:
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
     """
-    # pylint: disable=redefined-outer-name
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=redefined-outer-name,import-outside-toplevel
     import jax
 
     obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
@@ -1072,8 +1071,7 @@ def _obj_function_optax(phi, x, y):
 @partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
 def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
     """Dispatch optimization to the L-BFGS of optax."""
-    # pylint: disable=redefined-outer-name
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=redefined-outer-name,import-outside-toplevel
     import jax
     import optax
 
@@ -1108,8 +1106,7 @@ def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by
     minimizing the distance between the target and qsp polynomial over the grid.
     """
-    # pylint: disable=redefined-outer-name
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=redefined-outer-name,import-outside-toplevel
     import jax
 
     grid_points = _grid_pts(degree, "jax")
