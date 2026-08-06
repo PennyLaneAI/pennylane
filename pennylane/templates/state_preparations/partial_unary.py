@@ -20,7 +20,6 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Int, Wire
 from pennylane.wires import Wires
 
@@ -720,7 +719,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    ctrl_basis_rep = _ctrl_abstract(qp.BasisState(Int[num_wires - 1], Wire[num_wires - 1]), Wire[1])
+    ctrl_basis_rep = qp.ctrl(qp.BasisState(Int[num_wires - 1], Wire[num_wires - 1]), Wire[1])
     resources[ctrl_basis_rep] += num_entries
 
     embed_rep = qp.BasisState(Int[num_wires], Wire[n_subspace])

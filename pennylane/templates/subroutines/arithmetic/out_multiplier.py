@@ -217,7 +217,6 @@ class OutMultiplier(Operation):
         work_wires: WiresLike = (),
         output_wires_zeroed: bool = False,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-
         work_wires = [] if work_wires is None else work_wires
         num_work_wires = len(work_wires)
 
@@ -599,13 +598,8 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     """Resources for _c_add_sub."""
     resources = defaultdict(int)
     if num_x_wires > 1:
-        resources[
-            _ctrl_abstract(
-                BasisState(Int[num_x_wires - 1], Wire[num_x_wires - 1]),
-                Wire[1],
-                num_zero_control_values=1,
-            )
-        ] += 2
+        ctrl_basis_rep = ctrl(BasisState(Int[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
+        resources[ctrl_basis_rep] += 2
 
     cnot_on_0_rep = _ctrl_abstract(X, Wire[1], num_zero_control_values=1)
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
