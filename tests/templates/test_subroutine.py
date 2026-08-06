@@ -31,7 +31,7 @@ from pennylane.templates.core import (
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
 )
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 
 
 class TestInitialization:
@@ -165,7 +165,8 @@ def Example1SetupInputs(x, y, reg1, reg2, pauli_words):
 
 def Example1Resources(x, y, reg1, reg2, pauli_words):
     return {
-        qp.resource_rep(qp.PauliRot, pauli_word=pw): num for pw, num in Counter(pauli_words).items()
+        qp.PauliRot(Float, pauli_word=pw, wires=Wire[len(pw)]): num
+        for pw, num in Counter(pauli_words).items()
     }
 
 
@@ -217,7 +218,7 @@ def test_fallback_creating_resources_AbstractArray():
 
     resources = f.compute_resources({"a": p}, w, "Z")
     expected = defaultdict(int)
-    expected[qp.resource_rep(qp.PauliRot, pauli_word="Z")] = 3
+    expected[qp.PauliRot(Float, pauli_word="Z", wires=Wire[1])] = 3
 
     r = qp.resource_rep(
         qp.MultiControlledX,
@@ -403,8 +404,9 @@ class TestSubroutineCapture:
         assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
         # pylint: disable=protected-access
-        assert inner_jaxpr.eqns[-1].primitive == qp.PauliRot._primitive
-        assert inner_jaxpr.eqns[-1].params["pauli_word"] == "X"
+        assert inner_jaxpr.eqns[-1].primitive == qp.capture.primitives.operator_p
+        assert inner_jaxpr.eqns[-1].params["op_cls"] is qp.PauliRot
+        assert inner_jaxpr.eqns[-1].params["pauli_word"][0] == ("X",)
 
     def test_different_forms_of_wires(self):
         """Test that wires can be provided as literal integers, traced integers, lists, tuple, and arrays."""

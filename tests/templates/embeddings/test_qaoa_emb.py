@@ -239,6 +239,7 @@ class TestDecomposition:
         ([[0, 0]], [[[0, 0, 0, 0, 0, np.pi / 2]]], range(3), "X"),
     ]
 
+    @pytest.mark.pl2do(reason="Involves broadcasting with Operator2")
     @pytest.mark.capture
     @pytest.mark.parametrize(("features", "weights", "wires", "local_field"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, weights, wires, local_field):
