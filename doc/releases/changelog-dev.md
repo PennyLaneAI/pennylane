@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
+  [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
+
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
@@ -661,6 +664,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
+  [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
@@ -828,6 +834,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
+  [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
+
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
   [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
@@ -848,9 +857,13 @@
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
-  - Multi-qubit, parametric operators are ported:
-    - `~.DiagonalQubitUnitary`
+  - Parametric operators are ported:
+    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`
+  [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
+  [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
+  [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
+  - Multi-qubit, parametric operators are ported:
   - Templates are ported:
     - `~.BasisRotation`, `~.QROM`, `~.QFT`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)

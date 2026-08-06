@@ -268,9 +268,9 @@ class QubitUnitary(Operation):
         >>> decomp = qp.QubitUnitary.compute_decomposition(U, 0)
         >>> from pprint import pprint
         >>> pprint(decomp)
-        [RZ(np.float64(3.141...), wires=[0]),
+        [RZ(3.141..., wires=[0]),
         RY(np.float64(1.570...), wires=[0]),
-        RZ(np.float64(0.0), wires=[0]),
+        RZ(0.0, wires=[0]),
         GlobalPhase(np.float64(-1.570...), wires=[])]
 
         """

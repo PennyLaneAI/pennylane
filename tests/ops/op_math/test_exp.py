@@ -524,7 +524,10 @@ class TestDecomposition:
 
         phi = 1.23
 
-        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        try:
+            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        except TypeError:
+            wires = [0, 1, 2]
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
@@ -553,6 +556,9 @@ class TestDecomposition:
         elif op_class is qp.FermionicSWAP:
             expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
             # simplifying the generator changes the wire order
+            qp.assert_equal(expected, dec[0])
+        elif op_class is qp.MultiRZ:
+            expected = qp.PauliRot(phi, "Z" * len(wires), wires=wires)
             qp.assert_equal(expected, dec[0])
         else:
             qp.assert_equal(op, dec[0])
