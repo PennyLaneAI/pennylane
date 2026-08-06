@@ -185,12 +185,12 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
             )
         case "Y":
             def compute(wires):
-                Hadamard(wires[-1])
                 adjoint(S(wires[-1]))
+                Hadamard(wires[-1])
 
             def uncompute(wires):
-                S(wires[-1])
                 Hadamard(wires[-1])
+                S(wires[-1])
 
             change_op_basis(
                 partial(compute, wires=wires),
