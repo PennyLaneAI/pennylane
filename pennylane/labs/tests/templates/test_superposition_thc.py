@@ -143,7 +143,7 @@ class TestSuperpositionTHC:
         probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
         success = probs[:, :, 1]
 
-        support = set(tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9)))
+        support = {tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9))}
 
         assert set(support) == _valid_pairs(M, N)
 
@@ -301,9 +301,8 @@ class TestSuperpositionTHC:
             ),
         ],
     )
-    def test_wires_error(
-        self, M, N, mu_wires, nu_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, M, N, mu_wires, nu_wires, work_wires, msg_match):
         """An error is raised when the registers do not meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)

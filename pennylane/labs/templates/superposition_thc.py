@@ -236,9 +236,8 @@ class SuperpositionTHC(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        M, N, mu_wires, nu_wires, work_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(M, N, mu_wires, nu_wires, work_wires):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -263,9 +262,8 @@ class SuperpositionTHC(Operation):
         return q.queue
 
 
-def _left_inequalities(
-    M, N, mu_wires, nu_wires, work_wires, keep_eq=False
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     r"""Apply the inequality tests that flag a valid THC index pair.
 
     Computes the comparisons that define the valid index set onto dedicated flag

@@ -639,9 +639,8 @@ class TestEstimateResources:
     def test_custom_controlled_decomposition_labs(self):
         """Test that a custom controlled decomposition can be set and used."""
 
-        def custom_ctrl_RZ(
-            num_ctrl_wires, num_zero_ctrl, target_resource_params
-        ):  # pylint: disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params):
             return [GateCount(resource_rep(qre.X), count=3)]
 
         rc = ResourceConfig()

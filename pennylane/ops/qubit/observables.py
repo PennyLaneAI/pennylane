@@ -662,9 +662,8 @@ class BasisStateProjector(Projector, Operation):
         return []
 
     @staticmethod
-    def compute_sparse_matrix(  # pylint: disable=arguments-differ
-        basis_state: TensorLike, format="csr"
-    ) -> spmatrix:
+    # pylint: disable-next=arguments-differ
+    def compute_sparse_matrix(basis_state: TensorLike, format="csr") -> spmatrix:
         """
         Computes the sparse CSR matrix representation of the projector onto the basis state.
 
@@ -755,9 +754,7 @@ class StateVectorProjector(Projector):
         return f"P(M{mat_num})"
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=arguments-differ
-        state_vector: TensorLike,
-    ) -> np.ndarray:
+    def compute_matrix(state_vector: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -784,9 +781,7 @@ class StateVectorProjector(Projector):
         return qp.math.outer(state_vector, qp.math.conj(state_vector))
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=arguments-differ
-        state_vector: TensorLike,
-    ) -> np.ndarray:
+    def compute_eigvals(state_vector: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,

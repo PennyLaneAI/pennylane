@@ -332,9 +332,7 @@ def _separate_by_order(d: dict[ASTNode, float], max_order: int) -> list[dict[AST
     return ret
 
 
-def is_mergeable(
-    node1: ASTNode, node2: ASTNode, index: int
-):  # pylint: disable=too-many-return-statements
+def is_mergeable(node1: ASTNode, node2: ASTNode, index: int):
     """
     Check if two nodes are mergeable at `index`.
 
@@ -348,6 +346,7 @@ def is_mergeable(
     [[A, B], [C, [D, E]]] and [[A, B], [F, [D, E]]] are mergeable at index 2, but
     [[A, B], [C, [D, E]]] and [[A, B], [D, [E, F]]] are not.
     """
+    # pylint: disable=too-many-return-statements
     if not isinstance(node1, ASTNode) or not isinstance(node2, ASTNode):
         raise TypeError("Only ASTNode instances can be checked for mergeability.")
 

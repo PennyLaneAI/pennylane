@@ -63,9 +63,8 @@ class Identity(Operation):
         return {}
 
     @classmethod
-    def _primitive_bind_call(
-        cls, wires: WiresLike = (), **kwargs
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, wires: WiresLike = (), **kwargs):
         return super()._primitive_bind_call(wires=wires, **kwargs)
 
     def _flatten(self):
@@ -150,9 +149,8 @@ class Identity(Operation):
         return self.compute_matrix(n_wires=n_wires)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        wires, n_wires=1
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(wires, n_wires=1):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -291,9 +289,8 @@ class GlobalPhase(Operation):
     resource_keys = set()
 
     @classmethod
-    def _primitive_bind_call(
-        cls, phi, wires: WiresLike = (), **kwargs
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, phi, wires: WiresLike = (), **kwargs):
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
     def __init__(self, phi, wires: WiresLike = ()):
@@ -376,9 +373,8 @@ class GlobalPhase(Operation):
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        phi, wires, n_wires=1
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(phi, wires, n_wires=1):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -404,9 +400,8 @@ class GlobalPhase(Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(
-        phi, wires: WiresLike = ()
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_decomposition(phi, wires: WiresLike = ()):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::

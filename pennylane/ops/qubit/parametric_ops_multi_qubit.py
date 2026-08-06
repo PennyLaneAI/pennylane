@@ -198,9 +198,8 @@ class MultiRZ(Operator2):
         return MultiRZ(theta, wires=self.wires)
 
 
-def _multi_rz_decomposition_resources(  # pylint: disable=unused-argument
-    theta: TensorLike, wires: WiresLike
-):
+# pylint: disable-next=unused-argument
+def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
@@ -380,9 +379,8 @@ class PauliRot(Operator2):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=unused-argument
+    def compute_matrix(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -459,9 +457,8 @@ class PauliRot(Operator2):
         )
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -939,9 +936,8 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values,
     }
 
 
-def _ctrl_phase_shift(
-    phi, target_wire, subspace, control_wires, control_values, work_wires
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values, work_wires):
     r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
     target qubit/wire.
 

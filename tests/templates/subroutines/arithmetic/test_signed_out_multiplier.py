@@ -260,9 +260,8 @@ def test_signed_out_multiplier_correct(
     dev = device("default.qubit", wires=x_wires + y_wires + work_wires + output_wires)
 
     @qnode(dev)
-    def signed_multiply(
-        x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed):
         BasisEmbedding(
             init_state,
             x_wires + y_wires + work_wires + output_wires,

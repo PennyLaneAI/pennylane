@@ -801,9 +801,8 @@ add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory2, _pow_y)
 
 
-def _controlled_y_resource(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+# pylint: disable-next=unused-argument
+def _controlled_y_resource(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CY: 1}
     return {
@@ -819,9 +818,8 @@ def _controlled_y_resource(  # pylint: disable=unused-argument
 
 
 @register_resources(_controlled_y_resource)
-def _controlled_y_decomp(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+# pylint: disable-next=unused-argument
+def _controlled_y_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = control_wires + base.wires
 
     if len(control_wires) == 1:
@@ -955,9 +953,8 @@ class PauliZ(Operator2):
         return qp.pauli.pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(  # pylint: disable=unused-argument
-        wires: WiresLike,
-    ) -> list[qp.operation.Operator]:
+    # pylint: disable-next=unused-argument
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1061,9 +1058,8 @@ add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory2, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
-def _controlled_z_resources(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+# pylint: disable-next=unused-argument
+def _controlled_z_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CZ: 1}
     if len(control_wires) == 2:
@@ -1081,9 +1077,8 @@ def _controlled_z_resources(  # pylint: disable=unused-argument
 
 
 @register_resources(_controlled_z_resources)
-def _controlled_z_decomp(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+# pylint: disable-next=unused-argument
+def _controlled_z_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = control_wires + base.wires
 
     if len(control_wires) == 1:

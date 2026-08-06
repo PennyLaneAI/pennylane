@@ -159,12 +159,7 @@ def _to_autograd(result: ResultBatch) -> ResultBatch:
 
 
 @autograd.extend.primitive
-def _execute(  # pylint: disable=unused-argument
-    parameters,
-    tapes,
-    execute_fn,
-    jpc,
-):
+def _execute(parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argument
     """Autodifferentiable wrapper around a way of executing tapes.
 
     Args:
@@ -179,13 +174,7 @@ def _execute(  # pylint: disable=unused-argument
     return _to_autograd(execute_fn(tapes))
 
 
-def vjp(  # pylint: disable=unused-argument
-    ans,
-    parameters,
-    tapes,
-    execute_fn,
-    jpc,
-):
+def vjp(ans, parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argument
     """Returns the vector-Jacobian product operator for a batch of quantum tapes.
 
     Args:

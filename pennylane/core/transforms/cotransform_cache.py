@@ -35,9 +35,8 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     return autograd_jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
 
-def _tf_jac(  # pylint: disable=unused-argument
-    classical_function, argnums, *args, **kwargs
-) -> TensorLike:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+# pylint: disable-next=unused-argument
+def _tf_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     # pylint: disable=import-outside-toplevel
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")

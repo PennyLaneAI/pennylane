@@ -72,9 +72,8 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
     return new_ops
 
 
-def _select_ops(
-    control_wires, depth, target_wires, swap_wires, data, select_work_wires
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires):
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
@@ -320,9 +319,8 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
     return n_select_work_wires
 
 
-def _qrom_decomposition_resources(
-    data, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=too-many-branches
+def _qrom_decomposition_resources(data, control_wires, target_wires, work_wires, clean):
+    # pylint: disable=too-many-branches
 
     num_bitstrings = len(data)
     num_control_wires = len(control_wires)

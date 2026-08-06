@@ -426,9 +426,8 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         c, w = get_circuit
 
         @qp.qnode(qp.device("default.qubit", wires=n_qubits), interface="torch")
-        def c_default(
-            w1, w2, w3, w4, w5, w6, w7, inputs=None
-        ):  # pylint: disable=too-many-arguments
+        # pylint: disable-next=too-many-arguments
+        def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):
             """Version of the circuit with inputs as a default argument"""
             qp.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qp.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
@@ -671,9 +670,8 @@ class TestTorchLayerIntegration:
     @pytest.mark.parametrize("dtype", ["float32", "float64"])
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
-    def test_step_module(
-        self, module, batch_size, n_qubits, output_dim, dtype
-    ):  # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
+    def test_step_module(self, module, batch_size, n_qubits, output_dim, dtype):
         """Test if a module that includes TorchLayers can perform one optimization step. This
         test checks that some of the parameters in the module are different after one step.
         The module is composed of two TorchLayers sandwiched between Linear neural network layers,
@@ -704,9 +702,8 @@ class TestTorchLayerIntegration:
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_module_gradients(
-        self, module, output_dim, n_qubits, get_circuit
-    ):  # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
+    def test_module_gradients(self, module, output_dim, n_qubits, get_circuit):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the module"""
         _, w = get_circuit

@@ -290,15 +290,8 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights,
-        wires,
-        s_wires,
-        d_wires,
-        k,
-        init_state,
-        delta_sz=None,
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

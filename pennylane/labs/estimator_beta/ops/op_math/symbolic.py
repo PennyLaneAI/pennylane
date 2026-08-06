@@ -30,12 +30,8 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
 
-def _generate_name(
-    qfunc,
-    include_params: Iterable[str] | None = None,
-    *args,
-    **kwargs,
-):  # pylint: disable=keyword-arg-before-vararg
+# pylint: disable-next=keyword-arg-before-vararg
+def _generate_name(qfunc, include_params: Iterable[str] | None = None, *args, **kwargs):
     r"""Make a string representing the name of a function from its signature.
 
     Args:

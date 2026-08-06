@@ -264,13 +264,8 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_success(  # pylint: disable=unused-argument
-        self,
-        mock_input,
-        mock_sleep,
-        mock_load,
-        side_effect,
-    ):
+    # pylint: disable-next=unused-argument
+    def test_load_interactive_success(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
@@ -335,13 +330,8 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_qchem(  # pylint: disable=unused-argument
-        self,
-        mock_input,
-        mock_sleep,
-        mock_load,
-        side_effect,
-    ):
+    # pylint: disable-next=unused-argument
+    def test_load_interactive_qchem(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
