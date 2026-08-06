@@ -141,10 +141,14 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        if Wires.shared_wires([base.wires, control_wires]):
+        if not any(
+            isinstance(w, AbstractWires) for w in (base.wires, control_wires)
+        ) and Wires.shared_wires([base.wires, control_wires]):
             raise ValueError("control_wires must not overlap with the base operator.")
 
-        if Wires.shared_wires([work_wires, base.wires + control_wires]):
+        if not any(
+            isinstance(w, AbstractWires) for w in (work_wires, base.wires, control_wires)
+        ) and Wires.shared_wires([work_wires, base.wires + control_wires]):
             raise ValueError("work_wires must not overlap with the operator or control_wires.")
 
         accepted = ("zeroed", "borrowed")
