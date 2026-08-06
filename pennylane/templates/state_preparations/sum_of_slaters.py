@@ -648,19 +648,26 @@ class SumOfSlatersPrep(Operator2):
     `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__
     and is tailored to sparse states.
 
-    .. seealso::
-
-        :func:`~.select_sos_rows` and :func:`~.compute_sos_encoding` for the required
-        classical coprocessing, as well as :class:`~.PartialUnaryStatePreparation` for another
-        sparse state preparation technique.
-
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
-        wires (qp.wires.WiresLike): Wires on which to prepare the state. All work wires will be
-            allocated dynamically with :func:`~.allocate`.
+        wires (~.WiresLike): Wires on which to prepare the state.
+        enumeration_wires (~.WiresLike): Work wires used for the enumeration register. For
+            :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil` qubits are required.
+        identification_wires (~.WiresLike): Work wires used for the identification register.
+            The required number of qubits depends on the particular ``indices`` of the sparse state,
+            but it is at most :math:`2d-1` for :math:`d` entries in the state.
+        qrom_work_wires (~.WiresLike): Work wires used by the :class:`~.QROM` subroutine. For
+            :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil - 1` qubits are required.
+        mcx_cache_wires (~.WiresLike): Work wires used for caching AND values when uncomputing
+            the enumeration register with multicontrolled bit flips.
+            The required number of qubits depends on the particular ``indices`` of the sparse state,
+            but it is at most :math:`2d-2` for :math:`d` entries in the state.
         indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
             that in ``coefficients``.
+
+    The required sizes for the numerous work wire registers can be computed with
+    ``SumOfSlatersPrep.required_register_sizes``.
 
     .. warning::
 
@@ -681,13 +688,41 @@ class SumOfSlatersPrep(Operator2):
 
         coefficients = np.array([1, -1j, 1j, 1, 1, -1j, 1, 1j]) / np.sqrt(8)
         indices = (0, 1, 2, 4, 8, 16, 32, 64)
-        wires = list(range(7))
+        n = 7
+        wires = list(range(n))
 
-    This is all the information we require to create the state
-    preparation: ``coefficients``, ``indices``, and ``wires``.
-    The ``indices`` correspond to the computational basis states interpreted
+    This is all the information we require to create the state: ``coefficients``, ``indices``,
+    and ``wires``. The ``indices`` correspond to the computational basis states interpreted
     via their binary representation (e.g., :math:`|3\rangle = |11\rangle` for two qubits
     or :math:`|3\rangle = |011\rangle` for three qubits).
+    However, we also need to provide multiple sets of work wires. We can conveniently
+    compute the required register sizes with ``SumOfSlatersPrep.required_register_sizes``:
+
+    .. code-block:: python
+
+        from pennylane.templates import SumOfSlatersPrep
+
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
+
+    >>> print(sizes)
+    {'wires': 7, 'enumeration_wires': 3, 'identification_wires': 5, 'qrom_work_wires': 2, 'mcx_cache_wires': 4}
+
+    Then, we can create the wire registers, here we use :func:`~.registers`, which allocates
+    wires with consecutive integer labels.
+
+    .. code-block:: python
+
+        all_wires = qp.registers(sizes) # Includes the target wires
+
+    >>> print(*all_wires.items(), sep="\n")
+    ('wires', Wires([0, 1, 2, 3, 4, 5, 6]))
+    ('enumeration_wires', Wires([7, 8, 9]))
+    ('identification_wires', Wires([10, 11, 12, 13, 14]))
+    ('qrom_work_wires', Wires([15, 16]))
+    ('mcx_cache_wires', Wires([17, 18, 19, 20]))
+
+    With our work wires set up, we can construct the state preparation circuit and check the
+    prepared state for correctness:
 
     .. code-block:: python
 
@@ -695,13 +730,12 @@ class SumOfSlatersPrep(Operator2):
 
         gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "MultiplexerStatePreparation", "CNOT", "X"}
 
-        first_free_wire = max(wires)+1
+        num_wires = sum(sizes.values())
 
-        @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-        @qp.decompose(gate_set=gate_set, num_work_wires=14)
-        @qp.qnode(qp.device("lightning.qubit", wires=21))
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
-            qp.SumOfSlatersPrep(coefficients, wires, indices)
+            SumOfSlatersPrep(coefficients, **all_wires, indices=indices)
             return qp.state()
 
     We can check that we prepared the right state:
@@ -782,14 +816,18 @@ class SumOfSlatersPrep(Operator2):
 
             coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
             indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
-            wires = list(range(5))
-            first_free_wire = max(wires)+1
+            n = 5
+            wires = list(range(n))
 
-            @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-            @qp.decompose(gate_set=gate_set, num_work_wires=11)
-            @qp.qnode(qp.device("lightning.qubit", wires=16))
+            sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
+            all_wires = qp.registers(sizes) # Includes the target wires
+
+            num_wires = sum(sizes.values())
+
+            @qp.decompose(gate_set=gate_set)
+            @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
             def circuit():
-                qp.SumOfSlatersPrep(coefficients, wires, indices)
+                SumOfSlatersPrep(coefficients, **all_wires, indices=indices)
                 return qp.state()
 
         In this case, we only require eight work wires, because the encoding blocks can be skipped.
@@ -843,42 +881,6 @@ class SumOfSlatersPrep(Operator2):
         As we can see, the ladders of elbow, or :class:`~.TemporaryAND` gates are now
         controlled on the target register directly, rather than the encoding register, which
         we thus can skip for the identity encoding.
-
-        **Dynamic work wires**
-
-        Note that in the example above, wires with labels ``5`` to ``15`` were dynamically
-        allocated. We can see an
-        initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as
-        ``|Ψ⟩`` on the first four dynamic wires in the above diagram), a :class:`~.QROM` and
-        a sequence of elbow ladders that set a caching qubit (qubit index ``15``), which
-        then controls :class:`~.CNOT` gates that perform the actual uncomputation.
-
-        Note that we guessed the required number of work wires (``num_work_wires``) in
-        :func:`~.pennylane.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign
-        integer wire labels to those dynamically allocated wires. If we want to know
-        the required wire register sizes ahead of time, they can be computed with
-        ``SumOfSlatersPrep.required_register_sizes``:
-
-        >>> sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, len(wires))
-        >>> print(sizes)
-        {'wires': 5,
-         'enumeration_wires': 4,
-         'identification_wires': 0,
-         'qrom_work_wires': 3,
-         'mcx_cache_wires': 4}
-
-        Note that work wires of subroutines like ``QROM`` or the elbow ladders that realize a
-        :class:`~.MultiControlledX` gate are accounted for explicitly.
-        Even thought the decomposition of ``SumOfSlatersPrep`` allocates the needed work wires
-        automatically, you may want to allocate them explicitly. Generically, this can be done
-        with :func:`~.registers`:
-
-        >>> print(qp.registers(sizes))
-        {'wires': Wires([0, 1, 2, 3, 4]),
-         'enumeration_wires': Wires([5, 6, 7, 8]),
-         'identification_wires': Wires([]),
-         'qrom_work_wires': Wires([9, 10, 11]),
-         'mcx_cache_wires': Wires([12, 13, 14, 15])}
 
     """
 
