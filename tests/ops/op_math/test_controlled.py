@@ -38,9 +38,8 @@ from pennylane import numpy as pnp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.qscript import QuantumScript
-from pennylane.decomposition import DecompositionGraph, gate_sets
+from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
-from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
@@ -2012,36 +2011,6 @@ class TestCtrl:
             return qp.CNOT(control + base.wires)
 
         assert qp.ctrl(CustomOp([0]), control=1) == qp.CNOT([1, 0])
-
-    def test_ctrl_u1_single_control(self):
-        """Tests that controlling ``U1`` on a single active wire returns a generic controlled
-        op that decomposes into a ``ControlledPhaseShift`` via the decomposition graph."""
-        op = qp.ctrl(qp.U1(0.123, wires=0), control=1)
-        assert isinstance(op, ControlledOp2)
-        assert op.base == qp.U1(0.123, wires=0)
-
-        graph = DecompositionGraph(operations=[op], gate_set={"ControlledPhaseShift", "PauliX"})
-        solution = graph.solve()
-        with qp.queuing.AnnotatedQueue() as q:
-            rule = solution.decomposition(op)
-            _, args, kwargs = _get_decomp_args(op)
-            rule(*args, **kwargs)
-        assert q.queue == [qp.ControlledPhaseShift(0.123, wires=[1, 0])]
-
-    @pytest.mark.parametrize(
-        "control, control_values",
-        [
-            ([1], None),
-            ([1], [False]),
-            ([1, 2], None),
-        ],
-    )
-    def test_ctrl_u1_returns_generic_controlled(self, control, control_values):
-        """Tests that controlling ``U1`` returns a generic ``ControlledOp2`` rather than
-        eagerly collapsing to a ``ControlledPhaseShift``."""
-        op = qp.ctrl(qp.U1(0.123, wires=0), control=control, control_values=control_values)
-        assert isinstance(op, ControlledOp2)
-        assert op.base == qp.U1(0.123, wires=0)
 
 
 class _Rot(Operation):

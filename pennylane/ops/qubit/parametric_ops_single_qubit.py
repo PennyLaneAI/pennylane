@@ -33,7 +33,6 @@ from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
-    register_condition,
     register_resources,
     resource_rep,
 )
@@ -1393,24 +1392,9 @@ def _u1_phaseshift(phi, wires):
     PhaseShift(phi, wires=wires)
 
 
-# pylint: disable=unused-argument
-def _ctrl_u1_resources(base, control_wires, control_values, work_wires, work_wire_type):
-    return {resource_rep(qp.ControlledPhaseShift): 1}
-
-
-# ``ControlledPhaseShift`` is the dedicated controlled variant of ``PhaseShift``, and ``U1`` is
-# equivalent to ``PhaseShift``, so a single controlled ``U1`` decomposes into a
-# ``ControlledPhaseShift``. This only applies for a single control wire.
-@register_condition(lambda control_wires, **_: len(control_wires) == 1)
-@register_resources(_ctrl_u1_resources)
-def _ctrl_u1(base, control_wires, control_values, work_wires, work_wire_type):
-    qp.ControlledPhaseShift(base.phi, wires=control_wires + base.wires)
-
-
 add_decomps(U1, _u1_phaseshift)
 add_decomps("Adjoint(U1)", adjoint_rotation2)
 add_decomps("Pow(U1)", pow_rotation2)
-add_decomps("C(U1)", flip_zero_control2(_ctrl_u1))
 
 
 class U2(Operator2):

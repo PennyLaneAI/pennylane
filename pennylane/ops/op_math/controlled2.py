@@ -42,7 +42,7 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -673,39 +673,27 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
 
 def _flip_control_adjoint_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    num_zero_control_values = 0
-    if control_values is not None and len(control_values):
-        num_zero_control_values = int(math.sum(math.logical_not(control_values)))
+    return {
+        Adjoint2(
+            qp.ctrl(
+                base.base,
+                control=control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            )
+        ): 1
+    }
 
-    inner = _ctrl_abstract(
-        base.base,
-        control_wires,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-        num_zero_control_values=num_zero_control_values,
-    )
-    return {_adjoint_abstract(inner): 1}
 
-
-# pylint: disable=too-many-arguments
 @register_resources(_flip_control_adjoint_resource)
-def flip_control_adjoint(
-    *_,
-    control_wires,
-    control_values,
-    work_wires,
-    work_wire_type,
-    base,
-    wires=None,
-    **__,
-):
+def flip_control_adjoint(base, control_wires, control_values, work_wires, work_wire_type):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    control = wires[: len(control_wires)] if wires is not None else control_wires
     qp.adjoint(
-        ControlledOp2(
+        qp.ctrl(
             base.base,
-            control_wires=control,
+            control=control_wires,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
@@ -837,14 +825,6 @@ def _ctrl_abstract(
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         )
-
-    if not num_zero_control_values:
-        # pylint: disable=import-outside-toplevel
-        from pennylane.ops.op_math.controlled import base_to_custom_ctrl_op
-
-        op_type = op if isinstance(op, type) else type(op)
-        if custom := base_to_custom_ctrl_op().get((op_type, len(control_wires))):
-            return abstractify(custom)
 
     if not num_zero_control_values:
         return qp.ctrl(

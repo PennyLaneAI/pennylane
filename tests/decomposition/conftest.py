@@ -32,9 +32,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
-from pennylane.ops.qubit.parametric_ops_single_qubit import (  # pylint: disable=no-name-in-module
-    _ctrl_u1,
-)
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)
@@ -166,7 +163,6 @@ decompositions.get()["CRot"].append(_crot)
 decompositions.get()["C(PauliX)"].append(_controlled_x_decomp)
 decompositions.get()["C(GlobalPhase)"].append(_controlled_g_phase_decomp)
 decompositions.get()["C(Hadamard)"].append(_controlled_hadamard)
-decompositions.get()["C(U1)"].append(_ctrl_u1)
 decompositions.get()["Adjoint(Hadamard)"].append(self_adjoint)
 decompositions.get()["Pow(Hadamard)"].append(pow_involutory2)
 decompositions.get()["Adjoint(RX)"].append(adjoint_rotation)
