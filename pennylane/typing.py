@@ -523,6 +523,14 @@ class AbstractWires:
             return True
         return len(instance) == self.num_wires
 
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return AbstractWires(1)
+        if isinstance(item, slice):
+            new_start_stop_step = item.indices(self.num_wires)
+            return AbstractWires(len(range(*new_start_stop_step)))
+        raise IndexError(f"Cannot index into an AbstractArray with {item}.")
+
 
 class _AbstractWireTypeFactory(AbstractWires):
     """

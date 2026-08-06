@@ -1949,7 +1949,8 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
     if op_type.has_fixed_sig:
-        return op_type(**op_type.arg_specs)
+        with pause():
+            return op_type(**op_type.arg_specs)
 
     raise TypeError(
         f"'{op_type.__name__}' must set 'arg_specs' and cover all dynamic and wire "
@@ -1970,8 +1971,8 @@ def _abstractify_operator(op: Operator2) -> Operator2:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
     # need to use __abstract_init__ even if captture is enabled
-    new_op = op_cls.__new__(op_cls, **new_args)
-    new_op.__abstract_init__(**new_args)
+    with pause():
+        new_op = op_cls(**new_args)
     return new_op
 
 
