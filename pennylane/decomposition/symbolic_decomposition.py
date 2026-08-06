@@ -100,13 +100,12 @@ def is_integer(x):
 
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
 @register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
-def repeat_pow_base(*params, wires, base, z, **__):
+def repeat_pow_base(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
-    # pylint: disable=unused-argument
 
     @qp.for_loop(0, z)
-    def _loop(i):
+    def _loop(i):  # pylint: disable=unused-argument
         qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
@@ -240,11 +239,10 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         gate_counts[abstractify(qp.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=base_decomposition._work_wire_spec,
+        work_wires=base_decomposition._work_wire_spec,  # pylint: disable=protected-access
         exact=base_decomposition.exact_resources,
         name=f"controlled({base_decomposition.name})",
     )
@@ -333,8 +331,7 @@ def _flip_control_adjoint_resource(
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-):  # pylint: disable=too-many-arguments
-    # pylint: disable=unused-argument
+):  # pylint: disable=too-many-arguments,unused-argument
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(

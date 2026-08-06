@@ -964,10 +964,10 @@ def _evolve_state_vector_under_parametrized_evolution(
     """
 
     try:
-        import jax  # pylint: disable=import-outside-toplevel
-        from jax.experimental.ode import odeint  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import jax
+        from jax.experimental.ode import odeint
 
-        # pylint: disable-next=import-outside-toplevel
         from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
     except ImportError as e:  # pragma: no cover
