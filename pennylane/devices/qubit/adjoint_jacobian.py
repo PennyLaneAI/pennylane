@@ -13,6 +13,8 @@
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
 
+# pylint: disable=too-many-branches
+
 import logging
 from numbers import Number
 
@@ -26,8 +28,6 @@ from pennylane.operation import operation_derivative
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .simulate import get_final_state
-
-# pylint: disable=too-many-branches
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

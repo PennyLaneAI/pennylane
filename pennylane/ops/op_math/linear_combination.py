@@ -15,10 +15,10 @@
 LinearCombination class
 """
 
+# pylint: disable=protected-access
+
 import itertools
 import numbers
-
-# pylint: disable=protected-access
 from copy import copy
 
 import pennylane as qp

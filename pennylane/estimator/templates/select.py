@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for select templates."""
 
+# pylint: disable=arguments-differ,super-init-not-called,signature-differs
+
 from collections import defaultdict
 
 import numpy as np
@@ -28,8 +30,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,super-init-not-called,signature-differs
 
 
 class SelectTHC(ResourceOperator):

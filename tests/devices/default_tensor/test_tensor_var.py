@@ -15,6 +15,8 @@
 Tests for the variance calculation on the DefaultTensor device.
 """
 
+# pylint: disable=too-many-arguments,redefined-outer-name
+
 import numpy as np
 import pytest
 
@@ -28,8 +30,6 @@ VARPHI = np.linspace(0.02, 1, 3)
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
-
-# pylint: disable=too-many-arguments,redefined-outer-name
 
 
 @pytest.fixture(

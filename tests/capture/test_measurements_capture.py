@@ -15,9 +15,9 @@
 Tests for capturing measurements.
 """
 
-import numpy as np
+# pylint: disable=protected-access,unnecessary-lambda
 
-# pylint: disable=protected-access
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -296,7 +296,6 @@ def test_primitive_none_behavior():
     assert len(jaxpr.eqns) == 0
 
 
-# pylint: disable=unnecessary-lambda
 creation_funcs = [
     lambda: qp.state(),
     lambda: qp.density_matrix(wires=(0, 1)),

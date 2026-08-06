@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for parametric single qubit operations."""
 
+# pylint: disable=arguments-differ,signature-differs
+
 import math
 
 import pennylane.estimator as qre
@@ -23,8 +25,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,signature-differs
 
 
 def _rotation_resources(precision=1e-9):

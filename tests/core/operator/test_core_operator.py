@@ -15,6 +15,9 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
+# pylint: disable=protected-access,redefined-outer-name,too-few-public-methods
+# pylint: disable=too-many-public-methods,unused-argument
+
 import copy
 from collections.abc import Callable
 
@@ -36,9 +39,6 @@ from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=protected-access,redefined-outer-name,too-few-public-methods
-# pylint: disable=too-many-public-methods,unused-argument
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)

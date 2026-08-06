@@ -15,7 +15,7 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,protected-access
 
 import copy
 
@@ -428,7 +428,6 @@ class QuantumMonteCarlo(Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-
         .. seealso:: :meth:`~.QuantumMonteCarlo.decomposition`.
 
         Args:
@@ -452,7 +451,6 @@ class QuantumMonteCarlo(Operation):
         return op_list
 
 
-# pylint: disable=protected-access
 if QuantumMonteCarlo._primitive is not None:
 
     @QuantumMonteCarlo._primitive.def_impl

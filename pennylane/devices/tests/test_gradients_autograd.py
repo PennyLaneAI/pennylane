@@ -13,9 +13,9 @@
 # limitations under the License.
 """Tests trainable circuits using the Autograd interface."""
 
-import numpy as np
-
 # pylint: disable=no-self-use
+
+import numpy as np
 import pytest
 
 import pennylane as qp

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Functions for retrieving effective error from fragments"""
 
+# pylint: disable=too-many-arguments
+
 import copy
 import math
 from collections import defaultdict
@@ -32,8 +34,6 @@ from pennylane.labs.trotter_error.product_formulas.commutator import (
     SymbolNode,
 )
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
-
-# pylint: disable=too-many-arguments
 
 
 def effective_hamiltonian(

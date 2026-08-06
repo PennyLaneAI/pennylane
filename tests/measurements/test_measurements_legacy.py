@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=protected-access
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -29,8 +31,6 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.wires import Wires
-
-# pylint: disable=protected-access
 
 
 class NotValidMeasurement(MeasurementProcess):

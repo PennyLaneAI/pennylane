@@ -15,6 +15,8 @@
 Unit tests for functions needed for performing givens decomposition of a unitary.
 """
 
+# pylint: disable=too-many-arguments
+
 import numpy as onp
 import pytest
 from scipy.stats import ortho_group, unitary_group
@@ -298,7 +300,6 @@ def test_givens_matrix_jaxpr():
     assert "givens_matrix_jax" in str(make_jaxpr(_givens_matrix)(a, b))
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     ("use_jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [
@@ -382,7 +383,6 @@ def test_set_unitary_matrix_real(
     assert new_unitary_matrix.dtype == unitary_matrix.dtype
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     ("use_jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [

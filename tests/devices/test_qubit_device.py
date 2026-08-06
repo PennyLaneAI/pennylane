@@ -15,6 +15,8 @@
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
 
+# pylint: disable=redefined-outer-name
+
 import copy
 from random import random
 
@@ -40,9 +42,6 @@ from pennylane.wires import Wires
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
-
-
-# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(scope="function")

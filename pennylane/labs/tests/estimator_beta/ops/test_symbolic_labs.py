@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for symbolic resource operators in the estimator_beta module."""
 
+# pylint: disable=no-self-use,too-few-public-methods
+
 from collections import defaultdict
 from functools import partial
 
@@ -26,8 +28,6 @@ from pennylane.labs.estimator_beta.ops.op_math.symbolic import (
     _generate_name,
     mark_subroutine,
 )
-
-# pylint: disable=no-self-use,too-few-public-methods
 
 
 class TestGenerateName:

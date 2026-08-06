@@ -15,7 +15,7 @@
 This submodule defines a base class for composite operations.
 """
 
-# pylint: disable=invalid-sequence-index
+# pylint: disable=invalid-sequence-index,too-many-instance-attributes
 
 import abc
 import copy
@@ -30,8 +30,6 @@ from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
-
-# pylint: disable=too-many-instance-attributes
 
 
 def handle_recursion_error(func):

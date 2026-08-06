@@ -17,6 +17,8 @@ Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
 
+# pylint: disable=too-many-branches
+
 from inspect import isclass, signature
 
 from pennylane import math, measurements
@@ -39,8 +41,6 @@ from pennylane.ops import (
 from pennylane.ops.functions import map_wires, simplify
 from pennylane.templates import ControlledSequence
 from pennylane.wires import Wires
-
-# pylint: disable=too-many-branches
 
 
 class WiresIn(BooleanFn):

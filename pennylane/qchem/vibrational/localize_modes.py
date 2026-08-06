@@ -13,14 +13,14 @@
 # limitations under the License.
 """This module contains functions to localize normal modes."""
 
+# pylint: disable=dangerous-default-value
+
 import warnings
 
 import numpy as np
 import scipy
 
 from pennylane import math as qp_math
-
-# pylint: disable=dangerous-default-value
 
 
 def _mat_transform(u, qmat):

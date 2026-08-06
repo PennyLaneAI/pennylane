@@ -15,7 +15,7 @@
 Contains the PrepSelPrep template.
 """
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ,protected-access
 
 from pennylane import math
 from pennylane import ops as qp_ops
@@ -236,7 +236,6 @@ def _prepselprep_decomp(*_, wires, lcu, control, target_wires):  # pylint: disab
 
 add_decomps(PrepSelPrep, _prepselprep_decomp)
 
-# pylint: disable=protected-access
 if PrepSelPrep._primitive is not None:
 
     @PrepSelPrep._primitive.def_impl

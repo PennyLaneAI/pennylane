@@ -15,6 +15,8 @@
 Tests for the pennylane.qnn.torch module.
 """
 
+# pylint: disable=unnecessary-dunder-call
+
 import math
 from unittest import mock
 
@@ -25,8 +27,6 @@ import pennylane as qp
 from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
-
-# pylint: disable=unnecessary-dunder-call
 
 
 def indices_up_to(n_max):

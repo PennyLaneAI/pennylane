@@ -15,6 +15,8 @@
 Tests for the basic default behavior of the Device API.
 """
 
+# pylint: disable=unused-argument,unused-variable,protected-access
+
 import pytest
 
 import pennylane as qp
@@ -29,8 +31,6 @@ from pennylane.devices.capabilities import (
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
-
-# pylint: disable=unused-argument,unused-variable,protected-access
 
 
 def test_execute_method_abstract():

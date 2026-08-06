@@ -15,6 +15,8 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
+# pylint: disable=redefined-outer-name
+
 from collections import OrderedDict
 
 import numpy as np
@@ -28,8 +30,6 @@ from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
-
-# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(scope="function")

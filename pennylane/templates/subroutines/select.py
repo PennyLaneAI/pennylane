@@ -15,6 +15,8 @@
 Contains the Select template.
 """
 
+# pylint: disable=protected-access
+
 from collections import Counter, defaultdict
 from itertools import product
 
@@ -1131,7 +1133,6 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
 add_decomps(Select, _select_decomp_multi_control_work_wire)
 
-# pylint: disable=protected-access
 if Select._primitive is not None:
 
     @Select._primitive.def_impl

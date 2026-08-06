@@ -15,6 +15,8 @@ r"""
 Contains the SelectPauliRot template.
 """
 
+# pylint: disable=protected-access
+
 from pennylane import math
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
@@ -233,7 +235,6 @@ def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
 
-# pylint: disable=protected-access
 if SelectPauliRot._primitive is not None:
 
     @SelectPauliRot._primitive.def_impl

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
+# pylint: disable=too-many-branches,protected-access
+
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
@@ -26,8 +28,6 @@ from pennylane.ops.op_math import ctrl
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-# pylint: disable=too-many-branches,protected-access
 
 
 def _check_tape_validity(tape: QuantumScript):

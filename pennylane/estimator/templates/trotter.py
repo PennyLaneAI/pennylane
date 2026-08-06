@@ -15,6 +15,8 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 
+# pylint: disable=arguments-differ,too-many-arguments,super-init-not-called
+
 import numpy as np
 
 from pennylane.estimator.compact_hamiltonian import (
@@ -47,8 +49,6 @@ from .subroutines import (
     Select,
     SemiAdder,
 )
-
-# pylint: disable=arguments-differ,too-many-arguments,super-init-not-called
 
 
 class TrotterProduct(ResourceOperator):

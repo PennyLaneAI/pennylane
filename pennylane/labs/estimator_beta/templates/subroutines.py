@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
+# pylint: disable=unused-argument
+
 import math
 
 import pennylane.labs.estimator_beta as qre
@@ -20,8 +22,6 @@ from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperato
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import WiresLike
-
-# pylint: disable=unused-argument
 
 
 def selectpaulirot_controlled_resource_decomp(

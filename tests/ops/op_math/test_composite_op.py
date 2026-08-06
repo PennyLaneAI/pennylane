@@ -15,9 +15,9 @@
 Unit tests for the composite operator class of qubit operations
 """
 
-import inspect
-
 # pylint: disable=protected-access
+
+import inspect
 from copy import copy
 
 import numpy as np

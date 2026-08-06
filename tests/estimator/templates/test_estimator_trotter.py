@@ -15,6 +15,8 @@
 Test the Resource classes for Trotterization
 """
 
+# pylint: disable=too-many-arguments
+
 from collections import defaultdict
 
 import pytest
@@ -23,8 +25,6 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_operator import CompressedResourceOp
 from pennylane.wires import Wires
-
-# pylint: disable=too-many-arguments
 
 
 class TestResourceTrotterProduct:

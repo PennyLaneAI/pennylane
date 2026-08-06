@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+# pylint: disable=too-many-arguments
+
 from collections.abc import Sequence
 
 import mcm_utils
@@ -25,9 +27,6 @@ from pennylane.ops import MidMeasure
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
-
-
-# pylint: disable=too-many-arguments
 
 
 def test_combine_measurements_core():

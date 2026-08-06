@@ -15,6 +15,8 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 
+# pylint: disable=protected-access,redefined-outer-name,too-many-arguments
+
 import os
 import re
 from pathlib import Path, PosixPath
@@ -49,8 +51,6 @@ try:
     has_rich = True
 except ImportError:
     pass
-
-# pylint: disable=protected-access,redefined-outer-name
 
 
 pytestmark = pytest.mark.data
@@ -414,7 +414,6 @@ def mock_download_dataset(monkeypatch):
     return mock
 
 
-# pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")

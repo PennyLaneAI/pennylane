@@ -16,6 +16,8 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 
+# pylint: disable=too-many-arguments,unused-argument
+
 import warnings
 from functools import partial, singledispatch
 
@@ -59,9 +61,6 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
     reorder_grads,
 )
-
-# pylint: disable=too-many-arguments,unused-argument
-
 
 NONINVOLUTORY_OBS = {
     "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),

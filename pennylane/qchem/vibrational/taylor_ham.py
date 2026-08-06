@@ -13,13 +13,13 @@
 # limitations under the License.
 """The functions related to the construction of the Taylor form Hamiltonian."""
 
+# pylint: disable=import-outside-toplevel
+
 import itertools
 
 import numpy as np
 
 from pennylane.bose import BoseSentence, BoseWord, binary_mapping, unary_mapping
-
-# pylint: disable=import-outside-toplevel
 
 
 def _import_sklearn():

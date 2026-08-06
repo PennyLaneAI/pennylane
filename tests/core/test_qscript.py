@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the QuantumScript"""
 
+# pylint: disable=protected-access
+
 import copy
 
 import numpy as np
@@ -26,8 +28,6 @@ from pennylane.core.shots import Shots
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
-
-# pylint: disable=protected-access
 
 
 def test_process_queue_error_if_not_operator_or_measurement():

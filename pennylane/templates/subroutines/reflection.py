@@ -16,6 +16,8 @@
 This submodule contains the template for the Reflection operation.
 """
 
+# pylint: disable=protected-access
+
 import copy
 
 import numpy as np
@@ -271,7 +273,6 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
 
 add_decomps(Reflection, _reflection_decomposition)
 
-# pylint: disable=protected-access
 if Reflection._primitive is not None:
 
     @Reflection._primitive.def_impl

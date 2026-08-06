@@ -16,6 +16,8 @@ This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
 
+# pylint: disable=too-many-arguments,unused-argument
+
 from functools import partial
 
 import numpy as np
@@ -37,8 +39,6 @@ from .gradient_transform import (
     contract_qjac_with_cjac,
     find_and_validate_gradient_methods,
 )
-
-# pylint: disable=too-many-arguments,unused-argument
 
 
 def _rademacher_sampler(indices, num_params, *args, rng):

@@ -15,6 +15,9 @@
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
 
+# pylint: disable=too-many-arguments,consider-using-generator,protected-access
+# pylint: disable=possibly-used-before-assignment
+
 from functools import singledispatch
 
 from scipy.constants import angstrom, physical_constants
@@ -25,9 +28,6 @@ from .basis_data import atomic_numbers
 from .hartree_fock import nuclear_energy, scf
 from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable
-
-# pylint: disable=too-many-arguments,consider-using-generator,protected-access
-# pylint: disable=possibly-used-before-assignment
 
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 

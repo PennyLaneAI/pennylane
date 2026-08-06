@@ -15,6 +15,8 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=too-many-arguments
+
 import math
 
 import numpy as np
@@ -27,8 +29,6 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
-
-# pylint: disable=too-many-arguments
 
 
 class TestResourceOutOfPlaceSquare:

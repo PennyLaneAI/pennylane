@@ -18,6 +18,8 @@ bitstrings. It samples Pauli-Z observables from an RBF (Radial Basis Function) k
 estimates their expectation values, and combines the results into an MMD loss.
 """
 
+# pylint: disable=too-many-arguments
+
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial
@@ -140,7 +142,6 @@ def _compute_single_mmd(  # pylint: disable=too-many-arguments
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
 
 
-# pylint: disable=too-many-arguments
 @partial(
     jax.jit,
     static_argnames=[

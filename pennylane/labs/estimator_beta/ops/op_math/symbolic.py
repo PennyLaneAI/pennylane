@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 
+# pylint: disable=arguments-differ
+
 from collections.abc import Callable, Iterable
 from functools import wraps
 from inspect import signature
@@ -26,8 +28,6 @@ from pennylane.labs.estimator_beta import (
 )
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
-
-# pylint: disable=arguments-differ
 
 
 def _generate_name(

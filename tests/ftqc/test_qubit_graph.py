@@ -14,6 +14,8 @@
 
 """Unit tests for the qubit_graph module"""
 
+# pylint: disable=too-few-public-methods
+
 import re
 import uuid
 
@@ -24,8 +26,6 @@ import rustworkx as rx
 import pennylane as qp
 from pennylane.ftqc import QubitGraph
 from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
-
-# pylint: disable=too-few-public-methods
 
 
 class TestQubitGraphsInitialization:

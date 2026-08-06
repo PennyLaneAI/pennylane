@@ -15,6 +15,8 @@
 This module contains the qp.counts measurement.
 """
 
+# pylint: disable=protected-access,unused-argument
+
 import warnings
 from collections.abc import Sequence
 
@@ -291,7 +293,6 @@ class CountsMP(SampleMeasurement):
                 outcome_counts[outcome_binary] = 0
 
 
-# pylint: disable=protected-access,unused-argument
 if CountsMP._wires_primitive is not None:
 
     CountsMP._wires_primitive.multiple_results = True
@@ -327,7 +328,6 @@ if CountsMP._wires_primitive is not None:
         return keys, values
 
 
-# pylint: disable=protected-access,unused-argument
 if CountsMP._mcm_primitive is not None:
 
     CountsMP._mcm_primitive.multiple_results = True

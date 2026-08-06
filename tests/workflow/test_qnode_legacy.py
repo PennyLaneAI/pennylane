@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
-import copy
-
 # pylint: disable=protected-access
+
+import copy
 import warnings
 from functools import partial
 

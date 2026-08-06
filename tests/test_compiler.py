@@ -15,6 +15,8 @@
 Unit tests for the compiler subpackage.
 """
 
+# pylint: disable=too-few-public-methods
+
 from unittest.mock import patch
 
 import mcm_utils
@@ -33,8 +35,6 @@ pytestmark = pytest.mark.catalyst
 
 from jax import numpy as jnp  # pylint:disable=wrong-import-order,wrong-import-position
 from jax.core import ShapedArray  # pylint:disable=wrong-import-order,wrong-import-position
-
-# pylint: disable=too-few-public-methods
 
 
 @pytest.fixture

@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 
+# pylint: disable=arguments-differ,super-init-not-called,signature-differs
+
 from collections.abc import Iterable
 from functools import singledispatch
 
@@ -25,8 +27,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,super-init-not-called,signature-differs
 
 
 class Adjoint(ResourceOperator):

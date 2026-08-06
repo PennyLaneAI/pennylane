@@ -13,6 +13,9 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
+# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
+# pylint: disable=signature-differs
+
 import math
 from collections import defaultdict
 
@@ -30,9 +33,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
-# pylint: disable=signature-differs
 
 
 class OutOfPlaceSquare(ResourceOperator):

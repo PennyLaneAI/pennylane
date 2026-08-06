@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the classical shadows measurement processes"""
 
+# pylint: disable=dangerous-default-value,too-many-arguments
+
 import copy
 import itertools
 
@@ -25,8 +27,6 @@ from pennylane import numpy as np
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
-
-# pylint: disable=dangerous-default-value,too-many-arguments
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):

@@ -15,6 +15,8 @@
 This module contains tests for functions needed to compute PES object.
 """
 
+# pylint: disable=too-many-arguments,protected-access
+
 import sys
 from pathlib import Path
 
@@ -26,7 +28,6 @@ from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vibrational_class
 
 h5py = pytest.importorskip("h5py")
-# pylint: disable=too-many-arguments,protected-access
 
 
 def test_import_geometric(monkeypatch):

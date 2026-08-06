@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -43,8 +45,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.wires import Wires
-
-# pylint: disable=too-few-public-methods
 
 
 def test_measurements_module_getattr():

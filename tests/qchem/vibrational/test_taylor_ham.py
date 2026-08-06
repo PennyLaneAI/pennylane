@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit Tests for the Taylor Hamiltonian construction functions."""
 
+# pylint: disable=too-many-arguments
+
 import os
 import sys
 
@@ -380,7 +382,6 @@ def test_taylor_kinetic():
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     (
         "taylor_1D_coeffs",

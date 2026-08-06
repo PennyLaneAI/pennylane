@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -38,8 +40,6 @@ from pennylane.devices.preprocess import (
 )
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
-
-# pylint: disable=too-few-public-methods
 
 
 class NoMatOp(Operation):

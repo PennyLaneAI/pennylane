@@ -15,12 +15,12 @@
 Test the Resource classes for Qubitization
 """
 
+# pylint: disable=too-many-arguments
+
 import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator import resource_rep
-
-# pylint: disable=too-many-arguments
 
 
 class TestQubitizeTHC:

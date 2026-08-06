@@ -15,6 +15,8 @@
 Contains the QSVT template and qsvt wrapper function.
 """
 
+# pylint: disable=protected-access
+
 import copy
 import warnings
 from collections import defaultdict
@@ -709,7 +711,6 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
 add_decomps(QSVT, _QSVT_decomposition)
 
-# pylint: disable=protected-access
 if QSVT._primitive is not None:
 
     @QSVT._primitive.def_impl

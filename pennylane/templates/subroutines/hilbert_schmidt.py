@@ -15,6 +15,8 @@
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 
+# pylint: disable=protected-access
+
 import copy
 from collections import defaultdict
 from collections.abc import Iterable
@@ -266,7 +268,6 @@ class HilbertSchmidt(Operation):
         return decomp_ops
 
 
-# pylint: disable=protected-access
 if HilbertSchmidt._primitive is not None:
 
     @HilbertSchmidt._primitive.def_impl
@@ -412,7 +413,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         return clone
 
 
-# pylint: disable=protected-access
 if LocalHilbertSchmidt._primitive is not None:
 
     @LocalHilbertSchmidt._primitive.def_impl

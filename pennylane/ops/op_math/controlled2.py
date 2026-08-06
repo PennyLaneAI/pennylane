@@ -14,6 +14,8 @@
 
 """Defines the base class for controlled operators."""
 
+# pylint: disable=unused-argument,protected-access,no-value-for-parameter
+
 from collections.abc import Sequence
 from inspect import signature
 from textwrap import dedent
@@ -47,8 +49,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
-
-# pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods

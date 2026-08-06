@@ -14,6 +14,8 @@
 
 """Tests for the Adjoint2 class."""
 
+# pylint: disable=unused-argument
+
 import numpy as np
 import pytest
 from scipy import sparse
@@ -27,8 +29,6 @@ from pennylane.ops.op_math.adjoint2 import Adjoint2, adjoint_rotation
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import OneWireDynOp
-
-# pylint: disable=unused-argument
 
 
 class SX2(Operator2):

@@ -15,7 +15,7 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-position,wrong-import-order
+# pylint: disable=wrong-import-position,wrong-import-order,too-few-public-methods
 
 from functools import partial
 
@@ -49,8 +49,6 @@ from pennylane.exceptions import AutoGraphError
 from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
-
-# pylint: disable=too-few-public-methods
 
 
 class TestPennyLaneTransformer:

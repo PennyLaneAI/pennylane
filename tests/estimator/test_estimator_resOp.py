@@ -15,6 +15,8 @@
 This submodule tests the base classes for resource operators.
 """
 
+# pylint: disable=protected-access,unused-argument,comparison-with-itself
+
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
@@ -27,8 +29,6 @@ import pennylane.estimator.ops as qre_ops
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
-
-# pylint: disable=protected-access,unused-argument,comparison-with-itself
 
 
 class DummyX(ResourceOperator):

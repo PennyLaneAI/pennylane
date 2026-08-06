@@ -15,6 +15,8 @@
 Contains the GQSP template.
 """
 
+# pylint: disable=protected-access
+
 import copy
 
 from pennylane import capture, ops
@@ -220,7 +222,6 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
 add_decomps(GQSP, _GQSP_decomposition)
 
-# pylint: disable=protected-access
 if GQSP._primitive is not None:
 
     @GQSP._primitive.def_impl
