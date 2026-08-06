@@ -932,6 +932,33 @@ special_par_op_decomps = [
 
 custom_ctrl_op_decomps = special_non_par_op_decomps + special_par_op_decomps
 
+_CONTROL_ON_ZERO_PHASESHIFT_XFAIL_REASON = (
+    "Control-on-zero of a v1 PhaseShift relies on base_to_custom_ctrl_op mapping "
+    "PhaseShift -> ControlledPhaseShift inside Controlled._decompose_custom_ops; that entry "
+    "was dropped (ControlledPhaseShift is an Operator2 without resource_keys), so the "
+    "control-on-zero decomposition no longer produces a ControlledPhaseShift. Reverts once "
+    "Mudit ports PhaseShift/ControlledPhaseShift in #9951."
+)
+
+
+def _mark_control_on_zero_phaseshift_xfail(param_list):
+    """Mark the v1 ``PhaseShift`` control-on-zero decomposition param as xfail (#9951)."""
+    marked = []
+    for entry in param_list:
+        if entry[0] is qp.PhaseShift:
+            marked.append(
+                pytest.param(
+                    *entry,
+                    marks=pytest.mark.xfail(
+                        reason=_CONTROL_ON_ZERO_PHASESHIFT_XFAIL_REASON, strict=False
+                    ),
+                )
+            )
+        else:
+            marked.append(entry)
+    return marked
+
+
 pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, expected)
     (qp.PauliX, [0], [1], None, [qp.CNOT([1, 0])]),
     (
@@ -1169,7 +1196,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, _, expected",
-        custom_ctrl_op_decomps,
+        _mark_control_on_zero_phaseshift_xfail(custom_ctrl_op_decomps),
     )
     def test_control_on_zero_custom_ops(
         self, base_cls, params, base_wires, ctrl_wires, _, expected

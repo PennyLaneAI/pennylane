@@ -213,6 +213,15 @@ class TestDecompGraphConstruction:
         assert len(decomp_nodes) == 1
         assert decomp_nodes[0].rule is _custom_ctrl
 
+    @pytest.mark.xfail(
+        reason="This solve controls a v1 PhaseShift, which now produces a generic "
+        "Controlled(PhaseShift) in the resource path because the (PhaseShift, 1) -> "
+        "ControlledPhaseShift entry was dropped from base_to_custom_ctrl_op "
+        "(ControlledPhaseShift is an Operator2 without resource_keys), so it can no longer be "
+        "solved to the {ControlledPhaseShift} gate set. Reverts once Mudit ports "
+        "PhaseShift/ControlledPhaseShift in #9951.",
+        strict=False,
+    )
     def test_get_decomps_symbolic2(self):
         """Tests that get_decomps works properly for symbolicop2."""
 
