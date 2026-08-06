@@ -1955,8 +1955,6 @@ def _abstractify_operator(op: Operator2) -> Operator2:
 class StatePrepBase2(Operator2, is_baseclass=True):
     """An interface for state-prep operations."""
 
-    _stateprep_version = 2
-
     @abstractmethod
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """
