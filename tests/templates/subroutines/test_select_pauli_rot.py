@@ -215,6 +215,7 @@ class TestSelectPauliRot:
             for gate in dec[1::2]:
                 assert gate.name == "CNOT"
 
+    @pytest.mark.capture
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     @pytest.mark.parametrize("axis", "XYZ")
     def test_decomposition_new(self, n, axis):
