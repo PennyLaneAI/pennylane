@@ -43,9 +43,6 @@ def test_subclasshook_state_prep_base():
     assert isinstance(new_op, StatePrepBase)
     assert issubclass(NewOp, StatePrepBase)
 
-    assert isinstance(new_op, StatePrepBase)
-    assert issubclass(NewOp, StatePrepBase)
-
 
 def test_basis_state_input_cast_to_int():
     """Test that the input to BasisState is cast to an int."""
