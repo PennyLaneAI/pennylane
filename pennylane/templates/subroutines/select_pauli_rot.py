@@ -137,7 +137,7 @@ class SelectPauliRot(Operator2):
         return super().__abstract_init__(angles, control_wires, target_wire, rot_axis)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
     num_wires = len(control_wires) + 1
