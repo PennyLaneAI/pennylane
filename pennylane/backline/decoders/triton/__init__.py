@@ -12,4 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Triton CSS decoder support for backline."""
+"""Triton decoder support for backline."""
+
+from .decoder_frontend import build_css_decoder, build_triton_decoder
+
+__all__ = ["build_css_decoder", "build_triton_decoder"]

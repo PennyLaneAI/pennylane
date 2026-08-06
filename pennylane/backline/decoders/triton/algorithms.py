@@ -19,6 +19,7 @@ from .bp_iters import _sum_product_posteriors
 
 # ================== Single Syndrome Decoder ====================
 
+
 @triton.jit
 def _decode_one(
     syndrome,
@@ -35,7 +36,9 @@ def _decode_one(
         return _osd(P, syndrome)
     return _hard_decision(P)
 
+
 # ========================= Post Process ========================
+
 
 @triton.jit
 def _hard_decision(P):
@@ -60,4 +63,3 @@ def _osd(P, syndrome):
         bi = tl.where(c, tl.cast(i, tl.uint64), bi)
         best = tl.where(c, P[i], best)
     return tl.where(syndrome != 0, one << bi, zero)
-

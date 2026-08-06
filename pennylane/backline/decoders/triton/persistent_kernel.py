@@ -15,34 +15,31 @@
 import triton
 import triton.language as tl
 
-from .algorithms import _decode_one
-
 K_RING_SLOTS = tl.constexpr(256)  # can store 256 elements
 PAYLOAD_SLOT_WORDS = tl.constexpr(8)  # sizeof(PayloadSlot) / sizeof(u64)
 HANDOFF_SLOT_WORDS = tl.constexpr(2)  # sizeof(HandoffSlot) / sizeof(u64)
 
 
 @triton.jit
-def _persistent_css_decoder_kernel(
+def _persistent_decoder_kernel(
     ring_u64_ptr,
     handoff_u64_ptr,
     stop_u32_ptr,
     total,
-    Hx: tl.constexpr,
-    Hz: tl.constexpr,
-    POSTPROCESS: tl.constexpr,
-    PROB: tl.constexpr,
-    NITER: tl.constexpr,
+    decoder_fns: tl.constexpr,
 ):
     """Decode ring-buffer requests until completion or shutdown.
 
     ring_u64_ptr: PayloadSlot (64 bytes) = 8 u64 words
         word 0: syndrome
-        word 1: low32 = decoder_id (0 -> X, 1 -> Z), high32 = seq
+        word 1: low32 = decoder_id, high32 = seq
     handoff_u64_ptr: HandoffSlot (16 bytes) = 2 u64 words
         word 0: correction
         word 1: low32 = seq, high32 = pad
     stop_u32_ptr: single u32 scalar
+
+    ``decoder_fns`` is a constexpr tuple of Triton decoder functions. ``decoder_id``
+    selects the corresponding tuple index.
 
     Note: low32/high32 field layout assumes little-endian targets.
     """
@@ -74,25 +71,11 @@ def _persistent_css_decoder_kernel(
         # return statements are unsupported so we need to check halt again
         if halt == 0:
             syndrome = tl.load(req, volatile=True)
-            if decoder_id == 0:
-                correction = _decode_one(
-                    syndrome,
-                    Hx,
-                    postprocess=POSTPROCESS,
-                    prob=PROB,
-                    NITER=NITER,
-                )
-            elif decoder_id == 1:
-                correction = _decode_one(
-                    syndrome,
-                    Hz,
-                    postprocess=POSTPROCESS,
-                    prob=PROB,
-                    NITER=NITER,
-                )
-            else:
-                # NOTE: unrecognized decoder_id -> no correction
-                correction = tl.cast(0, tl.uint64)
+            correction = tl.cast(0, tl.uint64)
+            # dispatch to the right decoder e.g., X/Z CSS code
+            for i in tl.static_range(len(decoder_fns)):
+                if decoder_id == i:
+                    correction = decoder_fns[i](syndrome)
 
             out = handoff_u64_ptr + idx * HANDOFF_SLOT_WORDS
             tl.store(out, correction, cache_modifier=".wt")
@@ -104,3 +87,6 @@ def _persistent_css_decoder_kernel(
             )
 
             cursor += 1
+
+
+_persistent_css_decoder_kernel = _persistent_decoder_kernel
