@@ -410,11 +410,15 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-        new_op = (
-            qp.exp(gen, 1j * list(op.dynamic_args.values())[0])
-            if isinstance(op, Operator2)
-            else qp.exp(gen, 1j * op.data[0])
-        )
+
+        if isinstance(op, qp.ops.op_math.symbolicop2.SymbolicOp2):
+            op_data = list(op.base.dynamic_args.values())[0]
+        elif isinstance(op, Operator2):
+            op_data = list(op.dynamic_args.values())[0]
+        else:
+            op_data = op.data[0]
+
+        new_op = qp.exp(gen, 1j * op_data)
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
