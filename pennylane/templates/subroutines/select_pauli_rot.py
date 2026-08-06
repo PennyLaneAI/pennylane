@@ -122,7 +122,7 @@ class SelectPauliRot(Operator2):
             angles, control_wires=control_wires, target_wire=target_wire, rot_axis=rot_axis
         )
 
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def __abstract_init__(self, angles, control_wires, target_wire, rot_axis):
         if math.shape(angles)[-1] != 2 ** len(control_wires):
             raise ValueError("Number of angles must be 2^(len(control_wires))")
@@ -137,7 +137,7 @@ class SelectPauliRot(Operator2):
         return super().__abstract_init__(angles, control_wires, target_wire, rot_axis)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
     num_wires = len(control_wires) + 1
