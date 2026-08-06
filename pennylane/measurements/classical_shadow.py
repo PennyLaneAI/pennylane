@@ -467,7 +467,7 @@ class ShadowExpvalMP(MeasurementTransform):
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
-        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel# tach-ignore
+        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
             ClassicalShadow,
         )
 
