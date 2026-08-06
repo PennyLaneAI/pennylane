@@ -703,12 +703,10 @@ def flip_control_adjoint(
     work_wires,
     work_wire_type,
     base,
-    wires=None,
     **__,
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    control = wires[: len(control_wires)] if wires is not None else control_wires
     # Use ``qp.ctrl`` (rather than a generic ``ControlledOp2``) so that a custom controlled op
     # (e.g. ``ctrl(U1) -> ControlledPhaseShift``) is produced. This keeps the applied op type in
     # sync with ``_flip_control_adjoint_resource`` (which also dispatches via ``qp.ctrl``); a
@@ -717,7 +715,7 @@ def flip_control_adjoint(
     qp.adjoint(
         qp.ctrl(
             base.base,
-            control=control,
+            control=control_wires,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,

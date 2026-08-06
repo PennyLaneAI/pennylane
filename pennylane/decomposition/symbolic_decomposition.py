@@ -349,9 +349,8 @@ def _flip_control_adjoint_resource(
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-    # ``controlled_resource_rep`` may return either a ``CompressedResourceOp`` (legacy ops) or
-    # an abstract ``Operator2`` instance (e.g. ``ControlledPhaseShift``). ``_adjoint_abstract``
-    # handles both representations.
+    # ``controlled_resource_rep`` returns a ``CompressedResourceOp`` here; ``_adjoint_abstract``
+    # wraps it into the corresponding adjoint resource representation.
     return {_adjoint_abstract(inner_rep): 1}
 
 
