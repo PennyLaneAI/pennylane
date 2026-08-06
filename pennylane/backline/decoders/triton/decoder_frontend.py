@@ -232,4 +232,3 @@ def _make_css_decoder(h: np.ndarray, *, postprocess: str, niter: int, prob: floa
         return _decode_one(syndrome, h, postprocess=postprocess, prob=prob, NITER=niter)
 
     return decode
-
