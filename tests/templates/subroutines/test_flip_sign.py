@@ -131,6 +131,20 @@ class TestFlipSign:
         with pytest.raises(ValueError, match="At least one wire is required."):
             qp.FlipSign(state, wires=wires)
 
+    @pytest.mark.parametrize(
+        "state, wires, expected_wires",
+        [
+            (1, "", [""]),
+            (1, [""], [""]),
+            ([1, 0], ["", "a"], ["", "a"]),
+        ],
+    )
+    def test_empty_string_wire_label(self, state, wires, expected_wires):
+        """Test that ``""`` is a valid wire label, as it is for other PennyLane
+        operators. This was not allowed before porting to Operator2."""
+        op = qp.FlipSign(state, wires=wires)
+        assert op.wires == Wires(expected_wires)
+
     @pytest.mark.jax
     def test_jax_jit(self):
         import jax

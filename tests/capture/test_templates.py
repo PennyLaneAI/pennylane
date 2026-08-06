@@ -1767,9 +1767,15 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Superposition(**kwargs))
 
-    @pytest.mark.parametrize("n, wires", [(7, [0, 3, 2]), (np.array([1, 0, 0]), [0, 1, 2])])
-    def test_flip_sign(self, n, wires):
-        """Test the primitive bind call of BasisRotation."""
+    @pytest.mark.parametrize(
+        "n, wires, expected_state",
+        [
+            (7, [0, 3, 2], (1, 1, 1)),
+            (np.array([1, 0, 0]), [0, 1, 2], (1, 0, 0)),
+        ],
+    )
+    def test_flip_sign(self, n, wires, expected_state):
+        """Test the primitive bind call of FlipSign."""
 
         def qfunc(wires):
             qp.FlipSign(n, wires)
@@ -1787,6 +1793,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        # The canonicalized ``state`` is a static parameter that must survive capture
+        state_values, _ = eqn.params["state"]
+        assert tuple(int(bit) for bit in state_values) == expected_state
 
     def test_qft(self):
         """Test the primitive bind call of QFT."""
