@@ -162,7 +162,7 @@ class ImportanceConfig:
        is modified to include the convergence history."""
 
 
-def perturbation_error(
+def perturbation_error(  # pylint: disable=too-many-branches
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
     state: TrotterState,
@@ -226,7 +226,6 @@ def perturbation_error(
     >>> print(errors)
      defaultdict(<class 'int'>, {3: np.complex128(0.9189251160920877j)})
     """
-    # pylint: disable=too-many-branches
 
     if not product_formula.symbol_set.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")

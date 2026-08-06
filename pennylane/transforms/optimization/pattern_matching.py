@@ -483,7 +483,7 @@ def _not_fixed_qubits(n_qubits_circuit, exclude, length):
         yield list(sublist)
 
 
-def _first_match_qubits(node_c, node_p, n_qubits_p):
+def _first_match_qubits(node_c, node_p, n_qubits_p):  # pylint: disable=too-many-branches
     """
     Returns the list of qubits for circuit given the first match, the unknown qubit are
     replaced by -1.
@@ -494,7 +494,6 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     Returns:
         list: list of qubits to consider in circuit (with specific order).
     """
-    # pylint: disable=too-many-branches
 
     first_match_qubits = []
 
@@ -1092,11 +1091,11 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-pub
 
         return candidates_indices
 
-    def run_backward_match(self):
+    def run_backward_match(self):  # pylint: disable=too-many-branches,too-many-statements
         """Run the backward match algorithm and returns the list of matches given an initial match, a forward
         scenario and a circuit qubits configuration.
         """
-        # pylint: disable=too-many-branches,too-many-statements,too-many-nested-blocks
+        # pylint: disable=too-many-nested-blocks
         match_store_list = []
 
         counter = 1

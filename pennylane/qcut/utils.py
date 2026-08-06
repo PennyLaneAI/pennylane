@@ -533,7 +533,7 @@ def _remove_existing_cuts(graph):
     return uncut_graph
 
 
-def fragment_graph(graph):
+def fragment_graph(graph):  # pylint: disable=too-many-branches
     """
     Fragments a graph into a collection of subgraphs as well as returning
     the communication (`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__)
@@ -592,7 +592,6 @@ def fragment_graph(graph):
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e27f0>],
      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e26a0>)
     """
-    # pylint: disable=too-many-branches
 
     graph_copy = graph.copy()
 

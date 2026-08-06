@@ -210,7 +210,7 @@ def _get_symbol(i):
     return string.ascii_letters[i]
 
 
-def contract_tensors(
+def contract_tensors(  # pylint: disable=too-many-branches
     tensors: Sequence,
     communication_graph,
     prepare_nodes: Sequence[Sequence[PrepareNode]],
@@ -295,7 +295,7 @@ def contract_tensors(
     >>> qp.qcut.contract_tensors(tensors, graph, prep, meas)
     38
     """
-    # pylint: disable=too-many-branches,import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     if use_opt_einsum:
         try:
             from opt_einsum import contract, get_symbol

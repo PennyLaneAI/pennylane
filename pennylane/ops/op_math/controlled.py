@@ -1047,9 +1047,9 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     )
 
 
+# pylint: disable-next=too-many-return-statements
 def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     """Custom handling for decomposing a controlled operation"""
-    # pylint: disable=too-many-return-statements
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
     ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()

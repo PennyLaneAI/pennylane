@@ -319,8 +319,8 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
     return n_select_work_wires
 
 
+# pylint: disable-next=too-many-branches
 def _qrom_decomposition_resources(data, control_wires, target_wires, work_wires, clean):
-    # pylint: disable=too-many-branches
 
     num_bitstrings = len(data)
     num_control_wires = len(control_wires)

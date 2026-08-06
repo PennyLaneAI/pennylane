@@ -53,9 +53,8 @@ def _assert_legacy_namespace(attrs, *names):
         assert f"qml.data.{name}" in attrs
 
 
-def _legacy_h2_dataset_bind():
+def _legacy_h2_dataset_bind():  # pylint: disable=too-many-statements
     """Create a hardcoded H2-like dataset using the legacy namespace."""
-    # pylint: disable=too-many-statements
     bind = hdf5.create_group()
     bind.attrs["qml.data.type_id"] = "dataset"
     bind.attrs["qml.data.data_name"] = "qchem"

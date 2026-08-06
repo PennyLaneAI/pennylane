@@ -299,13 +299,12 @@ class SProd(ScalarSymbolicOp):
         return SProd(scalar=math.conjugate(self.scalar), base=qp.adjoint(self.base))
 
     @handle_recursion_error
-    def simplify(self) -> Operator:
+    def simplify(self) -> Operator:  # pylint: disable=too-many-return-statements
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
             .Operator: simplified operator
         """
-        # pylint: disable=too-many-return-statements
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()

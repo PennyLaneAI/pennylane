@@ -30,7 +30,7 @@ from pennylane.workflow.qnode import _make_execution_config
 
 
 @transform
-def add_noise(tape, noise_model, level="user"):
+def add_noise(tape, noise_model, level="user"):  # pylint: disable=too-many-branches
     """Insert operations according to a provided noise model.
 
     Circuits passed through this quantum transform will be updated to apply the
@@ -244,7 +244,6 @@ def add_noise(tape, noise_model, level="user"):
         )
 
     """
-    # pylint: disable=too-many-branches
     if not hasattr(noise_model, "model_map") or not hasattr(noise_model, "metadata"):
         raise ValueError(
             f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."

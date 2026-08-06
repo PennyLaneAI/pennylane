@@ -1158,7 +1158,8 @@ class TestToBloqDecomposition:
 
     def test_initialization_with_tuple(self, qubits, dtypes):
         """Tests standard initialization with a tuple of qubits."""
-        # pylint: disable=redefined-outer-name,protected-access
+        # pylint: disable=redefined-outer-name
+        # pylint: disable=protected-access
         q0, q1 = qubits
         _, dtype_uint = dtypes
         qubits_tuple = (q0, q1)

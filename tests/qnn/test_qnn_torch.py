@@ -670,12 +670,12 @@ class TestTorchLayerIntegration:
     @pytest.mark.parametrize("dtype", ["float32", "float64"])
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
-    # pylint: disable-next=redefined-outer-name
     def test_step_module(self, module, batch_size, n_qubits, output_dim, dtype):
         """Test if a module that includes TorchLayers can perform one optimization step. This
         test checks that some of the parameters in the module are different after one step.
         The module is composed of two TorchLayers sandwiched between Linear neural network layers,
         and the dataset is simply input and output vectors of zeros."""
+        # pylint: disable=redefined-outer-name
         if dtype == "float32":
             dtype = torch.float32
         else:
@@ -702,10 +702,10 @@ class TestTorchLayerIntegration:
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    # pylint: disable-next=redefined-outer-name
     def test_module_gradients(self, module, output_dim, n_qubits, get_circuit):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the module"""
+        # pylint: disable=redefined-outer-name
         _, w = get_circuit
 
         x = torch.zeros((2, n_qubits))
@@ -721,9 +721,10 @@ class TestTorchLayerIntegration:
         assert len(gradients) == 2 * len(w) + 6  # six parameters come from classical layers
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_module_state_dict(self, module, get_circuit):  # pylint: disable=redefined-outer-name
+    def test_module_state_dict(self, module, get_circuit):
         """Test if the state dictionary output by the module contains all the expected trainable
         parameters"""
+        # pylint: disable=redefined-outer-name
         _, w = get_circuit
 
         state_dict = module.state_dict()

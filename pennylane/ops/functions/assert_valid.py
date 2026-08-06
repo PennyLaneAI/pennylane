@@ -215,9 +215,9 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
+# pylint: disable-next=too-many-branches
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
-    # pylint: disable=too-many-branches
 
     params, args, kwargs = _get_decomp_args(op)
 

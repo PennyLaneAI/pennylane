@@ -696,6 +696,7 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
     return tapes, ids
 
 
+# pylint: disable-next=too-many-statements
 def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
@@ -719,7 +720,6 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
         list[pennylane.tape.QuantumTape]: Tapes to evaluate the metric tensor
         callable: processing function to obtain the metric tensor from the tape results
     """
-    # pylint: disable=too-many-statements
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
     (

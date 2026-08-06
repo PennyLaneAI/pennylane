@@ -251,7 +251,7 @@ class EllipseState:
         e2.b *= (-1) ** k
         return EllipseState(e1, e2), k
 
-    def reduce_skew(self) -> tuple[GridOp, EllipseState]:
+    def reduce_skew(self) -> tuple[GridOp, EllipseState]:  # pylint: disable=too-many-branches
         """Reduce the skew of the state.
 
         This uses Step Lemma described in Appendix A.6 of arXiv:1403.2975.
@@ -260,7 +260,6 @@ class EllipseState:
             tuple[GridOp, EllipseState]: A tuple containing the grid operation
                 and the state with reduced skew.
         """
-        # pylint: disable=too-many-branches
         if any(not e.positive_semi_definite for e in (self.e1, self.e2)):  # pragma: no cover
             raise ValueError("Ellipse is not positive semi-definite")
 
@@ -714,7 +713,7 @@ class GridIterator:
             if e1.contains(x1, y1) and e2.contains(x2, y2):
                 yield solution
 
-    def solve_upright_problem(
+    def solve_upright_problem(  # pylint: disable=too-many-branches
         self,
         state: EllipseState,
         bbox1: tuple[float],
@@ -739,7 +738,6 @@ class GridIterator:
         Returns:
             Iterable[ZOmega]: The list of solutions to the upright grid problem for two rectangles.
         """
-        # pylint: disable=too-many-branches
         e1, e2 = state.e1, state.e2
         Ax0, Ax1, Ay0, Ay1 = bbox1
         Bx0, Bx1, By0, By1 = bbox2

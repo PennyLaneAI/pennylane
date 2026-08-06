@@ -500,7 +500,6 @@ class MeasEq(BooleanFn):
                 )
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
-        # pylint: disable-next=protected-access
         mp_ops = list(getattr(op, "__name__", op.__class__.__name__) for op in self.condition)
         mp_names = [
             repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)

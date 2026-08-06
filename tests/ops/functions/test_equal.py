@@ -694,9 +694,8 @@ class TestEqual:
         )
 
     @pytest.mark.all_interfaces
-    def test_equal_op_remaining(self):
+    def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
         """Test optional arguments are working"""
-        # pylint: disable=too-many-statements
         wire = 0
 
         import jax

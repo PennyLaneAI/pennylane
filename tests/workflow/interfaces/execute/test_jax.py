@@ -300,9 +300,9 @@ class TestJaxExecuteIntegration:
         expected = [-jnp.cos(y) * jnp.sin(x), -jnp.cos(x) * jnp.sin(y)]
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
+    # pylint: disable-next=too-many-statements
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
         """Test that tapes wit different can be executed and differentiated."""
-        # pylint: disable=too-many-statements
 
         device = get_device(device_name, seed)
 

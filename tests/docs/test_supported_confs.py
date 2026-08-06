@@ -109,8 +109,7 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_k
 
     @qp.set_shots(shots)
     @qp.qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
-    def circuit(x):
-        # pylint: disable=too-many-return-statements
+    def circuit(x):  # pylint: disable=too-many-return-statements
         for i, wire_label in enumerate(wire_labels[:-1]):
             qp.Hadamard(wires=wire_label)
             qp.RX(x[i], wires=wire_label)
@@ -189,6 +188,7 @@ def get_density_matrix_cost_fn(circuit):
     return cost_fn
 
 
+# pylint: disable-next=too-many-return-statements
 def compute_gradient(x, interface, circuit, return_type, complex=False):
     """Return an interface-specific gradient or jacobian using the
     provided parameters:
@@ -204,7 +204,6 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
     the jacobian of the state directly. The latter is tested by the
     StateVector return type.
     """
-    # pylint: disable=too-many-return-statements
     if return_type == "StateCost":
         cost_fn = get_state_cost_fn(circuit)
     elif return_type == "DensityMatrix":

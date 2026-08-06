@@ -484,14 +484,13 @@ def split_non_commuting(
     return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
 
 
-def _split_ham_with_grouping(
+def _split_ham_with_grouping(  # pylint: disable=too-many-branches
     tape: qp.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
 ):
     """Split a tape measuring a single Sum and group commuting observables.
     It also assigns to each new tape the correct number of shots according to the
     shot distribution function defining the strategy for shot allocation.
     """
-    # pylint: disable=too-many-branches
 
     obs = tape.measurements[0].obs
     if obs.grouping_indices is None:

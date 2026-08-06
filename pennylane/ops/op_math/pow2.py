@@ -149,7 +149,7 @@ class Pow2(SymbolicOp2):
     @property
     @override
     # pylint: disable-next=invalid-overridden-method,arguments-differ
-    def has_decomposition(self):  # pylint: disable=invalid-overridden-method
+    def has_decomposition(self):
 
         if isinstance(self.z, int) and self.z > 0:
             return True
@@ -226,7 +226,7 @@ class Pow2(SymbolicOp2):
     @property
     @override
     # pylint: disable-next=invalid-overridden-method,arguments-differ
-    def has_generator(self):  # pylint: disable=invalid-overridden-method
+    def has_generator(self):
         return self.base.has_generator
 
     @override
@@ -251,7 +251,7 @@ class Pow2(SymbolicOp2):
     @property
     @override
     # pylint: disable-next=invalid-overridden-method,arguments-differ
-    def has_adjoint(self):  # pylint: disable=invalid-overridden-method
+    def has_adjoint(self):
         return isinstance(self.z, int)
 
     @override

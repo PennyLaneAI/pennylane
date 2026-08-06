@@ -52,7 +52,7 @@ def _update_resource_dict(
 PBCDepth = namedtuple("PBCDepth", ["any_commuting_depth", "qubit_disjoint_depth"])
 
 
-def _mlir_resources_to_specs_resources(
+def _mlir_resources_to_specs_resources(  # pylint: disable=too-many-branches
     all_data: dict[str, Any],
     focus: str,
     fn_resources: dict[str, SpecsResources | None],
@@ -81,7 +81,6 @@ def _mlir_resources_to_specs_resources(
             names in the output. (modified in-place by this function)
     """
 
-    # pylint: disable=too-many-branches
     # This method would not benefit from being broken up further, the parsing logic just requires
     # several branches
 

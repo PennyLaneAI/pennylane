@@ -363,7 +363,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         return cls._capabilities
 
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=unused-argument,too-many-branches
     def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -387,7 +387,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         Returns:
             array[float]: measured value(s)
         """
-        # pylint: disable=too-many-branches
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables

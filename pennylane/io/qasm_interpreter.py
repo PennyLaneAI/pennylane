@@ -89,6 +89,7 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     )  # pragma: no cover
 
 
+# pylint: disable-next=too-many-branches
 def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     """
     Evaluates an assignment.
@@ -102,7 +103,6 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     Returns:
         any: The updated left hand side.
     """
-    # pylint: disable=too-many-branches
     match operator:
         case "=":
             lhs = value
@@ -137,6 +137,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
+# pylint: disable-next=too-many-return-statements,too-many-branches
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
@@ -147,7 +148,6 @@ def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
          rhs (any): the second operand.
          line (int): the line number the operation occurs on.
     """
-    # pylint: disable=too-many-return-statements,too-many-branches
     match operator:
         case "==":
             return lhs == rhs

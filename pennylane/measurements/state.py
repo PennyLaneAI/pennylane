@@ -58,8 +58,8 @@ class StateMP(StateMeasurement):
         num_wires = len(self.wires) if self.wires else num_device_wires
         return (2**num_wires,)
 
-    # pylint: disable-next=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):
+        # pylint: disable=redefined-outer-name
         def cast_to_complex(state):
             # pylint: disable=redefined-outer-name
             dtype = str(state.dtype)

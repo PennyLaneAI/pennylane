@@ -914,7 +914,7 @@ class DefaultClifford(Device):
 
         return entropy / math.log(log_base)
 
-    def _measure_probability(self, meas, _, **kwargs):
+    def _measure_probability(self, meas, _, **kwargs):  # pylint: disable=too-many-branches
         r"""Measure the probability of each computational basis state.
 
         Computes the probability for each of the computational basis state vector iteratively
@@ -936,7 +936,6 @@ class DefaultClifford(Device):
            :math:`|0\rangle` / :math:`\rangle`1`. We identify this as a `branching` scenario. We half the
            current probability and post-select based on the `i`th index of the basis state we are iterating.
         """
-        # pylint: disable=too-many-branches
         circuit = kwargs.get("circuit")
 
         # Set the target states

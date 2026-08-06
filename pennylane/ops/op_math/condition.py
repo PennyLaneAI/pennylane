@@ -128,8 +128,7 @@ class Conditional(SymbolicOp, Operation):
         then_op (Operation): the PennyLane operation to apply conditionally
     """
 
-    def __init__(self, expr, then_op: Operation):
-        # pylint: disable=super-init-not-called
+    def __init__(self, expr, then_op: Operation):  # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op

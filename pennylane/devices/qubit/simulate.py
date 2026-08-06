@@ -391,7 +391,7 @@ def simulate(
     )
 
 
-def simulate_tree_mcm(
+def simulate_tree_mcm(  # pylint: disable=too-many-branches,too-many-statements
     circuit: QuantumScript,
     debugger=None,
     **execution_kwargs,
@@ -418,7 +418,6 @@ def simulate_tree_mcm(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
-    # pylint: disable=too-many-branches,too-many-statements
     PROBS_TOL = 0.0
     interface = execution_kwargs.get("interface", None)
 

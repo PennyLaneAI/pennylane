@@ -641,6 +641,7 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
+# pylint: disable-next=too-many-return-statements
 def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
 
@@ -655,7 +656,6 @@ def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     Returns:
         tensor_like: output state
     """
-    # pylint: disable=too-many-return-statements
     n_dim = math.ndim(state)
     state_interface = math.get_interface(state)
 

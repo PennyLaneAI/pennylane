@@ -571,6 +571,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
+    # pylint: disable-next=too-many-statements
     def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
@@ -617,7 +618,6 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
-        # pylint: disable=too-many-statements
         measurements = circuit.measurements
         results = []
 
