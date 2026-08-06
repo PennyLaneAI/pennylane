@@ -27,9 +27,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
-
-# pylint: disable-next=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import while_loop_prim
 from tests.capture.capture_utils import extract_all_primitives
 
 

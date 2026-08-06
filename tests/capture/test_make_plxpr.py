@@ -21,16 +21,15 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.capture import make_plxpr
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
-# must be below jax importorskip
-# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports
+# pylint: disable=wrong-import-position,wrong-import-order
 from jax import numpy as jnp
 
+from pennylane.capture import make_plxpr
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from tests.capture.capture_utils import extract_all_primitives
 
