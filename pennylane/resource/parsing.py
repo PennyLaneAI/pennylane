@@ -223,6 +223,8 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
         pbc_depth = extra.pop("pbc_depth")
         kwargs["any_commuting_depth"] = pbc_depth.pop("any_commuting_depth")
         kwargs["qubit_disjoint_depth"] = pbc_depth.pop("qubit_disjoint_depth")
+        # Pylint gets confused by the dynamic updates to kwargs here
+        # pylint: disable=missing-kwoa
         return PBCSpecsResources(
             **kwargs,
             extra=extra,
