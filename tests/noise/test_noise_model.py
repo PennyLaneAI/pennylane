@@ -154,11 +154,10 @@ class TestNoiseModels:
 
     def test_eq_noise_models(self):
         """Test that noise models can be subtracted and manipulated"""
-        # pylint: disable=unused-argument
 
         fcond = qp.noise.op_eq(qp.X) | qp.noise.op_eq(qp.Y)
 
-        def noise(op, **kwargs):
+        def noise(op, **kwargs):  # pylint: disable=unused-argument
             qp.RX(op.parameters[0] * 0.05, op.wires)
 
         # explicit construction

@@ -279,13 +279,12 @@ class TestAddNoiseInterface:
 
     def test_add_noise_with_non_qwc_obs_and_mid_meas(self):
         """Test that the add_noise transform catches and reports errors from the enclosed function."""
-        # pylint: disable=unused-argument
 
         dev = qp.device("default.qubit", wires=5)
 
         fcond = qp.noise.wires_in([0, 1])
 
-        def noise(op, **kwargs):
+        def noise(op, **kwargs):  # pylint: disable=unused-argument
             qp.CNOT(wires=[1, 0])
             qp.CRX(kwargs["noise_param"], wires=[0, 1])
 

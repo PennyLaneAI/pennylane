@@ -825,13 +825,13 @@ def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires
 # Decomposition rule with dynamic work wire allocation
 
 
+# pylint: disable-next=unused-argument
 def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
-    # pylint: disable=unused-argument
     return {"zeroed": max(math.ceil_log2(num_entries) - 1, 1)}
 
 
+# pylint: disable-next=unused-argument
 def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires):
-    # pylint: disable=unused-argument
     if num_entries == 1:
         return False  # Just use _pui_state_prep_provided_work_wires, we don't need work wires
     return num_work_wires < max(math.ceil_log2(num_entries) - 1, 1)

@@ -56,10 +56,9 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _expand_fn(
+def _expand_fn(  # pylint: disable=unused-argument
     tape: QuantumScript, postselect_mode=None, **_
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    # pylint: disable=unused-argument
     if not any(is_mcm(o) for o in tape.operations):
         return (tape,), null_postprocessing
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)

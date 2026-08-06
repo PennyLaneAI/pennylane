@@ -485,7 +485,7 @@ class IntegerComparator(Operation):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
     @staticmethod
-    def compute_matrix(
+    def compute_matrix(  # pylint: disable=unused-argument
         control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -525,7 +525,6 @@ class IntegerComparator(Operation):
          [0. 0. 0. 0. 0. 0. 1. 0.]
          [0. 0. 0. 0. 0. 0. 0. 1.]]
         """
-        # pylint: disable=unused-argument
 
         if value is None:
             raise ValueError("The value to compare to must be specified.")
@@ -555,7 +554,7 @@ class IntegerComparator(Operation):
         return mat
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=unused-argument
         value: int,
         wires: WiresLike,
         geq: bool = True,
@@ -587,7 +586,6 @@ class IntegerComparator(Operation):
         3: ─╰X────╰X────╰X────┤
 
         """
-        # pylint: disable=unused-argument
 
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")

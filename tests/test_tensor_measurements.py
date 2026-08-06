@@ -380,9 +380,9 @@ def tensor_product(observables):
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 
+    # pylint: disable-next=unused-argument
     def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol_stochastic, seed):
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
-        # pylint: disable=unused-argument
         dev = qp.device("default.qubit", wires=2, seed=seed)
 
         @qp.set_shots(1_000_000)

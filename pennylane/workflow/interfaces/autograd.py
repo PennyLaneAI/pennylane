@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def autograd_execute(
+def autograd_execute(  # pylint: disable=unused-argument
     tapes: QuantumScriptBatch,
     execute_fn: ExecuteFn,
     jpc: qp.workflow.jacobian_products.JacobianProductCalculator,
@@ -130,7 +130,6 @@ def autograd_execute(
     -0.0998...
 
     """
-    # pylint: disable=unused-argument
     tapes = tuple(tapes)
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
@@ -160,7 +159,7 @@ def _to_autograd(result: ResultBatch) -> ResultBatch:
 
 
 @autograd.extend.primitive
-def _execute(
+def _execute(  # pylint: disable=unused-argument
     parameters,
     tapes,
     execute_fn,
@@ -177,11 +176,10 @@ def _execute(
             for the input tapes.
 
     """
-    # pylint: disable=unused-argument
     return _to_autograd(execute_fn(tapes))
 
 
-def vjp(
+def vjp(  # pylint: disable=unused-argument
     ans,
     parameters,
     tapes,
@@ -204,7 +202,6 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
-    # pylint: disable=unused-argument
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given

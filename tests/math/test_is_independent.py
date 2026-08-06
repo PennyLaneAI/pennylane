@@ -94,14 +94,12 @@ args_overlooked_lambdas = [
 ]
 
 
-def const_circuit(x, y):
-    # pylint: disable=unused-argument
+def const_circuit(x, y):  # pylint: disable=unused-argument
     qp.RX(0.1, wires=0)
     return qp.expval(qp.PauliZ(0))
 
 
-def dependent_circuit(x, y, z):
-    # pylint: disable=unused-argument
+def dependent_circuit(x, y, z):  # pylint: disable=unused-argument
     qp.RX(0.1, wires=0)
     qp.RY(y / 2, wires=0)
     qp.RZ(qp.math.sin(z), wires=0)

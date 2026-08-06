@@ -397,8 +397,7 @@ def dummy_rz_decomp_1(phi, wires):
 
 
 @qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
-def dummy_rz_decomp_2(phi, wires):
-    # pylint: disable=unused-argument
+def dummy_rz_decomp_2(phi, wires):  # pylint: disable=unused-argument
     qp.H(wires)
 
 

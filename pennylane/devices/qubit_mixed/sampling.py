@@ -110,7 +110,7 @@ def _measure_with_samples_diagonalizing_gates(  # pylint: disable=too-many-argum
     return processed_samples[0]
 
 
-def _measure_classical_shadow(  # pylint: disable=too-many-arguments
+def _measure_classical_shadow(  # pylint: disable=too-many-arguments,unused-argument
     mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
@@ -138,7 +138,6 @@ def _measure_classical_shadow(  # pylint: disable=too-many-arguments
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    # pylint: disable=unused-argument
 
     # the list contains only one element based on how we group measurements
     mp = mp[0]

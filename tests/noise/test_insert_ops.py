@@ -510,8 +510,7 @@ def test_insert_template():
 def test_insert_transform_works_with_non_qwc_obs():
     """Test that the insert transform catches and reports errors from the enclosed function."""
 
-    def op(noise_param, wires):
-        # pylint: disable=unused-argument
+    def op(noise_param, wires):  # pylint: disable=unused-argument
         qp.CRX(noise_param, wires=[0, 1])
         qp.CNOT(wires=[1, 0])
 

@@ -29,7 +29,6 @@ has_jax = find_spec("jax") is not None
 
 @lru_cache
 def _get_vjp_prim():
-    # pylint: disable=unused-argument
     if not has_jax:  # pragma: no cover
         return None
 
@@ -40,7 +39,7 @@ def _get_vjp_prim():
     vjp_prim.prim_type = "higher_order"
 
     @vjp_prim.def_impl
-    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
+    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
         params = args[: len(jaxpr.invars)]
         dy = list(args[len(jaxpr.invars) :])
 
@@ -52,7 +51,7 @@ def _get_vjp_prim():
         return res + [dparams[i] for i in argnums]
 
     @vjp_prim.def_abstract_eval
-    def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
+    def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
         return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
 
     return vjp_prim

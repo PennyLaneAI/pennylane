@@ -2010,7 +2010,7 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_hermitian(
+    def test_hermitian(  # pylint: disable=unused-argument
         self, dev_name, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface, seed
     ):
         """Test that the jax device works with qp.Hermitian and jitting even
@@ -2019,7 +2019,6 @@ class TestJIT:
         Note: before a fix, the cases of shots=10 and shots=1000 were failing due
         to different reasons, hence the parametrization in the test.
         """
-        # pylint: disable=unused-argument
         if dev_name == "reference.qubit":
             pytest.xfail("diagonalize_measurements do not support Hermitians (sc-72911)")
 
@@ -2048,12 +2047,11 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_probs_obs_none(
+    def test_probs_obs_none(  # pylint: disable=unused-argument
         self, dev_name, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface, seed
     ):
         """Test that the jax device works with qp.probs, a MeasurementProcess
         that has obs=None even when shots>0."""
-        # pylint: disable=unused-argument
         if diff_method in ["backprop", "adjoint"]:
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 

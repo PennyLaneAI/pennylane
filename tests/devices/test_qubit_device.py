@@ -1077,11 +1077,10 @@ class TestMarginalProb:
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
-    def test_correct_marginals_returned_wires_none(
+    def test_correct_marginals_returned_wires_none(  # pylint: disable=unused-argument
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that passing wires=None simply returns the original probability."""
-        # pylint: disable=unused-argument
         num_wires = int(np.log2(len(probs)))
         dev = mock_qubit_device_with_original_statistics(wires=num_wires)
         dev.num_wires = num_wires
@@ -1147,12 +1146,12 @@ class TestMarginalProb:
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
-    def test_correct_broadcasted_marginals_returned_wires_none(  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_correct_broadcasted_marginals_returned_wires_none(  # pylint: disable=unused-argument
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, num_wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
-        # pylint: disable=unused-argument
         dev = mock_qubit_device_with_original_statistics(num_wires)
 
         res = dev.marginal_prob(probs, wires=None)

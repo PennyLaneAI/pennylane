@@ -703,11 +703,10 @@ def pulse_odegen(
 
 
 @pulse_odegen.custom_qnode_transform
-def pulse_odegen_qnode_wrapper(self, qnode, targs, tkwargs):
+def pulse_odegen_qnode_wrapper(self, qnode, targs, tkwargs):  # pylint: disable=unused-argument
     """A custom QNode wrapper for the gradient transform :func:`~.pulse_odegen`.
     It raises an error, so that applying ``pulse_odegen`` to a ``QNode`` directly
     is not supported.
     """
-    # pylint: disable=unused-argument
     transform_name = "pulse generator parameter-shift"
     raise_pulse_diff_on_qnode(transform_name)

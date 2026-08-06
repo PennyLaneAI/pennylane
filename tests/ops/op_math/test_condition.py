@@ -120,8 +120,7 @@ class TestCond:
             qp.RY(x, wires=1)
             qp.PauliZ(1)
 
-        def g(x):
-            # pylint: disable=unused-argument
+        def g(x):  # pylint: disable=unused-argument
             qp.PauliY(1)
 
         tape = getattr(self, tape)(f, g, r, terminal_measurement)

@@ -269,6 +269,7 @@ def _is_empty_or_all_true(control_values):
 
 
 @functools.singledispatch
+# pylint: disable-next=unused-argument
 def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_type) -> Operator:
     """Dispatch a ``qp.ctrl`` call to return a custom operator.
 
@@ -294,7 +295,6 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
     CY(wires=[1, 0])
 
     """
-    # pylint: disable=unused-argument
     return NotImplemented
 
 

@@ -619,7 +619,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         evaluations and reduce the number of calls to :math:`5`.
 
     """
-    # pylint: disable=cell-var-from-loop,unused-argument
+    # pylint: disable=cell-var-from-loop
 
     atol = 1e-8
     ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, spectra, shifts, atol)
@@ -634,7 +634,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         interface = math.get_interface(args[0])
 
-        def constant_fn(x):
+        def constant_fn(x):  # pylint: disable=unused-argument
             """Univariate reconstruction of a constant Fourier series."""
             return f0
 

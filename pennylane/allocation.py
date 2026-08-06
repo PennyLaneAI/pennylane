@@ -59,10 +59,9 @@ else:
         raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
 
     @allocate_prim.def_abstract_eval
-    def _allocate_primitive_abstract_eval(
+    def _allocate_primitive_abstract_eval(  # pylint: disable=unused-argument
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        # pylint: disable=unused-argument
         return [AbstractQubit() for _ in range(num_wires)]
 
     deallocate_prim = QpPrimitive("deallocate")

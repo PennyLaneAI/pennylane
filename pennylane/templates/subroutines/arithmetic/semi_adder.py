@@ -365,11 +365,11 @@ def _semi_adder(x_wires, y_wires, work_wires, **_):
 add_decomps(SemiAdder, _semi_adder)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     """
-    # pylint: disable=unused-argument
     num_y_wires = base_params["num_y_wires"]
     ctrl_kwargs["num_work_wires"] += base_params["num_work_wires"] - (num_y_wires - 1)
     if num_y_wires == 1:

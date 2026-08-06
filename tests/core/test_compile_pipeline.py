@@ -781,11 +781,10 @@ class TestCompilePipelineDunders:  # pylint: disable=too-many-public-methods
     def test_str_adds_ellipses(self):
         """Tests that the string representation uses ellipses for long kwargs."""
 
-        def verbose_transform(
+        def verbose_transform(  # pylint: disable=unused-argument
             tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
-            # pylint: disable=unused-argument
             return [tape], lambda x: x
 
         _CURRENT_THRESHOLD = 50

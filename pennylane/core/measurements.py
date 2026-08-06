@@ -122,7 +122,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         return tuple(out) if isinstance(out, list) else out
 
     @classmethod
-    def _abstract_eval(
+    def _abstract_eval(  # pylint: disable=unused-argument
         cls,
         n_wires: int | None = None,
         has_eigvals=False,
@@ -154,7 +154,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         ((50,), <class 'float'>)
 
         """
-        # pylint: disable=unused-argument
         return (), float
 
     def _flatten(self):

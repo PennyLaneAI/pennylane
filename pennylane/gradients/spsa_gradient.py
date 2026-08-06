@@ -41,7 +41,7 @@ from .gradient_transform import (
 )
 
 
-def _rademacher_sampler(indices, num_params, *args, rng):
+def _rademacher_sampler(indices, num_params, *args, rng):  # pylint: disable=unused-argument
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
@@ -57,7 +57,6 @@ def _rademacher_sampler(indices, num_params, *args, rng):
         tensor_like: Vector of size ``num_params`` with non-zero entries at positions indicated
         by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
-    # pylint: disable=unused-argument
     direction = np.zeros(num_params)
     direction[indices] = rng.choice([-1, 1], size=len(indices))
     return direction

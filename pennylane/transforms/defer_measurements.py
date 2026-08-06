@@ -98,7 +98,7 @@ def null_postprocessing(results):
 
 
 @transform
-def defer_measurements(
+def defer_measurements(  # pylint: disable=unused-argument
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
@@ -268,7 +268,6 @@ def defer_measurements(
         There is only one controlled gate with only one control wire.
 
     """
-    # pylint: disable=unused-argument
     if not any(isinstance(o, MidMeasure) for o in tape.operations):
         return (tape,), null_postprocessing
 

@@ -13,8 +13,7 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
-# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
-# pylint: disable=signature-differs
+# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called,signature-differs
 
 import math
 from collections import defaultdict

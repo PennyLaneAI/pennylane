@@ -589,10 +589,9 @@ num_controls_and_num_ops = (
 class TestUnaryIterator:
     """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
 
-    def test_is_registered_with_select(self, partial):
+    def test_is_registered_with_select(self, partial):  # pylint: disable=unused-argument
         """Test that the unary iteration decomposition is registered correctly with
         pml.Select."""
-        # pylint: disable=unused-argument
         decomp = qp.list_decomps(qp.Select)[1]
         assert decomp is _select_decomp_unary
 

@@ -1275,11 +1275,10 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
     @staticmethod
-    def _get_batch_size(tensor, expected_shape, expected_size):
+    def _get_batch_size(tensor, expected_shape, expected_size):  # pylint: disable=unused-argument
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape. As QubitDevice does not natively support broadcasting,
         it always reports no batch size, that is ``batch_size=None``"""
-        # pylint: disable=unused-argument
         return None
 
     def marginal_prob(self, prob, wires=None):
@@ -1750,6 +1749,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
+    # pylint: disable-next=no-self-use
     def _get_diagonalizing_gates(self, circuit: QuantumScript) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -1764,7 +1764,6 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
-        # pylint: disable=no-self-use
         return circuit.diagonalizing_gates
 
     def _is_lightning_device(self):

@@ -843,8 +843,7 @@ def fubini_ansatz1(params, wires=None):
     qp.RX(fixed_pars[2], wires=1)
 
 
-def fubini_ansatz2(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz2(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qp.RX(fixed_pars[1], wires=0)
@@ -857,8 +856,7 @@ def fubini_ansatz2(params, wires=None):
     qp.adjoint(qp.RX(params1, wires=1))
 
 
-def fubini_ansatz3(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz3(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     params2 = params[2]
@@ -879,8 +877,7 @@ def fubini_ansatz3(params, wires=None):
     qp.RZ(params2, wires=2)
 
 
-def fubini_ansatz4(params00, params_rest, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz4(params00, params_rest, wires=None):  # pylint: disable=unused-argument
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
@@ -910,8 +907,7 @@ def fubini_ansatz7(x, wires=None):
     qp.RX(x, wires=0)
 
 
-def fubini_ansatz8(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz8(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qp.RX(fixed_pars[1], wires=[0])
@@ -1192,8 +1188,7 @@ class TestFullMetricTensor:
             assert qp.math.allclose(mt, expected)
 
 
-def diffability_ansatz_0(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_0(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RX(weights[1], wires=0)
     qp.CNOT(wires=[0, 1])
@@ -1214,8 +1209,7 @@ def expected_diag_jac_0(weights):
     )
 
 
-def diffability_ansatz_1(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_1(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RY(weights[1], wires=0)
     qp.CNOT(wires=[0, 1])
@@ -1236,8 +1230,7 @@ def expected_diag_jac_1(weights):
     )
 
 
-def diffability_ansatz_2(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_2(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RY(weights[1], wires=1)
     qp.CNOT(wires=[0, 1])

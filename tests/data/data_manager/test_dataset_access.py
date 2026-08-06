@@ -264,7 +264,7 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_success(
+    def test_load_interactive_success(  # pylint: disable=unused-argument
         self,
         mock_input,
         mock_sleep,
@@ -272,7 +272,6 @@ class TestLoadInteractive:
         side_effect,
     ):
         """Test that load_interactive succeeds."""
-        # pylint: disable=unused-argument
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
 
@@ -310,11 +309,10 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_invalid_inputs(
+    def test_load_interactive_invalid_inputs(  # pylint: disable=unused-argument
         self, mock_input, _mock_sleep, mock_load, side_effect, error_message
     ):
         """Test that load_interactive raises errors as expected."""
-        # pylint: disable=unused-argument
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
             qp.data.load_interactive()
@@ -337,7 +335,7 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_qchem(
+    def test_load_interactive_qchem(  # pylint: disable=unused-argument
         self,
         mock_input,
         mock_sleep,
@@ -345,7 +343,6 @@ class TestLoadInteractive:
         side_effect,
     ):
         """Test that load_interactive succeeds."""
-        # pylint: disable=unused-argument
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
 

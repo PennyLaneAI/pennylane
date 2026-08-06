@@ -44,7 +44,6 @@ def _get_jacobian_prim():
     """Create a primitive for gradient computations.
     This primitive is used when capturing ``qp.grad``.
     """
-    # pylint: disable=unused-argument,too-many-arguments
 
     if not has_jax:  # pragma: no cover
         return None
@@ -54,6 +53,7 @@ def _get_jacobian_prim():
     jacobian_prim.prim_type = "higher_order"
 
     @jacobian_prim.def_impl
+    # pylint: disable-next=unused-argument,too-many-arguments
     def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid value '{method=}' without QJIT.")
@@ -71,6 +71,7 @@ def _get_jacobian_prim():
         return jax.tree_util.tree_leaves(res)
 
     @jacobian_prim.def_abstract_eval
+    # pylint: disable-next=unused-argument,too-many-arguments
     def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")

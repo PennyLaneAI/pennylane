@@ -1660,7 +1660,7 @@ if has_jax:
     operator_p.prim_type = "operator"
 
     @operator_p.def_impl
-    def _op_impl(  # pylint: disable=too-many-arguments
+    def _op_impl(  # pylint: disable=too-many-arguments,unused-argument
         *all_args,
         op_cls,
         wire_lens,
@@ -1671,7 +1671,6 @@ if has_jax:
         adjoint=False,
         **static_args,
     ):
-        # pylint: disable=unused-argument
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 

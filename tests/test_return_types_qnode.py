@@ -2008,9 +2008,8 @@ class TestIntegrationShotVectors:
         assert all(r.shape == () for r in res)
 
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, shot_vector, op, wires, device):
+    def test_probs(self, shot_vector, op, wires, device):  # pylint: disable=unused-argument
         """Test a single probability measurement."""
-        # pylint: disable=unused-argument
         dev = qp.device("default.qubit", wires=2)
         shot_vector = qp.measurements.Shots(shot_vector)
 

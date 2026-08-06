@@ -645,7 +645,7 @@ class QSVT(Operation):
         return self
 
     @staticmethod
-    def compute_matrix(*args, **kwargs):
+    def compute_matrix(*args, **kwargs):  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -660,7 +660,6 @@ class QSVT(Operation):
         Returns:
             tensor_like: matrix representation
         """
-        # pylint: disable=unused-argument
         op_list = []
         UA = kwargs["UA"]
         projectors = kwargs["projectors"]

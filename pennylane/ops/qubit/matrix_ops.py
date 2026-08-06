@@ -466,6 +466,7 @@ class DiagonalQubitUnitary(Operator2):
         super().__init__(D, wires=wires)
 
     @staticmethod
+    # pylint: disable-next=unused-argument
     def compute_matrix(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -486,7 +487,6 @@ class DiagonalQubitUnitary(Operator2):
         tensor([[ 1,  0],
                 [ 0, -1]])
         """
-        # pylint: disable=unused-argument
         D = qp.math.asarray(D)
 
         if not qp.math.is_abstract(D) and not qp.math.allclose(
@@ -501,6 +501,7 @@ class DiagonalQubitUnitary(Operator2):
         return qp.math.diag(D)
 
     @staticmethod
+    # pylint: disable-next=unused-argument
     def compute_eigvals(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -526,7 +527,6 @@ class DiagonalQubitUnitary(Operator2):
         >>> qp.DiagonalQubitUnitary.compute_eigvals(torch.tensor([1, -1]))
         tensor([ 1, -1])
         """
-        # pylint: disable=unused-argument
         D = qp.math.asarray(D)
 
         if not (

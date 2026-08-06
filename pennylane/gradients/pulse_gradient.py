@@ -855,11 +855,10 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
 
 
 @stoch_pulse_grad.custom_qnode_transform
-def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
+def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):  # pylint: disable=unused-argument
     """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
     It raises an error, so that applying ``stoch_pulse_grad`` to a ``QNode`` directly
     is not supported.
     """
-    # pylint: disable=unused-argument
     transform_name = "stochastic pulse parameter-shift"
     raise_pulse_diff_on_qnode(transform_name)

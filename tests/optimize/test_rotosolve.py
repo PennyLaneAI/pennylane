@@ -196,11 +196,10 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
-    def test_number_of_function_calls(  # pylint: disable=too-many-arguments
+    def test_number_of_function_calls(  # pylint: disable=too-many-arguments,unused-argument
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
-        # pylint: disable=unused-argument
         num_calls = 0
 
         @functools.wraps(fun)
@@ -224,12 +223,11 @@ class TestWithClassicalFunction:
         opt.step(_fun, *param, nums_frequency=nums_freq)
         assert num_calls == exp_num_calls
 
-    def test_single_step_convergence(
+    def test_single_step_convergence(  # pylint: disable=unused-argument
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
-        # pylint: disable=unused-argument
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         # Make only the first argument trainable
@@ -282,12 +280,11 @@ class TestWithClassicalFunction:
         )
         assert np.isclose(old_cost, fun(*param))
 
-    def test_full_output(
+    def test_full_output(  # pylint: disable=unused-argument
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
-        # pylint: disable=unused-argument
         param = tuple(np.array(p, requires_grad=True) for p in param)
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 

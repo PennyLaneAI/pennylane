@@ -313,10 +313,9 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
 def repeat_pow_base(base, z):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
-    # pylint: disable=unused-argument
 
     @qp.for_loop(0, z)
-    def _loop(i):
+    def _loop(i):  # pylint: disable=unused-argument
         qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter

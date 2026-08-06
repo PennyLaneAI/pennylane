@@ -115,8 +115,8 @@ class HilbertSchmidt(Operation):
     resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
-        # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
         V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
 

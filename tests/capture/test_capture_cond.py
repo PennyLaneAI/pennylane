@@ -568,15 +568,14 @@ def circuit_branches(pred, arg1, arg2):
 @qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
-    # pylint: disable=unused-argument
 
     qp.RX(0.10, wires=0)
 
-    def true_fn(arg1, arg2):
+    def true_fn(arg1, arg2):  # pylint: disable=unused-argument
         qp.RY(arg1, wires=0)
         return 7, 4.6, qp.S(wires=0), True
 
-    def false_fn(arg1, arg2):
+    def false_fn(arg1, arg2):  # pylint: disable=unused-argument
         qp.RZ(arg2, wires=0)
         return 2, 2.2, qp.T(wires=0), False
 

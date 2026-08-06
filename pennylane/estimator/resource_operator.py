@@ -208,8 +208,9 @@ class ResourceOperator(ABC):
 
     num_wires: int | None = None
 
+    # pylint: disable-next=unused-argument
     def __init__(self, *args, wires=None, **kwargs) -> None:
-        # pylint: disable=unused-argument
+
         self.wires = None
         if wires is not None:
             wires = Wires(wires)
@@ -439,9 +440,8 @@ class ResourceOperator(ABC):
     __rmatmul__ = __matmul__
 
     @classmethod
-    def tracking_name(cls, *args, **kwargs) -> str:
+    def tracking_name(cls, *args, **kwargs) -> str:  # pylint: disable=unused-argument
         r"""Returns a name used to track the operator during resource estimation."""
-        # pylint: disable=unused-argument
         return cls.__name__
 
 

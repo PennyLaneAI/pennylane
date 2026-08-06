@@ -33,7 +33,7 @@ from .tapes import _qcut_expand_fn, expand_fragment_tape, graph_to_tape, tape_to
 from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
-def _cut_circuit_expand(
+def _cut_circuit_expand(  # pylint: disable=unused-argument
     tape: QuantumScript,
     use_opt_einsum: bool = False,
     device_wires: Wires | None = None,
@@ -43,7 +43,6 @@ def _cut_circuit_expand(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations until reaching a depth that
     includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument
 
     def processing_fn(res):
         return res[0]
@@ -69,7 +68,7 @@ def _cut_circuit_expand(
 
 
 @partial(transform, expand_transform=_cut_circuit_expand)
-def cut_circuit(
+def cut_circuit(  # pylint: disable=unused-argument
     tape: QuantumScript,
     auto_cutter: bool | Callable = False,
     use_opt_einsum: bool = False,
@@ -362,7 +361,6 @@ def cut_circuit(
         ... )
         0.47165198882111165
     """
-    # pylint: disable=unused-argument
     if len(tape.measurements) != 1:
         raise ValueError(
             "The circuit cutting workflow only supports circuits with a single output "

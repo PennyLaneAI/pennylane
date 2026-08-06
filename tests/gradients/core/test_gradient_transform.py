@@ -522,9 +522,8 @@ class TestGradientTransformIntegration:
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
-        def circuit(x, y):
+        def circuit(x, y):  # pylint: disable=unused-argument
             """A quantum circuit that does not use its first parameter."""
-            # pylint: disable=unused-argument
             qp.RX(y[0], wires=0)
             qp.RY(y[0], wires=0)
             qp.RZ(y[1], wires=0)
