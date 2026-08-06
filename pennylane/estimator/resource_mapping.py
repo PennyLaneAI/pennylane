@@ -412,7 +412,7 @@ def _(op: qtemps.QROM):
     return re_temps.QROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        restored=op.hyperparameters["clean"],
+        restored=op.clean,
         wires=op.wires,
     )
 

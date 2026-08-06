@@ -164,7 +164,7 @@ class TestControlledDecompositionZYZ:
         def circuit(p):
             U = qp.Rot.compute_matrix(*p)
             ctrl_decomp_zyz(qp.QubitUnitary(U, wires=[0]), control_wires=control_wires)
-            return qp.probs(wires=0)
+            return qp.expval(qp.Z(0))
 
         circ_ad = qp.QNode(circuit, dev, diff_method="adjoint")
         circ_bp = qp.QNode(circuit, dev, diff_method="backprop")
@@ -569,7 +569,7 @@ class TestControlledDecompBisect:
         assert qp.math.allclose(decomp_matrix, expected_matrix)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
+    @pytest.mark.parametrize("op", list(zip(gen_ops, gen_ops_best)))
     @pytest.mark.parametrize("control_wires", cw5)
     def test_auto_select(self, op, control_wires, mocker):
         """Tests that the correct shortcut is chosen if possible."""
@@ -812,7 +812,6 @@ class TestControlledUnitaryRecursive:
 
 
 class TestMCXDecomposition:
-
     def test_wrong_work_wire_type(self):
         """Test that an error is raised if the work wire type is not 'zeroed' or 'borrowed'."""
 

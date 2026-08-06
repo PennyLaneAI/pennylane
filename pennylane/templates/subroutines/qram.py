@@ -637,13 +637,13 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
             d = tree_wire_manager.router(ell, p)
 
             # dir==1: CSWAP(d, in_w, R) — additionally controlled on signal
-            ctrl(CSWAP(wires=[d, in_w, R]), control=[signal], control_values=[1])
+            ctrl(SWAP(wires=[in_w, R]), control=[signal, d], control_values=[1, 1])
 
             # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
             ctrl(
-                ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0]),
-                control=[signal],
-                control_values=[1],
+                SWAP(wires=[in_w, L]),
+                control=[signal, d],
+                control_values=[1, 0],
             )
 
 
