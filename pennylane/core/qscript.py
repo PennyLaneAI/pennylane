@@ -27,7 +27,7 @@ from functools import cached_property
 from typing import Any, ParamSpec, TypeVar
 
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase, StatePrepBase2
+from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.core.shots import Shots, ShotsLike
 from pennylane.exceptions import DiagGatesUndefinedError, PennyLaneDeprecationWarning
@@ -393,10 +393,10 @@ class QuantumScript:
     @property
     def num_preps(self) -> int:
         """Returns the index of the first operator that is not an StatePrepBase
-        or StatePrepBase2 operator."""
+        or StatePrepBase operator."""
         idx = 0
         num_ops = len(self.operations)
-        while idx < num_ops and isinstance(self.operations[idx], (StatePrepBase, StatePrepBase2)):
+        while idx < num_ops and isinstance(self.operations[idx], StatePrepBase):
             idx += 1
         return idx
 
