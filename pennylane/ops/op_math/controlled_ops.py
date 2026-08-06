@@ -2144,7 +2144,7 @@ add_decomps("Adjoint(CRZ)", adjoint_rotation2)
 add_decomps("Pow(CRZ)", pow_rotation2)
 
 
-class CRot(ControlledOp):
+class CRot(Controlled2):
     r"""The controlled-Rot operator
 
     .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
@@ -2184,50 +2184,30 @@ class CRot(ControlledOp):
     """
 
     num_wires = 2
-    """int: Number of wires this operator acts on."""
-
-    num_params = 3
-    """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0, 0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    num_params = 3
 
-    name = "CRot"
-    parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
+    dynamic_argnames = ("phi", "theta", "omega")
+
+    arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[2]}
 
     def __init__(self, phi, theta, omega, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.Rot, phi, theta, omega, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(qp.Rot(phi, theta, omega, wires[1]), control_wires=wires[:1])
 
-    def __repr__(self):
-        params = ", ".join([repr(p) for p in self.parameters])
-        return f"CRot({params}, wires={self.wires})"
+    @override
+    def __abstract_init__(self, phi, theta, omega, wires):
+        super().__abstract_init__(abstractify(qp.Rot), control_wires=Wire[1])
 
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, theta, omega, wires):
-        return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
+    @override
     def adjoint(self):
-        phi, theta, omega = self.parameters
-        return CRot(-omega, -theta, -phi, wires=self.wires)
+        return CRot(-self.omega, -self.theta, -self.phi, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi, theta, omega):
+    @override
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(phi, theta, omega, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2295,55 +2275,13 @@ class CRot(ControlledOp):
 
         return qp.math.stack([stack_last(row) for row in mat], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
-    ) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CRot.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            theta (TensorLike): rotation angle :math:`\theta`
-            omega (TensorLike): rotation angle :math:`\omega`
-            wires (Iterable, Wires): the wires the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CRot.compute_decomposition(1.234, 2.34, 3.45, wires=[0, 1])
-        [RZ(-1.108, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RZ(-2.342, wires=[1]),
-         RY(-1.17, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RY(1.17, wires=[1]),
-         RZ(3.45, wires=[1])]
-
-        """
-        return [
-            qp.RZ((phi - omega) / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.RZ(-(phi + omega) / 2, wires=wires[1]),
-            qp.RY(-theta / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.RY(theta / 2, wires=wires[1]),
-            qp.RZ(omega, wires=wires[1]),
-        ]
-
-
-def _crot_resources():
+def _crot_resources(**_):
     return {qp.RZ: 3, qp.CNOT: 2, qp.RY: 2}
 
 
 @register_resources(_crot_resources)
-def _crot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike, **__):
+def _crot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike):
     qp.RZ((phi - omega) / 2, wires=wires[1])
     qp.CNOT(wires=wires)
     qp.RZ(-(phi + omega) / 2, wires=wires[1])
@@ -2357,8 +2295,8 @@ add_decomps(CRot, _crot)
 
 
 @register_resources({CRot: 1})
-def _adjoint_crot(phi, theta, omega, wires, **_):
-    CRot(-omega, -theta, -phi, wires=wires)
+def _adjoint_crot(base):
+    CRot(-base.omega, -base.theta, -base.phi, wires=base.wires)
 
 
 add_decomps("Adjoint(CRot)", _adjoint_crot)
