@@ -46,7 +46,7 @@ from .support import (
 
 has_rich = False
 try:
-    import rich  # pylint:disable=unused-import
+    import rich  # pylint: disable=unused-import
 
     has_rich = True
 except ImportError:
@@ -398,7 +398,7 @@ class TestMiscHelpers:
 
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
-    # pylint: disable-next=too-many-arguments,unused-argument
+    # pylint: disable-next=unused-argument
     def mock(data_path, dest, attributes, force, block_size, pbar_task):
         dset = Dataset.open(Path(dest), "w")
         if attributes:
@@ -508,7 +508,7 @@ def test_load_except(monkeypatch, tmp_path):
 )
 def test_download_dataset_full_or_partial(
     download_full, download_partial, attributes, dest_exists, force, called_partial
-):  # pylint: disable=too-many-arguments
+):
     """Test that _download_dataset calls ``_download_partial()`` if ``attributes`` is not None,
     or the dataset already exists at ``dest``, and that it only calls ``_download_full()`` if
     the dataset does not exist at ``dest`` and ``attributes`` is None.

@@ -15,8 +15,7 @@
 Unit tests for the `pennylane.qcut` package.
 """
 
-# pylint: disable=protected-access,too-few-public-methods,too-many-arguments,too-many-public-methods
-# pylint: disable=unused-argument
+# pylint: disable=protected-access,too-few-public-methods,too-many-arguments,too-many-public-methods,unused-argument
 
 import copy
 import itertools
@@ -344,7 +343,7 @@ class Test_WrappedObj:
         """Test that the ``_WrappedObj` representation is equivalent to the repr of the
         object it wraps."""
 
-        class Dummy:  # pylint: disable=too-few-public-methods
+        class Dummy:
             """Dummy class with custom repr"""
 
             def __repr__(self):

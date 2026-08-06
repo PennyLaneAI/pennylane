@@ -321,7 +321,7 @@ class AbstractArray:
     def _resolve_dtype(self, dtype):
         """Convert an arbitrary dtype into a numpy dtype."""
         if dtype.__class__.__module__.split(".")[0] == "torch":
-            import torch  # pylint: disable=import-outside-toplevel
+            import torch
 
             dummy = torch.empty((), dtype=dtype)
             dtype = dummy.numpy().dtype

@@ -32,7 +32,6 @@ h5py = pytest.importorskip("h5py")
 
 def test_import_geometric(monkeypatch):
     """Test if an ImportError is raised by _import_geometric function."""
-    # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "geometric", None)

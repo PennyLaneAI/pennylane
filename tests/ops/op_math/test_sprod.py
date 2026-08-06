@@ -1070,8 +1070,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1.23 in results  # pylint:disable=unsupported-membership-test
-        assert -1.23 not in results  # pylint:disable=unsupported-membership-test
+        assert 1.23 in results  # pylint: disable=unsupported-membership-test
+        assert -1.23 not in results  # pylint: disable=unsupported-membership-test
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op

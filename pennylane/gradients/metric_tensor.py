@@ -135,7 +135,7 @@ def _expand_metric_tensor(  # pylint: disable=too-many-arguments,unused-argument
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(  # pylint:disable=too-many-arguments
+def metric_tensor(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,

@@ -57,7 +57,7 @@ def no_tape_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform without tape."""
     circuit = circuit.copy()
-    circuit._ops.pop(index)  # pylint:disable=protected-access
+    circuit._ops.pop(index)  # pylint: disable=protected-access
     return [circuit], lambda x: x
 
 
@@ -66,7 +66,7 @@ def no_quantum_tape_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform with wrong hinting."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
     return [tape], lambda x: x
 
 
@@ -105,7 +105,7 @@ def first_valid_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
     _ = (qp.PauliX(0), qp.S(0))
     return [tape], lambda x: x
 
@@ -116,7 +116,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
 
     def fn(results):
         return qp.math.sum(results)
@@ -133,7 +133,7 @@ def expand_transform(
     tape: QuantumScript, index: int
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Multiple args expand fn."""
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
     return [tape], lambda x: x
 
 
@@ -263,7 +263,7 @@ class TestBoundTransform:
         # pylint: disable=protected-access
         assert isinstance(c._transform, Transform)
         assert c.is_informative
-        assert c._transform.is_informative  # pylint: disable=protected-access
+        assert c._transform.is_informative
 
     def test_error_if_extra_kwargs_when_dispatcher(self):
         """Test that a ValueError is raised if extra kwargs are passed when a Transform is provided."""
@@ -918,7 +918,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
             ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                 """A valid transform."""
                 tape = tape.copy()
-                tape._ops.pop(index)  # pylint:disable=protected-access
+                tape._ops.pop(index)  # pylint: disable=protected-access
                 return [tape], lambda x: x
 
         with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):

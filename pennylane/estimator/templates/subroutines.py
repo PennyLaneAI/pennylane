@@ -2389,7 +2389,7 @@ class Select(ResourceOperator):
             self.num_wires = minimum_num_wires
 
     @classmethod
-    def resource_decomp(cls, cmpr_ops, num_wires):  # pylint: disable=unused-argument
+    def resource_decomp(cls, cmpr_ops, num_wires):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:

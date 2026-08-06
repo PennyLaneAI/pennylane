@@ -15,7 +15,7 @@ r"""
 Contains the k-UpCCGSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access
+# pylint: disable=too-many-arguments,protected-access
 import copy
 from collections import defaultdict
 from collections.abc import Sequence

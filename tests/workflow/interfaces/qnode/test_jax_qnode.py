@@ -103,7 +103,7 @@ class TestQNode:
 
     def test_changing_trainability(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
-    ):  # pylint:disable=unused-argument
+    ):  # pylint: disable=unused-argument
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -267,7 +267,7 @@ class TestQNode:
 
     def test_jacobian_options(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed
-    ):  # pylint:disable=unused-argument
+    ):  # pylint: disable=unused-argument
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
@@ -1651,7 +1651,7 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 @pytest.mark.parametrize(
     "dev_name,diff_method,grad_on_execution, device_vjp", device_and_diff_method
 )
-class TestReturn:  # pylint:disable=too-many-public-methods
+class TestReturn:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
 
     def test_grad_single_measurement_param(

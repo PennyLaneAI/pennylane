@@ -120,7 +120,7 @@ def seed(request):
 
     """
 
-    fixture_manager = request._fixturemanager  # pylint:disable=protected-access
+    fixture_manager = request._fixturemanager  # pylint: disable=protected-access
     fixture_defs = fixture_manager.getfixturedefs("seed", request.node)
     original_fixture_def = fixture_defs[0]  # the original seed fixture provided by pytest-rng
     original_seed = original_fixture_def.func(request)

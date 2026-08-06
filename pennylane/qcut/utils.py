@@ -640,7 +640,7 @@ def fragment_graph(graph):
     prepare_nodes_removed = []
 
     for i, s in enumerate(subgraphs):
-        from networkx import has_path  # pylint: disable=import-outside-toplevel
+        from networkx import has_path
 
         if any(has_path(communication_graph, i, t) for t in terminal_indices):
             subgraphs_connected_to_measurements.append(s)

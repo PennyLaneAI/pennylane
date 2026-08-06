@@ -44,13 +44,13 @@ def first_valid_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)
     return [tape], lambda x: x
 
 
 def expand_transform(
     tape: QuantumScript,
-    index: int,  # pylint:disable=unused-argument
+    index: int,  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
@@ -62,7 +62,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape2 = tape._ops.pop(index)
 
     def fn(results):
         return qp.math.sum(results)
@@ -753,7 +753,7 @@ class TestCompilePipelineDunders:  # pylint: disable=too-many-public-methods
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
-        compile_pipeline._ipython_display_()  # pylint: disable=protected-access
+        compile_pipeline._ipython_display_()
         captured = capsys.readouterr()
         assert str(compile_pipeline) + "\n" == captured.out
 

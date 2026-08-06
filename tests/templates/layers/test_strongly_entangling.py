@@ -254,7 +254,7 @@ class TestDynamicDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_strongly_entangling_state(
         self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
-    ):  # pylint:disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
 
         import jax

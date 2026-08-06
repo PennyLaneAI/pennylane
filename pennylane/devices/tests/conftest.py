@@ -133,7 +133,7 @@ def fixture_device(device_kwargs):
     """Fixture to create a device."""
 
     # internally used by pytest
-    __tracebackhide__ = True  # pylint:disable=unused-variable
+    __tracebackhide__ = True  # pylint: disable=unused-variable
 
     def _device(wires):
         device_kwargs["wires"] = wires

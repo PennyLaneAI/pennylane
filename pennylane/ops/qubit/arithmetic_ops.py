@@ -117,7 +117,7 @@ class QubitCarry(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -290,7 +290,7 @@ class QubitSum(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

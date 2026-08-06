@@ -267,7 +267,7 @@ class Molecule:
         0.01825128
         """
         # molecular coefficients are set by other modules
-        c = self.mo_coefficients[index]  # pylint:disable=unsubscriptable-object
+        c = self.mo_coefficients[index]  # pylint: disable=unsubscriptable-object
 
         def orbital(x, y, z):
             r"""Evaluate a molecular orbital at a given position.

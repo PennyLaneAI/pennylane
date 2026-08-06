@@ -880,7 +880,7 @@ class BoundTransform:
             self._transform.expand_transform,
             args=self.args,
             kwargs=self.kwargs,
-            use_argnum=self._transform._use_argnum_in_expand,  # pylint:disable=protected-access
+            use_argnum=self._transform._use_argnum_in_expand,  # pylint: disable=protected-access
         )
 
     @property

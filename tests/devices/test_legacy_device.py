@@ -217,8 +217,6 @@ def test_gradients_record():
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
-    # pylint: disable=redefined-outer-name
-
     def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_operations returns the correct result
         when passed both string and Operation class arguments"""
@@ -285,7 +283,7 @@ class TestDeviceSupportedLogic:
         assert dev._all_multi_term_obs_supported(circuit)  # pylint: disable=protected-access
 
 
-class TestInternalFunctions:  # pylint:disable=too-many-public-methods
+class TestInternalFunctions:  # pylint: disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
     def test_repr(self, mock_device_supporting_paulis):
@@ -740,7 +738,7 @@ class TestObservables:
 
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
-        # pylint: disable=redefined-outer-name,pointless-statement
+        # pylint: disable=pointless-statement
         dev = mock_device()
 
         with pytest.raises(
@@ -904,16 +902,16 @@ class TestDeviceInit:
     def test_has_partitioned_shots(self):
         """Tests _has_partitioned_shots returns correct values"""
         dev = DefaultQubitLegacy(wires=1, shots=100)
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()  # pylint: disable=protected-access
 
         dev.shots = [10, 20]
-        assert dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert dev._has_partitioned_shots()  # pylint: disable=protected-access
 
         dev.shots = 10
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()  # pylint: disable=protected-access
 
         dev.shots = None
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()  # pylint: disable=protected-access
 
 
 class TestBatchExecution:

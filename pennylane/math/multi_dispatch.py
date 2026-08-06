@@ -25,7 +25,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
-from . import single_dispatch  # pylint:disable=unused-import
+from . import single_dispatch  # pylint: disable=unused-import
 from .interface_utils import get_interface
 from .utils import cast, cast_like, requires_grad
 
@@ -703,7 +703,7 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
 
 
 @multi_dispatch(argnum=[1])
-def scatter(indices, array, new_dims, like=None):  # pylint: disable=redefined-outer-name
+def scatter(indices, array, new_dims, like=None):
     """Scatters an array into a tensor of shape new_dims according to indices.
 
     This operation is similar to scatter_element_add, except that the tensor
@@ -1053,7 +1053,7 @@ def detach(tensor, like=None):
 
 
 @multi_dispatch(tensor_list=[1])
-def set_index(array, idx, val, like=None):  # pylint: disable=redefined-outer-name
+def set_index(array, idx, val, like=None):
     """Set the value at a specified index in an array.
     Calls ``array[idx]=val`` and returns the updated array unless JAX.
 

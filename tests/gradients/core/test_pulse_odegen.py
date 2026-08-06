@@ -1056,7 +1056,7 @@ class TestPulseOdegenTape:
         # TODO: remove once #2155 is resolved
         tape_with_shots = qp.workflow.construct_tape(circuit)([x, y])
         tape_with_shots.trainable_params = [0, 1]
-        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint:disable=protected-access
+        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint: disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1])
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
@@ -1138,7 +1138,7 @@ class TestPulseOdegenTape:
         # TODO: remove once #2155 is resolved
         tape_with_shots = qp.workflow.construct_tape(circuit)([x, y, z])
         tape_with_shots.trainable_params = [0, 1, 2]
-        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint:disable=protected-access
+        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint: disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1, 2])
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 

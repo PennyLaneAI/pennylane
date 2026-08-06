@@ -622,7 +622,7 @@ class QuantumScript:
         self,
         trainable_only: bool = True,
         operations_only: bool = False,
-        **kwargs,  # pylint:disable=unused-argument
+        **kwargs,  # pylint: disable=unused-argument
     ) -> list[TensorLike]:
         """Return the parameters incident on the quantum script operations.
 

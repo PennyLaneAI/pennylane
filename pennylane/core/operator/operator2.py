@@ -599,7 +599,7 @@ class Operator2(metaclass=OperatorMeta):
         """
         return cls.adjoint != Operator2.adjoint
 
-    def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator2":  # pylint: disable=no-self-use
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
         TODO: [sc-120844] Fix docstring after Adjoint is added

@@ -15,8 +15,7 @@
 Tests for the trotter_fragmented module (CGF scheme only).
 """
 
-# pylint: disable=no-value-for-parameter,too-many-arguments,too-many-nested-blocks
-# pylint: disable=redefined-outer-name,too-few-public-methods
+# pylint: disable=no-value-for-parameter,too-many-arguments,too-many-nested-blocks,redefined-outer-name,too-few-public-methods
 
 import itertools
 import math

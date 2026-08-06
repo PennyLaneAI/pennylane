@@ -593,7 +593,7 @@ def _multi_temporary_and_all_ones(
     def _ladder(i):
         qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
 
-    _ladder()  # pylint: disable = no-value-for-parameter
+    _ladder()  # pylint: disable=no-value-for-parameter
 
     return work_wires[num_needed - 1]
 

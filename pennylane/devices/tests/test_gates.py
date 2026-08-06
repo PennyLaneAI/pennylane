@@ -16,7 +16,7 @@ Tests that application of gates and state preparations
 works correctly an a device.
 """
 
-# pylint: disable=no-self-use,too-many-arguments,unnecessary-lambda-assignment
+# pylint: disable=too-many-arguments,unnecessary-lambda-assignment
 
 from cmath import exp
 from math import cos, sin, sqrt

@@ -291,7 +291,7 @@ def _get_while_loop_qfunc_prim():
     return while_loop_prim
 
 
-class WhileLoopCallable:  # pylint:disable=too-few-public-methods
+class WhileLoopCallable:  # pylint: disable=too-few-public-methods
     """Base class to represent a while loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.

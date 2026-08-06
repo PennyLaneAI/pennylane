@@ -54,7 +54,7 @@ def test_standard_use():
     fig, ax = qp.draw_mpl(circuit1)(1.23, 2.34)
 
     assert isinstance(fig, mpl.figure.Figure)
-    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint: disable=protected-access
 
     # proxy for whether correct things were drawn
     assert len(ax.patches) == 7  # two boxes, 2 circles for CNOT, 3 patches for measure
@@ -101,7 +101,7 @@ class TestPartial:
         fig, ax = qp.draw_mpl(partial(circuit1, 1.23))(2.34)
 
         assert isinstance(fig, mpl.figure.Figure)
-        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint: disable=protected-access
         self._assert_circuit1_drawing(ax)
         plt.close("all")
 
@@ -110,7 +110,7 @@ class TestPartial:
         fig, ax = qp.draw_mpl(partial(circuit1, y=2.34))(1.23)
 
         assert isinstance(fig, mpl.figure.Figure)
-        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint: disable=protected-access
         self._assert_circuit1_drawing(ax)
         plt.close("all")
 
@@ -119,7 +119,7 @@ class TestPartial:
         fig, ax = qp.draw_mpl(partial(partial(circuit1, 1.23), y=2.34))()
 
         assert isinstance(fig, mpl.figure.Figure)
-        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint: disable=protected-access
         self._assert_circuit1_drawing(ax)
         plt.close("all")
 
@@ -133,7 +133,7 @@ class TestPartial:
         fig, ax = qp.draw_mpl(partial(qfunc, x=1.23))(y=2.34)
 
         assert isinstance(fig, mpl.figure.Figure)
-        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint: disable=protected-access
 
         texts = [text.get_text() for text in ax.texts]
         assert "RX" in texts
@@ -628,7 +628,7 @@ def test_draw_mpl_supports_qfuncs():
     fig, ax = qp.draw_mpl(qfunc)(1.1)
 
     assert isinstance(fig, mpl.figure.Figure)
-    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint: disable=protected-access
     assert len(ax.patches) == 1
     assert len(ax.lines) == 1
     assert len(ax.texts) == 2

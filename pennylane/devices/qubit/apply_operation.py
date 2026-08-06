@@ -193,7 +193,7 @@ def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
         if op.batch_size is None:
-            op._batch_size = batch_size  # pylint:disable=protected-access
+            op._batch_size = batch_size  # pylint: disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
@@ -231,7 +231,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
         if op.batch_size is None:
-            op._batch_size = batch_size  # pylint:disable=protected-access
+            op._batch_size = batch_size  # pylint: disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     mat_axes = list(range(-num_indices, 0))

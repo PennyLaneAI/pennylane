@@ -723,7 +723,6 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         if self._shots_override_device:
             updated_qn._shots_override_device = True
 
-        # pylint: disable=protected-access
         updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
         return updated_qn
 

@@ -15,8 +15,7 @@
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
 
-# pylint: disable=too-many-arguments,consider-using-generator,protected-access
-# pylint: disable=possibly-used-before-assignment
+# pylint: disable=too-many-arguments,consider-using-generator,protected-access,possibly-used-before-assignment
 
 from functools import singledispatch
 
@@ -560,7 +559,7 @@ def _molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e12,
-):  # pylint: disable=too-many-arguments
+):
     r"""Generate the qubit Hamiltonian of a molecule."""
 
     method = method.strip().lower()

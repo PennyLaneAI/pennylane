@@ -264,7 +264,7 @@ class SuperpositionTHC(Operation):
 
 def _left_inequalities(
     M, N, mu_wires, nu_wires, work_wires, keep_eq=False
-):  # pylint:disable=too-many-arguments
+):  # pylint: disable=too-many-arguments
     r"""Apply the inequality tests that flag a valid THC index pair.
 
     Computes the comparisons that define the valid index set onto dedicated flag

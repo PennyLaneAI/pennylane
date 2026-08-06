@@ -225,7 +225,6 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         name=f"adjoint({base_rule.name})",
     )
     def _impl(base):
-        # pylint: disable=protected-access
         qp.adjoint(base_rule._impl)(**base.arguments)
 
     _impl._source = (

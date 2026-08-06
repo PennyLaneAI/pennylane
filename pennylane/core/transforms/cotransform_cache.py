@@ -86,7 +86,7 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     it cleanly works with all interfaces.
     """
     # tach-ignore
-    from pennylane.workflow import (  # tach-ignore # pylint: disable=import-outside-toplevel
+    from pennylane.workflow import (  # pylint: disable=import-outside-toplevel # tach-ignore
         construct_tape,
     )
 
@@ -111,7 +111,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     import jax  # pylint: disable=import-outside-toplevel
 
     # tach-ignore
-    from pennylane.workflow import (  # tach-ignore # pylint: disable=import-outside-toplevel
+    from pennylane.workflow import (  # pylint: disable=import-outside-toplevel # tach-ignore
         construct_tape,
     )
 

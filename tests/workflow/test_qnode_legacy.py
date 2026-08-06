@@ -1385,7 +1385,7 @@ class TestDefaultQubitLegacySeeding:
 
         # Manually simulate what happens on a new execution:
         # The execute() method sets _fresh_execution = True
-        dev._fresh_execution = True  # pylint: disable=protected-access
+        dev._fresh_execution = True
 
         # Second execution should produce the same result
         result2 = circuit()

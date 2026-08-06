@@ -121,7 +121,6 @@ class GQSP(Operation):
         return super()._primitive_bind_call(unitary, angles, wires=control)
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["unitary"] = ops.functions.map_wires(

@@ -33,8 +33,8 @@ jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.catalyst
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-order,wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order,wrong-import-position
+from jax import numpy as jnp  # pylint: disable=wrong-import-order,wrong-import-position
+from jax.core import ShapedArray  # pylint: disable=wrong-import-order,wrong-import-position
 
 
 @pytest.fixture

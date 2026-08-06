@@ -59,11 +59,11 @@ class TestParametricMidMeasure:
         """Test that we can flatten and unflatten the ParametricMidMeasure"""
 
         op = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="XY")
-        data, metadata = op._flatten()  # pylint: disable = protected-access
+        data, metadata = op._flatten()  # pylint: disable=protected-access
 
         assert hash(metadata)  # metadata must be hashable
 
-        unflattened_op = ParametricMidMeasure._unflatten(  # pylint: disable = protected-access
+        unflattened_op = ParametricMidMeasure._unflatten(  # pylint: disable=protected-access
             data, metadata
         )
         assert hash(op) == hash(unflattened_op)
@@ -241,11 +241,11 @@ class TestMidMeasureXAndY:
         """Test that we can flatten and unflatten the ParametricMidMeasure"""
 
         op = mp_class(Wires(0), meas_uid="m1")
-        data, metadata = op._flatten()  # pylint: disable = protected-access
+        data, metadata = op._flatten()  # pylint: disable=protected-access
 
         assert hash(metadata)  # metadata must be hashable
 
-        unflattened_op = mp_class._unflatten(data, metadata)  # pylint: disable = protected-access
+        unflattened_op = mp_class._unflatten(data, metadata)  # pylint: disable=protected-access
         assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.jax

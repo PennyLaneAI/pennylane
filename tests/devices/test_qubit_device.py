@@ -278,7 +278,7 @@ class TestObservables:
 
     def test_obs_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
-        # pylint: disable=redefined-outer-name,pointless-statement
+        # pylint: disable=pointless-statement
 
         with pytest.raises(
             ValueError,

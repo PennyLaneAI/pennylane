@@ -15,8 +15,7 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
-# pylint: disable=too-few-public-methods,too-many-arguments,no-self-use,protected-access
-# pylint: disable=undefined-variable,unused-variable
+# pylint: disable=too-few-public-methods,too-many-arguments,no-self-use,protected-access,undefined-variable,unused-variable
 
 import math
 from collections import defaultdict

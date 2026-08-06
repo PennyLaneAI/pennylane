@@ -658,7 +658,7 @@ class TestHigherOrderPrimitiveRegistrations:  # pylint: disable=too-many-public-
 
         jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
         assert jaxpr0.eqns[0].primitive.name == "mul"
-        assert jaxpr0.eqns[1].primitive == qp.RX._primitive  # pylint: disable=protected-access
+        assert jaxpr0.eqns[1].primitive == qp.RX._primitive
 
         assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
 

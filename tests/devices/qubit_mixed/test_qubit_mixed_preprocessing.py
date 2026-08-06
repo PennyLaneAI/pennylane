@@ -414,5 +414,4 @@ class TestPreprocessing:
         assert dev._prng_key is seed
 
         # Verify that the device's _rng is initialized appropriately
-        # pylint: disable=protected-access
         assert dev._rng is not None

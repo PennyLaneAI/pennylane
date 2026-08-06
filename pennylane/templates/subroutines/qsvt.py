@@ -533,7 +533,6 @@ class QSVT(Operation):
         }
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["UA"] = new_op._hyperparameters["UA"].map_wires(wire_map)
@@ -963,7 +962,6 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     def obj_function(phi):
         # Equation (23) in https://arxiv.org/pdf/2002.11649
 
-        # pylint: disable=import-outside-toplevel
         try:
             from jax import jit, vmap
 

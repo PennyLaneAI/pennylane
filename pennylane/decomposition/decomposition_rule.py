@@ -935,7 +935,6 @@ class _DecompInfoCollection:
         return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rules)
 
     def _repr_markdown_(self) -> str:
-        # pylint: disable=protected-access
         if not self._n_rules_original:
             return "No available decomposition rules."
         if not self._rules:

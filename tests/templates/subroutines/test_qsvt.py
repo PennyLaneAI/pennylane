@@ -1148,7 +1148,7 @@ class TestIterativeSolver:
     def test_W_of_x_scipy(self, x):
         """Test internal function _W_of_x_scipy"""
         try:
-            import jax  # pylint:disable=unused-import
+            import jax  # pylint: disable=unused-import
 
             interface = "jax"
         except ModuleNotFoundError:

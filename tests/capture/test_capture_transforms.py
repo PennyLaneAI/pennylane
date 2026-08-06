@@ -174,7 +174,7 @@ class TestCaptureTransforms:
         expected_program = CompilePipeline()
         expected_program.add_transform(z_to_hadamard, *targs, **tkwargs)
         # Manually change targs from tuple to list
-        expected_program[0]._args = tuple(targs)  # pylint: disable=protected-access
+        expected_program[0]._args = tuple(targs)
         assert qnode.compile_pipeline == expected_program
 
         qfunc_jaxpr = qnode_jaxpr.eqns[0].params["qfunc_jaxpr"]

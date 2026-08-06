@@ -357,7 +357,7 @@ class TestAttribute:
         class MyType:  # pylint: disable=too-few-public-methods
             pass
 
-        class Attribute(DatasetAttribute):  # pylint: disable=unused-variable
+        class Attribute(DatasetAttribute):
             """An attribute"""
 
             type_id = "_attr_2_"

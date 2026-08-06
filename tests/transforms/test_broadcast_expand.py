@@ -299,7 +299,6 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    # pylint: disable-next=too-many-arguments
     def test_jax(self, params, obs, exp_fn, use_jit, diff_method, seed):
         """Test that the expansion works with jax and is differentiable."""
         import jax

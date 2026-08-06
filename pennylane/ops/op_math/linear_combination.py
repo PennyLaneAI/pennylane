@@ -125,7 +125,6 @@ class LinearCombination(Sum):
         for leaf in leaves:
             if isinstance(leaf, Operator2):
                 if leaf.tracer is None:
-                    # pylint: disable-next=protected-access
                     leaf._bind_primitive()
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
             else:

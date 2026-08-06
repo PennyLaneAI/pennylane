@@ -20,7 +20,7 @@ from string import ascii_letters
 import scipy as sp
 import scipy.sparse.linalg as spla
 from autoray import numpy as np
-from numpy import float64, sqrt  # pylint:disable=wrong-import-order
+from numpy import float64, sqrt  # pylint: disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
 from pennylane import math

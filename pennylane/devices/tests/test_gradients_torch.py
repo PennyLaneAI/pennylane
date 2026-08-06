@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests trainable circuits using the Torch interface."""
 
-# pylint: disable=no-self-use,no-member
+# pylint: disable=no-member
 
 import numpy as np
 import pytest

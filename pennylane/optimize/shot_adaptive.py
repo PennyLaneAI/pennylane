@@ -255,7 +255,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 qs = make_qscript(base_func)(*qnode_args, **qnode_kwargs)
                 for op in qs.operations:
                     apply(op)
-                return measurements.expval(o)  # pylint:disable=cell-var-from-loop
+                return measurements.expval(o)  # pylint: disable=cell-var-from-loop
 
             new_shots = 1 if s == 1 else [(1, int(s))]
 

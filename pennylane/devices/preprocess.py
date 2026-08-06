@@ -161,7 +161,7 @@ def validate_device_wires(
                     new_ops = list(tape.operations)
                 modified = True
                 new_mp = copy(mp)
-                new_mp._wires = wires  # pylint:disable=protected-access
+                new_mp._wires = wires
                 new_ops[i] = Snapshot(
                     measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
                 )
@@ -173,7 +173,7 @@ def validate_device_wires(
         if not mp.obs and not mp.wires:
             modified = True
             new_mp = copy(mp)
-            new_mp._wires = wires  # pylint:disable=protected-access
+            new_mp._wires = wires
             measurements[m_idx] = new_mp
     if modified:
         tape = tape.copy(ops=new_ops, measurements=measurements)

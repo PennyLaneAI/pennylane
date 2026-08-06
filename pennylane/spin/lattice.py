@@ -17,8 +17,7 @@ This file contains functions and classes to create a
 the necessary information about a lattice.
 """
 
-# pylint: disable=too-many-arguments,too-many-instance-attributes,too-few-public-methods
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-arguments,too-many-instance-attributes,too-few-public-methods,too-many-branches
 
 import itertools
 

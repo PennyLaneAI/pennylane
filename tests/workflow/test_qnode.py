@@ -228,7 +228,7 @@ class TestInitialization:
         def f2():
             return qp.state()
 
-        assert f2._shots_override_device  # pylint: disable=protected-access
+        assert f2._shots_override_device
         assert f2.shots == qp.measurements.Shots(10)
 
         # Shots from device should be set correctly

@@ -189,7 +189,7 @@ class QubitUnitary(Operation):
         return {"num_wires": len(self.wires)}
 
     @staticmethod
-    def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_matrix(U: TensorLike):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -217,7 +217,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(U: TensorLike, format="csr"):
         r"""Representation of the operator as a sparse matrix.
 
         Args:

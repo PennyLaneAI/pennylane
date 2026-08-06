@@ -687,7 +687,7 @@ class TestBroadcasting:
         param = qp.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qp.RX(param, 0)
-        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
         state = apply_operation_einsum(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3

@@ -34,7 +34,6 @@ from pennylane.capture import PlxprInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
 from pennylane.pytrees import unflatten
 
@@ -75,7 +74,6 @@ class TestCaptureBasics:
 
         def fn(x):
             with qp.capture.pause():
-                # pylint: disable=protected-access
                 DynOp(x, wires=0)
                 DynOp(x, wires=0)._bind_primitive()
 

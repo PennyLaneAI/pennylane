@@ -196,7 +196,7 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
-    def test_number_of_function_calls(  # pylint: disable=too-many-arguments,unused-argument
+    def test_number_of_function_calls(  # pylint: disable=unused-argument
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""

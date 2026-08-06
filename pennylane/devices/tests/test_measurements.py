@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
 
-# pylint: disable=no-self-use,no-member
+# pylint: disable=no-member
 
 import pytest
 from flaky import flaky

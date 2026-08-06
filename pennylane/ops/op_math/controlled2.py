@@ -549,7 +549,6 @@ class ControlledOp2(Controlled2):
             return
 
         if self.base.tracer is None:
-            # pylint: disable=protected-access
             self.base._bind_primitive()
             # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
             # In that case, there is nothing to do, so return early.
@@ -652,7 +651,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
         _x_flips()
         qp.ctrl(
-            base_rule._impl,  # pylint: disable=protected-access
+            base_rule._impl,
             control=control_wires,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
@@ -737,7 +736,6 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -788,7 +786,6 @@ def _ctrl_single_work_wire_resource(
 
 
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
-# pylint: disable-next=unused-argument
 def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:

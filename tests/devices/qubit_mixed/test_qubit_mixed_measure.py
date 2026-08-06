@@ -726,7 +726,7 @@ class TestSumOfTermsDifferentiability:
         assert qp.math.allclose(expected_gradient, gradient)
 
 
-class TestReadoutErrors:  # pylint: disable=too-few-public-methods
+class TestReadoutErrors:
     """Test that readout errors are correctly applied to measurements."""
 
     def test_readout_error(self):

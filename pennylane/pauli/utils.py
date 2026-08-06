@@ -95,7 +95,7 @@ def is_pauli_word(observable):
 
 
 @singledispatch
-def _is_pauli_word(observable):  # pylint:disable=unused-argument
+def _is_pauli_word(observable):  # pylint: disable=unused-argument
     """
     Private implementation of is_pauli_word, to prevent all of the
     registered functions from appearing in the Sphinx docs.

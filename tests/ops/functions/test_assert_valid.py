@@ -247,7 +247,7 @@ class TestDecompositionErrors:
             num_wires = 3
 
         @qp.register_resources({qp.S: 3})
-        def rule(wires):  # pylint: disable=unused-argument
+        def rule(wires):
             @qp.for_loop(3)
             def loop(i):
                 qp.S(i)
@@ -261,7 +261,7 @@ class TestDecompositionErrors:
         """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
 
         @qp.register_resources({OneWireDynOp: 3})
-        def rule(phi, wires):  # pylint: disable=unused-argument
+        def rule(phi, wires):
             @qp.for_loop(3)
             def loop(i):
                 OneWireDynOp(phi, wires=i)
@@ -781,7 +781,7 @@ class TestOperator2AssertValid:
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
-            def __init__(self, phi, wires):  # pylint: disable=unused-argument
+            def __init__(self, phi, wires):
                 super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)

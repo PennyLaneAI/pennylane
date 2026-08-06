@@ -15,8 +15,7 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
-# pylint: disable=protected-access,redefined-outer-name,too-few-public-methods
-# pylint: disable=too-many-public-methods,unused-argument
+# pylint: disable=protected-access,redefined-outer-name,too-few-public-methods,too-many-public-methods,unused-argument
 
 import copy
 from collections.abc import Callable
@@ -361,7 +360,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires):  # pylint:disable=super-init-not-called
+            def __init__(self, wires):  # pylint: disable=super-init-not-called
                 pass
 
         op = MyOp(wires=0)
@@ -376,7 +375,7 @@ class TestOperatorConstruction:
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
+            def __init__(self, wires, basis_state=None):  # pylint: disable=super-init-not-called
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]

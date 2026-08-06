@@ -42,7 +42,6 @@ jax = pytest.importorskip("jax")
 from jax import make_jaxpr
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position
 # pylint: disable-next=ungrouped-imports
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
@@ -132,7 +131,7 @@ class TestPennyLaneTransformer:
 
         transformer = PennyLaneTransformer()
 
-        assert transformer._extra_locals is None  # pylint:disable = protected-access
+        assert transformer._extra_locals is None  # pylint: disable=protected-access
 
         locals = transformer.get_extra_locals()
         ag_fn_dict = locals["ag__"].__dict__

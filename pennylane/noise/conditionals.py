@@ -503,7 +503,7 @@ class MeasEq(BooleanFn):
 
         mp_ops = list(
             getattr(op, "__name__", op.__class__.__name__) for op in self.condition
-        )  # pylint: disable=protected_access
+        )  # pylint: disable=access
         mp_names = [
             repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)
             for idx, op in enumerate(mp_ops)

@@ -74,7 +74,7 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
 
 def _select_ops(
     control_wires, depth, target_wires, swap_wires, data, select_work_wires
-):  # pylint:disable=too-many-arguments
+):  # pylint: disable=too-many-arguments
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 

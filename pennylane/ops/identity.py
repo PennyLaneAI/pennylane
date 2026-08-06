@@ -178,7 +178,7 @@ class Identity(Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(wires, n_wires=1):  # pylint:disable=arguments-differ,unused-argument
+    def compute_decomposition(wires, n_wires=1):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -406,7 +406,7 @@ class GlobalPhase(Operation):
     @staticmethod
     def compute_decomposition(
         phi, wires: WiresLike = ()
-    ):  # pylint:disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::

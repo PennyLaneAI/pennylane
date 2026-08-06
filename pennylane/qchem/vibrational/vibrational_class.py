@@ -14,8 +14,7 @@
 """This module contains functions and classes to generate data needed to construct a
 vibrational Hamiltonian for a given molecule."""
 
-# pylint: disable=import-outside-toplevel,unused-variable,too-many-instance-attributes
-# pylint: disable=too-many-arguments
+# pylint: disable=import-outside-toplevel,unused-variable,too-many-instance-attributes,too-many-arguments
 
 from dataclasses import dataclass
 
