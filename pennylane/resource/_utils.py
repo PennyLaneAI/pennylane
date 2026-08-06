@@ -120,6 +120,7 @@ def preprocess_level_input(
         "all": list(range(0, total_levels)),
         "all-mlir": list(range(num_tape_levels, total_levels)),
         "user": [total_levels - 1],
+        "top": [0],
     }
     if isinstance(level, str) and level in default_level_map:
         return default_level_map[level]
