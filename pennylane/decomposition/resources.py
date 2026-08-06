@@ -427,8 +427,6 @@ def custom_ctrl_op_to_base():
     """The set of custom controlled operations."""
 
     return {
-        qp.CNOT: qp.X,
-        qp.Toffoli: qp.X,
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
         qp.CRot: qp.Rot,

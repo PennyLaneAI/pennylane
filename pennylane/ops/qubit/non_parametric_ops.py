@@ -30,12 +30,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
@@ -971,11 +966,9 @@ def _controlled_z_resources(  # pylint: disable=unused-argument
         return {qp.CCZ: 1}
     return {
         qp.H: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=len(control_wires),
-            num_zero_control_values=0,
-            num_work_wires=len(work_wires),
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 1,
     }
@@ -1563,11 +1556,9 @@ def _controlled_swap_resources(control_wires, work_wires, work_wire_type, **_):
         return {qp.CSWAP: 1}
     return {
         qp.CNOT: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=len(control_wires) + 1,
-            num_zero_control_values=0,
-            num_work_wires=len(work_wires),
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 2],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 1,
     }

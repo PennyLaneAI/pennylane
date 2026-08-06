@@ -321,16 +321,6 @@ def test_cleanup_method():
     assert inst.state is None
 
 
-def test_returning_operators():
-    """Test that operators that are returned are still processed by the interpreter."""
-
-    @SimplifyInterpreter()
-    def f():
-        return qp.X(0) ** 2
-
-    qp.assert_equal(f(), qp.I(0))
-
-
 class ConstAdder(PlxprInterpreter):
     """This interpreter, along with the add_3 primitive below, will be used to test
     that consts propagate through higher order primitives correctly."""

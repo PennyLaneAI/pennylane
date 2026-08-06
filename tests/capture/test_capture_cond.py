@@ -903,7 +903,7 @@ class TestDynamicShapeValidation:
         """Test an error is raised if the outvals have different types."""
 
         def true_fn():
-            return qp.X(0)
+            return True
 
         def false_fn():
             return jax.numpy.array(3)
