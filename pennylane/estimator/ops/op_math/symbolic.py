@@ -1067,7 +1067,7 @@ def _(action: Deallocate):
 
 
 @singledispatch
-def apply_controlled(
+def apply_controlled(  # pylint: disable=unused-argument
     action: GateCount | Allocate | Deallocate, num_ctrl_wires: int, num_zero_ctrl: int
 ) -> GateCount | Allocate | Deallocate:
     """Create the controlled version of a resource-tracking gate.
@@ -1085,7 +1085,6 @@ def apply_controlled(
     Returns:
         GateCount or Allocate or Deallocate.
     """
-    # pylint: disable=unused-argument
     return action
 
 

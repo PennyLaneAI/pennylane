@@ -77,7 +77,6 @@ def _get_slice(index, axis, num_axes):
 
 
 class DefaultQubitLegacy(QubitDevice):
-    # pylint: disable=unused-argument,too-many-arguments
     r"""Default qubit device for PennyLane.
 
     .. warning::
@@ -103,6 +102,8 @@ class DefaultQubitLegacy(QubitDevice):
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
     """
+
+    # pylint: disable=unused-argument,too-many-arguments
 
     name = "Default qubit PennyLane plugin (Legacy)"
     short_name = "default.qubit.legacy"

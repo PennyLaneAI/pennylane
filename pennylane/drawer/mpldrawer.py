@@ -59,7 +59,6 @@ def _open_circ_options_process(options):
 
 
 class MPLDrawer:
-    # pylint: disable=too-many-arguments
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
     Args:
@@ -218,6 +217,8 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
     """
+
+    # pylint: disable=too-many-arguments
 
     _box_length = 0.75
     """The width/height of the rectangle drawn by ``box_gate``"""

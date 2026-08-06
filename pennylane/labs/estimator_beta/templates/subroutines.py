@@ -693,7 +693,6 @@ def qrom_state_preparation_phase_grad_resource_decomp(
 
 
 class LabsQROM(ResourceOperator):
-    # pylint: disable=arguments-differ,too-many-arguments
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 
     Args:
@@ -747,6 +746,8 @@ class LabsQROM(ResourceOperator):
     'X': 18,
     'Hadamard': 24
     """
+
+    # pylint: disable=arguments-differ,too-many-arguments
 
     resource_keys = {
         "num_bitstrings",
