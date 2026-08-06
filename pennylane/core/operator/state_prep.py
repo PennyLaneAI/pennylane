@@ -26,6 +26,7 @@ from .base import Operation
 class StatePrepBase(Operation):
     """An interface for state-prep operations."""
 
+    _stateprep_version = 1
     grad_method = None
 
     @abc.abstractmethod
@@ -48,6 +49,12 @@ class StatePrepBase(Operation):
         cache: dict | None = None,
     ) -> str:
         return "|Ψ⟩"
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is StatePrepBase:
+            return getattr(subclass, "_stateprep_version", None) in {1, 2}
+        return NotImplemented
 
 
 __all__ = ["StatePrepBase"]
