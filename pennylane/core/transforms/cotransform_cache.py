@@ -85,9 +85,7 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     it cleanly works with all interfaces.
     """
     # tach-ignore
-    from pennylane.workflow import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        construct_tape,
-    )
+    from pennylane.workflow import construct_tape  # pylint: disable=import-outside-toplevel
 
     tape = construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
@@ -110,9 +108,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     import jax  # pylint: disable=import-outside-toplevel
 
     # tach-ignore
-    from pennylane.workflow import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        construct_tape,
-    )
+    from pennylane.workflow import construct_tape  # pylint: disable=import-outside-toplevel
 
     tag = jax.core.TraceTag()
     with jax.core.take_current_trace() as parent_trace:

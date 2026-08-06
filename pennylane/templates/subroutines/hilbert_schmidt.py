@@ -474,9 +474,8 @@ def _up_to_last_layer(
     def collect_wires_in_order(ops):
         accumulator = []
         for operator in ops:
-            for wire_index in range(  # pylint: disable=consider-using-enumerate
-                len(operator.wires)
-            ):
+            # pylint: disable-next=consider-using-enumerate
+            for wire_index in range(len(operator.wires)):
                 if capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
                 else:

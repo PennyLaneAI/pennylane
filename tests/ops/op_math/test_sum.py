@@ -1095,9 +1095,8 @@ class TestSortWires:
             qp.Z("three"),
             qp.CRY(1, ["test", 2]),
         ]
-        sorted_list = Sum._sort(  # pylint: disable=protected-access
-            op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5}
-        )
+        # pylint: disable-next=protected-access
+        sorted_list = Sum._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
         final_list = [
             qp.Y(0),
             qp.CRX(1, ["test", 2]),

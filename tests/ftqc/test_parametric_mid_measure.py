@@ -63,9 +63,8 @@ class TestParametricMidMeasure:
 
         assert hash(metadata)  # metadata must be hashable
 
-        unflattened_op = ParametricMidMeasure._unflatten(  # pylint: disable=protected-access
-            data, metadata
-        )
+        # pylint: disable-next=protected-access
+        unflattened_op = ParametricMidMeasure._unflatten(data, metadata)
         assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.jax

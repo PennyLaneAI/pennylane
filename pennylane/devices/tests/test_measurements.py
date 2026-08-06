@@ -63,9 +63,8 @@ obs = {
 all_obs = obs.keys()
 
 # All qubit observables should be available to test in the device test suite
-all_available_obs = qp.ops._qubit__obs__.copy().union(  # pylint: disable=protected-access
-    {"Prod", "SProd", "Sum"}
-)
+# pylint: disable-next=protected-access
+all_available_obs = qp.ops._qubit__obs__.copy().union({"Prod", "SProd", "Sum"})
 # Note that the identity is not technically a qubit observable
 all_available_obs |= {"Identity"}
 

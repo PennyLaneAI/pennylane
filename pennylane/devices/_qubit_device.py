@@ -1125,9 +1125,8 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         Returns:
             float: expectation value estimate.
         """
-        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            ClassicalShadow,
-        )
+        # tach-ignore
+        from pennylane.shadows import ClassicalShadow  # pylint: disable=import-outside-toplevel
 
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())

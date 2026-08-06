@@ -40,9 +40,9 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable-next=wrong-import-position
 from pennylane.capture.primitives import AbstractMeasurement, operator_p
-from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
-    assert_eqn_matches_op,
-)
+
+# pylint: disable-next=wrong-import-position
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

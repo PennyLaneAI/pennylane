@@ -921,9 +921,8 @@ class QuantumScript:
         Returns:
             .CircuitGraph: the circuit graph object
         """
-        from pennylane.circuit_graph import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            CircuitGraph,
-        )
+        # tach-ignore
+        from pennylane.circuit_graph import CircuitGraph  # pylint: disable=import-outside-toplevel
 
         if self._graph is None:
             self._graph = CircuitGraph(
@@ -992,9 +991,8 @@ class QuantumScript:
         Returns:
             str: the circuit representation of the quantum script
         """
-        from pennylane.drawer import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            tape_text,
-        )
+        # tach-ignore
+        from pennylane.drawer import tape_text  # pylint: disable=import-outside-toplevel
 
         return tape_text(
             self,
@@ -1152,10 +1150,8 @@ def _get_base_obs(observables):
 
     overlapping_ops_observables = []
 
-    from pennylane.ops.op_math import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        CompositeOp,
-        SymbolicOp,
-    )
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.ops.op_math import CompositeOp, SymbolicOp  # tach-ignore
 
     while any(isinstance(o, (CompositeOp, SymbolicOp)) for o in observables):
 
