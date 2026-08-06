@@ -45,7 +45,7 @@ from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last
 
 
-class MultiRZ(Operation):
+class MultiRZ(Operator2):
     r"""
     Arbitrary multi Z rotation.
 
@@ -71,23 +71,19 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
+    dynamic_argnames = ("theta",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"theta": Float, "wires": Wire[-1]}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_wires"}
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
-    def _flatten(self) -> FlatPytree:
-        return self.data, (self.wires, tuple())
-
     def __init__(self, theta: TensorLike, wires: WiresLike):
         wires = Wires(wires)
-        self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires)
         if not self._wires:
             raise ValueError(
@@ -95,7 +91,7 @@ class MultiRZ(Operation):
             )
 
     @staticmethod
-    def compute_matrix(theta: TensorLike, num_wires: int) -> TensorLike:
+    def compute_matrix(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -105,20 +101,22 @@ class MultiRZ(Operation):
 
         Args:
             theta (TensorLike): rotation angle
-            num_wires (int): number of wires the rotation acts on
+            wires (WiresLike): wires the rotation acts on
 
         Returns:
             TensorLike: canonical matrix
 
         **Example**
 
-        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), 2)
+        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), (0, 1))
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
                dtype=torch.complex128)
         """
+        wires = Wires(wires)
+        num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
         if (
@@ -136,8 +134,13 @@ class MultiRZ(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
+    @property
+    def num_wires(self):
+        """Returns the number of wires the operation acts on."""
+        return len(self.wires)
+
     @staticmethod
-    def compute_eigvals(theta: TensorLike, num_wires: int) -> TensorLike:
+    def compute_eigvals(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -154,7 +157,7 @@ class MultiRZ(Operation):
 
         Args:
             theta (TensorLike): rotation angle
-            num_wires (int): number of wires the rotation acts on
+            wires (WiresLike): wires the rotation acts on
 
         Returns:
             TensorLike: eigenvalues
@@ -162,10 +165,10 @@ class MultiRZ(Operation):
         **Example**
 
         >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
-        tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
-                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
-               dtype=torch.complex128)
+        tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
+        wires = Wires(wires)
+        num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
         if (
@@ -178,42 +181,6 @@ class MultiRZ(Operation):
             return math.exp(-0.5j * theta * eigs)
 
         return math.exp(math.outer(-0.5j * theta, eigs))
-
-    @staticmethod
-    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
-        theta: TensorLike, wires: WiresLike, **kwargs
-    ) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.MultiRZ.decomposition`.
-
-        Args:
-            theta (TensorLike): rotation angle :math:`\theta`
-            wires (Iterable, Wires): the wires the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.MultiRZ.compute_decomposition(1.2, wires=(0,1))
-        [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
-
-        """
-        ops = [
-            qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1], strict=True)
-        ]
-        ops.append(RZ(theta, wires=wires[0]))
-        ops += [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0], strict=True)]
-
-        return ops
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
 
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -230,12 +197,15 @@ class MultiRZ(Operation):
         return MultiRZ(theta, wires=self.wires)
 
 
-def _multi_rz_decomposition_resources(num_wires):
+# pylint: disable=unused-argument
+def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
+    num_wires = len(wires)
     return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
 
 @register_resources(_multi_rz_decomposition_resources)
-def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
+def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
+
     if compiler.active() or qp.capture.enabled():
         wires = math.array(wires, like="jax")
 
@@ -253,8 +223,8 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
-add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
-add_decomps("Pow(MultiRZ)", pow_rotation)
+add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
+add_decomps("Pow(MultiRZ)", pow_rotation2)
 
 
 class PauliRot(Operator2):
@@ -456,7 +426,7 @@ class PauliRot(Operator2):
             strict=True,
         )
 
-        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
+        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, list(range(len(non_identity_gates))))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
@@ -521,7 +491,7 @@ class PauliRot(Operator2):
         if set(pauli_word) == {"I"}:
             return qp.GlobalPhase.compute_eigvals(0.5 * theta, wires=range(len(pauli_word)))
 
-        return MultiRZ.compute_eigvals(theta, len(pauli_word))
+        return MultiRZ.compute_eigvals(theta, list(range(len(pauli_word))))
 
     @staticmethod
     def compute_decomposition(
@@ -592,7 +562,7 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
     return {
         qp.Hadamard: 2 * pauli_word.count("X"),
         qp.RX: 2 * pauli_word.count("Y"),
-        qp.resource_rep(qp.MultiRZ, num_wires=num_active_wires): 1,
+        qp.MultiRZ(Float, Wire[num_active_wires]): 1,
     }
 
 
