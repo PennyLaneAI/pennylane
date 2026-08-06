@@ -24,7 +24,7 @@ Origin of the code in this module:
   `third_party/nvidia/backend/driver.py` or `third_party/amd/backend/driver.py`.
 
 Local code in this module:
-- `build_shared` links the final `.so` from Triton's generated C launcher.
+- `build_so` links the final `.so` from Triton's generated C launcher.
 - `_copy_generated_source` adds `#include <stdlib.h>` because Triton's generated
   `compile.c` templates call `exit(...)` but do not include that header themselves.
 """
@@ -46,7 +46,7 @@ from triton.tools import compile as triton_compile_tool
 # Local wrapper around Triton's AOT artifacts: compile the kernel, materialize
 # Triton's generated C launcher source, link the final shared library, then
 # delete temporary sources.
-def build_shared(
+def build_so(
     kernel,
     *,
     signature: dict[str, str],
@@ -55,8 +55,7 @@ def build_shared(
     target: str = "hip:gfx90a:64",
     num_warps: int = 1,
     num_stages: int = 1,
-    build_dir: str = ".",
-    out: str = "librdma_triton_decoder.so",
+    out: str,
     compiler: str = "",
     cflags: tuple[str, ...] = (),
 ) -> tuple[Path, str]:
@@ -66,10 +65,9 @@ def build_shared(
     if target.count(":") != 2:
         raise ValueError(f"target must look like 'backend:arch:warp', got {target!r}")
 
-    build_path = Path(build_dir).resolve()
-    build_path.mkdir(parents=True, exist_ok=True)
     out_path = Path(out).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    build_path = out_path.parent
 
     backend, generated_symbol, generated_c = _compile_kernel(
         kernel,

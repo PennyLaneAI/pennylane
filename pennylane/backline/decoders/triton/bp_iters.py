@@ -15,14 +15,6 @@
 import triton
 import triton.language as tl
 
-from .math_utils import (
-    _bp_c2v_msg,
-    _bp_tanh_half,
-    _get_syndrome_signs,
-    _llr_from_p,
-    _sign1,
-)
-
 
 # Adapted from Pennylane Blog: https://pennylane.ai/demos/tutorial_bp_catalyst
 @triton.jit
@@ -85,68 +77,32 @@ def _sum_product_posteriors(
         P += (post,)
     return P
 
+# ========== Math Utils =================
+@triton.jit
+def _get_syndrome_signs(syndrome, NCHECKS: tl.constexpr):
+    """Convert syndrome bits to bipolar signs."""
+    s = ()
+    for i in tl.static_range(NCHECKS):
+        s += (tl.where(((syndrome >> i) & 1) != 0, -1.0, 1.0),)
+    return s
+
 
 @triton.jit
-def _norm_min_sum_posteriors(
-    syndrome,
-    H: tl.constexpr,
-    prob: tl.constexpr = 0.1,
-    NITER: tl.constexpr = 10,
-    ALPHA: tl.constexpr = 0.75,
-    BIG: tl.constexpr = 1.0e9,
-):
-    """Compute posterior LLRs with normalized min-sum decoding."""
-    L0: tl.constexpr = _llr_from_p(prob)
-    NCHECKS: tl.constexpr = len(H)
-    NVARS: tl.constexpr = len(H[0])
+def _bp_tanh_half(x):
+    """Compute tanh(x / 2) from exponentials."""
+    e = tl.exp(x)
+    return (e - 1.0) / (e + 1.0)
 
-    s = _get_syndrome_signs(syndrome, NCHECKS)
 
-    E = ()
-    for _ in tl.static_range(NCHECKS):
-        row = ()
-        for _ in tl.static_range(NVARS):
-            row += (0.0,)
-        E += (row,)
+@triton.jit
+def _bp_c2v_msg(ssign, prod, EPS: tl.constexpr = 1e-9):
+    """Compute a numerically bounded check-to-variable message."""
+    hi = 1.0 - EPS
+    p = tl.maximum(-hi, tl.minimum(prod, hi))
+    return ssign * tl.log((1.0 + p) / (1.0 - p))
 
-    for _ in range(NITER):
-        V = ()
-        for c in tl.static_range(NCHECKS):
-            row = ()
-            for v in tl.static_range(NVARS):
-                if H[c][v]:
-                    msg = L0
-                    for c2 in tl.static_range(NCHECKS):
-                        if c2 != c and H[c2][v]:
-                            msg += E[c2][v]
-                    row += (msg,)
-                else:
-                    row += (0.0,)
-            V += (row,)
 
-        newE = ()
-        for c in tl.static_range(NCHECKS):
-            row = ()
-            for v in tl.static_range(NVARS):
-                if H[c][v]:
-                    sign_prod = s[c]
-                    min_mag = BIG
-                    for v2 in tl.static_range(NVARS):
-                        if v2 != v and H[c][v2]:
-                            m = V[c][v2]
-                            sign_prod *= _sign1(m)
-                            min_mag = tl.minimum(min_mag, tl.abs(m))
-                    row += (ALPHA * sign_prod * min_mag,)
-                else:
-                    row += (0.0,)
-            newE += (row,)
-        E = newE
-
-    P = ()
-    for v in tl.static_range(NVARS):
-        post = L0
-        for c in tl.static_range(NCHECKS):
-            if H[c][v]:
-                post += E[c][v]
-        P += (post,)
-    return P
+@triton.constexpr_function
+def _llr_from_p(p):
+    """Convert an error probability to a log-likelihood ratio."""
+    return math.log((1.0 - p) / p)

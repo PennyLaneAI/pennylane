@@ -30,11 +30,9 @@ def _persistent_css_decoder_kernel(
     total,
     Hx: tl.constexpr,
     Hz: tl.constexpr,
-    BP_VARIANT: tl.constexpr,
     POSTPROCESS: tl.constexpr,
     PROB: tl.constexpr,
     NITER: tl.constexpr,
-    ALPHA: tl.constexpr,
 ):
     """Decode ring-buffer requests until completion or shutdown.
 
@@ -65,7 +63,7 @@ def _persistent_css_decoder_kernel(
         nspins = tl.zeros((), dtype=tl.uint32)
         # loop until expected seq or stop
         while (seq != expect) and (halt == 0):
-            if (nspins & 0x3FF) == 0:
+            if (nspins & 1023) == 0:
                 # check the stop flag only every 1024 iters
                 halt = tl.load(stop_u32_ptr, volatile=True) != 0
             nspins += 1
@@ -80,21 +78,17 @@ def _persistent_css_decoder_kernel(
                 correction = _decode_one(
                     syndrome,
                     Hx,
-                    bp_variant=BP_VARIANT,
                     postprocess=POSTPROCESS,
                     prob=PROB,
                     NITER=NITER,
-                    ALPHA=ALPHA,
                 )
             elif decoder_id == 1:
                 correction = _decode_one(
                     syndrome,
                     Hz,
-                    bp_variant=BP_VARIANT,
                     postprocess=POSTPROCESS,
                     prob=PROB,
                     NITER=NITER,
-                    ALPHA=ALPHA,
                 )
             else:
                 # NOTE: unrecognized decoder_id -> no correction
