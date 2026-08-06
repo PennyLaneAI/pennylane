@@ -15,34 +15,49 @@
 import triton
 import triton.language as tl
 
-from .posteriors import _norm_min_sum_posteriors, _sum_product_posteriors
-from .postprocess import _apply_postprocess
+from .bp_iters import _sum_product_posteriors
 
+# ================== Single Syndrome Decoder ====================
 
 @triton.jit
 def _decode_one(
     syndrome,
     H: tl.constexpr,
-    bp_variant: tl.constexpr = "sum_product",
     postprocess: tl.constexpr = "hard",
     prob: tl.constexpr = 0.1,
     NITER: tl.constexpr = 10,
-    ALPHA: tl.constexpr = 0.75,
 ):
     """Decode one syndrome into a correction."""
-    NCHECKS: tl.constexpr = len(H)
-    NVARS: tl.constexpr = len(H[0])
-    tl.static_assert(
-        (bp_variant == "sum_product") or (bp_variant == "norm_min_sum"),
-        "unknown belief-propagation variant",
-    )
-    tl.static_assert(NCHECKS <= 64, "decoder supports <= 64 check bits")
-    tl.static_assert(NVARS <= 64, "decoder supports <= 64 variable bits")
-
     syndrome = tl.cast(syndrome, tl.uint64)
 
-    if bp_variant == "sum_product":
-        P = _sum_product_posteriors(syndrome, H, prob, NITER)
-    else:
-        P = _norm_min_sum_posteriors(syndrome, H, prob, NITER, ALPHA)
-    return _apply_postprocess(P, syndrome, postprocess=postprocess)
+    P = _sum_product_posteriors(syndrome, H, prob, NITER)
+    if postprocess == "osd":
+        return _osd(P, syndrome)
+    return _hard_decision(P)
+
+# ========================= Post Process ========================
+
+@triton.jit
+def _hard_decision(P):
+    """Pack negative posterior values into a correction mask."""
+    one = tl.cast(1, tl.uint64)
+    zero = tl.cast(0, tl.uint64)
+    mask = zero
+    for i in tl.static_range(len(P)):
+        mask = mask | (tl.where(P[i] < 0.0, one, zero) << i)
+    return mask
+
+
+@triton.jit
+def _osd(P, syndrome):
+    """Build an order-zero one-bit correction for a nonzero syndrome."""
+    one = tl.cast(1, tl.uint64)
+    zero = tl.cast(0, tl.uint64)
+    bi = zero
+    best = P[0]
+    for i in tl.static_range(1, len(P)):
+        c = P[i] < best
+        bi = tl.where(c, tl.cast(i, tl.uint64), bi)
+        best = tl.where(c, P[i], best)
+    return tl.where(syndrome != 0, one << bi, zero)
+

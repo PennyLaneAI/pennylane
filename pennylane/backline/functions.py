@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 
-import numpy as np
+from numpy.typing import ArrayLike
 
 
 @dataclass(frozen=True)
@@ -48,17 +48,13 @@ class CoprocessorFunction:
 
 
 def css_decoder(
-    Hx: np.ndarray,
-    Hz: np.ndarray,
+    Hx: ArrayLike,
+    Hz: ArrayLike,
     *,
-    bp_variant: str = "sum_product",
     postprocess: str = "osd",
     niter: int = 10,
     prob: float = 0.1,
-    alpha: float = 0.75,
     platform: str = "hip:gfx90a:64",
-    build_dir: str = "decoder_build_dir",
-    library_name: str = "librdma_triton_decoder.so",
     num_warps: int = 1,
     num_stages: int = 1,
     compiler: str = "",
@@ -70,8 +66,8 @@ def css_decoder(
     shared library that can be used as a :class:`~.CoprocessorFunction`.
 
     Args:
-        Hx (np.ndarray): The X parity-check matrix.
-        Hz (np.ndarray): The Z parity-check matrix.
+        Hx (ArrayLike): The X parity-check matrix.
+        Hz (ArrayLike): The Z parity-check matrix.
 
     Returns:
         CoprocessorFunction: The compiled decode function, ready to pass as a
@@ -87,14 +83,10 @@ def css_decoder(
     so_path, symbol_name = build_css_decoder(
         Hx,
         Hz,
-        bp_variant=bp_variant,
         postprocess=postprocess,
         niter=niter,
         prob=prob,
-        alpha=alpha,
         platform=platform,
-        build_dir=build_dir,
-        library_name=library_name,
         num_warps=num_warps,
         num_stages=num_stages,
         compiler=compiler,
