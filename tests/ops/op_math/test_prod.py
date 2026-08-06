@@ -26,6 +26,7 @@ from pennylane import math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
@@ -1663,7 +1664,7 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.X(1), qp.X(2), qp.MultiRZ(0.5, wires=(0, 1))]
-        resources = {abstractify(qp.X): 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 3, qp.MultiRZ(Float, Wire[2]): 1}
 
         resource_obj = default_decomp.compute_resources(resources=resources)
 
