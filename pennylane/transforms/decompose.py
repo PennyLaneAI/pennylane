@@ -24,7 +24,7 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.core import Operator1, queuing
+from pennylane.core import queuing
 from pennylane.core.operator import Operator
 from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
@@ -190,38 +190,20 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                if isinstance(op, Operator1):
-                    wires = _args[-num_wires:]
-                    if not any(is_abstract_qubit(w) for w in wires):
-                        wires = math.array(wires, like="jax")
-                    rule(*_args[:-num_wires], wires=wires, **_kwargs)
-                else:
-                    rule(*_args, **_kwargs)
+                wires = _args[-num_wires:]
+                if not any(is_abstract_qubit(w) for w in wires):
+                    wires = math.array(wires, like="jax")
+                rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
-            if isinstance(op, Operator1):
-                args = (*op.parameters, *op.wires)
-                decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
-            else:
-                args = (
-                    tuple(op.dynamic_args.values())
-                    + tuple(op.wire_args.values())
-                    + tuple(op.hybrid_args.values())
-                )
-                decomp_fn = partial(
-                    compute_qfunc_decomposition,
-                    **op.static_args,
-                    **op.compilable_args,
-                )
+            args = (*op.parameters, *op.wires)
 
+            decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
             jaxpr_decomp = make_plxpr(decomp_fn)(*args)
 
             self._current_depth += 1
             # We don't need to copy the interpreter here, as the jaxpr of the decomposition
             # is evaluated with a new environment frame placed on top of the stack.
-            if isinstance(op, Operator1):
-                out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
-            else:
-                out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *op.parameters, *op.wires)
+            out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
             self._current_depth -= 1
 
             return out
