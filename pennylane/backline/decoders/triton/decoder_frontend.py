@@ -14,6 +14,8 @@
 
 """Frontend for building Triton decoder shared libraries."""
 
+# pylint: disable=no-name-in-module,no-member,too-many-arguments
+
 from __future__ import annotations
 
 import shutil
@@ -103,7 +105,7 @@ def build_triton_decoder(
         raise
 
 
-def build_css_decoder(
+def build_css_bp_decoder(
     Hx: ArrayLike,
     Hz: ArrayLike,
     *,
@@ -121,7 +123,7 @@ def build_css_decoder(
     Example:
 
         >>> import numpy as np
-        >>> from pennylane.backline.decoders.triton.decoder_frontend import build_css_decoder
+        >>> from pennylane.backline.decoders.triton.decoder_frontend import build_css_bp_decoder
         >>> # Steane [[7, 1, 3]] code X parity-check matrix.
         >>> SteaneHx = np.array([
         ...     [1, 0, 1, 0, 1, 0, 1],
@@ -129,7 +131,7 @@ def build_css_decoder(
         ...     [0, 0, 0, 1, 1, 1, 1],
         ... ])
         >>> Hz = Hx = SteaneHx
-        >>> so_path, symbol_name = build_css_decoder(
+        >>> so_path, symbol_name = build_css_bp_decoder(
         ...     Hx,
         ...     Hz,
         ...     postprocess="osd",
@@ -185,13 +187,9 @@ def _to_numpy(H: ArrayLike) -> np.ndarray:
     if not np.all((h == 0) | (h == 1)):
         raise ValueError("H must contain only binary entries 0/1")
     if h.shape[0] > 64:
-        raise ValueError(
-            f"H has {h.shape[0]} checks, but Triton decoder supports at most 64"
-        )
+        raise ValueError(f"H has {h.shape[0]} checks, but Triton decoder supports at most 64")
     if h.shape[1] > 64:
-        raise ValueError(
-            f"H has {h.shape[1]} variables, but Triton decoder supports at most 64"
-        )
+        raise ValueError(f"H has {h.shape[1]} variables, but Triton decoder supports at most 64")
     return h
 
 
@@ -200,9 +198,7 @@ def _validate_build_options(
 ) -> None:
     """Validate generic Triton decoder build options."""
     if not decoder_fns:
-        raise ValueError(
-            "decoder_fns must be a non-empty tuple of Triton decoder functions"
-        )
+        raise ValueError("decoder_fns must be a non-empty tuple of Triton decoder functions")
     if num_warps <= 0:
         raise ValueError("num_warps must be > 0")
     if num_stages <= 0:
@@ -224,9 +220,7 @@ def _validate_css_options(*, postprocess: str, niter: int, prob: float) -> None:
         raise ValueError("prob must be in (0, 1)")
 
 
-def _make_css_decoder(
-    h: np.ndarray, *, postprocess: str, niter: int, prob: float
-) -> object:
+def _make_css_decoder(h: np.ndarray, *, postprocess: str, niter: int, prob: float) -> object:
     """Build one specialized Triton CSS decoder function."""
     h = tl.constexpr(tuple(tuple(int(v) for v in row) for row in h.tolist()))
     postprocess = tl.constexpr(postprocess)
@@ -238,3 +232,4 @@ def _make_css_decoder(
         return _decode_one(syndrome, h, postprocess=postprocess, prob=prob, NITER=niter)
 
     return decode
+

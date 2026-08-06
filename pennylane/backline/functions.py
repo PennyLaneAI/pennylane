@@ -76,11 +76,11 @@ def css_decoder(
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
     """
     try:
-        from .decoders.triton.decoder_frontend import build_css_decoder
+        from .decoders.triton.decoder_frontend import build_css_bp_decoder
     except ImportError as exc:
         raise ImportError("css_decoder requires Triton support.") from exc
 
-    so_path, symbol_name = build_css_decoder(
+    so_path, symbol_name = build_css_bp_decoder(
         Hx,
         Hz,
         postprocess=postprocess,
