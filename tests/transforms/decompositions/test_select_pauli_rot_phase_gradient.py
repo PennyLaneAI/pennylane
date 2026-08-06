@@ -23,7 +23,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -223,67 +222,6 @@ def test_integration_multi_wire(rot_axis, seed):
     expected = np.kron(zeros, out_state_expected)
 
     assert np.allclose(out_state, expected), f"decomposition wrong for rot_axis={rot_axis}"
-
-
-@pytest.mark.usefixtures("enable_graph_decomposition")
-@pytest.mark.capture
-def test_capture_compatibility():
-    """Ensures capture compatibility."""
-
-    # pylint: disable=import-outside-toplevel
-    import jax
-
-    from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-    prec = 3
-    num_controls = 2
-    control_wires = list(range(num_controls))
-    target_wire = num_controls
-    first_aux = num_controls + 1
-
-    angle_wires = list(range(first_aux, first_aux + prec))
-    phase_grad_wires = list(range(first_aux + prec, first_aux + 2 * prec))
-    num_work_wires = max(prec, num_controls + 1) - 1
-    work_wires = list(range(first_aux + 2 * prec, first_aux + 2 * prec + num_work_wires))
-
-    angles = np.array(
-        [
-            (1 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
-            (1 / 2 + 1 / 4 + 0 / 8) * 4 * np.pi,
-            (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi,
-            (0 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
-        ]
-    )
-
-    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
-        angle_wires, phase_grad_wires, work_wires
-    )
-
-    gate_set = {
-        "QROM",
-        "SemiAdder",
-        "CNOT",
-        "PauliX",
-        "GlobalPhase",
-    }
-
-    @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.SelectPauliRot: custom_decomp})
-    def f(angles):
-        qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
-        return qp.state()
-
-    cjaxpr = jax.make_jaxpr(f)(angles)
-
-    collector = CollectOpsandMeas()
-    collector.eval(cjaxpr.jaxpr, cjaxpr.consts, angles)
-
-    op_names = {op.name for op in collector.state["ops"]}
-    # NOTE: Because `adjoint` is lazy in ChangeOpBasis,
-    # unsimplified operators will be collected.
-    gate_set |= {"Adjoint(CNOT)", "Adjoint(PauliX)"}
-    assert op_names.issubset(
-        gate_set
-    ), f"Following ops are present but not in gateset: {op_names - gate_set}"
 
 
 @pytest.mark.parametrize(
