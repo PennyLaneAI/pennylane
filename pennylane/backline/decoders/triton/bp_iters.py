@@ -17,6 +17,8 @@ import math
 import triton
 import triton.language as tl
 
+from .utils import _get_syndrome_signs, _bp_c2v_msg, _llr_from_p
+
 
 # Adapted from Pennylane Blog: https://pennylane.ai/demos/tutorial_bp_catalyst
 @triton.jit
@@ -78,33 +80,3 @@ def _sum_product_posteriors(
                 post += E[c][v]
         P += (post,)
     return P
-
-# ========== Math Utils =================
-@triton.jit
-def _get_syndrome_signs(syndrome, NCHECKS: tl.constexpr):
-    """Convert syndrome bits to bipolar signs."""
-    s = ()
-    for i in tl.static_range(NCHECKS):
-        s += (tl.where(((syndrome >> i) & 1) != 0, -1.0, 1.0),)
-    return s
-
-
-@triton.jit
-def _bp_tanh_half(x):
-    """Compute tanh(x / 2) from exponentials."""
-    e = tl.exp(x)
-    return (e - 1.0) / (e + 1.0)
-
-
-@triton.jit
-def _bp_c2v_msg(ssign, prod, EPS: tl.constexpr = 1e-9):
-    """Compute a numerically bounded check-to-variable message."""
-    hi = 1.0 - EPS
-    p = tl.maximum(-hi, tl.minimum(prod, hi))
-    return ssign * tl.log((1.0 + p) / (1.0 - p))
-
-
-@triton.constexpr_function
-def _llr_from_p(p):
-    """Convert an error probability to a log-likelihood ratio."""
-    return math.log((1.0 - p) / p)
