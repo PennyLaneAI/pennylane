@@ -61,7 +61,6 @@ class StateMP(StateMeasurement):
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint: disable=redefined-outer-name
         def cast_to_complex(state):
-            # pylint: disable=redefined-outer-name
             dtype = str(state.dtype)
             if "complex" in dtype:
                 return state
