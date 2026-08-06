@@ -83,8 +83,6 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
         when program capture is enabled.
         """
 
-        # pylint: disable=super-init-not-called
-
         def __init__(
             self,
             *,
@@ -97,6 +95,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             alt_decomps=None,
             strict=True,
         ):  # pylint: disable=too-many-arguments
+            # pylint: disable=super-init-not-called
             self.max_expansion = max_expansion
             self._current_depth = 0
 

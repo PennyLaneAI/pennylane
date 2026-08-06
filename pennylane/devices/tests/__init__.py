@@ -214,8 +214,7 @@ def cli():
 
         $ pl-device-test --device default.qubit --shots 1234 --tb=short -x
     """
-    # pylint: disable=import-outside-toplevel
-    from .conftest import pytest_addoption
+    from .conftest import pytest_addoption  # pylint: disable=import-outside-toplevel
 
     parser = argparse.ArgumentParser(
         description="See below for available options and commands for working with the PennyLane device tests."

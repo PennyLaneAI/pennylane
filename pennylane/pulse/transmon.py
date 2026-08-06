@@ -421,9 +421,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 class AmplitudeAndPhaseAndFreq:  # pylint: disable=too-few-public-methods
     """Class storing combined amplitude, phase and freq callables"""
 
-    # pylint: disable=too-many-return-statements
-
     def __init__(self, trig_fn, amp, phase, freq, hz_to_rads=2 * np.pi):
+        # pylint: disable=too-many-return-statements
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
         self.freq_is_callable = callable(freq)

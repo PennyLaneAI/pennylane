@@ -133,11 +133,10 @@ class TestQFT:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
-    # pylint: disable=protected-access
-
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
+        # pylint: disable=protected-access
         import jax
 
         from pennylane.capture.primitives import for_loop_prim

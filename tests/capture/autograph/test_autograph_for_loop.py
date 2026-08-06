@@ -690,9 +690,8 @@ class TestPennyLaneForLoops:
     def test_cond_if_for_loop_for(self):
         """Test Python conditionals and loops together with their PennyLane counterparts."""
 
-        # pylint: disable=cell-var-from-loop
-
         def f(x):
+            # pylint: disable=cell-var-from-loop
             acc = 0
             if x < 3:
 

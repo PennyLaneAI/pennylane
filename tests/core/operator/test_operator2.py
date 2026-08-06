@@ -12,7 +12,7 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=protected-access,too-few-public-methods
+# pylint: disable=protected-access
 
 # TODO: [sc-120817] Add interface tests
 # TODO: [sc-120982] Add integration tests
@@ -2491,7 +2491,7 @@ class TestLegacyGradMethodProperty:
     def test_generator_gives_frequencies(self):
         """Tests that a generator can create parameter frequencies which returns analytic."""
 
-        class GenOp(DynOp):
+        class GenOp(DynOp):  # pylint: disable=too-few-public-methods
             @override
             def generator(self):
                 return -0.5 * qp.Z(0)

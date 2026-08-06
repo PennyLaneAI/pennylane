@@ -225,9 +225,9 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     <tf.Tensor: shape=(), dtype=float32, numpy=8.0>) of type <class 'tuple'>.
 
     """
-    # pylint: disable=import-outside-toplevel
 
     def compute_jacobian(*args, **kwargs):
+        # pylint: disable=import-outside-toplevel
         interface = get_interface(*args)
 
         if interface == "autograd":

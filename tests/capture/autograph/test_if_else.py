@@ -203,9 +203,8 @@ class TestConditionals:
         """Test return statements from different branches of an if/else statement
         with autograph."""
 
-        # pylint: disable=no-else-return
-
         def f(x: int):
+            # pylint: disable=no-else-return
             if x > 0:
                 return 25  # converted to cond_fn
             else:

@@ -310,12 +310,11 @@ def test_jax_jit():
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
-    # pylint: disable=protected-access
-
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.xfail(reason="arrays should never be in metadata")
     def test_grover_plxpr(self):
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
+        # pylint: disable=protected-access
         import jax
 
         from pennylane.capture.primitives import for_loop_prim, operator_p

@@ -191,11 +191,10 @@ class TestDecomposition:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
-    # pylint: disable=protected-access
-
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_strongly_entangling_plxpr(self):
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
+        # pylint: disable=protected-access
         import jax
         from jax import numpy as jnp
 

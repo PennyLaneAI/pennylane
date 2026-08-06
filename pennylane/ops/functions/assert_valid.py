@@ -217,6 +217,7 @@ def _assert_counts_match(counts_0, counts_1):
 
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
+    # pylint: disable=too-many-branches
 
     params, args, kwargs = _get_decomp_args(op)
 
