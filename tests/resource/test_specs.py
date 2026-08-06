@@ -461,7 +461,6 @@ class TestSpecsTransform:
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_wires": 2,
-                    "num_wires": 2,
                     "circuit_depth": 5,
                     "total_quantum_operations": 5,
                     "vars": frozenset(),
@@ -471,7 +470,6 @@ class TestSpecsTransform:
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
                     "num_wires": 3,
-                    "num_wires": 3,
                     "circuit_depth": 5,
                     "total_quantum_operations": 5,
                     "vars": frozenset(),
@@ -480,7 +478,6 @@ class TestSpecsTransform:
                 {
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
-                    "num_wires": 3,
                     "num_wires": 3,
                     "circuit_depth": 5,
                     "total_quantum_operations": 5,
