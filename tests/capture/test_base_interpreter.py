@@ -19,6 +19,7 @@ This submodule tests strategy structure for defining custom plxpr interpreters
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator.operator2 import Operator2
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -189,7 +190,7 @@ def test_controlled_operator_handling(op_class, args, kwargs):
         return qp.expval(qp.Z(0))
 
     jaxpr = jax.make_jaxpr(f)()
-    if op_class._operator_version == 2:
+    if issubclass(op_class, Operator2):
         assert_eqn_matches_op(jaxpr.eqns[0], op_class)
     else:
         assert jaxpr.eqns[0].primitive == op_class._primitive
