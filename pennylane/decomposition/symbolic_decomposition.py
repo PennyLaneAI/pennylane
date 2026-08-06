@@ -336,9 +336,6 @@ def _flip_control_adjoint_resource(
     num_work_wires,
     work_wire_type,
 ):  # pylint: disable=too-many-arguments
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(
@@ -349,9 +346,7 @@ def _flip_control_adjoint_resource(
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-    # ``controlled_resource_rep`` returns a ``CompressedResourceOp`` here; ``_adjoint_abstract``
-    # wraps it into the corresponding adjoint resource representation.
-    return {_adjoint_abstract(inner_rep): 1}
+    return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
 
 
 # pylint: disable=too-many-arguments
