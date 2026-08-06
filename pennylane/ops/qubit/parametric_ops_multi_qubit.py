@@ -707,7 +707,7 @@ class PCPhase(Operator2):
            [ 0,  0,  1,  0],
            [ 0,  0,  0, -1]]), wires=[0, 1])
         """
-        dim, N = self.hyperparameters["dimension"]
+        dim, N = (self.dim, 2 ** len(self.wires))
         mat = np.diag([1] * dim + [-1] * (N - dim))
         return qp.Hermitian(mat, wires=self.wires)
 

@@ -900,7 +900,7 @@ class TestMatrix:
         op = qp.PCPhase(phi, dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = np.diag(
             [np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(2**num_wires)]
@@ -921,7 +921,7 @@ class TestMatrix:
         op = qp.PCPhase(tf.Variable(phi), dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = tf.Variable(
             np.diag(
@@ -944,7 +944,7 @@ class TestMatrix:
         op = qp.PCPhase(torch.tensor(phi), dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = torch.tensor(
             np.diag(
@@ -969,7 +969,7 @@ class TestMatrix:
         op = qp.PCPhase(phi, dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = jnp.diag(
             jnp.array(
@@ -990,7 +990,7 @@ class TestMatrix:
         op = qp.PCPhase(broadcasted_phi, dim=dim, wires=[0, 1])
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         mats = [
             np.diag([np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(size)])
