@@ -39,7 +39,7 @@ def _bp_tanh_half(x):
 
 
 @triton.jit
-def _bp_c2v_msg(ssign, prod, EPS: tl.constexpr = 1e-9):
+def _bp_c2v_msg(ssign, prod, EPS: tl.constexpr = 1e-6):
     """Compute a numerically bounded check-to-variable message."""
     hi = 1.0 - EPS
     p = tl.maximum(-hi, tl.minimum(prod, hi))
