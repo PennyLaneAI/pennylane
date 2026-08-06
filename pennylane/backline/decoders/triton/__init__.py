@@ -14,6 +14,6 @@
 
 """Triton decoder support for backline."""
 
-from .decoder_frontend import build_css_decoder, build_triton_decoder
+from .decoder_frontend import build_css_bp_decoder, build_triton_decoder
 
-__all__ = ["build_css_decoder", "build_triton_decoder"]
+__all__ = ["build_css_bp_decoder", "build_triton_decoder"]
