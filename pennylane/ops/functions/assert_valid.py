@@ -31,6 +31,7 @@ from pennylane import math
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
@@ -227,7 +228,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     # Test that the resource function is correct
     with qp.capture.pause():
         resources = rule.compute_resources(**params)
-    gate_counts = resources.gate_counts
+    estimated_gate_counts = resources.gate_counts
 
     if qp.capture.enabled():
         import jax  # pylint: disable=import-outside-toplevel
@@ -267,19 +268,25 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
+    if qp.capture.enabled():
+        # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are typically
+        # not aware of that, and still produce resource reps of ChangeOpBasis. Therefore, we unroll
+        # the ChangeOpBasis in the resources manually so that it will match the reality.
+        estimated_gate_counts = _unroll_change_op_basis(estimated_gate_counts)
+
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        non_zero_gate_counts = {k: v for k, v in estimated_gate_counts.items() if v > 0}
         _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in gate_counts for op in actual_gate_counts), (
+        assert all(op in estimated_gate_counts for op in actual_gate_counts), (
             "\nGate counts expected from resource function to contain actual gates:\n"
-            f"{list(gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
+            f"{list(estimated_gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
             "Missing in gate counts from resource function:\n"
-            f"{[op for op in actual_gate_counts if op not in gate_counts]}"
+            f"{[op for op in actual_gate_counts if op not in estimated_gate_counts]}"
         )
 
     # Tests that the decomposition produces the same matrix
@@ -296,6 +303,26 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll any resource reps of ChangeOpBasis."""
+    new_gate_counts = defaultdict(int)
+    for k, count in gate_counts.items():
+        if not isinstance(k, CompressedResourceOp):
+            new_gate_counts[k] += count
+            continue
+        if k.op_type is not qp.ops.ChangeOpBasis:
+            new_gate_counts[k] += count
+            continue
+        for p in ("compute_op", "target_op", "uncompute_op"):
+            op_rep = k.params[p]
+            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
+                for inner_op, inner_count in op_rep.params["resources"].items():
+                    new_gate_counts[inner_op] += count * inner_count
+            else:
+                new_gate_counts[op_rep] += count
+    return new_gate_counts
 
 
 def _check_matrix(op):

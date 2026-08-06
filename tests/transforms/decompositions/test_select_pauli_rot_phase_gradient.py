@@ -224,6 +224,38 @@ def test_integration_multi_wire(rot_axis, seed):
     assert np.allclose(out_state, expected), f"decomposition wrong for rot_axis={rot_axis}"
 
 
+@pytest.mark.capture
+def test_capture_compatibility():
+    """Ensures capture compatibility."""
+
+    prec = 3
+    num_controls = 2
+    control_wires = list(range(num_controls))
+    target_wire = num_controls
+    first_aux = num_controls + 1
+
+    angle_wires = list(range(first_aux, first_aux + prec))
+    phase_grad_wires = list(range(first_aux + prec, first_aux + 2 * prec))
+    num_work_wires = max(prec, num_controls + 1) - 1
+    work_wires = list(range(first_aux + 2 * prec, first_aux + 2 * prec + num_work_wires))
+
+    angles = np.array(
+        [
+            (1 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
+            (1 / 2 + 1 / 4 + 0 / 8) * 4 * np.pi,
+            (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi,
+            (0 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
+        ]
+    )
+
+    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires
+    )
+
+    op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
+    _test_decomposition_rule(op, custom_decomp)
+
+
 @pytest.mark.parametrize(
     "rot_axis, expected_op",
     [
