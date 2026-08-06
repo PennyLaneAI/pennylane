@@ -432,6 +432,7 @@ def custom_ctrl_op_to_base():
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
         qp.CRot: qp.Rot,
+        qp.ControlledPhaseShift: qp.PhaseShift,
     }
 
 

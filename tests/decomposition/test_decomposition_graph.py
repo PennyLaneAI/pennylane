@@ -226,15 +226,6 @@ class TestDecompGraphConstruction:
         assert len(decomp_nodes) == 1
         assert decomp_nodes[0].rule is _custom_ctrl
 
-    @pytest.mark.xfail(
-        reason="This solve controls a v1 PhaseShift, which now produces a generic "
-        "Controlled(PhaseShift) in the resource path because the (PhaseShift, 1) -> "
-        "ControlledPhaseShift entry was dropped from base_to_custom_ctrl_op "
-        "(ControlledPhaseShift is an Operator2 without resource_keys), so it can no longer be "
-        "solved to the {ControlledPhaseShift} gate set. Reverts once Mudit ports "
-        "PhaseShift/ControlledPhaseShift in #9951.",
-        strict=False,
-    )
     def test_get_decomps_symbolic2(self):
         """Tests that get_decomps works properly for symbolicop2."""
 
@@ -967,13 +958,7 @@ class TestControlledDecompositions:
         assert solution.decomposition(qp.ctrl(CustomOp(wires=[1]), control=[0, 2]))
 
     def test_flip_controlled_adjoint(self):
-        """Tests that the controlled form of an adjoint operator is decomposed properly.
-
-        The ``flip_control_adjoint`` rule turns ``ctrl(adjoint(U1))`` into ``adjoint(ctrl(U1))``.
-        ``ctrl(U1)`` dispatches to the custom ``ControlledPhaseShift``, so both the resource
-        function and the concrete rule emit ``adjoint(ControlledPhaseShift)`` -- they must agree
-        on the emitted op type for the graph solution to be consistent with what is applied.
-        """
+        """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
         graph = DecompositionGraph(operations=[op], gate_set={"ControlledPhaseShift"})
@@ -982,25 +967,7 @@ class TestControlledDecompositions:
             rule = solution.decomposition(op)
             _, args, kwargs = _get_decomp_args(op)
             rule(*args, **kwargs)
-        assert q.queue == [qp.adjoint(qp.ctrl(qp.U1(0.5, wires=0), control=[1]))]
-
-    def test_flip_controlled_adjoint_full_solve(self):
-        """Tests that ``ctrl(adjoint(U1))`` decomposes all the way to the target gate set.
-
-        This exercises the *full* graph solve (not just a single-rule application), which is
-        what would surface a mismatch between ``flip_control_adjoint``'s resource function and
-        its concrete implementation: the graph plans against the resource, so the applied rule
-        must emit the same op type for the plan to actually reach ``{ControlledPhaseShift}``.
-        """
-
-        op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
-        tape = qp.tape.QuantumScript([op])
-        with warnings.catch_warnings():
-            # A mismatch between resource and implementation surfaces here as a
-            # ``DecompositionWarning`` ("unable to find a decomposition ...").
-            warnings.simplefilter("error")
-            (decomposed,), _ = qp.transforms.decompose([tape], gate_set={"ControlledPhaseShift"})
-        assert decomposed.operations == [qp.ControlledPhaseShift(-0.5, wires=[1, 0])]
+        assert q.queue == [qp.adjoint(qp.ops.Controlled(qp.U1(0.5, wires=0), control_wires=[1]))]
 
     def test_decompose_with_single_work_wire(self):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""

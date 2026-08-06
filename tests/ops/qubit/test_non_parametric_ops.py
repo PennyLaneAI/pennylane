@@ -902,11 +902,6 @@ class TestPowMethod:
         with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(1.234)
 
-    @pytest.mark.xfail(
-        reason="ControlledPhaseShift now wraps a U1 base rather than PhaseShift; "
-        "reverts once Mudit ports PhaseShift/ControlledPhaseShift in #9951.",
-        strict=False,
-    )
     @pytest.mark.parametrize("n", (0.12, -3.462, 3.693))
     def test_cz_general_power(self, n):
         """Check that CZ raised to a non-integer power that's not the square root

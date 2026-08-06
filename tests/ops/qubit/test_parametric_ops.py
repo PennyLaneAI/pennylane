@@ -279,44 +279,6 @@ class TestParameterFrequencies:
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
-_PCPHASE_CTRL_PHASESHIFT_XFAIL_REASON = (
-    "PCPhase decomposes via ctrl(PhaseShift): the applied op is a ControlledPhaseShift "
-    "(custom_ctrl_dispatch), but the graph resource path now emits a generic "
-    "Controlled(PhaseShift) because the (PhaseShift, 1) -> ControlledPhaseShift entry was "
-    "dropped from base_to_custom_ctrl_op (ControlledPhaseShift is an Operator2 without "
-    "resource_keys). Reverts once Mudit ports PhaseShift/ControlledPhaseShift in #9951."
-)
-
-# (dim, wires) combinations of PCPhase whose decomposition controls a single v1 PhaseShift.
-_PCPHASE_CTRL_PHASESHIFT_XFAILS = {
-    (3, (1, 3)),
-    (22, (0, 1, 3, 2, 7)),
-    (23, (0, 1, 3, 2, 7)),
-    (24, (0, 1, 3, 2, 7)),
-    (25, (0, 1, 3, 2, 7)),
-    (26, (0, 1, 3, 2, 7)),
-}
-
-
-def _mark_pcphase_ctrl_ps_xfails(params):
-    """Mark the PCPhase (dim, wires) params that control a v1 PhaseShift as xfail (#9951)."""
-    marked = []
-    for dim, wires in params:
-        if (dim, tuple(wires)) in _PCPHASE_CTRL_PHASESHIFT_XFAILS:
-            marked.append(
-                pytest.param(
-                    dim,
-                    wires,
-                    marks=pytest.mark.xfail(
-                        reason=_PCPHASE_CTRL_PHASESHIFT_XFAIL_REASON, strict=False
-                    ),
-                )
-            )
-        else:
-            marked.append((dim, wires))
-    return marked
-
-
 class TestDecompositions:
     @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
     def test_phase_decomposition(self, phi, tol):
@@ -735,10 +697,7 @@ class TestDecompositions:
             assert np.allclose(expected_mat, decomp_mat)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize(
-        "dim, wires",
-        _mark_pcphase_ctrl_ps_xfails(two_wire_pcphases + five_wire_pcphases + other_pcphases),
-    )
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition_new(self, dim, wires):
         """Tests the PCPhase decomposition rules."""
 
@@ -3993,12 +3952,10 @@ label_data = [
         "Rot\n(1,\n2,\n3)",
     ),
     (
-        # ``ControlledPhaseShift`` wraps a ``U1`` base and defers to it for labelling, so it
-        # labels (and draws) as ``U1`` rather than the legacy ``Rϕ`` symbol.
         qp.ControlledPhaseShift(1.2345, wires=(0, 1)),
-        "U1",
-        "U1\n(1.23)",
-        "U1\n(1)",
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
     ),
 ]
 

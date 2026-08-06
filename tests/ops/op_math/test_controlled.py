@@ -938,33 +938,6 @@ special_par_op_decomps = [
 
 custom_ctrl_op_decomps = special_non_par_op_decomps + special_par_op_decomps
 
-_CONTROL_ON_ZERO_PHASESHIFT_XFAIL_REASON = (
-    "Control-on-zero of a v1 PhaseShift relies on base_to_custom_ctrl_op mapping "
-    "PhaseShift -> ControlledPhaseShift inside Controlled._decompose_custom_ops; that entry "
-    "was dropped (ControlledPhaseShift is an Operator2 without resource_keys), so the "
-    "control-on-zero decomposition no longer produces a ControlledPhaseShift. Reverts once "
-    "Mudit ports PhaseShift/ControlledPhaseShift in #9951."
-)
-
-
-def _mark_control_on_zero_phaseshift_xfail(param_list):
-    """Mark the v1 ``PhaseShift`` control-on-zero decomposition param as xfail (#9951)."""
-    marked = []
-    for entry in param_list:
-        if entry[0] is qp.PhaseShift:
-            marked.append(
-                pytest.param(
-                    *entry,
-                    marks=pytest.mark.xfail(
-                        reason=_CONTROL_ON_ZERO_PHASESHIFT_XFAIL_REASON, strict=False
-                    ),
-                )
-            )
-        else:
-            marked.append(entry)
-    return marked
-
-
 pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, expected)
     (qp.PauliX, [0], [1], None, [qp.CNOT([1, 0])]),
     (
@@ -1202,7 +1175,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, _, expected",
-        _mark_control_on_zero_phaseshift_xfail(custom_ctrl_op_decomps),
+        custom_ctrl_op_decomps,
     )
     def test_control_on_zero_custom_ops(
         self, base_cls, params, base_wires, ctrl_wires, _, expected
@@ -1697,7 +1670,7 @@ custom_ctrl_ops = [
         [1],
         qp.CRot(0.123, 0.234, 0.456, wires=[1, 0]),
     ),
-    (qp.U1(0.123, wires=0), [1], qp.ControlledPhaseShift(0.123, wires=[1, 0])),
+    (qp.PhaseShift(0.123, wires=0), [1], qp.ControlledPhaseShift(0.123, wires=[1, 0])),
     (
         qp.QubitUnitary(np.array([[0, 1], [1, 0]]), wires=0),
         [1, 2],
@@ -2368,10 +2341,7 @@ class TestTapeExpansionWithControlled:
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [
-            # ``ControlledPhaseShift`` now wraps a ``U1`` base, adding one extra decomposition
-            # layer (``U1`` -> ``PhaseShift``) for its multi-controlled form. At ``max_expansion=2``
-            # one ``Controlled(PhaseShift)`` therefore remains un-expanded (10 instead of 11 gates).
-            (qp.templates.QFT, [], 2, 10),
+            (qp.templates.QFT, [], 2, 11),
             (qp.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
         ],
     )

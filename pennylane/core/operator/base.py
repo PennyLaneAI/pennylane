@@ -1743,7 +1743,7 @@ class Operation(Operator):
         For operators that define a generator, the parameter frequencies are directly
         related to the eigenvalues of the generator:
 
-        >>> op = qp.PhaseShift(0.1, wires=0)
+        >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
         >>> op.parameter_frequencies
         [(1,)]
         >>> gen = qp.generator(op, format="observable")

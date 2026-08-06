@@ -21,7 +21,9 @@ from gate_data import QFT
 
 import pennylane as qp
 from pennylane.capture import run_autograph
-from tests.capture.capture_utils import assert_eqn_matches_op
+from tests.capture.capture_utils import (  # pylint: disable=no-name-in-module
+    assert_eqn_matches_op,
+)
 
 
 @pytest.mark.jax
@@ -171,7 +173,7 @@ class TestDynamicDecomposition:
         cphaseshift_loop = [eqn for eqn in outer_loop_eqn if eqn.primitive == for_loop_prim]
         assert cphaseshift_loop[0].primitive == for_loop_prim
         cphaseshift_eqns = cphaseshift_loop[0].params["jaxpr_body_fn"].eqns
-        assert_eqn_matches_op(cphaseshift_eqns[-1], qp.ControlledPhaseShift)
+        assert cphaseshift_eqns[-1].primitive == qp.ControlledPhaseShift._primitive
 
         assert_eqn_matches_op(swap_loop_eqn[-1], qp.SWAP)
 

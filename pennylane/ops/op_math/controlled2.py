@@ -42,7 +42,7 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -672,26 +672,19 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     return _impl
 
 
-# pylint: disable=unused-argument
 def _flip_control_adjoint_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    # Everything in this file is an ``Operator2``, so we lean on the native ``qp.ctrl`` /
-    # ``qp.adjoint`` dispatchers directly instead of the ``_ctrl_abstract`` / ``_adjoint_abstract``
-    # bridges (which also exist to handle the legacy ``CompressedResourceOp`` path). ``qp.ctrl``
-    # resolves any custom controlled op (e.g. ``ctrl(U1)`` -> ``ControlledPhaseShift``), which is
-    # what makes this decomposition solvable against gate sets like ``{ControlledPhaseShift}``.
-    # ``control_values`` is an abstract array here, so it cannot be inspected for zero controls;
-    # this matches the previous behaviour where ``num_zero_control_values`` always evaluated to 0
-    # in this abstract resource-estimation flow, i.e. the all-true controlled op is used.
-    return {
-        qp.adjoint(
-            qp.ctrl(
-                base.base,
-                control=control_wires,
-                work_wires=work_wires,
-                work_wire_type=work_wire_type,
-            )
-        ): 1
-    }
+    num_zero_control_values = 0
+    if control_values is not None and len(control_values):
+        num_zero_control_values = int(math.sum(math.logical_not(control_values)))
+
+    inner = _ctrl_abstract(
+        base.base,
+        control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+        num_zero_control_values=num_zero_control_values,
+    )
+    return {_adjoint_abstract(inner): 1}
 
 
 # pylint: disable=too-many-arguments
@@ -703,19 +696,16 @@ def flip_control_adjoint(
     work_wires,
     work_wire_type,
     base,
+    wires=None,
     **__,
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    # Use ``qp.ctrl`` (rather than a generic ``ControlledOp2``) so that a custom controlled op
-    # (e.g. ``ctrl(U1) -> ControlledPhaseShift``) is produced. This keeps the applied op type in
-    # sync with ``_flip_control_adjoint_resource`` (which also dispatches via ``qp.ctrl``); a
-    # generic ``ControlledOp2`` would not be graph-solvable to gate sets like
-    # ``{ControlledPhaseShift}`` because custom-controlled ``Operator2`` ops have no resource keys.
+    control = wires[: len(control_wires)] if wires is not None else control_wires
     qp.adjoint(
-        qp.ctrl(
+        ControlledOp2(
             base.base,
-            control=control_wires,
+            control_wires=control,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
@@ -847,6 +837,14 @@ def _ctrl_abstract(
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         )
+
+    if not num_zero_control_values:
+        # pylint: disable=import-outside-toplevel
+        from pennylane.ops.op_math.controlled import base_to_custom_ctrl_op
+
+        op_type = op if isinstance(op, type) else type(op)
+        if custom := base_to_custom_ctrl_op().get((op_type, len(control_wires))):
+            return abstractify(custom)
 
     if not num_zero_control_values:
         return qp.ctrl(
