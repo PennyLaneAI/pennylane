@@ -85,12 +85,10 @@ def _get_polynomial(f, mod, *variable_sizes):
 
         start = 0
         for wire_length in variable_sizes:
-            segment = bin_list[
-                start : start + wire_length
-            ]  # segment corresponding to the i-th variable
-            decimal = int(
-                "".join(map(str, segment)), 2
-            )  # decimal representation of the i-th variable
+            # segment corresponding to the i-th variable
+            segment = bin_list[start : start + wire_length]
+            # decimal representation of the i-th variable
+            decimal = int("".join(map(str, segment)), 2)
             decimal_values.append(decimal)
             start += wire_length
 

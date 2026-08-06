@@ -198,10 +198,7 @@ class TestControlledDecompositionZYZ:
         [
             (
                 qp.ops.Prod(qp.PauliX(0), qp.PauliX(0)),  # type: ignore
-                [
-                    qp.CNOT(wires=[1, 0]),
-                    qp.CNOT(wires=[1, 0]),
-                ],
+                [qp.CNOT(wires=[1, 0]), qp.CNOT(wires=[1, 0])],
             ),
             (
                 qp.s_prod(1j, qp.PauliX(0)),
@@ -652,12 +649,7 @@ class TestMultiControlledUnitary:
         ),
     ]
 
-    gen_ops = [
-        qp.PauliX(0),
-        qp.PauliZ(0),
-        qp.Hadamard(0),
-        qp.Rot(0.123, 0.456, 0.789, wires=0),
-    ]
+    gen_ops = [qp.PauliX(0), qp.PauliZ(0), qp.Hadamard(0), qp.Rot(0.123, 0.456, 0.789, wires=0)]
 
     @pytest.mark.parametrize("op", gen_ops + su2_gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
@@ -749,10 +741,7 @@ class TestMultiControlledUnitary:
 
         actual_ops = _decompose_multicontrolled_unitary(op, control_wires)
         expected_op = qp.ctrl(op, control_wires)
-        res = qp.matrix(
-            qp.tape.QuantumScript(actual_ops),
-            wire_order=control_wires + [0],
-        )
+        res = qp.matrix(qp.tape.QuantumScript(actual_ops), wire_order=control_wires + [0])
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
@@ -761,11 +750,7 @@ class TestMultiControlledUnitary:
 class TestControlledUnitaryRecursive:
     """tests for qp.ops._decompose_recursive"""
 
-    gen_ops = [
-        qp.PauliX(0),
-        qp.PauliZ(0),
-        qp.Hadamard(0),
-    ]
+    gen_ops = [qp.PauliX(0), qp.PauliZ(0), qp.Hadamard(0)]
     controlled_wires = tuple(list(range(1, 1 + n)) for n in range(1, 6))
 
     @pytest.mark.parametrize("op", gen_ops)
@@ -1124,10 +1109,7 @@ class TestMCXDecomposition:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "num_control_wires, num_work_wires",
-        [(4, 1), (4, 2)],
-    )
+    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(4, 1), (4, 2)])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""

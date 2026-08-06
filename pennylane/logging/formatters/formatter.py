@@ -154,9 +154,8 @@ class DynamicFormatter(Formatter):
         return local_formats
 
     def format(self, record):
-        f = inspect.getouterframes(inspect.currentframe())[
-            8
-        ]  # Stack depth from log-func call to format function
+        # Stack depth from log-func call to format function
+        f = inspect.getouterframes(inspect.currentframe())[8]
 
         fmt_str = f'[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.{f.function}()::"%(message)s"'
 

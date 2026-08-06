@@ -89,9 +89,8 @@ class TestSumOfSlatersPrep2:
         wires = list(range(num_wires))
         all_wires = make_registers(indices, num_wires)
 
-        with qp.decomposition.toggle_graph_ctx(
-            True
-        ):  # safe alternative to avoid enabling graph globally on the labs test runner
+        # safe alternative to avoid enabling graph globally on the labs test runner
+        with qp.decomposition.toggle_graph_ctx(True):
 
             for rule in qp.list_decomps(SumOfSlatersPrep2):
 
@@ -161,9 +160,8 @@ class TestSumOfSlatersPrep2:
         wires = list(range(num_wires))
         all_wires = make_registers(indices, num_wires)
 
-        with qp.decomposition.toggle_graph_ctx(
-            True
-        ):  # safe alternative to avoid enabling graph globally on the labs test runner
+        # safe alternative to avoid enabling graph globally on the labs test runner
+        with qp.decomposition.toggle_graph_ctx(True):
             # Currently just one rule is implemented, but this test should pass for all decompositions
             for rule in qp.list_decomps(SumOfSlatersPrep2):
 

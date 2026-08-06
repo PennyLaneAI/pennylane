@@ -34,13 +34,7 @@ v = 1 - 4 * u
 fourth_order = ProductFormula.prod([second_order(u) ** 2, second_order(v), second_order(u) ** 2])
 
 
-@pytest.mark.parametrize(
-    "product_formula, order",
-    [
-        (second_order, 3),
-        (fourth_order, 5),
-    ],
-)
+@pytest.mark.parametrize("product_formula, order", [(second_order, 3), (fourth_order, 5)])
 def test_parallel_modes_match_serial(product_formula, order, mpi4py_support):
     """Test perturbation_error against manual computation"""
 

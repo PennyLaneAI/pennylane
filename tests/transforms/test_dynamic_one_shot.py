@@ -21,12 +21,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError, TransformError
-from pennylane.measurements import (
-    CountsMP,
-    ExpectationMP,
-    ProbabilityMP,
-    SampleMP,
-)
+from pennylane.measurements import CountsMP, ExpectationMP, ProbabilityMP, SampleMP
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.transforms import dynamic_one_shot
 from pennylane.transforms.dynamic_one_shot import (

@@ -367,13 +367,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
 def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_wires, result):
     r"""Test that transform_hf returns the correct result."""
 
-    tapered_hf_state = taper_hf(
-        generators,
-        paulixops,
-        paulix_sector,
-        num_electrons,
-        num_wires,
-    )
+    tapered_hf_state = taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires)
     assert np.all(tapered_hf_state == result)
 
 

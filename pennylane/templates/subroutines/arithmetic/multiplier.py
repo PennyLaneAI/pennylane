@@ -252,11 +252,7 @@ class Multiplier(Operation):
         return [op1, target_op, op2]
 
 
-def _multiplier_decomposition_resources(
-    num_x_wires,
-    mod,
-    num_work_wires,
-) -> dict:
+def _multiplier_decomposition_resources(num_x_wires, mod, num_work_wires) -> dict:
     num_wires_aux = num_work_wires - 1 if mod != 2**num_x_wires else num_x_wires
     cs_base_params = {
         "base_class": PhaseAdder,

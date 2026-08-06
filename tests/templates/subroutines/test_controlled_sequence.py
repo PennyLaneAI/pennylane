@@ -63,9 +63,8 @@ class TestProperties:
         op2 = qp.ControlledSequence(qp.RX(0.25, wires=4), control=[0, 1, 2])  # different base wire
         op3 = qp.ControlledSequence(qp.RX(0.35, wires=3), control=[0, 1, 2])  # different base param
         op4 = qp.ControlledSequence(qp.RY(0.25, wires=3), control=[0, 1, 2])  # different base class
-        op5 = qp.ControlledSequence(
-            qp.RX(0.25, wires=3), control=[0, 1, 4]
-        )  # different control wires
+        # different control wires
+        op5 = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 4])
 
         assert hash(op) == hash(op1)
         for other_op in [op2, op3, op4, op5]:

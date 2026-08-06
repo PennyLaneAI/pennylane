@@ -238,14 +238,7 @@ class TestFolderMapView:
         assert FolderMapView(init)[key] == expect
 
     @pytest.mark.parametrize("key", ["__default"])
-    @pytest.mark.parametrize(
-        "init",
-        [
-            FOLDERMAP,
-            FOLDERMAP["qchem"],
-            FOLDERMAP["qchem"]["O2"],
-        ],
-    )
+    @pytest.mark.parametrize("init", [FOLDERMAP, FOLDERMAP["qchem"], FOLDERMAP["qchem"]["O2"]])
     def test_getitem_private_key(self, key, init):
         """Test that ``getitem`` raises a KeyError if the ``__default``
         key is passed."""
@@ -253,13 +246,7 @@ class TestFolderMapView:
         with pytest.raises(KeyError):
             _ = FolderMapView(init)[key]
 
-    @pytest.mark.parametrize(
-        "init",
-        [
-            FOLDERMAP,
-            FOLDERMAP["qchem"],
-        ],
-    )
+    @pytest.mark.parametrize("init", [FOLDERMAP, FOLDERMAP["qchem"]])
     def test_getitem_default_none(self, init):
         """Test that ``getitem`` raises a ValueError if ``DEFAULT`` is
         used, but there is no default defined for that level."""

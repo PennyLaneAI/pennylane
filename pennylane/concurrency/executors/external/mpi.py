@@ -76,12 +76,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         kwargs:     the keyword arguments to pass to ``fn``
         """
         kwargs.update({"use_pkl5": True})
-        return super().__call__(
-            dispatch,
-            fn,
-            *args,
-            **kwargs,
-        )
+        return super().__call__(dispatch, fn, *args, **kwargs)
 
     @property
     def size(self):
@@ -167,12 +162,7 @@ class MPICommExec(ExtExec):  # pragma: no cover
         kwargs:     the keyword arguments to pass to ``fn``
         """
         kwargs.update({"use_pkl5": True})
-        return super().__call__(
-            dispatch,
-            fn,
-            *args,
-            **kwargs,
-        )
+        return super().__call__(dispatch, fn, *args, **kwargs)
 
     def submit(self, fn: Callable, *args, **kwargs):
         with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:

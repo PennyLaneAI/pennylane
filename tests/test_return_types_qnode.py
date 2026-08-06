@@ -1047,10 +1047,7 @@ class TestIntegrationMultipleReturns:
         assert qp.math.shape(res[3]) == ()
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize(
-        "measurement",
-        [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])],
-    )
+    @pytest.mark.parametrize("measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])])
     def test_expval_sample(self, measurement, device, shots=100):
         """Test the expval and sample measurements together."""
         dev = qp.device(device, wires=2)
@@ -1071,10 +1068,7 @@ class TestIntegrationMultipleReturns:
         assert res[1].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize(
-        "measurement",
-        [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])],
-    )
+    @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
     def test_expval_counts(self, measurement, device, shots=100):
         """Test the expval and counts measurements together."""
         dev = qp.device(device, wires=2)

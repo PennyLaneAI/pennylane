@@ -295,14 +295,8 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 
 """
 
-from .expval_functions import (
-    CircuitConfig,
-    build_expval_func,
-)
-from .qudit_expval_functions import (
-    QuditCircuitConfig,
-    build_qudit_expval_func,
-)
+from .expval_functions import CircuitConfig, build_expval_func
+from .qudit_expval_functions import QuditCircuitConfig, build_qudit_expval_func
 from .mmd_loss import MMDConfig, median_heuristic, mmd_loss
 from .qudit_mmd_loss import QuditMMDConfig, build_qudit_mmd_loss
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator

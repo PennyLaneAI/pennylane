@@ -242,10 +242,7 @@ class TestMultiplexerStatePreparation:
             for wire in wires:
                 qp.Hadamard(wire)
 
-            qp.MultiplexerStatePreparation(
-                state,
-                wires=wires,
-            )
+            qp.MultiplexerStatePreparation(state, wires=wires)
             return qp.probs(wires)
 
         jit_circuit = jax.jit(circuit)

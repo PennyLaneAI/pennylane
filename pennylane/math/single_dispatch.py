@@ -333,12 +333,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "gather"] = "tensorflow"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "concat"] = "tensorflow"
 
 
-tf_fft_functions = [
-    "fft",
-    "ifft",
-    "fft2",
-    "ifft2",
-]
+tf_fft_functions = ["fft", "ifft", "fft2", "ifft2"]
 
 
 for fn in tf_fft_functions:

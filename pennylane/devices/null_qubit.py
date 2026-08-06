@@ -110,13 +110,7 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
-def _(
-    mp: StateMP | ProbabilityMP,
-    num_device_wires: int,
-    shots: int | None,
-    batch_size,
-    interface,
-):
+def _(mp: StateMP | ProbabilityMP, num_device_wires: int, shots: int | None, batch_size, interface):
     num_wires = len(mp.wires) or num_device_wires
     state = [1.0] + [0.0] * (2**num_wires - 1)
     if batch_size is not None:

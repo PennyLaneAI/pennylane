@@ -639,9 +639,8 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
 
     factorization_kwargs["tol_factor"] = tol_factor
     factors, core_tensors, leaf_tensors = factorize(chemist_two_body_tensor, **factorization_kwargs)
-    v_unitaries = [
-        np.kron(leaf_tensor, np.eye(2)) for leaf_tensor in leaf_tensors
-    ]  # account for spin
+    # account for spin
+    v_unitaries = [np.kron(leaf_tensor, np.eye(2)) for leaf_tensor in leaf_tensors]
 
     ops_t = 0.0
     for p in range(num_orbitals):
@@ -819,9 +818,8 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", 
     xi_vec = xi_mat[xi_idx]
 
     params = np.hstack((ki_vec, xi_vec))
-    cost_func = partial(
-        _symmetry_shift_two_body_loss, two=two_electron, xi_idx=xi_idx
-    )  # Step 1: Reduce norm of two-body term
+    # Step 1: Reduce norm of two-body term
+    cost_func = partial(_symmetry_shift_two_body_loss, two=two_electron, xi_idx=xi_idx)
 
     res_two = sp.optimize.minimize(cost_func, params, method=method, **method_kwargs)
     _, k2, xi, _, N2, F_ = _symmetry_shift_terms(res_two.x, xi_idx, norb)

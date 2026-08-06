@@ -32,10 +32,7 @@ from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier, qp.WireCut)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -166,11 +163,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
             [1.0],
             [qp.prod(qp.Hadamard(0), X(1), X(2))],
         ),  # trivial product
-        (
-            qp.prod(qp.Hadamard(0), X(1), qp.Identity(2)),
-            [1.0],
-            [qp.prod(qp.Hadamard(0), X(1))],
-        ),
+        (qp.prod(qp.Hadamard(0), X(1), qp.Identity(2)), [1.0], [qp.prod(qp.Hadamard(0), X(1))]),
         (
             qp.prod(qp.Hadamard(0), qp.s_prod(4, X(1)), qp.s_prod(2, X(2))),
             [2 * 4],
@@ -208,21 +201,15 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
 
     PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
         (qp.prod(X(0), X(1), X(2)), [1.0], [qp.prod(X(0), X(1), X(2))]),  # trivial product
-        (
-            qp.prod(X(0), X(1), X(2), qp.Identity(0)),
-            [1.0],
-            [qp.prod(X(0), X(1), X(2))],
-        ),  # trivial product
+        # trivial product
+        (qp.prod(X(0), X(1), X(2), qp.Identity(0)), [1.0], [qp.prod(X(0), X(1), X(2))]),
         (
             qp.prod(X(0), qp.s_prod(4, X(1)), qp.s_prod(2, X(2))),
             [2 * 4],
             [qp.prod(X(0), X(1), X(2))],
         ),  # product with scalar products inside
-        (
-            qp.prod(X(0), qp.s_prod(4, X(0)), qp.s_prod(2, X(1))),
-            [2 * 4],
-            [X(1)],
-        ),  # product with scalar products on same wire
+        # product with scalar products on same wire
+        (qp.prod(X(0), qp.s_prod(4, X(0)), qp.s_prod(2, X(1))), [2 * 4], [X(1)]),
         (
             qp.prod(X(0), qp.s_prod(4, Y(0)), qp.s_prod(2, X(1))),
             [1j * 2 * 4],
@@ -1183,10 +1170,7 @@ class TestSimplify:
 
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
-        prod_op = qp.prod(
-            qp.RX(1.23, wires=0),
-            qp.RX(-1.23, wires=0),
-        )
+        prod_op = qp.prod(qp.RX(1.23, wires=0), qp.RX(-1.23, wires=0))
         final_op = qp.Identity(0)
         simplified_op = prod_op.simplify()
         qp.assert_equal(final_op, simplified_op)
@@ -1690,22 +1674,12 @@ class TestDecomposition:
     @pytest.mark.jax
     def test_controlled_prod_basic_validity(self):
         """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
-        op = qp.ctrl(
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
-            control=[4, 5, 6],
-            work_wires=[7, 8, 9],
-        )
+        op = qp.ctrl(qp.prod(qp.X(0), qp.X(1), qp.X(2)), control=[4, 5, 6], work_wires=[7, 8, 9])
         qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(
-        "control_values",
-        [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]],
-    )
-    @pytest.mark.parametrize(
-        "work_wires",
-        [[7, 8, 9], [7]],
-    )
+    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
+    @pytest.mark.parametrize("work_wires", [[7, 8, 9], [7]])
     def test_controlled_prod_decomposition_new(self, control_values, work_wires):
         """The registered ``C(Prod)`` rule decomposes controlled products.
 
@@ -1725,10 +1699,7 @@ class TestDecomposition:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "num_control_wires, num_work_wires",
-        [(3, 1), (3, 2), (4, 1), (5, 3)],
-    )
+    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(3, 1), (3, 2), (4, 1), (5, 3)])
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.

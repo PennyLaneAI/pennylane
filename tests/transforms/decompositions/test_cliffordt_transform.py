@@ -303,10 +303,7 @@ class TestCliffordCompile:
         error = qp.math.sqrt(qp.math.real(qp.math.trace(qp.math.conj(diff).T @ diff)) / 2)
         assert error < epsilon
 
-    @pytest.mark.parametrize(
-        "op",
-        [CustomOneQubitOperation(wires=0)],
-    )
+    @pytest.mark.parametrize("op", [CustomOneQubitOperation(wires=0)])
     def test_zxz_rotation_decomposition(self, op):
         """Test single-qubit gates are decomposed correctly using ZXZ rotations"""
 
@@ -331,10 +328,7 @@ class TestCliffordCompile:
         )
         qp.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
-    @pytest.mark.parametrize(
-        "op",
-        [CustomTwoQubitOperation(wires=[0, 1])],
-    )
+    @pytest.mark.parametrize("op", [CustomTwoQubitOperation(wires=[0, 1])])
     def test_su4_rotation_decomposition(self, op):
         """Test two-qubit gates are decomposed correctly using SU(4) rotations"""
 
@@ -509,10 +503,7 @@ class TestCliffordCompile:
     def test_raise_with_rot_decomposition(self, op):
         """Test that exception is correctly raise when decomposing parametrized gates for which we already don't have a recipe"""
 
-        with pytest.raises(
-            ValueError,
-            match="qp.RX, qp.RY, qp.RZ, qp.Rot and qp.PhaseShift",
-        ):
+        with pytest.raises(ValueError, match="qp.RX, qp.RY, qp.RZ, qp.Rot and qp.PhaseShift"):
             _rot_decompose(op)
 
     def test_zero_global_phase(self):

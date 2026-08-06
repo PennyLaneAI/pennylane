@@ -582,10 +582,7 @@ class TestMeasurementCompositeValueManipulation:
 class TestMeasurementValueItems:
     """Test that a MeasurementValue returns its items correctly."""
 
-    funcs_and_expected_single = [
-        ((lambda v: v), [0, 1]),
-        ((lambda v: 1 - v), [1, 0]),
-    ]
+    funcs_and_expected_single = [((lambda v: v), [0, 1]), ((lambda v: 1 - v), [1, 0])]
 
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("func, expected", funcs_and_expected_single)

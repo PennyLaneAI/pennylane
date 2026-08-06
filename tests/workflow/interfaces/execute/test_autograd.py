@@ -469,11 +469,7 @@ class TestAutogradExecuteIntegration:
         device = get_device(device_name, seed=seed)
 
         def cost(a, b, c):
-            ops = [
-                qp.RY(a * c, wires=0),
-                qp.RZ(b, wires=0),
-                qp.RX(c + c**2 + pnp.sin(a), wires=0),
-            ]
+            ops = [qp.RY(a * c, wires=0), qp.RZ(b, wires=0), qp.RX(c + c**2 + pnp.sin(a), wires=0)]
 
             tape = qp.tape.QuantumScript(ops, [qp.expval(qp.PauliZ(0))], shots=shots)
             if shots.has_partitioned_shots:

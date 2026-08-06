@@ -31,13 +31,7 @@ def get_device(name="default.qubit", wires=2, seed=None):
 
 def make_ops(x, y, z):
     """Queue three parametrized and two unparametrized operations and return them."""
-    ops = [
-        qp.RX(x, wires=0),
-        qp.PauliY(0),
-        qp.RX(y, wires=1),
-        qp.RZ(z, wires=1),
-        qp.Hadamard(1),
-    ]
+    ops = [qp.RX(x, wires=0), qp.PauliY(0), qp.RX(y, wires=1), qp.RZ(z, wires=1), qp.Hadamard(1)]
     return ops
 
 

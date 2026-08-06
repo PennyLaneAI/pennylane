@@ -22,17 +22,7 @@ from functools import partial
 import numpy as np
 import pytest
 import scipy as sp
-from gate_data import (
-    CH,
-    CNOT,
-    CSWAP,
-    ControlledPhaseShift,
-    CRot3,
-    CRotx,
-    CRoty,
-    CRotz,
-    Toffoli,
-)
+from gate_data import CH, CNOT, CSWAP, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
 
 import pennylane as qp
@@ -71,11 +61,7 @@ class TempOperation(Operation):
 class OpWithDecomposition(Operation):
     @staticmethod
     def compute_decomposition(*params, wires=None, **_):
-        return [
-            qp.Hadamard(wires=wires[0]),
-            qp.S(wires=wires[1]),
-            qp.RX(params[0], wires=wires[0]),
-        ]
+        return [qp.Hadamard(wires=wires[0]), qp.S(wires=wires[1]), qp.RX(params[0], wires=wires[0])]
 
 
 class TestControlledInheritance:
@@ -225,13 +211,7 @@ class TestControlledInit:
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "base",
-        [
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
-            qp.X(0) + qp.Y(1),
-        ],
-    )
+    @pytest.mark.parametrize("base", [qp.prod(qp.X(0), qp.X(1), qp.X(2)), qp.X(0) + qp.Y(1)])
     def test_standard_validity_composite_base(self, base):
         """``assert_valid`` should pass for ``Controlled`` wrapping a CompositeOp."""
         op = Controlled(base, control_wires=[3, 4, 5], work_wires=[6, 7, 8])
@@ -739,11 +719,7 @@ class TestMatrix:
         """Test that matrix expands to have identity on work wires."""
 
         base = qp.PauliX(1)
-        op = Controlled(
-            base,
-            0,
-            work_wires="aux",
-        )
+        op = Controlled(base, 0, work_wires="aux")
         mat = op.matrix()
         assert mat.shape == (4, 4)
 
@@ -1345,13 +1321,7 @@ class TestControlledSupportsBroadcasting:
     """Test that the Controlled version of qubit operations with the ``supports_broadcasting`` attribute
     actually support broadcasting."""
 
-    single_scalar_single_wire_ops = [
-        "RX",
-        "RY",
-        "RZ",
-        "PhaseShift",
-        "U1",
-    ]
+    single_scalar_single_wire_ops = ["RX", "RY", "RZ", "PhaseShift", "U1"]
 
     single_scalar_multi_wire_ops = [
         "ControlledPhaseShift",
@@ -1372,18 +1342,11 @@ class TestControlledSupportsBroadcasting:
         "FermionicSWAP",
     ]
 
-    two_scalar_single_wire_ops = [
-        "U2",
-    ]
+    two_scalar_single_wire_ops = ["U2"]
 
-    three_scalar_single_wire_ops = [
-        "Rot",
-        "U3",
-    ]
+    three_scalar_single_wire_ops = ["Rot", "U3"]
 
-    three_scalar_multi_wire_ops = [
-        "CRot",
-    ]
+    three_scalar_multi_wire_ops = ["CRot"]
 
     # When adding an operation to the following list, you
     # actually need to write a new test!
@@ -1758,10 +1721,7 @@ class TestCtrl:
                 "ControlledQubitUnitary and Barrier can accept any number of control wires."
             )
         elif isinstance(op, Controlled):
-            expected = Controlled(
-                op.base,
-                control_wires=ctrl_wires + op.control_wires,
-            )
+            expected = Controlled(op.base, control_wires=ctrl_wires + op.control_wires)
         elif isinstance(op, Operator2):
             expected = ControlledOp2(op, control_wires=ctrl_wires)
         else:
@@ -1784,11 +1744,7 @@ class TestCtrl:
 
         assert len(q) == 1
         assert q.queue[0] is op
-        expected = ctrl(
-            qp.S(wires=[0]),
-            control=[3, 2, 1],
-            control_values=[1, 0, 1],
-        )
+        expected = ctrl(qp.S(wires=[0]), control=[3, 2, 1], control_values=[1, 0, 1])
         assert op == expected
 
     @pytest.mark.parametrize("op, ctrl_wires, ctrl_op", custom_ctrl_ops)
@@ -1807,14 +1763,7 @@ class TestCtrl:
             ctrl_values + op.control_values if isinstance(op, Controlled) else ctrl_values
         )
 
-        op = qp.ctrl(
-            qp.ctrl(
-                ctrl_op,
-                control=["b"],
-                control_values=[0],
-            ),
-            control=["a"],
-        )
+        op = qp.ctrl(qp.ctrl(ctrl_op, control=["b"], control_values=[0]), control=["a"])
         expected = qp.ctrl(
             expected_base,
             control=["a", "b"] + base_ctrl_wires,

@@ -742,11 +742,7 @@ class PauliY(Operator2):
         >>> print(qp.Y.compute_diagonalizing_gates(wires=[0]))
         [Z(0), S(0), H(0)]
         """
-        return [
-            Z(wires=wires),
-            S(wires=wires),
-            Hadamard(wires=wires),
-        ]
+        return [Z(wires=wires), S(wires=wires), Hadamard(wires=wires)]
 
     def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)

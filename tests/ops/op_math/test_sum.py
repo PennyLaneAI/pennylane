@@ -29,10 +29,7 @@ from pennylane.exceptions import MatrixUndefinedError
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier, qp.WireCut)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -197,10 +194,7 @@ class TestInitialization:
         w0, w1, w2, w3 = [0, 1, 2, 3]
         coeffs = [0.5, -0.5]
 
-        obs = [
-            qp.X(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.Z(w3),
-            qp.X(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.Z(w3),
-        ]
+        obs = [qp.X(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.Z(w3), qp.X(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.Z(w3)]
 
         H = qp.dot(coeffs, obs)
         _, H_ops = H.terms()
@@ -904,12 +898,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        ops_to_sum = (
-            qp.RZ(1.32, wires=0),
-            qp.Identity(wires=0),
-            qp.RX(1.9, wires=1),
-            qp.PauliX(0),
-        )
+        ops_to_sum = (qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1), qp.PauliX(0))
         s1 = qp.sum(ops_to_sum[0], ops_to_sum[1])
         s2 = qp.sum(s1, ops_to_sum[2])
         nested_sum = qp.sum(s2, ops_to_sum[3])
@@ -1262,9 +1251,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert np.allclose(
-            2, list(results.keys())[0]
-        )  # rounding errors due to float type of measurement outcome
+        # rounding errors due to float type of measurement outcome
+        assert np.allclose(2, list(results.keys())[0])
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Sum op in the measurement process."""

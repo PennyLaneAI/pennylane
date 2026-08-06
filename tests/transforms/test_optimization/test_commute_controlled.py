@@ -118,15 +118,7 @@ class TestCommuteControlled:
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = [
-            "PauliX",
-            "RX",
-            "CNOT",
-            "Toffoli",
-            "SX",
-            "PauliX",
-            "CRX",
-        ]
+        names_expected = ["PauliX", "RX", "CNOT", "Toffoli", "SX", "PauliX", "CRX"]
         wires_expected = [
             Wires(2),
             Wires(2),

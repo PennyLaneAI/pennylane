@@ -183,13 +183,7 @@ class TestVar:
 
         assert circuit() == circuit2()
 
-    @pytest.mark.parametrize(
-        "wire, expected",
-        [
-            (0, 1.0),
-            (1, 0.0),
-        ],
-    )
+    @pytest.mark.parametrize("wire, expected", [(0, 1.0), (1, 0.0)])
     def test_estimate_variance_with_counts(self, wire, expected):
         """Test that the variance of an observable is estimated correctly using counts."""
         counts = {"000": 100, "100": 100}

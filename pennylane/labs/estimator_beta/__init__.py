@@ -115,12 +115,7 @@ from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
-from .wires_manager.base_classes import (
-    Allocate,
-    Deallocate,
-    MarkClean,
-    MarkQubits,
-)
+from .wires_manager.base_classes import Allocate, Deallocate, MarkClean, MarkQubits
 from .wires_manager.wire_counting import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
@@ -195,11 +190,7 @@ def _(action: Deallocate):
 def _(op: qp.Adder):
     mod = op.hyperparameters["mod"]
     x_wires = op.hyperparameters["x_wires"]
-    return Adder(
-        len(x_wires),
-        mod,
-        wires=x_wires,
-    )
+    return Adder(len(x_wires), mod, wires=x_wires)
 
 
 @_map_to_resource_op.register
@@ -236,11 +227,7 @@ def _(op: qp.OutAdder):
 def _(op: qp.Multiplier):
     mod = op.hyperparameters["mod"]
     x_wires = op.hyperparameters["x_wires"]
-    return Multiplier(
-        len(x_wires),
-        mod=mod,
-        wires=x_wires,
-    )
+    return Multiplier(len(x_wires), mod=mod, wires=x_wires)
 
 
 @_map_to_resource_op.register
@@ -248,12 +235,7 @@ def _(op: qp.ModExp):
     mod = op.hyperparameters["mod"]
     x_wires = op.hyperparameters["x_wires"]
     output_wires = op.hyperparameters["output_wires"]
-    return ModExp(
-        len(x_wires),
-        len(output_wires),
-        mod=mod,
-        wires=x_wires + output_wires,
-    )
+    return ModExp(len(x_wires), len(output_wires), mod=mod, wires=x_wires + output_wires)
 
 
 @_map_to_resource_op.register
@@ -264,11 +246,7 @@ def _(op: qp.PhaseAdder):
     if mod != 2 ** (len(x_wires)):  # An extra wire was prepended
         x_wires = x_wires[1:]
 
-    return PhaseAdder(
-        len(x_wires),
-        mod=mod,
-        wires=x_wires,
-    )
+    return PhaseAdder(len(x_wires), mod=mod, wires=x_wires)
 
 
 @_map_to_resource_op.register

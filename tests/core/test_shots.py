@@ -92,12 +92,7 @@ class TestShotCopies:
 
     sc_data = (ShotCopies(1, 1), ShotCopies(100, 1), ShotCopies(100, 2), ShotCopies(10, 100))
 
-    str_data = (
-        "1 shots",
-        "100 shots",
-        "100 shots x 2",
-        "10 shots x 100",
-    )
+    str_data = ("1 shots", "100 shots", "100 shots x 2", "10 shots x 100")
 
     @pytest.mark.parametrize("expected_str, sc", list(zip(str_data, sc_data)))
     def test_str(self, expected_str, sc):
@@ -159,12 +154,7 @@ class TestShotsConstruction:
         assert shots.total_shots == 11
         assert isinstance(shots.shot_vector, tuple)
 
-    shot_data = (
-        Shots(None),
-        Shots(10),
-        Shots((1, 10, 100)),
-        Shots((1, 10, 10, 100, 100, 100)),
-    )
+    shot_data = (Shots(None), Shots(10), Shots((1, 10, 100)), Shots((1, 10, 10, 100, 100, 100)))
 
     str_data = (
         "Shots(total=None)",

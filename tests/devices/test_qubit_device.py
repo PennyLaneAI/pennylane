@@ -30,13 +30,7 @@ from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
 from pennylane.devices import QubitDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.measurements import (
-    ExpectationMP,
-    ProbabilityMP,
-    SampleMP,
-    StateMP,
-    VarianceMP,
-)
+from pennylane.measurements import ExpectationMP, ProbabilityMP, SampleMP, StateMP, VarianceMP
 from pennylane.resource import SpecsResources
 from pennylane.wires import Wires
 

@@ -265,11 +265,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
             self.shots = shots_copy
             return tuple(results)
         # apply all circuit operations
-        self.apply(
-            circuit.operations,
-            rotations=self._get_diagonalizing_gates(circuit),
-            **kwargs,
-        )
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
         if has_mcm:
             mid_measurements = kwargs["mid_measurements"]
 
@@ -986,10 +982,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (
-            QuantumFunctionError,
-            NotImplementedError,
-        ) as e:  # pragma: no cover
+        except (QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1016,10 +1009,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (
-            QuantumFunctionError,
-            NotImplementedError,
-        ) as e:  # pragma: no cover
+        except (QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "

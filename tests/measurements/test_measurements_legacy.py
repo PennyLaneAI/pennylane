@@ -25,11 +25,7 @@ from pennylane.core.measurements import (
     SampleMeasurement,
     StateMeasurement,
 )
-from pennylane.measurements import (
-    ClassicalShadowMP,
-    SampleMP,
-    StateMP,
-)
+from pennylane.measurements import ClassicalShadowMP, SampleMP, StateMP
 from pennylane.wires import Wires
 
 

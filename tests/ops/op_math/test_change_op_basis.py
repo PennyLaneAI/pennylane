@@ -461,12 +461,7 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         control_wires = [4]
         work_wires = [2, 3]
-        op = qp.ops.Controlled(
-            change_op_basis(*ops_lst),
-            control_wires,
-            [1],
-            work_wires=work_wires,
-        )
+        op = qp.ops.Controlled(change_op_basis(*ops_lst), control_wires, [1], work_wires=work_wires)
         for rule in qp.list_decomps("C(ChangeOpBasis)"):
             _test_decomposition_rule(op, rule)
 

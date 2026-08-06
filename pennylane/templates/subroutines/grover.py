@@ -121,10 +121,7 @@ class GroverOperator(Operation):
         if len(wires) < 2:
             raise ValueError("GroverOperator must have at least two wires provided.")
 
-        self._hyperparameters = {
-            "n_wires": len(wires),
-            "work_wires": work_wires,
-        }
+        self._hyperparameters = {"n_wires": len(wires), "work_wires": work_wires}
 
         super().__init__(wires=wires)
 
@@ -246,11 +243,7 @@ def _grover_decomposition(wires, work_wires, n_wires):
     apply_hadamards()  # pylint: disable=no-value-for-parameter
 
     PauliZ(wires[-1])
-    MultiControlledX(
-        control_values=ctrl_values,
-        wires=wires,
-        work_wires=work_wires,
-    )
+    MultiControlledX(control_values=ctrl_values, wires=wires, work_wires=work_wires)
     PauliZ(wires[-1])
 
     apply_hadamards()  # pylint: disable=no-value-for-parameter

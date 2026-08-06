@@ -373,9 +373,8 @@ def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
         partition_2 (list[Operator]): list of Pauli word ``Operator`` instances corresponding to a partition.
 
     """
-    partition_3 = set(
-        partition_2
-    )  # to improve the lookup time for similar obs in the second partition
+    # to improve the lookup time for similar obs in the second partition
+    partition_3 = set(partition_2)
     for pauli in partition_1:
         if not any(are_identical_pauli_words(pauli, other) for other in partition_3):
             return False
@@ -461,12 +460,7 @@ class TestGroupObservables:
     def test_observables_on_no_wires(self):
         """Test that observables on no wires are stuck in the first group."""
 
-        observables = [
-            qp.I(),
-            qp.X(0) @ qp.Y(1),
-            qp.Z(0),
-            2 * qp.I(),
-        ]
+        observables = [qp.I(), qp.X(0) @ qp.Y(1), qp.Z(0), 2 * qp.I()]
 
         groups = group_observables(observables)
         assert groups == [[qp.X(0) @ qp.Y(1), qp.I(), 2 * qp.I()], [qp.Z(0)]]
@@ -486,12 +480,7 @@ class TestGroupObservables:
         """Test that observables on no wires are stuck in the first group and
         coefficients are tracked when provided."""
 
-        observables = [
-            qp.X(0),
-            qp.Z(0),
-            2 * qp.I(),
-            qp.I() @ qp.I(),
-        ]
+        observables = [qp.X(0), qp.Z(0), 2 * qp.I(), qp.I() @ qp.I()]
         coeffs = [1, 2, 3, 4]
         groups, out_coeffs = group_observables(observables, coeffs)
         assert groups == [[qp.X(0), 2 * qp.I(), qp.I() @ qp.I()], [qp.Z(0)]]

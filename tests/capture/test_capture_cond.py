@@ -33,9 +33,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
-from tests.capture.capture_utils import (
-    extract_all_primitives,
-)
+from tests.capture.capture_utils import extract_all_primitives
 
 
 @pytest.fixture
@@ -126,13 +124,7 @@ class TestCond:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, selector, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize(
-        "selector, arg, expected",
-        [
-            (1, 10, 20),
-            (0, 10, 30),
-        ],
-    )
+    @pytest.mark.parametrize("selector, arg, expected", [(1, 10, 20), (0, 10, 30)])
     def test_cond_true_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and false branches."""
         true_fn, false_fn, _, _, _, _ = testing_functions
@@ -143,11 +135,7 @@ class TestCond:
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qp.cond(
-                pred > 0,
-                true_fn,
-                false_fn,
-            )
+            return qp.cond(pred > 0, true_fn, false_fn)
 
         result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -156,13 +144,7 @@ class TestCond:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize(
-        "selector, arg",
-        [
-            (1, 10.0),
-            (0, 10.0),
-        ],
-    )
+    @pytest.mark.parametrize("selector, arg", [(1, 10.0), (0, 10.0)])
     def test_gradient(self, testing_functions, selector, arg, decorator):
         """Test the gradient of the conditional."""
         from pennylane.capture.primitives import jacobian_prim
@@ -175,11 +157,7 @@ class TestCond:
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qp.cond(
-                pred > 0,
-                true_fn,
-                false_fn,
-            )
+            return qp.cond(pred > 0, true_fn, false_fn)
 
         test_func = qp.grad(func(selector))
 
@@ -216,11 +194,7 @@ class TestCond:
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qp.cond(
-                pred > 0,
-                true_fn,
-                false_fn,
-            )
+            return qp.cond(pred > 0, true_fn, false_fn)
 
         result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -723,9 +697,8 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
 
-    @pytest.mark.xfail(
-        strict=False
-    )  # currently using single branch statistics, sometimes gives good results
+    # currently using single branch statistics, sometimes gives good results
+    @pytest.mark.xfail(strict=False)
     @pytest.mark.parametrize("shots", [None, 300])
     @pytest.mark.parametrize(
         "params, expected",

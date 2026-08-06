@@ -160,12 +160,7 @@ class DefaultProgress:
         else:
             end = "\r"
 
-        print(
-            *self._task_display_lines,
-            sep="\n",
-            end=end,
-            flush=True,
-        )
+        print(*self._task_display_lines, sep="\n", end=end, flush=True)
 
 
 def make_progress() -> DefaultProgress:

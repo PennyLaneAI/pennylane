@@ -44,13 +44,7 @@ from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 from pennylane.wires import Wires
 
-PARAMETRIZED_OPERATIONS_1P_1W = [
-    qp.RX,
-    qp.RY,
-    qp.RZ,
-    qp.PhaseShift,
-    qp.U1,
-]
+PARAMETRIZED_OPERATIONS_1P_1W = [qp.RX, qp.RY, qp.RZ, qp.PhaseShift, qp.U1]
 
 PARAMETRIZED_OPERATIONS_1P_2W = [
     qp.IsingXX,
@@ -67,10 +61,7 @@ PARAMETRIZED_OPERATIONS_1P_2W = [
 ]
 
 
-PARAMETRIZED_OPERATIONS_3P_1W = [
-    qp.Rot,
-    qp.U3,
-]
+PARAMETRIZED_OPERATIONS_3P_1W = [qp.Rot, qp.U3]
 
 
 PARAMETRIZED_OPERATIONS_1P_4W = [
@@ -318,12 +309,7 @@ class TestEqual:
             )
             is True
         )
-        assert_equal(
-            test_operator,
-            test_operator,
-            check_trainability=False,
-            check_interface=False,
-        )
+        assert_equal(test_operator, test_operator, check_trainability=False, check_interface=False)
 
         test_operator_diff_parameter = op1(param * 2, wires=wire)
         assert (
@@ -1420,12 +1406,7 @@ equal_pauli_words = [
 class TestPauliErrorEqual:
     """Tests for qp.equal with PauliErrors."""
 
-    ARGS_ONE = [
-        ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1)],
-    ]
+    ARGS_ONE = [["XY", 0.1, (0, 1)], ["XY", 0.1, (0, 1)], ["XY", 0.1, (0, 1)], ["XY", 0.1, (0, 1)]]
     ARGS_TWO = [
         ["XY", 0.1, (0, 1)],
         ["XYZ", 0.1, (0, 1, 2)],  # different Pauli strs, number of wires
@@ -2911,10 +2892,7 @@ class TestBasisRotation:
     def test_non_equal_training_wires(self, op, other_op):
         assert qp.equal(op, other_op) is False
 
-        with pytest.raises(
-            AssertionError,
-            match=re.escape("have different wires"),
-        ):
+        with pytest.raises(AssertionError, match=re.escape("have different wires")):
             assert_equal(op, other_op)
 
     @pytest.mark.jax

@@ -754,9 +754,8 @@ class TestSpecialUnitary:
 
         # Create just 10 parameters for testing - this is sufficient to test interface conversion
         num_params = 10
-        theta_np = (
-            np.random.randn(num_params) * 0.01 + 0.0j
-        )  # crucial for jax to proceed with holomorphic
+        # crucial for jax to proceed with holomorphic
+        theta_np = np.random.randn(num_params) * 0.01 + 0.0j
         theta = qp.math.asarray(theta_np, like=interface, requires_grad=True)
 
         # This should not raise an error about tensor type mismatches

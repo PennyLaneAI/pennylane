@@ -952,10 +952,7 @@ class TestQubitIntegration:
         w1 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
         w2 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
-        weights = [
-            jax.numpy.array(np.random.random(w1)),
-            jax.numpy.array(np.random.random(w2)),
-        ]
+        weights = [jax.numpy.array(np.random.random(w1)), jax.numpy.array(np.random.random(w2))]
 
         grad_fn = jax.grad(cost)
         res = grad_fn(weights)

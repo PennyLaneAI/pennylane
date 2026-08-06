@@ -75,13 +75,7 @@ class TestSparsePipeline:
     ground_state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
     cat_state = np.array([1, 0, 0, 0, 0, 0, 0, 1]) / np.sqrt(2)
 
-    @pytest.mark.parametrize(
-        "state",
-        [
-            ground_state,
-            cat_state,
-        ],
-    )
+    @pytest.mark.parametrize("state", [ground_state, cat_state])
     def test_sparse_op(self, state):
         """Test that a sparse QubitUnitary operation works on default.qubit with expval measurement."""
         mat = sp.sparse.csr_matrix([[0, 1], [1, 0]])
@@ -1236,10 +1230,7 @@ class TestQInfoMeasurements:
 class TestTreeTraversalStack:
     """Unit tests for TreeTraversalStack"""
 
-    @pytest.mark.parametrize(
-        "max_depth",
-        [0, 1, 10, 100],
-    )
+    @pytest.mark.parametrize("max_depth", [0, 1, 10, 100])
     def test_init_with_depth(self, max_depth):
         """Test that TreeTraversalStack is initialized correctly with given ``max_depth``"""
         tree_stack = TreeTraversalStack(max_depth)

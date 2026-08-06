@@ -315,12 +315,7 @@ class TestExpval:  # pylint: disable=too-many-public-methods
         assert qp.math.allequal(compute_expval(state), expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "state,expected",
-        [
-            ([[1.0, 0.0], [0.0, 1.0]], [0.0]),
-        ],
-    )
+    @pytest.mark.parametrize("state,expected", [([[1.0, 0.0], [0.0, 1.0]], [0.0])])
     def test_tf_function_density_matrix(self, state, expected):
         """Test that tf.function does not break process_density_matrix"""
         import tensorflow as tf
@@ -382,13 +377,7 @@ class TestExpval:  # pylint: disable=too-many-public-methods
 
         assert qp.math.allequal(energy_batched, energy)
 
-    @pytest.mark.parametrize(
-        "wire, expected",
-        [
-            (0, 0.0),
-            (1, 1.0),
-        ],
-    )
+    @pytest.mark.parametrize("wire, expected", [(0, 0.0), (1, 1.0)])
     def test_estimate_expectation_with_counts(self, wire, expected):
         """Test that the expectation value of an observable is estimated correctly using counts"""
         counts = {"000": 100, "100": 100}

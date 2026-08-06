@@ -32,11 +32,7 @@ class TestWireResourceManager:
         WireResourceManager(zeroed=2, any_state=2, algo_wires=10, tight_budget=True),
     )
 
-    wire_manager_parameters = (
-        (2, 0, 0, False),
-        (4, 2, 20, False),
-        (2, 2, 10, True),
-    )
+    wire_manager_parameters = ((2, 0, 0, False), (4, 2, 20, False), (2, 2, 10, True))
 
     @pytest.mark.parametrize(
         "wire_manager, attribute_tup", list(zip(wire_manager_quantities, wire_manager_parameters))
@@ -68,11 +64,7 @@ class TestWireResourceManager:
 
     extra_wires = (0, 2, 4)
 
-    wire_manager_parameters_algo = (
-        (2, 0, 0, False),
-        (4, 2, 2, False),
-        (2, 2, 4, True),
-    )
+    wire_manager_parameters_algo = ((2, 0, 0, False), (4, 2, 2, False), (2, 2, 4, True))
 
     @pytest.mark.parametrize(
         "wire_manager, attribute_tup, algo_q",

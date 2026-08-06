@@ -179,20 +179,14 @@ class Incrementer(Operator):
     @property
     def resource_params(self):
         num_work_wires = len(self.hyperparameters["work_wires"])
-        return {
-            "num_wires": len(self.wires) - num_work_wires,
-            "num_work_wires": num_work_wires,
-        }
+        return {"num_wires": len(self.wires) - num_work_wires, "num_work_wires": num_work_wires}
 
     def map_wires(self, wire_map: dict):
         work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
         keep = set(self.wires) - set(self.hyperparameters["work_wires"])
         wires = [wire_map.get(w, w) for w in self.wires if w in keep]
 
-        return Incrementer(
-            wires,
-            work_wires,
-        )
+        return Incrementer(wires, work_wires)
 
 
 def _incrementer_resources(num_wires, **_):
@@ -348,13 +342,7 @@ def _control_values_condition(num_zero_control_values, **_):
 @register_condition(_base_work_wire_condition)
 @register_condition(_control_values_condition)
 @register_resources(_controlled_incrementer_resources)
-def _controlled_incrementer_decomposition(
-    *_,
-    control_wires,
-    work_wires,
-    base,
-    **__,
-):
+def _controlled_incrementer_decomposition(*_, control_wires, work_wires, base, **__):
     wires = base.wires
 
     if compiler.active() or enabled():

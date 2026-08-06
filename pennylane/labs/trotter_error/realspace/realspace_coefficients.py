@@ -268,18 +268,10 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
                 f"of shape {r_child.shape}."
             )
 
-        return cls(
-            node_type=_NodeType.SUM,
-            l_child=l_child,
-            r_child=r_child,
-        )
+        return cls(node_type=_NodeType.SUM, l_child=l_child, r_child=r_child)
 
     @classmethod
-    def outer_node(
-        cls,
-        l_child: _RealspaceTree,
-        r_child: _RealspaceTree,
-    ) -> _RealspaceTree:
+    def outer_node(cls, l_child: _RealspaceTree, r_child: _RealspaceTree) -> _RealspaceTree:
         """Returns a ``_RealspaceTree`` representing the outer product of the two children nodes.
 
         Args:
@@ -301,11 +293,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         (alpha[idx0]) * (beta[idx1,idx2])
         """
 
-        return cls(
-            node_type=_NodeType.OUTER,
-            l_child=l_child,
-            r_child=r_child,
-        )
+        return cls(node_type=_NodeType.OUTER, l_child=l_child, r_child=r_child)
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> _RealspaceTree:
@@ -329,16 +317,9 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         """
 
         if len(tensor.shape):
-            return cls(
-                node_type=_NodeType.TENSOR,
-                tensor=tensor,
-                label=label,
-            )
+            return cls(node_type=_NodeType.TENSOR, tensor=tensor, label=label)
 
-        return cls(
-            node_type=_NodeType.FLOAT,
-            value=tensor,
-        )
+        return cls(node_type=_NodeType.FLOAT, value=tensor)
 
     @classmethod
     def scalar_node(cls, scalar: float, child: _RealspaceTree) -> _RealspaceTree:
@@ -362,11 +343,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         5 * (alpha[idx0,idx1])
         """
 
-        return cls(
-            node_type=_NodeType.SCALAR,
-            l_child=child,
-            scalar=scalar,
-        )
+        return cls(node_type=_NodeType.SCALAR, l_child=child, scalar=scalar)
 
     def __add__(self, other: _RealspaceTree) -> _RealspaceTree:
         return self.__class__.sum_node(self, other)

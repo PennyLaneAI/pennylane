@@ -23,11 +23,7 @@ from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess, StateMeasurement
-from pennylane.measurements import (
-    DensityMatrixMP,
-    ExpectationMP,
-    StateMP,
-)
+from pennylane.measurements import DensityMatrixMP, ExpectationMP, StateMP
 from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike

@@ -76,10 +76,7 @@ class TestInitialization:
 
         S = Subroutine(WireArgnames, wire_argnames=("reg1", "reg2"))
 
-        assert S.wire_argnames == (
-            "reg1",
-            "reg2",
-        )
+        assert S.wire_argnames == ("reg1", "reg2")
         assert S.dynamic_argnames == ("x", "y")
 
     def test_static_argnames_and_setup_inputs(self):
@@ -93,10 +90,7 @@ class TestInitialization:
 
         S = Subroutine(T, setup_inputs=setup_inputs, static_argnames=("z",))
         assert S.static_argnames == ("z",)
-        assert S.dynamic_argnames == (
-            "x",
-            "y",
-        )
+        assert S.dynamic_argnames == ("x", "y")
 
         a, k = S.setup_inputs(0.5, 1.2, "a", [1, 2, 3])
         assert a == (0.5, 1.2)
@@ -207,10 +201,7 @@ def test_fallback_creating_resources_AbstractArray():
 
     @partial(Subroutine, static_argnames="rotation")
     def f(params, wires, rotation):
-        for (
-            p,
-            w,
-        ) in zip(params["a"], wires):
+        for p, w in zip(params["a"], wires):
             qp.PauliRot(p, rotation, w)
         qp.MultiControlledX(wires)
 
@@ -1105,10 +1096,7 @@ class TestGraphDecomposition:
 
         @partial(Subroutine, static_argnames="rotation")
         def f(params, wires, rotation):
-            for (
-                p,
-                w,
-            ) in zip(params, wires):
+            for p, w in zip(params, wires):
                 qp.PauliRot(p, rotation, w)
             qp.MultiControlledX(wires)
 

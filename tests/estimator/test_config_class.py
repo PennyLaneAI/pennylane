@@ -165,10 +165,7 @@ class TestResourceConfig:
         with pytest.raises(ValueError, match="Precision must be a non-negative value"):
             config.set_precision(DummyOp, negative_precision)
 
-    @pytest.mark.parametrize(
-        "resource_key",
-        ("precision", "coeff_precision", "rot_precision"),
-    )
+    @pytest.mark.parametrize("resource_key", ("precision", "coeff_precision", "rot_precision"))
     def test_set_precision_raises_error_for_unsupported_op(self, resource_key):
         """Test that set_precision raises ValueError for an unsupported operator."""
         config = ResourceConfig()

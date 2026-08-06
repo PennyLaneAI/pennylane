@@ -910,12 +910,7 @@ class CCZ(Controlled2):
 
 
 def _ccz_resources(wires: AbstractWires):  # pylint: disable=unused-argument
-    return {
-        qp.CNOT: 6,
-        _adjoint_abstract(qp.T): 3,
-        qp.T: 4,
-        qp.Hadamard: 2,
-    }
+    return {qp.CNOT: 6, _adjoint_abstract(qp.T): 3, qp.T: 4, qp.Hadamard: 2}
 
 
 @register_resources(_ccz_resources)
@@ -1267,9 +1262,7 @@ class Toffoli(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(
-        wires: WiresLike,
-    ) -> list[qp.operation.Operator]:
+    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1349,12 +1342,7 @@ def _check_and_convert_control_values(control_values, control_wires):
 
 
 def _toffoli_resources():
-    return {
-        qp.Hadamard: 2,
-        qp.CNOT: 6,
-        qp.T: 4,
-        _adjoint_abstract(qp.T): 3,
-    }
+    return {qp.Hadamard: 2, qp.CNOT: 6, qp.T: 4, _adjoint_abstract(qp.T): 3}
 
 
 @register_resources(_toffoli_resources)

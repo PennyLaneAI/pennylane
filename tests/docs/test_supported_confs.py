@@ -509,10 +509,7 @@ class TestSupportedConfs:
             pytest.xfail(reason="see pytorch/pytorch/issues/94397")
         compute_gradient(x, interface, circuit, "StateVector", complex=True)
 
-    wire_specs_list = [
-        (2, [0, 1], 0, 0),
-        (3, [0, 1, 2], 0, [0, 1]),
-    ]
+    wire_specs_list = [(2, [0, 1], 0, 0), (3, [0, 1, 2], 0, [0, 1])]
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(

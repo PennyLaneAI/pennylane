@@ -162,9 +162,8 @@ def test_integration_multi_wire(seed):
         qp.StatePrep(in_state, wires=wires)  # input state
         qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
         qp.RZ(phi, wires)
-        qp.adjoint(
-            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
-        )  # uncompute phase gradient state
+        # uncompute phase gradient state
+        qp.adjoint(qp.StatePrep(phase_grad_state, wires=phase_grad_wires))
         return qp.state()
 
     # random input state

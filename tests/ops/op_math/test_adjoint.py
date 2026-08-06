@@ -757,10 +757,7 @@ class TestIntegration:
 
 ##### TESTS FOR THE ADJOINT CONSTRUCTOR ######
 
-noncallable_objects = [
-    [qp.Hadamard(1), qp.RX(-0.2, wires=1)],
-    qp.tape.QuantumScript(),
-]
+noncallable_objects = [[qp.Hadamard(1), qp.RX(-0.2, wires=1)], qp.tape.QuantumScript()]
 
 
 @pytest.mark.parametrize("obj", noncallable_objects)
@@ -1043,10 +1040,7 @@ class TestAdjointConstructorIntegration:
         expected_res = np.sin(x)
         expected_grad = np.cos(x)
         assert qp.math.allclose(circ(x), expected_res)
-        assert qp.math.allclose(
-            autograd.grad(circ)(x),
-            expected_grad,
-        )
+        assert qp.math.allclose(autograd.grad(circ)(x), expected_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))

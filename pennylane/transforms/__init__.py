@@ -430,10 +430,7 @@ from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 
-from .decompositions import (
-    clifford_t_decomposition,
-    gridsynth,
-)
+from .decompositions import clifford_t_decomposition, gridsynth
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
@@ -458,23 +455,12 @@ from .optimization import (
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
-from .commutation_dag import (
-    commutation_dag,
-    CommutationDAG,
-    CommutationDAGNode,
-)
+from .commutation_dag import commutation_dag, CommutationDAG, CommutationDAGNode
 from .transpile import transpile
-from .zx import (
-    to_zx,
-    from_zx,
-)
+from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
-from .intermediate_reps import (
-    parity_matrix,
-    phase_polynomial,
-    rowcol,
-)
+from .intermediate_reps import parity_matrix, phase_polynomial, rowcol
 from .rz_phase_gradient import rz_phase_gradient
 from .decomp_inspector import decomp_inspector, DecompGraphInspector
 

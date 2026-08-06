@@ -70,9 +70,7 @@ class TestDecomposition:
     # pylint: disable-next=unused-argument
     def test_decomposition_new_capture(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
+        weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
@@ -84,9 +82,7 @@ class TestDecomposition:
     # pylint: disable-next=unused-argument
     def test_decomposition_new(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
+        weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):

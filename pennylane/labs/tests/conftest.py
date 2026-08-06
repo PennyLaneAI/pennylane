@@ -35,9 +35,7 @@ TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
-LIST_CORE_DEVICES = {
-    "default.qubit",
-}
+LIST_CORE_DEVICES = {"default.qubit"}
 
 
 @pytest.fixture(scope="function")

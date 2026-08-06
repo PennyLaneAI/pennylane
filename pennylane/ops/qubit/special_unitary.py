@@ -715,11 +715,7 @@ class TmpPauliRot(PauliRot):
     has_matrix = False
 
     @staticmethod
-    def compute_decomposition(
-        theta: TensorLike,
-        wires: WiresLike,
-        pauli_word: str,
-    ):
+    def compute_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.

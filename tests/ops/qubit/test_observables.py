@@ -76,10 +76,7 @@ DECOMPOSITION_TEST_DATA_MULTI_WIRES = [
 ]
 
 # Testing Projector observable with the basis states.
-BASISSTATEPROJECTOR_EIGVALS_TEST_DATA = [
-    (np.array([0, 0])),
-    (np.array([1, 0, 1])),
-]
+BASISSTATEPROJECTOR_EIGVALS_TEST_DATA = [(np.array([0, 0])), (np.array([1, 0, 1]))]
 
 STATEVECTORPROJECTOR_TEST_STATES = [
     (np.array([1, 0])),

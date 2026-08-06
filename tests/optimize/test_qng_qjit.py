@@ -22,10 +22,7 @@ import pytest
 
 import pennylane as qp
 
-dev_names = (
-    "default.qubit",
-    "lightning.qubit",
-)
+dev_names = ("default.qubit", "lightning.qubit")
 
 
 def circuit(params):

@@ -13,22 +13,8 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .non_parametric_ops import (
-    Hadamard,
-    S,
-    T,
-    X,
-    Y,
-    Z,
-    SWAP,
-)
-from .parametric_ops_single_qubit import (
-    PhaseShift,
-    RX,
-    RY,
-    RZ,
-    Rot,
-)
+from .non_parametric_ops import Hadamard, S, T, X, Y, Z, SWAP
+from .parametric_ops_single_qubit import PhaseShift, RX, RY, RZ, Rot
 
 from .parametric_ops_multi_qubit import MultiRZ, PauliRot, PCPhase
 

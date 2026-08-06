@@ -213,10 +213,7 @@ class TestOptaxInternalFunctions:
         ref = qp.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.parametrize(
-        "x",
-        list([0.1, 0.2, 0.3, 0.4]),
-    )
+    @pytest.mark.parametrize("x", list([0.1, 0.2, 0.3, 0.4]))
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast_optax(self, x, degree):
         """Test internal function _qsp_iterate_broadcast_optax"""

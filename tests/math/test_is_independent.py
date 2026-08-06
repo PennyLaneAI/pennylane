@@ -88,10 +88,7 @@ overlooked_lambdas = [
     lambda x: 1.0 if abs(x) < 1e-5 else 0.0,  # delta for x!=0 is not okay
 ]
 
-args_overlooked_lambdas = [
-    (2.0,),
-    (-2.0,),
-]
+args_overlooked_lambdas = [(2.0), (-2.0)]
 
 
 def const_circuit(x, y):  # pylint: disable=unused-argument
@@ -346,11 +343,7 @@ class TestIsIndependentTorch:
         lambda x: (np.ones(3), -0.1),
     ]
 
-    args_constant = [
-        (0.1, torch.tensor([-2.1, 0.1])),
-        (1.2,),
-        (torch.ones((2, 3)),),
-    ]
+    args_constant = [(0.1, torch.tensor([-2.1, 0.1])), (1.2), (torch.ones((2, 3)))]
 
     dependent_functions = [
         qp.QNode(dependent_circuit, dev, interface=interface),

@@ -46,11 +46,7 @@ class MutualInfoMP(StateMeasurement):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
         return (None, None), metadata
 
-    def __init__(
-        self,
-        wires: Sequence[Wires] | None = None,
-        log_base: float | None = None,
-    ):
+    def __init__(self, wires: Sequence[Wires] | None = None, log_base: float | None = None):
         self.log_base = log_base
         super().__init__(wires=wires)
 

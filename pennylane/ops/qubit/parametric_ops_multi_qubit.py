@@ -300,12 +300,7 @@ class PauliRot(Operator2):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(
-        self,
-        theta: TensorLike,
-        pauli_word: str,
-        wires: WiresLike,
-    ):
+    def __init__(self, theta: TensorLike, pauli_word: str, wires: WiresLike):
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
@@ -1221,11 +1216,7 @@ class IsingXX(Operation):
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
-            qp.CNOT(wires=wires),
-            RX(phi, wires=[wires[0]]),
-            qp.CNOT(wires=wires),
-        ]
+        decomp_ops = [qp.CNOT(wires=wires), RX(phi, wires=[wires[0]]), qp.CNOT(wires=wires)]
         return decomp_ops
 
     def adjoint(self) -> "IsingXX":
@@ -1344,11 +1335,7 @@ class IsingYY(Operation):
         [CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1])]
 
         """
-        return [
-            qp.CY(wires=wires),
-            RY(phi, wires=[wires[0]]),
-            qp.CY(wires=wires),
-        ]
+        return [qp.CY(wires=wires), RY(phi, wires=[wires[0]]), qp.CY(wires=wires)]
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:
@@ -1520,11 +1507,7 @@ class IsingZZ(Operation):
         [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """
-        return [
-            qp.CNOT(wires=wires),
-            RZ(phi, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-        ]
+        return [qp.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), qp.CNOT(wires=wires)]
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:

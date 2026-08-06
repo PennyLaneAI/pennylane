@@ -136,11 +136,7 @@ def any_state_allocation1():
     allocate = Allocate(3, state=AllocateState.ANY, restored=True)
     deallocate = Deallocate(allocated_register=allocate)
 
-    return [
-        allocate,
-        GateCount(qre.X.resource_rep(), 5),
-        deallocate,
-    ]
+    return [allocate, GateCount(qre.X.resource_rep(), 5), deallocate]
 
 
 def any_state_allocation2():
@@ -430,9 +426,8 @@ class TestEstimateAuxiliaryWires:
         ):
             lst_actions = [
                 Allocate(5),  # Allocated in the zero state
-                Allocate(
-                    5, state=AllocateState.ANY, restored=True
-                ),  # Allocate with a promise to restore
+                # Allocate with a promise to restore
+                Allocate(5, state=AllocateState.ANY, restored=True),
                 GateCount(qre.Z.resource_rep(), 5),
                 Deallocate(2),  # Deallocated in the zero state
                 GateCount(qre.X.resource_rep(), 3),
@@ -702,13 +697,7 @@ class TestEstimateAuxiliaryWires:
                 (1, 0, 0),
             ),
             # 2nd allocation function
-            (
-                any_state_allocation2,
-                1,
-                0,
-                0,
-                (5, -1, -1),
-            ),
+            (any_state_allocation2, 1, 0, 0, (5, -1, -1)),
             (
                 any_state_allocation2,
                 1,
@@ -773,13 +762,7 @@ class TestEstimateAuxiliaryWires:
                 (3, -5, -5),
             ),
             # 3rd allocation function
-            (
-                any_state_allocation3,
-                1,
-                0,
-                0,
-                (7, 0, 2),
-            ),
+            (any_state_allocation3, 1, 0, 0, (7, 0, 2)),
             (
                 any_state_allocation3,
                 1,

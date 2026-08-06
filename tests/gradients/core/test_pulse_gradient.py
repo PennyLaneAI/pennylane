@@ -276,11 +276,7 @@ class TestParshiftAndIntegrate:
             psr_coeffs = np.random.random(num_shifts)
 
         results_shape = (num_split_times * num_shifts * multi_term,) + meas_shape
-        new_results_shape = (
-            multi_term,
-            num_split_times,
-            num_shifts,
-        ) + meas_shape
+        new_results_shape = (multi_term, num_split_times, num_shifts) + meas_shape
         results = np.random.random(results_shape)
 
         prefactor = 0.3214
@@ -333,11 +329,7 @@ class TestParshiftAndIntegrate:
             psr_coeffs = np.random.random(num_shifts)
 
         results_shape = (num_shifts * multi_term, (num_split_times + 2)) + meas_shape
-        new_results_shape = (
-            multi_term,
-            num_shifts,
-            num_split_times + 2,
-        ) + meas_shape
+        new_results_shape = (multi_term, num_shifts, num_split_times + 2) + meas_shape
         results = np.random.random(results_shape)
 
         prefactor = 0.3214
@@ -396,10 +388,7 @@ class TestParshiftAndIntegrate:
             cjacs = np.random.random(cjac_shape)
             psr_coeffs = np.random.random(num_shifts)
 
-        results_shape = (
-            num_split_times * num_shifts * multi_term,
-            num_meas_or_shots,
-        ) + meas_shape
+        results_shape = (num_split_times * num_shifts * multi_term, num_meas_or_shots) + meas_shape
         new_results_shape = (
             multi_term,
             num_split_times,

@@ -22,36 +22,17 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Controlled, Prod, SProd, Sum
 from pennylane.wires import Wires
 
-SPECIAL_UTILITIES = {
-    "Barrier",
-    "WireCut",
-    "Snapshot",
-}
+SPECIAL_UTILITIES = {"Barrier", "WireCut", "Snapshot"}
 # Ops that don't commute with anything
 IDENTITIES = {"Identity", "GlobalPhase"}
 # Ops that commute with everything other than special utilities
 SELF_COMMUTE = {"Hadamard"}
 # Ops that only commute with themselves and identities
 
-PAULIZ_GROUP = {
-    "PauliZ",
-    "ctrl",
-    "S",
-    "T",
-    "RZ",
-    "PhaseShift",
-    "MultiRZ",
-    "U1",
-    "IsingZZ",
-}
+PAULIZ_GROUP = {"PauliZ", "ctrl", "S", "T", "RZ", "PhaseShift", "MultiRZ", "U1", "IsingZZ"}
 # Set[str]: names of operations that commute with PauliZ
 
-SWAP_GROUP = {
-    "SWAP",
-    "ISWAP",
-    "SISWAP",
-    "Permute",
-}
+SWAP_GROUP = {"SWAP", "ISWAP", "SISWAP", "Permute"}
 # Set[str]: names of operations that commute with SWAP
 
 PAULIX_GROUP = {"PauliX", "SX", "RX", "Identity", "IsingXX", "BasisState"}

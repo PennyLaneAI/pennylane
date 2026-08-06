@@ -138,12 +138,7 @@ class QubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(
-        self,
-        U: TensorLike | csr_matrix,
-        wires: WiresLike,
-        unitary_check: bool = False,
-    ):
+    def __init__(self, U: TensorLike | csr_matrix, wires: WiresLike, unitary_check: bool = False):
         wires = Wires(wires)
         U_shape = qp.math.shape(U)
         dim = 2 ** len(wires)

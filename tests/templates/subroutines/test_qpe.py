@@ -268,10 +268,7 @@ class TestDecomposition:
         ):
             qp.QuantumPhaseEstimation(unitary, target_wires=[1], estimation_wires=[2, 3])
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="No estimation wires specified.",
-        ):
+        with pytest.raises(QuantumFunctionError, match="No estimation wires specified."):
             qp.QuantumPhaseEstimation(unitary)
 
     def test_map_wires(self):
@@ -280,15 +277,7 @@ class TestDecomposition:
 
         unitary = qp.RX(np.pi / 4, wires=[0]) @ qp.CNOT(wires=[0, 1])
         qpe = qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
-        new_qpe = qp.map_wires(
-            qpe,
-            wire_map={
-                0: 2,
-                1: 3,
-                2: 4,
-                3: 5,
-            },
-        )
+        new_qpe = qp.map_wires(qpe, wire_map={0: 2, 1: 3, 2: 4, 3: 5})
 
         assert list(new_qpe.wires) == [2, 3, 4, 5]
         assert list(new_qpe._hyperparameters["target_wires"]) == [2, 3]

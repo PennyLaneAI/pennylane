@@ -402,9 +402,8 @@ class TestCtrlQfunc:
 
         # First equation of plxpr is the multiplication of x by 2
         assert plxpr.eqns[1].params["n_consts"] == 1  # w1 is a const for the outer `ctrl`
-        assert (
-            plxpr.eqns[1].invars[0] is plxpr.jaxpr.invars[1]
-        )  # first input is first control wire, const
+        # first input is first control wire, const
+        assert plxpr.eqns[1].invars[0] is plxpr.jaxpr.invars[1]
         assert plxpr.eqns[1].invars[1] is plxpr.jaxpr.invars[0]  # second input is x, first arg
         assert plxpr.eqns[1].invars[-1] is plxpr.jaxpr.invars[2]  # second control wire
         assert len(plxpr.eqns[1].invars) == 6  # one const, 4 args, one control wire

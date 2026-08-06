@@ -360,11 +360,7 @@ class Select(Operation):
         }
 
     def _flatten(self):
-        return tuple(self.ops), (
-            self.control,
-            self.work_wires,
-            self.partial,
-        )
+        return tuple(self.ops), (self.control, self.work_wires, self.partial)
 
     @classmethod
     def _primitive_bind_call(cls, ops, control, **kwargs):  # pylint: disable=arguments-differ

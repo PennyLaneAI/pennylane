@@ -290,11 +290,7 @@ class RealspaceMatrix(Fragment):
         for key in r_keys.difference(l_keys):
             new_blocks[key] = other._blocks[key]
 
-        return RealspaceMatrix(
-            self.states,
-            self.modes,
-            new_blocks,
-        )
+        return RealspaceMatrix(self.states, self.modes, new_blocks)
 
     def __sub__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
@@ -323,11 +319,7 @@ class RealspaceMatrix(Fragment):
         for key in r_keys.difference(l_keys):
             new_blocks[key] = (-1) * other._blocks[key]
 
-        return RealspaceMatrix(
-            self.states,
-            self.modes,
-            new_blocks,
-        )
+        return RealspaceMatrix(self.states, self.modes, new_blocks)
 
     def __mul__(self, scalar: float) -> RealspaceMatrix:
         new_blocks = {}

@@ -978,21 +978,11 @@ class TestScipySparse:
 
     matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
 
-    dispatched_linalg_methods = [
-        fn.linalg.expm,
-        fn.linalg.inv,
-        fn.linalg.norm,
-    ]
+    dispatched_linalg_methods = [fn.linalg.expm, fn.linalg.inv, fn.linalg.norm]
 
-    dispatched_linalg_methods_factorization = [
-        fn.linalg.eigs,
-        fn.linalg.eigsh,
-        fn.linalg.svds,
-    ]
+    dispatched_linalg_methods_factorization = [fn.linalg.eigs, fn.linalg.eigsh, fn.linalg.svds]
 
-    dispatched_linalg_methods_linear_solver = [
-        fn.linalg.spsolve,
-    ]
+    dispatched_linalg_methods_linear_solver = [fn.linalg.spsolve]
 
     @pytest.mark.parametrize("matrix", matrix)
     def test_get_interface_scipy(self, matrix):
@@ -1363,13 +1353,7 @@ class TestInBackprop:
             fn.in_backprop(type("hello", tuple(), {})())
 
 
-shape_test_data = [
-    tuple(),
-    (3,),
-    (2, 2),
-    (3, 2, 2),
-    (2, 1, 1, 2),
-]
+shape_test_data = [tuple(), (3), (2, 2), (3, 2, 2), (2, 1, 1, 2)]
 
 
 @pytest.mark.parametrize(
@@ -2463,12 +2447,7 @@ class TestSize:  # pylint: disable=too-few-public-methods
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("torch", marks=pytest.mark.torch),
-        ],
-    )
+    @pytest.mark.parametrize("interface", [pytest.param("torch", marks=pytest.mark.torch)])
     @pytest.mark.parametrize(("array", "size"), array_and_size)
     def test_size_torch_and_tf(self, array, size, interface):
         """Test size function with the torch and tf interfaces."""

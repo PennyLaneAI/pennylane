@@ -230,11 +230,7 @@ def execute(tapes, execute_fn, jpc, device=None):  # pylint: disable=unused-argu
         tape.trainable_params = qp.math.get_trainable_indices(params)
         parameters.extend(tape.get_parameters())
 
-    kwargs = {
-        "tapes": tuple(tapes),
-        "execute_fn": execute_fn,
-        "jpc": jpc,
-    }
+    kwargs = {"tapes": tuple(tapes), "execute_fn": execute_fn, "jpc": jpc}
 
     return ExecuteTapes.apply(kwargs, *parameters)
 

@@ -14,10 +14,7 @@
 r"""This module contains the experimental transforms building blocks (core)."""
 
 import inspect
-from .transform import (
-    Transform,
-    BoundTransform,
-)
+from .transform import Transform, BoundTransform
 from .compile_pipeline import CompilePipeline
 
 

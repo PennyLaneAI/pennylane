@@ -187,9 +187,7 @@ def _mlir_resources_to_specs_resources(  # pylint: disable=too-many-branches
         fn_resources[focus] = SpecsResources(**kwargs)
 
 
-def _get_resources_from_analysis_pass(
-    all_data: dict[str, Any],
-) -> list[SpecsResources]:
+def _get_resources_from_analysis_pass(all_data: dict[str, Any]) -> list[SpecsResources]:
     resource_data = {}
 
     for fn_name in all_data.keys():
@@ -209,12 +207,7 @@ def _get_resources_from_analysis_pass(
     return [resource_data[fn].subs() for fn, data in all_data.items() if data["qnode"]]
 
 
-def _execute_analysis_pass(
-    new_qnode,
-    compile_options,
-    *args,
-    **kwargs,
-):  # pragma: no cover
+def _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs):  # pragma: no cover
     """
     Helper function to compile the QNode with the resource analysis pass inserted, which will output
     the necessary JSON files for MLIR analysis.

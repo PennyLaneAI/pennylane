@@ -57,16 +57,7 @@ def test_fq_vals(n, eta, omega, lamb, g_cost, q_cost):
     assert np.allclose(est.qubits, q_cost)
 
 
-@pytest.mark.parametrize(
-    ("lz", "cost_ref"),
-    [
-        # the reference cost is obtained manually by computing the cost for a range of k values, as
-        # powers of two and selecting the minimum cost.
-        (20, 9),
-        (100, 21),
-        (300, 35),
-    ],
-)
+@pytest.mark.parametrize(("lz", "cost_ref"), [(20, 9), (100, 21), (300, 35)])
 def test_cost_qrom(lz, cost_ref):
     r"""Test that _cost_qrom returns the correct value."""
     cost = qp.estimator.FirstQuantization._cost_qrom(lz)
@@ -74,13 +65,7 @@ def test_cost_qrom(lz, cost_ref):
     assert cost == cost_ref
 
 
-@pytest.mark.parametrize(
-    "lz",
-    [
-        5.7,
-        -6,
-    ],
-)
+@pytest.mark.parametrize("lz", [5.7, -6])
 def test_cost_qrom_error(lz):
     r"""Test that _cost_qrom raises an error with incorrect input."""
     with pytest.raises(ValueError, match="sum of the atomic numbers must be a positive integer"):
@@ -224,14 +209,7 @@ def test_success_prob(n_basis, br, prob_ref):
     assert prob == prob_ref
 
 
-@pytest.mark.parametrize(
-    ("n_basis", "br"),
-    [
-        (-10000, 7),
-        (10000, 7.2),
-        (10000, -7),
-    ],
-)
+@pytest.mark.parametrize(("n_basis", "br"), [(-10000, 7), (10000, 7.2), (10000, -7)])
 def test_success_prob_error(n_basis, br):
     r"""Test that success_prob raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be a positive"):

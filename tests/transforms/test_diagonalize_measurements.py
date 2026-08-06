@@ -329,9 +329,7 @@ class TestDiagonalizeTapeMeasurements:
         new_tape = tapes[0]
 
         if to_eigvals:
-            assert new_tape.measurements == [
-                ExpectationMP(eigvals=obs.eigvals(), wires=obs.wires),
-            ]
+            assert new_tape.measurements == [ExpectationMP(eigvals=obs.eigvals(), wires=obs.wires)]
         else:
             assert new_tape.measurements == [qp.expval(expected_obs)]
         assert new_tape.operations == diag_gates
@@ -432,11 +430,7 @@ class TestDiagonalizeTapeMeasurements:
                 SampleMP(wires=[2, 3]),
             ]
         else:
-            assert new_measurements == [
-                qp.expval(Z(0)),
-                qp.var(Z(1)),
-                qp.sample(wires=[2, 3]),
-            ]
+            assert new_measurements == [qp.expval(Z(0)), qp.var(Z(1)), qp.sample(wires=[2, 3])]
         assert diagonalizing_gates == diagonalize_qwc_pauli_words([X(0), Y(1)])[0]
 
     @pytest.mark.parametrize("supported_base_obs", [{qp.Z}, {qp.Z, qp.Hadamard}])
@@ -462,11 +456,7 @@ class TestDiagonalizeTapeMeasurements:
                 SampleMP(wires=[2, 3]),
             ]
         else:
-            assert new_measurements == [
-                qp.expval(Z(0)),
-                qp.var(Z(1)),
-                qp.sample(wires=[2, 3]),
-            ]
+            assert new_measurements == [qp.expval(Z(0)), qp.var(Z(1)), qp.sample(wires=[2, 3])]
         assert diagonalizing_gates == X(0).diagonalizing_gates() + Y(1).diagonalizing_gates()
 
     @pytest.mark.parametrize("supported_base_obs", [{qp.Z}, {qp.Z, qp.Hadamard}])
@@ -495,21 +485,13 @@ class TestDiagonalizeTapeMeasurements:
                 SampleMP(wires=[0]),
             ]
         else:
-            assert new_measurements == [
-                qp.expval(Z(0)),
-                qp.var(Z(1)),
-                qp.sample(wires=[0]),
-            ]
+            assert new_measurements == [qp.expval(Z(0)), qp.var(Z(1)), qp.sample(wires=[0])]
         assert diagonalizing_gates == Y(1).diagonalizing_gates()
 
     def test_decomposing_subset_of_obs(self):
         """Test that passing a list of supported obs to the diagonalize_measurements transform
         diagonalizes only the unsupported base observables"""
-        measurements = [
-            qp.expval(X(0)),
-            qp.var(X(1) + Y(2) @ X(1)),
-            qp.counts(X(0) @ (2.3 * Y(2))),
-        ]
+        measurements = [qp.expval(X(0)), qp.var(X(1) + Y(2) @ X(1)), qp.counts(X(0) @ (2.3 * Y(2)))]
 
         tape = QuantumScript([], measurements=measurements)
 

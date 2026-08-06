@@ -90,12 +90,7 @@ def test_scalar_multiplication(frag, scalar, expected):
     assert result_rmul == expected
 
 
-@pytest.mark.parametrize(
-    "frag1, frag2, expected",
-    [
-        (identity, pauli_x, pauli_x),
-    ],
-)
+@pytest.mark.parametrize("frag1, frag2, expected", [(identity, pauli_x, pauli_x)])
 def test_matrix_multiplication(frag1, frag2, expected):
     """Test matrix multiplication of SparseFragments"""
     result = frag1 @ frag2
@@ -104,12 +99,7 @@ def test_matrix_multiplication(frag1, frag2, expected):
     assert result == expected
 
 
-@pytest.mark.parametrize(
-    "frag, expected",
-    [
-        (SparseFragment(csr_array([[3, 4], [0, 0]])), 5.0),
-    ],
-)
+@pytest.mark.parametrize("frag, expected", [(SparseFragment(csr_array([[3, 4], [0, 0]])), 5.0)])
 def test_norm(frag, expected):
     """Test norm computation of SparseFragments"""
     assert np.isclose(frag.norm(), expected)

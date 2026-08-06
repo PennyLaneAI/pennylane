@@ -958,10 +958,7 @@ class TestParamShift:
         grad = fn(dev.execute(tapes))
         exp = np.stack([-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])])
         assert len(grad) == len(exp)
-        for (
-            a,
-            b,
-        ) in zip(grad, exp):
+        for a, b in zip(grad, exp):
             assert np.allclose(a, b)
 
     def test_independent_parameters_analytic(self):
@@ -1762,9 +1759,8 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "par", [0, 1, 2, 3, np.int8(1), np.int16(1), np.int32(1), np.int64(1)]
-    )  # integers, zero
+    # integers, zero
+    @pytest.mark.parametrize("par", [0, 1, 2, 3, np.int8(1), np.int16(1), np.int32(1), np.int64(1)])
     def test_integer_parameters(self, tol, par):
         """Test that the gradient of the RY gate matches the exact analytic formula."""
         dev = qp.device("default.qubit", wires=2)

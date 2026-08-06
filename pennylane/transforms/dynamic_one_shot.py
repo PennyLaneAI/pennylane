@@ -28,13 +28,7 @@ from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError, TransformError
-from pennylane.measurements import (
-    CountsMP,
-    ExpectationMP,
-    ProbabilityMP,
-    SampleMP,
-    VarianceMP,
-)
+from pennylane.measurements import CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -340,10 +334,7 @@ def _handle_measurement_qjit(  # pylint: disable=too-many-arguments
 
     result = results[m_count]
     if isinstance(m, CountsMP):
-        res = (
-            result[0][0],
-            math.sum(result[1] * math.reshape(is_valid, (-1, 1)), axis=0),
-        )
+        res = (result[0][0], math.sum(result[1] * math.reshape(is_valid, (-1, 1)), axis=0))
         return res, m_count + 1
     result = math.squeeze(result)
     if isinstance(m, SampleMP) and result.ndim == 1:

@@ -170,11 +170,7 @@ class AllSinglesDoubles(Operation):
             raise ValueError(f"Elements of 'hf_state' must be integers, got {hf_dtype}.")
         hf_state = tuple(hf_state)
 
-        self._hyperparameters = {
-            "hf_state": hf_state,
-            "singles": singles,
-            "doubles": doubles,
-        }
+        self._hyperparameters = {"hf_state": hf_state, "singles": singles, "doubles": doubles}
 
         super().__init__(weights, wires=wires)
 

@@ -827,9 +827,8 @@ class TestIntegration:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        @qnode(
-            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
-        )  # <--- we only choose one trainable parameter
+        # <--- we only choose one trainable parameter
+        @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -1211,10 +1210,7 @@ class TestShots:
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="shots on device is deprecated",
-        ):
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
             dev = qp.device("default.qubit", wires=[0, 1], shots=10)
 
         def ansatz0(a, shots):
@@ -1374,9 +1370,7 @@ class TestCompilePipelineIntegration:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @just_pauli_x_out
@@ -1430,15 +1424,11 @@ class TestCompilePipelineIntegration:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @qp.transform
-        def repeat_operations(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def repeat_operations(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qp.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -1970,10 +1960,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
     def test_shots_initialization(self):
         """Test that _shots is correctly initialized from the device with deprecation warning."""
         # Test that QNode inherits shots from device (with deprecation warning)
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="shots on device is deprecated",
-        ):
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
             dev_with_shots = qp.device("default.qubit", wires=1, shots=42)
         qn_with_device_shots = qp.QNode(dummyfunc, dev_with_shots)
         assert qn_with_device_shots._shots == qp.measurements.Shots(42)

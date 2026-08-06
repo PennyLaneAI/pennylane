@@ -1769,11 +1769,7 @@ class Operation(Operator):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    def __init__(
-        self,
-        *params: TensorLike,
-        wires: WiresLike | None = None,
-    ):
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None):
         super().__init__(*params, wires=wires)
 
         # check the grad_recipe validity

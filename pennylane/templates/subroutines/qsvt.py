@@ -516,10 +516,7 @@ class QSVT(Operation):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
 
-        self._hyperparameters = {
-            "UA": UA,
-            "projectors": projectors,
-        }
+        self._hyperparameters = {"UA": UA, "projectors": projectors}
 
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
@@ -527,10 +524,7 @@ class QSVT(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "UA": self.hyperparameters["UA"],
-            "projectors": self.hyperparameters["projectors"],
-        }
+        return {"UA": self.hyperparameters["UA"], "projectors": self.hyperparameters["projectors"]}
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)

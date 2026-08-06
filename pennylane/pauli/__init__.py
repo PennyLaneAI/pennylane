@@ -38,10 +38,7 @@ from .utils import (
 
 from .pauli_interface import pauli_word_prefactor
 
-from .conversion import (
-    pauli_decompose,
-    pauli_sentence,
-)
+from .conversion import pauli_decompose, pauli_sentence
 
 from .grouping import (
     group_observables,

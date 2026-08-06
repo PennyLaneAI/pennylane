@@ -493,13 +493,7 @@ class TestEstimateResources:
 
         actual_resources = estimate(my_circuit, gate_set={"Hadamard", "X"})()
 
-        expected_gates = defaultdict(
-            int,
-            {
-                resource_rep(qre.Hadamard): 1,
-                resource_rep(qre.X): 1,
-            },
-        )
+        expected_gates = defaultdict(int, {resource_rep(qre.Hadamard): 1, resource_rep(qre.X): 1})
         expected_resources = Resources(
             zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=expected_gates
         )

@@ -811,9 +811,8 @@ class TestConditionalOperations:
         tapes, _ = qp.defer_measurements(tape)
         tape = tapes[0]
 
-        assert (
-            len(tape.operations) == 5 + 1 + 1 + 2
-        )  # 5 regular ops + 1 measurement op + 1 reset op + 2 conditional ops
+        # 5 regular ops + 1 measurement op + 1 reset op + 2 conditional ops
+        assert len(tape.operations) == 5 + 1 + 1 + 2
 
         assert len(tape.measurements) == 1
 
@@ -863,14 +862,7 @@ class TestConditionalOperations:
         qp.assert_equal(tape.measurements[0], terminal_measurement)
 
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
-    @pytest.mark.parametrize(
-        "device",
-        [
-            "default.qubit",
-            "default.mixed",
-            "lightning.qubit",
-        ],
-    )
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("ops", [(qp.RX, qp.CRX), (qp.RY, qp.CRY), (qp.RZ, qp.CRZ)])
     def test_conditional_rotations(self, device, r, ops):
         """Test that the quantum conditional operations match the output of
@@ -967,14 +959,7 @@ class TestConditionalOperations:
         assert isinstance(tape.measurements[0], qp.measurements.MeasurementProcess)
         qp.assert_equal(tape.measurements[0].obs, H)
 
-    @pytest.mark.parametrize(
-        "device",
-        [
-            "default.qubit",
-            "default.mixed",
-            "lightning.qubit",
-        ],
-    )
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("ops", [(qp.RX, qp.CRX), (qp.RY, qp.CRY), (qp.RZ, qp.CRZ)])
     def test_conditional_rotations_assert_zero_state(self, device, ops):
         """Test that the quantum conditional operations applied by controlling
@@ -1004,14 +989,7 @@ class TestConditionalOperations:
 
         assert np.allclose(normal_probs, cond_probs)
 
-    @pytest.mark.parametrize(
-        "device",
-        [
-            "default.qubit",
-            "default.mixed",
-            "lightning.qubit",
-        ],
-    )
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_conditional_rotations_with_else(self, device):
         """Test that an else operation can also defined using qp.cond."""
         dev = qp.device(device, wires=3)
@@ -1083,10 +1061,7 @@ class TestConditionalOperations:
 
         assert qnode() == expected
 
-    @pytest.mark.parametrize(
-        "device",
-        ["default.qubit", "default.mixed", "lightning.qubit"],
-    )
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_cond_qfunc(self, device):
         """Test that a qfunc can also used with qp.cond."""
         dev = qp.device(device, wires=4)
@@ -1122,10 +1097,7 @@ class TestConditionalOperations:
 
         assert np.allclose(exp, cond_probs)
 
-    @pytest.mark.parametrize(
-        "device",
-        ["default.qubit", "default.mixed", "lightning.qubit"],
-    )
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_cond_qfunc_with_else(self, device):
         """Test that a qfunc can also used with qp.cond even when an else
         qfunc is provided."""
@@ -1452,13 +1424,7 @@ class TestQubitReuseAndReset:
             qp.measure(0)
             return qp.expval(qp.PauliZ(1))
 
-        expected = [
-            qp.RX(1.0, 0),
-            qp.CNOT([0, 2]),
-            qp.RY(2.0, 1),
-            qp.CNOT([0, 3]),
-            qp.RZ(3.0, 1),
-        ]
+        expected = [qp.RX(1.0, 0), qp.CNOT([0, 2]), qp.RY(2.0, 1), qp.CNOT([0, 3]), qp.RZ(3.0, 1)]
 
         tape = qp.workflow.construct_tape(circ)(1.0, 2.0)
         assert tape.operations == expected

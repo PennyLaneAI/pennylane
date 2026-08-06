@@ -74,9 +74,8 @@ def _validate_computational_basis_sampling(tape):
         if all_wires == empty_wires:
             return
 
-        with (
-            QueuingManager.stop_recording()
-        ):  # stop recording operations - the constructed operator is just aux
+        # stop recording operations - the constructed operator is just aux
+        with QueuingManager.stop_recording():
             pauliz_for_cb_obs = (
                 qp.Z(all_wires)
                 if len(all_wires) == 1
@@ -96,9 +95,8 @@ def rotations_and_diagonal_measurements(tape):
     if not tape.obs_sharing_wires:
         return [], tape.measurements
 
-    with (
-        QueuingManager.stop_recording()
-    ):  # stop recording operations to active context when computing qwc groupings
+    # stop recording operations to active context when computing qwc groupings
+    with QueuingManager.stop_recording():
         try:
             rotations, diag_obs = qp.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
         except (TypeError, ValueError) as e:

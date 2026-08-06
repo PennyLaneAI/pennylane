@@ -172,10 +172,7 @@ FERMI_WORDS_AND_OPS = [
     (
         FermiWord({(0, 5): "+", (1, 5): "-", (2, 5): "+", (3, 5): "-"}),  # [5, 5, 5, 5],
         # obtained with openfermion using: jordan_wigner(FermionOperator('5^ 5 5^ 5', 1))
-        (
-            [(0.5 + 0j), (-0.5 + 0j)],
-            [qp.Identity(0), qp.PauliZ(5)],
-        ),
+        ([(0.5 + 0j), (-0.5 + 0j)], [qp.Identity(0), qp.PauliZ(5)]),
     ),
     (
         FermiWord({(0, 3): "+", (1, 3): "-", (2, 3): "+", (3, 1): "-"}),

@@ -32,15 +32,7 @@ from pennylane import numpy as np
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.transforms import TransformError
 
-one_qubit_no_parameter = [
-    qp.PauliX,
-    qp.PauliY,
-    qp.PauliZ,
-    qp.Hadamard,
-    qp.S,
-    qp.T,
-    qp.SX,
-]
+one_qubit_no_parameter = [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard, qp.S, qp.T, qp.SX]
 
 
 I_CNOT = np.kron(I, CNOT)

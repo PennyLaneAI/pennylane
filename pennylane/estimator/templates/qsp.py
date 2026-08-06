@@ -631,12 +631,7 @@ class QSVT(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
-        cls,
-        block_encoding: CompressedResourceOp,
-        encoding_dims: int,
-        poly_deg: int,
-    ):
+    def resource_rep(cls, block_encoding: CompressedResourceOp, encoding_dims: int, poly_deg: int):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -917,7 +912,4 @@ class QSP(ResourceOperator):
         else:
             raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
 
-        return [
-            GateCount(block_encoding, poly_deg),
-            GateCount(rot_op, poly_deg + 1),
-        ]
+        return [GateCount(block_encoding, poly_deg), GateCount(rot_op, poly_deg + 1)]

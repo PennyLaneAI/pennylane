@@ -82,10 +82,7 @@ class Qubitization(Operation):
     def __init__(self, hamiltonian, control):
         wires = Wires(control) + hamiltonian.wires
 
-        self._hyperparameters = {
-            "hamiltonian": hamiltonian,
-            "control": Wires(control),
-        }
+        self._hyperparameters = {"hamiltonian": hamiltonian, "control": Wires(control)}
 
         super().__init__(*hamiltonian.data, wires=wires)
 

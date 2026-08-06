@@ -211,10 +211,7 @@ class TestHelpers:
         assert all(np.issubdtype(type(num), int) for num in argnum)
         assert np.allclose(argnum, argnum_exp)
 
-    @pytest.mark.parametrize(
-        "circuit, enc_args, argnum",
-        process_id_cases_unknown_arg,
-    )
+    @pytest.mark.parametrize("circuit, enc_args, argnum", process_id_cases_unknown_arg)
     def test_process_ids_unknown_arg(self, circuit, enc_args, argnum):
         dev = qp.device("default.qubit", wires=2)
         qnode = qp.QNode(circuit, dev)

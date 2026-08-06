@@ -617,10 +617,7 @@ class TestMultiControlledX:
 
     def test_str_control_values_error(self):
         """Tests that control_values specified with a bit string is deprecated."""
-        with pytest.raises(
-            ValueError,
-            match="control_values must be boolean or int",
-        ):
+        with pytest.raises(ValueError, match="control_values must be boolean or int"):
             _ = qp.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
     @pytest.mark.parametrize(

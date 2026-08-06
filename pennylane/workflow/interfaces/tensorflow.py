@@ -129,10 +129,7 @@ def _get_parameters_dtype(parameters):
     return None
 
 
-_complex_dtype_map = {
-    tf.float32: tf.complex64,
-    tf.float64: tf.complex128,
-}
+_complex_dtype_map = {tf.float32: tf.complex64, tf.float64: tf.complex128}
 
 
 def _to_tensors(x, dtype=None, complex_safe=False):

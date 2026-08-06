@@ -1009,11 +1009,7 @@ class TestSqrtMatrix:
     """Tests for the sqrt_matrix function."""
 
     # NOTE: make sure the matrix is positive definite
-    dm_list = [
-        np.array([[1, 0], [0, 1]]),
-        np.array([[1, 0], [0, 2]]),
-        np.array([[4, 2], [2, 3]]),
-    ]
+    dm_list = [np.array([[1, 0], [0, 1]]), np.array([[1, 0], [0, 2]]), np.array([[4, 2], [2, 3]])]
     shape_list = range(2, 10)
     # NOTE: sqrt_matrix is frequently used by BlockEncode
     #       here below are some test matrices that are used

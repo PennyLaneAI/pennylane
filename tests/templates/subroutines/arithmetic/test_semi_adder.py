@@ -127,11 +127,7 @@ class TestSemiAdder:
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
-        x_wires, y_wires, work_wires = (
-            [0, 1, 2, 3, 4],
-            [5, 6, 7, 8, 9],
-            [10, 11, 12, 13],
-        )
+        x_wires, y_wires, work_wires = ([0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13])
 
         adder_decomposition = qp.SemiAdder(x_wires, y_wires, work_wires).compute_decomposition(
             x_wires, y_wires, work_wires
@@ -144,22 +140,12 @@ class TestSemiAdder:
         assert names.count("Adjoint(TemporaryAND)") == 4
         assert names.count("CNOT") == 21
 
-    @pytest.mark.parametrize(
-        ("x_wires"),
-        [
-            [0, 1, 2],
-            [0, 1],
-            [0, 1, 2, 3],
-        ],
-    )
+    @pytest.mark.parametrize(("x_wires"), [[0, 1, 2], [0, 1], [0, 1, 2, 3]])
     def test_decomposition_rule(self, x_wires):
         """Tests that SemiAdder is decomposed properly."""
 
         for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(
-                qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
-                rule,
-            )
+            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule)
 
     @pytest.mark.jax
     def test_jit_compatible(self):

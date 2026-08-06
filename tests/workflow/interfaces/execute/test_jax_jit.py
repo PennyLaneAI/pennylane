@@ -75,12 +75,7 @@ class TestJaxExecuteUnitTests:
 
             tape = qp.tape.QuantumScript.from_queue(q)
 
-            return execute(
-                [tape],
-                device,
-                diff_method=param_shift,
-                grad_on_execution=True,
-            )[0]
+            return execute([tape], device, diff_method=param_shift, grad_on_execution=True)[0]
 
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
@@ -101,12 +96,7 @@ class TestJaxExecuteUnitTests:
 
             tape = qp.tape.QuantumScript.from_queue(q)
 
-            return execute(
-                [tape],
-                device,
-                diff_method=param_shift,
-                interface="blah",
-            )[0]
+            return execute([tape], device, diff_method=param_shift, interface="blah")[0]
 
         with pytest.raises(ValueError, match="'blah' is not a valid Interface"):
             cost(a, device=dev)
@@ -124,11 +114,7 @@ class TestJaxExecuteUnitTests:
 
             tape = qp.tape.QuantumScript.from_queue(q)
 
-            return execute(
-                [tape],
-                dev,
-                diff_method="adjoint",
-            )[0]
+            return execute([tape], dev, diff_method="adjoint")[0]
 
         a = jax.numpy.array([0.1, 0.2])
 
@@ -156,12 +142,7 @@ class TestJaxExecuteUnitTests:
 
             tape = qp.tape.QuantumScript.from_queue(q)
 
-            return execute(
-                [tape],
-                dev,
-                diff_method="adjoint",
-                grad_on_execution=False,
-            )[0]
+            return execute([tape], dev, diff_method="adjoint", grad_on_execution=False)[0]
 
         a = jax.numpy.array([0.1, 0.2])
 
@@ -192,13 +173,7 @@ class TestCaching:
 
             tape = qp.tape.QuantumScript.from_queue(q)
 
-            return execute(
-                [tape],
-                dev,
-                diff_method=param_shift,
-                cache=True,
-                cachesize=cachesize,
-            )[0]
+            return execute([tape], dev, diff_method=param_shift, cache=True, cachesize=cachesize)[0]
 
         params = jax.numpy.array([0.1, 0.2])
         jax.jit(jax.grad(cost), static_argnums=1)(params, cachesize=2)
@@ -221,12 +196,7 @@ class TestCaching:
 
             tape = qp.tape.QuantumScript.from_queue(q)
 
-            return execute(
-                [tape],
-                dev,
-                diff_method=param_shift,
-                cache=cache,
-            )[0]
+            return execute([tape], dev, diff_method=param_shift, cache=cache)[0]
 
         custom_cache = {}
         params = jax.numpy.array([0.1, 0.2])
@@ -258,12 +228,7 @@ class TestCaching:
 
             tape2 = qp.tape.QuantumScript.from_queue(q2)
 
-            res = execute(
-                [tape1, tape2],
-                dev,
-                diff_method=param_shift,
-                cache=cache,
-            )
+            res = execute([tape1, tape2], dev, diff_method=param_shift, cache=cache)
             return res[0]
 
         custom_cache = {}
@@ -285,12 +250,7 @@ class TestCaching:
 
             tape = qp.tape.QuantumScript.from_queue(q)
 
-            return execute(
-                [tape],
-                dev,
-                diff_method=param_shift,
-                cache=cache,
-            )[0]
+            return execute([tape], dev, diff_method=param_shift, cache=cache)[0]
 
         # Without caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)

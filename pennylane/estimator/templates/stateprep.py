@@ -762,9 +762,8 @@ class QROMStatePreparation(ResourceOperator):
             )
             gate_counts.append(GateCount(h, 2 * num_precision_wires))
             gate_counts.append(GateCount(s, num_precision_wires))
-            gate_counts.append(
-                GateCount(s_dagg, num_precision_wires)
-            )  # map RY rotations to RZ for phase grad
+            # map RY rotations to RZ for phase grad
+            gate_counts.append(GateCount(s_dagg, num_precision_wires))
 
         else:
             cry = qre.CRY.resource_rep()
@@ -1169,10 +1168,7 @@ class PrepTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def adjoint_resource_decomp(
-        cls,
-        target_resource_params: dict,
-    ) -> list[GateCount]:
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 

@@ -344,10 +344,7 @@ class TestAddNoiseInterface:
         args = [0.1, 0.2, 0.3, 0.4]
 
         results = []
-        for mp in [
-            qp.expval(qp.PauliZ(0) @ qp.PauliZ(1)),
-            qp.var(qp.PauliZ(0) @ qp.PauliZ(1)),
-        ]:
+        for mp in [qp.expval(qp.PauliZ(0) @ qp.PauliZ(1)), qp.var(qp.PauliZ(0) @ qp.PauliZ(1))]:
 
             @qp.qnode(dev)
             def f(w, x, y, z):
@@ -635,9 +632,8 @@ class TestGetTransformProgramHelper:
         dev_program = _get_transform_program(circuit, level="device")
         config = qp.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
         config = qp.device("default.qubit").setup_execution_config(config)
-        assert len(dev_program) == 4 + len(
-            circuit.device.preprocess_transforms(config)
-        )  # currently 8
+        # currently 8
+        assert len(dev_program) == 4 + len(circuit.device.preprocess_transforms(config))
 
         full_program = _get_transform_program(circuit)
         assert dev_program == full_program

@@ -33,8 +33,7 @@ except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 
 
-# pragma: no cover
-def _needs_mpl(func):
+def _needs_mpl(func):  # pragma: no cover
     def wrapper():
         if not _has_mpl:  # pragma: no cover
             raise ImportError(

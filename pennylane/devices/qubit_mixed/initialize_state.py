@@ -37,9 +37,8 @@ def create_initial_state(
         array: The initial density matrix (tensor form) of a circuit
     """
     num_wires = len(wires)
-    num_axes = (
-        2 * num_wires
-    )  # we initialize the density matrix as the tensor form to keep compatibility with the rest of the module
+    # we initialize the density matrix as the tensor form to keep compatibility with the rest of the module
+    num_axes = 2 * num_wires
     if not prep_operation:
         state = math.zeros((2,) * num_axes, dtype=complex)
         state[(0,) * num_axes] = 1

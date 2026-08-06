@@ -213,10 +213,7 @@ class GateFabric(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
-        self._hyperparameters = {
-            "init_state": tuple(init_state),
-            "include_pi": include_pi,
-        }
+        self._hyperparameters = {"init_state": tuple(init_state), "include_pi": include_pi}
 
         super().__init__(weights, wires=wires)
 

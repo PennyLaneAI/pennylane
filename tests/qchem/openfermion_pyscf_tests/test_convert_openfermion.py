@@ -309,10 +309,7 @@ class TestToOpenFermion:
         q_op = qp.to_openfermion(pl_op, wires=wires)
         assert q_op == of_op
 
-    INVALID_OPS = (
-        qp.prod(qp.PauliX(0), qp.Hadamard(1)),
-        qp.sum(qp.PauliZ(0), qp.Hadamard(1)),
-    )
+    INVALID_OPS = (qp.prod(qp.PauliX(0), qp.Hadamard(1)), qp.sum(qp.PauliZ(0), qp.Hadamard(1)))
 
     @pytest.mark.parametrize("op", INVALID_OPS)
     def test_not_xyz(self, op):
@@ -331,9 +328,7 @@ class TestToOpenFermion:
             ValueError,
             match=f"pl_op must be a Sum, LinearCombination, FermiWord or FermiSentence, got: {type(pl_op)}.",
         ):
-            qp.to_openfermion(
-                pl_op,
-            )
+            qp.to_openfermion(pl_op)
 
     OPS_FERMI_WIRE = (
         ((qp.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: "a", 1: 2})),

@@ -294,13 +294,7 @@ class TestOutMultiplier:
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
-        x_wires, y_wires, output_wires, mod, work_wires = (
-            [0, 1, 2],
-            [3, 5],
-            [6, 8],
-            3,
-            [9, 10],
-        )
+        x_wires, y_wires, output_wires, mod, work_wires = ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10])
         multiplier_decomposition = (
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             .compute_decomposition(

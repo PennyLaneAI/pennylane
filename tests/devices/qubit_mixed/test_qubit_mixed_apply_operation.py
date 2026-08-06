@@ -776,13 +776,7 @@ class TestSnapshot:
             expected_values = measure(qp.expval(qp.PauliZ(0)), initial_state, is_state_batched=True)
             assert math.allclose(debugger.snapshots[tag], expected_values)
 
-    @pytest.mark.parametrize(
-        "measurement",
-        [
-            qp.sample(wires=[0, 1]),
-            qp.counts(wires=[0, 1]),
-        ],
-    )
+    @pytest.mark.parametrize("measurement", [qp.sample(wires=[0, 1]), qp.counts(wires=[0, 1])])
     def test_snapshot_with_shots_and_measurement(
         self, measurement, ml_framework, state, shape, request
     ):

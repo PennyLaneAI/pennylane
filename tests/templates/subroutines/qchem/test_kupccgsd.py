@@ -131,13 +131,7 @@ class TestDecomposition:
 
         @qp.qnode(dev)
         def circuit():
-            qp.kUpCCGSD(
-                weights,
-                wires=range(4),
-                k=1,
-                delta_sz=0,
-                init_state=np.array([0, 1, 0, 1]),
-            )
+            qp.kUpCCGSD(weights, wires=range(4), k=1, delta_sz=0, init_state=np.array([0, 1, 0, 1]))
             return qp.expval(qp.Identity(0)), qp.state()
 
         @qp.qnode(dev2)
@@ -426,13 +420,7 @@ class TestInputs:
 
         @qp.qnode(dev)
         def circuit():
-            qp.kUpCCGSD(
-                weights=weights,
-                wires=wires,
-                k=k,
-                delta_sz=delta_sz,
-                init_state=init_state,
-            )
+            qp.kUpCCGSD(weights=weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
             return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg_match):
@@ -475,13 +463,7 @@ class TestAttributes:
 
 
 def circuit_template(weights):
-    qp.kUpCCGSD(
-        weights,
-        wires=range(4),
-        k=1,
-        delta_sz=0,
-        init_state=np.array([1, 1, 0, 0]),
-    )
+    qp.kUpCCGSD(weights, wires=range(4), k=1, delta_sz=0, init_state=np.array([1, 1, 0, 0]))
     return qp.expval(qp.PauliZ(0))
 
 

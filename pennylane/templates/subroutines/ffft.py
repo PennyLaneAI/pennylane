@@ -152,9 +152,7 @@ class FFFT(Operator):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
+        return {"num_wires": len(self.wires)}
 
 
 def _fast_fermionic_fourier_transform_resources(num_wires):

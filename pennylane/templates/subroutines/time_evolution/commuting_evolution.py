@@ -131,9 +131,7 @@ class CommutingEvolution(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
-        }
+        return {"words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys())}
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
         # pylint: disable=import-outside-toplevel

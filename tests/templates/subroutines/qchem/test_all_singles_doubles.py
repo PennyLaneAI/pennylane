@@ -334,13 +334,7 @@ class TestInputs:
         qnode = qp.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
-            qnode(
-                weights=weights,
-                wires=wires,
-                hf_state=hf_state,
-                singles=singles,
-                doubles=doubles,
-            )
+            qnode(weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles)
 
 
 class TestAttributes:

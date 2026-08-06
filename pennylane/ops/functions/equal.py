@@ -617,11 +617,7 @@ def _check_pytree_value(
 
 
 @_equal_dispatch.register
-def _equal_pauliword(
-    op1: PauliWord,
-    op2: PauliWord,
-    **kwargs,
-):
+def _equal_pauliword(op1: PauliWord, op2: PauliWord, **kwargs):
     if op1 != op2:
         if set(op1) != set(op2):
             err = "Different wires in Pauli words."

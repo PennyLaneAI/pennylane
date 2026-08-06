@@ -239,12 +239,7 @@ Utility Classes
 
 from pennylane.exceptions import DecompositionError
 from .gate_set import GateSet
-from .utils import (
-    enable_graph,
-    disable_graph,
-    enabled_graph,
-    toggle_graph_ctx,
-)
+from .utils import enable_graph, disable_graph, enabled_graph, toggle_graph_ctx
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution
 from .resources import (
     Resources,

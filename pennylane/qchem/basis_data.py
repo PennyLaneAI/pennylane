@@ -763,12 +763,7 @@ CCPVDZ = {
     },
 }
 
-basis_sets = {
-    "sto-3g": STO3G,
-    "6-31g": POPLE631G,
-    "6-311g": POPLE6311G,
-    "cc-pvdz": CCPVDZ,
-}
+basis_sets = {"sto-3g": STO3G, "6-31g": POPLE631G, "6-311g": POPLE6311G, "cc-pvdz": CCPVDZ}
 
 
 def load_basisset(basis, element):

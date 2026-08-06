@@ -489,10 +489,7 @@ class TestDifferentModes:
         # circuit would normally dispatch the reversed method, but has an extra observable.
 
         op = qp.evolve(qp.X(0) @ qp.X(1) + qp.Y(2) + qp.Z(0) @ qp.Z(1), 0.5)
-        mps = [
-            qp.expval(qp.Z(0) @ qp.X(1) + qp.Y(0) + qp.X(0) @ qp.H(1)),
-            qp.expval(qp.Z(0)),
-        ]
+        mps = [qp.expval(qp.Z(0) @ qp.X(1) + qp.Y(0) + qp.X(0) @ qp.H(1)), qp.expval(qp.Z(0))]
         tape = qp.tape.QuantumScript([op], mps)
         batch, _ = qp.gradients.hadamard_grad(tape, aux_wire=3, mode="auto")
         assert len(batch) == 3
@@ -507,18 +504,12 @@ class TestDifferentModes:
         mp = qp.expval(qp.Z(0) @ qp.X(1) + qp.Y(0) + qp.X(0) @ qp.Z(1))
         tape = qp.tape.QuantumScript([op], [mp, qp.probs((0, 1))])
 
-        with pytest.raises(
-            ValueError,
-            match="require an auxiliary wire",
-        ):
+        with pytest.raises(ValueError, match="require an auxiliary wire"):
             _, _ = qp.gradients.hadamard_grad(tape, mode="standard", aux_wire=None)
 
         tape = qp.tape.QuantumScript([op], [mp])
 
-        with pytest.raises(
-            ValueError,
-            match="require an auxiliary wire",
-        ):
+        with pytest.raises(ValueError, match="require an auxiliary wire"):
             _, _ = qp.gradients.hadamard_grad(tape, mode="reversed", aux_wire=None)
 
     def test_automatic_mode_raises(self, mocker):
@@ -1015,9 +1006,8 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         (cost12, [8, 3], np.ndarray),
     ]
 
-    @pytest.mark.parametrize(
-        "mode", ["standard"]
-    )  # other modes should not work with probs at the moment
+    # other modes should not work with probs at the moment
+    @pytest.mark.parametrize("mode", ["standard"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode."""

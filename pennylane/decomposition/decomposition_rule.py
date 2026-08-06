@@ -909,11 +909,7 @@ class _DecompInfoCollection:
 
     # pylint: disable=protected-access
 
-    def __init__(
-        self,
-        rule_infos: Sequence[_DecompInfo],
-        show_not_applicable: bool = True,
-    ) -> None:
+    def __init__(self, rule_infos: Sequence[_DecompInfo], show_not_applicable: bool = True) -> None:
         self._n_rules_original = len(rule_infos)
         indexed_rule_infos = enumerate(rule_infos)
         self._show_not_applicable = show_not_applicable

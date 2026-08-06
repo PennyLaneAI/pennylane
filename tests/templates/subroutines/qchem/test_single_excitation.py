@@ -141,39 +141,19 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        ("single_wires"),
-        [
-            [0, 1, 2],
-            [10, 11],
-            [1, 2, 3, 4],
-        ],
-    )
+    @pytest.mark.parametrize(("single_wires"), [[0, 1, 2], [10, 11], [1, 2, 3, 4]])
     @pytest.mark.capture
     def test_decomposition_new_capture(self, single_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qp.FermionicSingleExcitation(
-            np.pi / 3,
-            wires=single_wires,
-        )
+        op = qp.FermionicSingleExcitation(np.pi / 3, wires=single_wires)
 
         for rule in qp.list_decomps(qp.FermionicSingleExcitation):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.parametrize(
-        ("single_wires"),
-        [
-            [0, 1, 2],
-            [10, 11],
-            [1, 2, 3, 4],
-        ],
-    )
+    @pytest.mark.parametrize(("single_wires"), [[0, 1, 2], [10, 11], [1, 2, 3, 4]])
     def test_decomposition_new(self, single_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qp.FermionicSingleExcitation(
-            np.pi / 3,
-            wires=single_wires,
-        )
+        op = qp.FermionicSingleExcitation(np.pi / 3, wires=single_wires)
 
         for rule in qp.list_decomps(qp.FermionicSingleExcitation):
             _test_decomposition_rule(op, rule)

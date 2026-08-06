@@ -354,11 +354,7 @@ mul_LinearCombinations = [
         ),
     ),
     # The result is the zero LinearCombination
-    (
-        0.0,
-        qp.ops.LinearCombination([1], [X(0)]),
-        qp.ops.LinearCombination([0], [X(0)]),
-    ),
+    (0.0, qp.ops.LinearCombination([1], [X(0)]), qp.ops.LinearCombination([0], [X(0)])),
     (
         0.0,
         qp.ops.LinearCombination([1.0, 1.2, 0.1], [X(0), Z(1), X(2)]),
@@ -623,9 +619,8 @@ class TestLinearCombination:
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
         assert len(data) == 2
-        assert qp.math.allequal(
-            data[0], H._coeffs
-        )  # Previously checking "is" instead of "==", problem?
+        # Previously checking "is" instead of "==", problem?
+        assert qp.math.allequal(data[0], H._coeffs)
         assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
@@ -1281,10 +1276,7 @@ class TestLinearCombinationSparseMatrix:
         """Tests that sparse_LinearCombination returns a scipy.sparse.csr_matrix object"""
 
         coeffs = [-0.25, 0.75]
-        obs = [
-            X(wires=[0]) @ Z(wires=[1]),
-            Y(wires=[0]) @ Z(wires=[1]),
-        ]
+        obs = [X(wires=[0]) @ Z(wires=[1]), Y(wires=[0]) @ Z(wires=[1])]
         H = qp.ops.LinearCombination(coeffs, obs)
 
         sparse_matrix = H.sparse_matrix()

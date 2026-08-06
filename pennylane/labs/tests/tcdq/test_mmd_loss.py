@@ -284,21 +284,11 @@ class TestMMDLossAPI:
 
     def test_raises_n_samples_le_one(self):
         """``n_samples <= 1`` should raise ``ValueError``."""
-        config = CircuitConfig(
-            gates={0: [[0]]},
-            n_samples=1,
-            key=jax.random.PRNGKey(0),
-            n_qubits=1,
-        )
+        config = CircuitConfig(gates={0: [[0]]}, n_samples=1, key=jax.random.PRNGKey(0), n_qubits=1)
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=5)
 
         with pytest.raises(ValueError, match="n_samples must be greater than 1"):
-            mmd_loss(
-                jnp.array([0.1]),
-                config,
-                mmd_cfg,
-                jnp.array([[0]]),
-            )
+            mmd_loss(jnp.array([0.1]), config, mmd_cfg, jnp.array([[0]]))
 
     def test_return_per_bandwidth_type_and_length(self):
         """``return_per_bandwidth=True`` returns a list of length ``len(bandwidth)``."""
@@ -311,12 +301,7 @@ class TestMMDLossAPI:
         mmd_cfg = MMDConfig(bandwidth=[0.5, 1.0], n_ops=30, return_per_bandwidth=True)
         data = jnp.array([[0, 1], [1, 0], [0, 0]])
 
-        res = mmd_loss(
-            jnp.array([0.1, 0.2]),
-            config,
-            mmd_cfg,
-            data,
-        )
+        res = mmd_loss(jnp.array([0.1, 0.2]), config, mmd_cfg, data)
         assert isinstance(res, list)
         assert len(res) == 2
 
@@ -448,26 +433,11 @@ class TestMMDLossStatistical:
         "generators, params, biases, n_data",
         [
             # 3-qubit, 3-gate circuit, moderate data bias
-            (
-                [[0], [1], [0, 1, 2]],
-                [0.37, 0.95, 0.73],
-                [0.3, 0.7, 0.5],
-                200,
-            ),
+            ([[0], [1], [0, 1, 2]], [0.37, 0.95, 0.73], [0.3, 0.7, 0.5], 200),
             # 3-qubit, 2-gate circuit, skewed data
-            (
-                [[0, 1], [1, 2]],
-                [0.5, 0.3],
-                [0.1, 0.9, 0.5],
-                150,
-            ),
+            ([[0, 1], [1, 2]], [0.5, 0.3], [0.1, 0.9, 0.5], 150),
             # 2-qubit, 3-gate circuit
-            (
-                [[0], [1], [0, 1]],
-                [0.2, 0.8, 0.4],
-                [0.4, 0.6],
-                100,
-            ),
+            ([[0], [1], [0, 1]], [0.2, 0.8, 0.4], [0.4, 0.6], 100),
         ],
     )
     def test_unbiased_z_test(self, generators, params, biases, n_data):
@@ -538,12 +508,7 @@ class TestMMDLossStatistical:
         data = jnp.array(rng.binomial(1, 0.5, (30, 2)))
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=50, wires=[0, 2])
 
-        res = mmd_loss(
-            jnp.array([0.1, 0.2, 0.3, 0.15]),
-            config,
-            mmd_cfg,
-            data,
-        )
+        res = mmd_loss(jnp.array([0.1, 0.2, 0.3, 0.15]), config, mmd_cfg, data)
         assert res.shape == () and np.isfinite(float(res))
 
     def test_sqrt_loss_positive(self):
@@ -558,12 +523,7 @@ class TestMMDLossStatistical:
         data = jnp.array(rng.binomial(1, 0.3, (50, 2)))
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=200, sqrt_loss=True)
 
-        res = mmd_loss(
-            jnp.array([0.5, 0.3]),
-            config,
-            mmd_cfg,
-            data,
-        )
+        res = mmd_loss(jnp.array([0.5, 0.3]), config, mmd_cfg, data)
         assert res.shape == ()
         assert float(res) >= 0.0
 
@@ -580,11 +540,5 @@ class TestMMDLossStatistical:
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=100)
 
         r_default = mmd_loss(params, config, mmd_cfg, data)
-        r_override = mmd_loss(
-            params,
-            config,
-            mmd_cfg,
-            data,
-            key=jax.random.PRNGKey(12345),
-        )
+        r_override = mmd_loss(params, config, mmd_cfg, data, key=jax.random.PRNGKey(12345))
         assert float(r_default) != float(r_override)

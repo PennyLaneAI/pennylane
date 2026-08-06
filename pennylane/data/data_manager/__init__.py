@@ -31,12 +31,7 @@ from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
 from pennylane.data.data_manager import progress
 
-from .graphql import (
-    get_dataset_urls,
-    _get_parameter_tree,
-    list_data_names,
-    list_attributes,
-)
+from .graphql import get_dataset_urls, _get_parameter_tree, list_data_names, list_attributes
 from .foldermap import DataPath, FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params, provide_defaults
 
@@ -538,12 +533,7 @@ def load_interactive():
         print("Aborting and not downloading!")
         return None
 
-    return load(
-        data_name,
-        attributes=attributes,
-        folder_path=dest_folder,
-        force=force,
-    )[0]
+    return load(data_name, attributes=attributes, folder_path=dest_folder, force=force)[0]
 
 
 __all__ = (

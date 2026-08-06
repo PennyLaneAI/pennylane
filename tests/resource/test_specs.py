@@ -22,10 +22,7 @@ from pennylane import numpy as pnp
 from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
 
-devices_list = [
-    (qp.device("default.qubit"), None),
-    (qp.device("default.qubit", wires=2), 2),
-]
+devices_list = [(qp.device("default.qubit"), None), (qp.device("default.qubit", wires=2), 2)]
 
 
 @pytest.mark.parametrize("key", ["bad_value", 123, "num_observables", "gradient_fn", "interface"])
@@ -514,10 +511,7 @@ Batched tape c:
     Wire allocations: 3
     Circuit Depth: 5"""
 
-    @pytest.mark.parametrize(
-        "device,num_wires",
-        devices_list,
-    )
+    @pytest.mark.parametrize("device,num_wires", devices_list)
     def test_num_wires_source_of_truth(self, device, num_wires):
         """Tests that num_wires behaves differently on old and new devices."""
 

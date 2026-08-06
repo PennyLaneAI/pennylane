@@ -89,16 +89,7 @@ decomp_3wires = [
 
 
 def decomposition_wires(wires):
-    wire_order = [
-        wires[0],
-        wires[1],
-        wires[2],
-        wires,
-        wires[2],
-        wires[0],
-        wires[1],
-        wires,
-    ]
+    wire_order = [wires[0], wires[1], wires[2], wires, wires[2], wires[0], wires[1], wires]
     return wire_order
 
 
@@ -127,11 +118,7 @@ def test_grover_diffusion_matrix(n_wires):
     oplist.append(PauliZ.compute_matrix())
 
     ctrl_str = [0] * (n_wires - 1)
-    CX = MultiControlledX(
-        control_values=ctrl_str,
-        wires=wires,
-        work_wires=None,
-    ).matrix()
+    CX = MultiControlledX(control_values=ctrl_str, wires=wires, work_wires=None).matrix()
 
     M = functools.reduce(np.kron, oplist)
     G = M @ CX @ M

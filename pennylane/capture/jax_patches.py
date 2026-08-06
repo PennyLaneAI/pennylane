@@ -188,9 +188,7 @@ def _patch_dyn_shape_staging_rule():
         return out_tracers[0]
 
     # Return just the core patch - the wrappers will call the patched version
-    return [
-        (lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule),
-    ]
+    return [(lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule)]
 
 
 def _patch_pjit_infer_params():
@@ -234,9 +232,7 @@ def _patch_pjit_infer_params():
         # Fix: ensure list + list, not tuple + list
         return p, list(p.consts) + args_flat
 
-    return [
-        (pjit, "_infer_params_internal", patched_infer_params_internal),
-    ]
+    return [(pjit, "_infer_params_internal", patched_infer_params_internal)]
 
 
 def _patch_pjit_staging_rule():

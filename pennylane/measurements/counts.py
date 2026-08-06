@@ -355,11 +355,7 @@ if CountsMP._mcm_primitive is not None:
         return keys, values
 
 
-def counts(
-    op=None,
-    wires=None,
-    all_outcomes=False,
-) -> CountsMP:
+def counts(op=None, wires=None, all_outcomes=False) -> CountsMP:
     r"""Sample from the supplied observable, with the number of shots
     determined from QNode,
     returning the number of counts for each sample. If no observable is provided then basis state

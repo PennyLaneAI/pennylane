@@ -83,10 +83,7 @@ def optimize_measurements(
     grouped_obs = [[observables[idx] for idx in group] for group in partition_indices]
 
     if grouping.lower() == "qwc":
-        (
-            post_rotations,
-            diagonalized_groupings,
-        ) = diagonalize_qwc_groupings(grouped_obs)
+        post_rotations, diagonalized_groupings = diagonalize_qwc_groupings(grouped_obs)
     else:
         raise NotImplementedError(
             f"Measurement reduction by '{grouping.lower()}' grouping not implemented."

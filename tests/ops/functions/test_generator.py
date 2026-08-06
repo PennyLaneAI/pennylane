@@ -383,23 +383,14 @@ class TestArithmeticReturn:
         result = qp.s_prod(0.5, qp.PauliX(0) @ qp.PauliY(1))
 
         assert not isinstance(gen, qp.Hamiltonian)
-        assert np.allclose(
-            qp.matrix(gen, wire_order=[0, 1]),
-            qp.matrix(result, wire_order=[0, 1]),
-        )
+        assert np.allclose(qp.matrix(gen, wire_order=[0, 1]), qp.matrix(result, wire_order=[0, 1]))
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
         gen = qp.generator(HamiltonianOp, format="arithmetic")(0.5, wires=[0, 1])
-        result = qp.sum(
-            qp.PauliX(0) @ qp.Identity(1),
-            qp.s_prod(0.5, qp.PauliX(0) @ qp.PauliY(1)),
-        )
+        result = qp.sum(qp.PauliX(0) @ qp.Identity(1), qp.s_prod(0.5, qp.PauliX(0) @ qp.PauliY(1)))
         assert not isinstance(gen, qp.Hamiltonian)
-        assert np.allclose(
-            qp.matrix(gen, wire_order=[0, 1]),
-            qp.matrix(result, wire_order=[0, 1]),
-        )
+        assert np.allclose(qp.matrix(gen, wire_order=[0, 1]), qp.matrix(result, wire_order=[0, 1]))
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable
@@ -408,10 +399,7 @@ class TestArithmeticReturn:
         expected = qp.pauli_decompose(HermitianOp.H, hide_identity=True, pauli=True).operation()
 
         assert not isinstance(gen, qp.Hamiltonian)
-        assert np.allclose(
-            qp.matrix(gen),
-            qp.matrix(expected),
-        )
+        assert np.allclose(qp.matrix(gen), qp.matrix(expected))
 
     def test_sparse_hamiltonian(self):
         """Test a generator that returns a SparseHamiltonian observable
@@ -422,7 +410,4 @@ class TestArithmeticReturn:
         ).operation()
 
         assert not isinstance(gen, qp.Hamiltonian)
-        assert np.allclose(
-            qp.matrix(gen),
-            qp.matrix(expected),
-        )
+        assert np.allclose(qp.matrix(gen), qp.matrix(expected))

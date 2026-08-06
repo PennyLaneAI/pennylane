@@ -546,12 +546,7 @@ class DefaultClifford(Device):
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
         return results
 
-    def simulate(
-        self,
-        circuit: QuantumScript,
-        seed=None,
-        debugger=None,
-    ) -> Result:
+    def simulate(self, circuit: QuantumScript, seed=None, debugger=None) -> Result:
         """Simulate a single quantum script.
 
         Args:
@@ -1068,9 +1063,8 @@ class DefaultClifford(Device):
         meas_wire = stim_circuit.num_qubits
 
         bits = []
-        recipes = np.random.RandomState(meas_seed).randint(
-            3, size=(shots, meas_wire)
-        )  # Random Pauli basis to be used for measurements
+        # Random Pauli basis to be used for measurements
+        recipes = np.random.RandomState(meas_seed).randint(3, size=(shots, meas_wire))
 
         for recipe in recipes:
             bits.append(

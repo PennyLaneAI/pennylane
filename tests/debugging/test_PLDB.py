@@ -95,10 +95,7 @@ class TestPLDB:
 
         PLDB.reset_active_dev()  # clean up the debugger active devices
 
-    dev_names = (
-        "default.qubit",
-        "lightning.qubit",
-    )
+    dev_names = ("default.qubit", "lightning.qubit")
 
     @pytest.mark.parametrize("device_name", dev_names)
     def test_get_active_device(self, device_name):
@@ -214,9 +211,8 @@ def test_measure(mock_method, measurement_process):
     expected_debugging_tape = qp.tape.QuantumScript(ops, measurements + [measurement_process])
     executed_debugging_tape = mock_method.call_args.args[0][0]
 
-    qp.assert_equal(
-        expected_debugging_tape, executed_debugging_tape
-    )  # _execute was called with new measurements
+    # _execute was called with new measurements
+    qp.assert_equal(expected_debugging_tape, executed_debugging_tape)
 
 
 @patch.object(PLDB, "_execute")

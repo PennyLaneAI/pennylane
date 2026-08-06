@@ -285,11 +285,7 @@ class TestDecomposeGraphEnabled:
             gate_set={"RY", "RZ", "CZ", "Hadamard", "GlobalPhase"},
             alt_decomps={qp.CNOT: [my_cnot]},
         )
-        assert new_tape.operations == [
-            qp.H(0),
-            qp.CZ(wires=[1, 0]),
-            qp.H(0),
-        ]
+        assert new_tape.operations == [qp.H(0), qp.CZ(wires=[1, 0]), qp.H(0)]
 
     @pytest.mark.integration
     def test_alt_decomp(self):
@@ -629,10 +625,7 @@ class TestDecomposeGraphEnabled:
     def test_minimize_work_wires(self):
         """Tests that the number of allocations can be minimized."""
 
-        @qp.register_resources(
-            {qp.CNOT: 2, LargeOpDynamicWireDecomp: 2},
-            work_wires={"zeroed": 1},
-        )
+        @qp.register_resources({qp.CNOT: 2, LargeOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1})
         def _some_decomp(wires):
             with qp.allocation.allocate(1, state="zero", restored=True) as work_wires:
                 qp.CNOT([wires[0], work_wires[0]])

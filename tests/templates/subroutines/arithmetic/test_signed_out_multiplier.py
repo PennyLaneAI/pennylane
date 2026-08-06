@@ -165,12 +165,7 @@ def test_decomposition_with_abstract_wires(rule_name, registers, expected_primit
     rule = list_decomps(SignedOutMultiplier)[rule_name]
 
     def decomposition(x_wires, y_wires, output_wires, work_wires):
-        rule(
-            x_wires=x_wires,
-            y_wires=y_wires,
-            output_wires=output_wires,
-            work_wires=work_wires,
-        )
+        rule(x_wires=x_wires, y_wires=y_wires, output_wires=output_wires, work_wires=work_wires)
 
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
         *(jnp.array(register) for register in registers)
@@ -262,10 +257,7 @@ def test_signed_out_multiplier_correct(
     @qnode(dev)
     # pylint: disable-next=too-many-arguments
     def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed):
-        BasisEmbedding(
-            init_state,
-            x_wires + y_wires + work_wires + output_wires,
-        )
+        BasisEmbedding(init_state, x_wires + y_wires + work_wires + output_wires)
         SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
         return state()
 

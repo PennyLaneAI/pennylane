@@ -73,11 +73,7 @@ class TestStopRecording:
         @QueuingManager.stop_recording()
         @QueuingManager.stop_recording()
         def my_op():
-            return [
-                qp.RX(0.123, wires=0),
-                qp.RY(2.32, wires=0),
-                qp.RZ(1.95, wires=0),
-            ]
+            return [qp.RX(0.123, wires=0), qp.RY(2.32, wires=0), qp.RZ(1.95, wires=0)]
 
         # the stop_recording function will still work outside of any queuing contexts
         res = my_op()

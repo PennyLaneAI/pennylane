@@ -71,9 +71,7 @@ class DeviceDerivatives(DummyDevice):
 
     def capabilities(self):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            provides_jacobian=True,
-        )
+        capabilities.update(provides_jacobian=True)
         return capabilities
 
 
@@ -597,9 +595,8 @@ class TestIntegration:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        @qnode(
-            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
-        )  # <--- we only choose one trainable parameter
+        # <--- we only choose one trainable parameter
+        @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -810,9 +807,7 @@ class TestCompilePipelineIntegration:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @just_pauli_x_out
@@ -866,15 +861,11 @@ class TestCompilePipelineIntegration:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @qp.transform
-        def repeat_operations(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def repeat_operations(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qp.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )

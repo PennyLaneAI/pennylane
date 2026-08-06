@@ -225,10 +225,7 @@ class TestRydbergDrive:
             qp.Hamiltonian([0.5, 0.5], [qp.PauliX(0), qp.PauliX(3)]),
             qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(0), qp.PauliY(3)]),
         ]
-        coeffs_expected = [
-            AmplitudeAndPhase(np.cos, f, 1),
-            AmplitudeAndPhase(np.sin, f, 1),
-        ]
+        coeffs_expected = [AmplitudeAndPhase(np.cos, f, 1), AmplitudeAndPhase(np.sin, f, 1)]
         H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
         qp.assert_equal(Hd([0.1], 10), H_expected([0.1], 10))
@@ -269,9 +266,7 @@ class TestRydbergSettings:
         assert settings1 != settings2
         assert settings0 == settings2
 
-    def test_add_two_settings(
-        self,
-    ):
+    def test_add_two_settings(self):
         """Test that two RydbergSettings are correctly added"""
 
         settings0 = RydbergSettings(register0, interaction_coeff=2.0)
@@ -284,9 +279,7 @@ class TestRydbergSettings:
         assert settings10.register == register0
         assert settings10.interaction_coeff == 2.0
 
-    def test_raises_error_two_interaction_terms(
-        self,
-    ):
+    def test_raises_error_two_interaction_terms(self):
         """Raises error when attempting to add two non-trivial RydbergSettings"""
         # pylint: disable=unused-variable
         settings0 = RydbergSettings(register0)

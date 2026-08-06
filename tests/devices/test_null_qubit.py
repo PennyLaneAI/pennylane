@@ -20,10 +20,7 @@ import pennylane as qp
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 from pennylane.devices import ExecutionConfig, NullQubit, preprocess
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import (
-    ClassicalShadowMP,
-    ShadowExpvalMP,
-)
+from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 
 
 def test_name():
@@ -1122,13 +1119,7 @@ class TestIntegration:
 
         assert np.array_equal(circuit(), [expected] * 5)
 
-    @pytest.mark.parametrize(
-        "wires,expected",
-        [
-            (None, [1, 0, 0, 0]),
-            (3, [1] + [0] * 7),
-        ],
-    )
+    @pytest.mark.parametrize("wires,expected", [(None, [1, 0, 0, 0]), (3, [1] + [0] * 7)])
     def test_state_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by state."""
         dev = NullQubit(wires=wires)
@@ -1141,13 +1132,7 @@ class TestIntegration:
 
         assert np.array_equal(circuit(), expected)
 
-    @pytest.mark.parametrize(
-        "wires,expected",
-        [
-            (None, [1, 0, 0, 0]),
-            (3, [1] + [0] * 7),
-        ],
-    )
+    @pytest.mark.parametrize("wires,expected", [(None, [1, 0, 0, 0]), (3, [1] + [0] * 7)])
     def test_probs_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by probs."""
         dev = NullQubit(wires=wires)

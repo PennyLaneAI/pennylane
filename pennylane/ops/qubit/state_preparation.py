@@ -460,9 +460,7 @@ class StatePrep(StatePrepBase):
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
 
-        return tuple(
-            self.parameters,
-        ), (metadata, self.wires)
+        return tuple(self.parameters), (metadata, self.wires)
 
     @classmethod
     def _unflatten(cls, data, metadata):

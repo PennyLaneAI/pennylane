@@ -139,10 +139,7 @@ class Reflection(Operation):
         if not set(reflection_wires).issubset(set(U.wires)):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
 
-        self._hyperparameters = {
-            "base": U,
-            "reflection_wires": tuple(reflection_wires),
-        }
+        self._hyperparameters = {"base": U, "reflection_wires": tuple(reflection_wires)}
 
         super().__init__(alpha, *U.data, wires=wires)
 
@@ -220,11 +217,7 @@ def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wire
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
-    resources = {
-        ops.GlobalPhase: 1,
-        _adjoint_abstract(base_rep): 1,
-        ops.PauliX: 2,
-    }
+    resources = {ops.GlobalPhase: 1, _adjoint_abstract(base_rep): 1, ops.PauliX: 2}
 
     if num_wires > 1:
         resources[

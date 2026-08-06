@@ -88,10 +88,7 @@ def test_shots():
     """Test the shots behavior of a dummy legacy device."""
     legacy_dev = DummyDevice(shots=(100, 100))
     # Expect a deprecation warning when wrapping a legacy device with shots
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="Setting shots on device is deprecated",
-    ):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Setting shots on device is deprecated"):
         dev = LegacyDeviceFacade(legacy_dev)
 
     assert dev.shots == qp.measurements.Shots((100, 100))

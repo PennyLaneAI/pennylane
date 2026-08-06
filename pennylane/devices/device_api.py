@@ -966,10 +966,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
         def __repr__(self):
             return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
 
-        def preprocess(
-            self,
-            execution_config: ExecutionConfig | None = None,
-        ):
+        def preprocess(self, execution_config: ExecutionConfig | None = None):
             """This function updates the original device compile pipeline to be applied."""
             program, config = self.original_device.preprocess(execution_config)
             program = self.transform(program, *self.targs, **self.tkwargs)
@@ -998,10 +995,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
         def __repr__(self):
             return f"Transformed Device({repr(original_device)} with additional preprocess transform {self.transform})"
 
-        def preprocess_transforms(
-            self,
-            execution_config: ExecutionConfig | None = None,
-        ):
+        def preprocess_transforms(self, execution_config: ExecutionConfig | None = None):
             """This function updates the original device compile pipeline to be applied."""
             program = self.original_device.preprocess_transforms(execution_config)
             program = self.transform(program, *self.targs, **self.tkwargs)

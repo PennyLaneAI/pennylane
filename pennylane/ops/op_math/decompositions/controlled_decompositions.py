@@ -267,12 +267,7 @@ def _single_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__)
 
 
 def _single_ctrl_decomp_zyz_resources(**__):
-    return {
-        ops.RZ: 3,
-        ops.RY: 2,
-        ops.CNOT: 2,
-        _ctrl_abstract(ops.GlobalPhase, Wire[1]): 1,
-    }
+    return {ops.RZ: 3, ops.RY: 2, ops.CNOT: 2, _ctrl_abstract(ops.GlobalPhase, Wire[1]): 1}
 
 
 # Resources are not exact because rotations might be skipped for zero angles

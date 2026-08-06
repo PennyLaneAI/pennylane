@@ -331,10 +331,7 @@ def _get_full_transform_program(qnode, gradient_fn):
     program = copy(qnode.compile_pipeline)
 
     if getattr(gradient_fn, "expand_transform", False):
-        program.add_transform(
-            transform(gradient_fn.expand_transform),
-            **qnode.gradient_kwargs,
-        )
+        program.add_transform(transform(gradient_fn.expand_transform), **qnode.gradient_kwargs)
 
     mcm_config = {
         "postselect_mode": qnode.execute_kwargs["postselect_mode"],
@@ -346,9 +343,7 @@ def _get_full_transform_program(qnode, gradient_fn):
     return program + qnode.device.preprocess_transforms(config)
 
 
-def _validate_level(
-    level: str | int | slice,
-) -> None:
+def _validate_level(level: str | int | slice) -> None:
     """Check that the level specification is valid.
 
     Args:

@@ -485,11 +485,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
         def circuit():
             qp.RX(0.54, wires=0)
 
-            return (
-                qp.counts(qp.PauliZ(0)),
-                qp.expval(qp.PauliX(1)),
-                qp.var(qp.PauliY(2)),
-            )
+            return (qp.counts(qp.PauliZ(0)), qp.expval(qp.PauliX(1)), qp.var(qp.PauliY(2)))
 
         result = circuit()
 
@@ -524,11 +520,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
         @qp.set_shots(n_sample)
         @qp.qnode(dev)
         def circuit():
-            return (
-                qp.counts(qp.PauliZ(0)),
-                qp.counts(qp.PauliZ(1)),
-                qp.counts(qp.PauliZ(2)),
-            )
+            return (qp.counts(qp.PauliZ(0)), qp.counts(qp.PauliZ(1)), qp.counts(qp.PauliZ(2)))
 
         result = circuit()
 

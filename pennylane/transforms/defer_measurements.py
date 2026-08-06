@@ -18,11 +18,7 @@
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
-from pennylane.measurements import (
-    CountsMP,
-    ProbabilityMP,
-    SampleMP,
-)
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
 from pennylane.ops.op_math import ctrl
 from pennylane.transforms import transform

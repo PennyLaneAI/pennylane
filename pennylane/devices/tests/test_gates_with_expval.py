@@ -271,12 +271,7 @@ class TestGatesQubitExpval:
 
         assert np.allclose(circuit(), expected_output, atol=tol)
 
-    @pytest.mark.parametrize(
-        "name,expected_output",
-        [
-            ("CSWAP", [-1, -1, 1]),
-        ],
-    )
+    @pytest.mark.parametrize("name,expected_output", [("CSWAP", [-1, -1, 1])])
     def test_supported_gate_three_wires_no_parameters(
         self, device, tol, name, expected_output, shots
     ):

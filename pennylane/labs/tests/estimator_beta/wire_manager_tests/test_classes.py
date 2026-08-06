@@ -546,9 +546,8 @@ class TestMarkQubits:
 
         marked_qubits2 = MarkQubits(wires=[1, 2, 3])
         assert marked_qubits.equal(marked_qubits2)
-        assert hash(marked_qubits) != hash(
-            marked_qubits2
-        )  # we need the hash to be different for queuing
+        # we need the hash to be different for queuing
+        assert hash(marked_qubits) != hash(marked_qubits2)
 
         marked_qubits3 = MarkQubits(wires=[3, 2, 1])
         assert marked_qubits.equal(marked_qubits3)

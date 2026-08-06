@@ -184,11 +184,7 @@ def measure_arbitrary_basis(
     )
 
 
-def measure_x(
-    wires: Hashable | Wires,
-    reset: bool = False,
-    postselect: int | None = None,
-):
+def measure_x(wires: Hashable | Wires, reset: bool = False, postselect: int | None = None):
     r"""Perform a mid-circuit measurement in the X basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
 
@@ -233,11 +229,7 @@ def measure_x(
     return _measure_impl(wires, XMidMeasure, reset=reset, postselect=postselect)
 
 
-def measure_y(
-    wires: Hashable | Wires,
-    reset: bool = False,
-    postselect: int | None = None,
-):
+def measure_y(wires: Hashable | Wires, reset: bool = False, postselect: int | None = None):
     r"""Perform a mid-circuit measurement in the Y basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
 
@@ -282,11 +274,7 @@ def measure_y(
     return _measure_impl(wires, YMidMeasure, reset=reset, postselect=postselect)
 
 
-def measure_z(
-    wires: Hashable | Wires,
-    reset: bool = False,
-    postselect: int | None = None,
-):
+def measure_z(wires: Hashable | Wires, reset: bool = False, postselect: int | None = None):
     r"""Perform a mid-circuit measurement in the Z basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
 
@@ -315,11 +303,7 @@ def measure_z(
     return measure(wires, reset=reset, postselect=postselect)
 
 
-def _measure_impl(
-    wires: Hashable | Wires,
-    measurement_class=MidMeasure,
-    **kwargs,
-):
+def _measure_impl(wires: Hashable | Wires, measurement_class=MidMeasure, **kwargs):
     """Concrete implementation of qp.measure"""
     wires = Wires(wires)
 

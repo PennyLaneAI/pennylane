@@ -281,12 +281,7 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
     def layers(l):
         @for_loop(n_wires)
         def rot_loop(i):
-            Rot(
-                weights[..., l, i, 0],
-                weights[..., l, i, 1],
-                weights[..., l, i, 2],
-                wires=wires[i],
-            )
+            Rot(weights[..., l, i, 0], weights[..., l, i, 1], weights[..., l, i, 2], wires=wires[i])
 
         def imprim_true():
             @for_loop(n_wires)

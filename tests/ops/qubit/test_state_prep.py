@@ -188,16 +188,7 @@ class TestDecomposition:
         assert isinstance(ops2[0], qp.X)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "state",
-        [
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [1, 1, 0],
-            [1, 1, 1],
-        ],
-    )
+    @pytest.mark.parametrize("state", [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [1, 1, 1]])
     def test_BasisState_abstract_decomposition_correctness(self, state):
         """Test that the abstract decomposition of BasisState produces the correct
         state vector when compiled and executed via ``qjit``.  Uses BasisEmbedding
@@ -222,16 +213,7 @@ class TestDecomposition:
         assert np.allclose(result, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "state",
-        [
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [1, 1, 0],
-            [1, 1, 1],
-        ],
-    )
+    @pytest.mark.parametrize("state", [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [1, 1, 1]])
     def test_BasisState_abstract_decomposition_correctness_jax_jit(self, state):
         """Test that the abstract decomposition of BasisState produces the correct
         state vector when traced through ``jax.jit``.  Uses ``reference.qubit``
@@ -348,13 +330,7 @@ class TestStatePrepIntegration:
 
         assert np.allclose(circuit(), expected)
 
-    @pytest.mark.parametrize(
-        "state",
-        [
-            (np.array([1, 1, 1, 1])),
-            (np.array([1, 1j, 1j, 1])),
-        ],
-    )
+    @pytest.mark.parametrize("state", [(np.array([1, 1, 1, 1])), (np.array([1, 1j, 1j, 1]))])
     @pytest.mark.parametrize("validate_norm", [True, False])
     def test_StatePrep_normalize(self, state, validate_norm):
         """Test that StatePrep normalizes the input state correctly."""

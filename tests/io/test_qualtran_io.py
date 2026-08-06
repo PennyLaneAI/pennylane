@@ -740,9 +740,7 @@ class TestToBloqDecomposition:
                     clean=False,
                 ),
                 # From ResourceQROM
-                {
-                    (qp.X(0), True): 1,
-                },
+                {(qp.X(0), True): 1},
             ),
             (
                 qp.QROM(

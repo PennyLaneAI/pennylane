@@ -33,9 +33,7 @@ if TYPE_CHECKING:
     from .qnode import QNode
 
 
-def _validate_level(
-    level: str | int | slice,
-) -> None:
+def _validate_level(level: str | int | slice) -> None:
     """Check that the level specification is valid.
 
     Args:
@@ -62,11 +60,7 @@ def _find_level(program, level):
     )
 
 
-def _get_user_transform_slice(
-    program,
-    level: str | int | slice,
-    num_user_transforms: int,
-) -> slice:
+def _get_user_transform_slice(program, level: str | int | slice, num_user_transforms: int) -> slice:
     """Interpret the level specification for the initial user transform slice.
 
     This function handles slicing into the user transforms before any
@@ -136,10 +130,7 @@ def _get_inner_transform_slice(
     return slice(start, stop, level.step)
 
 
-def construct_batch(
-    qnode: QNode | TorchLayer,
-    level: str | int | slice = "user",
-) -> Callable:
+def construct_batch(qnode: QNode | TorchLayer, level: str | int | slice = "user") -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
     Args:
@@ -241,9 +232,7 @@ def construct_batch(
         """Create a batch of tapes and a post processing function."""
         if is_torch_layer:
             x = args[0]
-            kwargs = {
-                **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
-            }
+            kwargs = {**{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()}}
 
         initial_tape = make_qscript(qnode.func, shots=qnode.shots)(*args, **kwargs)
         params = initial_tape.get_parameters(trainable_only=False)
@@ -292,9 +281,8 @@ def construct_batch(
         )
         resolved_program = full_transform_program[level_slice_inner]
 
-        batch, remaining_post_processing = resolved_program(
-            user_transformed_tapes
-        )  # Use the user-transformed tapes
+        # Use the user-transformed tapes
+        batch, remaining_post_processing = resolved_program(user_transformed_tapes)
 
         def combined_post_processing(results):
             """Combine the user post-processing with the remaining post-processing."""

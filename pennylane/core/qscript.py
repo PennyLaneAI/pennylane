@@ -40,9 +40,7 @@ QS = TypeVar("QS", bound="QuantumScript")
 _UNSET_BATCH_SIZE = -1
 
 
-def process_queue(
-    queue: AnnotatedQueue,
-) -> tuple[list[Operator], list[MeasurementProcess]]:
+def process_queue(queue: AnnotatedQueue) -> tuple[list[Operator], list[MeasurementProcess]]:
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
@@ -724,9 +722,7 @@ class QuantumScript:
         """
 
         # pylint: disable=import-outside-toplevel # tach-ignore
-        from pennylane.ops.functions import (
-            bind_new_parameters,
-        )
+        from pennylane.ops.functions import bind_new_parameters
 
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
@@ -961,9 +957,7 @@ class QuantumScript:
         """
         if self._specs is None:
             # pylint: disable=import-outside-toplevel # tach-ignore
-            from pennylane.resource.resource import (
-                resources_from_tape,
-            )
+            from pennylane.resource.resource import resources_from_tape
 
             resources = resources_from_tape(self)
             self._specs = {"resources": resources, "shots": self.shots}

@@ -493,10 +493,7 @@ class TestDecompGraphSolver:
         """Tests solving a simple graph for the optimal decompositions."""
 
         op = qp.Hadamard(wires=[0])
-        graph = DecompositionGraph(
-            operations=[op],
-            gate_set={"RX", "RY", "RZ", "GlobalPhase"},
-        )
+        graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "RZ", "GlobalPhase"})
         solution = graph.solve()
 
         # verify that the better decomposition rule is chosen when both are valid.
@@ -887,10 +884,7 @@ class TestControlledDecompositions:
 
         op1 = qp.ops.Controlled(qp.X(0), control_wires=[1])
         op2 = ControlledOp2(qp.H(0), control_wires=[1])
-        graph = DecompositionGraph(
-            operations=[op1, op2],
-            gate_set={"CNOT", "CH"},
-        )
+        graph = DecompositionGraph(operations=[op1, op2], gate_set={"CNOT", "CH"})
         assert len(graph._graph.nodes()) == 35
         assert len(graph._graph.edges()) == 55
 
@@ -1227,11 +1221,7 @@ class TestSymbolicDecompositions:
             solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **rule1_params)
             solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule2_params)
 
-        assert q.queue == [
-            CustomOp(0),
-            CustomOp(0),
-            qp.adjoint(qp.pow(CustomOp(1), 2)),
-        ]
+        assert q.queue == [CustomOp(0), CustomOp(0), qp.adjoint(qp.pow(CustomOp(1), 2))]
 
     def test_base_decomp_contains_mcms_or_dynamic_wires(self):
         """Tests that the graph skips adjoint of rules that contain MCMs or dynamic wires."""

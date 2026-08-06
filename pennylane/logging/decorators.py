@@ -54,10 +54,7 @@ def log_string_debug_func(func, log_level, use_entry, override=None):
             s_caller = "::L".join(
                 [str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]]
             )
-            lgr.debug(
-                f"Calling {f_string} from {s_caller}",
-                **_debug_log_kwargs,
-            )
+            lgr.debug(f"Calling {f_string} from {s_caller}", **_debug_log_kwargs)
         return func(*args, **kwargs)
 
     @wraps(func)
@@ -68,10 +65,7 @@ def log_string_debug_func(func, log_level, use_entry, override=None):
             s_caller = "::L".join(
                 [str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]]
             )
-            lgr.debug(
-                f"Calling {f_string}={output} from {s_caller}",
-                **{"stacklevel": 2},
-            )
+            lgr.debug(f"Calling {f_string}={output} from {s_caller}", **{"stacklevel": 2})
         return output
 
     return wrapper_entry if use_entry else wrapper_exit

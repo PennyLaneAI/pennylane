@@ -17,10 +17,7 @@ test of a quantum register and a classical integer."""
 from pennylane import capture, compiler, cond, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X
 from pennylane.templates.subroutines import Elbow
 from pennylane.wires import Wires, WiresLike
@@ -266,11 +263,7 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
             resources[X] += 1
         return resources
 
-    resources = {
-        Elbow: n - 1,
-        CNOT: n - 1,
-        X: 0,
-    }
+    resources = {Elbow: n - 1, CNOT: n - 1, X: 0}
 
     bit_0 = _get_specific_bit(L, 0)
     if bit_0:

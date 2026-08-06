@@ -131,13 +131,7 @@ class TestOneParameterGenerators:
             expected = -1j * T * expand_matrix(term.matrix(), term.wires, H.wires)
             assert qp.math.allclose(gen, expected)
 
-    @pytest.mark.parametrize(
-        "terms",
-        [
-            [X(0), Z(0), Y(0)],
-            [Y("a") @ X(3), X(3) @ Z("a")],
-        ],
-    )
+    @pytest.mark.parametrize("terms", [[X(0), Z(0), Y(0)], [Y("a") @ X(3), X(3) @ Z("a")]])
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
     def test_with_noncommuting_const_terms_ham(self, terms, t):
         """Test that the generators are correct for a Hamiltonian with multiple
@@ -153,10 +147,7 @@ class TestOneParameterGenerators:
                 p * expand_matrix(term.matrix(), term.wires, H.wires)
                 for p, term in zip(params, terms)
             ]
-            exp = jnp.sum(
-                jnp.array(summands),
-                axis=0,
-            )
+            exp = jnp.sum(jnp.array(summands), axis=0)
             return jax.scipy.linalg.expm(-1j * T * exp)
 
         num_terms = len(terms)
@@ -1419,12 +1410,7 @@ class TestPulseOdegenIntegration:
             qp.evolve(ham)(params, 0.1)
             return qp.expval(Y(0) @ X(1))
 
-        qnode_pulse_grad = qp.QNode(
-            ansatz,
-            dev,
-            interface="jax",
-            diff_method=pulse_odegen,
-        )
+        qnode_pulse_grad = qp.QNode(ansatz, dev, interface="jax", diff_method=pulse_odegen)
         qnode_backprop = qp.QNode(ansatz, dev, interface="jax")
 
         with qp.Tracker(dev) as tracker:

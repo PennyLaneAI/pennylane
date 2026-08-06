@@ -155,15 +155,7 @@ class RandomLayers(Operation):
 
     grad_method = None
 
-    def __init__(
-        self,
-        weights,
-        wires,
-        ratio_imprim=0.3,
-        imprimitive=None,
-        rotations=None,
-        seed=42,
-    ):
+    def __init__(self, weights, wires, ratio_imprim=0.3, imprimitive=None, rotations=None, seed=42):
         shape = math.shape(weights)
         if len(shape) != 2:
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")

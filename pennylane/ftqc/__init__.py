@@ -27,11 +27,7 @@ Modules
 """
 
 from .operations import RotXZX
-from .decomposition import (
-    convert_to_mbqc_formalism,
-    convert_to_mbqc_gateset,
-    ppr_to_mbqc,
-)
+from .decomposition import convert_to_mbqc_formalism, convert_to_mbqc_gateset, ppr_to_mbqc
 from .parametric_midmeasure import (
     ParametricMidMeasure,
     XMidMeasure,

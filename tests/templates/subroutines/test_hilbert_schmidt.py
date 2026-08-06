@@ -396,10 +396,7 @@ class TestHilbertSchmidt:
         U = qp.CNOT(wires=[0, 1])
         V = qp.RZ(0.1, wires=1)
 
-        with pytest.raises(
-            ValueError,
-            match="U and V must have the same number of wires.",
-        ):
+        with pytest.raises(ValueError, match="U and V must have the same number of wires."):
             qp.HilbertSchmidt(V, U)
 
     def test_distinct_wires(self):
@@ -408,10 +405,7 @@ class TestHilbertSchmidt:
         U = qp.Hadamard(wires=0)
         V = qp.RZ(0.1, wires=0)
 
-        with pytest.raises(
-            ValueError,
-            match="Operators in U and V must act on distinct wires.",
-        ):
+        with pytest.raises(ValueError, match="Operators in U and V must act on distinct wires."):
             qp.HilbertSchmidt(V, U)
 
     @pytest.mark.jax
@@ -677,10 +671,7 @@ class TestLocalHilbertSchmidt:
         U = qp.CNOT(wires=[0, 1])
         V = qp.RZ(0.1, wires=1)
 
-        with pytest.raises(
-            ValueError,
-            match="U and V must have the same number of wires.",
-        ):
+        with pytest.raises(ValueError, match="U and V must have the same number of wires."):
             qp.LocalHilbertSchmidt(V, U)
 
     def test_distinct_wires(self):
@@ -689,10 +680,7 @@ class TestLocalHilbertSchmidt:
         U = qp.Hadamard(wires=0)
         V = qp.RZ(0.1, wires=0)
 
-        with pytest.raises(
-            ValueError,
-            match="Operators in U and V must act on distinct wires.",
-        ):
+        with pytest.raises(ValueError, match="Operators in U and V must act on distinct wires."):
             qp.LocalHilbertSchmidt(V, U)
 
     @pytest.mark.jax

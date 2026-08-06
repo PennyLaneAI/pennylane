@@ -201,10 +201,7 @@ class TestPreprocessing:
                 False,
             ),
             # Complex LinearCombination
-            (
-                qp.Hamiltonian([0.3, 0.7], [qp.prod(qp.PauliX(0), qp.PauliZ(1)), qp.PauliY(2)]),
-                True,
-            ),
+            (qp.Hamiltonian([0.3, 0.7], [qp.prod(qp.PauliX(0), qp.PauliZ(1)), qp.PauliY(2)]), True),
         ],
     )
     def test_accepted_observable(self, obs, expected):
@@ -330,13 +327,7 @@ class TestPreprocessing:
             with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
                 program(tapes)
 
-    @pytest.mark.parametrize(
-        "readout_err, req_warn",
-        [
-            (0.1, True),
-            (None, False),
-        ],
-    )
+    @pytest.mark.parametrize("readout_err, req_warn", [(0.1, True), (None, False)])
     @pytest.mark.parametrize(
         "measurements",
         [

@@ -165,12 +165,7 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None):
             First row: measurement outcomes (0 or 1).
             Second row: Pauli basis recipe (0=X, 1=Y, 2=Z).
     """
-    return mp.process_density_matrix_with_shots(
-        state,
-        wire_order,
-        shots,
-        rng=rng,
-    )
+    return mp.process_density_matrix_with_shots(state, wire_order, shots, rng=rng)
 
 
 def _measure_hamiltonian_with_samples(  # pylint: disable=too-many-arguments

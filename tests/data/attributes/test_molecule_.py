@@ -38,15 +38,7 @@ def _assert_molecules_equal(mol_in: Molecule, mol_out: Molecule):
     assert mol_out.charge == mol_in.charge
 
 
-@pytest.mark.parametrize(
-    "basis",
-    [
-        "sto-3g",
-        "6-31g",
-        "6-311g",
-        "cc-pvdz",
-    ],
-)
+@pytest.mark.parametrize("basis", ["sto-3g", "6-31g", "6-311g", "cc-pvdz"])
 @pytest.mark.parametrize(
     ("symbols", "coordinates"),
     [

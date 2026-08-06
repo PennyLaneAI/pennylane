@@ -102,8 +102,7 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     return BoundTransform(transform, args=targs, kwargs=tkwargs)
 
 
-# pragma: no cover
-def _dummy_register(obj):  # just used for sphinx
+def _dummy_register(obj):  # just used for sphinx  # pragma: no cover
     if isinstance(obj, type):  # pragma: no cover
         return lambda arg: arg  # pragma: no cover
     return obj  # pragma: no cover

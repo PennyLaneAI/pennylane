@@ -42,15 +42,7 @@ channels_with_one_arg = [
     channel.PhaseDamping,
 ]
 
-two_arg_args = [
-    (0.0, 0.0),
-    (0.0, 0.1),
-    (0.1, 0.0),
-    (1.0, 1.0),
-    (0.0, 1.0),
-    (1.0, 0.0),
-    (0.3, 0.2),
-]
+two_arg_args = [(0.0, 0.0), (0.0, 0.1), (0.1, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0), (0.3, 0.2)]
 
 channels_with_two_args = [channel.GeneralizedAmplitudeDamping, channel.ResetError]
 
@@ -1149,11 +1141,4 @@ class TestThermalRelaxationError:
             return qp.expval(qp.PauliZ(0))
 
         gradient = np.squeeze(qp.grad(circuit)(pe))
-        assert np.allclose(
-            gradient,
-            np.array(
-                [
-                    (1 / 0.1) * (circuit(0.1) - circuit(0.0)),
-                ]
-            ),
-        )
+        assert np.allclose(gradient, np.array([(1 / 0.1) * (circuit(0.1) - circuit(0.0))]))

@@ -170,10 +170,7 @@ class TestGradMethodValidation:
             qp.RX(np.array(0.1, requires_grad=True), wires=0)
             qp.expval(qp.PauliZ(0))
         tape = qp.tape.QuantumScript.from_queue(q)
-        diff_methods = {
-            0: "A",
-            1: "F",
-        }
+        diff_methods = {0: "A", 1: "F"}
         with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
             _validate_gradient_methods(tape, "analytic", diff_methods)
 

@@ -763,7 +763,4 @@ class TestGetGraphql:
             pennylane.data.data_manager.graphql.GraphQLError,
             match="Errors in request: Mock error message.",
         ):
-            pennylane.data.data_manager.graphql.get_graphql(
-                GRAPHQL_URL,
-                error_query,
-            )
+            pennylane.data.data_manager.graphql.get_graphql(GRAPHQL_URL, error_query)

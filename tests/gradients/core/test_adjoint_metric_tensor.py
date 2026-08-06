@@ -486,17 +486,9 @@ class TestAdjointMetricTensorQNode:
             assert qp.math.allclose(mt, expected)
 
 
-diff_fubini_ansatze = [
-    fubini_ansatz0,
-    fubini_ansatz2,
-    fubini_ansatz10,
-]
+diff_fubini_ansatze = [fubini_ansatz0, fubini_ansatz2, fubini_ansatz10]
 
-diff_fubini_params = [
-    fubini_params[0],
-    fubini_params[2],
-    fubini_params[10],
-]
+diff_fubini_params = [fubini_params[0], fubini_params[2], fubini_params[10]]
 
 
 @pytest.mark.parametrize("ansatz, params", list(zip(diff_fubini_ansatze, diff_fubini_params)))

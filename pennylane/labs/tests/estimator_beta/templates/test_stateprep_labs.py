@@ -29,10 +29,7 @@ from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 class TestMottonenStatePreparation:
     """Test the MottonenStatePreparation class"""
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
-    )
+    @pytest.mark.parametrize("num_wires", [(4), (5), (6)])
     def test_resources(self, num_wires):
         """Test that the resources are correct"""
         rz = resource_rep(qre.RZ)
@@ -45,20 +42,14 @@ class TestMottonenStatePreparation:
 
         assert decomp_equal(qre.MottonenStatePreparation.resource_decomp(num_wires), expected)
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
-    )
+    @pytest.mark.parametrize("num_wires", [(4), (5), (6)])
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct"""
         op = qre.MottonenStatePreparation(num_wires)
 
         assert op.resource_params == {"num_wires": num_wires}
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
-    )
+    @pytest.mark.parametrize("num_wires", [(4), (5), (6)])
     def test_resource_rep(self, num_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
@@ -73,10 +64,7 @@ class TestMottonenStatePreparation:
 class TestCosineWindow:
     """Test the CosineWindow class"""
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
-    )
+    @pytest.mark.parametrize("num_wires", [(4), (5), (6)])
     def test_resources(self, num_wires):
         """Test that the resources are correct"""
         hadamard = resource_rep(qre.Hadamard)
@@ -96,28 +84,18 @@ class TestCosineWindow:
 
         assert decomp_equal(qre.CosineWindow.resource_decomp(num_wires), expected)
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
-    )
+    @pytest.mark.parametrize("num_wires", [(4), (5), (6)])
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct"""
         op = qre.CosineWindow(num_wires)
 
         assert op.resource_params == {"num_wires": num_wires}
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
-    )
+    @pytest.mark.parametrize("num_wires", [(4), (5), (6)])
     def test_resource_rep(self, num_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
-        expected = qre.CompressedResourceOp(
-            qre.CosineWindow,
-            num_wires,
-            {"num_wires": num_wires},
-        )
+        expected = qre.CompressedResourceOp(qre.CosineWindow, num_wires, {"num_wires": num_wires})
         assert expected == qre.CosineWindow.resource_rep(num_wires)
 
 

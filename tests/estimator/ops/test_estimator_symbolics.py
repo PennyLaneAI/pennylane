@@ -45,11 +45,7 @@ class DummyOp(qre.ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_wires) -> list[GateCount]:
-        return [
-            Allocate(num_wires),
-            GateCount(qre.X.resource_rep()),
-            Deallocate(num_wires),
-        ]
+        return [Allocate(num_wires), GateCount(qre.X.resource_rep()), Deallocate(num_wires)]
 
 
 class TestAdjoint:
@@ -186,14 +182,7 @@ class TestAdjoint:
 class TestControlled:
     """Tests for the Controlled resource Op"""
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
-        (
-            (1, 0),
-            (2, 0),
-            (3, 2),
-        ),
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ((1, 0), (2, 0), (3, 2)))
     @pytest.mark.parametrize(
         "base_type, base_args",
         (
@@ -367,14 +356,7 @@ class TestControlled:
         assert qre.estimate(ctrl_op) == ctrl_res
         assert qre.estimate(ctrl_ctrl_op) == ctrl_ctrl_res
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
-        (
-            (1, 0),
-            (2, 0),
-            (3, 2),
-        ),
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ((1, 0), (2, 0), (3, 2)))
     @pytest.mark.parametrize(
         "base_op",
         (

@@ -535,16 +535,7 @@ def _pauliZ(wire):
     return sample(ops.Z(wire))
 
 
-MC_MEASUREMENTS = [
-    _identity,
-    _identity,
-    _pauliX,
-    _pauliX,
-    _pauliY,
-    _pauliY,
-    _pauliZ,
-    _pauliZ,
-]
+MC_MEASUREMENTS = [_identity, _identity, _pauliX, _pauliX, _pauliY, _pauliY, _pauliZ, _pauliZ]
 
 
 def expand_fragment_tapes_mc(

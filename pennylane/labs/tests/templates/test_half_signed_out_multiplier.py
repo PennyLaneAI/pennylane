@@ -95,9 +95,8 @@ def bin_to_int(bits):
 def test_half_signed_out_multiplier_correct(x_wires, y_wires, output_wires, work_wires, init_state):
     """Tests with a few examples that ``half_signed_out_multiplier`` yields correct results."""
 
-    with qp.decomposition.toggle_graph_ctx(
-        True
-    ):  # safe alternative to avoid enabling graph globally on the labs test runner
+    # safe alternative to avoid enabling graph globally on the labs test runner
+    with qp.decomposition.toggle_graph_ctx(True):
         dev = qp.device("default.qubit", wires=x_wires + y_wires + output_wires + work_wires)
 
         @qp.qnode(dev)

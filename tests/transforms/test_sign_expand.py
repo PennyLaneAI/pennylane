@@ -31,13 +31,7 @@ with pennylane.tape.QuantumTape() as tape2:
     qp.Hadamard(1)
     qp.PauliZ(1)
     qp.PauliX(2)
-    H2 = qp.Hamiltonian(
-        [1, 1],
-        [
-            qp.PauliX(0) @ qp.PauliZ(2),
-            qp.PauliZ(1),
-        ],
-    )
+    H2 = qp.Hamiltonian([1, 1], [qp.PauliX(0) @ qp.PauliZ(2), qp.PauliZ(1)])
     qp.expval(H2)
 
 H3 = qp.Hamiltonian([1.5, 0.3], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(2)])
@@ -73,13 +67,7 @@ with pennylane.tape.QuantumTape() as tape2_var:
     qp.Hadamard(1)
     qp.PauliZ(1)
     qp.PauliX(2)
-    H2 = qp.Hamiltonian(
-        [1, 1],
-        [
-            qp.PauliX(0) @ qp.PauliZ(2),
-            qp.PauliZ(1),
-        ],
-    )
+    H2 = qp.Hamiltonian([1, 1], [qp.PauliX(0) @ qp.PauliZ(2), qp.PauliZ(1)])
     qp.var(H2)
 
 TAPES_var = [tape1_var, tape2_var]

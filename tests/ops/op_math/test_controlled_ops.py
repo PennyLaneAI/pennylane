@@ -26,10 +26,7 @@ import pennylane as qp
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
 from pennylane.wires import Wires
 
-NON_PARAMETRIZED_OPERATIONS = [
-    (qp.CY, CY),
-    (qp.CZ, CZ),
-]
+NON_PARAMETRIZED_OPERATIONS = [(qp.CY, CY), (qp.CZ, CZ)]
 
 PARAMETRIZED_OPERATIONS = [
     (qp.CRX, CRotx),
@@ -94,10 +91,7 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
             qp.ControlledQubitUnitary(base_op, wires=None)
 
     @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "control_wires, wires",
-        [(0, 1), ([0, 1], [2])],
-    )
+    @pytest.mark.parametrize("control_wires, wires", [(0, 1), ([0, 1], [2])])
     def test_consistency_with_capture(self, control_wires, wires):
         """Test that the operator wires are as expected with capture enabled"""
         base_op = [[0, 1], [1, 0]]
@@ -173,13 +167,9 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
 
         with qp.tape.QuantumTape() as tape:
             arbitrary_input(wires=wires)
-            qp.Toffoli(
-                wires=wires,
-            )
+            qp.Toffoli(wires=wires)
 
-            _toffoli_elbow(
-                wires=wires,
-            )
+            _toffoli_elbow(wires=wires)
 
             qp.adjoint(arbitrary_input)(wires=wires)
 

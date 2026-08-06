@@ -218,22 +218,12 @@ class TestQNode:
         loss = res[0] + res[1]
 
         loss.backward()
-        expected = [
-            -np.sin(a_val) + np.sin(a_val) * np.sin(b_val),
-            -np.cos(a_val) * np.cos(b_val),
-        ]
+        expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
     # TODO: fix this behavior with float: already present before return type.
-    def test_jacobian_dtype(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_jacobian_dtype(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test calculating the jacobian with a different datatype"""
         gradient_kwargs = {}
         if not "lightning" in getattr(dev, "name", "").lower():
@@ -275,14 +265,7 @@ class TestQNode:
         assert a.grad.dtype is torch.float32
         assert b.grad.dtype is torch.float32
 
-    def test_jacobian_options(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_jacobian_options(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test setting jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite-diff and spsa")
@@ -344,10 +327,7 @@ class TestQNode:
         loss = res[0] + res[1]
         loss.backward()
 
-        expected = [
-            -np.sin(a_val) + np.sin(a_val) * np.sin(b_val),
-            -np.cos(a_val) * np.cos(b_val),
-        ]
+        expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
         assert np.allclose([a.grad, b.grad], expected, atol=tol, rtol=0)
 
         # make the second QNode argument a constant
@@ -369,14 +349,7 @@ class TestQNode:
         expected = -np.sin(a_val) + np.sin(a_val) * np.sin(b_val)
         assert np.allclose(a.grad, expected, atol=tol, rtol=0)
 
-    def test_classical_processing(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_classical_processing(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test classical processing within the quantum tape"""
         a = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
@@ -780,14 +753,7 @@ class TestQubitIntegration:
         assert np.allclose(jac[1][0], res_2, atol=tol, rtol=0)
         assert np.allclose(jac[1][1], res_3, atol=tol, rtol=0)
 
-    def test_chained_qnodes(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_chained_qnodes(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test that the gradient of chained QNodes works without error"""
         gradient_kwargs = {}
         if diff_method == "hadamard":
@@ -929,10 +895,7 @@ class TestQubitIntegration:
         assert isinstance(hess, torch.Tensor)
         assert tuple(hess.shape) == (2, 2, 2)
 
-        expected_res = [
-            0.5 + 0.5 * np.cos(a) * np.cos(b),
-            0.5 - 0.5 * np.cos(a) * np.cos(b),
-        ]
+        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
         assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
         expected_g = [

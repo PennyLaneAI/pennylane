@@ -206,12 +206,7 @@ class TestSelect:
         decomp = qp.list_decomps(qp.Select)[0]
 
         ops = [qp.X(2), qp.X(3), qp.X(4), qp.Y(2)]
-        op_reps = (
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.Y),
-        )
+        op_reps = (abstractify(qp.X), abstractify(qp.X), abstractify(qp.X), abstractify(qp.Y))
         control = (0, 1)
 
         resource_obj = decomp.compute_resources(
@@ -248,11 +243,7 @@ class TestSelect:
         decomp = qp.list_decomps(qp.Select)[0]
 
         ops = [qp.X(2), qp.X(3), qp.SWAP([2, 3])]
-        op_reps = (
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.SWAP),
-        )
+        op_reps = (abstractify(qp.X), abstractify(qp.X), abstractify(qp.SWAP))
         control = (0, 1)
 
         resource_obj = decomp.compute_resources(
@@ -340,12 +331,7 @@ class TestSelect:
         resources = op.resource_params
         assert resources["num_control_wires"] == 2
 
-        op_reps = (
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.X),
-            abstractify(qp.Y),
-        )
+        op_reps = (abstractify(qp.X), abstractify(qp.X), abstractify(qp.X), abstractify(qp.Y))
 
         assert resources["op_reps"] == op_reps
 

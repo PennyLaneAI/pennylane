@@ -41,11 +41,7 @@ from pennylane.devices.preprocess import (
     validate_observables,
 )
 from pennylane.exceptions import DeviceError, WireError
-from pennylane.measurements import (
-    ExpectationMP,
-    StateMP,
-    VarianceMP,
-)
+from pennylane.measurements import ExpectationMP, StateMP, VarianceMP
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
 from pennylane.typing import Result, ResultBatch, TensorLike
@@ -379,13 +375,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
         "method",
     )
 
-    def __init__(
-        self,
-        wires=None,
-        method="mps",
-        c_dtype=np.complex128,
-        **kwargs,
-    ) -> None:
+    def __init__(self, wires=None, method="mps", c_dtype=np.complex128, **kwargs) -> None:
         if not has_quimb:
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
@@ -603,10 +593,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
 
         return replace(config, **updated_values, device_options=new_device_options)
 
-    def preprocess(
-        self,
-        execution_config: ExecutionConfig | None = None,
-    ):
+    def preprocess(self, execution_config: ExecutionConfig | None = None):
         """This function defines the device compile pipeline to be applied and an updated device configuration.
 
         Args:

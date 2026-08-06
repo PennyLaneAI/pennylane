@@ -337,9 +337,7 @@ class TestQNSPSAOptimizer:
         tensor_reg = (tensor_reg + regularization * identity) / (1 + regularization)
 
         inv_metric_tensor = np.linalg.inv(tensor_reg)
-        grad_tensor = np.array(grad_expected).reshape(
-            inv_metric_tensor.shape[0],
-        )
+        grad_tensor = np.array(grad_expected).reshape(inv_metric_tensor.shape[0])
         new_params_tensor_expected = params_tensor - stepsize * np.matmul(
             inv_metric_tensor, grad_tensor
         )

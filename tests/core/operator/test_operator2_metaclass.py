@@ -123,10 +123,7 @@ class TestOperatorAbstractInputs:
                 },
             ),
             # Ensures nested arrays don't get flattened
-            (
-                {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
-                {"my_array": Int[2, 2]},
-            ),
+            ({"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)}, {"my_array": Int[2, 2]}),
         ],
     )
     def test_mixed_arg_op(self, hybrid_in, hybrid_out):
@@ -185,10 +182,7 @@ class TestOperatorAbstractInputs:
             def __init__(self, hybrid_arg, wires):
                 super().__init__(hybrid_arg, wires=wires)
 
-        op = HybridWiresOp(
-            hybrid_arg=hybrid_in,
-            wires=AbstractWires(1),
-        )
+        op = HybridWiresOp(hybrid_arg=hybrid_in, wires=AbstractWires(1))
         assert op.hybrid_arg == hybrid_out
 
     @pytest.mark.parametrize(

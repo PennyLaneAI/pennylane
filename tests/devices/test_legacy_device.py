@@ -307,11 +307,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
         """Tests the function Device.check_validity with valid queue and observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.PauliZ(0))]
 
@@ -323,10 +319,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
 
         dev = mock_device_supporting_prod()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliZ(wires=1),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliZ(wires=1)]
 
         observables = [
             qp.expval(qp.PauliX(0) @ qp.PauliZ(1)),
@@ -340,10 +333,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
 
         dev = mock_device_supporting_prod()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliZ(wires=1),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliZ(wires=1)]
 
         unsupported_nested_observables = [qp.expval(qp.PauliZ(0) @ (qp.PauliX(1) @ qp.PauliY(2)))]
 
@@ -354,11 +344,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
         """Tests the function Device.check_validity with prod support capability"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.PauliZ(0) @ qp.PauliX(1))]
 
@@ -370,11 +356,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
         """Tests the function Device.check_validity with invalid queue and valid observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.RX(1.0, wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.RX(1.0, wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.PauliZ(0))]
 
@@ -385,11 +367,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
         """Tests the function Device.check_validity with valid queue and invalid observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.Hadamard(0))]
 
@@ -630,17 +608,9 @@ class TestOperations:
         op_queue raises no error"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         queue_at_pre_measure = []
 
@@ -658,17 +628,9 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         call_history = []
         with monkeypatch.context() as m:
@@ -687,17 +649,9 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.Hadamard(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.Hadamard(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
@@ -754,17 +708,9 @@ class TestObservables:
         op_queue raises no error"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         queue_at_pre_measure = []
 
@@ -802,17 +748,9 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.Hadamard(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.Hadamard(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(queue, observables)
@@ -857,19 +795,11 @@ class TestParameters:
         p0 = 0.54
         p1 = -0.32
 
-        queue = [
-            qp.RX(p0, wires=0),
-            qp.PauliY(wires=1),
-            qp.Rot(0.432, 0.123, p1, wires=2),
-        ]
+        queue = [qp.RX(p0, wires=0), qp.PauliY(wires=1), qp.Rot(0.432, 0.123, p1, wires=2)]
 
         parameters = {0: (0, 0), 1: (2, 3)}
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         p_mapping = {}
 

@@ -499,11 +499,7 @@ class RealspaceSum(Fragment):
 
         mat = self.matrix(state.gridpoints, basis="harmonic", sparse=True)
 
-        return HOState(
-            state.modes,
-            state.gridpoints,
-            mat @ state.vector,
-        )
+        return HOState(state.modes, state.gridpoints, mat @ state.vector)
 
     def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[str], dict]:
         """Return a dictionary containing the non-zero coefficients of

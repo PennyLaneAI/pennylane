@@ -269,9 +269,8 @@ def horizontal_cartan_subalgebra(
         iteration += 1
 
     np_a = _gram_schmidt(np_a)  # orthogonalize Abelian subalgebra
-    np_k = op_to_adjvec(
-        k, g, is_orthogonal=is_orthogonal
-    )  # adjoint vectors of k space for re-ordering
+    # adjoint vectors of k space for re-ordering
+    np_k = op_to_adjvec(k, g, is_orthogonal=is_orthogonal)
     np_oldg = math.vstack([np_k, np_m])
     np_k = _gram_schmidt(np_k)
 

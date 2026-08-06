@@ -358,12 +358,7 @@ class TestCwireConnections:
         assert new_bit_map == bit_map
 
         # should not draw cwire for m2 if there is no usage of it
-        layers = [
-            m0.measurements,
-            m1.measurements,
-            m2.measurements,
-            [qp.expval(m0), qp.expval(m1)],
-        ]
+        layers = [m0.measurements, m1.measurements, m2.measurements, [qp.expval(m0), qp.expval(m1)]]
         bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
         new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 3]], 1: [[1, 3]]}
@@ -371,12 +366,7 @@ class TestCwireConnections:
         assert new_bit_map == bit_map
 
         # should not draw cwire for m1 if there is no usage of it
-        layers = [
-            m0.measurements,
-            m1.measurements,
-            m2.measurements,
-            [qp.expval(m0), qp.expval(m2)],
-        ]
+        layers = [m0.measurements, m1.measurements, m2.measurements, [qp.expval(m0), qp.expval(m2)]]
         bit_map = {m0.measurements[0]: 0, m2.measurements[0]: 1}
         new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 3]], 1: [[2, 3]]}

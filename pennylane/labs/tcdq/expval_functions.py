@@ -204,9 +204,7 @@ def _core_expval_execution(  # pylint: disable=too-many-arguments
     return jnp.mean(expvals, axis=1), std_err
 
 
-def build_expval_func(
-    config: CircuitConfig,
-) -> Callable:
+def build_expval_func(config: CircuitConfig) -> Callable:
     """Build an estimator for Pauli expectation values of a qubit IQP circuit.
 
     Returns a pure function that estimates the expectation value of each Pauli

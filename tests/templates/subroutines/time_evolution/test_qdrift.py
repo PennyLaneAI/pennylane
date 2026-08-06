@@ -38,10 +38,7 @@ test_hamiltonians = (
             qp.prod(qp.PauliZ(0), qp.PauliX(1)),
         ],  #  Here we chose such hamiltonian to have non-commutability
     ),  # op arith
-    (
-        [1, -0.5, 0.5],
-        [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(1)],
-    ),
+    ([1, -0.5, 0.5], [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(1)]),
 )
 
 
@@ -419,10 +416,7 @@ class TestIntegration:
 
         @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
+            h = qp.sum(qp.s_prod(coeffs[0], terms[0]), qp.s_prod(coeffs[1], terms[1]))
             qp.QDrift(h, time, n=3)
             return qp.expval(qp.Hadamard(0))
 

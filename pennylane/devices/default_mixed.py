@@ -205,13 +205,7 @@ class DefaultMixed(Device):
         return "default.mixed"
 
     @debug_logger_init
-    def __init__(
-        self,
-        wires=None,
-        shots=None,
-        seed="global",
-        readout_prob=None,
-    ) -> None:
+    def __init__(self, wires=None, shots=None, seed="global", readout_prob=None) -> None:
 
         if isinstance(wires, int) and wires > 23:
             raise ValueError(

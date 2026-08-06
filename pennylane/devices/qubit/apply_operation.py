@@ -31,10 +31,7 @@ EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
 _INV_SQRT2 = 1 / np.sqrt(2)
 
-_HADAMARD_MAT = np.array(
-    [[_INV_SQRT2, _INV_SQRT2], [_INV_SQRT2, -_INV_SQRT2]],
-    dtype=np.complex128,
-)
+_HADAMARD_MAT = np.array([[_INV_SQRT2, _INV_SQRT2], [_INV_SQRT2, -_INV_SQRT2]], dtype=np.complex128)
 _HADAMARD_CACHE = {
     np.dtype("complex64"): _HADAMARD_MAT.astype(np.complex64),
     np.dtype("complex128"): _HADAMARD_MAT,
@@ -255,13 +252,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
 
 
 @singledispatch
-def apply_operation(
-    op: Operator,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
+def apply_operation(op: Operator, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply and operator to a given state.
 
     Args:
@@ -831,13 +822,7 @@ def apply_multicontrolledx(
 
 
 @apply_operation.register
-def apply_grover(
-    op: qp.GroverOperator,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
+def apply_grover(op: qp.GroverOperator, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
     wires) or via standard matrix based methods (else)."""
     if len(op.wires) < 9:

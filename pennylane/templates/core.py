@@ -252,14 +252,7 @@ def _get_array_types():
 
 @lru_cache
 def _get_non_array_iterables():
-    return (
-        list,
-        tuple,
-        Wires,
-        range,
-        capture.autograph.ag_primitives.PRange,
-        set,
-    )
+    return (list, tuple, Wires, range, capture.autograph.ag_primitives.PRange, set)
 
 
 def _setup_wires(wires):
@@ -354,9 +347,7 @@ class SubroutineOp(Operation):
         data = flatten(dynamic_args)[0]
         super().__init__(*data, wires=wires)
 
-        self._hyperparameters = {
-            "decomposition": tuple(decomposition),
-        }
+        self._hyperparameters = {"decomposition": tuple(decomposition)}
         self.name = subroutine.name
 
     @property

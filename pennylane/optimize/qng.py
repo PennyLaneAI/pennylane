@@ -302,9 +302,8 @@ def _flatten_np(x):
         Any: elements of x in depth-first order
     """
     if isinstance(x, pnp.ndarray):
-        yield from _flatten_np(
-            x.flat
-        )  # should we allow object arrays? or just "yield from x.flat"?
+        # should we allow object arrays? or just "yield from x.flat"?
+        yield from _flatten_np(x.flat)
     elif isinstance(x, Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
         # Since Wires are always flat, just yield.

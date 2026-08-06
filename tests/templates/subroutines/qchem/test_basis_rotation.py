@@ -41,12 +41,8 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
                 [0.63602933, -0.26406278, 0.72507761],
             ]
         ),  # orthogonal matrix with determinant 1
-        np.array(
-            [
-                [-0.618452, -0.68369054 - 0.38740723j],
-                [-0.78582258, 0.53807284 + 0.30489424j],
-            ]
-        ),  # unitary matrix
+        # unitary matrix
+        np.array([[-0.618452, -0.68369054 - 0.38740723j], [-0.78582258, 0.53807284 + 0.30489424j]]),
     ],
 )
 def test_standard_validity(rotation):
@@ -232,19 +228,13 @@ class TestDecomposition:
         @qp.qnode(dev)
         def circuit():
             qp.PauliX(wires=[0])
-            qp.BasisRotation(
-                wires=range(2),
-                unitary_matrix=weights,
-            )
+            qp.BasisRotation(wires=range(2), unitary_matrix=weights)
             return qp.expval(qp.Identity(0)), qp.state()
 
         @qp.qnode(dev2)
         def circuit2():
             qp.PauliX(wires=["z"])
-            qp.BasisRotation(
-                wires=["z", "a"],
-                unitary_matrix=weights,
-            )
+            qp.BasisRotation(wires=["z", "a"], unitary_matrix=weights)
             return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
@@ -429,11 +419,7 @@ def test_basis_rotation_exceptions(wires, unitary_matrix, msg_match):
 
 def circuit_template(unitary_matrix, check=False):
     qp.BasisState(qp.math.array([1, 1, 0]), wires=[0, 1, 2])
-    qp.BasisRotation(
-        wires=range(3),
-        unitary_matrix=unitary_matrix,
-        check=check,
-    )
+    qp.BasisRotation(wires=range(3), unitary_matrix=unitary_matrix, check=check)
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 

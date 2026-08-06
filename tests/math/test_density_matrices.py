@@ -76,15 +76,9 @@ state_vectors = [
 
 array_funcs = [lambda x: x, onp.array, np.array, jnp.array, torch.tensor]
 
-single_wires_list = [
-    [0],
-    [1],
-]
+single_wires_list = [[0], [1]]
 
-multiple_wires_list = [
-    [0, 1],
-    [1, 0],
-]
+multiple_wires_list = [[0, 1], [1, 0]]
 # fmt: on
 
 c_dtypes = ["complex64", "complex128"]

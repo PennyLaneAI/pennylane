@@ -56,11 +56,7 @@ def apply_operation_sparse_wrapped(op, state, is_state_batched: bool = False):
     return apply_operation_csr_matrix(op, state, is_state_batched)
 
 
-methods = [
-    apply_operation_einsum,
-    apply_operation_tensordot,
-    apply_operation,
-]
+methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
 
 
 def test_custom_operator_with_matrix():
@@ -159,10 +155,7 @@ class TestSparseOperation:
         U_sp = qp.QubitUnitary(csr_matrix(U), wires=range(3))
 
         # Apply the operation
-        with pytest.raises(
-            TypeError,
-            match="State should not be sparse",
-        ):
+        with pytest.raises(TypeError, match="State should not be sparse"):
             apply_operation_csr_matrix(U_sp, state)
 
     @pytest.mark.parametrize("N", range(4, 10, 2))

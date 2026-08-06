@@ -604,15 +604,7 @@ class TestBBQRAM:
 
     def test_raises_with_wrong_wire_num(self):
         with pytest.raises(ValueError, match="Expected 4 wires, got 3."):
-            qre.BBQRAM(
-                4,
-                3,
-                4,
-                6,
-                control_wires=(1,),
-                target_wires=(2,),
-                work_wires=(3,),
-            )
+            qre.BBQRAM(4, 3, 4, 6, control_wires=(1), target_wires=(2), work_wires=(3,))
 
     @pytest.mark.parametrize(
         (
@@ -840,10 +832,7 @@ class TestResourceOutMultiplier:
 
         num_elbows = 25
 
-        expected = [
-            GateCount(l_elbow, num_elbows),
-            GateCount(r_elbow, num_elbows),
-        ]
+        expected = [GateCount(l_elbow, num_elbows), GateCount(r_elbow, num_elbows)]
         assert qre.OutMultiplier.resource_decomp(a_register_size, b_register_size) == expected
 
 
@@ -1352,10 +1341,7 @@ class TestResourceIterativeQPE:
     def test_resource_params(self, base_op, num_iter):
         """Test the resource_params method"""
         op = qre.IterativeQPE(base_op, num_iter)
-        expected = {
-            "base_cmpr_op": base_op.resource_rep_from_op(),
-            "num_iter": num_iter,
-        }
+        expected = {"base_cmpr_op": base_op.resource_rep_from_op(), "num_iter": num_iter}
         assert op.resource_params == expected
 
     @pytest.mark.parametrize(
@@ -1664,11 +1650,7 @@ class TestResourceQFT:
         op = qre.QFT(3)
         resources = qre.estimate(op, config=config)
 
-        expected_gates = {
-            "Toffoli": 5,
-            "CNOT": 6,
-            "Hadamard": 6,
-        }
+        expected_gates = {"Toffoli": 5, "CNOT": 6, "Hadamard": 6}
         assert resources.gate_counts == expected_gates
         assert resources.algo_wires == 3
         assert resources.any_state_wires == 0
@@ -1698,31 +1680,13 @@ class TestResourceAQFT:
         """Test that the name of the operator is tracked correctly."""
         assert qre.AQFT(3, 2).tracking_name(3, 2) == "AQFT(3, 2)"
 
-    @pytest.mark.parametrize(
-        "num_wires, order",
-        (
-            (3, 2),
-            (3, 3),
-            (4, 2),
-            (4, 3),
-            (5, 5),
-        ),
-    )
+    @pytest.mark.parametrize("num_wires, order", ((3, 2), (3, 3), (4, 2), (4, 3), (5, 5)))
     def test_resource_params(self, num_wires, order):
         """Test that the resource params are correct."""
         op = qre.AQFT(order, num_wires)
         assert op.resource_params == {"order": order, "num_wires": num_wires}
 
-    @pytest.mark.parametrize(
-        "num_wires, order",
-        (
-            (3, 2),
-            (3, 3),
-            (4, 2),
-            (4, 3),
-            (5, 5),
-        ),
-    )
+    @pytest.mark.parametrize("num_wires, order", ((3, 2), (3, 3), (4, 2), (4, 3), (5, 5)))
     def test_resource_rep(self, order, num_wires):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
@@ -2176,10 +2140,7 @@ class TestResourceQROM:
         num_bitstrings = 8
         size_bitstring = 17
 
-        opt_width = qre.QROM._t_optimized_select_swap_width(
-            num_bitstrings,
-            size_bitstring,
-        )
+        opt_width = qre.QROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
         assert opt_width == 1
 
     @pytest.mark.parametrize(
@@ -3344,9 +3305,8 @@ class TestResourceQubitization:
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         prep = qre.QFT(3)
-        sel = qre.Select(
-            [qre.X(), qre.Y(), qre.Z()]
-        )  # has 4 wires (3 ops + 2 ctrl, but ops share wires)
+        # has 4 wires (3 ops + 2 ctrl, but ops share wires)
+        sel = qre.Select([qre.X(), qre.Y(), qre.Z()])
         with pytest.raises(ValueError, match="Expected .* wires, got"):
             qre.Qubitization(prep, sel, wires=[0])
 
@@ -3429,10 +3389,7 @@ class TestResourceQubitization:
             alpha=math.pi,
             cmpr_U=prep_cmpr,
         )
-        expected_res = [
-            GateCount(sel_cmpr),
-            GateCount(ref_op),
-        ]
+        expected_res = [GateCount(sel_cmpr), GateCount(ref_op)]
         assert qre.Qubitization.resource_decomp(prep_cmpr, sel_cmpr) == expected_res
 
     @pytest.mark.parametrize(
@@ -3454,10 +3411,7 @@ class TestResourceQubitization:
             num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=prep_cmpr
         )
 
-        expected = [
-            GateCount(ref_op),
-            GateCount(sel_cmpr),
-        ]
+        expected = [GateCount(ref_op), GateCount(sel_cmpr)]
         assert qre.Qubitization.adjoint_resource_decomp(target_params) == expected
 
     @pytest.mark.parametrize(
@@ -3495,10 +3449,7 @@ class TestResourceQubitization:
             num_zero_ctrl=num_zero_ctrl,
         )
 
-        expected = [
-            GateCount(ctrl_sel),
-            GateCount(ctrl_ref),
-        ]
+        expected = [GateCount(ctrl_sel), GateCount(ctrl_ref)]
         assert (
             qre.Qubitization.controlled_resource_decomp(
                 num_ctrl_wires, num_zero_ctrl, target_params

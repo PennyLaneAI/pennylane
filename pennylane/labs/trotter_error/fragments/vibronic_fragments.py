@@ -117,11 +117,7 @@ def _position_fragment(
 
 def _momentum_fragment(states: int, modes: int, freqs: ArrayLike) -> RealspaceMatrix:
     """Return the fragment consisting only of momentum operators."""
-    term = RealspaceOperator(
-        modes,
-        ("P", "P"),
-        RealspaceCoeffs(np.diag(freqs) / 2, label="omega"),
-    )
+    term = RealspaceOperator(modes, ("P", "P"), RealspaceCoeffs(np.diag(freqs) / 2, label="omega"))
     word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
 

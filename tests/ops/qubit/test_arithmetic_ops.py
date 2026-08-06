@@ -249,12 +249,7 @@ class TestIntegerComparator:
         # pylint: disable=protected-access
         wires = qp.wires.Wires((0, 1, 2, 3))
         work_wires = qp.wires.Wires(4)
-        op = qp.IntegerComparator(
-            2,
-            geq=False,
-            wires=(0, 1, 2, 3),
-            work_wires=(4),
-        )
+        op = qp.IntegerComparator(2, geq=False, wires=(0, 1, 2, 3), work_wires=(4,))
 
         data, metadata = op._flatten()
         assert data == tuple()

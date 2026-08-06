@@ -83,11 +83,7 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
         use the Fourier transform reconstruction if this derivative is needed.
         """
         _x = x - x0 - shifts
-        return math.tensordot(
-            math.sinc(a * _x) / math.sinc(b * _x),
-            evals,
-            axes=[[0], [0]],
-        )
+        return math.tensordot(math.sinc(a * _x) / math.sinc(b * _x), evals, axes=[[0], [0]])
 
     return _reconstruction
 

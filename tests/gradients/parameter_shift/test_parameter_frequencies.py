@@ -76,9 +76,7 @@ class TestParameterFrequencies:
                 super().__init__(phi, theta, wires=wires)
 
         @parameter_frequencies.register
-        def multi_arg_op_no_gen_param_freqs(
-            op: MultiArgOpNoGenParamFreqs,
-        ):
+        def multi_arg_op_no_gen_param_freqs(op: MultiArgOpNoGenParamFreqs):
             return freqs
 
         op = MultiArgOpNoGenParamFreqs(0.4, 0.3, wires=[0, 1])

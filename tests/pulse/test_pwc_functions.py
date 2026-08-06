@@ -149,9 +149,8 @@ class TestPWC_from_function:
             # pwc functions should match initial function between times i-1 and i,
             # i.e. points just before time i should always match
             assert f_initial(2, i) == f_pwc(2, i * 0.99)
-            assert f_initial(2, i) == f_decorated(
-                2, i * 0.99
-            )  # 0.99*i because for edge point, f_pwc(i) is 0
+            # 0.99*i because for edge point, f_pwc(i) is 0
+            assert f_initial(2, i) == f_decorated(2, i * 0.99)
 
     @pytest.mark.parametrize("num_bins", [10, 15, 21])
     def test_num_bins_is_correct(self, num_bins):

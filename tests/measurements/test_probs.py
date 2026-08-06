@@ -272,10 +272,7 @@ class TestProbs:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
-    @pytest.mark.parametrize(
-        "subset_wires",
-        [[3, 1, 0]],
-    )
+    @pytest.mark.parametrize("subset_wires", [[3, 1, 0]])
     def test_process_density_matrix_medium(self, interface, subset_wires):
         """Test processing of a random generated, medium-sized density matrices."""
         # Define a density matrix for a 4-qubit system
@@ -283,10 +280,7 @@ class TestProbs:  # pylint: disable=too-many-public-methods
         B = np.random.rand(size, size)
         dm_np = B + B.conjugate().T
         dm_np = dm_np / np.trace(dm_np)
-        dm = qp.math.array(
-            dm_np,
-            like=interface,
-        )
+        dm = qp.math.array(dm_np, like=interface)
 
         wires = qp.wires.Wires(range(4))
         # Process the entire batch of density matrices
@@ -295,12 +289,10 @@ class TestProbs:  # pylint: disable=too-many-public-methods
         # Trace out the second qubit (qubit indexed 2) and calculate probabilities for qubits 3, 1, 0
         # We need to sum over the indices corresponding to the second qubit, which are in positions 4, 5, 6, 7, ...
         # and their strides in the flattened array are 4 (since 2^2)
-        reshaped_dm = dm_np.reshape(
-            (2, 2, 2, 2, 2, 2, 2, 2)
-        )  # Reshape to (2^8) with each qubit getting a dimension
-        reduced_dm = np.einsum(
-            "ijklmnkp->ljipnm", reshaped_dm
-        )  # Sum over the second qubit (k, m -> trace out)
+        # Reshape to (2^8) with each qubit getting a dimension
+        reshaped_dm = dm_np.reshape((2, 2, 2, 2, 2, 2, 2, 2))
+        # Sum over the second qubit (k, m -> trace out)
+        reduced_dm = np.einsum("ijklmnkp->ljipnm", reshaped_dm)
 
         # Reshape back to a 8x8 matrix to get the density matrix for qubits 3, 1, 0
         reduced_dm = reduced_dm.reshape((8, 8))

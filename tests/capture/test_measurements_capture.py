@@ -47,17 +47,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 def _get_shapes_for(*measurements, shots=qp.measurements.Shots(None), num_device_wires=0):
     if jax.config.jax_enable_x64:
-        dtype_map = {
-            float: jax.numpy.float64,
-            int: jax.numpy.int64,
-            complex: jax.numpy.complex128,
-        }
+        dtype_map = {float: jax.numpy.float64, int: jax.numpy.int64, complex: jax.numpy.complex128}
     else:
-        dtype_map = {
-            float: jax.numpy.float32,
-            int: jax.numpy.int32,
-            complex: jax.numpy.complex64,
-        }
+        dtype_map = {float: jax.numpy.float32, int: jax.numpy.int32, complex: jax.numpy.complex64}
 
     shapes = []
     if not shots:

@@ -72,10 +72,7 @@ class TestHadamard:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
     def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
@@ -133,10 +130,7 @@ class TestHadamard:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
     def test_resource_controlled_estimate(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected when estimate is used."""
         num_ctrl_wires = len(ctrl_wires)
@@ -222,10 +216,7 @@ class TestHadamard:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
     def test_toffoli_based_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)

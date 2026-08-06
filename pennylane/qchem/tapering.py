@@ -107,9 +107,8 @@ def symmetry_generators(h):
 
     # Get reduced row echelon form of binary matrix
     rref_binary_matrix = binary_finite_reduced_row_echelon(binary_matrix)
-    rref_binary_matrix_red = rref_binary_matrix[
-        ~np.all(rref_binary_matrix == 0, axis=1)
-    ]  # remove all-zero rows
+    # remove all-zero rows
+    rref_binary_matrix_red = rref_binary_matrix[~np.all(rref_binary_matrix == 0, axis=1)]
 
     # Get kernel (i.e., nullspace) for trimmed binary matrix using gaussian elimination
     nullspace = _kernel(rref_binary_matrix_red)
@@ -557,9 +556,8 @@ def _build_generator(operation, wire_order, op_gen=None):
         coeffs = 1.0
 
         if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
-            coeffs = functools.reduce(
-                lambda i, j: i * j, operation.parameters
-            )  # coeffs from operation
+            # coeffs from operation
+            coeffs = functools.reduce(lambda i, j: i * j, operation.parameters)
 
         mat1 = scipy.linalg.expm(1j * qp.matrix(op_gen, wire_order=wire_order) * coeffs)
         mat2 = qp.matrix(operation, wire_order=wire_order)

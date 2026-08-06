@@ -651,10 +651,7 @@ class TestTemplates:  # pylint: disable=too-many-public-methods
         @qp.qnode(dev, shots=shots)
         def circuit():
             qp.StatePrep(eigenvector, wires=target_wires)
-            qp.QuantumPhaseEstimation(
-                unitary,
-                estimation_wires=estimation_wires,
-            )
+            qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
             return qp.probs(estimation_wires)
 
         res = np.argmax(circuit()) / 2**n_estimation_wires

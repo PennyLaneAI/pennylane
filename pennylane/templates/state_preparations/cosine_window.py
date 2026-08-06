@@ -93,9 +93,7 @@ class CosineWindow(StatePrepBase):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
+        return {"num_wires": len(self.wires)}
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "CosineWindow"

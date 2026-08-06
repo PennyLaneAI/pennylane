@@ -346,10 +346,7 @@ class QubitSum(Operation):
         [CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
 
         """
-        decomp_ops = [
-            qp.CNOT(wires=[wires[1], wires[2]]),
-            qp.CNOT(wires=[wires[0], wires[2]]),
-        ]
+        decomp_ops = [qp.CNOT(wires=[wires[1], wires[2]]), qp.CNOT(wires=[wires[0], wires[2]])]
         return decomp_ops
 
     def adjoint(self):
@@ -422,11 +419,7 @@ class IntegerComparator(Operation):
 
     def _flatten(self) -> FlatPytree:
         hp = self.hyperparameters
-        metadata = (
-            ("work_wires", hp["work_wires"]),
-            ("value", hp["value"]),
-            ("geq", hp["geq"]),
-        )
+        metadata = (("work_wires", hp["work_wires"]), ("value", hp["value"]), ("geq", hp["geq"]))
         return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
 
     def __init__(

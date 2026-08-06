@@ -26,10 +26,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
-    pow_rotation,
-)
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -276,11 +273,7 @@ class SingleExcitation(Operation):
 
 
 def _single_excitation_resources():
-    return {
-        qp.Hadamard: 2,
-        qp.CNOT: 2,
-        qp.RY: 2,
-    }
+    return {qp.Hadamard: 2, qp.CNOT: 2, qp.RY: 2}
 
 
 @register_resources(_single_excitation_resources)
@@ -452,15 +445,7 @@ class SingleExcitationMinus(Operation):
 
 
 def _single_excitation_minus_decomp_resources():
-    return {
-        qp.Hadamard: 2,
-        qp.CY: 1,
-        qp.CNOT: 2,
-        qp.RY: 2,
-        qp.S: 1,
-        qp.RZ: 1,
-        qp.GlobalPhase: 1,
-    }
+    return {qp.Hadamard: 2, qp.CY: 1, qp.CNOT: 2, qp.RY: 2, qp.S: 1, qp.RZ: 1, qp.GlobalPhase: 1}
 
 
 @register_resources(_single_excitation_minus_decomp_resources)
@@ -616,15 +601,7 @@ class SingleExcitationPlus(Operation):
 
 
 def _single_excitation_plus_decomp_resources():
-    return {
-        qp.Hadamard: 2,
-        qp.CY: 1,
-        qp.CNOT: 2,
-        qp.RY: 2,
-        qp.S: 1,
-        qp.RZ: 1,
-        qp.GlobalPhase: 1,
-    }
+    return {qp.Hadamard: 2, qp.CY: 1, qp.CNOT: 2, qp.RY: 2, qp.S: 1, qp.RZ: 1, qp.GlobalPhase: 1}
 
 
 @register_resources(_single_excitation_plus_decomp_resources)
@@ -1535,13 +1512,7 @@ class FermionicSWAP(Operation):
 
 
 def _fermionic_swap_decomp_resources():
-    return {
-        qp.Hadamard: 4,
-        qp.MultiRZ(Float, Wire[2]): 2,
-        qp.RX: 4,
-        qp.RZ: 2,
-        qp.GlobalPhase: 1,
-    }
+    return {qp.Hadamard: 4, qp.MultiRZ(Float, Wire[2]): 2, qp.RX: 4, qp.RZ: 2, qp.GlobalPhase: 1}
 
 
 @register_resources(_fermionic_swap_decomp_resources)

@@ -309,10 +309,7 @@ def pytest_runtest_setup(item):
     """Automatically skip tests if interfaces are not installed"""
     # Autograd is assumed to be installed
     interfaces = {"torch", "jax"}
-    available_interfaces = {
-        "torch": torch_available,
-        "jax": jax_available,
-    }
+    available_interfaces = {"torch": torch_available, "jax": jax_available}
 
     allowed_interfaces = [
         allowed_interface

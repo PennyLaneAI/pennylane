@@ -150,11 +150,7 @@ class HilbertSchmidt(Operation):
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
-    def __init__(
-        self,
-        V: Operator | Iterable[Operator],
-        U: Operator | Iterable[Operator],
-    ) -> None:
+    def __init__(self, V: Operator | Iterable[Operator], U: Operator | Iterable[Operator]) -> None:
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
         if not all(isinstance(op, Operator) for op in u_ops):
             raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
@@ -165,10 +161,7 @@ class HilbertSchmidt(Operation):
             raise ValueError("The argument 'V' must be an Operator or an iterable of Operators.")
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
-        self._hyperparameters = {
-            "U": u_ops,
-            "V": v_ops,
-        }
+        self._hyperparameters = {"U": u_ops, "V": v_ops}
 
         if len(u_wires) != len(v_wires):
             raise ValueError("U and V must have the same number of wires.")

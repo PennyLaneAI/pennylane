@@ -109,11 +109,7 @@ class TestSnapshotTape:
         assert "snapshot_tags" in fn_no_meas.keywords
         assert len(fn_no_meas.keywords["snapshot_tags"]) == num_snapshots
         assert all(key in fn_no_meas.keywords["snapshot_tags"] for key in expected_keys)
-        assert fn_no_meas(["a", 1, 2]) == {
-            0: "a",
-            "very_important_state": 1,
-            2: 2,
-        }
+        assert fn_no_meas(["a", 1, 2]) == {0: "a", "very_important_state": 1, 2: 2}
 
     def test_snapshot_fails_with_non_str_tags(self):
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):

@@ -160,9 +160,8 @@ class TestQubitGraphsInitialization:
         # This is essentially duplicated from the QubitGraph implementation, but it ensures that
         # accidental changes to the production code will result in a test failure
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
-        aux_qubits = [
-            ("aux", i) for i in range(9, 17)
-        ]  # 8 auxiliary qubits, indexed 9, 10, ..., 16
+        # 8 auxiliary qubits, indexed 9, 10, ..., 16
+        aux_qubits = [("aux", i) for i in range(9, 17)]
 
         expected_graph = nx.Graph()
         expected_graph.add_nodes_from(data_qubits)

@@ -180,10 +180,7 @@ class PauliGroupingStrategy:
         # Create complement graph
         if new_rx:
             # node/edge hinting was introduced on version 0.15
-            graph = rx.PyGraph(
-                node_count_hint=len(self.observables),
-                edge_count_hint=len(edges),
-            )
+            graph = rx.PyGraph(node_count_hint=len(self.observables), edge_count_hint=len(edges))
         else:
             graph = rx.PyGraph()
 

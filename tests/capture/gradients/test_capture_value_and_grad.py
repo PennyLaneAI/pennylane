@@ -50,13 +50,7 @@ def diff_eqn_assertions(eqn, argnums=None, fn=None):
     """Perform basic checks on a value_and_grad equation."""
     argnums = (0,) if argnums is None else argnums
     assert eqn.primitive == value_and_grad_prim
-    assert set(eqn.params.keys()) == {
-        "argnums",
-        "jaxpr",
-        "method",
-        "h",
-        "fn",
-    }
+    assert set(eqn.params.keys()) == {"argnums", "jaxpr", "method", "h", "fn"}
     assert eqn.params["argnums"] == tuple(argnums)
     assert eqn.params["method"] == "auto"
     assert eqn.params["h"] == 1e-6

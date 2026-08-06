@@ -336,10 +336,7 @@ class PauliRot(ResourceOperator):
         h = qre.resource_rep(qre.Hadamard)
         s = qre.resource_rep(qre.S)
         rz = qre.resource_rep(qre.RZ, {"precision": precision})
-        s_dagg = qre.resource_rep(
-            qre.Adjoint,
-            {"base_cmpr_op": qre.resource_rep(qre.S)},
-        )
+        s_dagg = qre.resource_rep(qre.Adjoint, {"base_cmpr_op": qre.resource_rep(qre.S)})
         cnot = qre.resource_rep(qre.CNOT)
 
         h_count = 0
@@ -374,10 +371,7 @@ class PauliRot(ResourceOperator):
                 * pauli_string (str): a string describing the Pauli operators that define the rotation
                 * precision (float): error threshold for the Clifford + T decomposition of this operation
         """
-        return {
-            "pauli_string": self.pauli_string,
-            "precision": self.precision,
-        }
+        return {"pauli_string": self.pauli_string, "precision": self.precision}
 
     @classmethod
     def resource_rep(cls, pauli_string: str, precision: float | None = None):
@@ -503,10 +497,7 @@ class PauliRot(ResourceOperator):
             num_ctrl_wires,
             num_zero_ctrl,
         )
-        s_dagg = qre.resource_rep(
-            qre.Adjoint,
-            {"base_cmpr_op": qre.resource_rep(qre.S)},
-        )
+        s_dagg = qre.resource_rep(qre.Adjoint, {"base_cmpr_op": qre.resource_rep(qre.S)})
         cnot = qre.CNOT.resource_rep()
 
         h_count = 0

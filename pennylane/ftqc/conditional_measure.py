@@ -24,11 +24,7 @@ from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.ops.op_math.condition import CondCallable, Conditional, cond
 
 
-def cond_measure(
-    condition: MeasurementValue | bool,
-    true_fn: Callable,
-    false_fn: Callable,
-):
+def cond_measure(condition: MeasurementValue | bool, true_fn: Callable, false_fn: Callable):
     """Perform a mid-circuit measurement where the basis of the measurement is conditional on the
     supplied expression. This conditional expression may involve the results of other mid-circuit
     qubit measurements.

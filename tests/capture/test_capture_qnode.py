@@ -988,16 +988,7 @@ class TestQNodeVmapIntegration:  # pylint: disable=too-many-public-methods
             return res1, res2, res3, res4
 
         y = jnp.pi
-        x = {
-            "arr": jnp.array(
-                [
-                    [0.1, 0.2, 0.3],
-                    [0.4, 0.5, 0.6],
-                    [0.7, 0.8, 0.9],
-                ]
-            ),
-            "foo": None,
-        }
+        x = {"arr": jnp.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]), "foo": None}
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
 

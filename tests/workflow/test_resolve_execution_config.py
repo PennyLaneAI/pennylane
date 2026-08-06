@@ -36,9 +36,7 @@ def test_resolve_execution_config_with_gradient_method():
 
 def test_metric_tensor_lightning_edge_case():
     """Test resolving an ExecutionConfig with the metric tensor transform on a lightning device."""
-    execution_config = ExecutionConfig(
-        gradient_method="best",
-    )
+    execution_config = ExecutionConfig(gradient_method="best")
     device = qp.device("lightning.qubit", wires=2)
 
     empty_tape = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))])

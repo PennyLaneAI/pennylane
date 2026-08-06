@@ -414,10 +414,7 @@ class TestInputs:
             qp.MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
-    @pytest.mark.parametrize("state_vector,wires", [
-        ([0, 1, 0], [0, 1]),
-        ([0, 1, 0, 0, 0], [0]),
-    ])
+    @pytest.mark.parametrize("state_vector,wires", [([0, 1, 0], [0, 1]), ([0, 1, 0, 0, 0], [0])])
     # fmt: on
     def test_error_num_entries(self, state_vector, wires):
         """Tests that the correct error messages is raised  if

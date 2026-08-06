@@ -82,10 +82,7 @@ d1_co = np.array(
         [[[-4.04219964e-03, 3.22757939e-02], [3.22757939e-02, -1.21723538e-02]]],
     ]
 )
-co_exp_result = {
-    "h_data": [h1_co, h2_co],
-    "dip_data": [d1_co],
-}
+co_exp_result = {"h_data": [h1_co, h2_co], "dip_data": [d1_co]}
 
 
 def test_error_vscf_integrals():
@@ -104,12 +101,7 @@ def test_error_vscf_dipole():
         vibrational.vscf_integrals(h_integrals=[1, 2, 3], d_integrals=[1, 2, 3, 4])
 
 
-@pytest.mark.parametrize(
-    ("h_data"),
-    [
-        (h_data_h2s),
-    ],
-)
+@pytest.mark.parametrize(("h_data"), [h_data_h2s])
 def test_modal_error(h_data):
     r"""Test that an error is raised if number of modals provided is incorrect"""
 
@@ -120,12 +112,7 @@ def test_modal_error(h_data):
         vibrational.vscf_integrals(h_integrals=h_data, modals=[5, 5, 5])
 
 
-@pytest.mark.parametrize(
-    ("h_data", "h2s_result"),
-    [
-        (h_data_h2s, h2s_exp_result),
-    ],
-)
+@pytest.mark.parametrize(("h_data", "h2s_result"), [(h_data_h2s, h2s_exp_result)])
 def test_vscf_calculation(h_data, h2s_result):
     r"""Test that vscf calculation produces correct energy and rotation matrices"""
 
@@ -154,12 +141,7 @@ def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
     assert np.allclose(result_dip[2], expected_dip[2])
 
 
-@pytest.mark.parametrize(
-    ("molecule", "exp_result"),
-    [
-        (co_mol, co_exp_result),
-    ],
-)
+@pytest.mark.parametrize(("molecule", "exp_result"), [(co_mol, co_exp_result)])
 def test_vscf_integrals_full(molecule, exp_result):
     r"""Test that correct rotated Hamiltonian and dipole is produced when in the full workflow."""
     pes = vibrational.vibrational_pes(molecule, n_points=17, cubic=False, dipole_level=2)

@@ -70,10 +70,7 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         if self.tracker.active:
             for c in circuits:
                 self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_derivative_batches=1,
-                derivatives=len(circuits),
-            )
+            self.tracker.update(execute_and_derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
         diff_batch, fn = qp.gradients.param_shift(circuits)

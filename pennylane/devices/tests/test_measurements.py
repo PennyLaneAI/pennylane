@@ -23,11 +23,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.measurements import MeasurementTransform, SampleMeasurement, StateMeasurement
 from pennylane.exceptions import DeviceError
-from pennylane.measurements import (
-    ClassicalShadowMP,
-    SampleMP,
-    StateMP,
-)
+from pennylane.measurements import ClassicalShadowMP, SampleMP, StateMP
 from pennylane.wires import Wires
 
 from .conftest import get_legacy_capabilities

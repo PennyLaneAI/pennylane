@@ -537,14 +537,7 @@ class TestSpsaGradient:
 
         transform = [qp.math.shape(spsa_grad(c)(x)) for c in circuits]
 
-        expected = [
-            (3,),
-            (1, 3),
-            (2, 3),
-            (4, 3),
-            (1, 4, 3),
-            (2, 4, 3),
-        ]
+        expected = [(3), (1, 3), (2, 3), (4, 3), (1, 4, 3), (2, 4, 3)]
 
         assert all(t == q for t, q in zip(transform, expected))
 

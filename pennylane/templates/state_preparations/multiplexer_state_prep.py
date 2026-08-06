@@ -92,9 +92,7 @@ class MultiplexerStatePreparation(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ

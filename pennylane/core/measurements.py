@@ -97,9 +97,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             if eigvals is None:
                 out = cls._wires_primitive.bind(*wires, **kwargs)  # wires
                 return tuple(out) if isinstance(out, list) else out
-            return cls._wires_primitive.bind(
-                *wires, eigvals, has_eigvals=True, **kwargs
-            )  # wires + eigvals
+            # wires + eigvals
+            return cls._wires_primitive.bind(*wires, eigvals, has_eigvals=True, **kwargs)
 
         if isinstance(obs, Operator2):
             if obs.tracer is None:

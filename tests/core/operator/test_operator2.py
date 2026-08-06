@@ -318,19 +318,13 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_arg_specs_wire_sizes_mismatch_error(self):
         """Test that ``arg_specs`` and ``wire_sizes`` must agree on wire counts."""
 
-        with pytest.raises(
-            TypeError,
-            match="Number of wires specified for 'wires' does not match",
-        ):
+        with pytest.raises(TypeError, match="Number of wires specified for 'wires' does not match"):
 
             class Op(Operator2):
                 # pylint: disable=unused-variable
                 dynamic_argnames = ("phi",)
                 wire_sizes = (3,)
-                arg_specs = {
-                    "phi": AbstractArray((), float),
-                    "wires": AbstractWires(2),
-                }
+                arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
                 def __init__(self, phi, wires):
                     super().__init__(phi, wires=wires)
@@ -419,10 +413,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(-1),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(-1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -485,10 +476,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "pytree_wires")
             hybrid_argnames = ("pytree_wires",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, pytree_wires, wires):
                 super().__init__(phi, [Wires(w) for w in pytree_wires], wires=wires)
@@ -701,10 +689,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -722,10 +707,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -744,10 +726,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((2,), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -763,10 +742,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), int),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((), int), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -782,10 +758,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -798,10 +771,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -818,12 +788,7 @@ class TestProperties:
     def test_arguments(self):
         """Test that ``arguments`` maps all arguments to their values."""
         op = FullOp(0.5, "info", [], wires=0)
-        assert op.arguments == {
-            "phi": 0.5,
-            "static": "info",
-            "hybrid": [],
-            "wires": Wires([0]),
-        }
+        assert op.arguments == {"phi": 0.5, "static": "info", "hybrid": [], "wires": Wires([0])}
 
     def test_dynamic_args(self):
         """Test that ``dynamic_args`` is set correctly."""
@@ -884,10 +849,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -902,10 +864,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (1,)
-            arg_specs = {
-                "phi": AbstractArray((2,), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -918,10 +877,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (1,)
-            arg_specs = {
-                "phi": AbstractArray((2,), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -940,10 +896,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
-            arg_specs = {
-                "phi": AbstractArray((), int),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((), int), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -957,10 +910,7 @@ class TestBroadcasting:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((2, 3), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2, 3), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)

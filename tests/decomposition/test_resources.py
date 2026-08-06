@@ -57,12 +57,7 @@ class TestResources:
     def test_negative_weighted_cost(self):
         """Tests that an error is raised if the cost is negative."""
         with pytest.raises(AssertionError):
-            Resources(
-                gate_counts={
-                    abstractify(qp.RX): 2,
-                },
-                weighted_cost=-2.0,
-            )
+            Resources(gate_counts={abstractify(qp.RX): 2}, weighted_cost=-2.0)
 
     def test_add_resources(self):
         """Tests adding two Resources objects."""
@@ -95,10 +90,7 @@ class TestResources:
 
         resources = resources * 2
         assert resources.num_gates == 6
-        assert resources.gate_counts == {
-            abstractify(qp.RX): 4,
-            abstractify(qp.RZ): 2,
-        }
+        assert resources.gate_counts == {abstractify(qp.RX): 4, abstractify(qp.RZ): 2}
         assert resources.weighted_cost == 4
 
     def test_repr(self):

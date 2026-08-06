@@ -1491,14 +1491,7 @@ class SubstitutionConfig:  # pylint: disable=too-few-public-methods
     qubits and predecessors of the match in the circuit.
     """
 
-    def __init__(
-        self,
-        circuit_config,
-        template_config,
-        pred_block,
-        qubit_config,
-        template_dag,
-    ):
+    def __init__(self, circuit_config, template_config, pred_block, qubit_config, template_dag):
         self.template_dag = template_dag
         self.circuit_config = circuit_config
         self.template_config = template_config

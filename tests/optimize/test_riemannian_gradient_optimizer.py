@@ -293,10 +293,7 @@ def test_riemannian_gradient_restriction_check():
         return qp.expval(qp.Hamiltonian(coeffs=[-1.0], observables=[qp.PauliX(0)]))
 
     restriction = "not_a_hamiltonian"
-    with pytest.raises(
-        TypeError,
-        match="restriction must be a Hamiltonian",
-    ):
+    with pytest.raises(TypeError, match="restriction must be a Hamiltonian"):
         RiemannianGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
 
 

@@ -323,12 +323,7 @@ class MPLDrawer:
             line_options = {**global_options, **specific_options}
 
             # Create Line2D with the combined options
-            line = plt.Line2D(
-                (-1, self.n_layers),
-                (idx, idx),
-                zorder=1,
-                **line_options,
-            )
+            line = plt.Line2D((-1, self.n_layers), (idx, idx), zorder=1, **line_options)
             self._wire_lines.append(line)
 
         for line in self._wire_lines:
@@ -398,14 +393,7 @@ class MPLDrawer:
 
         if self._starting_dots:
             for wire in range(self.n_wires):
-                self.ax.text(
-                    -1.5,
-                    wire,
-                    s="···",
-                    ha="center",
-                    va="center_baseline",
-                    fontsize=21,
-                )
+                self.ax.text(-1.5, wire, s="···", ha="center", va="center_baseline", fontsize=21)
 
     def erase_wire(self, layer: int, wire: int, length: int) -> None:
         """Erases a portion of a wire by adding a rectangle that matches the background.

@@ -354,11 +354,7 @@ def _controlled_rep(base_class, num_control_wires, num_work_wires):
 
 def _controlled_z(num_control_wires, num_work_wires):
     """Resources for a borrowed-work multi-controlled ``Z``."""
-    return ctrl(
-        Z(Wire[1]),
-        control=Wire[num_control_wires],
-        work_wires=Wire[num_work_wires],
-    )
+    return ctrl(Z(Wire[1]), control=Wire[num_control_wires], work_wires=Wire[num_work_wires])
 
 
 def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
@@ -477,9 +473,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    adjoint(
-        lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
-    )()  # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
+    # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
     RY(angle, wires=work_wires[0])
 
 

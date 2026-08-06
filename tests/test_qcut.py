@@ -263,9 +263,8 @@ def compare_tapes(res_tape, expected_tape):
     assert res_tape.get_parameters() == expected_tape.get_parameters()
 
     for op, exp_op in zip(res_tape.operations, expected_tape.operations):
-        if (
-            get_name(op) == "PrepareNode"
-        ):  # The exact ordering of PrepareNodes w.r.t wires varies on each call
+        # The exact ordering of PrepareNodes w.r.t wires varies on each call
+        if get_name(op) == "PrepareNode":
             assert get_name(exp_op) == "PrepareNode"
         else:
             assert get_name(op) == get_name(exp_op)
@@ -893,10 +892,7 @@ class TestReplaceWireCut:
         assert len(measure_nodes) == len(prepare_nodes) == 3
 
         expected_meas_pred_wires = [[0, "a"], ["a", 2], ["a", 2]]
-        expected_meas_pred_name = [
-            "CNOT",
-            "CNOT",
-        ] * len(measure_nodes)
+        expected_meas_pred_name = ["CNOT", "CNOT"] * len(measure_nodes)
         expected_meas_succ_wires = [[0], ["a"], [2]]
         expected_meas_succ_name = ["PrepareNode"] * len(measure_nodes)
 
@@ -1037,10 +1033,7 @@ class TestFragmentGraph:
             (qp.expval(qp.PauliZ(wires=[0])), {"order": 13}),
             (qp.RZ(0.133, wires=["a"]), {"order": 5}),
         ]
-        expected_nodes = [
-            sub_0_expected_nodes,
-            sub_1_expected_nodes,
-        ]
+        expected_nodes = [sub_0_expected_nodes, sub_1_expected_nodes]
 
         sub_0_expected_edges = [(qp.RX(0.432, wires=[0]), qcut.MeasureNode(wires=[0]), {"wire": 0})]
         sub_1_expected_edges = [
@@ -1050,10 +1043,7 @@ class TestFragmentGraph:
             (qp.CNOT(wires=[0, "a"]), qp.RZ(0.133, wires=["a"]), {"wire": "a"}),
             (qp.RY(0.543, wires=["a"]), qp.CNOT(wires=[0, "a"]), {"wire": "a"}),
         ]
-        expected_edges = [
-            sub_0_expected_edges,
-            sub_1_expected_edges,
-        ]
+        expected_edges = [sub_0_expected_edges, sub_1_expected_edges]
 
         for subgraph, expected_n in zip(subgraphs, expected_nodes):
             compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
@@ -1208,10 +1198,7 @@ class TestFragmentGraph:
             (qp.CNOT(wires=[1, 2]), {"order": 4}),
         ]
 
-        expected_nodes = [
-            sub_0_expected_nodes,
-            sub_1_expected_nodes,
-        ]
+        expected_nodes = [sub_0_expected_nodes, sub_1_expected_nodes]
 
         sub_0_expected_edges = [
             (qp.Hadamard(wires=[0]), qp.CNOT(wires=[0, 1]), {"wire": 0}),
@@ -1226,10 +1213,7 @@ class TestFragmentGraph:
             (qp.CNOT(wires=[1, 2]), qp.sample(qp.Projector([1], wires=[2])), {"wire": 2}),
         ]
 
-        expected_edges = [
-            sub_0_expected_edges,
-            sub_1_expected_edges,
-        ]
+        expected_edges = [sub_0_expected_edges, sub_1_expected_edges]
 
         for fragment, expected_n in zip(fragments, expected_nodes):
             compare_fragment_nodes(list(fragment.nodes(data=True)), expected_n)
@@ -2010,11 +1994,7 @@ class TestExpandFragmentTapesMC:
                 return fixed_choice
 
         with monkeypatch.context() as m:
-            m.setattr(
-                onp.random,
-                "default_rng",
-                lambda *_: _MockRNG(),
-            )
+            m.setattr(onp.random, "default_rng", lambda *_: _MockRNG())
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 frags, communication_graph, 2
             )
@@ -4763,10 +4743,7 @@ class TestCutStrategy:
             assert imbalance == depth_imbalance
 
     @pytest.mark.parametrize("num_wires", [50, 10])
-    def test_infer_wire_imbalance_raises(
-        self,
-        num_wires,
-    ):
+    def test_infer_wire_imbalance_raises(self, num_wires):
         """Test that the imbalance correctly raises."""
 
         k = 2
@@ -4817,10 +4794,7 @@ class TestCutStrategy:
     )
     def test_get_cut_kwargs_warnings(self, num_fragments_probed):
         """Test the 3 situations where the get_cut_kwargs pops out a warning."""
-        strategy = qcut.CutStrategy(
-            max_free_wires=2,
-            num_fragments_probed=num_fragments_probed,
-        )
+        strategy = qcut.CutStrategy(max_free_wires=2, num_fragments_probed=num_fragments_probed)
         k = num_fragments_probed
         k_lower = k if isinstance(k, int) else k[0]
         assert strategy.k_lower == k_lower
@@ -4832,9 +4806,7 @@ class TestCutStrategy:
     @pytest.mark.parametrize("max_gates_by_fragment", [[20, 30], [20, 30, 40]])
     def test_by_fragment_sizes(self, max_wires_by_fragment, max_gates_by_fragment):
         """Test that the user provided by-fragment limits properly propagates."""
-        strategy = qcut.CutStrategy(
-            max_free_wires=2,
-        )
+        strategy = qcut.CutStrategy(max_free_wires=2)
         if (
             max_wires_by_fragment
             and max_gates_by_fragment
@@ -5655,10 +5627,7 @@ class TestCutCircuitWithHamiltonians:
 
         dev = qp.device("lightning.qubit", wires=4)
 
-        circuit = [
-            qp.IsingXX(0.1234, wires=[0, 3]),
-            qp.WireCut(0),
-        ]
+        circuit = [qp.IsingXX(0.1234, wires=[0, 3]), qp.WireCut(0)]
 
         tape = qp.tape.QuantumScript(circuit, measurements=[qp.expval(H)])
         cut_tapes, proc_fn = qp.cut_circuit(tape, device_wires=range(3))

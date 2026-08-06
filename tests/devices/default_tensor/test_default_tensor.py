@@ -335,18 +335,12 @@ class TestSupportedGatesAndObservables:
 
         if observable == "Projector":
             for o in observables_list[observable]:
-                tape = qp.tape.QuantumScript(
-                    [qp.PauliX(0)],
-                    [qp.expval(o)],
-                )
+                tape = qp.tape.QuantumScript([qp.PauliX(0)], [qp.expval(o)])
                 result = dev.execute(circuits=tape)
                 assert isinstance(result, (float, np.ndarray))
 
         else:
-            tape = qp.tape.QuantumScript(
-                [qp.PauliX(0)],
-                [qp.expval(observables_list[observable])],
-            )
+            tape = qp.tape.QuantumScript([qp.PauliX(0)], [qp.expval(observables_list[observable])])
             result = dev.execute(circuits=tape)
             assert isinstance(result, (float, np.ndarray))
 

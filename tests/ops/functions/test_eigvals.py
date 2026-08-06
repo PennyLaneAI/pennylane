@@ -25,15 +25,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms import TransformError
 
-one_qubit_no_parameter = [
-    qp.PauliX,
-    qp.PauliY,
-    qp.PauliZ,
-    qp.Hadamard,
-    qp.S,
-    qp.T,
-    qp.SX,
-]
+one_qubit_no_parameter = [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard, qp.S, qp.T, qp.SX]
 
 one_qubit_one_parameter = [qp.RX, qp.RY, qp.RZ, qp.PhaseShift]
 

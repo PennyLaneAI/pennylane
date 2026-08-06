@@ -616,12 +616,7 @@ class TestPauliGroup:
         labeled by a string."""
 
         wire_map = {"qubit": 0}
-        expected_pg_1_wires = [
-            Identity("qubit"),
-            PauliZ("qubit"),
-            PauliX("qubit"),
-            PauliY("qubit"),
-        ]
+        expected_pg_1_wires = [Identity("qubit"), PauliZ("qubit"), PauliX("qubit"), PauliY("qubit")]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
         assert all(exp == (ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
 

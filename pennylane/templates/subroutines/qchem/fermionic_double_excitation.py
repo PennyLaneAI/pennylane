@@ -545,10 +545,7 @@ class FermionicDoubleExcitation(Operation):
         wires1 = Wires(wires1)
         wires2 = Wires(wires2)
 
-        self._hyperparameters = {
-            "wires1": wires1,
-            "wires2": wires2,
-        }
+        self._hyperparameters = {"wires1": wires1, "wires2": wires2}
 
         wires = wires1 + wires2
         super().__init__(weight, wires=wires)

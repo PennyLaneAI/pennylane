@@ -977,15 +977,7 @@ class TestPatternMatching:
 
         wires, target_wires, control_wires = _update_qubits(circuit_dag, [0, 5, 1, 2, 4])
 
-        forward = ForwardMatch(
-            circuit_dag,
-            pattern_dag,
-            6,
-            0,
-            wires,
-            target_wires,
-            control_wires,
-        )
+        forward = ForwardMatch(circuit_dag, pattern_dag, 6, 0, wires, target_wires, control_wires)
         forward.run_forward_match()
 
         forward_match = forward.match

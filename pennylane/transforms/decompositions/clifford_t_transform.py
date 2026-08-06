@@ -35,25 +35,10 @@ from pennylane.transforms.optimization.optimization_utils import _fuse_global_ph
 from pennylane.typing import PostprocessingFn
 
 # Single qubits Clifford+T gates in PL
-_CLIFFORD_T_ONE_GATES = [
-    qp.Identity,
-    qp.X,
-    qp.Y,
-    qp.Z,
-    qp.Hadamard,
-    qp.S,
-    qp.SX,
-    qp.T,
-]
+_CLIFFORD_T_ONE_GATES = [qp.Identity, qp.X, qp.Y, qp.Z, qp.Hadamard, qp.S, qp.SX, qp.T]
 
 # Two qubits Clifford+T gates in PL
-_CLIFFORD_T_TWO_GATES = [
-    qp.CNOT,
-    qp.CY,
-    qp.CZ,
-    qp.SWAP,
-    qp.ISWAP,
-]
+_CLIFFORD_T_TWO_GATES = [qp.CNOT, qp.CY, qp.CZ, qp.SWAP, qp.ISWAP]
 
 # Single-parameter gates in PL
 # note: _simplify_param makes use of their periodic nature,

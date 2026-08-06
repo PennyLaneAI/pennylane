@@ -769,9 +769,8 @@ class TestPauliSentence:
         assert copy_ps1[pw_id] == 1 + scalar
         assert copy_ps2 == ps4
 
-    psx = PauliSentence(
-        {pw1: 1.5, pw2: 4j, pw3: -0.5}
-    )  # problems with numerical accuracy for subtracting 1.23 - 1 = 0.2299999998
+    # problems with numerical accuracy for subtracting 1.23 - 1 = 0.2299999998
+    psx = PauliSentence({pw1: 1.5, pw2: 4j, pw3: -0.5})
     sub_ps_pw = (
         (
             psx,
@@ -961,10 +960,8 @@ class TestPauliSentence:
             qp.s_prod(1, qp.Identity(wires=[0, "b", "c"])),
         )
 
-        ps_op, op = (
-            full_ps_op.operands[1],
-            full_op.operands[1],
-        )  # testing that the identity term is constructed well
+        # testing that the identity term is constructed well
+        ps_op, op = (full_ps_op.operands[1], full_op.operands[1])
         if op.scalar != 1:
             assert ps_op.scalar == op.scalar
             ps_base, op_base = (ps_op.base, op.base)
@@ -1263,10 +1260,7 @@ class TestPauliSentenceMatrix:
         else:
             coeffs = 1.0
 
-        qp.assert_equal(
-            f(1.0, 1.0),
-            (coeffs * qp.X(0) + coeffs * qp.X(0)).simplify(),
-        )
+        qp.assert_equal(f(1.0, 1.0), (coeffs * qp.X(0) + coeffs * qp.X(0)).simplify())
 
 
 class TestPaulicomms:

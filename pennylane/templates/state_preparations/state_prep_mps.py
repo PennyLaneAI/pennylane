@@ -484,9 +484,8 @@ class MPSPrep(Operation):
             d, k = vectors.shape
             new_columns = qp.math.array(np.random.RandomState(42).random((d, d - k)))
             unitary_matrix, R = qp.math.linalg.qr(qp.math.hstack([vectors, new_columns]))
-            unitary_matrix *= qp.math.sign(
-                qp.math.diag(R)
-            )  # Enforce uniqueness for QR decomposition
+            # Enforce uniqueness for QR decomposition
+            unitary_matrix *= qp.math.sign(qp.math.diag(R))
 
             ops.append(qp.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires))
 

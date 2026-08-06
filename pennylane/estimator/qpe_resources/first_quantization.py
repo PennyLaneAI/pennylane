@@ -87,16 +87,7 @@ class FirstQuantization(Operation):
 
     grad_method = None
 
-    def __init__(
-        self,
-        n,
-        eta,
-        omega=None,
-        error=0.0016,
-        charge=0,
-        br=7,
-        vectors=None,
-    ):
+    def __init__(self, n, eta, omega=None, error=0.0016, charge=0, br=7, vectors=None):
         self.n = n
         self.eta = eta
         self.omega = omega
@@ -367,9 +358,8 @@ class FirstQuantization(Operation):
         )
 
         p_nu = 0.2398  # approximation from Eq. (29) in arxiv:1807.09802
-        p_nu_amp = (
-            np.sin(3 * np.arcsin(np.sqrt(p_nu))) ** 2
-        )  # Eq. (129), PRX Quantum 2, 040332 (2021)
+        # Eq. (129), PRX Quantum 2, 040332 (2021)
+        p_nu_amp = np.sin(3 * np.arcsin(np.sqrt(p_nu))) ** 2
 
         # lambda_u and lambda_v are taken from Eq. (25) of PRX Quantum 2, 040332 (2021)
         lambda_u = eta * l_z * lambda_nu / (np.pi * omega ** (1 / 3))
@@ -702,14 +692,7 @@ class FirstQuantization(Operation):
         return int(np.ceil(qubits))
 
     @staticmethod
-    def _norm_noncubic(
-        n,
-        eta,
-        error,
-        br,
-        charge,
-        vectors,
-    ):
+    def _norm_noncubic(n, eta, error, br, charge, vectors):
         r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis
         for non-cubic systems.
 
@@ -839,14 +822,7 @@ class FirstQuantization(Operation):
             int: number of logical qubits needed to implement the first quantization algorithm
         """
 
-        lambda_total, _ = FirstQuantization._norm_noncubic(
-            n,
-            eta,
-            error,
-            br,
-            charge,
-            vectors,
-        )
+        lambda_total, _ = FirstQuantization._norm_noncubic(n, eta, error, br, charge, vectors)
 
         omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
 

@@ -95,12 +95,7 @@ class TestFlipSign:
         op = qp.FlipSign(n, wires=wires)
         assert op.wires == Wires(wires)
 
-    @pytest.mark.parametrize(
-        ("n, wires"),
-        [
-            (-1, 0),
-        ],
-    )
+    @pytest.mark.parametrize(("n, wires"), [(-1, 0)])
     def test_invalid_state_error(self, n, wires):
         """Assert error raised when given negative basic state"""
         with pytest.raises(
@@ -108,14 +103,7 @@ class TestFlipSign:
         ):
             qp.FlipSign(n, wires=wires)
 
-    @pytest.mark.parametrize(
-        ("n, wires"),
-        [
-            (2, 1),
-            (5, 2),
-            (3, [1]),
-        ],
-    )
+    @pytest.mark.parametrize(("n, wires"), [(2, 1), (5, 2), (3, [1])])
     def test_number_wires_error(self, n, wires):
         """Assert error raised when given basis state length is less than number of wires"""
         num_wires = 1 if isinstance(wires, int) else len(wires)
@@ -143,16 +131,7 @@ class TestFlipSign:
         ):
             qp.FlipSign(n, wires=wires)
 
-    @pytest.mark.parametrize(
-        ("n, wires"),
-        [
-            ([1, 0], []),
-            (2, []),
-            (3, ()),
-            (1, ""),
-            (2, ""),
-        ],
-    )
+    @pytest.mark.parametrize(("n, wires"), [([1, 0], []), (2, []), (3, ()), (1, ""), (2, "")])
     def test_wire_empty_error(self, n, wires):
         """Assert error raised when given empty wires"""
         with pytest.raises(ValueError, match="At least one valid wire is required."):

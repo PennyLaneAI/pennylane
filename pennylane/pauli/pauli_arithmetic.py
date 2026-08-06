@@ -35,31 +35,16 @@ X = "X"
 Y = "Y"
 Z = "Z"
 
-op_map = {
-    I: Identity,
-    X: PauliX,
-    Y: PauliY,
-    Z: PauliZ,
-}
+op_map = {I: Identity, X: PauliX, Y: PauliY, Z: PauliZ}
 
-op_to_str_map = {
-    Identity: I,
-    PauliX: X,
-    PauliY: Y,
-    PauliZ: Z,
-}
+op_to_str_map = {Identity: I, PauliX: X, PauliY: Y, PauliZ: Z}
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
 matY = np.array([[0, -1j], [1j, 0]])
 matZ = np.array([[1, 0], [0, -1]])
 
-mat_map = {
-    I: matI,
-    X: matX,
-    Y: matY,
-    Z: matZ,
-}
+mat_map = {I: matI, X: matX, Y: matY, Z: matZ}
 
 anticom_map = {
     I: {I: 0, X: 0, Y: 0, Z: 0},
@@ -112,30 +97,10 @@ def _ps_to_sparse_index(pauli_words, wires):
     return indices
 
 
-_map_I = {
-    I: (1, I),
-    X: (1, X),
-    Y: (1, Y),
-    Z: (1, Z),
-}
-_map_X = {
-    I: (1, X),
-    X: (1, I),
-    Y: (1.0j, Z),
-    Z: (-1.0j, Y),
-}
-_map_Y = {
-    I: (1, Y),
-    X: (-1.0j, Z),
-    Y: (1, I),
-    Z: (1j, X),
-}
-_map_Z = {
-    I: (1, Z),
-    X: (1j, Y),
-    Y: (-1.0j, X),
-    Z: (1, I),
-}
+_map_I = {I: (1, I), X: (1, X), Y: (1, Y), Z: (1, Z)}
+_map_X = {I: (1, X), X: (1, I), Y: (1.0j, Z), Z: (-1.0j, Y)}
+_map_Y = {I: (1, Y), X: (-1.0j, Z), Y: (1, I), Z: (1j, X)}
+_map_Z = {I: (1, Z), X: (1j, Y), Y: (-1.0j, X), Z: (1, I)}
 
 mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
 
@@ -970,9 +935,8 @@ class PauliSentence(dict):
         data0 = pauli_words[0]._get_csr_data(wire_order, 1)
         base_matrix.data = np.ones_like(data0)
         base_matrix.indices = pauli_words[0]._get_csr_indices(wire_order)
-        base_matrix.indptr = _cached_arange(
-            matrix_size + 1
-        )  # Non-zero entries by row (starting from 0)
+        # Non-zero entries by row (starting from 0)
+        base_matrix.indptr = _cached_arange(matrix_size + 1)
         base_matrix = base_matrix.toarray()
         coeff = self[pauli_words[0]]
         ml_interface = qp.math.get_interface(coeff)

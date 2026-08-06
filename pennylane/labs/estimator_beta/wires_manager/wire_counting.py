@@ -301,9 +301,8 @@ def estimate_wires_from_circuit(
                 state_circuit_wires[w] = 0
 
             num_clean_logical_wires = sum(state_circuit_wires[w_i] for w_i in circuit_wires)
-            num_any_state_logical_wires = (
-                len(circuit_wires) - num_clean_logical_wires
-            )  # Note this contains the wires that circuit_element acts on
+            # Note this contains the wires that circuit_element acts on
+            num_any_state_logical_wires = len(circuit_wires) - num_clean_logical_wires
 
             sub_max_alloc, sub_max_dealloc, sub_total = _estimate_auxiliary_wires(
                 [GateCount(circuit_element)],

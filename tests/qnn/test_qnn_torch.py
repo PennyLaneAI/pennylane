@@ -794,9 +794,7 @@ def test_vjp_is_unwrapped_for_param_shift():
         num_params = 1
 
         @staticmethod
-        def compute_matrix(
-            *params,
-        ):
+        def compute_matrix(*params):
             z = params[0]
             return np.diag([z, z])
 

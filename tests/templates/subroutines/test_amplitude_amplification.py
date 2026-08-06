@@ -327,14 +327,7 @@ def test_p_min(p_min):
     assert circuit()[0] >= p_min
 
 
-@pytest.mark.parametrize(
-    "iters, p_min",
-    (
-        (4, 0.8),
-        (5, 0.9),
-        (6, 0.95),
-    ),
-)
+@pytest.mark.parametrize("iters, p_min", ((4, 0.8), (5, 0.9), (6, 0.95)))
 def test_fixed_point_angles_function(iters, p_min):
     """Test that the _get_fixed_point_angles function works correctly."""
 

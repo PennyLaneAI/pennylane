@@ -29,10 +29,7 @@ from pennylane.wires import Wires
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier, qp.WireCut)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -158,9 +155,8 @@ class TestInitialization:
         """Test that the diagonalizing gates are correct."""
         diag_sprod_op = SProd(1.23, qp.PauliX(wires=0))
         diagonalizing_gates = diag_sprod_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = (
-            qp.PauliX(wires=0).diagonalizing_gates()[0].matrix()
-        )  # scaling doesn't change diagonalizing gates
+        # scaling doesn't change diagonalizing gates
+        true_diagonalizing_gates = qp.PauliX(wires=0).diagonalizing_gates()[0].matrix()
 
         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 

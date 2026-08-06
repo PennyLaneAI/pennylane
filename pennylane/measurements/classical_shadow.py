@@ -44,11 +44,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
     _shortname = "shadow"
 
-    def __init__(
-        self,
-        wires: WiresLike | None = None,
-        seed: int | None = None,
-    ):
+    def __init__(self, wires: WiresLike | None = None, seed: int | None = None):
         self.seed = seed
         super().__init__(wires=wires)
 
@@ -58,11 +54,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
-        fingerprint = (
-            self.__class__.__name__,
-            self.seed,
-            tuple(self.wires.tolist()),
-        )
+        fingerprint = (self.__class__.__name__, self.seed, tuple(self.wires.tolist()))
         return hash(fingerprint)
 
     def process(self, tape, device):
@@ -412,10 +404,7 @@ class ClassicalShadowMP(MeasurementTransform):
         return (2, shots, len(self.wires))
 
     def __copy__(self):
-        return self.__class__(
-            seed=self.seed,
-            wires=self._wires,
-        )
+        return self.__class__(seed=self.seed, wires=self._wires)
 
 
 class ShadowExpvalMP(MeasurementTransform):
@@ -433,22 +422,14 @@ class ShadowExpvalMP(MeasurementTransform):
     _shortname = "shadowexpval"
 
     def _flatten(self):
-        metadata = (
-            ("seed", self.seed),
-            ("k", self.k),
-        )
+        metadata = (("seed", self.seed), ("k", self.k))
         return (self.H,), metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
-    def __init__(
-        self,
-        H: Operator | Sequence[Operator],
-        seed: int | None = None,
-        k: int = 1,
-    ):
+    def __init__(self, H: Operator | Sequence[Operator], seed: int | None = None, k: int = 1):
         self.seed = seed
         self.H = H
         self.k = k
@@ -570,11 +551,7 @@ class ShadowExpvalMP(MeasurementTransform):
             if isinstance(self.H, Sequence) and not isinstance(self.H, Operator)
             else copy.copy(self.H)
         )
-        return self.__class__(
-            H=H_copy,
-            k=self.k,
-            seed=self.seed,
-        )
+        return self.__class__(H=H_copy, k=self.k, seed=self.seed)
 
 
 def shadow_expval(

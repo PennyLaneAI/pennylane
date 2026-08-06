@@ -102,13 +102,7 @@ def polarity(  # pylint: disable=too-many-arguments
     return frobenius_inner_product(K, T, normalize=normalize)
 
 
-def target_alignment(
-    X,
-    Y,
-    kernel,
-    assume_normalized_kernel=False,
-    rescale_class_labels=True,
-):
+def target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
     r"""Target alignment of a given kernel function.
 
     This function is an alias for :func:`~.kernels.polarity` with ``normalize=True``.

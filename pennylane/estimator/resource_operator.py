@@ -299,9 +299,7 @@ class ResourceOperator(ABC):
                 of the target operator.
         """
         # pylint: disable=import-outside-toplevel
-        from pennylane.estimator.ops.op_math.symbolic import (
-            apply_adj,
-        )
+        from pennylane.estimator.ops.op_math.symbolic import apply_adj
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -336,9 +334,7 @@ class ResourceOperator(ABC):
                 of the target operator.
         """
         # pylint: disable=import-outside-toplevel
-        from pennylane.estimator.ops.op_math.symbolic import (
-            apply_controlled,
-        )
+        from pennylane.estimator.ops.op_math.symbolic import apply_controlled
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -445,10 +441,7 @@ class ResourceOperator(ABC):
         return cls.__name__
 
 
-def _dequeue(
-    op_to_remove: ResourceOperator | Iterable,
-    context: QueuingManager = QueuingManager,
-):
+def _dequeue(op_to_remove: ResourceOperator | Iterable, context: QueuingManager = QueuingManager):
     """Remove the given resource operator(s) from the Operator queue."""
     if not isinstance(op_to_remove, Iterable):
         op_to_remove = [op_to_remove]

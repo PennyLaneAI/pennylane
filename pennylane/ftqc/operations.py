@@ -92,11 +92,7 @@ class RotXZX(Operation):
         [RX(1.2, wires=[0]), RZ(2.3, wires=[0]), RX(3.4, wires=[0])]
 
         """
-        decomp_ops = [
-            RX(phi, wires=wires),
-            RZ(theta, wires=wires),
-            RX(omega, wires=wires),
-        ]
+        decomp_ops = [RX(phi, wires=wires), RZ(theta, wires=wires), RX(omega, wires=wires)]
         return decomp_ops
 
     def adjoint(self):

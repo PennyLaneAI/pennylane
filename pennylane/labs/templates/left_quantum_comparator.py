@@ -16,10 +16,7 @@
 from pennylane import capture, compiler, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X
 from pennylane.templates.subroutines import Elbow
 from pennylane.wires import Wires, WiresLike
@@ -202,10 +199,7 @@ class LeftQuantumComparator(Operation):
 
 def _left_quantum_comparator_resources(num_y_wires, comparator):
 
-    resources = {
-        Elbow: num_y_wires,
-        CNOT: 2 + 5 * (num_y_wires - 1),
-    }
+    resources = {Elbow: num_y_wires, CNOT: 2 + 5 * (num_y_wires - 1)}
 
     if comparator in [">=", "<="]:
         resources[X] = 1

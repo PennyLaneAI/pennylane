@@ -244,9 +244,7 @@ class BBQRAM(Operation):
             control_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
         )
 
-        self._hyperparameters = {
-            "wire_manager": wire_manager,
-        }
+        self._hyperparameters = {"wire_manager": wire_manager}
 
         super().__init__(data, wires=all_wires)
 
@@ -459,11 +457,7 @@ class HybridQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {
-        "num_target_wires",
-        "num_select_wires",
-        "num_tree_control_wires",
-    }
+    resource_keys = {"num_target_wires", "num_select_wires", "num_tree_control_wires"}
 
     def __init__(
         self,
@@ -637,11 +631,7 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
             ctrl(SWAP(wires=[in_w, R]), control=[signal, d], control_values=[1, 1])
 
             # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
-            ctrl(
-                SWAP(wires=[in_w, L]),
-                control=[signal, d],
-                control_values=[1, 0],
-            )
+            ctrl(SWAP(wires=[in_w, L]), control=[signal, d], control_values=[1, 0])
 
 
 def _swap_controlled_on_signal(tree_wire_manager, signal, level, k):
@@ -861,12 +851,7 @@ class SelectOnlyQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {
-        "select_value",
-        "num_control_wires",
-        "num_select_wires",
-        "num_target_wires",
-    }
+    resource_keys = {"select_value", "num_control_wires", "num_select_wires", "num_target_wires"}
 
     def __init__(
         self,

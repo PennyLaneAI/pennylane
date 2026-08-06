@@ -69,13 +69,7 @@ class TestCompressedResourceOp:
         ("X", DummyX, 1, {"num_wires": 1}, "X"),
     )
 
-    compressed_op_names = (
-        "DummyX",
-        "DummyQFT",
-        "DummyQSVT",
-        "DummyTrotterProduct",
-        "X",
-    )
+    compressed_op_names = ("DummyX", "DummyQFT", "DummyQSVT", "DummyTrotterProduct", "X")
 
     @pytest.mark.parametrize(
         "name, op_type, num_wires, parameters, name_param", compressed_ops_and_params_lst
@@ -420,11 +414,7 @@ class TestResourceOperator:
 
     def test_dequeue(self):
         """Test that we can remove a resource operator correctly."""
-        ops_to_remove = (
-            self.ops_to_queue[0],
-            [self.ops_to_queue[2]],
-            self.ops_to_queue[0:3],
-        )
+        ops_to_remove = (self.ops_to_queue[0], [self.ops_to_queue[2]], self.ops_to_queue[0:3])
 
         expected_queues = (
             self.ops_to_queue[1:],
@@ -467,13 +457,7 @@ class TestResourceOperator:
         op2 = CNOT()
         resources = op1.add_series(op2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
@@ -484,13 +468,7 @@ class TestResourceOperator:
         res2 = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_series(res2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
@@ -506,13 +484,7 @@ class TestResourceOperator:
         op2 = CNOT()
         resources = op1.add_parallel(op2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
@@ -523,13 +495,7 @@ class TestResourceOperator:
         res2 = Resources(zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_parallel(res2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 

@@ -59,10 +59,7 @@ class TestDecompositionRule:
                 qp.CNOT(wires=(w0, w1))
 
         def _multi_rz_resources(num_wires):
-            return {
-                qp.RZ: 1,
-                qp.CNOT: 2 * (num_wires - 1),
-            }
+            return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
         multi_rz_decomposition = register_resources(
             _multi_rz_resources, multi_rz_decomposition, exact=exact_resources
@@ -91,10 +88,7 @@ class TestDecompositionRule:
         """Tests creating a decomposition rule using the decorator syntax."""
 
         def _multi_rz_resources(num_wires):
-            return {
-                qp.RZ: 1,
-                qp.CNOT: 2 * (num_wires - 1),
-            }
+            return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
         @register_resources(_multi_rz_resources, exact=exact_resources)
         def multi_rz_decomposition(theta, wires, **__):
@@ -397,16 +391,10 @@ class TestDecompositionRule:
                 qp.CNOT(wires=(w0, w1))
 
         def _multi_rz_resources_old(num_wires):
-            return {
-                qp.RZ: 500,
-                qp.CNOT: 2 * (num_wires - 1),
-            }
+            return {qp.RZ: 500, qp.CNOT: 2 * (num_wires - 1)}
 
         def _multi_rz_resources_new(num_wires):
-            return {
-                qp.RZ: 1,
-                qp.CNOT: 2 * (num_wires - 1),
-            }
+            return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
         multi_rz_decomposition = register_resources(
             _multi_rz_resources_old, multi_rz_decomposition, exact=exact_resources
@@ -482,11 +470,7 @@ class TestDecompDictionary:
 
         assert qp.decomposition.has_decomp(SomeOtherOp)
         assert qp.decomposition.has_decomp(SomeOtherOp(wires=[0, 1]))
-        assert list(qp.list_decomps(SomeOtherOp)) == [
-            custom_decomp,
-            custom_decomp2,
-            custom_decomp3,
-        ]
+        assert list(qp.list_decomps(SomeOtherOp)) == [custom_decomp, custom_decomp2, custom_decomp3]
         assert list(qp.list_decomps(SomeOtherOp(wires=[0, 1]))) == [
             custom_decomp,
             custom_decomp2,

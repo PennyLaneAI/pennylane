@@ -142,14 +142,7 @@ class TestExecutionConfig:
         config = ExecutionConfig(gradient_method=method)
         assert config.gradient_method == method
 
-    @pytest.mark.parametrize(
-        "invalid_method",
-        [
-            123,
-            lambda grad_fn: True,
-            True,
-        ],
-    )
+    @pytest.mark.parametrize("invalid_method", [123, lambda grad_fn: True, True])
     def test_invalid_gradient_method(self, invalid_method):
         """Test that invalid types for gradient_method raise an error."""
         with pytest.raises(
@@ -158,21 +151,10 @@ class TestExecutionConfig:
         ):
             _ = ExecutionConfig(gradient_method=invalid_method)
 
-    @pytest.mark.parametrize(
-        "invalid_device_options",
-        [
-            "hi",
-            123,
-            lambda grad_fn: True,
-            True,
-        ],
-    )
+    @pytest.mark.parametrize("invalid_device_options", ["hi", 123, lambda grad_fn: True, True])
     def test_invalid_device_options(self, invalid_device_options):
         """Test that invalid types for device_options raise an error."""
-        with pytest.raises(
-            TypeError,
-            match=r"Got invalid type .* for 'device_options'",
-        ):
+        with pytest.raises(TypeError, match=r"Got invalid type .* for 'device_options'"):
             _ = ExecutionConfig(device_options=invalid_device_options)
 
     @pytest.mark.parametrize(
@@ -243,16 +225,10 @@ class TestExecutionConfig:
         og_device_options = copy(config.device_options)
         og_gradient_keyword_arguments = copy(config.gradient_keyword_arguments)
 
-        with pytest.raises(
-            TypeError,
-            match=r".* is immutable",
-        ):
+        with pytest.raises(TypeError, match=r".* is immutable"):
             config.device_options["hi"] = "there"
 
-        with pytest.raises(
-            TypeError,
-            match=r".* is immutable",
-        ):
+        with pytest.raises(TypeError, match=r".* is immutable"):
             config.gradient_keyword_arguments["foo"] = "buzz"
 
         # Verify the original dictionaries were not changed
@@ -303,10 +279,7 @@ class TestMCMConfig:
 
     _VALID_MCM_METHODS: list[str | None] = [None] + [item.value for item in MCM_METHOD]
 
-    @pytest.mark.parametrize(
-        "mcm_method",
-        _VALID_MCM_METHODS,
-    )
+    @pytest.mark.parametrize("mcm_method", _VALID_MCM_METHODS)
     def test_valid_mcm_method(self, mcm_method):
         """Test that MCMConfig can be instantiated with valid mcm_method values."""
         config = MCMConfig(mcm_method=mcm_method)
@@ -322,10 +295,7 @@ class TestMCMConfig:
 
     _INVALID_MCM_METHODS = ["foo", 123, True, "None", "none"]
 
-    @pytest.mark.parametrize(
-        "mcm_method",
-        _INVALID_MCM_METHODS,
-    )
+    @pytest.mark.parametrize("mcm_method", _INVALID_MCM_METHODS)
     def test_invalid_mcm_method_raises_value_error(self, mcm_method):
         """Test that MCMConfig raises a ValueError for an invalid mcm method"""
         with pytest.raises(ValueError, match=f"'{mcm_method}' is not a valid mcm_method"):
@@ -333,10 +303,7 @@ class TestMCMConfig:
 
     _INVALID_POSTSELECT_MODES = ["foo", 123, True, "None", "none"]
 
-    @pytest.mark.parametrize(
-        "invalid_mode",
-        _INVALID_POSTSELECT_MODES,
-    )
+    @pytest.mark.parametrize("invalid_mode", _INVALID_POSTSELECT_MODES)
     def test_invalid_postselect_mode_raises_value_error(self, invalid_mode):
         """Test that MCMConfig raises ValueError for invalid postselect_mode."""
         with pytest.raises(ValueError, match=f"'{invalid_mode}' is not a valid postselect_mode"):

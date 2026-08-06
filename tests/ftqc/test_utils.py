@@ -80,10 +80,7 @@ def test_parity_measurement_values(args, expected_outcome):
     assert par.processing_fn(*args) == expected_outcome
 
 
-@pytest.mark.parametrize(
-    "args, expected_outcome",
-    [((0, 1, 1), 1), ((0, 0, 1), 0), ((1, 1, 1), 0)],
-)
+@pytest.mark.parametrize("args, expected_outcome", [((0, 1, 1), 1), ((0, 0, 1), 0), ((1, 1, 1), 0)])
 def test_parity_mvs_and_constant(args, expected_outcome):
     """Test that passing a sequence of MeasurementValues and a constant to the parity
     function returns the expected MeasurementValue with the correct processing function."""

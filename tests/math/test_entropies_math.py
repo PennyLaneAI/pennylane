@@ -35,10 +35,7 @@ class TestPurity:
         ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], 1, 1),
     ]
 
-    single_wires_list = [
-        [0],
-        [1],
-    ]
+    single_wires_list = [[0], [1]]
 
     full_wires_list = [[0, 1]]
 
@@ -78,10 +75,7 @@ class TestPurity:
 class TestVonNeumannEntropy:  # pylint: disable=too-few-public-methods
     """Tests for creating a density matrix from state vectors."""
 
-    single_wires_list = [
-        [0],
-        [1],
-    ]
+    single_wires_list = [[0], [1]]
 
     base = [2, np.exp(1), 10]
 
@@ -262,10 +256,7 @@ class TestRelativeEntropy:
 class TestMaxEntropy:
     """Tests for computing the maximum entropy of a given state."""
 
-    single_wires_list = [
-        [0],
-        [1],
-    ]
+    single_wires_list = [[0], [1]]
 
     base = [2, np.exp(1), 10]
 
@@ -297,9 +288,7 @@ class TestMaxEntropy:
 
         assert qp.math.allclose(entropy, expected_max_entropy)
 
-    parameters = [
-        [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
-    ]
+    parameters = [[[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]]]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("params", parameters)
@@ -357,10 +346,7 @@ class TestMaxEntropy:
 class TestMinEntropy:
     """Test for computing the minimum entropy of a given state."""
 
-    single_wires_list = [
-        [0],
-        [1],
-    ]
+    single_wires_list = [[0], [1]]
 
     base = [2, np.exp(1), 10]
 
@@ -392,9 +378,7 @@ class TestMinEntropy:
 
         assert qp.math.allclose(entropy, expected_min_entropy)
 
-    parameters = [
-        [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
-    ]
+    parameters = [[[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]]]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("params", parameters)

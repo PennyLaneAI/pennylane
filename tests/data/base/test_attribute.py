@@ -286,35 +286,14 @@ class TestAttribute:
         with np.printoptions(legacy="1.21"):
             assert repr(attribute(val)) == f"{attribute_type.__name__}({repr(val)})"
 
-    @pytest.mark.parametrize(
-        "val",
-        (
-            "",
-            "abc",
-            0,
-            0.0,
-            np.int64(0),
-            complex(1, 2),
-            None,
-        ),
-    )
+    @pytest.mark.parametrize("val", ("", "abc", 0, 0.0, np.int64(0), complex(1, 2), None))
     def test_str(self, val):
         """Test that __str__ returns the string representation of the value"""
 
         assert str(attribute(val)) == str(val)
 
     @pytest.mark.parametrize("copy_func", [copy, deepcopy])
-    @pytest.mark.parametrize(
-        "val",
-        (
-            "abc",
-            0,
-            0.0,
-            np.int64(0),
-            complex(1, 2),
-            None,
-        ),
-    )
+    @pytest.mark.parametrize("val", ("abc", 0, 0.0, np.int64(0), complex(1, 2), None))
     def test_copy_preserves_values(self, copy_func, val):
         """Test that copy preserves values"""
 

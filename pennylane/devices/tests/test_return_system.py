@@ -116,12 +116,7 @@ class TestIntegrationMultipleReturns:
 
         def circuit(x):
             qubit_ansatz(x)
-            return (
-                qp.probs(wires=0),
-                qp.expval(qp.Z(0)),
-                qp.probs(op=qp.Y(1)),
-                qp.expval(qp.Y(1)),
-            )
+            return (qp.probs(wires=0), qp.expval(qp.Z(0)), qp.probs(op=qp.Y(1)), qp.expval(qp.Y(1)))
 
         qnode = qp.QNode(circuit, dev, shots=shots, diff_method=None)
         res = qnode(0.5)

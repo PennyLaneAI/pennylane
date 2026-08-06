@@ -241,10 +241,7 @@ class LegacyDeviceFacade(Device):
             execution_config = ExecutionConfig()
 
         if execution_config.mcm_config.mcm_method == "deferred":
-            pipeline.add_transform(
-                defer_measurements,
-                allow_postselect=False,
-            )
+            pipeline.add_transform(defer_measurements, allow_postselect=False)
 
         pipeline.add_transform(legacy_device_batch_transform, device=self._device)
         pipeline.add_transform(legacy_device_expand_fn, device=self._device)
@@ -327,10 +324,7 @@ class LegacyDeviceFacade(Device):
         circuit = QuantumScript([], [], shots=self.shots) if circuit is None else circuit
 
         if execution_config is None or execution_config.gradient_method == "best":
-            validation_methods = (
-                self._validate_backprop_method,
-                self._validate_device_method,
-            )
+            validation_methods = (self._validate_backprop_method, self._validate_device_method)
             return any(validate(circuit) for validate in validation_methods)
 
         if execution_config.gradient_method == "backprop":
@@ -385,11 +379,7 @@ class LegacyDeviceFacade(Device):
         _add_adjoint_transforms(pipeline, name=f"{self.name} + adjoint")
         try:
             pipeline((tape,))
-        except (
-            DecompositionUndefinedError,
-            DeviceError,
-            AttributeError,
-        ):
+        except (DecompositionUndefinedError, DeviceError, AttributeError):
             return False
         return True
 

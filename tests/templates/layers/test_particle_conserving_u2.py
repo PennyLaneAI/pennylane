@@ -242,11 +242,7 @@ def test_exceptions(weights, wires, msg_match):
 
     @qp.qnode(dev)
     def circuit():
-        qp.ParticleConservingU2(
-            weights=weights,
-            wires=wires,
-            init_state=init_state,
-        )
+        qp.ParticleConservingU2(weights=weights, wires=wires, init_state=init_state)
         return qp.expval(qp.PauliZ(0))
 
     with pytest.raises(ValueError, match=msg_match):

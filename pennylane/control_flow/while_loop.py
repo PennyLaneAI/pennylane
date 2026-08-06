@@ -262,14 +262,7 @@ def _get_while_loop_qfunc_prim():
     )
 
     @while_loop_prim.def_impl
-    def _impl(
-        *args,
-        jaxpr_body_fn,
-        jaxpr_cond_fn,
-        body_slice,
-        cond_slice,
-        args_slice,
-    ):
+    def _impl(*args, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice):
         body_slice = slice(*body_slice)
         cond_slice = slice(*cond_slice)
         args_slice = slice(*args_slice)

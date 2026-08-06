@@ -34,15 +34,9 @@ from pennylane.exceptions import (
     WireError,
 )
 from pennylane.math import is_abstract, requires_grad
-from pennylane.measurements import (
-    counts,
-    sample,
-)
+from pennylane.measurements import counts, sample
 from pennylane.ops import Snapshot
-from pennylane.transforms import (
-    diagonalize_measurements,
-    resolve_dynamic_wires,
-)
+from pennylane.transforms import diagonalize_measurements, resolve_dynamic_wires
 from pennylane.transforms.core import transform
 from pennylane.transforms.decompose import (
     _construct_and_solve_decomp_graph,
@@ -755,9 +749,8 @@ def _get_diagonalized_tape_and_wires(tape):
 
     measured_wires = set()
     for m in diagonalized_tape.measurements:
-        measured_wires.update(
-            m.wires.tolist()
-        )  # ToDo: add test confirming that the wire order can be weird and this still works
+        # ToDo: add test confirming that the wire order can be weird and this still works
+        measured_wires.update(m.wires.tolist())
     measured_wires = list(measured_wires)
 
     return diagonalized_tape, measured_wires

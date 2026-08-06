@@ -125,11 +125,7 @@ class TestDefaultMixedTrainability:
             return qp.expval(qp.PauliZ(0))
 
         # Create a QNode with the specified interface
-        circuit = qp.QNode(
-            circuit,
-            dev,
-            interface=interface,
-        )
+        circuit = qp.QNode(circuit, dev, interface=interface)
         # Execute the circuit
         result = circuit(param)
         # Check that the result is a tensor with the correct interface
@@ -143,13 +139,7 @@ class TestDefaultMixedTrainability:
         """Test that the trainable parameters are correctly applied to initial state"""
         num_qubits = 2
         dev = DefaultMixed(wires=num_qubits)
-        state = qp.math.array(
-            [
-                1.0,
-            ],
-            like=interface,
-            requires_grad=True,
-        )
+        state = qp.math.array([1.0], like=interface, requires_grad=True)
 
         # Make a trainable, parametrized circuit
         def circuit_StatePrep(state):
@@ -158,11 +148,7 @@ class TestDefaultMixedTrainability:
             return [qp.expval(qp.PauliZ(wires=q)) for q in range(num_qubits)]
 
         # Create a QNode with the specified interface
-        circuit = qp.QNode(
-            circuit_StatePrep,
-            dev,
-            interface=interface,
-        )
+        circuit = qp.QNode(circuit_StatePrep, dev, interface=interface)
         # Execute the circuit
         result = circuit(state)
         # Check that the result is a tensor with the correct interface

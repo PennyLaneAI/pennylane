@@ -720,11 +720,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         """Test the primitive bind call of MERA, MPS, and TTN."""
 
         def block(weights, wires):
-            return [
-                qp.CNOT(wires),
-                qp.RY(weights[0], wires[0]),
-                qp.RY(weights[1], wires[1]),
-            ]
+            return [qp.CNOT(wires), qp.RY(weights[0], wires[0]), qp.RY(weights[1], wires[1])]
 
         wires = list(range(4))
         n_block_wires = 2
@@ -846,11 +842,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert eqn.primitive == qp.MPSPrep._primitive
         assert eqn.invars[:4] == jaxpr.jaxpr.invars
         assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
-        expected_params = {
-            "n_wires": 3,
-            "work_wires": None,
-            "right_canonicalize": False,
-        }
+        expected_params = {"n_wires": 3, "work_wires": None, "right_canonicalize": False}
         actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
         assert actual_params == expected_params
         assert len(eqn.outvars) == 1
@@ -863,15 +855,8 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert q.queue[0] == qp.MPSPrep(mps=mps, wires=wires)
 
     def test_all_singles_doubles(self):
-        arguments = (
-            jnp.array([-2.8, 0.5]),
-            jnp.array([1, 2, 3, 4]),
-            jnp.array([1, 1, 0, 0]),
-        )
-        keyword_args = (
-            jnp.array([[0, 2]]),
-            jnp.array([[0, 1, 2, 3]]),
-        )
+        arguments = (jnp.array([-2.8, 0.5]), jnp.array([1, 2, 3, 4]), jnp.array([1, 1, 0, 0]))
+        keyword_args = (jnp.array([[0, 2]]), jnp.array([[0, 1, 2, 3]]))
         params = (*arguments, *keyword_args)
 
         def qfunc(weights, wires, hf_state, singles, doubles):
@@ -1084,12 +1069,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_qrom(self):
         """Test the primitive bind call of QROM."""
 
-        kwargs = {
-            "data": ((0,), (1,)),
-            "control_wires": [0],
-            "target_wires": [1],
-            "work_wires": None,
-        }
+        kwargs = {"data": ((0), (1)), "control_wires": [0], "target_wires": [1], "work_wires": None}
 
         def qfunc():
             qp.QROM(**kwargs)
@@ -1146,9 +1126,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         """Test the primitive bind call of MultiplexerStatePreparation."""
 
         state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
-        kwargs = {
-            "wires": (8, 9),
-        }
+        kwargs = {"wires": (8, 9)}
 
         def qfunc(state_vector):
             qp.MultiplexerStatePreparation(state_vector, **kwargs)
@@ -1175,11 +1153,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         """Test the primitive bind call of SelectPauliRot."""
 
         angles = np.arange(1, 9)
-        kwargs = {
-            "control_wires": [0, 1, 2],
-            "target_wire": 3,
-            "rot_axis": "X",
-        }
+        kwargs = {"control_wires": [0, 1, 2], "target_wire": 3, "rot_axis": "X"}
 
         def qfunc(angles):
             qp.SelectPauliRot(angles, **kwargs)
@@ -1209,12 +1183,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""
 
-        kwargs = {
-            "k": 3,
-            "x_wires": [0, 1],
-            "mod": None,
-            "work_wire": None,
-        }
+        kwargs = {"k": 3, "x_wires": [0, 1], "mod": None, "work_wire": None}
 
         def qfunc():
             qp.PhaseAdder(**kwargs)
@@ -1243,12 +1212,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_adder(self):
         """Test the primitive bind call of Adder."""
 
-        kwargs = {
-            "k": 3,
-            "x_wires": [0, 1],
-            "mod": None,
-            "work_wires": None,
-        }
+        kwargs = {"k": 3, "x_wires": [0, 1], "mod": None, "work_wires": None}
 
         def qfunc():
             qp.Adder(**kwargs)
@@ -1277,11 +1241,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_semiadder(self):
         """Test the primitive bind call of SemiAdder."""
 
-        kwargs = {
-            "x_wires": [0, 1, 2],
-            "y_wires": [3, 4, 5],
-            "work_wires": [6, 7],
-        }
+        kwargs = {"x_wires": [0, 1, 2], "y_wires": [3, 4, 5], "work_wires": [6, 7]}
 
         def qfunc():
             qp.SemiAdder(**kwargs)
@@ -1310,12 +1270,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_multiplier(self):
         """Test the primitive bind call of Multiplier."""
 
-        kwargs = {
-            "k": 3,
-            "x_wires": [0, 1],
-            "mod": None,
-            "work_wires": [2, 3],
-        }
+        kwargs = {"k": 3, "x_wires": [0, 1], "mod": None, "work_wires": [2, 3]}
 
         def qfunc():
             qp.Multiplier(**kwargs)
@@ -1344,10 +1299,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_incrementer(self):
         """Test the primitive bind call of Incrementer."""
 
-        kwargs = {
-            "wires": [0, 1],
-            "work_wires": [2, 3],
-        }
+        kwargs = {"wires": [0, 1], "work_wires": [2, 3]}
 
         def qfunc():
             qp.Incrementer(**kwargs)
@@ -1376,12 +1328,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""
 
-        kwargs = {
-            "x_wires": [0, 1],
-            "y_wires": [2, 3],
-            "output_wires": [4, 5],
-            "work_wires": [],
-        }
+        kwargs = {"x_wires": [0, 1], "y_wires": [2, 3], "output_wires": [4, 5], "work_wires": []}
 
         def qfunc():
             qp.SignedOutMultiplier(**kwargs)

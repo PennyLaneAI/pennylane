@@ -54,11 +54,7 @@ def selectpaulirot_controlled_resource_decomp(
     rot_axis = target_resource_params["rot_axis"]
     precision = target_resource_params["precision"]
 
-    rotation_gate_map = {
-        "X": qre.RX,
-        "Y": qre.RY,
-        "Z": qre.RZ,
-    }
+    rotation_gate_map = {"X": qre.RX, "Y": qre.RY, "Z": qre.RZ}
     gate_lst = []
 
     gate = resource_rep(
@@ -109,11 +105,7 @@ def qft_phase_grad_resource_decomp(num_wires) -> list[GateCount]:
     # Use qubits from phase gradient register
     phase_grad_reg = Allocate(num_wires=num_wires - 1, state="any", restored=True)
 
-    gate_types = [
-        phase_grad_reg,
-        GateCount(hadamard, num_wires),
-        GateCount(swap, num_wires // 2),
-    ]
+    gate_types = [phase_grad_reg, GateCount(hadamard, num_wires), GateCount(swap, num_wires // 2)]
 
     for size_reg in range(1, num_wires):
         ctrl_add = qre.Controlled.resource_rep(
@@ -156,9 +148,7 @@ def aqft_resource_decomp(order, num_wires) -> list[GateCount]:
     if order >= num_wires:
         order = num_wires - 1
 
-    gate_types = [
-        GateCount(hadamard, num_wires),
-    ]
+    gate_types = [GateCount(hadamard, num_wires)]
 
     if order > 1:
         # Use qubits from the phase gradient register
@@ -988,9 +978,8 @@ class LabsQROM(ResourceOperator):
         gate_cost.extend(cls._select_cost(L_opt, num_bit_flips, select_restored_prefactor))
 
         if L_opt > 2:
-            gate_cost.append(
-                Deallocate(allocated_register=aux_wires_select)
-            )  # release Select aux wires
+            # release Select aux wires
+            gate_cost.append(Deallocate(allocated_register=aux_wires_select))
 
         # SWAP cost:
         if W_opt > 1:
@@ -998,9 +987,8 @@ class LabsQROM(ResourceOperator):
                 cls._swap_cost(size_bitstring, ceil_log2(W_opt), swap_restored_prefactor)
             )
 
-            if (
-                not borrow_qubits
-            ):  # X-axis measurement & reset (Figure 5 https://arxiv.org/abs/1902.02134)
+            # X-axis measurement & reset (Figure 5 https://arxiv.org/abs/1902.02134)
+            if not borrow_qubits:
                 gate_cost.append(GateCount(hadamard, (W_opt - 1) * size_bitstring))
 
             gate_cost.append(Deallocate(allocated_register=aux_wires_swap))
@@ -1077,9 +1065,8 @@ class LabsQROM(ResourceOperator):
         )
 
         if L_opt > 1:
-            gate_cost.append(
-                Deallocate(allocated_register=aux_wires_select)
-            )  # release Select aux wires
+            # release Select aux wires
+            gate_cost.append(Deallocate(allocated_register=aux_wires_select))
 
         # SWAP cost:
         if W_opt > 1:
@@ -1089,9 +1076,8 @@ class LabsQROM(ResourceOperator):
                 )
             )
 
-            if (
-                not borrow_qubits
-            ):  # X-axis measurement & reset (Figure 5 https://arxiv.org/abs/1902.02134)
+            # X-axis measurement & reset (Figure 5 https://arxiv.org/abs/1902.02134)
+            if not borrow_qubits:
                 gate_cost.append(
                     GateCount(resource_rep(qre.Hadamard), (W_opt - 1) * size_bitstring)
                 )
@@ -1202,9 +1188,8 @@ class LabsQROM(ResourceOperator):
             )
 
         elif num_data_blocks == 2:
-            gate_cost.append(
-                GateCount(x, 2 * repeat),
-            )  # for the 0-control value in the CNOTs
+            # for the 0-control value in the CNOTs
+            gate_cost.append(GateCount(x, 2 * repeat))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -1213,9 +1198,8 @@ class LabsQROM(ResourceOperator):
             )
 
         elif num_data_blocks / 2 ** ceil_log2(num_data_blocks) > 3 / 4:
-            gate_cost.append(
-                GateCount(x, repeat * (2 * (num_data_blocks - 3 + 1)))
-            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(GateCount(x, repeat * (2 * (num_data_blocks - 3 + 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -1226,9 +1210,8 @@ class LabsQROM(ResourceOperator):
             gate_cost.append(GateCount(r_elbow, repeat * (num_data_blocks - 3)))
 
         else:
-            gate_cost.append(
-                GateCount(x, repeat * (2 * (num_data_blocks - 2 + 1)))
-            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(GateCount(x, repeat * (2 * (num_data_blocks - 2 + 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -1271,9 +1254,8 @@ class LabsQROM(ResourceOperator):
             )
 
         else:  # num_data_blocks > 1
-            gate_cost.append(
-                GateCount(x, repeat * (2 * (num_data_blocks - 1)))
-            )  # conjugate 0-control in left-elbows
+            # conjugate 0-control in left-elbows
+            gate_cost.append(GateCount(x, repeat * (2 * (num_data_blocks - 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -1394,9 +1376,8 @@ class LabsQROM(ResourceOperator):
             num_bit_flips = (d * M) // 2
 
         # Set optimal Select-Swap depth
-        k_approx = math.sqrt(
-            d
-        )  # minimizes Toffoli cost Appendix C. https://arxiv.org/abs/1902.02134
+        # minimizes Toffoli cost Appendix C. https://arxiv.org/abs/1902.02134
+        k_approx = math.sqrt(d)
         k = 2 ** round(math.log2(k_approx))  # must be a power of 2
 
         gate_lst = []
@@ -1407,9 +1388,8 @@ class LabsQROM(ResourceOperator):
         gate_lst.append(GateCount(had, M))
 
         if M < k:
-            aux_reg = Allocate(
-                k - M, state="zero", restored=True
-            )  #  we can re-use the M output qubits
+            #  we can re-use the M output qubits
+            aux_reg = Allocate(k - M, state="zero", restored=True)
             gate_lst.append(aux_reg)
 
         new_address_size = int(math.ceil(d / k))
@@ -1455,9 +1435,8 @@ class LabsQROM(ResourceOperator):
             num_bit_flips = (d * M) // 2
 
         # Set optimal Select-Swap depth
-        k_approx = math.sqrt(
-            d / 2
-        )  # minimizes Toffoli cost Appendix C. https://arxiv.org/abs/1902.02134
+        # minimizes Toffoli cost Appendix C. https://arxiv.org/abs/1902.02134
+        k_approx = math.sqrt(d / 2)
         k = 2 ** round(math.log2(k_approx))  # must be a power of 2
 
         gate_lst = []
@@ -1468,9 +1447,8 @@ class LabsQROM(ResourceOperator):
         gate_lst.append(GateCount(had, M))
 
         if M < k:
-            aux_reg = Allocate(
-                k - M, state="any", restored=True
-            )  #  we can re-use the M output qubits
+            #  we can re-use the M output qubits
+            aux_reg = Allocate(k - M, state="any", restored=True)
             gate_lst.append(aux_reg)
 
         new_address_size = int(math.ceil(d / k))
@@ -2100,9 +2078,8 @@ class SelectCopyQROM(ResourceOperator):
             )
 
         elif num_data_blocks == 2:
-            gate_cost.append(
-                GateCount(x, 2),
-            )  # for the 0-control value in the CNOTs
+            # for the 0-control value in the CNOTs
+            gate_cost.append(GateCount(x, 2))
             gate_cost.append(
                 GateCount(
                     qre.Controlled.resource_rep(load_op, 1, 0),
@@ -2115,9 +2092,8 @@ class SelectCopyQROM(ResourceOperator):
             unary_aux_reg = Allocate(l - 1, "zero", True)
             gate_cost.append(unary_aux_reg)
 
-            gate_cost.append(
-                GateCount(x, (2 * (num_data_blocks - 3 + 1)))
-            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(GateCount(x, (2 * (num_data_blocks - 3 + 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -2139,9 +2115,8 @@ class SelectCopyQROM(ResourceOperator):
             unary_aux_reg = Allocate(l - 1, "zero", True)
             gate_cost.append(unary_aux_reg)
 
-            gate_cost.append(
-                GateCount(x, (2 * (num_data_blocks - 2 + 1)))
-            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(GateCount(x, (2 * (num_data_blocks - 2 + 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -2197,9 +2172,8 @@ class SelectCopyQROM(ResourceOperator):
             unary_aux_reg = Allocate(l, "zero", True)
             gate_cost.append(unary_aux_reg)
 
-            gate_cost.append(
-                GateCount(x, (2 * (num_data_blocks - 1)))
-            )  # conjugate 0-control in left-elbows
+            # conjugate 0-control in left-elbows
+            gate_cost.append(GateCount(x, (2 * (num_data_blocks - 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -2245,18 +2219,16 @@ class SelectCopyQROM(ResourceOperator):
             pass
 
         elif num_data_blocks == 2:
-            gate_cost.append(
-                GateCount(x, 2),
-            )  # for the 0-control value in the CNOTs
+            # for the 0-control value in the CNOTs
+            gate_cost.append(GateCount(x, 2))
 
         elif num_data_blocks / 2 ** ceil_log2(num_data_blocks) > 3 / 4:
             l = ceil_log2(num_data_blocks)
             unary_aux_reg = Allocate(l - 1, "zero", True)
             gate_cost.append(unary_aux_reg)
 
-            gate_cost.append(
-                GateCount(x, (2 * (num_data_blocks - 3 + 1)))
-            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(GateCount(x, (2 * (num_data_blocks - 3 + 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -2272,9 +2244,8 @@ class SelectCopyQROM(ResourceOperator):
             unary_aux_reg = Allocate(l - 1, "zero", True)
             gate_cost.append(unary_aux_reg)
 
-            gate_cost.append(
-                GateCount(x, (2 * (num_data_blocks - 2 + 1)))
-            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(GateCount(x, (2 * (num_data_blocks - 2 + 1))))
             gate_cost.append(
                 GateCount(
                     cnot,

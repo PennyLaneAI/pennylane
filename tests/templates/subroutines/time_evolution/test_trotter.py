@@ -687,10 +687,7 @@ class TestIntegration:
         @jax.jit
         @qp.qnode(dev, interface="jax")
         def circ(time, c1, c2):
-            h = qp.sum(
-                qp.s_prod(c1, terms[0]),
-                qp.s_prod(c2, terms[1]),
-            )
+            h = qp.sum(qp.s_prod(c1, terms[0]), qp.s_prod(c2, terms[1]))
             qp.TrotterProduct(h, time, n=2, order=2, check_hermitian=False)
             return qp.state()
 
@@ -723,10 +720,7 @@ class TestIntegration:
 
         @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
+            h = qp.sum(qp.s_prod(coeffs[0], terms[0]), qp.s_prod(coeffs[1], terms[1]))
             qp.TrotterProduct(h, time, n=2, order=2)
 
             return qp.state()
@@ -896,10 +890,7 @@ class TestIntegration:
 
         @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
+            h = qp.sum(qp.s_prod(coeffs[0], terms[0]), qp.s_prod(coeffs[1], terms[1]))
             qp.TrotterProduct(h, time, n=n, order=order)
             return qp.expval(qp.Hadamard(0))
 
@@ -1000,11 +991,7 @@ class TestTrotterizedQfuncInitialization:
         with pytest.raises(ValueError, match="The order must be 1 or a positive even integer,"):
             TrotterizedQfunc(time, *args, qfunc=self.my_qfunc, order=order, wires=[0, 1], **kwargs)
 
-    wire_data = (
-        [0, 1],
-        ["a", "b"],
-        (0, "a"),
-    )
+    wire_data = ([0, 1], ["a", "b"], (0, "a"))
     args_kwargs_data = (
         ((1.0, 2), {"kwarg1": True, "kwarg2": 34.5}),
         ((0.0, -0.2), {"kwarg1": False, "kwarg2": 678}),

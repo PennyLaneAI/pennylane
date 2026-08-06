@@ -209,10 +209,7 @@ def test_jax_pytree_integration(mp):
 class TestStatisticsQueuing:
     """Tests for annotating the return types of the statistics functions"""
 
-    @pytest.mark.parametrize(
-        "op",
-        [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard, qp.Identity],
-    )
+    @pytest.mark.parametrize("op", [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard, qp.Identity])
     def test_annotating_obs_return_type(self, stat_func, return_type, op):
         """Test that the return_type related info is updated for a
         measurement"""

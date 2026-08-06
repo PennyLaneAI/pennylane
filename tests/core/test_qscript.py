@@ -121,14 +121,7 @@ class TestInitialization:
         qs = QuantumScript()
         assert qs.obs_sharing_wires_id == []
 
-    @pytest.mark.parametrize(
-        "ops",
-        (
-            [qp.S(0)],
-            (qp.S(0),),
-            (qp.S(i) for i in [0]),
-        ),
-    )
+    @pytest.mark.parametrize("ops", ([qp.S(0)], (qp.S(0)), (qp.S(i) for i in [0])))
     def test_provide_ops(self, ops):
         """Test provided ops are converted to lists."""
         qs = QuantumScript(ops)
@@ -136,14 +129,7 @@ class TestInitialization:
         assert isinstance(qs.operations, list)
         qp.assert_equal(qs.operations[0], qp.S(0))
 
-    @pytest.mark.parametrize(
-        "m",
-        (
-            [qp.state()],
-            (qp.state(),),
-            (qp.state() for _ in range(1)),
-        ),
-    )
+    @pytest.mark.parametrize("m", ([qp.state()], (qp.state()), (qp.state() for _ in range(1))))
     def test_provide_measurements(self, m):
         """Test provided measurements are converted to lists."""
         qs = QuantumScript(measurements=m)
@@ -599,10 +585,7 @@ class TestIteration:
             qp.CNOT(wires=[0, "a"]),
             qp.RX(0.133, wires=4),
         ]
-        m = [
-            qp.expval(qp.PauliX(wires="a")),
-            qp.probs(wires=[0, "a"]),
-        ]
+        m = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
         qs = QuantumScript(ops, m)
 
         circuit = ops + m
@@ -949,9 +932,8 @@ class TestScriptCopying:
         )
 
         new_measurements = [qp.expval(2 * qp.X(0)), qp.var(3 * qp.Y(1))]
-        new_tape = tape.copy(
-            measurements=new_measurements, trainable_params=[1, 2]
-        )  # continue ignoring param in RX
+        # continue ignoring param in RX
+        new_tape = tape.copy(measurements=new_measurements, trainable_params=[1, 2])
 
         assert tape.measurements == measurements
         assert new_tape.measurements == new_measurements
@@ -968,9 +950,8 @@ class TestScriptCopying:
         )
 
         new_ops = [qp.RX(1.2, 0), qp.RY(2.3, 1)]
-        new_tape = tape.copy(
-            operations=new_ops, trainable_params=[0, 1]
-        )  # continue ignoring param in 2*X(0)
+        # continue ignoring param in 2*X(0)
+        new_tape = tape.copy(operations=new_ops, trainable_params=[0, 1])
 
         assert tape.operations == ops
         assert new_tape.operations == new_ops
@@ -1338,11 +1319,8 @@ class TestDiagonalizingGates:
             (qp.X(0), qp.Y(1), qp.Hamiltonian([1, 2], [qp.Y(1), qp.X(2)])),  # linearcomb
             (2 * qp.X(0), qp.Y(1), qp.Y(1) + qp.X(2)),  # with sprod
             (qp.X(0), qp.Y(1), (qp.Y(1) + qp.X(2)) @ qp.X(0)),  # prod of sum (nested)
-            (
-                qp.X(0),
-                qp.Y(1),
-                qp.Hamiltonian([1, 2], [qp.Y(1) @ qp.X(0), 2 * qp.X(2) + qp.Z(3)]),
-            ),  # nested linearcombination
+            # nested linearcombination
+            (qp.X(0), qp.Y(1), qp.Hamiltonian([1, 2], [qp.Y(1) @ qp.X(0), 2 * qp.X(2) + qp.Z(3)])),
         ],
     )
     def test_duplicate_obs_composite(self, obs):
@@ -1418,10 +1396,7 @@ def test_jax_pytree_integration(qscript_type):
 
     eye_mat = np.eye(4)
     ops = [qp.adjoint(qp.RY(0.5, wires=0)), qp.Rot(1.2, 2.3, 3.4, wires=0)]
-    mps = [
-        qp.var(qp.s_prod(2.0, qp.PauliX(0))),
-        qp.expval(qp.Hermitian(eye_mat, wires=(0, 1))),
-    ]
+    mps = [qp.var(qp.s_prod(2.0, qp.PauliX(0))), qp.expval(qp.Hermitian(eye_mat, wires=(0, 1)))]
 
     tape = qscript_type(ops, mps, shots=100)
     tape.trainable_params = [2]

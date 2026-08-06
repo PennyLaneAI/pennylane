@@ -106,11 +106,7 @@ class TestResourceTrotterProduct:
             ValueError,
             match="All components of first_order_expansion must be instances of `ResourceOperator` in order to obtain resources.",
         ):
-            qre.TrotterProduct(
-                [qre.X(), qre.Y(), qre.Allocate(4)],
-                num_steps=10,
-                order=3,
-            )
+            qre.TrotterProduct([qre.X(), qre.Y(), qre.Allocate(4)], num_steps=10, order=3)
 
     def test_user_defined_wires(self):
         """Test that user-defined wires take precedence over operator wires."""
@@ -270,11 +266,7 @@ class TestTrotterCDF:
         """Test the controlled_resource_decomp method for TrotterCDF."""
 
         compact_ham = qre.CDFHamiltonian(num_orbitals=num_orbitals, num_fragments=num_fragments)
-        target_resource_params = {
-            "cdf_ham": compact_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
+        target_resource_params = {"cdf_ham": compact_ham, "num_steps": num_steps, "order": order}
         decomp = qre.TrotterCDF.controlled_resource_decomp(
             num_ctrl_wires, num_zero_ctrl, target_resource_params
         )
@@ -404,11 +396,7 @@ class TestTrotterTHC:
 
         compact_ham = qre.THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=tensor_rank)
 
-        target_resource_params = {
-            "thc_ham": compact_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
+        target_resource_params = {"thc_ham": compact_ham, "num_steps": num_steps, "order": order}
         decomp = qre.TrotterTHC.controlled_resource_decomp(
             num_ctrl_wires, num_zero_ctrl, target_resource_params
         )

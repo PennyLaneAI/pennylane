@@ -41,12 +41,7 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
     objects.
     """
 
-    def __init__(
-        self,
-        ops=None,
-        measurements=None,
-        shots=None,
-    ):
+    def __init__(self, ops=None, measurements=None, shots=None):
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots)
         self.ops = None

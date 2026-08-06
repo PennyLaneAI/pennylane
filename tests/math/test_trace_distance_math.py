@@ -64,13 +64,7 @@ class TestTraceDistanceMath:
         )
     )
 
-    array_funcs = [
-        lambda x: x,
-        onp.array,
-        np.array,
-        jnp.array,
-        torch.tensor,
-    ]
+    array_funcs = [lambda x: x, onp.array, np.array, jnp.array, torch.tensor]
 
     check_state = [True, False]
 

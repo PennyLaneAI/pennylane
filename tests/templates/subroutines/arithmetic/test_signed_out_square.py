@@ -195,11 +195,7 @@ class TestSignedOutSquare:
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_decomposition(self, output_wires_zeroed):
         """Test that the decomposition(s) create the expected operators."""
-        x_wires, output_wires, work_wires = (
-            [0, 1, 2],
-            [3, 4, 5, 6, 7],
-            [8, 9, 10, 11, 12],
-        )
+        x_wires, output_wires, work_wires = ([0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12])
         rules = qp.list_decomps(SignedOutSquare)
         assert len(rules) == 1
         rule = rules[0]

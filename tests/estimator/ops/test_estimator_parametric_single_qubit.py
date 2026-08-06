@@ -119,11 +119,7 @@ class TestPauliRotation:
         ]
         assert resource_op_class(precision).pow_resource_decomp(z, {"precision": None}) == expected
 
-    params_ctrl_classes = (
-        (qre.RX, qre.CRX),
-        (qre.RY, qre.CRY),
-        (qre.RZ, qre.CRZ),
-    )
+    params_ctrl_classes = ((qre.RX, qre.CRX), (qre.RY, qre.CRY), (qre.RZ, qre.CRZ))
 
     @pytest.mark.parametrize("resource_class, controlled_class", params_ctrl_classes)
     @pytest.mark.parametrize("precision", params_errors)

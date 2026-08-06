@@ -166,14 +166,7 @@ class TTN(Operation):
         Operation.__init__(new_op, data, wires=metadata[0])
         return new_op
 
-    def __init__(
-        self,
-        wires,
-        n_block_wires,
-        block,
-        n_params_block,
-        template_weights=None,
-    ):
+    def __init__(self, wires, n_block_wires, block, n_params_block, template_weights=None):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
         shape = math.shape(template_weights)  # (n_params_block, n_blocks)

@@ -475,12 +475,7 @@ class TestDecomposeInterpreterGraphEnabled:
             (
                 None,
                 # Use the most efficient decomposition for both.
-                {
-                    qp.Toffoli: 2 + 2 * 2 + 2,
-                    qp.RZ: 2 * 3 + 3,
-                    qp.RY: 2 * 2 + 2,
-                    qp.CNOT: 2 * 2 + 2,
-                },
+                {qp.Toffoli: 2 + 2 * 2 + 2, qp.RZ: 2 * 3 + 3, qp.RY: 2 * 2 + 2, qp.CNOT: 2 * 2 + 2},
             ),
             (
                 0,
@@ -505,22 +500,12 @@ class TestDecomposeInterpreterGraphEnabled:
             (
                 2,
                 # When there are only 2 available, use 1 to decompose the larger op
-                {
-                    qp.Toffoli: 4 + 2 * 2 + 2,
-                    qp.RZ: 2 * 3 + 3,
-                    qp.RY: 2 * 2 + 2,
-                    qp.CNOT: 2 * 2 + 2,
-                },
+                {qp.Toffoli: 4 + 2 * 2 + 2, qp.RZ: 2 * 3 + 3, qp.RY: 2 * 2 + 2, qp.CNOT: 2 * 2 + 2},
             ),
             (
                 3,
                 # Enough wires to choose the most efficient decomposition for both.
-                {
-                    qp.Toffoli: 2 + 2 * 2 + 2,
-                    qp.RZ: 2 * 3 + 3,
-                    qp.RY: 2 * 2 + 2,
-                    qp.CNOT: 2 * 2 + 2,
-                },
+                {qp.Toffoli: 2 + 2 * 2 + 2, qp.RZ: 2 * 3 + 3, qp.RY: 2 * 2 + 2, qp.CNOT: 2 * 2 + 2},
             ),
         ],
     )
@@ -579,10 +564,7 @@ class TestDecomposeInterpreterGraphEnabled:
         class SomeOtherOp(Operation):
             """Some other operation."""
 
-        @qp.register_resources(
-            {qp.CNOT: 2, LargeOpDynamicWireDecomp: 2},
-            work_wires={"zeroed": 1},
-        )
+        @qp.register_resources({qp.CNOT: 2, LargeOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1})
         def _some_decomp(wires):
             with qp.allocation.allocate(1, state="zero", restored=True) as work_wires:
                 qp.CNOT([wires[0], work_wires[0]])

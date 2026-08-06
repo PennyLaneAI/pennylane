@@ -57,9 +57,7 @@ def _pauli_word_prefactor(observable):
 @_pauli_word_prefactor.register(PauliY)
 @_pauli_word_prefactor.register(PauliZ)
 @_pauli_word_prefactor.register(Identity)
-def _pw_prefactor_pauli(
-    observable: PauliX | PauliY | PauliZ | Identity,
-):
+def _pw_prefactor_pauli(observable: PauliX | PauliY | PauliZ | Identity):
     return 1
 
 

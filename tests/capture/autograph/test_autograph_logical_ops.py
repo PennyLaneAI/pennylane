@@ -61,17 +61,7 @@ class TestAnd:
 
         assert result[0] == (x and val)
 
-    @pytest.mark.parametrize(
-        "python_object",
-        [
-            "",
-            "string",
-            [],
-            [1, 2],
-            {},
-            {1: "a"},
-        ],
-    )
+    @pytest.mark.parametrize("python_object", ["", "string", [], [1, 2], {}, {1: "a"}])
     @pytest.mark.parametrize("arg", [True, False])
     def test_python_object_interaction(self, python_object, arg):
         """Test that logical AND works with Python objects."""
@@ -165,10 +155,7 @@ class TestAnd:
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
-        assert jnp.array_equal(
-            result,
-            (expected),
-        ), f"Expected {expected}, got {result}"
+        assert jnp.array_equal(result, (expected)), f"Expected {expected}, got {result}"
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -203,17 +190,7 @@ class TestOr:
 
         assert result[0] == (x or val)
 
-    @pytest.mark.parametrize(
-        "python_object",
-        [
-            "",
-            "string",
-            [],
-            [1, 2],
-            {},
-            {1: "a"},
-        ],
-    )
+    @pytest.mark.parametrize("python_object", ["", "string", [], [1, 2], {}, {1: "a"}])
     @pytest.mark.parametrize("arg", [True, False])
     def test_python_object_interaction(self, python_object, arg):
         """Test that logical OR works with Python objects."""
@@ -345,17 +322,7 @@ class TestNot:
 
         assert result[0] == (not val)
 
-    @pytest.mark.parametrize(
-        "python_object",
-        [
-            "",
-            "string",
-            [],
-            [1, 2],
-            {},
-            {1: "a"},
-        ],
-    )
+    @pytest.mark.parametrize("python_object", ["", "string", [], [1, 2], {}, {1: "a"}])
     def test_python_object_interaction(self, python_object):
         """Test that logic al NOT works with Python objects."""
 

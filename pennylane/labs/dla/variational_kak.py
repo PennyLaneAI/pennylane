@@ -348,14 +348,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     return success
 
 
-def run_opt(
-    cost,
-    theta,
-    n_epochs=500,
-    optimizer=None,
-    verbose=False,
-    interrupt_tol=None,
-):
+def run_opt(cost, theta, n_epochs=500, optimizer=None, verbose=False, interrupt_tol=None):
     r"""Boilerplate jax optimization
 
     Args:

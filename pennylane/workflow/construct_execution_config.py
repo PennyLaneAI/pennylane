@@ -119,9 +119,7 @@ def construct_execution_config(
             if type(qnode).__name__ == "TorchLayer":
                 # avoid triggering import of torch if its not needed.
                 x = args[0]
-                kwargs = {
-                    **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
-                }
+                kwargs = {**{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()}}
             tape = qp.tape.make_qscript(qnode.func, shots=qnode.shots)(*args, **kwargs)
             batch, _ = qnode.compile_pipeline((tape,))
             config = _resolve_execution_config(config, qnode.device, batch)

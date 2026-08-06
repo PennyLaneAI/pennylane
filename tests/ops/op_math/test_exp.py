@@ -703,9 +703,8 @@ class TestMiscMethods:
         assert op.hyperparameters.keys() == copied_op.hyperparameters.keys()
 
         for attr, value in vars(copied_op).items():
-            if (
-                attr != "_hyperparameters"
-            ):  # hyperparameters contains base, which can't be compared via ==
+            # hyperparameters contains base, which can't be compared via ==
+            if attr != "_hyperparameters":
                 assert vars(op)[attr] == value
 
         assert len(vars(op).items()) == len(vars(copied_op).items())

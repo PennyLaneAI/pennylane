@@ -705,10 +705,7 @@ class TestDeviceCapabilities:
         for obs in [qp.X(0), qp.Y(0), qp.Z(0)]:
             assert capabilities.supports_observable(obs.name) is True
 
-        for obs in [
-            qp.H(0),
-            qp.Hamiltonian([0.5], [qp.PauliZ(0)]),
-        ]:
+        for obs in [qp.H(0), qp.Hamiltonian([0.5], [qp.PauliZ(0)])]:
             assert capabilities.supports_observable(obs.name) is False
 
     @pytest.mark.usefixtures("create_temporary_toml_file")

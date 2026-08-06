@@ -102,10 +102,7 @@ class TestDecomposition:  # pylint: disable=too-many-public-methods
     def test_wrong_shape(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="The matrix should have shape",
-        ):
+        with pytest.raises(ValueError, match="The matrix should have shape"):
             qp.pauli_decompose(hamiltonian)
 
     def test_not_hermitian(self):
@@ -554,20 +551,14 @@ class TestPhasedDecomposition:
     def test_wrong_shape_non_square(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="The matrix should be square",
-        ):
+        with pytest.raises(ValueError, match="The matrix should be square"):
             _generalized_pauli_decompose(hamiltonian, padding=False)
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((5, 5)), np.ones((3, 3))])
     def test_wrong_shape_non_power_two(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="Dimension of the matrix should be a power of 2",
-        ):
+        with pytest.raises(ValueError, match="Dimension of the matrix should be a power of 2"):
             _generalized_pauli_decompose(hamiltonian, padding=False)
 
     def test_hide_identity_true(self):
@@ -876,11 +867,7 @@ class TestPauliSentence:
         ):
             pauli_sentence(op)
 
-    words = (
-        PauliWord({0: "X"}),
-        PauliWord({0: "X", 1: "Y"}),
-        PauliWord({"a": "X", 0: "Y"}),
-    )
+    words = (PauliWord({0: "X"}), PauliWord({0: "X", 1: "Y"}), PauliWord({"a": "X", 0: "Y"}))
 
     @pytest.mark.parametrize("pw", words)
     def test_trivial_pauli_word(self, pw):

@@ -72,15 +72,7 @@ test_coordinates = np.array(
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_building_hamiltonian(
-    charge,
-    mult,
-    package,
-    nact_els,
-    nact_orbs,
-    mapping,
-    tmpdir,
-):
+def test_building_hamiltonian(charge, mult, package, nact_els, nact_orbs, mapping, tmpdir):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
     Hamiltonian class and the correctness of the total number of qubits required to run the
     quantum simulation. The latter is tested for different values of the molecule's charge and
@@ -605,13 +597,7 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     )
 
 
-@pytest.mark.parametrize(
-    ("wiremap"),
-    [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
-    ],
-)
+@pytest.mark.parametrize(("wiremap"), [["a", "b", "c", "d"], [0, "z", 3, "auxiliary"]])
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
@@ -631,13 +617,7 @@ def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
     assert set(hamiltonian.wires) == set(wiremap)
 
 
-@pytest.mark.parametrize(
-    ("wiremap"),
-    [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
-    ],
-)
+@pytest.mark.parametrize(("wiremap"), [["a", "b", "c", "d"], [0, "z", 3, "auxiliary"]])
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
@@ -717,11 +697,7 @@ def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
     wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
 
     molecule = qchem.Molecule(symbols, geometry)
-    hamiltonian_ref, _ = qchem.molecular_hamiltonian(
-        molecule,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
+    hamiltonian_ref, _ = qchem.molecular_hamiltonian(molecule, args=args, outpath=tmpdir.strpath)
 
     hamiltonian, _ = qchem.molecular_hamiltonian(
         molecule,
@@ -930,10 +906,7 @@ def test_molecule_as_kwargs(tmpdir):
     keyword argument
     """
 
-    molecule = qchem.Molecule(
-        test_symbols,
-        test_coordinates,
-    )
+    molecule = qchem.Molecule(test_symbols, test_coordinates)
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(
         molecule=molecule,
         method="pyscf",
@@ -1239,14 +1212,7 @@ def test_mapped_hamiltonian_pyscf_openfermion(
         )
 
 
-@pytest.mark.parametrize(
-    ("method"),
-    [
-        "pyscf",
-        "dhf",
-        "openfermion",
-    ],
-)
+@pytest.mark.parametrize(("method"), ["pyscf", "dhf", "openfermion"])
 def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units."""
 
@@ -1272,14 +1238,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     qp.assert_equal(hamiltonian_ang, hamiltonian_bohr)
 
 
-@pytest.mark.parametrize(
-    ("method"),
-    [
-        "pyscf",
-        "dhf",
-        "openfermion",
-    ],
-)
+@pytest.mark.parametrize(("method"), ["pyscf", "dhf", "openfermion"])
 def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdir):
     r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units."""
 

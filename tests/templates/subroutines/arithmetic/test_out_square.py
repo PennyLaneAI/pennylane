@@ -233,11 +233,7 @@ class TestOutSquare:
     def test_adder_decomposition_output_wires_zeroed(self):
         """Test that the controlled adder decomposition has the expected structure with
         ``output_wires_zeroed=True``."""
-        x_wires, output_wires, work_wires = (
-            [0, 1, 2],
-            [3, 4, 5, 6],
-            [7, 8, 9, 10],
-        )
+        x_wires, output_wires, work_wires = ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10])
         with qp.queuing.AnnotatedQueue() as q:
             _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=True)
 
@@ -270,11 +266,7 @@ class TestOutSquare:
     def test_adder_decomposition_output_wires_not_zeroed(self):
         """Test that the controlled adder decomposition has the expected structure with
         ``output_wires_zeroed=False``."""
-        x_wires, output_wires, work_wires = (
-            [0, 1, 2],
-            [3, 4, 5, 6],
-            [7, 8, 9, 10],
-        )
+        x_wires, output_wires, work_wires = ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10])
         with qp.queuing.AnnotatedQueue() as q:
             _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=False)
 

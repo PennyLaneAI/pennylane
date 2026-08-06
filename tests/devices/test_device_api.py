@@ -549,11 +549,7 @@ class TestPreprocessTransforms:
             assert qp.transforms.diagonalize_measurements in program
             for transform_container in program:
                 if transform_container._transform is qp.transforms.diagonalize_measurements:
-                    assert transform_container._kwargs["supported_base_obs"] == {
-                        qp.Z,
-                        qp.X,
-                        qp.Y,
-                    }
+                    assert transform_container._kwargs["supported_base_obs"] == {qp.Z, qp.X, qp.Y}
 
 
 class TestMinimalDevice:
@@ -785,12 +781,7 @@ class TestProvidingDerivatives:
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
-            def compute_vjp(
-                self,
-                circuits,
-                cotangents,
-                execution_config: ExecutionConfig = None,
-            ):
+            def compute_vjp(self, circuits, cotangents, execution_config: ExecutionConfig = None):
                 return ("c",)
 
         dev = WithVjp()

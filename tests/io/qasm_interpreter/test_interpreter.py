@@ -78,21 +78,9 @@ class TestBuiltIns:
     VALID_BIT_TYPE_VAL = [
         ## Valid
         # BitType
-        Variable(
-            ty="BitType",
-            val=5,
-            size=3,
-            line=0,
-            constant=True,
-        ),
+        Variable(ty="BitType", val=5, size=3, line=0, constant=True),
         # IntType
-        Variable(
-            ty="IntType",
-            val=5,
-            size=-1,
-            line=0,
-            constant=True,
-        ),
+        Variable(ty="IntType", val=5, size=-1, line=0, constant=True),
         # Int
         5,
     ]
@@ -104,13 +92,7 @@ class TestBuiltIns:
     INVALID_BIT_TYPE_VAL = [
         ## Invalid
         # StringType
-        Variable(
-            ty="StringType",
-            val="string",
-            size=-1,
-            line=0,
-            constant=True,
-        ),
+        Variable(ty="StringType", val="string", size=-1, line=0, constant=True),
         # String
         "string",
     ]
@@ -251,10 +233,7 @@ class TestIO:
                 ast, context={"name": "inputs", "wire_map": None}, theta=0.2
             )
 
-        assert q.queue == [
-            RX(0.1, "q"),
-            RX(0.2, "q"),
-        ]
+        assert q.queue == [RX(0.1, "q"), RX(0.2, "q")]
 
 
 @pytest.mark.external
@@ -279,11 +258,7 @@ class TestMeasurementReset:
             permissive=True,
         )
 
-        results = {
-            "res_1": None,
-            "res_2": None,
-            "res_3": None,
-        }
+        results = {"res_1": None, "res_2": None, "res_3": None}
 
         @qnode(device("default.qubit", wires=[0, 1, 2]))
         def add_meas(results):
@@ -546,10 +521,7 @@ class TestControlFlow:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "end-early"})
 
-        assert q.queue == [
-            CH(wires=["q0", "q1"]),
-            CNOT(wires=["q1", "q0"]),
-        ]
+        assert q.queue == [CH(wires=["q0", "q1"]), CNOT(wires=["q1", "q0"])]
 
 
 @pytest.mark.external
@@ -557,10 +529,7 @@ class TestSubroutine:
 
     def test_scoping_const(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/scoping_const.qasm").read(),
-            permissive=True,
-        )
+        ast = parse(open("tests/io/qasm_interpreter/scoping_const.qasm").read(), permissive=True)
 
         context = QasmInterpreter().interpret(
             ast, context={"name": "nested-subroutines", "wire_map": None}
@@ -572,10 +541,7 @@ class TestSubroutine:
 
     def test_nested_renaming(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/nested_renaming.qasm").read(),
-            permissive=True,
-        )
+        ast = parse(open("tests/io/qasm_interpreter/nested_renaming.qasm").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -594,10 +560,7 @@ class TestSubroutine:
 
     def test_repeated_calls(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/repeated_calls.qasm").read(),
-            permissive=True,
-        )
+        ast = parse(open("tests/io/qasm_interpreter/repeated_calls.qasm").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -741,10 +704,7 @@ class TestExpressions:
 
     def test_different_assignments(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/assignment.qasm").read(),
-            permissive=True,
-        )
+        ast = parse(open("tests/io/qasm_interpreter/assignment.qasm").read(), permissive=True)
 
         context = QasmInterpreter().interpret(
             ast, context={"wire_map": None, "name": "assignment-exprs"}
@@ -780,11 +740,7 @@ class TestExpressions:
                 ast, context={"wire_map": None, "name": "expression-implemented"}
             )
 
-        assert q.queue == [
-            PauliX("q0") ** 12,
-            PauliX("q0") ** 18,
-            PauliX("q0") ** 24,
-        ]
+        assert q.queue == [PauliX("q0") ** 12, PauliX("q0") ** 18, PauliX("q0") ** 24]
 
     def test_bare_expression(self):
         # parse the QASM
@@ -1335,12 +1291,7 @@ class TestGates:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
-        assert q.queue == [
-            PauliX("q0"),
-            PauliY("q0"),
-            RX(0.1, "q0"),
-            PauliY("q0"),
-        ]
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, "q0"), PauliY("q0")]
 
     def test_mod_with_declared_param(self):
 
@@ -1375,10 +1326,7 @@ class TestGates:
             permissive=True,
         )
 
-        with pytest.raises(
-            ValueError,
-            match="Attempt to reference uninitialized parameter phi!",
-        ):
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter phi!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "name-error"})
 
     def test_unsupported_node_type_raises(self):

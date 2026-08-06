@@ -378,10 +378,7 @@ class TestParamShift:
         for g in grad:
             assert isinstance(g, tuple)
             assert len(g) == len(tape.trainable_params)
-            for (
-                a,
-                b,
-            ) in zip(g, _expected):
+            for a, b in zip(g, _expected):
                 assert np.allclose(a, b, atol=shot_vec_tol)
 
     @pytest.mark.slow
@@ -1388,9 +1385,8 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         res = dev.execute(tape)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
         for r in res:
-            assert qp.math.allclose(
-                r, expected, atol=0.10
-            )  # around 97% pass chance for the correct sampling
+            # around 97% pass chance for the correct sampling
+            assert qp.math.allclose(r, expected, atol=0.10)
 
         # circuit jacobians
         tapes, fn = qp.gradients.param_shift(tape, broadcast=broadcast)
@@ -2137,12 +2133,7 @@ probs = qp.probs(wires=[1, 0])
 var_involutory = qp.var(proj)
 var_non_involutory = qp.var(hermitian)
 
-single_scalar_output_measurements = [
-    expval,
-    probs,
-    var_involutory,
-    var_non_involutory,
-]
+single_scalar_output_measurements = [expval, probs, var_involutory, var_non_involutory]
 
 single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
 
@@ -2184,9 +2175,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -2211,9 +2201,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wire]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            qp.RY(x, wires=[op_wire])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))
@@ -2249,12 +2238,10 @@ class TestReturn:
         y = 0.213
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
-            qp.RY(
-                y, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(y, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -2281,15 +2268,13 @@ class TestReturn:
 
         with qp.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
-                qp.RY(
-                    params[idx], wires=[w]
-                )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                qp.RY(params[idx], wires=[w])
 
             w = op_wires[-1]
             # Extra op - 5 measurements in total
-            qp.RY(
-                params[5], wires=[w]
-            )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+            # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+            qp.RY(params[5], wires=[w])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))

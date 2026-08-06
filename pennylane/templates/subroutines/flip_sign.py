@@ -95,10 +95,7 @@ class FlipSign(Operation):
 
     @property
     def resource_params(self):
-        return {
-            "num_wires": len(self.wires),
-            "arr_bin": self.hyperparameters["arr_bin"],
-        }
+        return {"num_wires": len(self.wires), "arr_bin": self.hyperparameters["arr_bin"]}
 
     @staticmethod
     def to_list(n, n_wires):

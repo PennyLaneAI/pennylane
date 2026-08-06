@@ -339,10 +339,7 @@ class TestNorm:
 
 @pytest.mark.all_interfaces
 class TestSVD:
-    mat = [
-        [-0.00707107 + 0.0j, 1.00707107 + 0.0j],
-        [0.99292893 + 0.0j, -0.00707107 + 0.0j],
-    ]
+    mat = [[-0.00707107 + 0.0j, 1.00707107 + 0.0j], [0.99292893 + 0.0j, -0.00707107 + 0.0j]]
 
     mats_interface = (
         (
@@ -402,12 +399,7 @@ class TestSVD:
         assert np.allclose(mat, recovered_matrix, rtol=1e-04)
 
     @pytest.mark.parametrize("mat, expected_intrf", mats_interface)
-    @pytest.mark.parametrize(
-        "expected_results",
-        [
-            ([[1.0100001, 0.98999995]]),
-        ],
-    )
+    @pytest.mark.parametrize("expected_results", [[[1.0100001, 0.98999995]]])
     def test_svd_only_sv(self, mat, expected_intrf, expected_results):
         """Test that svd is correct and works for each interface. Asking only for singular values."""
         results_svd = fn.svd(mat, compute_uv=False)

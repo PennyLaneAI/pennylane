@@ -294,14 +294,7 @@ class TestReconstructEqu:
         assert spy.call_count == num_frequency * 2 + 1
         assert fun_close(fun, rec)
 
-    all_scales = [
-        [1],
-        [0],
-        [1, 1],
-        [1, 2],
-        [1, 5],
-        [1, 2, 10],
-    ]
+    all_scales = [[1], [0], [1, 1], [1, 2], [1, 5], [1, 2, 10]]
 
     @pytest.mark.parametrize("scales", all_scales)
     def test_with_qnode(self, scales, mocker):
@@ -503,13 +496,7 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(fun, rec)
 
-    all_scales = [
-        [1.3],
-        [1.02, 1.59],
-        [0.08, 20.2],
-        [1.2, 5.0001],
-        [1.0, 2.0, 3.0],
-    ]
+    all_scales = [[1.3], [1.02, 1.59], [0.08, 20.2], [1.2, 5.0001], [1.0, 2.0, 3.0]]
 
     @pytest.mark.parametrize("scales", all_scales)
     def test_with_qnode(self, scales, mocker):
@@ -686,13 +673,7 @@ class TestPrepareJobs:
     def test_with_nums_frequency(self, ids, nums_frequency, tol):
         """Test the prepared jobs when using nums_frequency."""
 
-        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
-            ids,
-            nums_frequency,
-            None,
-            None,
-            atol=tol,
-        )
+        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, None, None, atol=tol)
 
         # Check ids
         if ids is None:

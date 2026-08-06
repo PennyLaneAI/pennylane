@@ -45,13 +45,7 @@ class TestExpectationValueMath:
         ),
     ]
 
-    array_funcs = [
-        lambda x: x,
-        onp.array,
-        np.array,
-        jnp.array,
-        torch.tensor,
-    ]
+    array_funcs = [lambda x: x, onp.array, np.array, jnp.array, torch.tensor]
 
     @pytest.mark.parametrize("operator_and_states", ops_vs_vecstates)
     @pytest.mark.parametrize("func", array_funcs)

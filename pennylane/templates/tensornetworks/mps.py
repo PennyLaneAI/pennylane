@@ -64,11 +64,7 @@ def compute_indices_MPS(wires, n_block_wires, offset=None):
 
     return tuple(
         tuple(wires[idx] for idx in range(j, j + n_block_wires))
-        for j in range(
-            0,
-            n_layers,
-            n_step,
-        )
+        for j in range(0, n_layers, n_step)
         if not j + n_block_wires > len(wires)
     )
 

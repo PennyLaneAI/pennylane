@@ -109,19 +109,13 @@ class TestDotSum:
     def test_dot_different_number_of_coeffs_and_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does
         not match."""
-        with pytest.raises(
-            ValueError,
-            match="Number of coefficients and operators does not match",
-        ):
+        with pytest.raises(ValueError, match="Number of coefficients and operators does not match"):
             qp.dot([1.0], [qp.PauliX(0), qp.PauliY(1)])
 
     def test_dot_empty_coeffs_or_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does
         not match."""
-        with pytest.raises(
-            ValueError,
-            match="Cannot compute the dot product of an empty sequence",
-        ):
+        with pytest.raises(ValueError, match="Cannot compute the dot product of an empty sequence"):
             qp.dot([], [])
 
     @pytest.mark.autograd
@@ -273,14 +267,7 @@ class TestDotSum:
 
 
 coeffs0 = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
-ops0 = [
-    qp.PauliX(0),
-    qp.PauliY(1),
-    qp.PauliZ(2),
-    qp.PauliX(3),
-    qp.PauliY(4),
-    qp.PauliZ(5),
-]
+ops0 = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2), qp.PauliX(3), qp.PauliY(4), qp.PauliZ(5)]
 
 
 class TestDotPauliSentence:

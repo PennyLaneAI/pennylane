@@ -58,14 +58,7 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-CONSTANTS = {
-    "π": np.pi,
-    "τ": np.pi * 2,
-    "ℇ": np.e,
-    "pi": np.pi,
-    "tau": np.pi * 2,
-    "e": np.e,
-}
+CONSTANTS = {"π": np.pi, "τ": np.pi * 2, "ℇ": np.e, "pi": np.pi, "tau": np.pi * 2, "e": np.e}
 
 
 def _eval_unary_op(operand: any, operator: str, line: int):
@@ -84,7 +77,7 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     if operator == "~":
         return ~operand
     # we shouldn't ever get this error if the parser did its job right
-    raise SyntaxError(  # pragma: no covers
+    raise SyntaxError(  # pragma: no cover
         f"Invalid operator {operator} encountered in unary expression " f"on line {line}."
     )  # pragma: no cover
 

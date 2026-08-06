@@ -71,14 +71,7 @@ class TestReduceNonClifford:
 
         assert new_qs.operations == []
 
-    @pytest.mark.parametrize(
-        "num_gates, expected_ops",
-        (
-            (1, [qp.S(0)]),
-            (2, [qp.Z(0)]),
-            (4, []),
-        ),
-    )
+    @pytest.mark.parametrize("num_gates, expected_ops", ((1, [qp.S(0)]), (2, [qp.Z(0)]), (4, [])))
     def test_S_gate_simplification(self, num_gates, expected_ops):
         """Test S gate simplification/cancellation."""
         ops = [qp.S(0)] * num_gates
@@ -106,14 +99,7 @@ class TestReduceNonClifford:
 
         assert new_qs.operations == expected_ops
 
-    @pytest.mark.parametrize(
-        "params",
-        (
-            (1.7, 0.0),
-            (3.1, -0.5),
-            (0.1, 0.9, -2.8),
-        ),
-    )
+    @pytest.mark.parametrize("params", ((1.7, 0.0), (3.1, -0.5), (0.1, 0.9, -2.8)))
     def test_merge_RX_rotations(self, params):
         """Test that RX rotation gates are correctly merged together."""
         ops = [qp.RX(angle, wires=0) for angle in params]
@@ -130,14 +116,7 @@ class TestReduceNonClifford:
         assert qp.equal(rz, qp.RZ(phi, 0))
         assert qp.equal(ht, qp.H(0))
 
-    @pytest.mark.parametrize(
-        "params",
-        (
-            (1.7, 0.0),
-            (3.1, -0.5),
-            (0.1, 0.9, -2.8),
-        ),
-    )
+    @pytest.mark.parametrize("params", ((1.7, 0.0), (3.1, -0.5), (0.1, 0.9, -2.8)))
     def test_merge_RY_rotations(self, params):
         """Test that RY rotation gates are correctly merged together."""
         ops = [qp.RY(angle, wires=0) for angle in params]
@@ -158,14 +137,7 @@ class TestReduceNonClifford:
         assert qp.equal(ht, qp.H(0))
         assert qp.equal(st, qp.adjoint(qp.S(0)))
 
-    @pytest.mark.parametrize(
-        "params",
-        (
-            (1.7, 0.0),
-            (3.1, -0.5),
-            (0.1, 0.9, -2.8),
-        ),
-    )
+    @pytest.mark.parametrize("params", ((1.7, 0.0), (3.1, -0.5), (0.1, 0.9, -2.8)))
     def test_merge_RZ_rotations(self, params):
         """Test that RZ rotation gates are correctly merged together."""
         ops = [qp.RZ(angle, wires=0) for angle in params]
@@ -203,15 +175,7 @@ class TestReduceNonClifford:
 
         assert new_qs.operations == expected_ops
 
-    @pytest.mark.parametrize(
-        "measurements",
-        (
-            [],
-            [qp.expval(qp.Z(0))],
-            [qp.probs()],
-            [qp.state()],
-        ),
-    )
+    @pytest.mark.parametrize("measurements", ([], [qp.expval(qp.Z(0))], [qp.probs()], [qp.state()]))
     def test_transformed_tape(self, measurements):
         """Test that the operations of the transformed tape match the expected operations
         and that the original measurements are not touched."""

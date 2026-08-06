@@ -30,12 +30,7 @@ from pennylane.core.transforms.compile_pipeline import (
     null_postprocessing,
 )
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.transforms.core import (
-    BoundTransform,
-    CompilePipeline,
-    TransformError,
-    transform,
-)
+from pennylane.transforms.core import BoundTransform, CompilePipeline, TransformError, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 
@@ -1389,17 +1384,13 @@ class TestCompilePipelineCall:
         postprocessing0 = fn.keywords["postprocessing_stack"][0]
         assert postprocessing0.func is _batch_postprocessing
         assert postprocessing0.args == tuple()
-        assert postprocessing0.keywords["individual_fns"] == [
-            add_one,
-        ]
+        assert postprocessing0.keywords["individual_fns"] == [add_one]
         assert postprocessing0.keywords["slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
         assert postprocessing1.args == tuple()
-        assert postprocessing1.keywords["individual_fns"] == [
-            scale_two,
-        ]
+        assert postprocessing1.keywords["individual_fns"] == [scale_two]
         assert postprocessing1.keywords["slices"] == [slice(0, 1)]
 
         results = (1.0,)
@@ -1421,17 +1412,13 @@ class TestCompilePipelineCall:
         postprocessing0 = fn.keywords["postprocessing_stack"][0]
         assert postprocessing0.func is _batch_postprocessing
         assert postprocessing0.args == tuple()
-        assert postprocessing0.keywords["individual_fns"] == [
-            scale_two,
-        ]
+        assert postprocessing0.keywords["individual_fns"] == [scale_two]
         assert postprocessing0.keywords["slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
         assert postprocessing1.args == tuple()
-        assert postprocessing1.keywords["individual_fns"] == [
-            add_one,
-        ]
+        assert postprocessing1.keywords["individual_fns"] == [add_one]
         assert postprocessing1.keywords["slices"] == [slice(0, 1)]
 
         results = (1.0,)
@@ -1464,9 +1451,8 @@ class TestCompilePipelineCall:
         orig2 = qp.tape.QuantumScript(
             [op], [qp.expval(qp.sum(qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)))]
         )
-        orig3 = qp.tape.QuantumScript(
-            [op], [qp.expval(qp.sum(*(qp.PauliX(i) for i in range(5))))]
-        )  # contributes 5 terms
+        # contributes 5 terms
+        orig3 = qp.tape.QuantumScript([op], [qp.expval(qp.sum(*(qp.PauliX(i) for i in range(5))))])
 
         batch, fn = prog((orig1, orig2, orig3))
 
@@ -1856,10 +1842,7 @@ class TestMarkers:  # pylint: disable=too-many-public-methods
         """Tests that labels must be strings."""
 
         pipeline = CompilePipeline()
-        with pytest.raises(
-            ValueError,
-            match="Marker label must be a string",
-        ):
+        with pytest.raises(ValueError, match="Marker label must be a string"):
             pipeline.add_marker(undefined_label)
 
     @pytest.mark.parametrize("undefined_level", [-1, 0.5, 10])

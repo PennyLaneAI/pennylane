@@ -563,13 +563,7 @@ class TestEstimateResources:
 
         actual_resources = estimate(my_circuit, gate_set={"DummyHadamard", "X"})()
 
-        expected_gates = defaultdict(
-            int,
-            {
-                resource_rep(DummyHadamard): 1,
-                resource_rep(X): 1,
-            },
-        )
+        expected_gates = defaultdict(int, {resource_rep(DummyHadamard): 1, resource_rep(X): 1})
         expected_resources = Resources(
             zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=expected_gates
         )
@@ -865,10 +859,7 @@ def test_default_adjoint_decomp():
     assert _default_adjoint_decomp(base_resource_decomp) == expected_resource_decomp
 
 
-@pytest.mark.parametrize(
-    "num_ctrl, num_zero",
-    ((1, 0), (2, 0), (2, 1), (5, 3)),
-)
+@pytest.mark.parametrize("num_ctrl, num_zero", ((1, 0), (2, 0), (2, 1), (5, 3)))
 def test_default_controlled_decomp(num_ctrl, num_zero):
     """Test that the default controlled decomposition is applied as expected"""
     base_resource_decomp = [
@@ -1031,10 +1022,7 @@ def test_get_symbolic_resource_decomposition(res_op, expected_decomp):
 
     def custom_RX_pow(pow_z, target_resource_params):
         precision = target_resource_params["precision"]
-        return [
-            GateCount(Hadamard.resource_rep(), 2),
-            GateCount(RZ.resource_rep(precision), pow_z),
-        ]
+        return [GateCount(Hadamard.resource_rep(), 2), GateCount(RZ.resource_rep(precision), pow_z)]
 
     def custom_QFT(num_wires):
         return [
@@ -1054,10 +1042,7 @@ def test_get_symbolic_resource_decomposition(res_op, expected_decomp):
 def test_get_resource_decomposition(res_op, expected_decomp):
     def custom_RX_pow(pow_z, target_resource_params):
         precision = target_resource_params["precision"]
-        return [
-            GateCount(Hadamard.resource_rep(), 2),
-            GateCount(RZ.resource_rep(precision), pow_z),
-        ]
+        return [GateCount(Hadamard.resource_rep(), 2), GateCount(RZ.resource_rep(precision), pow_z)]
 
     def custom_QFT(num_wires):
         return [

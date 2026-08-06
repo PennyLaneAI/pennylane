@@ -45,13 +45,7 @@ from .trotter import (
     TrotterPauli,
 )
 
-from .stateprep import (
-    MPSPrep,
-    QROMStatePreparation,
-    UniformStatePrep,
-    AliasSampling,
-    PrepTHC,
-)
+from .stateprep import MPSPrep, QROMStatePreparation, UniformStatePrep, AliasSampling, PrepTHC
 
 from .embeddings import BasisEmbedding
 

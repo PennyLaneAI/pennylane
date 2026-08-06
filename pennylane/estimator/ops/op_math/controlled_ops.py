@@ -918,9 +918,7 @@ class CNOT(ResourceOperator):
                 "num_zero_ctrl": num_zero_ctrl,
             },
         )
-        return [
-            GateCount(mcx),
-        ]
+        return [GateCount(mcx)]
 
     @classmethod
     def pow_resource_decomp(
@@ -1126,16 +1124,10 @@ class Toffoli(ResourceOperator):
         """
         gate_types = []
         t = resource_rep(qre.T)
-        t_dag = resource_rep(
-            qre.Adjoint,
-            {"base_cmpr_op": t},
-        )
+        t_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": t})
         h = resource_rep(qre.Hadamard)
         cnot = resource_rep(CNOT)
-        s_dag = resource_rep(
-            qre.Adjoint,
-            {"base_cmpr_op": resource_rep(qre.S)},
-        )
+        s_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": resource_rep(qre.S)})
         cz = resource_rep(CZ)
 
         if elbow == "left":
@@ -1411,10 +1403,7 @@ class MultiControlledX(ResourceOperator):
                 * num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
         """
 
-        return {
-            "num_ctrl_wires": self.num_ctrl_wires,
-            "num_zero_ctrl": self.num_zero_ctrl,
-        }
+        return {"num_ctrl_wires": self.num_ctrl_wires, "num_zero_ctrl": self.num_zero_ctrl}
 
     @classmethod
     def resource_rep(cls, num_ctrl_wires: int, num_zero_ctrl: int) -> CompressedResourceOp:

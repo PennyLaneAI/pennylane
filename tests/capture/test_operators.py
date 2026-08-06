@@ -588,9 +588,8 @@ class TestAbstractDunders:
 
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[2].invars[0].val == 3
-        assert (
-            jaxpr.eqns[2].invars[1] == jaxpr.eqns[1].outvars[0]
-        )  # the sprod from the previous step
+        # the sprod from the previous step
+        assert jaxpr.eqns[2].invars[1] == jaxpr.eqns[1].outvars[0]
 
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)

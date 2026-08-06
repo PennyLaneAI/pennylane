@@ -164,10 +164,7 @@ class TestIntegration:
 
     devices = ["default.qubit", "default.mixed", "lightning.qubit"]
 
-    single_wires_list = [
-        [0],
-        [1],
-    ]
+    single_wires_list = [[0], [1]]
 
     base = [2, np.exp(1), 10]
 

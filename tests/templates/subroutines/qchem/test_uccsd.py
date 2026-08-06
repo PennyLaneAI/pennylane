@@ -549,15 +549,7 @@ class TestInterfaces:
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
         # Test with n_repeats=2
-        weights = pnp.array(
-            np.random.random(
-                size=(
-                    2,
-                    2,
-                )
-            ),
-            requires_grad=True,
-        )
+        weights = pnp.array(np.random.random(size=(2, 2)), requires_grad=True)
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
@@ -734,15 +726,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
         # Test with n_repeats=2
-        weights = torch.tensor(
-            np.random.random(
-                size=(
-                    2,
-                    2,
-                )
-            ),
-            requires_grad=True,
-        )
+        weights = torch.tensor(np.random.random(size=(2, 2)), requires_grad=True)
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 

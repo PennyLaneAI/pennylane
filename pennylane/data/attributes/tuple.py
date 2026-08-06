@@ -22,10 +22,7 @@ from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.typing_util import T
 
 
-class DatasetTuple(
-    Generic[T],
-    DatasetAttribute[HDF5Group, tuple[T], tuple[T]],
-):
+class DatasetTuple(Generic[T], DatasetAttribute[HDF5Group, tuple[T], tuple[T]]):
     """Type for tuples."""
 
     type_id = "tuple"

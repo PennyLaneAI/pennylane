@@ -21,11 +21,7 @@ from inspect import signature
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.core.operator import Operator
-from pennylane.labs.estimator_beta import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-)
+from pennylane.labs.estimator_beta import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
@@ -262,9 +258,8 @@ class ResourceQfunc(ResourceOperator):
                     decomp.append(op)
                 elif isinstance(op, Operator):
                     decomp.append(qre._map_to_resource_op(op))
-                elif isinstance(
-                    op, qre.MarkQubits
-                ):  # TODO: @Jaybsoni to add support for this eventually
+                # TODO: @Jaybsoni to add support for this eventually
+                elif isinstance(op, qre.MarkQubits):
                     raise TypeError(
                         "Marking qubits is currently not supported with mark_subroutine and ResourceQfunc. "
                         "Instead, instantiate MarkQubits instances within the main Qnode or qfunc directly."
@@ -287,9 +282,8 @@ class ResourceQfunc(ResourceOperator):
             self.wires = ops_wires if len(ops_wires) == self.num_wires else None
 
         else:  # We determine the total number of wires to expect
-            if (
-                len(ops_wires) < num_unique_wires_required
-            ):  # If factors didn't provide enough wire labels
+            # If factors didn't provide enough wire labels
+            if len(ops_wires) < num_unique_wires_required:
                 self.wires = None  # we assume they all act on the same set
                 self.num_wires = num_unique_wires_required
 
@@ -312,11 +306,7 @@ class ResourceQfunc(ResourceOperator):
                   representation.
 
         """
-        return {
-            "name": self.name,
-            "num_wires": self.num_wires,
-            "cmpr_ops": self.cmpr_ops,
-        }
+        return {"name": self.name, "num_wires": self.num_wires, "cmpr_ops": self.cmpr_ops}
 
     @classmethod
     def resource_rep(cls, name, num_wires, cmpr_ops):
@@ -333,11 +323,7 @@ class ResourceQfunc(ResourceOperator):
         Returns:
             :class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
-        params = {
-            "name": name,
-            "num_wires": num_wires,
-            "cmpr_ops": cmpr_ops,
-        }
+        params = {"name": name, "num_wires": num_wires, "cmpr_ops": cmpr_ops}
         return CompressedResourceOp(cls, num_wires, params, name=name)
 
     @classmethod

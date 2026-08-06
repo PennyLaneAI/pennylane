@@ -18,11 +18,7 @@ Contains the Adder template.
 from collections import defaultdict
 
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    change_op_basis_resource_rep,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, change_op_basis_resource_rep, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis

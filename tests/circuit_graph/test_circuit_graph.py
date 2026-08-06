@@ -96,10 +96,7 @@ def ops_fixture():
 @pytest.fixture(name="obs")
 def obs_fixture():
     """A fixture of observables to go after the queue fixture."""
-    return [
-        qp.expval(qp.PauliX(wires=0)),
-        qp.expval(qp.Hermitian(np.identity(4), wires=[1, 2])),
-    ]
+    return [qp.expval(qp.PauliX(wires=0)), qp.expval(qp.Hermitian(np.identity(4), wires=[1, 2]))]
 
 
 @pytest.fixture(name="circuit")
@@ -151,17 +148,7 @@ class TestCircuitGraph:
 
         a = {(graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list()}
 
-        b = {
-            (0, 3),
-            (1, 3),
-            (2, 4),
-            (3, 5),
-            (3, 6),
-            (4, 5),
-            (5, 7),
-            (5, 8),
-            (6, 8),
-        }
+        b = {(0, 3), (1, 3), (2, 4), (3, 5), (3, 6), (4, 5), (5, 7), (5, 8), (6, 8)}
         assert a == b
 
     def test_ancestors_and_descendants_example(self, ops, obs):

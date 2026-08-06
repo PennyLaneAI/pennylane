@@ -309,13 +309,7 @@ def test_differentiable_molecular_dipole(
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
 
-@pytest.mark.parametrize(
-    ("wiremap"),
-    [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
-    ],
-)
+@pytest.mark.parametrize(("wiremap"), [["a", "b", "c", "d"], [0, "z", 3, "auxiliary"]])
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_custom_wiremap_dipole(wiremap, tmpdir):
     r"""Test that the generated dipole operator has the correct wire labels given by a custom wiremap."""
@@ -325,20 +319,10 @@ def test_custom_wiremap_dipole(wiremap, tmpdir):
     method = "dhf"
 
     mol = qchem.Molecule(symbols, geometry)
-    dipole_dhf = qchem.molecular_dipole(
-        mol,
-        method=method,
-        wires=wiremap,
-        outpath=tmpdir.strpath,
-    )
+    dipole_dhf = qchem.molecular_dipole(mol, method=method, wires=wiremap, outpath=tmpdir.strpath)
 
     method = "openfermion"
-    dipole_of = qchem.molecular_dipole(
-        mol,
-        method=method,
-        wires=wiremap,
-        outpath=tmpdir.strpath,
-    )
+    dipole_of = qchem.molecular_dipole(mol, method=method, wires=wiremap, outpath=tmpdir.strpath)
 
     assert all(set(dip.wires).issubset(set(wiremap)) for dip in dipole_dhf)
     assert all(set(dip.wires).issubset(set(wiremap)) for dip in dipole_of)
@@ -383,23 +367,12 @@ def test_real_dipole(method, args, tmpdir):
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
     molecule = qchem.Molecule(symbols, geometry)
 
-    dipole = qchem.molecular_dipole(
-        molecule,
-        method=method,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
+    dipole = qchem.molecular_dipole(molecule, method=method, args=args, outpath=tmpdir.strpath)
 
     assert all(np.isrealobj(op.terms()[0]) for op in dipole)
 
 
-@pytest.mark.parametrize(
-    ("method"),
-    [
-        "openfermion",
-        "dhf",
-    ],
-)
+@pytest.mark.parametrize(("method"), ["openfermion", "dhf"])
 def test_coordinate_units_for_molecular_dipole(method, tmpdir):
     r"""Test that molecular_dipole generates correct operator for both Bohr and Angstrom units."""
 
@@ -408,17 +381,9 @@ def test_coordinate_units_for_molecular_dipole(method, tmpdir):
     geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
 
     molecule_bohr = qchem.Molecule(symbols, geometry_bohr, unit="bohr")
-    dipole_bohr = qchem.molecular_dipole(
-        molecule_bohr,
-        method=method,
-        outpath=tmpdir.strpath,
-    )
+    dipole_bohr = qchem.molecular_dipole(molecule_bohr, method=method, outpath=tmpdir.strpath)
 
     molecule_ang = qchem.Molecule(symbols, geometry_ang, unit="angstrom")
-    dipole_ang = qchem.molecular_dipole(
-        molecule_ang,
-        method=method,
-        outpath=tmpdir.strpath,
-    )
+    dipole_ang = qchem.molecular_dipole(molecule_ang, method=method, outpath=tmpdir.strpath)
     for o1, o2 in zip(dipole_ang, dipole_bohr):
         qp.assert_equal(o1, o2)

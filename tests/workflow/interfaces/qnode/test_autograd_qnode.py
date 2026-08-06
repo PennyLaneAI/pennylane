@@ -1047,10 +1047,7 @@ class TestQubitIntegration:
 
         hess = qp.jacobian(grad_fn)(x)
 
-        expected_hess = [
-            [-np.cos(a), 0],
-            [0, 0],
-        ]
+        expected_hess = [[-np.cos(a), 0], [0, 0]]
 
         if diff_method in {"finite-diff"}:
             tol = 10e-2

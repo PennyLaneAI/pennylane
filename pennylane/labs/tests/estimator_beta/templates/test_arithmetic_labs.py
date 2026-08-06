@@ -68,16 +68,7 @@ class TestResourcePhaseAdder:
         with pytest.raises(ValueError, match="Expected 3 wires,"):
             qre.PhaseAdder(num_x_wires=3, mod=3, wires=[0, 1])
 
-    @pytest.mark.parametrize(
-        "num_x_wires, mod",
-        (
-            (2, 1),
-            (7, 2),
-            (8, 5),
-            (5, 2**5),
-            (3, None),
-        ),
-    )
+    @pytest.mark.parametrize("num_x_wires, mod", ((2, 1), (7, 2), (8, 5), (5, 2**5), (3, None)))
     def test_resource_rep(self, num_x_wires, mod):
         """Test the resource_rep method of the class."""
         op = qre.PhaseAdder(num_x_wires, mod)
@@ -190,16 +181,7 @@ class TestResourcePhaseAdder:
         assert decomp_equal(op.resource_decomp(**op.resource_params), expected_decomp)
 
     @pytest.mark.parametrize("z", (1, 2, 3, 5))
-    @pytest.mark.parametrize(
-        "num_x_wires, mod",
-        (
-            (2, 1),
-            (7, 2),
-            (8, 5),
-            (5, 2**5),
-            (3, None),
-        ),
-    )
+    @pytest.mark.parametrize("num_x_wires, mod", ((2, 1), (7, 2), (8, 5), (5, 2**5), (3, None)))
     def test_pow_resources(self, num_x_wires, mod, z):
         """Test the pow_resource_decomp works as expected."""
         op = qre.PhaseAdder(num_x_wires, mod)
@@ -248,16 +230,7 @@ class TestResourceAdder:
         ):
             qre.Adder(num_x_wires=3, mod=mod)
 
-    @pytest.mark.parametrize(
-        "num_x_wires, mod",
-        (
-            (2, 1),
-            (7, 2),
-            (8, 5),
-            (5, 2**5),
-            (3, None),
-        ),
-    )
+    @pytest.mark.parametrize("num_x_wires, mod", ((2, 1), (7, 2), (8, 5), (5, 2**5), (3, None)))
     def test_resource_rep(self, num_x_wires, mod):
         """Test the resource_rep method of the class."""
         op = qre.Adder(num_x_wires, mod)
@@ -424,16 +397,7 @@ class TestResourceAdder:
         assert decomp_equal(op.resource_decomp(**op.resource_params), expected_decomp)
 
     @pytest.mark.parametrize("z", (1, 2, 3, 5))
-    @pytest.mark.parametrize(
-        "num_x_wires, mod",
-        (
-            (2, 1),
-            (7, 2),
-            (8, 5),
-            (5, 2**5),
-            (3, None),
-        ),
-    )
+    @pytest.mark.parametrize("num_x_wires, mod", ((2, 1), (7, 2), (8, 5), (5, 2**5), (3, None)))
     def test_pow_resources(self, num_x_wires, mod, z):
         """Test the pow_resource_decomp works as expected."""
         op = qre.Adder(num_x_wires, mod)
@@ -805,16 +769,7 @@ class TestResourceMultiplier:
         with pytest.raises(ValueError, match="Expected 3 wires,"):
             qre.Multiplier(num_x_wires=3, mod=3, wires=[0, 1])
 
-    @pytest.mark.parametrize(
-        "num_x_wires, mod",
-        (
-            (2, 1),
-            (7, 2),
-            (8, 5),
-            (5, 2**5),
-            (3, None),
-        ),
-    )
+    @pytest.mark.parametrize("num_x_wires, mod", ((2, 1), (7, 2), (8, 5), (5, 2**5), (3, None)))
     def test_resource_rep(self, num_x_wires, mod):
         """Test the resource_rep method of the class."""
         op = qre.Multiplier(num_x_wires, mod)
@@ -921,16 +876,7 @@ class TestResourceMultiplier:
         assert decomp_equal(op.resource_decomp(**op.resource_params), expected_decomp)
 
     @pytest.mark.parametrize("z", (1, 2, 3, 5))
-    @pytest.mark.parametrize(
-        "num_x_wires, mod",
-        (
-            (2, 1),
-            (7, 2),
-            (8, 5),
-            (5, 2**5),
-            (3, None),
-        ),
-    )
+    @pytest.mark.parametrize("num_x_wires, mod", ((2, 1), (7, 2), (8, 5), (5, 2**5), (3, None)))
     def test_pow_resources(self, num_x_wires, mod, z):
         """Test the pow_resource_decomp works as expected."""
         op = qre.Multiplier(num_x_wires, mod)

@@ -44,10 +44,7 @@ class TestNoInterfaceRequired:
         assert qp.math.allclose(results[0], 1.0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize(
-        "interface, gradient_method",
-        [("torch", None), ("torch", "backprop")],
-    )
+    @pytest.mark.parametrize("interface, gradient_method", [("torch", None), ("torch", "backprop")])
     def test_no_gradient_computation_required(self, interface, gradient_method, seed):
         """Test that tapes execute without an ML boundary when no gradient computation is required."""
         container = BoundTransform(merge_rotations)

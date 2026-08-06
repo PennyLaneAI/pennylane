@@ -311,12 +311,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)
-def _sos_state_prep(
-    coefficients,
-    *_,
-    indices=None,
-    **all_wires,
-):
+def _sos_state_prep(coefficients, *_, indices=None, **all_wires):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     n = len(all_wires["wires"])
     num_entries = len(indices)

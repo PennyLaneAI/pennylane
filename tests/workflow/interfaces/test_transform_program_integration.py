@@ -25,10 +25,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-device_suite = (
-    qp.device("default.qubit"),
-    qp.device("lightning.qubit", wires=5),
-)
+device_suite = (qp.device("default.qubit"), qp.device("lightning.qubit", wires=5))
 
 
 @pytest.mark.all_interfaces
@@ -65,9 +62,7 @@ class TestCompilePipeline:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         pauli_x_out_container = qp.transforms.core.BoundTransform(just_pauli_x_out)
@@ -171,15 +166,11 @@ class TestCompilePipeline:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @qp.transform
-        def repeat_operations(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def repeat_operations(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qp.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )

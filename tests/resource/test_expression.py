@@ -19,10 +19,7 @@ Test Expression class and its associated methods
 
 import pytest
 
-from pennylane.resource.expression import (
-    Expression,
-    _term_to_str,
-)
+from pennylane.resource.expression import Expression, _term_to_str
 
 
 @pytest.mark.parametrize(
@@ -91,11 +88,7 @@ class TestExpression:
                 (): 4,
             }
         )
-        assert expr._data == {
-            ("x", "y"): 5,
-            ("z",): 1,
-            (): 4,
-        }
+        assert expr._data == {("x", "y"): 5, ("z"): 1, (): 4}
 
     def test_normalize(self):
         """Test that the _normalize method correctly combines like terms and removes zero terms."""
@@ -110,10 +103,7 @@ class TestExpression:
             _skip_normalization=True,
         )
         expr._normalize()
-        assert expr._data == {
-            ("z",): 1,
-            (): 4,
-        }
+        assert expr._data == {("z"): 1, (): 4}
 
     def test_vars(self, sample_expr):
         """Test that the vars property returns the expected set of variables."""

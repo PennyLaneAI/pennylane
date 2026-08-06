@@ -525,15 +525,7 @@ class TestQSVTMatrix:
         assert np.allclose(qp.matrix(op), default_matrix)
         assert qp.math.get_interface(qp.matrix(op)) == "tensorflow"
 
-    @pytest.mark.parametrize(
-        ("A", "phis"),
-        [
-            (
-                [[0.1, 0.2], [0.3, 0.4]],
-                [0.1, 0.2, 0.3],
-            )
-        ],
-    )
+    @pytest.mark.parametrize(("A", "phis"), [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2, 0.3])])
     def test_QSVT_grad(self, A, phis):
         """Test that qp.grad results are the same as finite difference results"""
 
@@ -867,13 +859,7 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(100, 0)),
         ],
     )
-    @pytest.mark.parametrize(
-        "angle_solver",
-        [
-            ("root-finding"),
-            ("iterative"),
-        ],
-    )
+    @pytest.mark.parametrize("angle_solver", [("root-finding"), ("iterative")])
     def test_correctness_QSP_angles_finding(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
@@ -904,13 +890,7 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(100, 0)),
         ],
     )
-    @pytest.mark.parametrize(
-        "angle_solver",
-        [
-            ("root-finding"),
-            ("iterative"),
-        ],
-    )
+    @pytest.mark.parametrize("angle_solver", [("root-finding"), ("iterative")])
     def test_correctness_QSP_angles_finding_with_jax(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
@@ -940,13 +920,7 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(100, 0)),
         ],
     )
-    @pytest.mark.parametrize(
-        "angle_solver",
-        [
-            ("root-finding"),
-            ("iterative"),
-        ],
-    )
+    @pytest.mark.parametrize("angle_solver", [("root-finding"), ("iterative")])
     def test_correctness_QSVT_angles(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
@@ -1124,10 +1098,7 @@ class TestIterativeSolver:
         ref = qp.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.parametrize(
-        "x",
-        list([0.1, 0.2, 0.3, 0.4]),
-    )
+    @pytest.mark.parametrize("x", list([0.1, 0.2, 0.3, 0.4]))
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast_scipy(self, x, degree):
         """Test internal function _qsp_iterate_broadcast_scipy"""

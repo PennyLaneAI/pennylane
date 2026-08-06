@@ -522,11 +522,7 @@ class TestMeasureSamples:  # pylint: disable=too-many-public-methods
 
         state = np.array([0, 1])
 
-        mps = [
-            qp.measurements.ExpectationMP(2 * qp.I()),
-            qp.expval(qp.Z(0)),
-            qp.probs(wires=0),
-        ]
+        mps = [qp.measurements.ExpectationMP(2 * qp.I()), qp.expval(qp.Z(0)), qp.probs(wires=0)]
 
         results = measure_with_samples(mps, state, qp.measurements.Shots(1))
         assert qp.math.allclose(results[0], 2.0)

@@ -139,9 +139,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         wires = Wires(iterable)
         assert len(wires) == len(iterable)
 
-    def test_contains(
-        self,
-    ):
+    def test_contains(self):
         """Tests the __contains__() method."""
 
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
@@ -156,9 +154,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         assert [0, 4] not in wires
         assert [4] not in wires
 
-    def test_contains_wires(
-        self,
-    ):
+    def test_contains_wires(self):
         """Tests the dedicated contains_wires() method."""
 
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
@@ -169,9 +165,8 @@ class TestWires:  # pylint: disable=too-many-public-methods
 
         assert not wires.contains_wires(0)  # wrong type
         assert not wires.contains_wires([0, 1])  # wrong type
-        assert not wires.contains_wires(
-            Wires([4, 5])
-        )  # looks up 4 and 5 in wires, which are not present
+        # looks up 4 and 5 in wires, which are not present
+        assert not wires.contains_wires(Wires([4, 5]))
 
     def test_add_two_wires_objects(self):
         """Tests that wires objects add correctly."""

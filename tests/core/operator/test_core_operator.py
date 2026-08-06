@@ -29,10 +29,7 @@ from pennylane import numpy as pnp
 from pennylane.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import parameter_frequencies
-from pennylane.operation import (
-    _UNSET_BATCH_SIZE,
-    operation_derivative,
-)
+from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
@@ -1192,10 +1189,7 @@ class TestOperatorIntegration:
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qp.CNOT(wires=[0, 1])
-        final_op = qp.sum(
-            qp.CNOT(wires=[0, 1]),
-            qp.s_prod(5, qp.Identity([0, 1])),
-        )
+        final_op = qp.sum(qp.CNOT(wires=[0, 1]), qp.s_prod(5, qp.Identity([0, 1])))
         qp.assert_equal(sum_op, final_op)
 
     def test_sub_rsub_and_neg_dunder_methods(self):
@@ -1760,13 +1754,7 @@ class TestNewOpMath:
             with pytest.raises(TypeError, match="unsupported operand type"):
                 _ = op - "foo"
 
-        @pytest.mark.parametrize(
-            "x0, x1",
-            [
-                (X2(0), X2(1)),
-                (qp.PauliX(0), qp.PauliX(1)),
-            ],
-        )
+        @pytest.mark.parametrize("x0, x1", [(X2(0), X2(1)), (qp.PauliX(0), qp.PauliX(1))])
         def test_op_with_scalar(self, x0, x1):
             """Tests adding/subtracting ops with scalars."""
             for op in [x0 + 1, 1 + x0]:
@@ -1806,13 +1794,7 @@ class TestNewOpMath:
             qp.assert_equal(op[1], op1)
             qp.assert_equal(op[2], op2)
 
-        @pytest.mark.parametrize(
-            "base",
-            [
-                qp.PauliY(0),
-                MultiRot([np.pi], [0], "Y"),
-            ],
-        )
+        @pytest.mark.parametrize("base", [qp.PauliY(0), MultiRot([np.pi], [0], "Y")])
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="unsupported operand type"):
@@ -1876,13 +1858,7 @@ class TestNewOpMath:
             assert nested.scalar == 1.0
             qp.assert_equal(nested.base, op)
 
-        @pytest.mark.parametrize(
-            "base",
-            [
-                qp.PauliY(0),
-                MultiRot([np.pi], [0], "Y"),
-            ],
-        )
+        @pytest.mark.parametrize("base", [qp.PauliY(0), MultiRot([np.pi], [0], "Y")])
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="non-int of type"):
@@ -1943,13 +1919,7 @@ class TestNewOpMath:
             qp.assert_equal(op.base, base)
             assert op.z == power
 
-        @pytest.mark.parametrize(
-            "base",
-            [
-                qp.PauliY(0),
-                MultiRot([np.pi], [0], "Y"),
-            ],
-        )
+        @pytest.mark.parametrize("base", [qp.PauliY(0), MultiRot([np.pi], [0], "Y")])
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="unsupported operand type"):
@@ -2085,12 +2055,10 @@ def test_get_attr():
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 
     with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
-        from pennylane.operation import (
-            non_existent_attr,
-        )  # error is raised if non-existent attribute imported
+        # error is raised if non-existent attribute imported
+        from pennylane.operation import non_existent_attr
 
     from pennylane.operation import StatePrep
 
-    assert (
-        StatePrep is qp.operation.StatePrepBase
-    )  # StatePrep imported from operation.py is an alias for StatePrepBase
+    # StatePrep imported from operation.py is an alias for StatePrepBase
+    assert StatePrep is qp.operation.StatePrepBase

@@ -731,11 +731,7 @@ class TestQASMConformanceTests:
             qp.RY(x[1], wires=0)
             qp.CNOT(wires=[0, 1])
             qp.RX(x[0], wires=1)
-            return [
-                qp.expval(qp.PauliX(0)),
-                qp.expval(qp.PauliZ(1)),
-                qp.expval(qp.Hadamard(2)),
-            ]
+            return [qp.expval(qp.PauliX(0)), qp.expval(qp.PauliZ(1)), qp.expval(qp.Hadamard(2))]
 
         res = qp.to_openqasm(qnode)([0.1, 0.2])
 
@@ -774,11 +770,7 @@ class TestQASMConformanceTests:
             qp.RY(x[1], wires=0)
             qp.CNOT(wires=[0, 1])
             qp.RX(x[0], wires=1)
-            return [
-                qp.expval(qp.PauliX(0)),
-                qp.expval(qp.PauliZ(1)),
-                qp.expval(qp.Hadamard(2)),
-            ]
+            return [qp.expval(qp.PauliX(0)), qp.expval(qp.PauliZ(1)), qp.expval(qp.Hadamard(2))]
 
         params = [0.1, 0.2]
         qasm = qp.to_openqasm(qnode)(params)

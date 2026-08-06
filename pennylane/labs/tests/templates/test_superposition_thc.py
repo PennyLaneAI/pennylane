@@ -75,15 +75,7 @@ def _full_state(M, N, n):
     return np.asarray(circuit())
 
 
-@pytest.mark.parametrize(
-    ("M", "N", "n"),
-    [
-        (2, 4, 3),
-        (1, 2, 2),
-        (3, 4, 4),
-        (7, 3, 3),
-    ],
-)
+@pytest.mark.parametrize(("M", "N", "n"), [(2, 4, 3), (1, 2, 2), (3, 4, 4), (7, 3, 3)])
 def test_standard_validity(M, N, n):
     """Check the operation using the assert_valid function.
 
@@ -154,14 +146,7 @@ class TestSuperpositionTHC:
         weights = success[success > 1e-9]
         assert np.allclose(weights, weights[0])
 
-    @pytest.mark.parametrize(
-        ("M", "N", "n"),
-        [
-            (1, 2, 2),
-            (2, 4, 3),
-            (4, 8, 3),
-        ],
-    )
+    @pytest.mark.parametrize(("M", "N", "n"), [(1, 2, 2), (2, 4, 3), (4, 8, 3)])
     def test_work_wires_clean(self, M, N, n):
         """All work wires are returned to |0> except the output flag wires
         ``work_wires[0]`` (the amplitude-amplification auxiliary wire), ``work_wires[3]``
@@ -188,14 +173,7 @@ class TestSuperpositionTHC:
                 continue
             assert np.isclose(prob_one, 0.0), f"work_wires[{i}] not returned to zero"
 
-    @pytest.mark.parametrize(
-        ("M", "N", "n"),
-        [
-            (1, 2, 2),
-            (2, 4, 3),
-            (4, 8, 3),
-        ],
-    )
+    @pytest.mark.parametrize(("M", "N", "n"), [(1, 2, 2), (2, 4, 3), (4, 8, 3)])
     def test_no_phase_errors(self, M, N, n):
         """The template introduces no complex phases: the full prepared state
         vector is real-valued."""

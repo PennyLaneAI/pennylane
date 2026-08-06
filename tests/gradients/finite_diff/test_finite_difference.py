@@ -447,14 +447,7 @@ class TestFiniteDiff:
 
         transform = [qp.math.shape(qp.gradients.finite_diff(c)(x)) for c in circuits]
 
-        expected_shapes = [
-            (3,),
-            (1, 3),
-            (2, 3),
-            (4, 3),
-            (1, 4, 3),
-            (2, 4, 3),
-        ]
+        expected_shapes = [(3), (1, 3), (2, 3), (4, 3), (1, 4, 3), (2, 4, 3)]
         assert all(t == q for t, q in zip(transform, expected_shapes))
 
     def test_special_observable_qnode_differentiation(self):

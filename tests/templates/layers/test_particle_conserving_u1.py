@@ -118,15 +118,7 @@ class TestDecomposition:
         gates_per_layer = gates_per_u1 * (qubits - 1)
         gate_count = layers * gates_per_layer + 1
 
-        gates_u1 = [
-            qp.CZ,
-            qp.CRot,
-            qp.PhaseShift,
-            qp.CNOT,
-            qp.PhaseShift,
-            qp.CNOT,
-            qp.PhaseShift,
-        ]
+        gates_u1 = [qp.CZ, qp.CRot, qp.PhaseShift, qp.CNOT, qp.PhaseShift, qp.CNOT, qp.PhaseShift]
         gates_ent = gates_u1 + [qp.CZ, qp.CRot] + gates_u1
 
         wires = list(range(qubits))

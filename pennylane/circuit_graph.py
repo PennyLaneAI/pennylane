@@ -441,9 +441,8 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         if not self.operations:
             return 0
         with QueuingManager.stop_recording():
-            ops_with_initial_I = [
-                I(self.wires)
-            ] + self.operations  # add identity wire to end the graph
+            # add identity wire to end the graph
+            ops_with_initial_I = [I(self.wires)] + self.operations
         operation_graph, _, _ = _construct_graph_from_queue(ops_with_initial_I, self.wires)
 
         def weight_fn(in_idx, out_idx, w):  # pylint: disable=unused-argument

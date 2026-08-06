@@ -58,11 +58,7 @@ class Ellipse:
         - 2z * log(λ) = log(d / a) => z = 0.5 * log(d / a) / log(λ)
     """
 
-    def __init__(
-        self,
-        D: tuple[float, float, float],
-        p: tuple[float, float] = (0, 0),
-    ):
+    def __init__(self, D: tuple[float, float, float], p: tuple[float, float] = (0, 0)):
         self.a, self.b, self.d = D
         self.p = p
         self.z = 0.5 * math.log2(self.d / self.a) / math.log2(_LAMBDA)
@@ -512,12 +508,7 @@ class GridOp:
 
     def transpose(self) -> GridOp:
         """Transpose the grid operation."""
-        return GridOp(
-            self.d,
-            self.b,
-            self.c,
-            self.a,
-        )
+        return GridOp(self.d, self.b, self.c, self.a)
 
     def adj2(self) -> GridOp:
         """Compute the sqrt(2)-conjugate of the grid operation."""
@@ -621,9 +612,8 @@ class GridIterator:
         for ix in range(self.max_trials):
             # Update the radius of the unit disk.
             radius = 2**-k
-            e2_ = Ellipse(
-                (radius, 0, radius), (0, 0)
-            )  # Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
+            # Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
+            e2_ = Ellipse((radius, 0, radius), (0, 0))
             # Apply the grid operation to the state and solve the two-dimensional grid problem.
             state = EllipseState(e1, e2_).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
@@ -819,12 +809,7 @@ class GridIterator:
         return 1 + int(upper_bound_b - lower_bound_b)
 
     @staticmethod
-    def solve_one_dim_problem(
-        x0: float,
-        x1: float,
-        y0: float,
-        y1: float,
-    ) -> Iterable[ZSqrtTwo]:
+    def solve_one_dim_problem(x0: float, x1: float, y0: float, y1: float) -> Iterable[ZSqrtTwo]:
         r"""Iterates the solutions to the one dimensional grid problem given intervals :math:`[x0, x1]` and :math:`[y0, y1]`.
 
         Given two real intervals :math:`[x0, x1]` and :math:`[y0, y1]`

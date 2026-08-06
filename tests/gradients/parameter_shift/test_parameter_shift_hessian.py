@@ -32,9 +32,7 @@ def test_preprocessing_expansion():
 
     dev = qp.device("default.qubit")
 
-    @qp.qnode(
-        device=dev,
-    )
+    @qp.qnode(device=dev)
     def circuit(params):
         qp.StronglyEntanglingLayers(params, wires=[0, 1])
         return qp.expval(qp.PauliZ(0))
@@ -1590,13 +1588,7 @@ class TestParamShiftHessianWithKwargs:
     """Test the parameter-shift Hessian computation when manually
     providing parameter shifts or `argnum`."""
 
-    @pytest.mark.parametrize(
-        "diagonal_shifts",
-        (
-            [(np.pi / 3,), (np.pi / 2,)],
-            [(np.pi / 3,), None],
-        ),
-    )
+    @pytest.mark.parametrize("diagonal_shifts", ([(np.pi / 3), (np.pi / 2)], [(np.pi / 3), None]))
     def test_with_diagonal_shifts(self, diagonal_shifts):
         """Test that diagonal shifts are used and yield the correct Hessian."""
         dev = qp.device("default.qubit", wires=2)
@@ -1633,13 +1625,7 @@ class TestParamShiftHessianWithKwargs:
 
         assert np.allclose(expected, hessian)
 
-    @pytest.mark.parametrize(
-        "off_diagonal_shifts",
-        (
-            [(np.pi / 2,), (0.3, 0.6)],
-            [None, (0.3, 0.6)],
-        ),
-    )
+    @pytest.mark.parametrize("off_diagonal_shifts", ([(np.pi / 2), (0.3, 0.6)], [None, (0.3, 0.6)]))
     def test_with_offdiagonal_shifts(self, off_diagonal_shifts):
         """Test that off-diagonal shifts are used and yield the correct Hessian."""
         dev = qp.device("default.qubit", wires=2)

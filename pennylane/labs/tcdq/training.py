@@ -450,9 +450,8 @@ def train(  # pylint: disable=too-many-arguments
             history_needed = 2 * options.convergence_interval
 
             if current_step > history_needed:
-                recent_history = jnp.concatenate(
-                    metric_acc[-10:]
-                )  # Grab last 10 chunks (heuristic)
+                # Grab last 10 chunks (heuristic)
+                recent_history = jnp.concatenate(metric_acc[-10:])
 
                 if len(recent_history) >= history_needed:
                     if _check_convergence(recent_history, options.convergence_interval):

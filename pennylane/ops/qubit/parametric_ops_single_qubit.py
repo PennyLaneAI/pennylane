@@ -1047,13 +1047,7 @@ class Rot(Operation):
 
     resource_keys = set()
 
-    def __init__(
-        self,
-        phi: TensorLike,
-        theta: TensorLike,
-        omega: TensorLike,
-        wires: WiresLike,
-    ):
+    def __init__(self, phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike):
         super().__init__(phi, theta, omega, wires=wires)
 
     @property
@@ -1061,11 +1055,7 @@ class Rot(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike,
-        theta: TensorLike,
-        omega: TensorLike,
-    ) -> TensorLike:
+    def compute_matrix(phi: TensorLike, theta: TensorLike, omega: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1150,11 +1140,7 @@ class Rot(Operation):
         [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
 
         """
-        return [
-            RZ(phi, wires=wires),
-            RY(theta, wires=wires),
-            RZ(omega, wires=wires),
-        ]
+        return [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
 
     def adjoint(self) -> "Rot":
         phi, theta, omega = self.parameters
@@ -1613,13 +1599,7 @@ class U3(Operation):
 
     resource_keys = set()
 
-    def __init__(
-        self,
-        theta: TensorLike,
-        phi: TensorLike,
-        delta: TensorLike,
-        wires: WiresLike,
-    ):
+    def __init__(self, theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike):
         super().__init__(theta, phi, delta, wires=wires)
 
     @property

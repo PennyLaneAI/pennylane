@@ -213,10 +213,7 @@ class Not(BooleanFn):
         if any(getattr(opr, "condition", None) for opr in self.operands):
             self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
 
-        super().__init__(
-            lambda *args, **kwargs: not left(*args, **kwargs),
-            f"Not({left.name})",
-        )
+        super().__init__(lambda *args, **kwargs: not left(*args, **kwargs), f"Not({left.name})")
 
     def __str__(self):
         return f"~{self.operands[0].name}"

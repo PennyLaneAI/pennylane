@@ -281,11 +281,7 @@ class TestAbstractifyOperatorClasses:
         class FixedSigOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
-            arg_specs = {
-                "phi": Float,
-                "wires": Wire[2],
-                "ctrl_wires": Wire[1],
-            }
+            arg_specs = {"phi": Float, "wires": Wire[2], "ctrl_wires": Wire[1]}
 
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)

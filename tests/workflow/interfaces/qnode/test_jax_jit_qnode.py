@@ -62,10 +62,7 @@ H_FOR_SPSA = 0.05
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution,device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution,device_vjp", device_test_cases)
 class TestQNode:
     """Test that using the QNode with JAX integrates with the PennyLane
     stack"""
@@ -318,10 +315,7 @@ class TestQNode:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestVectorValuedQNode:
     """Test that using vector-valued QNodes with JAX integrate with the
     PennyLane stack"""
@@ -1020,10 +1014,7 @@ class TestShotsIntegration:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
@@ -1147,10 +1138,7 @@ class TestQubitIntegration:
         w1 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
         w2 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
-        weights = [
-            jax.numpy.array(np.random.random(w1)),
-            jax.numpy.array(np.random.random(w2)),
-        ]
+        weights = [jax.numpy.array(np.random.random(w1)), jax.numpy.array(np.random.random(w2))]
 
         grad_fn = jax.jit(jax.grad(cost))
         res = grad_fn(weights)
@@ -1206,10 +1194,7 @@ class TestQubitIntegration:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution,device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution,device_vjp", device_test_cases)
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 
@@ -1623,10 +1608,7 @@ class TestQubitIntegrationHigherOrder:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
     with the JAX interface"""
@@ -1956,10 +1938,7 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution,device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution,device_vjp", device_test_cases)
 class TestJIT:
     """Test JAX JIT integration with the QNode and automatic resolution of the
     correct JAX interface variant."""
@@ -2220,10 +2199,7 @@ class TestJIT:
 @pytest.mark.parametrize("shots", [None, 10000])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian with different return types."""
 
@@ -2859,10 +2835,7 @@ hessian_fn = [
 
 @pytest.mark.parametrize("hessian", hessian_fn)
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestReturnHessian:
     """Class to test the shape of the Hessian with different return types."""
 
@@ -3221,10 +3194,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
 @pytest.mark.parametrize("argnums", [0, 1, [0, 1]])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestSubsetArgnums:
     def test_single_measurement(
         self,
