@@ -1286,25 +1286,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         their decompositions exhibit the same counts for each gate type, even if the individual
         gate parameters differ.
 
-        **Examples**
-
-        The ``MultiRZ`` has non-empty ``resource_keys``:
-
-        >>> qp.MultiRZ.resource_keys
-        {'num_wires'}
-
-        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
-
-        >>> op = qp.MultiRZ(0.5, wires=[0, 1])
-        >>> op.resource_params
-        {'num_wires': 2}
-
-        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
-
-        >>> op2 = qp.MultiRZ(0.7, wires=[1, 2])
-        >>> op2.resource_params
-        {'num_wires': 2}
-
         """
         return {}
 
