@@ -19,8 +19,8 @@ from itertools import combinations, product
 import numpy as np
 
 import pennylane as qp
-from pennylane import allocate, for_loop, math
-from pennylane.core.operator import Operation, Operator2
+from pennylane import for_loop, math
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import Int, Wire
@@ -985,6 +985,7 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
+# pylint: disable-next=too-many-arguments, unused-argument
 def _sos_state_prep_resources(
     coefficients,
     wires,
@@ -1050,7 +1051,7 @@ def _sos_state_prep_resources(
 
     return resources
 
-
+# pylint: disable-next=too-many-arguments, unused-argument
 def _sos_state_prep_work_wires(
     coefficients,
     wires,
@@ -1069,6 +1070,7 @@ def _sos_state_prep_work_wires(
     num_entries = len(indices)
     num_bits = len(selector_ids)
 
+    # pylint: disable-next=protected-access 
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
     return {"zeroed": sum(sizes.values()) - num_wires}
 
