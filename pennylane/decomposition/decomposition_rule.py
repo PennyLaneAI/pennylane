@@ -293,6 +293,7 @@ def register_resources(
 
           import pennylane as qp
           from pennylane.allocation import allocate
+          from pennylane.typing import Wire
 
           qp.decomposition.enable_graph()
 

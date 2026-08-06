@@ -22,7 +22,7 @@ from typing import Literal, override
 from scipy import sparse
 
 import pennylane as qp
-from pennylane import allocation, math
+from pennylane import allocation, capture, compiler, math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
@@ -805,7 +805,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         wires = arguments.get("control_wires", arguments.get("wires", None))
         assert wires is not None
 
-        if qp.compiler.active() and not qp.capture.enabled():
+        if compiler.active() and not capture.enabled():
             control_values = math.array(control_values, like="jax")
             wires = math.array(wires, like="jax")
 

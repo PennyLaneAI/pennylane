@@ -43,8 +43,8 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _ctrl_decomp_bisect_od,
     _decompose_mcx_with_no_worker,
     _mcx_two_workers,
-    decompose_mcx_many_workers_explicit,
-    decompose_mcx_one_worker_explicit,
+    decompose_mcx_many_workers,
+    decompose_mcx_one_worker,
 )
 from pennylane.wires import Wires
 
@@ -815,27 +815,19 @@ class TestMCXDecomposition:
     def test_wrong_work_wire_type(self):
         """Test that an error is raised if the work wire type is not 'zeroed' or 'borrowed'."""
 
-        # pylint: disable=protected-access
-        control_wires = [0, 1]
-        target_wire = 2
+        expected_msg = r"work_wire_type must be one of \('zeroed', 'borrowed'\). Got 'blah'."
 
-        # one worker:
-        work_wires = 3
-        with pytest.raises(
-            ValueError, match="work_wire_type must be either 'zeroed' or 'borrowed'"
-        ):
+        with pytest.raises(ValueError, match=expected_msg):
             qp.MultiControlledX(
-                wires=control_wires + [target_wire],
-                work_wires=work_wires,
+                wires=[0, 1, 2],
+                work_wires=3,
                 work_wire_type="blah",
             )
 
-        with pytest.raises(
-            ValueError, match="work_wire_type must be either 'zeroed' or 'borrowed'"
-        ):
+        with pytest.raises(ValueError, match=expected_msg):
             qp.MultiControlledX.compute_decomposition(
-                wires=control_wires + [target_wire],
-                work_wires=work_wires,
+                wires=[0, 1, 2],
+                work_wires=3,
                 work_wire_type="blah",
             )
 
@@ -859,12 +851,10 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0] * len(work_wires), wires=work_wires)
             # pylint: disable=missing-kwoa
-            decompose_mcx_many_workers_explicit(wires=mcx.wires, **mcx.hyperparameters)
+            decompose_mcx_many_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(
-            mcx, decompose_mcx_many_workers_explicit, skip_decomp_matrix_check=True
-        )
+        _test_decomposition_rule(mcx, decompose_mcx_many_workers, skip_decomp_matrix_check=True)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
@@ -930,12 +920,10 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0], wires=work_wire)
             # pylint: disable=missing-kwoa
-            decompose_mcx_one_worker_explicit(wires=mcx.wires, **mcx.hyperparameters)
+            decompose_mcx_one_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(
-            mcx, decompose_mcx_one_worker_explicit, skip_decomp_matrix_check=True
-        )
+        _test_decomposition_rule(mcx, decompose_mcx_one_worker, skip_decomp_matrix_check=True)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -968,7 +956,7 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0, 0], wires=work_wires)
-            _mcx_two_workers(mcx.wires, work_wires, work_wire_type)
+            _mcx_two_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, _mcx_two_workers, skip_decomp_matrix_check=True)
@@ -996,7 +984,7 @@ class TestMCXDecomposition:
         mcx = qp.MultiControlledX(wires=control_wires + [target_wire])
 
         with qp.queuing.AnnotatedQueue() as q:
-            _decompose_mcx_with_no_worker(mcx.wires)
+            _decompose_mcx_with_no_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, _decompose_mcx_with_no_worker, skip_decomp_matrix_check=True)
@@ -1131,10 +1119,7 @@ class TestMCXDecomposition:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "num_control_wires, num_work_wires",
-        [(4, 1), (4, 2)],
-    )
+    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(4, 1), (4, 2)])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""
