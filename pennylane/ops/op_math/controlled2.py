@@ -534,6 +534,11 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     def name(self):
         return f"C({self.base.name})"
 
+    @property
+    @override
+    def data(self):
+        return self.base.data
+
     def __repr__(self):
         params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
