@@ -17,7 +17,7 @@ import math
 import triton
 import triton.language as tl
 
-from .utils import _get_syndrome_signs, _bp_c2v_msg, _llr_from_p
+from .utils import _bp_c2v_msg, _bp_tanh_half, _get_syndrome_signs, _llr_from_p
 
 
 # Adapted from Pennylane Blog: https://pennylane.ai/demos/tutorial_bp_catalyst
