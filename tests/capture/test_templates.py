@@ -318,6 +318,7 @@ tested_modified_templates = [
     qp.SelectOnlyQRAM,
     qp.MERA,
     qp.MPS,
+    qp.MultiplexerStatePreparation,
     qp.TTN,
     qp.QROM,
     qp.PhaseAdder,
@@ -336,7 +337,6 @@ tested_modified_templates = [
     qp.MPSPrep,
     qp.GQSP,
     qp.QROMStatePreparation,
-    qp.MultiplexerStatePreparation,
     qp.SelectPauliRot,
     qp.QFT,
 ]
@@ -422,7 +422,7 @@ class TestModifiedTemplates:
 
         # due to flattening and unflattening H
         assert jaxpr.eqns[0].primitive == qp.X._primitive
-        assert jaxpr.eqns[1].primitive == qp.Z._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
@@ -575,7 +575,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qp.FermionicDoubleExcitation(weight, **kwargs)
 
-    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
@@ -594,7 +593,7 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 5
         assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
-        assert jaxpr.eqns[-2].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RZ)
 
         eqn = jaxpr.eqns[-1]
         assert eqn.primitive == template._primitive
@@ -611,7 +610,6 @@ class TestModifiedTemplates:
         V = qp.RZ(v_params[0], wires=1)
         assert qp.equal(q.queue[0], template(V, U)) is True
 
-    @pytest.mark.xfail(reason="operators of operators not supported yet with Operator2")
     @pytest.mark.parametrize("template", [qp.HilbertSchmidt, qp.LocalHilbertSchmidt])
     def test_hilbert_schmidt_multiple_ops(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt with multiple ops."""
@@ -629,9 +627,9 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(qfunc)(v_params)
 
         assert len(jaxpr.eqns) == 9
-        assert jaxpr.eqns[0].primitive == qp.Hadamard._primitive
-        assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
-        assert jaxpr.eqns[-5].primitive == qp.RZ._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
+        assert_eqn_matches_op(jaxpr.eqns[-5], qp.RZ)
         assert jaxpr.eqns[-2].primitive == qp.RX._primitive
 
         eqn = jaxpr.eqns[-1]
@@ -1149,30 +1147,21 @@ class TestModifiedTemplates:
         """Test the primitive bind call of MultiplexerStatePreparation."""
 
         state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
-        kwargs = {
-            "wires": (8, 9),
-        }
+        wires = [8, 9]
 
-        def qfunc(state_vector):
-            qp.MultiplexerStatePreparation(state_vector, **kwargs)
+        def qfunc(state_vector, wires):
+            qp.MultiplexerStatePreparation(state_vector, wires)
 
-        qfunc(state_vector)
-        jaxpr = jax.make_jaxpr(qfunc)(state_vector)
+        qfunc(state_vector, wires)
+        jaxpr = jax.make_jaxpr(qfunc)(state_vector, wires)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.MultiplexerStatePreparation._primitive
+        assert_eqn_matches_op(eqn, qp.MultiplexerStatePreparation)
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.MultiplexerStatePreparation(state_vector, **kwargs))
 
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""

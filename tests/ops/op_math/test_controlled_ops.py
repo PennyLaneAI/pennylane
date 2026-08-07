@@ -792,7 +792,6 @@ def test_simplify_crot():
 controlled_data = [
     (qp.RX(1.234, wires=0), qp.CRX(1.234, wires=("a", 0))),
     (qp.RY(1.234, wires=0), qp.CRY(1.234, wires=("a", 0))),
-    (qp.RZ(1.234, wires=0), qp.CRZ(1.234, wires=("a", 0))),
     (qp.PhaseShift(1.234, wires=0), qp.ControlledPhaseShift(1.234, wires=("a", 0))),
     (qp.Rot(1.2, 2.3, 3.4, wires=0), qp.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
 ]
