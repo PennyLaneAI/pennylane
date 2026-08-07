@@ -17,8 +17,6 @@ import triton.language as tl
 
 from .bp_iters import _sum_product_posteriors
 
-# ================== Single Syndrome Decoder ====================
-
 
 @triton.jit
 def _decode_one(
@@ -35,9 +33,6 @@ def _decode_one(
     if postprocess == "osd":
         return _osd(P, syndrome)
     return _hard_decision(P)
-
-
-# ========================= Post Process ========================
 
 
 @triton.jit
