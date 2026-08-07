@@ -282,9 +282,10 @@ class GlobalPhase(Operator2):
 
     # NOTE: Previous default for legacy operator
     num_wires = None
+    wire_sizes = (0,)
 
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[-1]}
+    arg_specs = {"phi": Float, "wires": Wire[0]}
 
     grad_method = "A"
 

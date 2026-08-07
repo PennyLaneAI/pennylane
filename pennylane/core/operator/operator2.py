@@ -1609,10 +1609,10 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
                 f"Expected wire_size == None for '{wname}' as it is a hybrid wire argument."
             )
 
-        if not ((isinstance(wsize, int) and wsize > 0) or wsize is None):
+        if not ((isinstance(wsize, int)) or wsize is None):
             raise TypeError(
                 f"'{cls.__name__}.wire_sizes' is invalid. 'wire_sizes' must be a sequence "
-                f"of positive integers or 'None' values, but got {cls.wire_sizes}."
+                f"of nonnegative integers or 'None' values, but got {cls.wire_sizes}."
             )
 
         # If the wire argument is in arg_specs, the entries in arg_specs
