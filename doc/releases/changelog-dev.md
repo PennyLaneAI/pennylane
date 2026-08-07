@@ -1197,6 +1197,9 @@
   one of its subclasses returned ``True`` if they shared the same data and wires.
   [(#9749)](https://github.com/PennyLaneAI/pennylane/pull/9749)
 
+* Corrected MMD loss functions in TCDQ so that gradients are unbiased. Expval estimators now return variances instead of standard errors. 
+  [(#9982)](https://github.com/PennyLaneAI/pennylane/pull/9982)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
