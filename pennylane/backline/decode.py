@@ -28,6 +28,8 @@ import numpy as np
 
 from pennylane.runtime import runtime_call
 
+from .device import active_placement
+
 # In-process ``__call`` adapters from TransportCAPI.h, named verbatim by a local runtime_call.
 _PREFIX = "__catalyst__transport__"
 _GET_SESSION = f"{_PREFIX}get_session__call"
@@ -93,10 +95,41 @@ def _resolve_out_bytes(controller, out_bytes) -> int:
     )
 
 
+def _resolve_nodes(controller, coprocessor, decoder_id):
+    """Fill in whichever node the caller left out, from the built placement.
+
+    An explicit node always wins. ``decoder_id`` picks the coprocessor, since each one carries the
+    decoder of that id.
+    """
+    if controller is not None and coprocessor is not None:
+        return controller, coprocessor
+
+    placement = active_placement()
+    if placement is None:
+        raise ValueError(
+            "decode: no backline device has been built, so the controller cannot be resolved. "
+            "Build one with qp.backline(controller=..., coprocessors=[...]), or pass the nodes "
+            "explicitly: decode(syndrome, controller=ctrl, coprocessor=coproc)."
+        )
+
+    if controller is None:
+        controller = placement.controller
+    if coprocessor is None:
+        coprocs = placement.coprocessors
+        if coprocs:
+            if decoder_id >= len(coprocs):
+                raise ValueError(
+                    f"decode: decoder_id {decoder_id} selects coprocessor {decoder_id}, but the "
+                    f"placement has {len(coprocs)}. Pass coprocessor= to choose one directly."
+                )
+            coprocessor = coprocs[decoder_id]
+    return controller, coprocessor
+
+
 def decode(  # pylint: disable=too-many-arguments
     syndrome,
     *,
-    controller,
+    controller=None,
     coprocessor=None,
     out_bytes=None,
     in_bytes=None,
@@ -138,9 +171,7 @@ def decode(  # pylint: disable=too-many-arguments
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :func:`~pennylane.backline`
     """
-    if controller is None:
-        raise ValueError("decode: a controller is required (decode(..., controller=ctrl)).")
-
+    controller, coprocessor = _resolve_nodes(controller, coprocessor, decoder_id)
     key = _session_key(coprocessor)
     nbytes = _byte_count(syndrome) if in_bytes is None else int(in_bytes)
     reply_bytes = _resolve_out_bytes(controller, out_bytes)
