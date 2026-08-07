@@ -231,7 +231,7 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qp.RZ(np.pi / 2, wires=wires)
     qp.RX(np.pi / 2, wires=wires)
     qp.RZ(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 # pylint: disable=unused-argument
@@ -475,7 +475,7 @@ class PauliX(Operation):
         GlobalPhase(-1.5707963267948966, wires=[0])]
 
         """
-        return [qp.RX(np.pi, wires=wires), qp.GlobalPhase(-np.pi / 2, wires=wires)]
+        return [qp.RX(np.pi, wires=wires), qp.GlobalPhase(-np.pi / 2)]
 
     def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
@@ -526,7 +526,7 @@ def _paulix_to_rx_resources():
 @register_resources(_paulix_to_rx_resources)
 def _paulix_to_rx(wires: WiresLike, **__):
     qp.RX(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
@@ -539,7 +539,7 @@ def _pow_x_to_sx(wires, **_):
 def _pow_x_to_rx(wires, z, **_):
     z_mod2 = qp.math.array(z) % 2
     qp.RX(np.pi * z_mod2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliX, _paulix_to_rx)
@@ -789,14 +789,14 @@ def _pauliy_to_ry_gp_resources(wires: AbstractWires):  # pylint: disable=unused-
 @register_resources(_pauliy_to_ry_gp_resources)
 def _pauliy_to_ry_gp(wires: WiresLike):
     qp.RY(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 @register_resources(lambda **_: {qp.RY: 1, qp.GlobalPhase: 1})
 def _pow_y(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.RY(np.pi * z_mod2, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
@@ -1493,7 +1493,7 @@ def _sx_to_rx_resources(wires: WiresLike = None):  # pylint: disable=unused-argu
 @register_resources(_sx_to_rx_resources)
 def _sx_to_rx(wires: WiresLike | None = None):
     qp.RX(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 4, wires=wires)
+    qp.GlobalPhase(-np.pi / 4)
 
 
 add_decomps(SX, _sx_to_rx)
@@ -1509,7 +1509,7 @@ def _pow_sx_to_x(base, z):  # pylint: disable=unused-argument
 def _pow_sx(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.RX(np.pi / 2 * z_mod4, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 4 * z_mod4)
 
 
 add_decomps("Pow(SX)", make_pow_decomp_with_period2(4), _pow_sx_to_x, _pow_sx)

@@ -573,7 +573,7 @@ def _diagonal_qu_decomp(D, wires):
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
     if len(wires) == 1:
-        qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1), wires=wires)
+        qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1))
         qp.RZ(qp.math.squeeze(diff, axis=-1), wires=wires)
     else:
         qp.DiagonalQubitUnitary(qp.math.exp(1j * mean), wires=wires[:-1])
