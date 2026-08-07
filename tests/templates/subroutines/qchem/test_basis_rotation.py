@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 @pytest.mark.jax
@@ -108,7 +109,10 @@ class TestDecomposition:
             gate_wires.append(list(indices))
 
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
-        queue = op.decomposition()
+        plxpr = qp.capture.make_plxpr(op.decomposition, autograph=False)()
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        queue = collector.state["ops"]
 
         assert len(queue) == len(gate_ops)  # number of gates
 
