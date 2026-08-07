@@ -15,7 +15,6 @@
 Unit tests for the available built-in parametric qubit operations.
 """
 
-# pylint: disable=too-few-public-methods,too-many-public-methods
 import copy
 from functools import partial, reduce
 
@@ -26,6 +25,9 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+
+# pylint: disable=too-few-public-methods,too-many-public-methods
+from pennylane.core.operator import Operator1
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -900,7 +902,7 @@ class TestMatrix:
         op = qp.PCPhase(phi, dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = np.diag(
             [np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(2**num_wires)]
@@ -921,7 +923,7 @@ class TestMatrix:
         op = qp.PCPhase(tf.Variable(phi), dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = tf.Variable(
             np.diag(
@@ -944,7 +946,7 @@ class TestMatrix:
         op = qp.PCPhase(torch.tensor(phi), dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = torch.tensor(
             np.diag(
@@ -969,7 +971,7 @@ class TestMatrix:
         op = qp.PCPhase(phi, dim=dim, wires=wires)
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         expected_mat = jnp.diag(
             jnp.array(
@@ -981,6 +983,9 @@ class TestMatrix:
         assert np.allclose(mat2, expected_mat)
         assert qp.math.get_interface(mat1) == "jax"
 
+    @pytest.mark.pl2do(
+        reason="Broadcasted parameters with Operator2 will be revisited in the future"
+    )
     def test_pcphase_broadcasted(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""
         dim = 2
@@ -990,7 +995,7 @@ class TestMatrix:
         op = qp.PCPhase(broadcasted_phi, dim=dim, wires=[0, 1])
 
         mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+        mat2 = op.compute_matrix(**op.arguments)
 
         mats = [
             np.diag([np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(size)])
@@ -1808,7 +1813,7 @@ class TestEigvals:
 
         # test identity for theta=0
         op = qp.PCPhase(0.0, dim=2, wires=[0, 1])
-        assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), np.ones(4))
+        assert np.allclose(op.compute_eigvals(**op.arguments), np.ones(4))
         assert np.allclose(op.eigvals(), np.ones(4))
 
         # test arbitrary phase shift
@@ -3489,7 +3494,7 @@ class TestSimplify:
             params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
 
         # construct the wires
-        if op_class.num_wires == 1:
+        if hasattr(op_class, "num_wires") and op_class.num_wires == 1:
             wires = 0
         else:
             wires = [0, 1]
@@ -3523,40 +3528,97 @@ class TestSimplify:
         """Test the gradient of an op after simplication for the autograd interface"""
         dev = qp.device("default.qubit", wires=2)
 
-        @qp.qnode(dev)
-        def circuit(simplify, wires, *params, **hyperparams):
-            if simplify:
-                qp.simplify(op(*params, wires=wires, **hyperparams))
-            else:
-                op(*params, wires=wires, **hyperparams)
+        if issubclass(op, Operator1):
 
-            return qp.expval(qp.PauliZ(0))
+            @qp.qnode(dev)
+            def circuit(simplify, wires, *params, **hyperparams):
+                if simplify:
+                    qp.simplify(op(*params, wires=wires, **hyperparams))
+                else:
+                    op(*params, wires=wires, **hyperparams)
 
-        unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = self._get_params_wires(unsimplified_op)
-        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
+                return qp.expval(qp.PauliZ(0))
 
-        for i in range(params[0].shape[0]):
-            parameters = [p[i] for p in params]
+            unsimplified_op = self.get_unsimplified_op(op)
+            params, wires = self._get_params_wires(unsimplified_op)
+            hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
-            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
-            simplified_res = circuit(True, wires, *parameters, **hyperparams)
+            for i in range(params[0].shape[0]):
+                parameters = [p[i] for p in params]
 
-            unsimplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                False,
-                wires,
-                *parameters,
-                **hyperparams,
-            )
-            simplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                True,
-                wires,
-                *parameters,
-                **hyperparams,
-            )
+                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+                simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
-            assert qp.math.allclose(unsimplified_res, simplified_res)
-            assert qp.math.allclose(unsimplified_grad, simplified_grad)
+                unsimplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                    False,
+                    wires,
+                    *parameters,
+                    **hyperparams,
+                )
+                simplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                    True,
+                    wires,
+                    *parameters,
+                    **hyperparams,
+                )
+
+                assert qp.math.allclose(unsimplified_res, simplified_res)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad)
+        else:
+
+            @qp.qnode(dev)
+            def circuit(simplify, wires, *args, **kwargs):
+                if simplify:
+                    qp.simplify(op(*args, wires=wires, **kwargs))
+                else:
+                    op(*args, wires=wires, **kwargs)
+
+                return qp.expval(qp.PauliZ(0))
+
+            unsimplified_op = self.get_unsimplified_op(op)
+
+            angle = next(iter(unsimplified_op.dynamic_args))
+            for i in range(unsimplified_op.dynamic_args[angle].shape[0]):
+                flat_dyn_args = [p[i] for p in unsimplified_op.dynamic_args.values()]
+
+                unsimplified_res = circuit(
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_res = circuit(
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+
+                unsimplified_grad = qp.grad(
+                    circuit, argnums=list(range(2, 2 + len(flat_dyn_args)))
+                )(
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(flat_dyn_args))))(
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+
+                assert qp.math.allclose(unsimplified_res, simplified_res)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("op", rotations)
@@ -3644,32 +3706,78 @@ class TestSimplify:
 
         dev = qp.device("default.qubit", wires=2)
 
-        @qp.qnode(dev)
-        def circuit(simplify, wires, *params, **hyperparams):
-            if simplify:
-                qp.simplify(op(*params, wires=wires, **hyperparams))
-            else:
-                op(*params, wires=wires, **hyperparams)
+        if issubclass(op, Operator1):
 
-            return qp.expval(qp.PauliZ(0))
+            @qp.qnode(dev)
+            def circuit(simplify, wires, *params, **hyperparams):
+                if simplify:
+                    qp.simplify(op(*params, wires=wires, **hyperparams))
+                else:
+                    op(*params, wires=wires, **hyperparams)
 
-        unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = self._get_params_wires(unsimplified_op)
-        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
+                return qp.expval(qp.PauliZ(0))
 
-        for i in range(params[0].shape[0]):
-            parameters = [torch.tensor(p[i], requires_grad=True) for p in params]
+            unsimplified_op = self.get_unsimplified_op(op)
+            params, wires = self._get_params_wires(unsimplified_op)
+            hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
-            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
-            unsimplified_res.backward()
-            unsimplified_grad = [p.grad for p in parameters]
+            for i in range(params[0].shape[0]):
+                parameters = [torch.tensor(p[i], requires_grad=True) for p in params]
 
-            simplified_res = circuit(True, wires, *parameters, **hyperparams)
-            simplified_res.backward()
-            simplified_grad = [p.grad for p in parameters]
+                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+                unsimplified_res.backward()
+                unsimplified_grad = [p.grad for p in parameters]
 
-            assert qp.math.allclose(unsimplified_res, simplified_res)
-            assert qp.math.allclose(unsimplified_grad, simplified_grad)
+                simplified_res = circuit(True, wires, *parameters, **hyperparams)
+                simplified_res.backward()
+                simplified_grad = [p.grad for p in parameters]
+
+                assert qp.math.allclose(unsimplified_res, simplified_res)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad)
+        else:
+
+            @qp.qnode(dev)
+            def circuit(simplify, wires, *args, **kwargs):
+                if simplify:
+                    qp.simplify(op(*args, wires=wires, **kwargs))
+                else:
+                    op(*args, wires=wires, **kwargs)
+
+                return qp.expval(qp.PauliZ(0))
+
+            unsimplified_op = self.get_unsimplified_op(op)
+
+            angle = next(iter(unsimplified_op.dynamic_args))
+            for i in range(unsimplified_op.dynamic_args[angle].shape[0]):
+                flat_dyn_args = [
+                    torch.tensor(p[i], requires_grad=True)
+                    for p in unsimplified_op.dynamic_args.values()
+                ]
+
+                unsimplified_res = circuit(
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                unsimplified_res.backward()
+                unsimplified_grad = [p.grad for p in flat_dyn_args]
+
+                simplified_res = circuit(
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_res.backward()
+                simplified_grad = [p.grad for p in flat_dyn_args]
+
+                assert qp.math.allclose(unsimplified_res, simplified_res)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", rotations)
@@ -3680,34 +3788,92 @@ class TestSimplify:
 
         dev = qp.device("default.qubit")
 
-        @qp.qnode(dev, interface="jax")
-        def circuit(simplify, wires, *params, **hyperparams):
-            if simplify:
-                qp.simplify(op(*params, wires=wires, **hyperparams))
-            else:
-                op(*params, wires=wires, **hyperparams)
+        if issubclass(op, Operator1):
 
-            return qp.expval(qp.PauliZ(0))
+            @qp.qnode(dev, interface="jax")
+            def circuit(simplify, wires, *params, **hyperparams):
+                if simplify:
+                    qp.simplify(op(*params, wires=wires, **hyperparams))
+                else:
+                    op(*params, wires=wires, **hyperparams)
 
-        unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = self._get_params_wires(unsimplified_op)
-        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
+                return qp.expval(qp.PauliZ(0))
 
-        for i in range(params[0].shape[0]):
-            parameters = [jnp.array(p[i]) for p in params]
+            unsimplified_op = self.get_unsimplified_op(op)
+            params, wires = self._get_params_wires(unsimplified_op)
+            hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
-            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
-            simplified_res = circuit(True, wires, *parameters, **hyperparams)
+            for i in range(params[0].shape[0]):
+                parameters = [jnp.array(p[i]) for p in params]
 
-            unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                False, wires, *parameters, **hyperparams
-            )
-            simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                True, wires, *parameters, **hyperparams
-            )
+                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+                simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
-            assert qp.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
-            assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+                unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                    False, wires, *parameters, **hyperparams
+                )
+                simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                    True, wires, *parameters, **hyperparams
+                )
+
+                assert qp.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+
+        else:
+
+            @qp.qnode(dev, interface="jax")
+            def circuit(simplify, wires, *args, **kwargs):
+                if simplify:
+                    qp.simplify(op(*args, wires=wires, **kwargs))
+                else:
+                    op(*args, wires=wires, **kwargs)
+
+                return qp.expval(qp.PauliZ(0))
+
+            unsimplified_op = self.get_unsimplified_op(op)
+
+            angle = next(iter(unsimplified_op.dynamic_args))
+            for i in range(unsimplified_op.dynamic_args[angle].shape[0]):
+                flat_dyn_args = [jnp.array(p[i]) for p in unsimplified_op.dynamic_args.values()]
+
+                unsimplified_res = circuit(
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_res = circuit(
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+
+                unsimplified_grad = jax.grad(
+                    circuit, argnums=list(range(2, 2 + len(flat_dyn_args)))
+                )(
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(flat_dyn_args))))(
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+
+                assert qp.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
 
     @pytest.mark.jax
     def test_simplify_rotations_grad_jax_jit(self):
@@ -3759,7 +3925,11 @@ class TestSimplify:
             pytest.skip("U2 gate does not simplify to Identity")
 
         try:
-            wires = range(op.num_wires) if op.num_wires is not None else range(2)
+            wires = (
+                range(op.num_wires)
+                if hasattr(op, "num_wires") and op.num_wires is not None
+                else range(2)
+            )
         except TypeError:
             wires = range(2)
 

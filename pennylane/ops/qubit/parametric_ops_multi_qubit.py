@@ -29,7 +29,6 @@ import numpy as np
 import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
-from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -38,7 +37,7 @@ from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -594,7 +593,7 @@ add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
 add_decomps("Pow(PauliRot)", pow_rotation2)
 
 
-class PCPhase(Operation):
+class PCPhase(Operator2):
     r"""PCPhase(phi, dim, wires)
     A projector-controlled phase gate.
 
@@ -670,6 +669,11 @@ class PCPhase(Operation):
 
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    compilable_argnames = ("dim",)
+    arg_specs = {"phi": Float, "wires": Wire[-1]}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
     ndim_params = (0,)
@@ -677,17 +681,13 @@ class PCPhase(Operation):
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
+        """The basis of the operator."""
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
             PennyLaneDeprecationWarning,
         )
         return "Z"
-
-    grad_method = "A"
-    parameter_frequencies = [(2,)]
-
-    resource_keys = {"num_wires", "dim"}
 
     def generator(self) -> "qp.Hermitian":
         r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
@@ -707,13 +707,9 @@ class PCPhase(Operation):
            [ 0,  0,  1,  0],
            [ 0,  0,  0, -1]]), wires=[0, 1])
         """
-        dim, N = self.hyperparameters["dimension"]
+        dim, N = (self.dim, 2 ** len(self.wires))
         mat = np.diag([1] * dim + [-1] * (N - dim))
         return qp.Hermitian(mat, wires=self.wires)
-
-    def _flatten(self) -> FlatPytree:
-        hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
-        return tuple(self.data), (self.wires, hyperparameter)
 
     def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
@@ -724,17 +720,12 @@ class PCPhase(Operation):
                 f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
             )
 
-        super().__init__(phi, wires=wires)
-        self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
+        super().__init__(phi, dim, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
+    def compute_matrix(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
         """Get the matrix representation of Pi-controlled phase unitary."""
-        d, t = dimension
+        d, t = (dim, 2 ** len(wires))
 
         if (
             math.get_interface(phi) == "tensorflow"
@@ -763,10 +754,9 @@ class PCPhase(Operation):
         return math.stack([math.diag(d) for d in diags])
 
     @staticmethod
-    def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
+    def compute_eigvals(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
         """Get the eigvals for the Pi-controlled phase unitary."""
-        phi = params[0]
-        d, t = hyperparams["dimension"]
+        d, t = (dim, 2 ** len(wires))
 
         if (
             math.get_interface(phi) == "tensorflow"
@@ -784,129 +774,22 @@ class PCPhase(Operation):
             product = math.outer(arg, prefactors)
         return math.exp(product)
 
-    @staticmethod
-    def compute_decomposition(
-        *params: TensorLike, wires: WiresLike, **hyperparams
-    ) -> list[Operator]:
-        r"""Representation of the PCPhase operator as a product of other operators (static method).
-
-        Args:
-            *params (list): trainable parameters of the operator, as stored in the
-                ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyper-parameters of the operator,
-                as stored in the ``hyperparameters`` attribute
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        In short, this decomposition relies on decomposing the generator (see :meth:`~.generator`)
-        of the ``PCPhase`` gate into generators of multicontrolled :class:`~.PhaseShift` gates,
-        potentially complemented with (non-controlled) Pauli-X gates and/or a global phase.
-        For example, for ``dim=13`` on four qubits:
-
-        >>> op_13 = qp.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
-        >>> print(qp.draw(op_13.decomposition)())
-        1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤
-        2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤
-        3: ────────────├○───────────├GlobalPhase(-1.23)─┤
-        4: ──X─────────╰Rϕ(2.46)──X─╰GlobalPhase(-1.23)─┤
-
-        In the following we provide a detailed example for illustration purposes.
-
-        **Detailed example**
-
-        Consider the projector-controlled phase gate on :math:`n=4` qubits and with
-        :math:`d=\texttt{dim}=3`, i.e,
-
-        >>> op_3 = qp.PCPhase(1.23, dim=3, wires=[0, 1, 2, 3])
-
-        It acts on :math:`N=2^n=16`-dimensional vectors and is described by
-
-        .. math:: \Pi(\phi) = \exp(i\phi G) = \exp(i\phi(2\Pi-\mathbb{I}_N)),
-
-        where :math:`G` is a diagonal matrix with :math:`d=3` ones, followed by
-        :math:`2^n-d = 16 - 3=13` negative ones. Accordingly, :math:`\Pi` is diagonal with
-        :math:`3` ones and :math:`13` zeros.
-
-        First, we implement the global phase generated by :math:`\mathbb{I}_N` with
-        a :class:`~.GlobalPhase` gate with angle :math:`-\phi`.
-        Then we decompose :math:`d` into powers of two with positive or negative sign, via
-        :math:`d=3=4-1 = 2^2-2^0`. This decomposition tells us that we can write the
-        target gate with two (multi-)controlled phase shift gates. For this, we rewrite
-        the projector :math:`\Pi` according to the decomposition as
-
-        .. math::
-
-            \Pi &= \text{diag}(1, 1, 1, 0, 0, \dots, 0)\\
-            &=\text{diag}(1, 1, 1, 1, 0, \dots, 0)
-            -\text{diag}(0, 0, 0, 1, 0, \dots, 0)
-
-        where :math:`0,\dots, 0` indicates :math:`12` zeros each time.
-        How do we realize this projector decomposition on the gate level?
-
-        A singly-controlled phase shift gate applies a phase to a quarter of all computational
-        basis states (the control filters by the state of one qubit, and the phase shift gate
-        itself filters by the :math:`|1\rangle` state of the target qubit, cutting the number
-        of states we are acting on in half each time).
-        For :math:`n=4`, this amounts to :math:`2^4/4=4` states, which is exactly
-        what we need for the first term above. To apply the phase to the *first* four states,
-        :math:`|0000\rangle`, :math:`|0001\rangle`, :math:`|0010\rangle`, and :math:`|0011\rangle`,
-        we want to "filter by" the first two qubits being in the :math:`|0\rangle` state.
-        For qubit :math:`0`, we do this by controlling on the :math:`|0\rangle` state.
-        For qubit :math:`1`, we pick it as the target of the controlled phase shift operation.
-        Generically, this would make it act on the :math:`|1\rangle` state, so we simply flip
-        qubit :math:`1` before and after the operation to apply the phase to the :math:`|0\rangle`
-        state instead.
-        Thus, we conclude this first step by applying the gates
-        ``qp.X(1)``, ``qp.ctrl(qp.PhaseShift(2 * phi, 1), control=[0], control_values=[0])``,
-        and ``qp.X(1)``.
-
-        Next, we implement the second term in the projector decomposition, applying a phase
-        to a single computational basis state. This requires us to fully control a phase shift
-        gate, i.e., we use the last qubit as target and the other three as controls (there is
-        some freedom of choice here, but this is a convenient choice).
-        We want to apply the phase to the state :math:`|3\rangle=|0011\rangle`. So the controls
-        :math:`0` and :math:`1` are set to zero and the control :math:`2` is set to one.
-        As we want to effect the phase onto the :math:`|1\rangle` state of qubit :math:`3`,
-        we don't need to flip the target bit as we did before. However, given the negative sign
-        in the projector decomposition, we need to multiply the phase with :math:`-1`.
-        Overall, we apply the gate
-        ``qp.ctrl(qp.PhaseShift(-2 * phi, 3), control=[0, 1, 2], control_values=[0, 0, 1])``,
-        which concludes the decomposition, now reading:
-
-        >>> print(qp.draw(op_3.decomposition)())
-        0: ────╭○───────────╭○─────────╭GlobalPhase(1.23)─┤
-        1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤
-        2: ─────────────────├●─────────├GlobalPhase(1.23)─┤
-        3: ─────────────────╰Rϕ(-2.46)─╰GlobalPhase(1.23)─┤
-
-        """
-        with queuing.AnnotatedQueue() as q:
-            _decompose_pcphase(*params, wires=wires, **hyperparams)
-
-        if queuing.QueuingManager.recording():
-            for op in q.queue:
-                queuing.apply(op)
-
-        return q.queue
-
     def adjoint(self) -> "PCPhase":
         """Computes the adjoint of the operator."""
-        phi = self.parameters[0]
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi
+        dim = self.dim
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
         """Computes the operator raised to z."""
-        phi = self.parameters[0]
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi
+        dim = self.dim
         return [PCPhase(phi * z, dim=dim, wires=self.wires)]
 
     def simplify(self) -> "PCPhase":
         """Simplifies the operator if possible."""
-        phi = self.parameters[0] % (2 * np.pi)
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi % (2 * np.pi)
+        dim = self.dim
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1007,9 +890,11 @@ def _ctrl_phase_shift(
     return 0.0
 
 
-def _decompose_pcphase_resource(num_wires, dim):
+# pylint: disable-next=unused-argument
+def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
+    num_wires = len(wires)
     gate_count = Counter()
     flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, num_wires + 1)
     sigma = (-1) ** flipped
@@ -1045,10 +930,8 @@ def _decompose_pcphase_resource(num_wires, dim):
 
 
 @register_resources(_decompose_pcphase_resource)
-def _decompose_pcphase(phi, wires, dimension, **_):
+def _decompose_pcphase(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
-
-    dim, _ = dimension
 
     # Use one more bit than there are wires, according to flipping all relevant bits for the
     # projector decomposition, or a global phase on the gate level. Afterwards, we have
