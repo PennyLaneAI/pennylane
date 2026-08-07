@@ -1184,10 +1184,11 @@ def _controlled_rot_resource(base, control_wires, control_values, work_wires, wo
 @register_resources(_controlled_rot_resource)
 def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
-    phi, theta, omega, wires = base.phi, base.theta, base.omega, base.wires
+    phi, theta, omega = base.phi, base.theta, base.omega
+    wires = control_wires + base.wires
 
     if len(control_wires) == 1:
-        qp.CRot(phi, theta, omega, wires=control_wires + wires)
+        qp.CRot(phi, theta, omega, wires=wires)
         return
 
     qp.RZ((phi - omega) / 2, wires=wires[-1])
