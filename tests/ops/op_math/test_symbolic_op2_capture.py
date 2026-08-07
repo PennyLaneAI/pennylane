@@ -206,8 +206,9 @@ class TestControlledCapture:
         assert eqn.params["n_ctrls"] == 2
         assert eqn.invars[-4].val == 0
         assert eqn.invars[-3].val == 1
-        assert eqn.invars[-2].val is True
-        assert eqn.invars[-1].val is False
+        # pylint: disable=singleton-comparison
+        assert eqn.invars[-2].val == True
+        assert eqn.invars[-1].val == False
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(RX2(0.7, 2), [0, 1], [True, False])
