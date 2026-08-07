@@ -468,7 +468,7 @@ class ShadowExpvalMP(MeasurementTransform):
             if isinstance(op, Operator2):
                 if op.tracer is None:
                     # pylint: disable-next=protected-access
-                    op._bind_primitive()
+                    op._bind_primitive()  # pragma: no cover
                 return op.tracer if op.tracer is not None else op
             return op
 

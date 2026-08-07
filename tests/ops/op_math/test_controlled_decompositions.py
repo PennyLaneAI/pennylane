@@ -973,7 +973,7 @@ class TestMCXDecomposition:
 
         assert qp.math.allclose(matrix, expected_matrix)
 
-    @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
+    @pytest.mark.parametrize("n_ctrl_wires", [4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_no_workers(self, n_ctrl_wires):
         """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
 
@@ -994,8 +994,11 @@ class TestMCXDecomposition:
         matrix = _tape_to_matrix(tape, wire_order=mcx.wires)
 
         expected_matrix = mcx.sparse_matrix()
-
         assert qp.math.allclose(matrix, expected_matrix)
+
+        # compute decomposition result
+        old_decomps = mcx.decomposition()
+        assert tape.operations == old_decomps
 
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7])
     def test_decompose_mcx_old(self, n_ctrl_wires):

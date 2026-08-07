@@ -209,8 +209,6 @@ unmodified_templates_cases = [
         ),
     ),
     (qp.FermionicSingleExcitation, (0.421,), {"wires": [0, 3, 2]}),
-    (qp.FlipSign, (7,), {"wires": [0, 3, 2]}),
-    (qp.FlipSign, (np.array([1, 0, 0]), [0, 1, 2]), {}),
     (
         qp.kUpCCGSD,
         (jnp.ones((1, 6)), [0, 1, 2, 3]),
@@ -340,6 +338,7 @@ tested_modified_templates = [
     qp.GQSP,
     qp.QROMStatePreparation,
     qp.SelectPauliRot,
+    qp.FlipSign,
     qp.QFT,
 ]
 
@@ -1760,6 +1759,37 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Superposition(**kwargs))
+
+    @pytest.mark.parametrize(
+        "n, wires, expected_state",
+        [
+            (7, [0, 3, 2], (1, 1, 1)),
+            (np.array([1, 0, 0]), [0, 1, 2], (1, 0, 0)),
+        ],
+    )
+    def test_flip_sign(self, n, wires, expected_state):
+        """Test the primitive bind call of FlipSign."""
+
+        def qfunc(wires):
+            qp.FlipSign(n, wires)
+
+        # Validate inputs
+        qfunc(wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.FlipSign)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        # The canonicalized ``state`` is a static parameter that must survive capture
+        state_values, _ = eqn.params["state"]
+        assert tuple(int(bit) for bit in state_values) == expected_state
 
     def test_qft(self):
         """Test the primitive bind call of QFT."""
