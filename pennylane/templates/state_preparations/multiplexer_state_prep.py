@@ -15,15 +15,14 @@ r"""Contains the MultiplexerStatePreparation template."""
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core import queuing
-from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.core.operator import Operator2
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
 
-class MultiplexerStatePreparation(Operation):
+class MultiplexerStatePreparation(Operator2):
     r"""Prepares a quantum state using multiplexed rotations.
 
     This operation implements the state preparation method described
@@ -33,10 +32,12 @@ class MultiplexerStatePreparation(Operation):
         state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on
             :math:`n` wires.
         wires (Sequence[int]): The wires on which to prepare the state.
+        check (bool): whether to check that the input state vector has norm 1.0. Defaults to ``False``.
 
     Raises:
         ValueError: If the length of the input state vector array is not :math:`2^n`, where
-            :math:`n` is the number of wires, or if the norm of the input state is not unity.
+            :math:`n` is the number of wires, or if ``check=True`` and the norm of the input
+            state is not unity.
 
     **Example**
 
@@ -65,10 +66,13 @@ class MultiplexerStatePreparation(Operation):
 
     """
 
-    resource_keys = {"num_wires"}
+    dynamic_argnames = ("state_vector",)
+    compilable_argnames = ("check",)
 
-    # pylint: disable=too-many-positional-arguments, too-many-arguments
-    def __init__(self, state_vector, wires):
+    arg_specs = {"state_vector": Complex[-1], "wires": Wire[-1]}
+    wire_sizes = (None,)
+
+    def __init__(self, state_vector, wires, check=False):
 
         wires = Wires(wires)
         n_amplitudes = math.shape(state_vector)[0]
@@ -77,40 +81,21 @@ class MultiplexerStatePreparation(Operation):
                 f"State vector must be of length {2 ** len(wires)}; got length {n_amplitudes}."
             )
 
-        if not math.is_abstract(state_vector):
+        if check and not math.is_abstract(state_vector):
             norm = math.linalg.norm(state_vector)
             if not math.allclose(norm, 1.0, atol=1e-3):
                 raise ValueError(
                     f"State vector must have norm 1.0; the input state vector has norm {norm}"
                 )
 
-        self.state_vector = state_vector
         super().__init__(state_vector, wires=wires)
 
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
-
-    @staticmethod
-    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
-        with queuing.AnnotatedQueue() as q:
-            _multiplexer_state_prep_decomposition(state_vector, wires)
-
-        if queuing.QueuingManager.recording():
-            for op in q.queue:
-                qp.apply(op)
-
-        return q.queue
-
-
-def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
+# pylint: disable=unused-argument
+def _multiplexer_state_prep_decomposition_resources(state_vector, wires, check=False) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
+    num_wires = len(wires)
+
     resources = dict.fromkeys(
         [
             qp.SelectPauliRot(Float[2**i], control_wires=Wire[i], target_wire=Wire[1], rot_axis="Y")
