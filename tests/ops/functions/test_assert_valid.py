@@ -25,8 +25,7 @@ import pytest
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator2
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
     _check_capture,
@@ -818,6 +817,7 @@ class TestOperator2AssertValid:
 
 def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""
+
     n_wires = c.num_wires
     if n_wires is None:
         n_wires = 1
@@ -852,8 +852,12 @@ def create_op_instance(c, str_wires=False):
 @pytest.mark.parametrize("str_wires", (True, False))
 def test_generated_list_of_ops(class_to_validate, str_wires):
     """Test every auto-generated operator instance."""
+
     if class_to_validate.__module__[10:14] == "ftqc":
         pytest.skip(reason="skip tests for ftqc ops")
+
+    if issubclass(class_to_validate, Operator2) and str_wires:
+        pytest.skip(reason="Operator2 don't take string wires")
 
     # If you defined a new Operator and this call to `create_op_instance` failed, it might
     # be the fault of the test and not your Operator. Please do one of the following things:
