@@ -15,8 +15,8 @@ r"""Contains the MultiplexerStatePreparation template."""
 
 import pennylane as qp
 from pennylane import math
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.core.operator import Operator2
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires

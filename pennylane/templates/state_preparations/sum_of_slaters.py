@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.operation import Operator2
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import Complex, Int, Wire
 
@@ -632,7 +633,7 @@ def compute_sos_encoding(bits):
     return U, b
 
 
-class SumOfSlatersPrep(Operation):
+class SumOfSlatersPrep(Operator2):
     r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
 
     This operation prepares an arbitrary state
@@ -882,7 +883,9 @@ class SumOfSlatersPrep(Operation):
 
     """
 
-    resource_keys = {"num_entries", "num_bits", "num_wires"}
+    dynamic_argnames = ("coefficients",)
+    wire_names = ("wires",)
+    compileable_argnames = ("indices",)
 
     @property
     def resource_params(self):
