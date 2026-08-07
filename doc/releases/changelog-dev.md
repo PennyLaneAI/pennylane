@@ -875,6 +875,10 @@
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  - Single-qubit parametric operators are ported:
+    - `~.U1`, `~.U2`, `~.U3`
+  [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
+  [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
