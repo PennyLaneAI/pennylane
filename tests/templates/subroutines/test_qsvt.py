@@ -548,7 +548,7 @@ class TestQSVTMatrix:
             return qp.expval(qp.PauliZ(wires=0))
 
         A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
-        phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
+        phis = np.array([0.1, 0.2, 0.3], dtype=float, requires_grad=True)
         y = circuit(A, phis)
 
         mat_grad_results, phi_grad_results = qp.grad(circuit)(A, phis)
