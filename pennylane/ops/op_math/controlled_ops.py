@@ -2241,7 +2241,7 @@ class CRZ(Controlled2):
         super().__abstract_init__(qp.RZ(phi, Wire[1]), Wire[1])
 
     def adjoint(self):
-        return CRZ(-self.data[0], wires=self.wires)
+        return CRZ(-self.phi, wires=self.wires)
 
     @staticmethod
     # pylint: disable=unused-argument, arguments-differ
@@ -2626,11 +2626,7 @@ class ControlledPhaseShift(Controlled2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
     name = "ControlledPhaseShift"
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires):
         super().__init__(qp.PhaseShift(phi, wires[1:]), wires[:1])
@@ -2639,12 +2635,9 @@ class ControlledPhaseShift(Controlled2):
     def __abstract_init__(self, phi, wires):  # pylint: disable=arguments-differ,unused-argument
         super().__abstract_init__(qp.PhaseShift(Float, Wire), Wire)
 
-    def __repr__(self):
-        return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
-
     @override
     def adjoint(self):
-        return ControlledPhaseShift(-self.data[0], wires=self.wires)
+        return ControlledPhaseShift(-self.phi, wires=self.wires)
 
     @staticmethod
     # pylint: disable=arguments-differ,unused-argument

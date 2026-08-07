@@ -812,9 +812,6 @@ class PhaseShift(Operator2):
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[1]}
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
