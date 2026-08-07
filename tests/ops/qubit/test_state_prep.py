@@ -230,7 +230,7 @@ class TestDecomposition:
         @qp.qjit
         @qp.qnode(dev)
         def circuit(s):
-            qp.BasisEmbedding(features=s, wires=range(n_wires))
+            qp.BasisState(s, wires=range(n_wires))
             return qp.state()
 
         result = circuit(jax.numpy.array(state))
