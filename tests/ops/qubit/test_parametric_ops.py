@@ -3480,7 +3480,6 @@ class TestSimplify:
 
     @staticmethod
     def get_unsimplified_op(op_class):
-
         # construct the parameters of the op
         if op_class.num_params == 1:
             params = npp.array([[-50.0, 3.0, 50.0]])
