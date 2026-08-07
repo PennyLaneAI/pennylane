@@ -706,7 +706,7 @@ class TestSpecsAbstractArrayIntegartion:
         @qp.qnode(qp.device("null.qubit", wires=3))
         def c():
             qp.RZ(qp.typing.Float, wires=0)
-            qp.RX(qp.typing.Float, wires=0)
+            qp.RZ(qp.typing.Float, wires=0)
             return qp.probs(wires=0)
 
         assert qp.specs(c, level=0)().resources.quantum_operations["RZ"] == 2
@@ -743,7 +743,7 @@ class TestSpecsAbstractArrayIntegartion:
             def __init__(self, a, wires):
                 super().__init__(a, wires)
 
-        @qp.qjit(capture=True)
+        @qp.qjit(capture=True, target="mlir")
         @qp.qnode(qp.device("null.qubit", wires=2))
         def c():
             PytreeOp({"a": qp.typing.Float[4, 10], "b": qp.typing.Int[100]}, 0)
