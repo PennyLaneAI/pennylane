@@ -417,7 +417,7 @@ class GlobalPhase(Operator2):
     def generator(self):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle Identity with no wires, see PR #5194
-        return qp.s_prod(-1, qp.I(self.wires))
+        return qp.s_prod(-1, qp.I())
 
 
 def _controlled_g_phase_resource(

@@ -50,7 +50,7 @@ def _get_has_generator_types(num_wires):
     any_wires_types = []
     for op_name in qp.ops.qubit.__all__:
         op_class = getattr(qp.ops.qubit, op_name)
-        if op_class not in {qp.PauliRot, qp.PCPhase} and op_class.has_generator:
+        if op_class not in {qp.PauliRot, qp.PCPhase, qp.GlobalPhase} and op_class.has_generator:
             if op_class.num_wires == num_wires:
                 has_generator_types.append(op_class)
             elif op_class.num_wires is None:
