@@ -349,7 +349,7 @@ class TestControlledResourceRep:
         assert rep == expected
 
         # Also verify consistency with the resource_rep path (from actual ops)
-        actual_op = qp.ctrl(qp.BasisEmbedding(features=1, wires=[0, 1, 2]), control=3)
+        actual_op = qp.ctrl(qp.BasisEmbedding(1, wires=[0, 1, 2]), control=3)
         from_actual = resource_rep(type(actual_op), **actual_op.resource_params)
         assert rep == from_actual
 
