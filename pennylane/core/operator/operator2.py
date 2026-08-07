@@ -32,7 +32,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled, pause
+from pennylane.capture import enabled, pause, symbolic_array
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -231,20 +231,6 @@ class Operator2(metaclass=OperatorMeta):
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.tracer = None
-
-    def __abstract_init__(self, *args, **kwargs):
-        """Constructor for canonicalization of abstract inputs."""
-        bound_args = self._sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        arguments = bound_args.arguments
-
-        target_args = self.dynamic_argnames + self.hybrid_argnames + self.wire_argnames
-        for name in target_args:
-            kind = _resolve_arg_kind(type(self), name)
-            arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
-
-        Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
-        self._is_abstract = True
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -1326,6 +1312,7 @@ class Operator2(metaclass=OperatorMeta):
         if not enabled():
             return
 
+        _abstract_args_to_symbolic_arrays(self._bound_args)
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
         wire_lens = []
@@ -1766,12 +1753,27 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
     return hybrid_mask
 
 
+def _abstract_args_to_symbolic_arrays(bound_args):
+    for name, value in bound_args.arguments.items():
+        partial_leaves, _ = flatten(value, is_leaf=_is_op)
+        _ = pop_op_eqns(filter(_is_op, partial_leaves))
+        leaves, struct = flatten(value)
+        leaves = list(leaves)
+        for i, l in enumerate(leaves):
+            if isinstance(l, AbstractWires):
+                leaves[i] = [symbolic_array((), int) for _ in range(l.num_wires)]
+            elif isinstance(l, AbstractArray):
+                leaves[i] = symbolic_array(l.shape, l.dtype)
+        bound_args.arguments[name] = unflatten(leaves, struct)
+
+
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
     """Process a hybrid argument for binding an operator primitive."""
     partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
     _ = pop_op_eqns(filter(_is_op, partial_leaves))
 
     leaves, tree = flatten(hybrid_val)
+
     if is_wire_arg:
         return leaves, tree, [False] * len(leaves)
 
@@ -1948,7 +1950,7 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
-
+    print(new_args)
     return op_cls(**new_args)
 
 

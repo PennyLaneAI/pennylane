@@ -17,6 +17,8 @@ A tool for capturing dummy arrays that can be used for resource estimation.
 from functools import lru_cache
 from importlib.util import find_spec
 
+from pennylane.typing import AbstractArray
+
 from .switches import enabled
 
 has_jax = find_spec("jax") is not None
@@ -31,19 +33,17 @@ def _symbolic_array_primitive():
 
     import pennylane  # pylint: disable=import-outside-toplevel
 
-    estimation_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
+    symbolic_array_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
 
-    @estimation_p.def_abstract_eval
-    def _estimation_p_abstract_eval(shape, dtype):
+    @symbolic_array_p.def_abstract_eval
+    def _symbolic_array_p_abstract_eval(shape, dtype):
         return jax.core.ShapedArray(shape, dtype)
 
-    @estimation_p.def_impl
-    def _estimation_p_impl(shape, dtype):
-        raise NotImplementedError(
-            "symbolic_arrays can only be produced for abstract evaluation and cannot be executed."
-        )
+    @symbolic_array_p.def_impl
+    def _symbolic_array_p_impl(shape, dtype):
+        return AbstractArray(shape, dtype)
 
-    return estimation_p
+    return symbolic_array_p
 
 
 def symbolic_array(shape: tuple[int, ...], dtype: type):

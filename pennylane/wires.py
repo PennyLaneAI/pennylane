@@ -26,6 +26,7 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
+from pennylane.typing import AbstractWires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -120,6 +121,11 @@ class Wires(Sequence):
     Args:
          wires (Any): the wire label(s)
     """
+
+    def __new__(cls, wires=None, _override=False):
+        if isinstance(wires, AbstractWires):
+            return wires
+        return super().__new__(cls)
 
     def _flatten(self):
         """Serialize Wires into a flattened representation according to the PyTree convention."""

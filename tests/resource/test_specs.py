@@ -666,3 +666,87 @@ class TestSpecsGraphModeExclusive:
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2
         assert specs["resources"].num_allocs == 2
+
+
+@pytest.mark.catalyst
+class TestSpecsAbstractArrayIntegartion:
+    """Test integration of qjit specs with abstract arrays."""
+
+    def test_simple_float_arg(self):
+        """Test specs on an array with a simple float arg."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.RZ(qp.typing.Float, wires=0)
+            return qp.probs(wires=0)
+
+        specs = qp.specs(c, level=0)()
+
+        assert specs.resources.quantum_operations["RZ"] == 1
+
+    def test_wire_arg(self):
+        """Test that abstract wires can be passed in."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.CZ(qp.typing.Wire[2])
+            return qp.probs(wires=0)
+
+        specs = qp.specs(c, level=0)()
+
+        assert specs.resources.quantum_operations["CZ"] == 1
+
+    def test_compilation(self):
+        """Test that a transform can processed the abstract inputs."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.transforms.merge_rotations
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.RZ(qp.typing.Float, wires=0)
+            qp.RZ(qp.typing.Float, wires=0)
+            return qp.probs(wires=0)
+
+        assert qp.specs(c, level=0)().resources.quantum_operations["RZ"] == 2
+        assert qp.specs(c, level=1)().resources.quantum_operations["RZ"] == 1
+
+    def test_hybrid_op(self):
+        """Test capturing a hybrid op."""
+
+        class HybridOp(qp.core.Operator2):
+
+            hybrid_argnames = "op"
+            wire_argnames = ()
+
+            def __init__(self, op):
+                super().__init__(op=op)
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def c():
+            HybridOp(qp.RZ(qp.typing.Float, qp.typing.Wire))
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)().resources
+
+        assert r.quantum_operations == {"HybridOp": 1}
+
+    def test_pytree_input(self):
+        """Test the input being in a pytree."""
+
+        class PytreeOp(qp.core.Operator2):
+
+            hybrid_argnames = "a"
+
+            def __init__(self, a, wires):
+                super().__init__(a, wires)
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def c():
+            PytreeOp({"a": qp.typing.Float[4, 10], "b": qp.typing.Int[100]}, 0)
+            return qp.probs(wires=0)
+
+        assert qp.specs(c, level=0)().resources.quantum_operations == {"PytreeOp": 1}

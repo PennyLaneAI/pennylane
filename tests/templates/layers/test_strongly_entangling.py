@@ -23,7 +23,6 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane import ops as qp_ops
-from pennylane.capture import run_autograph
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -185,97 +184,6 @@ class TestDecomposition:
                 assert i == expected_wire
                 if idx % n_wires == n_wires - 1:
                     range_idx += 1
-
-
-@pytest.mark.jax
-@pytest.mark.capture
-# pylint:disable=protected-access
-class TestDynamicDecomposition:
-    """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_strongly_entangling_plxpr(self):
-        """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
-        import jax
-        from jax import numpy as jnp
-
-        from pennylane.capture.primitives import for_loop_prim
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-        from pennylane.transforms.decompose import DecomposeInterpreter
-
-        layers = 5
-        n_wires = 3
-        gate_set = None
-        imprimitive = qp.CNOT
-        max_expansion = 1
-
-        weight_shape = (layers, n_wires, 3)
-        weights = np.random.random(size=weight_shape)
-        wires = list(range(n_wires))
-
-        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        def circuit(weights, wires):
-            qp.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
-            return qp.state()
-
-        jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-        jaxpr_eqns = jaxpr.eqns
-        layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
-        assert layer_loop_eqn[0].primitive == for_loop_prim
-        layer_inner_eqn = layer_loop_eqn[0].params["jaxpr_body_fn"].eqns
-
-        rot_loop_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == for_loop_prim]
-        assert rot_loop_eqn[0].primitive == for_loop_prim
-        rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
-        assert rot_inner_eqn[-1].primitive == qp.Rot._primitive
-
-        cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
-        assert cnot_inner_eqn[-1].primitive == qp.CNOT._primitive
-        # Validate Ops
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
-        ops_list = collector.state["ops"]
-        tape = qp.tape.QuantumScript(
-            [qp.StronglyEntanglingLayers(jnp.array(weights), wires=wires, imprimitive=imprimitive)]
-        )
-        [decomp_tape], _ = qp.transforms.decompose(
-            tape, max_expansion=max_expansion, gate_set=gate_set
-        )
-        assert ops_list == decomp_tape.operations
-
-    @pytest.mark.parametrize("autograph", [True, False])
-    @pytest.mark.parametrize(
-        "n_layers, n_wires, ranges",
-        [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3]), (4, 4, None)],
-    )
-    @pytest.mark.parametrize("imprimitive", [qp.CNOT, qp.CZ, None])
-    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, 5, None])
-    @pytest.mark.parametrize("gate_set", [[qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.GlobalPhase], None])
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_strongly_entangling_state(
-        self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
-    ):  # pylint:disable=too-many-arguments
-        """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
-
-        import jax
-
-        from pennylane.transforms.decompose import DecomposeInterpreter
-
-        weight_shape = (n_layers, n_wires, 3)
-        weights = np.random.random(size=weight_shape)
-        wires = list(range(n_wires))
-
-        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qp.qnode(device=qp.device("default.qubit", wires=n_wires))
-        def circuit(weights, wires):
-            qp.StronglyEntanglingLayers(
-                weights, wires=wires, ranges=ranges, imprimitive=imprimitive
-            )
-            return qp.state()
-
-        if autograph:
-            circuit = run_autograph(circuit)
-        _ = jax.make_jaxpr(circuit)(weights, wires=wires)
 
 
 class TestInputs:

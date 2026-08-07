@@ -345,10 +345,6 @@ class CH(Controlled2):
         super().__init__(qp.H(wires[1:]), wires[:1])
 
     @override
-    def __abstract_init__(self, wires: WiresLike):  # pylint: disable=unused-argument
-        super().__abstract_init__(qp.H(Wire[1]), control_wires=Wire[1])
-
-    @override
     def adjoint(self):
         return CH(self.wires)
 
@@ -437,13 +433,6 @@ class CY(Controlled2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(qp.Y(wires[1:]), wires[:1])
-
-    @override
-    # pylint: disable=unused-argument
-    def __abstract_init__(self, wires: WiresLike):
-        # `wires` is abstract here and carries no information beyond its fixed
-        # size of 2, which always splits into one control and one target wire.
-        super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
 
     def adjoint(self):
         return CY(self.wires)
@@ -577,11 +566,6 @@ class CZ(Controlled2):
     def __init__(self, wires: WiresLike):
         super().__init__(qp.Z(wires[1:]), wires[:1])
 
-    @override
-    # pylint: disable=unused-argument
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.Z(Wire[1]), control_wires=Wire[1])
-
     def __repr__(self):
         return f"CZ(wires={self.wires})"
 
@@ -703,10 +687,6 @@ class CSWAP(Controlled2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(qp.SWAP(wires[1:]), wires[:1])
-
-    @override
-    def __abstract_init__(self, wires: WiresLike):  # pylint: disable=unused-argument
-        super().__abstract_init__(qp.SWAP(Wire[2]), control_wires=Wire[1])
 
     @override
     def adjoint(self):
@@ -865,11 +845,6 @@ class CCZ(Controlled2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(qp.Z(wires[2:]), wires[:2])
-
-    @override
-    # pylint: disable=unused-argument
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.Z(Wire[1]), control_wires=Wire[2])
 
     def __repr__(self):
         return f"CCZ(wires={self.wires})"
@@ -2232,13 +2207,6 @@ class CRZ(Controlled2):
 
     def __init__(self, phi, wires):
         super().__init__(qp.RZ(phi, wires[1:]), control_wires=wires[:1])
-
-    @override
-    # pylint: disable=unused-argument
-    def __abstract_init__(self, phi, wires: WiresLike):
-        # `wires` is abstract here and carries no information beyond its fixed
-        # size of 2, which always splits into one control and one target wire.
-        super().__abstract_init__(qp.RZ(phi, Wire[1]), Wire[1])
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
