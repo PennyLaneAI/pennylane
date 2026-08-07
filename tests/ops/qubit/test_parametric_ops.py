@@ -3753,10 +3753,10 @@ class TestSimplify:
             assert qp.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
             assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
 
-    @pytest.mark.parametrize("op_class", rotations)
-    def test_simplify_to_identity(self, op_class):
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_to_identity(self, op):
         """Test that the operator correctly simplifies to the identity when the rotation is 0"""
-        if op_class == qp.U2:
+        if op == qp.U2:
             pytest.skip("U2 gate does not simplify to Identity")
 
         try:
@@ -3771,7 +3771,7 @@ class TestSimplify:
 
         simplified_op = qp.simplify(unsimplified_op)
 
-        if op_class != qp.PSWAP:
+        if op != qp.PSWAP:
             assert isinstance(simplified_op, qp.Identity)
         else:
             # PSWAP reduces to SWAP when the angle is 0
