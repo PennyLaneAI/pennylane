@@ -23,7 +23,14 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Channel, Operation, Operator, Operator2, StatePrepBase, StatePrepBase2
+from pennylane.core.operator import (
+    Channel,
+    Operation,
+    Operator,
+    Operator2,
+    StatePrepBase,
+    StatePrepBase2,
+)
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
 from pennylane.fourier.mark import MarkedOp
