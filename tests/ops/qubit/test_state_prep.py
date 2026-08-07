@@ -45,25 +45,12 @@ def test_subclasshook_state_prep_base():
     assert issubclass(NewOp, StatePrepBase)
 
 
-class TestInputs:
-    """Test inputs and pre-processing."""
+def test_basis_state_input_cast_to_int():
+    """Test that the input to BasisState is cast to an int."""
 
-    def test_basis_state_input_cast_to_int(self):
-        """Test that the input to BasisState is cast to an int."""
-
-        state = np.array([1.0, 0.0], dtype=np.float64)
-        op = qp.BasisState(state, wires=(0, 1))
-        assert op.data[0].dtype == np.int64
-
-    @pytest.mark.parametrize(
-        ("state", "wires", "expected"),
-        [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
-    )
-    def test_state_as_int_conversion(self, state, wires, expected):
-        """checks conversion from state as int to a list of binary digits
-        with length = len(wires)"""
-
-        assert np.allclose(qp.BasisState(state, wires=wires).parameters[0], expected)
+    state = np.array([1.0, 0.0], dtype=np.float64)
+    op = qp.BasisState(state, wires=(0, 1))
+    assert op.data[0].dtype == np.int64
 
 
 class TestStandardValidityBasisState:
@@ -579,12 +566,6 @@ class TestStateVector:
         with pytest.raises(ValueError, match=r"State and wires must have the same length."):
             _ = qp.BasisState([0], wires=[0, 1])
 
-    @pytest.mark.parametrize("state", [-3, 9])
-    def test_basis_state_invalid_integer_state(self, state):
-        """Tests that the parameter must be of length num_wires."""
-        with pytest.raises(ValueError, match=r"Integer state must be a non-negative integer"):
-            _ = qp.BasisState(state, wires=[0, 1, 2])
-
     def test_input_not_binary_exception(self):
         """Checks exception if the state contains values other than zero and one."""
         with pytest.raises(ValueError, match="Basis state must only consist of"):
@@ -732,9 +713,6 @@ class TestInterfacesBasisState:
         res2 = circuit2(tuple(state))
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        res = circuit(2)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
     @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
@@ -748,9 +726,6 @@ class TestInterfacesBasisState:
 
         res = circuit(state)
         res2 = circuit2(state)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(pnp.array(2))
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -770,9 +745,6 @@ class TestInterfacesBasisState:
         res2 = circuit2(state)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        res = circuit(jnp.array(2))
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
     @pytest.mark.jax
     def test_jax_jit(self, tol):
         """Tests compilation with JAX JIT."""
@@ -789,10 +761,6 @@ class TestInterfacesBasisState:
 
         res = circuit(state)
         res2 = circuit2(state)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(2)
-        res2 = circuit2(2)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -850,7 +818,4 @@ class TestInterfacesBasisState:
 
         res = circuit(state)
         res2 = circuit2(state)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(torch.tensor(2))
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)

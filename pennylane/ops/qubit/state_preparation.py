@@ -104,40 +104,30 @@ class BasisState(StatePrepBase2):
         # pylint: disable=unused-argument
         super().__abstract_init__(Int[len(wires)], wires)
 
-    def __init__(self, state: int | TensorLike | Sequence[int], wires: WiresLike):
-
+    def __init__(self, state: TensorLike | Sequence[int], wires: WiresLike):
         wires = Wires(wires)
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
 
-        shape = qp.math.shape(state)
         num_wires = len(wires)
         abstract_state = qp.math.is_abstract(state)
-        if not shape:
-            if not abstract_state and not 0 <= state < 2**num_wires:
-                raise ValueError(
-                    f"Integer state must be a non-negative integer smaller than {2 ** num_wires} "
-                    f"to have a feasible binary representation on {num_wires} qubits, got {state}"
-                )
-            state = qp.math.int_to_binary(state, num_wires)
-            shape = (num_wires,)
-        else:
-            if len(shape) != 1:
-                raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 
-            n_states = shape[0]
-            if n_states != num_wires:
-                raise ValueError(
-                    f"State and wires must have the same length; got {num_wires} wires but "
-                    f"a state of length {n_states} ({state=})."
-                )
+        shape = math.shape(state)
+        if len(shape) != 1:
+            raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 
-            if not abstract_state:
-                state_list = list(qp.math.toarray(state))
-                if not set(state_list).issubset({0, 1}):
-                    raise ValueError(
-                        f"Basis state must only consist of 0s and 1s; got {state_list}"
-                    )
+        n_states = shape[0]
+        if n_states != num_wires:
+            raise ValueError(
+                f"State and wires must have the same length; got {num_wires} wires but "
+                f"a state of length {n_states} ({state=})."
+            )
+
+        if not abstract_state:
+            state_list = list(qp.math.toarray(state))
+            if not set(state_list).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
+
         state = qp.math.cast(state, int)
         super().__init__(state, wires=wires)
 
@@ -177,7 +167,6 @@ def _basis_state_decomp_resources(
 
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state: AbstractArray, wires: AbstractWires):
-
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
@@ -414,7 +403,6 @@ class StatePrep(StatePrepBase):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order: WiresLike | None = None):
-
         if self.is_sparse:
             op_vector = _sparse_statevec_permute_and_embed(
                 self.parameters[0], self.wires, wire_order
