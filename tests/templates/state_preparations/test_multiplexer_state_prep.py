@@ -43,16 +43,24 @@ class TestMultiplexerStatePreparation:
                 np.array([1.0, 0, 0]),
                 "State vector must be of length",
             ),
-            (
-                np.array([1.0, 1, 0, 0]),
-                "State vector must have",
-            ),
         ],
     )
     def test_MultiplexerStatePrep_error(self, state, msg_match):
         """Test that proper errors are raised for MultiplexerStatePreparation"""
         with pytest.raises(ValueError, match=msg_match):
             qp.MultiplexerStatePreparation(state, wires=[0, 1])
+
+    def test_norm_check_error(self):
+        """Test that a non-normalized state raises an error when ``check=True``."""
+        state = np.array([1.0, 1.0, 0, 0])
+        with pytest.raises(ValueError, match="State vector must have norm 1.0"):
+            qp.MultiplexerStatePreparation(state, wires=[0, 1], check=True)
+
+    def test_norm_check_skipped_by_default(self):
+        """Test that a non-normalized state does not raise when ``check=False`` (default)."""
+        state = np.array([1.0, 1.0, 0, 0])
+        qp.MultiplexerStatePreparation(state, wires=[0, 1])
+        qp.MultiplexerStatePreparation(state, wires=[0, 1], check=False)
 
     @pytest.mark.parametrize(
         ("state", "num_wires"),
@@ -136,7 +144,7 @@ class TestMultiplexerStatePreparation:
         qs = qp.tape.QuantumScript(
             [
                 qp.MultiplexerStatePreparation(
-                    state,
+                    np.array(state),
                     wires=wires,
                 )
             ],

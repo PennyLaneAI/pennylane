@@ -360,8 +360,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ───────├●─│──────────────├●────┤
     5: ───────├●─│──────────────├●────┤
          |0>├─╰X─╰●─────────────╰X──┤
-    Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1)): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
-    Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1)): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+    Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
+    Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
     Wire Allocations: {'zero': 1}
     Full Expansion Gates: {CNOT: 34, GlobalPhase: 68, MidMeasure: 2, RX: 12, RY: 18, RZ: 58}
     Weighted Cost: 124.0
@@ -372,8 +372,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     3: ─├●─├●────────├●─┤
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
-    Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
-    Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+    Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
+    Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
     Full Expansion Gates: {CNOT: 72, GlobalPhase: 82, MidMeasure: 4, RX: 22, RY: 24, RZ: 80}
     Weighted Cost: 202.0
 
@@ -482,9 +482,9 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ───────├●─│──────────────├●────┤
         5: ───────├●─│──────────────├●────┤
         6: ───────├●─│──────────────├●────┤
-            |0>├─╰X─╰●─────────────╰X──┤
-        Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 4}
-        Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+             |0>├─╰X─╰●─────────────╰X──┤
+        Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 4}
+        Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {CNOT: 60, GlobalPhase: 107, MidMeasure: 2, RX: 17, RY: 22, RZ: 96}
         Weighted Cost: 197.0
@@ -496,11 +496,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ─├●─├●────────├●─┤
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
-        Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4)): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 4}
-        Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4)): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+        Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 4}
+        Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
         Full Expansion Gates: {CNOT: 102, GlobalPhase: 202, MidMeasure: 6, RX: 40, RY: 42, RZ: 176}
         Weighted Cost: 366.0
-
 
         Similarly, for the ``MultiControlledX`` in the circuit:
 

@@ -1116,6 +1116,30 @@ class TestControlledDecomposition:
             qp.X(3),
         ]
 
+    @pytest.mark.catalyst
+    def test_flip_zero_control_qjit(self):
+        """Tests flip_zero_control with qjit."""
+
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
+        def _custom_controlled_rule(base, control_wires, **_):
+            qp.CNOT(control_wires[:2])
+            qp.H(control_wires[2])
+            qp.CNOT([control_wires[-1], base.wires[0]])
+            qp.H(control_wires[2])
+            qp.CNOT(control_wires[:2])
+
+        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        op = NonParametricOp(wires=[0])
+
+        @qp.qjit
+        @qp.qnode(qp.device("null.qubit", wires=4))
+        def circuit(cvals):
+            custom_rule(base=op, control_wires=[1, 2, 3], control_values=cvals)
+            return qp.probs()
+
+        specs = qp.specs(circuit, level="device")([1, 1, 0])
+        assert specs.resources.quantum_operations == {"CNOT": 3, "Hadamard": 2, "PauliX": 2}
+
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""

@@ -291,7 +291,6 @@ class BasisRotation(Operator2):
     """
 
     dynamic_argnames = ("unitary_matrix",)
-    wires_argnames = ("wires",)
     compilable_argnames = ("check",)
 
     arg_specs = {"unitary_matrix": Complex[-1, -1], "wires": Wire[-1]}
@@ -317,10 +316,6 @@ class BasisRotation(Operator2):
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         super().__init__(unitary_matrix, wires=wires)
-
-    @property
-    def num_params(self):
-        return 1
 
 
 # pylint: disable-next=unused-argument
