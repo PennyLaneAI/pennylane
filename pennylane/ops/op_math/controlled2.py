@@ -164,8 +164,10 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if len(control_values) != len(control_wires):
             raise ValueError("control_values should be the same length as control_wires")
 
-        if not isinstance(control_values, AbstractArray):
-            control_values = qp.math.stack(control_values).astype(bool)
+        if isinstance(control_values, (list, tuple)):
+            control_values = qp.math.asarray(control_values, like=control_values[0])
+
+        control_values = qp.math.cast(control_values, dtype=bool)
 
         self._base = base
         self._control_wires = control_wires
@@ -398,10 +400,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             if isinstance(simplified_base, qp.Identity):
                 return simplified_base
 
+            ctrl_values = qp.math.concatenate([self.control_values, self.base.control_values])
             return qp.ctrl(
                 simplified_base,
                 control=self.control_wires + self.base.control_wires,
-                control_values=self.control_values + self.base.control_values,
+                control_values=math.cast(ctrl_values, bool),
                 work_wires=self.work_wires + self.base.work_wires,
                 work_wire_type=resolve_work_wire_type(
                     self.base.work_wires,
@@ -494,8 +497,11 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
             params.append(f"work_wires={self.work_wires}")
-        if self.control_values and not all(self.control_values):
-            params.append(f"control_values={self.control_values}")
+        ctrl_values = self.control_values
+        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+            params.append(f"control_values={ctrl_values}")
+        elif not all(ctrl_values):
+            params.append(f"control_values={ctrl_values.tolist()}")
         return f"Controlled({self.base}, {', '.join(params)})"
 
     @property
@@ -525,13 +531,13 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values.
         if n_ctrls == 0:
-            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
+            invars = eqns[0].invars + self.control_wires.tolist() + list(self.control_values)
         else:
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
             # need to insert the new control wires before the old ones, and do the same
             # for control values too.
             control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
-            control_values = self.control_values + eqns[0].invars[-n_ctrls:]
+            control_values = list(self.control_values) + eqns[0].invars[-n_ctrls:]
             invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
 
         params["n_ctrls"] += len(self.control_wires)
@@ -716,6 +722,10 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         # ops like MultiControlledX and ControlledQubitUnitary
         wires = arguments.get("control_wires", arguments.get("wires", None))
         assert wires is not None
+
+        if qp.compiler.active() and not qp.capture.enabled():
+            control_values = math.array(control_values, like="jax")
+            wires = math.array(wires, like="jax")
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
