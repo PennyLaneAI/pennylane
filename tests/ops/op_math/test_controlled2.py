@@ -418,6 +418,8 @@ class TestControlled2:
         """Tests that controlled operators with control values pass the eigvals test."""
 
         op = qp.MultiControlledX([0, 1, 2, 3], control_values=control_values)
+        expected = Controlled2.compute_eigvals(qp.X(3), [0, 1, 2], control_values=control_values)
+        assert qp.math.allclose(op.eigvals(), expected)
         _check_eigendecomposition(op)
 
         op2 = qp.ctrl(qp.SWAP([0, 1]), control=[2, 3, 4], control_values=control_values)
