@@ -1133,9 +1133,6 @@ class TestControlledDecomposition:
 
         class CustomRot(Operator):  # pylint: disable=too-few-public-methods
 
-            def __init__(self, *params, wires):
-                super().__init__(*params, wires=wires)
-
             @staticmethod
             def compute_matrix(*params):
                 return qp.Rot.compute_matrix(*params)
