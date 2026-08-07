@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 
-import numpy as np
+from numpy.typing import ArrayLike
 
 
 @dataclass(frozen=True)
@@ -47,18 +47,27 @@ class CoprocessorFunction:
         return self.name
 
 
-def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
+def css_decoder(
+    Hx: ArrayLike,
+    Hz: ArrayLike,
+    *,
+    postprocess: str = "osd",
+    niter: int = 10,
+    prob: float = 0.1,
+    platform: str = "hip:gfx90a:64",
+    num_warps: int = 1,
+    num_stages: int = 1,
+    compiler: str = "",
+    cflags: tuple[str, ...] = (),
+) -> CoprocessorFunction:
     """Compile a CSS code's Tanner graph into a coprocessor decode function.
 
     Accepts the X- and Z-type parity-check matrices of a CSS code and compiles a decoder down to a
     shared library that can be used as a :class:`~.CoprocessorFunction`.
 
-    .. note::
-        Not yet implemented — this is a placeholder for the Triton-based decoder compiler.
-
     Args:
-        Hx (np.ndarray): The X parity-check matrix.
-        Hz (np.ndarray): The Z parity-check matrix.
+        Hx (ArrayLike): The X parity-check matrix.
+        Hz (ArrayLike): The Z parity-check matrix.
 
     Returns:
         CoprocessorFunction: The compiled decode function, ready to pass as a
@@ -66,7 +75,21 @@ def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
 
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
     """
-    raise NotImplementedError(
-        "css_decoder is not yet implemented; it will compile a CSS code's Tanner graph "
-        "into a CoprocessorFunction via Triton."
+    try:
+        from .decoders.triton.decoder_frontend import build_css_bp_decoder
+    except ImportError as exc:
+        raise ImportError("css_decoder requires Triton support.") from exc
+
+    so_path, symbol_name = build_css_bp_decoder(
+        Hx,
+        Hz,
+        postprocess=postprocess,
+        niter=niter,
+        prob=prob,
+        platform=platform,
+        num_warps=num_warps,
+        num_stages=num_stages,
+        compiler=compiler,
+        cflags=cflags,
     )
+    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))

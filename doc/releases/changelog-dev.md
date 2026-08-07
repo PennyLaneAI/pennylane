@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* (Experimental) Added a generic Triton decoder dispatcher to user provided `triton`
+decoders as well as CSS decoder based on Tannerg graph now built on top of it.
+  [(#9975)](https://github.com/PennyLaneAI/pennylane/pull/9975)
+
 * (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
   [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
 
