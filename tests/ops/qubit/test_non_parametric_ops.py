@@ -15,7 +15,6 @@
 Unit tests for the available non-parametric qubit operations
 """
 
-# pylint: disable=too-few-public-methods
 import copy
 import itertools
 
@@ -51,6 +50,9 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
+
+# pylint: disable=too-few-public-methods
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -622,6 +624,7 @@ class TestMultiControlledX:
             (None, [1, 0], TypeError, "Must specify a set of wires."),
             ([0, 1, 2], [0, 1, 0], ValueError, "control_values should be the same length"),
             ([1], [1], ValueError, r"MultiControlledX acts on at least 2 wires, 1 given."),
+            (Wire[1], None, ValueError, r"MultiControlledX acts on at least 2 wires, 1 given."),
         ],
     )
     def test_invalid_arguments_to_init(self, wires, control_values, error_type, error_message):

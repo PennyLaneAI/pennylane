@@ -1349,15 +1349,13 @@ class MultiControlledX(Controlled2):
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        wires = Wires(wires)
-        if len(wires) < 2:
-            raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
+        arguments = _setup_inputs_mcx(wires, control_values, work_wires, work_wire_type)
         super().__init__(
-            base=qp.X(wires[-1]),
-            control_wires=wires[:-1],
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
+            base=qp.X(arguments["wires"][-1]),
+            control_wires=arguments["wires"][:-1],
+            control_values=arguments["control_values"],
+            work_wires=arguments["work_wires"],
+            work_wire_type=arguments["work_wire_type"],
         )
 
     @override
