@@ -21,9 +21,27 @@ import pytest
 import scipy as sp
 
 import pennylane as qp
+from pennylane.core.operator import StatePrepBase, StatePrepBase2
 from pennylane.exceptions import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
+
+
+def test_subclasshook_state_prep_base():
+    """Test that anything that inherits from StatePrepBase2 is a StatePrepBase."""
+
+    class NewOp(StatePrepBase2):  # pylint: disable=too-few-public-methods
+        """dummy operator2"""
+
+        def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            super().__init__(wires)
+
+        def state_vector(self, wire_order):  # pylint: disable=signature-differs, unused-argument
+            return [0, 1]
+
+    new_op = NewOp(wires=0)
+    assert isinstance(new_op, StatePrepBase)
+    assert issubclass(NewOp, StatePrepBase)
 
 
 def test_basis_state_input_cast_to_int():
@@ -295,7 +313,6 @@ class TestDecomposition:
 
 
 class TestStatePrepIntegration:
-
     @pytest.mark.catalyst
     @pytest.mark.parametrize("input_type", [tuple, list])
     def test_state_prep_tuple_list_capture(self, input_type):
