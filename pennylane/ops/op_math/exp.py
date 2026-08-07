@@ -29,13 +29,13 @@ from pennylane.decomposition import (
     add_decomps,
     register_condition,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     OperatorPropertyUndefined,
 )
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
@@ -63,7 +63,11 @@ def _get_has_generator_types(num_wires):
 
 def _find_equal_generator(base, coeff):
     for op_class in _get_has_generator_types(len(base.wires)):
-        g, c = qp.generator(op_class)(coeff, base.wires)
+        # NOTE: Use a real probe coeff so that constructing the candidate does not fail for operators that do not support
+        # complex angles (like RZ). This should be fine as any op_class in _get_has_generator_types has a generator
+        # which doesn't depend on coeff. The coefficient is cast to real during construction anyways down below.
+        probe_coeff = math.real(coeff)
+        g, c = qp.generator(op_class)(probe_coeff, base.wires)
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
         mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires, strict=True)))
 
@@ -496,7 +500,9 @@ def _pauli_rot_decomp_condition(base):
 def _pauli_rot_decomp_resource(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    return {resource_rep(qp.PauliRot, pauli_word=qp.pauli.pauli_word_to_string(base)): 1}
+
+    pauli_word = qp.pauli.pauli_word_to_string(base)
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_condition(_pauli_rot_decomp_condition)

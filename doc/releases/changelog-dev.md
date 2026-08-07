@@ -661,6 +661,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
+  [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
@@ -828,6 +831,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
+  [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
+
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
   [(#9873)](https://github.com/PennyLaneAI/pennylane/pull/9873)
@@ -840,13 +846,22 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Non-parametric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
+  [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
+  [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
+  - Parametric operators are ported:
+    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`
+  [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
+  [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
+  [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
+  [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
+  - Multi-qubit, parametric operators are ported:
   - Templates are ported:
     - `~.BasisRotation`, `~.QROM`, `~.QFT`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
@@ -991,6 +1006,7 @@
     [(#9843)](https://github.com/PennyLaneAI/pennylane/pull/9843)
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
+    [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.

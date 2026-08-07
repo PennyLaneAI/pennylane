@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
 from pennylane.typing import Wire
 
@@ -159,6 +160,8 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
+            if issubclass(base_class, Operator2):
+                return {abstractify(base_class(**base_params)): 1}
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
@@ -357,9 +360,9 @@ def flip_control_adjoint(
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
     qp.adjoint(
-        qp.ops.Controlled(
+        qp.ctrl(
             base.base,
-            control_wires=wires[: len(control_wires)],
+            control=wires[: len(control_wires)],
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,

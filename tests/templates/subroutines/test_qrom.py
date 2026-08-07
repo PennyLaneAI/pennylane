@@ -38,19 +38,6 @@ from pennylane.templates.subroutines.qrom import (
 from pennylane.templates.subroutines.select import _select_decomp_unary
 from pennylane.typing import AbstractArray, Int, Wire
 
-clifford_t_measure = {
-    qp.H,
-    qp.T,
-    qp.S,
-    qp.X,
-    qp.Y,
-    qp.Z,
-    qp.CNOT,
-    qp.CZ,
-    qp.Hadamard,
-    PauliMeasure,
-}
-
 has_jax = True
 try:
     from jax import numpy as jnp
@@ -621,7 +608,7 @@ class TestMeasurementQROM:
         """Test that the general resource estimate contains the expected gate types."""
         res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
         assert res[qp.resource_rep(PauliMeasure)] > 0
-        assert res[qp.resource_rep(qp.CZ)] > 0
+        assert res[qp.CZ] > 0
 
     def test_resources_from_base_params(self):
         """Test that resources are extracted from ``base_params`` (Adjoint path)."""
@@ -730,6 +717,7 @@ class TestMeasurementQROM:
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -754,7 +742,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -771,6 +759,7 @@ class TestMeasurementQROM:
             ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
@@ -796,7 +785,7 @@ class TestMeasurementQROM:
         x_state /= np.linalg.norm(x_state)
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
@@ -819,6 +808,7 @@ class TestMeasurementQROM:
         assert np.isclose(circuit()[0][0], 1.0)
         assert np.isclose(circuit()[1][0], 1.0)
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -853,7 +843,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -872,6 +862,7 @@ class TestMeasurementQROM:
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         ("L", "n_extra"),
@@ -897,7 +888,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
