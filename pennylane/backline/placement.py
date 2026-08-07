@@ -70,6 +70,50 @@ class Node:
     """Backend-specific initialization arguments; empty by default (never ``None``). TODO: add what is recognized here
     """
 
+    # Aliases for Catalyst (``name``/``addr``/``port``/``triple``).
+
+    @property
+    def name(self) -> "str | None":
+        """Alias of :attr:`label`."""
+        return self.label
+
+    @property
+    def addr(self) -> "str | None":
+        """Alias of :attr:`~.Coprocessor.comm_host`, or ``None``."""
+        return getattr(self, "comm_host", None)
+
+    @property
+    def port(self) -> "int | None":
+        """Alias of :attr:`~.Coprocessor.oob_port`, or ``None``."""
+        return getattr(self, "oob_port", None)
+
+    @property
+    def triple(self) -> "str | None":
+        """Cross-compilation triple from :attr:`executor`, or ``None``."""
+        return getattr(getattr(self, "executor", None), "triple", None)
+
+    def _fill_backend_lib(self, role: str) -> None:
+        """Set ``init_args['backend_lib']`` from :attr:`backend` if not already set."""
+        if not self.backend:
+            return
+        init = self.init_args or {}
+        if "backend_lib" in init:
+            return
+        lib = f"libcatalyst_transport_{self.backend}_{role}.so"
+        object.__setattr__(self, "init_args", {**init, "backend_lib": lib})
+
+    def _ensure_executor_spec(self) -> None:
+        """Wrap :attr:`executor_options` into an :class:`ExecutorSpec` for remote nodes."""
+        if self.remote and self.executor_options is not None and self.executor is None:
+            object.__setattr__(self, "executor", ExecutorSpec(options=dict(self.executor_options)))
+
+
+@dataclass(frozen=True)
+class ExecutorSpec:
+    """Unrealized executor request held on :attr:`~.Node.executor` until the compiler launches it."""
+
+    options: dict = field(default_factory=dict)
+
 
 @dataclass(frozen=True, kw_only=True)
 class Controller(Node):
@@ -95,6 +139,8 @@ class Controller(Node):
     def __post_init__(self):
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit"))
+        self._fill_backend_lib("controller")
+        self._ensure_executor_spec()
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -138,6 +184,8 @@ class Coprocessor(Node):
                 )
             if not 1 <= self.oob_port <= 65535:
                 raise ValueError(f"oob_port must be in 1..65535, got {self.oob_port}")
+        self._fill_backend_lib("coprocessor")
+        self._ensure_executor_spec()
 
 
 @dataclass(frozen=True, kw_only=True)
