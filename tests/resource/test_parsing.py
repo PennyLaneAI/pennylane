@@ -316,3 +316,12 @@ class TestAnalysisPassConversion:
         ]
 
         assert actual == expected
+
+    def test_unknown_extended_fields(self, example_loop_analysis_pass_result):
+        """Test that unknown extended fields are ignored with a warning."""
+        example_loop_analysis_pass_result["for_loop_2"]["extended_fields"]["unknown_field"] = {
+            "some_key": 42
+        }
+
+        with pytest.warns(UserWarning, match="Specs detected unknown extended fields in the resource data:"):
+            parse_resources_json(example_loop_analysis_pass_result)

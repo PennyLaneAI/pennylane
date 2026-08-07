@@ -191,22 +191,35 @@ def _handle_extended_fields(
         call_count (int | Expression): The number of times the called function is invoked
     """
 
-    if "pbc_depth" in called_fn_resources.extra:
-        pbc_depth = extended_fields.get("pbc_depth", None)
-        if pbc_depth is None:
-            extended_fields["pbc_depth"] = {
-                "any_commuting_depth": call_count
-                * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"],
-                "qubit_disjoint_depth": call_count
-                * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"],
-            }
-        else:
-            pbc_depth["any_commuting_depth"] += (
-                call_count * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"]
-            )
-            pbc_depth["qubit_disjoint_depth"] += (
-                call_count * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"]
-            )
+    unknown_fields = []
+
+    for field_name in called_fn_resources.extra:
+        match field_name:
+            case "pbc_depth":
+                pbc_depth = extended_fields.get("pbc_depth", None)
+                if pbc_depth is None:
+                    extended_fields["pbc_depth"] = {
+                        "any_commuting_depth": call_count
+                        * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"],
+                        "qubit_disjoint_depth": call_count
+                        * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"],
+                    }
+                else:
+                    pbc_depth["any_commuting_depth"] += (
+                        call_count * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"]
+                    )
+                    pbc_depth["qubit_disjoint_depth"] += (
+                        call_count * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"]
+                    )
+            case _:
+                unknown_fields.append(field_name)
+
+    if unknown_fields:
+        warnings.warn(
+            f"Specs detected unknown extended fields in the resource data: {unknown_fields}. "
+            "These fields will not be propagated correctly, so final results may be inaccurate.",
+            UserWarning,
+        )
 
 
 def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
