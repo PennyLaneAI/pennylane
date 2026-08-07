@@ -20,7 +20,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 @pytest.mark.jax
@@ -99,6 +98,9 @@ class TestDecomposition:
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
+        from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
+            CollectOpsandMeas,
+        )
 
         gate_ops, gate_angles, gate_wires = [], [], []
 
