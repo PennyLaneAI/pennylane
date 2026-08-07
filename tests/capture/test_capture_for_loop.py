@@ -15,7 +15,7 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=too-few-public-methods,unbalanced-tuple-unpacking
+# pylint: disable=too-few-public-methods
 
 import numpy as np
 import pytest
@@ -402,6 +402,7 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(5))
 
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [output] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
@@ -417,6 +418,7 @@ class TestDynamicShapes:
             return qp.for_loop(4)(f)(0)
 
         jaxpr = jax.make_jaxpr(w)()
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [r] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qp.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
 
@@ -471,6 +473,7 @@ class TestDynamicShapes:
             return f(i0, jnp.ones(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [final_j, final_a] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qp.math.allclose(final_j, 5)  # 2 +3
         assert qp.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
@@ -511,6 +514,7 @@ class TestDynamicShapes:
             return f(a0, b0)
 
         jaxpr = jax.make_jaxpr(w)(2)
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [a, b] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qp.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
         assert qp.math.allclose(b, jnp.array([9, 9]))  # 1 + 1 + 1 + 2 + 4
@@ -530,6 +534,7 @@ class TestDynamicShapes:
             return f(x0, y0)
 
         jaxpr = jax.make_jaxpr(workflow)(2)
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [s, x, y] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qp.math.allclose(s, 8)
         x_expected = jnp.ones(8)
@@ -549,6 +554,7 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(w)(2)
         # shape of b present in inputs, shape of a is not
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [shape1, a, b] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(shape1, 15)
         expected = jnp.ones(15)
@@ -572,6 +578,7 @@ class TestDynamicShapes:
             return c, d
 
         jaxpr = jax.make_jaxpr(w)(2)
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [c, d] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(c, jnp.array([5, 5, 5]))  # 2*2 + 1
         assert jnp.allclose(d, jnp.array([5, 5, 5]))

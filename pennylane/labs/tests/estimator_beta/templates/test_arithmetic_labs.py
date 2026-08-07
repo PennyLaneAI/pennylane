@@ -15,7 +15,7 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=no-self-use
 
 import re
 

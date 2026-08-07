@@ -406,7 +406,6 @@ class TestProcessSamples:
 
 
 class TestCountsIntegration:  # pylint: disable=too-many-public-methods
-    # pylint: disable=not-an-iterable
 
     def test_counts_all_outcomes_with_mcm(self):
         """Test that all outcomes are present in results if requested."""
@@ -472,6 +471,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
 
         assert isinstance(sample, tuple)
         assert len(sample) == 2
+        # pylint: disable-next=not-an-iterable
         assert np.all([sum(s.values()) == n_sample for batch in sample for s in batch])
 
     def test_counts_combination(self):
@@ -633,6 +633,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
         assert res[1] == {basis_state: shot_vec[1]}
         assert res[2] == {basis_state: shot_vec[2]}
         assert len(res) == len(shot_vec)
+        # pylint: disable-next=not-an-iterable
         assert sum(sum(res_bin.values()) for res_bin in res) == sum(shot_vec)
 
     @pytest.mark.all_interfaces
@@ -655,6 +656,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
         assert res[1] == {1: shot_vec[1]}
         assert res[2] == {1: shot_vec[2]}
         assert len(res) == len(shot_vec)
+        # pylint: disable-next=not-an-iterable
         assert sum(sum(res_bin.values()) for res_bin in res) == sum(shot_vec)
 
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
@@ -679,6 +681,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
         assert res[1][basis_state] == shot_vec[1]
         assert res[2][basis_state] == shot_vec[2]
         assert len(res) == len(shot_vec)
+        # pylint: disable-next=not-an-iterable
         assert sum(sum(res_bin.values()) for res_bin in res) == sum(shot_vec)
 
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
@@ -703,6 +706,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
         assert res[1][sample] == shot_vec[1]
         assert res[2][sample] == shot_vec[2]
         assert len(res) == len(shot_vec)
+        # pylint: disable-next=not-an-iterable
         assert sum(sum(res_bin.values()) for res_bin in res) == sum(shot_vec)
 
     meas2 = [

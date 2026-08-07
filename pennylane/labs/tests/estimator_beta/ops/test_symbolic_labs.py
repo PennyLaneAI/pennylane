@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for symbolic resource operators in the estimator_beta module."""
 
-# pylint: disable=no-self-use,too-few-public-methods
+# pylint: disable=no-self-use
 
 from collections import defaultdict
 from functools import partial

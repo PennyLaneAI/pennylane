@@ -14,7 +14,7 @@
 
 """Unit tests for the classical shadows class"""
 
-# pylint: disable=redefined-outer-name,unpacking-non-sequence,too-few-public-methods,not-an-iterable,inconsistent-return-statements
+# pylint: disable=redefined-outer-name,too-few-public-methods,inconsistent-return-statements
 
 import numpy as onp
 import pytest
@@ -37,6 +37,7 @@ def qnode(n_wires):
     return qp.classical_shadow(wires=range(n_wires))
 
 
+# pylint: disable-next=not-an-iterable
 shadows = [ClassicalShadow(*qnode(n_wires)) for n_wires in range(2, 3)]
 
 
@@ -119,7 +120,7 @@ class TestIntegrationShadows:
             return qp.classical_shadow(wires=range(n_wires))
 
         # should prepare the bell state
-        bits, recipes = qnode(2)
+        bits, recipes = qnode(2)  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
         global_snapshots = shadow.global_snapshots()
 
@@ -132,7 +133,7 @@ class TestIntegrationShadows:
         assert qp.math.allclose(np.mean(local_snapshots, axis=0)[0], 0.5 * np.eye(2), atol=1e-1)
 
         # alternative computation
-        bits, recipes = qnode(1)
+        bits, recipes = qnode(1)  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
         global_snapshots = shadow.global_snapshots()
         local_snapshots = shadow.local_snapshots(wires=[0])
@@ -197,7 +198,7 @@ class TestStateReconstruction:
         """Test that the state reconstruction is correct for a uniform
         superposition of qubits"""
         circuit = hadamard_circuit(wires)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         state = shadow.global_snapshots()
@@ -213,7 +214,7 @@ class TestStateReconstruction:
         """Test that the state reconstruction is correct for a maximally
         entangled state"""
         circuit = max_entangled_circuit(wires)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         state = shadow.global_snapshots()
@@ -231,7 +232,7 @@ class TestStateReconstruction:
         """Test that the state reconstruction is correct for different numbers
         of used snapshots"""
         circuit = hadamard_circuit(wires)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         state = shadow.global_snapshots(snapshots=snapshots)
@@ -242,7 +243,7 @@ class TestStateReconstruction:
         """Test that the state reconstruction is correct for different indices
         of considered snapshots"""
         circuit = hadamard_circuit(wires)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         # choose 1000 random indices
@@ -258,7 +259,7 @@ class TestStateReconstruction:
     def test_large_state_warning(self, monkeypatch):
         """Test that a warning is raised when a very large state is reconstructed"""
         circuit = hadamard_circuit(17, shots=2)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         msg = "Querying density matrices for n_wires > 16 is not recommended, operation will take a long time"
@@ -279,7 +280,7 @@ class TestStateReconstructionInterfaces:
     def test_qft_reconstruction(self, interface):
         """Test that the state reconstruction is correct for a QFT state"""
         circuit = qft_circuit(3, interface=interface)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         state = shadow.global_snapshots()
@@ -300,7 +301,7 @@ class TestExpvalEstimation:
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
         circuit = hadamard_circuit(3, shots=100000)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         obs = [
@@ -323,7 +324,7 @@ class TestExpvalEstimation:
         """Test that the expval estimation is correct for a maximally
         entangled state"""
         circuit = max_entangled_circuit(3, shots=100000)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         obs = [
@@ -347,7 +348,7 @@ class TestExpvalEstimation:
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         H = qp.Hadamard(0) @ qp.Hadamard(2)
@@ -358,7 +359,7 @@ class TestExpvalEstimation:
     def test_non_pauli_error_no_pauli_rep(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         H = qp.Hadamard(0) @ qp.Hadamard(2)
@@ -374,7 +375,7 @@ class TestExpvalEstimationInterfaces:
     def test_qft_expval(self, interface):
         """Test that the expval estimation is correct for a QFT state"""
         circuit = qft_circuit(3, shots=100000, interface=interface)
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bits, recipes)
 
         obs = [

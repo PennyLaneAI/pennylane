@@ -61,7 +61,9 @@ def test_tracking_compute_derivatives():
             return 0.0
 
         def compute_derivatives(
-            self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
+            self,
+            circuits,
+            execution_config: qp.devices.ExecutionConfig | None = None,
         ):
             return 0.0
 
@@ -86,7 +88,9 @@ def test_tracking_execute_and_compute_derivatives():
             return 0.0
 
         def execute_and_compute_derivatives(
-            self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
+            self,
+            circuits,
+            execution_config: qp.devices.ExecutionConfig | None = None,
         ):
             return 0.0, 0.0
 
@@ -113,7 +117,10 @@ def test_tracking_compute_jvp():
             return 0.0
 
         def compute_jvp(
-            self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
+            self,
+            circuits,
+            tangents,
+            execution_config: qp.devices.ExecutionConfig | None = None,
         ):
             return 0.0
 
@@ -138,7 +145,10 @@ def test_tracking_execute_and_compute_jvp():
             return 0.0
 
         def execute_and_compute_jvp(
-            self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
+            self,
+            circuits,
+            tangents,
+            execution_config: qp.devices.ExecutionConfig | None = None,
         ):
             return 0.0, 0.0
 

@@ -15,7 +15,7 @@
 Test the profiler functionality.
 """
 
-# pylint: disable=no-self-use,too-few-public-methods
+# pylint: disable=no-self-use
 
 from collections import defaultdict
 

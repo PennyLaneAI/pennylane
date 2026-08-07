@@ -456,8 +456,9 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable-next=signature-differs
-            def process_samples(self, samples, wire_order, shot_range, bin_size):
+            def process_samples(  # pylint: disable=signature-differs
+                self, samples, wire_order, shot_range, bin_size
+            ):
                 return qp.math.sum(samples[..., self.wires])
 
             def process_counts(self, counts: dict, wire_order: Wires):

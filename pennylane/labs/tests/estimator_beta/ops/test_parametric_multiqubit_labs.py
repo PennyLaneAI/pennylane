@@ -25,7 +25,7 @@ from pennylane.estimator.resource_operator import resource_rep
 class TestPauliRot:
     """Test the alternate controlled decomposition for PauliRot class."""
 
-    # pylint: disable=no-self-use,too-many-arguments
+    # pylint: disable=no-self-use
 
     ctrl_data = (
         (

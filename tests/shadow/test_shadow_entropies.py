@@ -14,8 +14,6 @@
 
 """Tests for shadow entropies"""
 
-# pylint: disable=unpacking-non-sequence
-
 import pytest
 
 import pennylane as qp
@@ -62,6 +60,7 @@ class TestShadowEntropies:
     def test_constant_distribution(self, n_wires, base):
         """Test for state with constant eigenvalues of reduced state that all entropies are the same"""
 
+        # pylint: disable-next=unpacking-non-sequence
         bits, recipes = max_entangled_circuit(wires=n_wires)()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -101,7 +100,7 @@ class TestShadowEntropies:
 
         x = np.arange(n_wires, requires_grad=True)
 
-        bitstrings, recipes = qnode(x)
+        bitstrings, recipes = qnode(x)  # pylint: disable=unpacking-non-sequence
         shadow = ClassicalShadow(bitstrings, recipes)
 
         # Get the full dm of the qnode_exact
@@ -144,7 +143,7 @@ class TestShadowEntropies:
             return qp.classical_shadow(wires=range(2))
 
         param = 0.5
-        bits, recipes = circuit()
+        bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
         shadow = qp.ClassicalShadow(bits, recipes)
 
         # explicitly not use pytest parametrize to reuse the same measurements

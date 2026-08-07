@@ -13,8 +13,6 @@
 # limitations under the License.
 r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
-# pylint: disable=too-many-arguments
-
 import pytest
 
 from pennylane.core.queuing import AnnotatedQueue

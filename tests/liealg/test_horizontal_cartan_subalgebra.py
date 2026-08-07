@@ -258,8 +258,10 @@ def _generate_test_cases(seed_value):
     return ps_test_cases, op_test_cases, dense_test_cases
 
 
-class TestData:  # pylint: disable=attribute-defined-outside-init
+class TestData:
     """A base class to provide shared, seed-dependent test case fixtures."""
+
+    # pylint: disable=attribute-defined-outside-init
 
     @pytest.fixture(autouse=True)
     def setup_test_cases(self, seed):

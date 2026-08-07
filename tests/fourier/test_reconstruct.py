@@ -15,7 +15,7 @@
 Tests for the Fourier reconstruction transform.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods,consider-using-dict-items
+# pylint: disable=too-many-arguments,too-few-public-methods
 
 from functools import reduce
 from inspect import signature
@@ -822,7 +822,7 @@ class TestReconstruct:
 
         assert tracker.totals["executions"] == exp_calls
         arg_names = list(signature(qnode.func).parameters.keys())
-        for outer_key in recons:
+        for outer_key in recons:  # pylint: disable=consider-using-dict-items
             outer_key_num = arg_names.index(outer_key)
             for inner_key, rec in recons[outer_key].items():
                 x0 = params[outer_key_num]
@@ -858,7 +858,7 @@ class TestReconstruct:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
         assert tracker.totals["executions"] == exp_calls
         arg_names = list(signature(qnode.func).parameters.keys())
-        for outer_key in recons:
+        for outer_key in recons:  # pylint: disable=consider-using-dict-items
             outer_key_num = arg_names.index(outer_key)
             for inner_key, rec in recons[outer_key].items():
                 x0 = params[outer_key_num]
@@ -912,7 +912,7 @@ class TestReconstruct:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
         assert tracker.totals["executions"] == exp_calls
         arg_names = list(signature(qnode.func).parameters.keys())
-        for outer_key in recons:
+        for outer_key in recons:  # pylint: disable=consider-using-dict-items
             outer_key_num = arg_names.index(outer_key)
             for inner_key, rec in recons[outer_key].items():
                 x0 = params[outer_key_num]
@@ -973,7 +973,7 @@ class TestReconstruct:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
         assert tracker.totals["executions"] == exp_calls
         arg_names = list(signature(qnode.func).parameters.keys())
-        for outer_key in recons:
+        for outer_key in recons:  # pylint: disable=consider-using-dict-items
             outer_key_num = arg_names.index(outer_key)
             for inner_key, rec in recons[outer_key].items():
                 if outer_key == "Z" and inner_key == (1, 3):
@@ -1050,7 +1050,7 @@ class TestReconstruct:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
         assert tracker.totals["executions"] == exp_calls
         arg_names = list(signature(qnode.func).parameters.keys())
-        for outer_key in recons:
+        for outer_key in recons:  # pylint: disable=consider-using-dict-items
             outer_key_num = arg_names.index(outer_key)
             for inner_key, rec in recons[outer_key].items():
                 x0 = params[outer_key_num]

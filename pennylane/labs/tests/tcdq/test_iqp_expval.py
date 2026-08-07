@@ -158,7 +158,7 @@ class TestIQPExpval:
             ),
         ],
     )
-    def test_build_expval_func_core_vs_pennylane(  # pylint: disable=too-many-arguments
+    def test_build_expval_func_core_vs_pennylane(
         self, n_samples, obs_strings, generators_pl, params, init_state_spec
     ):
         """Test core expval function against PennyLane ground truth."""
@@ -208,7 +208,7 @@ class TestIQPExpval:
             ),
         ],
     )
-    def test_build_expval_func_vs_pennylane(  # pylint: disable=too-many-arguments
+    def test_build_expval_func_vs_pennylane(
         self, n_qubits, gates, params, obs_strings, init_state_spec
     ):
         """Test built expval function versus full PennyLane simulation."""

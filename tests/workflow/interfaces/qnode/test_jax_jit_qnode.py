@@ -968,9 +968,8 @@ class TestShotsIntegration:
         # Test return shapes for shot vectors
         assert isinstance(res, tuple)
         assert len(res) == 2  # Two different shot counts
-        # pylint: disable=not-an-iterable
-        assert all(isinstance(r, jax.numpy.ndarray) for r in res)
-        assert all(r.shape == () for r in res)  # Scalar outputs
+        assert all(isinstance(r, jax.numpy.ndarray) for r in res)  # pylint: disable=not-an-iterable
+        assert all(r.shape == () for r in res)  # Scalar outputs  # pylint: disable=not-an-iterable
 
         g = jax.jacobian(circuit)(0.5)
 

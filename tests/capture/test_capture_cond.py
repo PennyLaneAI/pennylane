@@ -15,7 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name,unbalanced-tuple-unpacking
+# pylint: disable=redefined-outer-name
 
 from functools import partial
 
@@ -995,11 +995,13 @@ class TestDynamicShapes:
         assert len(jaxpr.jaxpr.outvars) == 2
         assert jaxpr.jaxpr.outvars[1].aval.shape[0] is jaxpr.jaxpr.outvars[0]
 
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [a, b] = qp.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, True, 4)
 
         assert a == 4
         assert qp.math.allclose(b, true_fn(4))
 
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [c, d] = qp.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, False, 7)
         assert c == 49
         assert qp.math.allclose(d, false_fn(7))
@@ -1020,9 +1022,11 @@ class TestDynamicShapes:
             return qp.cond(condition, true_fn, false_fn)(i)
 
         jaxpr = jax.make_jaxpr(f)(True, 2)
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [res_true] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 4)
         assert qp.math.allclose(res_true, 4)
 
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qp.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
@@ -1040,11 +1044,13 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(w)(True, 3)
 
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [res_true] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2)
 
         expected = qp.RX(jax.numpy.arange(2), 2)
         qp.assert_equal(res_true, expected)
 
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 3)
         expected_false = qp.RY(jax.numpy.arange(3), 3)
         qp.assert_equal(res_false, expected_false)

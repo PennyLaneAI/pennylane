@@ -251,7 +251,7 @@ class TestSubroutineOp:
     def test_isinstance_with_Subroutine(self):
         """Test that SubroutineOp's are instances of their corresponding Subroutine."""
 
-        # pylint: disable=isinstance-second-argument-not-valid-type
+        # pylint: disable-next=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
     def test_basic_validity(self):

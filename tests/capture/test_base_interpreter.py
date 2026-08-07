@@ -15,7 +15,7 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access,unbalanced-tuple-unpacking,wrong-import-position
+# pylint: disable=protected-access,wrong-import-position
 
 import pytest
 
@@ -881,6 +881,7 @@ class TestDynamicShapes:
             return jnp.hstack((x, y))
 
         jaxpr = jax.make_jaxpr(f)(2)
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [shape, res] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4)
         assert qp.math.allclose(shape, 8)
         assert qp.math.allclose(res, jnp.hstack((jnp.zeros(4), jnp.ones(4))))

@@ -12,7 +12,7 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=protected-access,unbalanced-tuple-unpacking,wrong-import-position
+# pylint: disable=protected-access,wrong-import-position
 
 import pytest
 from operator2_utils import (
@@ -243,7 +243,7 @@ class TestHybridCapture:
         jaxpr = jax.make_jaxpr(lambda x: MixedHybridOp(x, [x, 1.0], [[0], [1, 2]], wires=3).tracer)(
             0.5
         )
-        [op] = _eval(jaxpr, 0.7)
+        [op] = _eval(jaxpr, 0.7)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, MixedHybridOp(0.7, [0.7, 1.0], [[0], [1, 2]], wires=3))
 
     def test_no_hybrid_forward_mask(self):
@@ -323,6 +323,7 @@ class TestReconstruction:
         captured = jax.make_jaxpr(lambda wire: DynOp(0.5, wires=wire).tracer)(0)
 
         def interpret(wire):
+            # pylint: disable-next=unbalanced-tuple-unpacking
             [op] = PlxprInterpreter().eval(captured.jaxpr, captured.consts, wire)
             return op
 
@@ -335,37 +336,37 @@ class TestReconstruction:
     def test_simple_roundtrip(self):
         """Test that a simple operator round-trips through capture and evaluation."""
         jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0).tracer)(0.5)
-        [op] = _eval(jaxpr, 0.7)
+        [op] = _eval(jaxpr, 0.7)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, DynOp(0.7, wires=0))
 
     def test_dynamic_args_roundtrip(self):
         """Test that an operator with multiple dynamic args round-trips."""
         jaxpr = jax.make_jaxpr(lambda a, b: TwoDynOp(a, b, wires=0).tracer)(0.5, 0.6)
-        [op] = _eval(jaxpr, 0.1, 0.2)
+        [op] = _eval(jaxpr, 0.1, 0.2)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, TwoDynOp(0.1, 0.2, wires=0))
 
     def test_static_roundtrip(self):
         """Test that a static argument round-trips through capture and evaluation."""
         jaxpr = jax.make_jaxpr(lambda x: StaticOp("a", wires=x).tracer)(0)
-        [op] = _eval(jaxpr, 1)
+        [op] = _eval(jaxpr, 1)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, StaticOp("a", wires=1))
 
     def test_compilable_roundtrip(self):
         """Test that a compilable argument round-trips through capture and evaluation."""
         jaxpr = jax.make_jaxpr(lambda x: CompilableOp(5, wires=x).tracer)(0)
-        [op] = _eval(jaxpr, 1)
+        [op] = _eval(jaxpr, 1)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, CompilableOp(5, wires=1))
 
     def test_multiwire_roundtrip(self):
         """Test that an operator with multiple wire arguments round-trips."""
         jaxpr = jax.make_jaxpr(lambda: MultiWireOp(wires=[0, 1], ctrl_wires=2).tracer)()
-        [op] = _eval(jaxpr)
+        [op] = _eval(jaxpr)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, MultiWireOp(wires=[0, 1], ctrl_wires=2))
 
     def test_numeric_hybrid_roundtrip(self):
         """Test that a hybrid argument with numeric leaves round-trips."""
         jaxpr = jax.make_jaxpr(lambda x: HybridOp([x, 2.0], wires=0).tracer)(0.5)
-        [op] = _eval(jaxpr, 0.7)
+        [op] = _eval(jaxpr, 0.7)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, HybridOp([0.7, 2.0], wires=0))
 
     def test_nested_operator_roundtrip(self):
@@ -376,7 +377,7 @@ class TestReconstruction:
             return HybridOp([inner], wires=0).tracer
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        [op] = _eval(jaxpr, 0.7)
+        [op] = _eval(jaxpr, 0.7)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, HybridOp([DynOp(0.7, wires=0)], wires=0))
 
     def test_two_level_nested_roundtrip(self):
@@ -388,14 +389,14 @@ class TestReconstruction:
             return HybridOp([mid], wires=0).tracer
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        [op] = _eval(jaxpr, 0.9)
+        [op] = _eval(jaxpr, 0.9)  # pylint: disable=unbalanced-tuple-unpacking
         expected = HybridOp([HybridOp([DynOp(0.9, wires=0)], wires=0)], wires=0)
         qp.assert_equal(op, expected)
 
     def test_full_operator_roundtrip(self):
         """Test that an operator using all argument groups round-trips."""
         jaxpr = jax.make_jaxpr(lambda x: FullOp(x, "lbl", [1.0, 2.0], wires=0).tracer)(0.5)
-        [op] = _eval(jaxpr, 0.3)
+        [op] = _eval(jaxpr, 0.3)  # pylint: disable=unbalanced-tuple-unpacking
         qp.assert_equal(op, FullOp(0.3, "lbl", [1.0, 2.0], wires=0))
 
 

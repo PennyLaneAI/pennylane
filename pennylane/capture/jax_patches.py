@@ -122,7 +122,6 @@ def _add_make_eqn_helper():
         Returns:
             (eqn, out_tracers): TracingEqn and output tracers
         """
-        # pylint: disable=too-many-function-args
         source_info = source_info or source_info_util.new_source_info()
         ctx = ctx or JaxprEqnContext(
             compute_on.current_compute_type(),

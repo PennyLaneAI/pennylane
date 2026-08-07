@@ -837,6 +837,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Enabled pylint's ``useless-suppression`` check, removed obsolete ``# pylint: disable``
+  comments, and updated CI to run pylint in package mode for better cross-module inference.
+  [(#9911)](https://github.com/PennyLaneAI/pennylane/pull/9911)
+
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 

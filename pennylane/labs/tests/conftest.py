@@ -220,7 +220,7 @@ def _convert_to_int_or_float(value):
             return value
 
 
-class StoreDictKeyPair(argparse.Action):  # pylint: disable=too-few-public-methods
+class StoreDictKeyPair(argparse.Action):
     """Argparse action for storing key-value pairs as a dictionary.
 
     For example, calling a CLI program with ``--mydict v1=k1 v2=5``:

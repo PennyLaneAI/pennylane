@@ -15,8 +15,6 @@
 Unit tests for the SumOfSlatersPrep2 template.
 """
 
-# pylint: disable=missing-kwoa
-
 import numpy as np
 import pytest
 
@@ -79,7 +77,6 @@ class TestSumOfSlatersPrep2:
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, use_qjit):
         """Test that the decomposition of SumOfSlatersPrep2 actually prepares the desired state."""
-        # pylint: disable=unsubscriptable-object
         if num_entries == 63 and use_qjit:
             pytest.skip(
                 reason="This test case takes over a minute and does not provide unique value"

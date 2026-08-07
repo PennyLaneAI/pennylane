@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
-# pylint: disable=unused-argument,too-many-arguments,arguments-differ
+# pylint: disable=unused-argument,arguments-differ
 
 import pytest
 

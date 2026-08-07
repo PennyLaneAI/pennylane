@@ -137,7 +137,7 @@ class TestAdjointCapture:
         eqn = _single_op_eqn(jaxpr)
         assert eqn.params["adjoint"] is lazy
 
-        # pylint: disable=unbalanced-tuple-unpacking
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         expected = Adjoint2(RX2(0.5, wires=0)) if lazy else RX2(-0.5, wires=0)
         qp.assert_equal(op, expected, check_interface=False)
@@ -237,7 +237,7 @@ class TestControlledCapture:
         eqn = _single_op_eqn(jaxpr)
         assert eqn.params["n_ctrls"] == 1
 
-        # pylint: disable=unbalanced-tuple-unpacking
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         expected = ControlledOp2(RX2(0.5, wires=0), control_wires=[1])
         qp.assert_equal(op, expected)
@@ -259,7 +259,7 @@ class TestControlledCapture:
         assert eqn.params["n_ctrls"] == 2
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
-        # pylint: disable=unbalanced-tuple-unpacking
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(RX2(0.7, wires=2), control_wires=[0, 1])
         qp.assert_equal(op, expected)
@@ -297,7 +297,7 @@ class TestNestedSymbolicOpCapture:
         assert eqn.params["n_ctrls"] == 1
         assert eqn.params["adjoint"] is lazy
 
-        # pylint: disable=unbalanced-tuple-unpacking
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         inner_op = Adjoint2(RX2(0.7, wires=1)) if lazy else RX2(-0.7, wires=1)
         expected = ControlledOp2(inner_op, control_wires=[0])
@@ -317,7 +317,7 @@ class TestNestedSymbolicOpCapture:
         assert eqn.params["n_ctrls"] == 1
         assert eqn.params["adjoint"] is lazy
 
-        # pylint: disable=unbalanced-tuple-unpacking
+        # pylint: disable-next=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         inner_op = Adjoint2(RX2(0.7, wires=1)) if lazy else RX2(-0.7, wires=1)
         expected = ControlledOp2(inner_op, control_wires=[0])

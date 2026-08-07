@@ -604,7 +604,7 @@ def test_threemode_degs():
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
 def test_taylor_coeffs():
     """Test that the computer taylor coeffs for Hamiltonian are accurate"""
-    # pylint: disable=unbalanced-tuple-unpacking
+    # pylint: disable-next=unbalanced-tuple-unpacking
     taylor_coeffs_1D, taylor_coeffs_2D, _ = taylor_coeffs(pes_object_3D, 4, 2)
     assert np.allclose(abs(taylor_coeffs_1D), abs(taylor_1D), atol=1e-8)
     assert np.allclose(abs(taylor_coeffs_2D), abs(taylor_2D), atol=1e-8)

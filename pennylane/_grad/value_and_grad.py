@@ -70,10 +70,8 @@ def _get_value_and_grad_prim():
 def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     # mostly a copy-paste of _capture_diff, but a few minor things needed to get updated
     # Could also find a way to remove code duplication
-
-    import jax  # pylint: disable=import-outside-toplevel
-
     # pylint: disable=import-outside-toplevel
+    import jax
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)

@@ -378,15 +378,18 @@ class TestAbstractArray:  # pylint: disable=too-many-public-methods
 
     def test_instance_check(self):
         """Test that things can be checked to be instances of a AbstractArray instance."""
-        # pylint: disable=isinstance-second-argument-not-valid-type
 
         a = AbstractArray((4, 2), bool)
         b = AbstractArray((-1, 2), bool)
 
         for variant in (a, b):
+            # pylint: disable-next=isinstance-second-argument-not-valid-type
             assert isinstance(np.zeros((4, 2), bool), variant)
+            # pylint: disable-next=isinstance-second-argument-not-valid-type
             assert not isinstance(np.array([0, 0], dtype=bool), variant)
+            # pylint: disable-next=isinstance-second-argument-not-valid-type
             assert not isinstance(np.ones((4, 2), float), variant)
+            # pylint: disable-next=isinstance-second-argument-not-valid-type
             assert not isinstance("a", variant)
 
     def test_instance_check_unknown_rank(self):
@@ -532,12 +535,12 @@ class TestAbstractWires:
 
     def test_instance_check(self):
         """Test instance check of Wire."""
-        # pylint: disable=isinstance-second-argument-not-valid-type
 
         # int wire labels
         for i in range(4):
             w = Wires(list(range(i)))
             assert isinstance(w, Wire[i])
+            # pylint: disable-next=isinstance-second-argument-not-valid-type
             assert not isinstance(w, Wire[6])
 
         # str wire labels
@@ -546,10 +549,13 @@ class TestAbstractWires:
         for i in range(len(l)):
             w = Wires(l[:i])
             assert isinstance(w, Wire[i])
+            # pylint: disable-next=isinstance-second-argument-not-valid-type
             assert isinstance(w, Wire[-1])
+            # pylint: disable-next=isinstance-second-argument-not-valid-type
             assert not isinstance(w, Wire[6])
 
         # non-wires
+        # pylint: disable-next=isinstance-second-argument-not-valid-type
         assert not isinstance({"not": "wires"}, Wire)
 
     def test_addition(self):

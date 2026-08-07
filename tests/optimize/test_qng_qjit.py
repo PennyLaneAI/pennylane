@@ -13,8 +13,6 @@
 # limitations under the License.
 """Test Jax-based Catalyst-compatible QNG optimizer"""
 
-# pylint: disable=assignment-from-none
-
 from functools import partial
 
 import numpy as np
@@ -187,12 +185,12 @@ class TestMetricTensor:
         lam = 1e-11
 
         opt_with_lam = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None, lam=lam)
-        state_with_lam = opt_with_lam.init(params)
+        state_with_lam = opt_with_lam.init(params)  # pylint: disable=assignment-from-none
         new_params_with_lam, _ = opt_with_lam.step(circ, params, state_with_lam)
         mt_with_lam = opt_with_lam._get_metric_tensor(circ, params)
 
         opt = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None)
-        state = opt.init(params)
+        state = opt.init(params)  # pylint: disable=assignment-from-none
         new_params, _ = opt.step(circ, params, state)
         mt = opt._get_metric_tensor(circ, params)
 
@@ -230,7 +228,7 @@ class TestExceptions:  # pylint: disable=too-few-public-methods
 
         opt = qp.QNGOptimizerQJIT()
         params = jnp.array(0.5)
-        state = opt.init(params)
+        state = opt.init(params)  # pylint: disable=assignment-from-none
 
         with pytest.raises(
             ValueError,
@@ -259,7 +257,7 @@ class TestOptimize:
         params_jax = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT(stepsize=0.05)
-        state = opt.init(params_jax)
+        state = opt.init(params_jax)  # pylint: disable=assignment-from-none
 
         new_params1, _ = opt.step(circ, params_jax, state)
         new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
@@ -290,7 +288,7 @@ class TestOptimize:
         params_jax = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT(stepsize=0.05)
-        state = opt.init(params_jax)
+        state = opt.init(params_jax)  # pylint: disable=assignment-from-none
 
         new_params1, _ = opt.step(circ, params_jax, state)
         new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
@@ -324,7 +322,7 @@ class TestOptimize:
         opt = qp.QNGOptimizerQJIT(stepsize=0.1)
         params = jnp.array([0.011, 0.012])
         expected_params = jnp.array([0.011, 0.012])
-        state = opt.init(params)
+        state = opt.init(params)  # pylint: disable=assignment-from-none
 
         num_steps = 30
         for _ in range(num_steps):
@@ -352,7 +350,7 @@ class TestOptimize:
         params = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT()
-        state = opt.init(params)
+        state = opt.init(params)  # pylint: disable=assignment-from-none
 
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
@@ -390,7 +388,7 @@ class TestOptimize:
         params = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT()
-        state = opt.init(params)
+        state = opt.init(params)  # pylint: disable=assignment-from-none
 
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)

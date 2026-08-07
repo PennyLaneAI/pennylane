@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for non parametric resource operators."""
 
-# pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
+# pylint: disable=no-self-use
 
 from collections import defaultdict
 
