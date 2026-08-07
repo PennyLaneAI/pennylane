@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the BasisEmbedding template.
+Tests for the BasisEmbedding template which is a direct alias of BasisState.
 """
 
 import numpy as np
