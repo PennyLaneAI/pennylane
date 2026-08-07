@@ -34,7 +34,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.typing import AbstractArray, AbstractWires, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -98,11 +98,11 @@ class BasisState(StatePrepBase2):
     _primitive = "This is a mocked attribute, not a valid primitive"
 
     dynamic_argnames = ("state",)
-    arg_specs = {"state": Int[-1], "wires": Wire[-1]}
+    arg_specs = {"state": Bool[-1], "wires": Wire[-1]}
 
     def __abstract_init__(self, state, wires):
         # pylint: disable=unused-argument
-        super().__abstract_init__(Int[len(wires)], wires)
+        super().__abstract_init__(Bool[len(wires)], wires)
 
     def __init__(self, state: TensorLike | Sequence[int], wires: WiresLike):
         wires = Wires(wires)
@@ -128,7 +128,7 @@ class BasisState(StatePrepBase2):
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
 
-        state = qp.math.cast(state, int)
+        state = qp.math.cast(state, bool)
         super().__init__(state, wires=wires)
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:

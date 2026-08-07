@@ -45,12 +45,12 @@ def test_subclasshook_state_prep_base():
     assert issubclass(NewOp, StatePrepBase)
 
 
-def test_basis_state_input_cast_to_int():
-    """Test that the input to BasisState is cast to an int."""
+def test_basis_state_input_cast_to_bool():
+    """Test that the input to BasisState is cast to bool."""
 
     state = np.array([1.0, 0.0], dtype=np.float64)
     op = qp.BasisState(state, wires=(0, 1))
-    assert op.data[0].dtype == np.int64
+    assert op.state.dtype == bool
 
 
 class TestStandardValidityBasisState:
