@@ -463,14 +463,10 @@ class TestSumOfSlatersPrep:
         assert sizes["mcx_cache_wires"] == max(m - 1, 0)
 
         op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
-        exp_resource_params = {
-            "num_entries": num_entries,
-            "num_bits": new_num_bits,
-            "num_wires": num_wires,
-        }
-        assert exp_resource_params == op.resource_params
 
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(
+            coefficients, range(num_wires), indices
+        )
         assert sum(sizes.values()) - num_wires == registered_work_wires.total
 
     @pytest.mark.parametrize("n", [7, 8, 9, 15, 16, 17])
@@ -496,10 +492,8 @@ class TestSumOfSlatersPrep:
         assert sizes["mcx_cache_wires"] == m - 1
 
         op = SumOfSlatersPrep(coefficients, range(n), indices)
-        exp_resource_params = {"num_entries": n, "num_bits": num_bits, "num_wires": n}
-        assert exp_resource_params == op.resource_params
 
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
 
     @pytest.mark.usefixtures("enable_graph_decomposition")

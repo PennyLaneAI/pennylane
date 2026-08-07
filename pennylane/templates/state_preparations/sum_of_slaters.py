@@ -20,10 +20,10 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, for_loop, math
-from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.operation import Operator2
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Complex, Int, Wire
+from pennylane.typing import Complex, Float, Int, Wire
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -632,7 +632,7 @@ def compute_sos_encoding(bits):
     return U, b
 
 
-class SumOfSlatersPrep(Operation):
+class SumOfSlatersPrep(Operator2):
     r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
 
     This operation prepares an arbitrary state
@@ -882,19 +882,13 @@ class SumOfSlatersPrep(Operation):
 
     """
 
-    resource_keys = {"num_entries", "num_bits", "num_wires"}
-
-    @property
-    def resource_params(self):
-        indices = self.hyperparameters["indices"]
-        n = len(self.wires)
-        v_bits = math.int_to_binary(np.array(indices), n).T
-        selector_ids, _ = select_sos_rows(v_bits)
-        return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": n}
+    dynamic_argnames = ("coefficients",)
+    wire_names = ("wires",)
+    compilable_argnames = ("indices",)
+    arg_specs = {"coefficients": Float[-1], "wires": Wire[-1]}
 
     def __init__(self, coefficients, wires, indices):
-        super().__init__(coefficients, wires)
-        self.hyperparameters["indices"] = indices
+        super().__init__(coefficients, wires, indices)
 
     @staticmethod
     def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
@@ -967,9 +961,18 @@ class SumOfSlatersPrep(Operation):
         }
 
 
-def _sos_state_prep_resources(num_entries, num_bits, num_wires):
+def _sos_state_prep_resources(coefficients, wires, indices):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
+
+    n = 1 if isinstance(wires, int) else len(wires)
+    v_bits = math.int_to_binary(np.array(indices), n).T
+    selector_ids, _ = select_sos_rows(v_bits)
+
+    num_entries = len(indices)
+    num_bits = len(selector_ids)
+    num_wires = n
+
     if num_entries == 1:
         return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
     d = math.ceil_log2(num_entries)
@@ -1017,9 +1020,17 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     return resources
 
 
-def _sos_state_prep_work_wires(num_entries, num_bits, num_wires):
+def _sos_state_prep_work_wires(coefficients, wires, indices):
     """See SumOfSlatersPrep.required_register_sizes for details."""
     # pylint: disable-next=protected-access
+    n = 1 if isinstance(wires, int) else len(wires)
+    v_bits = math.int_to_binary(np.array(indices), n).T
+    selector_ids, _ = select_sos_rows(v_bits)
+
+    num_entries = len(indices)
+    num_bits = len(selector_ids)
+    num_wires = n
+
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
     return {"zeroed": sum(sizes.values()) - num_wires}
 
@@ -1159,7 +1170,7 @@ def _sos_state_prep_with_wires(
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
 def _sos_state_prep(coefficients, wires, indices, **__):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
-    n = len(wires)
+    n = 1 if isinstance(wires, int) else len(wires)
     num_entries = len(indices)
     v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
     if num_entries == 1:
