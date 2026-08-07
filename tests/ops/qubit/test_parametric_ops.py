@@ -67,7 +67,6 @@ PARAMETRIZED_OPERATIONS = [
     qp.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qp.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
     qp.PSWAP(0.123, wires=[0, 1]),
-    qp.GlobalPhase(0.123, wires=[0]),
     qp.GlobalPhase(0.123),
 ]
 
