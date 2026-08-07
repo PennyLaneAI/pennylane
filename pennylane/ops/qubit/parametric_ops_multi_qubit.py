@@ -711,10 +711,6 @@ class PCPhase(Operator2):
         mat = np.diag([1] * dim + [-1] * (N - dim))
         return qp.Hermitian(mat, wires=self.wires)
 
-    def _flatten(self) -> FlatPytree:
-        hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
-        return tuple(self.data), (self.wires, hyperparameter)
-
     def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 

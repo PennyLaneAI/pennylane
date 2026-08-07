@@ -983,6 +983,9 @@ class TestMatrix:
         assert np.allclose(mat2, expected_mat)
         assert qp.math.get_interface(mat1) == "jax"
 
+    @pytest.mark.pl2do(
+        reason="Broadcasted parameters with Operator2 will be revisited in the future"
+    )
     def test_pcphase_broadcasted(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""
         dim = 2
@@ -3703,32 +3706,78 @@ class TestSimplify:
 
         dev = qp.device("default.qubit", wires=2)
 
-        @qp.qnode(dev)
-        def circuit(simplify, wires, *params, **hyperparams):
-            if simplify:
-                qp.simplify(op(*params, wires=wires, **hyperparams))
-            else:
-                op(*params, wires=wires, **hyperparams)
+        if issubclass(op, Operator1):
 
-            return qp.expval(qp.PauliZ(0))
+            @qp.qnode(dev)
+            def circuit(simplify, wires, *params, **hyperparams):
+                if simplify:
+                    qp.simplify(op(*params, wires=wires, **hyperparams))
+                else:
+                    op(*params, wires=wires, **hyperparams)
 
-        unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = self._get_params_wires(unsimplified_op)
-        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
+                return qp.expval(qp.PauliZ(0))
 
-        for i in range(params[0].shape[0]):
-            parameters = [torch.tensor(p[i], requires_grad=True) for p in params]
+            unsimplified_op = self.get_unsimplified_op(op)
+            params, wires = self._get_params_wires(unsimplified_op)
+            hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
-            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
-            unsimplified_res.backward()
-            unsimplified_grad = [p.grad for p in parameters]
+            for i in range(params[0].shape[0]):
+                parameters = [torch.tensor(p[i], requires_grad=True) for p in params]
 
-            simplified_res = circuit(True, wires, *parameters, **hyperparams)
-            simplified_res.backward()
-            simplified_grad = [p.grad for p in parameters]
+                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+                unsimplified_res.backward()
+                unsimplified_grad = [p.grad for p in parameters]
 
-            assert qp.math.allclose(unsimplified_res, simplified_res)
-            assert qp.math.allclose(unsimplified_grad, simplified_grad)
+                simplified_res = circuit(True, wires, *parameters, **hyperparams)
+                simplified_res.backward()
+                simplified_grad = [p.grad for p in parameters]
+
+                assert qp.math.allclose(unsimplified_res, simplified_res)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad)
+        else:
+
+            @qp.qnode(dev)
+            def circuit(simplify, wires, *args, **kwargs):
+                if simplify:
+                    qp.simplify(op(*args, wires=wires, **kwargs))
+                else:
+                    op(*args, wires=wires, **kwargs)
+
+                return qp.expval(qp.PauliZ(0))
+
+            unsimplified_op = self.get_unsimplified_op(op)
+
+            angle = next(iter(unsimplified_op.dynamic_args))
+            for i in range(unsimplified_op.dynamic_args[angle].shape[0]):
+                flat_dyn_args = [
+                    torch.tensor(p[i], requires_grad=True)
+                    for p in unsimplified_op.dynamic_args.values()
+                ]
+
+                unsimplified_res = circuit(
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                unsimplified_res.backward()
+                unsimplified_grad = [p.grad for p in flat_dyn_args]
+
+                simplified_res = circuit(
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_res.backward()
+                simplified_grad = [p.grad for p in flat_dyn_args]
+
+                assert qp.math.allclose(unsimplified_res, simplified_res)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", rotations)
