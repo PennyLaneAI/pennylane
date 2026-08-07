@@ -771,19 +771,18 @@ class TestMatrix:
 
         wires = list(range(n_wires))
         eye = np.eye(2**n_wires)
-        eye2 = np.eye(2)
         # test identity for theta=0
-        assert np.allclose(qp.GlobalPhase.compute_matrix(0, n_wires=n_wires), eye, atol=tol, rtol=0)
-        assert np.allclose(qp.GlobalPhase.compute_matrix(0), eye2, atol=tol, rtol=0)
+        assert np.allclose(
+            qp.GlobalPhase.compute_matrix(0, wires=range(n_wires)), eye, atol=tol, rtol=0
+        )
         assert np.allclose(qp.GlobalPhase(0).matrix(wire_order=wires), eye, atol=tol, rtol=0)
 
         # test arbitrary global phase
         phi = 0.5432
         exp = np.exp(-1j * phi)
         assert np.allclose(
-            qp.GlobalPhase.compute_matrix(phi, n_wires=n_wires), exp * eye, atol=tol, rtol=0
+            qp.GlobalPhase.compute_matrix(phi, wires=range(n_wires)), exp * eye, atol=tol, rtol=0
         )
-        assert np.allclose(qp.GlobalPhase.compute_matrix(phi), exp * eye2, atol=tol, rtol=0)
         assert np.allclose(
             qp.GlobalPhase(phi).matrix(wire_order=wires), exp * eye, atol=tol, rtol=0
         )
@@ -791,11 +790,9 @@ class TestMatrix:
         # test arbitrary broadcasted global phase with non-default n_wires=0
         phi = np.array([0.5, 0.4, 0.3])
         expected = np.tensordot(np.exp(-1j * phi), eye, axes=0)
-        expected2 = np.tensordot(np.exp(-1j * phi), eye2, axes=0)
         assert np.allclose(
-            qp.GlobalPhase.compute_matrix(phi, n_wires=n_wires), expected, atol=tol, rtol=0
+            qp.GlobalPhase.compute_matrix(phi, wires=range(n_wires)), expected, atol=tol, rtol=0
         )
-        assert np.allclose(qp.GlobalPhase.compute_matrix(phi), expected2, atol=tol, rtol=0)
         assert np.allclose(qp.GlobalPhase(phi).matrix(wire_order=wires), expected, atol=tol, rtol=0)
 
     def test_identity(self, tol):
@@ -4153,7 +4150,7 @@ def test_global_phase_compute_sparse_matrix_broadcasted_raises(n_wires):
 
     phi = np.array([0.123, np.pi / 4, 0])
     with pytest.raises(qp.operation.SparseMatrixUndefinedError, match="broadcasting"):
-        _ = qp.GlobalPhase.compute_sparse_matrix(phi, n_wires=n_wires)
+        _ = qp.GlobalPhase.compute_sparse_matrix(phi, wires=range(n_wires))
 
 
 def test_decomposition():
