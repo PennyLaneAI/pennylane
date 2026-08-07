@@ -122,15 +122,10 @@ def build_css_bp_decoder(
 
     Example:
 
-        >>> import numpy as np
-        >>> from pennylane.backline.decoders.triton.decoder_frontend import build_css_bp_decoder
-        >>> # Steane [[7, 1, 3]] code X parity-check matrix.
-        >>> SteaneHx = np.array([
-        ...     [1, 0, 1, 0, 1, 0, 1],
-        ...     [0, 1, 1, 0, 0, 1, 1],
-        ...     [0, 0, 0, 1, 1, 1, 1],
-        ... ])
-        >>> Hz = Hx = SteaneHx
+        >>> from catalyst.python_interface.transforms.qecp.qec_code_lib import QecCode
+        >>> steane_code = QecCode.get("Steane")
+        >>> Hx = steane_code.x_tanner
+        >>> Hz = steane_code.z_tanner
         >>> so_path, symbol_name = build_css_bp_decoder(
         ...     Hx,
         ...     Hz,
