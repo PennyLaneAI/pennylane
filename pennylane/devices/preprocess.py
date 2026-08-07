@@ -295,8 +295,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             ``False``, the operator should be decomposed. This replaces ``stopping_condition``
             if and only if the tape has shots.
         skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if
-            it inherits from :class:`~.StatePrepBase`.
-            Defaults to ``True``.
+            it inherits from :class:`~.StatePrepBase`. Defaults to ``True``.
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .

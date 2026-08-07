@@ -31,8 +31,7 @@ def create_initial_state(
 
     Args:
         wires (Union[Wires, Iterable]): The wires to be present in the initial state
-        prep_operation (Optional[StatePrepBase]): An operation to prepare
-            the initial state
+        prep_operation (Optional[StatePrepBase]): An operation to prepare the initial state
         like (Optional[str]): The machine learning interface used to create the initial state.
             Defaults to None
 
