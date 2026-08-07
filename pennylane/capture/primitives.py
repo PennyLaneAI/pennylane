@@ -33,6 +33,7 @@ from pennylane.ops.mid_measure.pauli_measure import _create_pauli_measure_primit
 from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
+from pennylane.runtime.runtime_call import _get_runtime_call_prim
 from pennylane.workflow._capture_qnode import qnode_prim
 
 from .subroutine import quantum_subroutine_prim
@@ -53,6 +54,7 @@ measure_prim = _create_mid_measure_primitive()
 pauli_measure_prim = _create_pauli_measure_primitive()
 transform_prim = _create_transform_primitive()
 symbolic_array_prim = _symbolic_array_primitive()
+runtime_call_prim = _get_runtime_call_prim()
 
 __all__ = [
     "AbstractOperator",
@@ -71,6 +73,7 @@ __all__ = [
     "measure_prim",
     "operator_p",
     "quantum_subroutine_prim",
+    "runtime_call_prim",
     "pauli_measure_prim",
     "transform_prim",
 ]

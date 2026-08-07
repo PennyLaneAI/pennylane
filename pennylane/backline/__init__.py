@@ -132,17 +132,22 @@ lives in the compiled runtime.
     ~register_transport
 """
 
+from .decode import decode
 from .device import HeterogeneousDevice, backline
 from .functions import CoprocessorFunction, css_decoder
-from .placement import Controller, Coprocessor, Node, Placement
+from .placement import Controller, Coprocessor, ExecutorSpec, Node, Placement
 from .transports import Transport, get_transport, register_transport
+
+backline.decode = decode
 
 __all__ = [
     "Node",
     "Controller",
     "Coprocessor",
+    "ExecutorSpec",
     "Placement",
     "backline",
+    "decode",
     "HeterogeneousDevice",
     "CoprocessorFunction",
     "css_decoder",

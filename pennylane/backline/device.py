@@ -74,6 +74,11 @@ class HeterogeneousDevice(Device):
         return self._placement
 
     @property
+    def backline(self):
+        """Placement: Alias of :attr:`placement` for Catalyst (``device.backline``)."""
+        return self._placement
+
+    @property
     def transport(self):
         """Transport: The :class:`~.Transport` carrying data between nodes."""
         return self._placement.transport
@@ -167,4 +172,32 @@ def backline(
             ...
     """
     placement = Placement(controller=controller, coprocessors=coprocessors, transport=transport)
+    _register_placement(placement)
     return HeterogeneousDevice(placement=placement)
+
+
+_PLACEMENTS: "list[Placement]" = []
+
+
+def _register_placement(placement: Placement) -> None:
+    """Record a placement as :func:`backline` builds it."""
+    if placement not in _PLACEMENTS:
+        _PLACEMENTS.append(placement)
+
+
+def active_placement() -> "Placement | None":
+    """The placement an in-circuit call belongs to, when there is exactly one.
+
+    ``None`` if no :func:`backline` device has been built; raises if more than one has.
+
+    .. seealso:: :func:`~pennylane.backline.decode`
+    """
+    if not _PLACEMENTS:
+        return None
+    if len(_PLACEMENTS) > 1:
+        raise RuntimeError(
+            f"{len(_PLACEMENTS)} backline placements have been built, so which one an in-circuit "
+            "call belongs to is ambiguous. Pass the nodes explicitly, e.g. "
+            "decode(syndrome, controller=ctrl, coprocessor=coproc)."
+        )
+    return _PLACEMENTS[0]
