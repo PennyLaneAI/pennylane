@@ -645,47 +645,8 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
-    def test_split_non_commuting_tape(self):
-        """Test that qp.transforms.split_non_commuting works as expected"""
-
-        @qp.transforms.cancel_inverses
-        @qp.transforms.split_non_commuting  # Applies as tape transform
-        @qp.qnode(qp.device("null.qubit", wires=3))
-        def circuit():
-            qp.H(0)
-            qp.X(0)
-            qp.X(0)
-            return qp.expval(qp.X(0)), qp.expval(qp.Y(0)), qp.expval(qp.Z(0))
-
-        actual = qp.specs(qjit(circuit), level=1)()
-        expected = CircuitSpecs(
-            device_name="null.qubit",
-            num_device_wires=3,
-            shots=Shots(None),
-            level="split_non_commuting",
-            resources=[
-                SpecsResources(
-                    counts={"Hadamard": 1, "PauliX": 2},
-                    measurement_processes={"expval(PauliX)": 1},
-                    num_allocs=1,
-                ),
-                SpecsResources(
-                    counts={"Hadamard": 1, "PauliX": 2},
-                    measurement_processes={"expval(PauliY)": 1},
-                    num_allocs=1,
-                ),
-                SpecsResources(
-                    counts={"Hadamard": 1, "PauliX": 2},
-                    measurement_processes={"expval(PauliZ)": 1},
-                    num_allocs=1,
-                ),
-            ],
-        )
-
-        assert actual == expected
-
     def test_split_non_commuting_mlir(self):
-        """Test that qp.transforms.split_non_commuting works as expected"""
+        """Test that split_non_commuting works as expected"""
 
         @qp.transforms.cancel_inverses
         @qp.transform(pass_name="split-non-commuting")  # Applies as MLIR pass

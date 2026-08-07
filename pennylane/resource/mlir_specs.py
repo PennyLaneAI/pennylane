@@ -261,7 +261,6 @@ def resources_from_analysis_pass(
     qjit,
     original_qnode,
     level: int | tuple[int] | list[int],
-    num_tape_levels: int,
     level_to_markers: dict[int, list[str]],
     level_to_name: dict[int, str],
     *args,
@@ -285,7 +284,6 @@ def resources_from_analysis_pass(
         original_qnode (:class:`~pennylane.QNode`): the original QNode before any compilation
         level (int | tuple[int] | list[int]): the levels at which to insert resource analysis passes
             for resource counting
-        num_tape_levels (int): the number of tape transform levels in the compile pipeline
         level_to_markers (dict[int, list[str]]): mapping from level number to a list of marker names
         level_to_name (dict[int, str]): mapping from level number to the name to use for that level
             in the output. Note that this argument is mutated by this function
@@ -311,33 +309,21 @@ def resources_from_analysis_pass(
     ) as tmpdirname:
         fname_prefix = f"{tmpdirname}/{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_level_"
 
-        if num_tape_levels > 0:
-            # Account for the inserted lowering pass which comes after all tape transforms
-            max_legal_level += 1
-
-            # Add all tape transforms first, which come before any MLIR passes
-            new_compile_pipeline += iter_pipeline[: num_tape_levels - 1]
-            iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
-
         if max_level > max_legal_level:
             bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
             raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
 
-        if num_tape_levels in level:
+        if 0 in level:
             fname = f"{fname_prefix}before.json"
-            fname_to_level[fname] = (
-                num_tape_levels  # num_tape_levels == the level of the lowering pass
-            )
-            level_to_name[num_tape_levels] = (
-                ", ".join(level_to_markers[num_tape_levels])
-                if num_tape_levels in level_to_markers
-                else "Before MLIR Passes"
+            fname_to_level[fname] = 0
+            level_to_name[0] = (
+                ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
             )
             new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
 
-        for i, comp_pass in enumerate(iter_pipeline, start=num_tape_levels + 1):
+        for i, comp_pass in enumerate(iter_pipeline, start=1):
             if i > max_level:
                 break
             new_compile_pipeline += comp_pass

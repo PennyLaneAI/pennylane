@@ -30,14 +30,12 @@ import pennylane as qp
 
 from ._utils import (
     apply_partial_args,
-    get_last_tape_transform_level,
     get_marker_level_map,
-    make_level_name_unique,
     preprocess_level_input,
     unwrap_partial,
 )
 from .mlir_specs import resources_from_analysis_pass
-from .resource import CircuitSpecs, SpecsResources, resources_from_tape
+from .resource import CircuitSpecs, SpecsResources
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
@@ -97,69 +95,32 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
-    # This value is used to determine the last level which is a transform and not an MLIR pass
-    num_tape_levels = get_last_tape_transform_level(compile_pipeline)
-    if num_tape_levels != 0:
-        # Account for the "Before Tape Transforms" tape at level 0
-        num_tape_levels += 1
-
     # Map to convert back and forth between marker name and int level
     marker_to_level = get_marker_level_map(compile_pipeline)
     level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
 
-    return_single_level: bool = isinstance(level, (int, str)) and level not in (
-        "all",
-        "all-mlir",
-    )
+    return_single_level: bool = isinstance(level, (int, str)) and level != "all"
 
     # Easier to assume level is always a sorted list of int levels
-    level = preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
+    level = preprocess_level_input(level, marker_to_level, len(compile_pipeline))
     level_to_name: dict[int, str] = {}
-
-    tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
-    mlir_levels = [lvl for lvl in level if lvl >= num_tape_levels]
 
     resources = {}
 
-    # Handle tape transforms
-    if len(tape_levels) > 0:
-        for tape_level in tape_levels:
-            # User transforms always come first, so level and tape_level align correctly
-            batch, _ = qp.workflow.construct_batch(original_qnode, level=tape_level)(
-                *args, **kwargs
-            )
-            res = [resources_from_tape(tape, False) for tape in batch]
-
-            if len(res) == 1:
-                res = res[0]
-
-            if tape_level in level_to_markers:
-                trans_name: str = ", ".join(level_to_markers[tape_level])
-            elif tape_level == 0:
-                trans_name = "Before Tape Transforms"
-            else:
-                trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
-
-            trans_name = make_level_name_unique(trans_name, frozenset(level_to_name.values()))
-            resources[trans_name] = res
-            level_to_name[tape_level] = trans_name
-
     # Handle MLIR passes
-    if len(mlir_levels) > 0:
-        resources.update(
-            resources_from_analysis_pass(
-                qjit,
-                original_qnode,
-                mlir_levels,
-                num_tape_levels,
-                level_to_markers,
-                level_to_name,
-                *args,
-                **kwargs,
-            )
+    resources.update(
+        resources_from_analysis_pass(
+            qjit,
+            original_qnode,
+            level,
+            level_to_markers,
+            level_to_name,
+            *args,
+            **kwargs,
         )
+    )
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
