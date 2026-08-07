@@ -17,7 +17,6 @@ import copy
 import itertools
 import json
 import os
-import re
 import tempfile
 import time
 import warnings
@@ -92,41 +91,39 @@ def _mlir_resources_to_specs_resources(
     fn_resources[focus] = None
     resources = all_data[focus]
 
-    operations = {k: resources["operations"][k] for k in resources["operations"].keys()}
-
-    measurement_processes = defaultdict(
-        int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
-    )
-    quantum_operations = defaultdict(int)
-    num_allocs = resources["num_qubits"]
-
-    pbc_depth = None
-    if depths := resources.get("depth"):  # TODO: This field is being renamed in Catalyst soon
-        pbc_depth = PBCDepth(
-            any_commuting_depth=depths["any_commuting_depth"],
-            qubit_disjoint_depth=depths["qubit_disjoint_depth"],
-        )
-
-    if resources.get("auto_qubit_management", False):
+    # Process qubit allocations
+    num_allocs = resources["num_qubits"]["alloc"]
+    if resources["metadata"].get("auto_qubit_management", False):
         warnings.warn(
             f"Specs detected that function '{focus}' uses automatic qubit management. "
             "The number of qubits allocated by this function will not be known at this time, so "
             "the final allocation counts may be inaccurate.",
         )
 
-    for res_name, count in operations.items():
-        match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
-        gate_name, gate_size = match.groups() if match else (res_name, 0)
+    # Process quantum operations and measurements
+    measurement_processes = defaultdict(int, resources["measurement_processes"])
+    quantum_operations = defaultdict(int)
+    for gate_size, ops in resources["quantum_operations"].items():
+        for gate_name, count in ops.items():
+            if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+                # Separate out PPMs and PPRs by weight
+                gate_name += f"-w{gate_size}"
 
-        if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-            # Separate out PPMs and PPRs by weight
-            gate_name += f"-w{gate_size}"
+            quantum_operations[gate_name] += count
 
-        quantum_operations[gate_name] += count
+    # Process PBC depths
+    pbc_depth = None
+    if depths := resources["extended_fields"].get("pbc_depth"):
+        pbc_depth = PBCDepth(
+            any_commuting_depth=depths["any_commuting_depth"],
+            qubit_disjoint_depth=depths["qubit_disjoint_depth"],
+        )
 
-    # Recurse through all function calls and combine resources with the appropriate multiplicative factors
+    # Process function calls (both static and dynamic)
+    # NOTE: Recurse through all function calls and combine resources with the appropriate multiplicative factors
+    function_calls = resources["function_calls"]
     for called_fn, call_count in itertools.chain(
-        resources["function_calls"].items(), resources["var_function_calls"].items()
+        function_calls["static"].items(), function_calls["dynamic"].items()
     ):
         if not isinstance(call_count, int):
             # If there is no integer call count, we have to treat this as a symbolic variable
@@ -166,7 +163,8 @@ def _mlir_resources_to_specs_resources(
                     + call_count * called_fn_resources.qubit_disjoint_depth,
                 )
 
-    # Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
+    # Construct final specs resource objects
+    # NOTE: Sorting these dicts by key ensures that the resulting SpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
 
     kwargs = {
@@ -176,6 +174,8 @@ def _mlir_resources_to_specs_resources(
         },
         "num_allocs": num_allocs,
         "circuit_depth": None,  # Can't get depth from MLIR pass results
+        # Store all remaining extended_fields into the extra fields kwarg
+        "extra": {k: v for k, v in resources["extended_fields"].items() if k != "pbc_depth"},
     }
 
     if pbc_depth is not None:
@@ -198,7 +198,7 @@ def _get_resources_from_analysis_pass(
             all_data, focus=fn_name, fn_resources=resource_data, display_names={}
         )
 
-    if any(resources["has_branches"] for resources in all_data.values()):
+    if any(resources["metadata"]["has_branches"] for resources in all_data.values()):
         warnings.warn(
             "Specs was unable to determine the branch of a conditional or switch statement."
             " The results will take the maximum resources across all possible branches, serving as an upper bound.",
@@ -207,7 +207,7 @@ def _get_resources_from_analysis_pass(
 
     # Only include information about qnodes, ignoring any extra functions
     # The blank substitution will return a concrete SpecsResources if no symbolic variables remain
-    return [resource_data[fn].subs() for fn, data in all_data.items() if data["qnode"]]
+    return [resource_data[fn].subs() for fn, data in all_data.items() if data["metadata"]["qnode"]]
 
 
 def _execute_analysis_pass(
