@@ -41,20 +41,6 @@ def _stop_autograph(f):
     return new_f
 
 
-def _contains_abstract_type(val):
-    """Check if pytree contains any abstract types."""
-    leaves, _ = flatten(val)
-
-    for leaf in leaves:
-        if isinstance(leaf, (AbstractArray, AbstractWires)):
-            return True
-
-        if isinstance(val, type) and issubclass(val, Number):
-            return True
-
-    return False
-
-
 class OperatorMeta(ABCMeta):
     """A metatype that overrides class construction for operators for program capture
     and graph-based decompositions integration.
@@ -75,14 +61,6 @@ class OperatorMeta(ABCMeta):
 
         bound = cls._sig.bind(*args, **kwargs)
         bound.apply_defaults()
-        arguments: dict = bound.arguments
-        target_args = cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
-
-        if not enabled() and any(_contains_abstract_type(arguments[name]) for name in target_args):
-            obj = cls.__new__(cls, *bound.args, **bound.kwargs)
-            obj.__abstract_init__(*bound.args, **bound.kwargs)
-            return obj
-
         # This method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
         op = type.__call__(cls, *args, **kwargs)

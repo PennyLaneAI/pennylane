@@ -164,7 +164,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if len(control_values) != len(control_wires):
             raise ValueError("control_values should be the same length as control_wires")
 
-        control_values = [bool(v) for v in control_values]
+        if not isinstance(control_values, AbstractArray):
+            control_values = qp.math.stack(control_values).astype(bool)
 
         self._base = base
         self._control_wires = control_wires
@@ -181,57 +182,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if "work_wires" in self._init_args:
             self._init_args["work_wires"] = work_wires
 
+        print(self._init_args)
         super().__init__(**self._init_args)
-
-    @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
-        self,
-        base: Operator,
-        control_wires: WiresLike | AbstractWires,
-        control_values: int | bool | Sequence[int | bool] | AbstractArray | None = None,
-        work_wires: WiresLike | AbstractWires | None = None,
-        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-    ):
-
-        # abstractify the wires
-        if work_wires is None:
-            work_wires = Wire[0]
-        if not isinstance(work_wires, AbstractWires):
-            work_wires = abstractify(Wires(work_wires))
-        if not isinstance(control_wires, AbstractWires):
-            control_wires = abstractify(Wires(control_wires))
-
-        # abstractify control values
-        if control_values is None:
-            control_values = Bool[len(control_wires)]
-        elif isinstance(control_values, (int, bool)):
-            control_values = Bool[1]
-        elif isinstance(control_values, (list, tuple, Wires)):
-            control_values = Bool[len(control_values)]
-
-        # abstractify the base
-        base = abstractify(base)
-
-        # initialize the interface properties
-        self._base = base
-        self._control_wires = control_wires
-        self._control_values = control_values
-        self._work_wires = work_wires
-        self._work_wire_type = work_wire_type
-
-        if "base" in self._init_args:
-            self._init_args["base"] = base
-
-        if "control_wires" in self._init_args:
-            self._init_args["control_wires"] = control_wires
-
-        if "control_values" in self._init_args:
-            self._init_args["control_values"] = control_values
-
-        if "work_wires" in self._init_args:
-            self._init_args["work_wires"] = work_wires
-
-        super().__abstract_init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
         super().__init_subclass__(is_baseclass)

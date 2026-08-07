@@ -232,20 +232,6 @@ class Operator2(metaclass=OperatorMeta):
 
         self.tracer = None
 
-    def __abstract_init__(self, *args, **kwargs):
-        """Constructor for canonicalization of abstract inputs."""
-        bound_args = self._sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        arguments = bound_args.arguments
-
-        target_args = self.dynamic_argnames + self.hybrid_argnames + self.wire_argnames
-        for name in target_args:
-            kind = _resolve_arg_kind(type(self), name)
-            arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
-
-        Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
-        self._is_abstract = True
-
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
     # ------------------------------------------------------------------------
@@ -1944,8 +1930,7 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
     if op_type.has_fixed_sig:
-        with pause():
-            return op_type(**op_type.arg_specs)
+        return op_type(**op_type.arg_specs)
 
     raise TypeError(
         f"'{op_type.__name__}' must set 'arg_specs' and cover all dynamic and wire "
@@ -1965,10 +1950,8 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
-    # need to use __abstract_init__ even if captture is enabled
-    with pause():
-        new_op = op_cls(**new_args)
-    return new_op
+    print(new_args)
+    return op_cls(**new_args)
 
 
 class StatePrepBase2(Operator2, is_baseclass=True):
