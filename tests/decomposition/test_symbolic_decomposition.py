@@ -72,6 +72,7 @@ from tests.core.operator.operator2_utils import (
     DynOpWithMatrix,
     NonParametricOp,
     OneWireDynOp,
+    StaticOp,
 )
 from tests.decomposition.conftest import to_resources
 
@@ -232,6 +233,32 @@ class TestAdjointDecompositionRules:
             qp.adjoint(qp.RX)(0.5, 0),
             qp.adjoint(qp.H(0)),
         ]
+
+    @pytest.mark.catalyst
+    def test_adjoint2_static_argument_qjit(self):
+        """Tests compiling an Adjoint2 decomposition whose base has static metadata."""
+
+        @register_resources({qp.X: 1})
+        def custom_rule(label, wires):
+            assert label == "borrowed"
+            qp.X(wires)
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(StaticOp, custom_rule)
+
+            op = qp.adjoint(StaticOp("borrowed", wires=0))
+            [rule] = qp.list_decomps(op)
+
+            @qp.qjit(capture=False, target="mlir")
+            @qp.qnode(qp.device("lightning.qubit", wires=1))
+            def circuit():
+                rule(**op.arguments)
+                return qp.state()
+
+            mlir = str(circuit.mlir)
+            circuit.workspace.cleanup()
+
+        assert "quantum.adjoint" in mlir
 
     def test_adjoint_rotation(self):
         """Tests the adjoint_rotation decomposition."""

@@ -326,6 +326,28 @@ class TestQROM:
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.catalyst
+    def test_adjoint_qjit(self):
+        """Test that the compilable ``clean`` argument remains static in an adjoint rule."""
+
+        @qp.qjit(capture=False, target="mlir")
+        @qp.qnode(qp.device("lightning.qubit", wires=3))
+        def circuit():
+            qp.adjoint(
+                qp.QROM(
+                    [[0], [1], [1], [0]],
+                    control_wires=[0, 1],
+                    target_wires=[2],
+                    work_wires=[],
+                    clean=True,
+                )
+            )
+            return qp.state()
+
+        mlir = str(circuit.mlir)
+        circuit.workspace.cleanup()
+        assert "quantum.adjoint" in mlir
+
     @pytest.mark.parametrize(
         ("data", "control_wires", "target_wires", "work_wires", "clean"),
         [
