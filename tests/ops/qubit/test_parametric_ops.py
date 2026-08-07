@@ -3867,7 +3867,7 @@ class TestSimplify:
             pytest.skip("U2 gate does not simplify to Identity")
 
         try:
-            wires = range(op.num_wires) if op.num_wires is not None else range(2)
+            wires = range(op.num_wires) if hasattr(op, "num_wires") and op.num_wires is not None else range(2)
         except TypeError:
             wires = range(2)
 
