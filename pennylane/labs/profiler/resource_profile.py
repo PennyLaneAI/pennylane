@@ -199,7 +199,6 @@ class ProfileNode:
         return grouped_data
 
     @classmethod
-    # Returns a dict[str, tuple(scalar, gate_counts, child_nodes)]
     def group_by_type(cls, child_nodes: list["ProfileNode"]):
         r"""Group a list of child nodes by operator type, merging duplicates.
 
