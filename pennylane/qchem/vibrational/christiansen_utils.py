@@ -1023,7 +1023,6 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order, path):
         l1 = 0
         for rank in range(num_proc):
             local_dipole_cform_threebody = _read_data(path, rank, "cform_D3data", "D3")
-            #
             chunk = np.array_split(local_dipole_cform_threebody, nmode_combos, axis=0)[mode_combo]
             l1 += chunk.shape[0]
             local_chunk[l0:l1, :] = chunk
