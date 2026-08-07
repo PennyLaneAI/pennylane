@@ -15,4 +15,13 @@ r"""Resource operators for embedding templates."""
 
 from pennylane.estimator.ops.qubit.state_preparation import BasisState
 
-BasisEmbedding = BasisState
+
+class BasisEmbedding(BasisState):
+    r"""Resource class for preparing a single basis state, as an embedding.
+    Mirrors :class:`~.BasisEmbedding`, which inherits from :class:`~.BasisState`
+    but is otherwise identical to it.
+
+    Args:
+        num_wires (int): number of wires the operator acts on
+        wires (WiresLike, Optional): the wire(s) the operation acts on
+    """
