@@ -123,6 +123,8 @@ class TemporaryAND(Operator2):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    # ndim_params must align with the shape of the dynamic args, but num_params is still 0 because
+    # control_values isn't actually meant to be trainable.
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
