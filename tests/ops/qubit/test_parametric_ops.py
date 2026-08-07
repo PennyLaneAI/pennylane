@@ -683,6 +683,7 @@ class TestDecompositions:
         decomp_mat = qp.matrix(decomp_op, wire_order=wires)
         assert np.allclose(expected_mat, decomp_mat)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Revisiting parameter broadcasting in the future.")
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition_broadcasted(self, dim, wires):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
