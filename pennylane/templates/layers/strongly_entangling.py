@@ -215,10 +215,10 @@ class StronglyEntanglingLayers(Operation):
         >>> ops = qp.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=ranges, imprimitive=qp.CNOT)
         >>> from pprint import pprint
         >>> pprint(ops)
-        [Rot(tensor(-0.2000), tensor(0.1000), tensor(-0.4000), wires=['a']),
-        Rot(tensor(1.2000), tensor(-2.), tensor(-0.4000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CNOT(wires=['b', 'a'])]
+        [Rot(-0.200..., 0.100..., -0.400..., wires=['a']),
+         Rot(1.200..., -2.0, -0.400..., wires=['b']),
+         CNOT(wires=['a', 'b']),
+         CNOT(wires=['b', 'a'])]
 
         """
         n_layers = math.shape(weights)[-3]

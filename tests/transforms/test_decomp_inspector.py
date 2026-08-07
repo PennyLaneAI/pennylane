@@ -289,7 +289,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 71.0
 
-            Decomposition 2 (name: one_zeroed_worker)
+            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
             0: ───────╭●─────●╮────┤  
             1: ───────├●─────●┤────┤  
             2: ───────│──╭●───│────┤  
@@ -319,7 +319,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 71.0
 
-            CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+            Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤  
             1: ───────╭●─│───●╮────┤  
             2: ───────├●─│───●┤────┤  

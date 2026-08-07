@@ -865,12 +865,12 @@
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   - Parametric operators are ported:
-    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`
+    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.Rot`, :class:`~.CRot`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
-  - Multi-qubit, parametric operators are ported:
+  [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   - Templates are ported:
     - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
