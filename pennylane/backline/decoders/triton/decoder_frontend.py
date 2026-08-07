@@ -134,6 +134,11 @@ def build_css_bp_decoder(
         ...     platform="hip:gfx90a:64",
         ... )
 
+    Note:
+        Takes one syndrome as a ``u64`` and returns one correction mask as a ``u64``.
+        In the returned mask, bit ``i`` targets qubit ``i`` and ``0`` means no correction.
+        TODO: This is a constraint of the current Payload and Handoff sizes.
+
     Args:
         Hx (ArrayLike): X parity-check matrix.
         Hz (ArrayLike): Z parity-check matrix.
