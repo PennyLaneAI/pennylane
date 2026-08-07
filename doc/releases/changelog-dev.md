@@ -832,6 +832,12 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
+* :class:`~.MultiplexerStatePreparation` no longer validates the norm of the input
+  state vector automatically. Validation is now opt-in via the ``check`` keyword
+  argument, which defaults to ``False``. Pass ``check=True`` to raise a ``ValueError``
+  when the input state vector does not have norm 1.0.
+  [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
+
 <h3>Internal changes ⚙️</h3>
 
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
@@ -866,10 +872,12 @@
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   - Multi-qubit, parametric operators are ported:
   - Templates are ported:
-    - `~.BasisRotation`, `~.QROM`, `~.QFT`
+    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
+  [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
@@ -952,6 +960,7 @@
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
     [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
     [(#9756)](https://github.com/PennyLaneAI/pennylane/pull/9756)
+    [(#9976)](https://github.com/PennyLaneAI/pennylane/pull/9976)
   - Compatibility with the `drawer` module.
     [(#9849)](https://github.com/PennyLaneAI/pennylane/pull/9849)
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
@@ -980,6 +989,7 @@
     [(#9856)](https://github.com/PennyLaneAI/pennylane/pull/9856)
     [(#9876)](https://github.com/PennyLaneAI/pennylane/pull/9876)
     [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+    [(#9966)](https://github.com/PennyLaneAI/pennylane/pull/9966)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
