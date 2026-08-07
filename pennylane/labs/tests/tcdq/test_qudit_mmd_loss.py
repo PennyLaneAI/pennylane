@@ -35,13 +35,7 @@ jnp = pytest.importorskip("jax.numpy")
 jax.config.update("jax_enable_x64", True)
 
 
-def _call_qudit_mmd_loss(
-    params,
-    circuit_config,
-    mmd_config,
-    target_data,
-    key=None,
-):
+def _call_qudit_mmd_loss(params, circuit_config, mmd_config, target_data, key=None):
     """Construct the loss function and evaluate it once."""
     loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
     return loss_fn(params, target_data, key)
@@ -610,32 +604,11 @@ class TestQuditMMDLossStatistical:
         "gates, params, n_qudits, d, n_data, graph_type",
         [
             # 2-qutrit, 3 gates, cycle
-            (
-                {0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
-                [0.37, 0.95, 0.73],
-                2,
-                3,
-                80,
-                "cycle",
-            ),
+            ({0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}, [0.37, 0.95, 0.73], 2, 3, 80, "cycle"),
             # 2-qutrit, 2 gates, complete
-            (
-                {0: [[1, 0]], 1: [[0, 2]]},
-                [0.5, 0.3],
-                2,
-                3,
-                60,
-                "complete",
-            ),
+            ({0: [[1, 0]], 1: [[0, 2]]}, [0.5, 0.3], 2, 3, 60, "complete"),
             # 2-qudit d=4, 3 gates, cycle
-            (
-                {0: [[1, 0]], 1: [[0, 1]], 2: [[2, 1]]},
-                [0.2, 0.8, 0.4],
-                2,
-                4,
-                80,
-                "cycle",
-            ),
+            ({0: [[1, 0]], 1: [[0, 1]], 2: [[2, 1]]}, [0.2, 0.8, 0.4], 2, 4, 80, "cycle"),
         ],
     )
     def test_unbiased_z_test(self, gates, params, n_qudits, d, n_data, graph_type):
@@ -667,11 +640,7 @@ class TestQuditMMDLossStatistical:
         for _ in range(self.N_TRIALS):
             master_key, loss_key, sample_key = jax.random.split(master_key, 3)
             idx = jax.random.choice(sample_key, n_data, shape=(batch,), replace=False)
-            est = loss_fn(
-                params=params_jnp,
-                target_data=X_jnp[idx],
-                key=loss_key,
-            )
+            est = loss_fn(params=params_jnp, target_data=X_jnp[idx], key=loss_key)
             estimates.append(float(est))
 
         estimates = np.array(estimates)

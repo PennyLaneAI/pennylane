@@ -15,7 +15,6 @@ r"""
 Contains the IQPEmbedding template.
 """
 
-# pylint: disable=too-many-arguments
 import copy
 from itertools import combinations
 
@@ -226,9 +225,8 @@ class IQPEmbedding(Operation):
         return (1,)
 
     @staticmethod
-    def compute_decomposition(
-        features, wires, n_repeats, pattern
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(features, wires, n_repeats, pattern):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

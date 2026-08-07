@@ -15,10 +15,10 @@
 LinearCombination class
 """
 
+# pylint: disable=protected-access
+
 import itertools
 import numbers
-
-# pylint: disable=too-many-arguments,protected-access
 from copy import copy
 
 import pennylane as qp
@@ -116,8 +116,8 @@ class LinearCombination(Sum):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], _grouping_indices=metadata[0])
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
         leaves, structure = flatten(observables, is_leaf=lambda x: isinstance(x, Operator))
 
@@ -125,7 +125,6 @@ class LinearCombination(Sum):
         for leaf in leaves:
             if isinstance(leaf, Operator2):
                 if leaf.tracer is None:
-                    # pylint: disable-next=protected-access
                     leaf._bind_primitive()
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
             else:
@@ -509,8 +508,7 @@ if LinearCombination._primitive is not None:
 
 
 # this just exists for the docs build for now, since we're waiting until the next PR to fix the docs
-# pylint: disable=too-few-public-methods
-class Hamiltonian:
+class Hamiltonian:  # pylint: disable=too-few-public-methods
     r"""Returns an operator representing a Hamiltonian.
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,

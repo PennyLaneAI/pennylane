@@ -31,10 +31,7 @@ EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
 _INV_SQRT2 = 1 / np.sqrt(2)
 
-_HADAMARD_MAT = np.array(
-    [[_INV_SQRT2, _INV_SQRT2], [_INV_SQRT2, -_INV_SQRT2]],
-    dtype=np.complex128,
-)
+_HADAMARD_MAT = np.array([[_INV_SQRT2, _INV_SQRT2], [_INV_SQRT2, -_INV_SQRT2]], dtype=np.complex128)
 _HADAMARD_CACHE = {
     np.dtype("complex64"): _HADAMARD_MAT.astype(np.complex64),
     np.dtype("complex128"): _HADAMARD_MAT,
@@ -113,9 +110,8 @@ def _align_torch_interfaces(params, state0, state1, state_interface, param_inter
     return params, state0, state1
 
 
-def _prepare_batched_params(  # pylint: disable=too-many-arguments
-    params, state, state0, state1, axis, n_dim, is_state_batched
-):
+# pylint: disable-next=too-many-arguments
+def _prepare_batched_params(params, state, state0, state1, axis, n_dim, is_state_batched):
     """Prepare parameters and state slices for batched parametric operations.
 
     Args:
@@ -193,7 +189,7 @@ def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
         if op.batch_size is None:
-            op._batch_size = batch_size  # pylint:disable=protected-access
+            op._batch_size = batch_size  # pylint: disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
@@ -231,7 +227,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
         if op.batch_size is None:
-            op._batch_size = batch_size  # pylint:disable=protected-access
+            op._batch_size = batch_size  # pylint: disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     mat_axes = list(range(-num_indices, 0))
@@ -256,13 +252,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
 
 
 @singledispatch
-def apply_operation(
-    op: Operator,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
+def apply_operation(op: Operator, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply and operator to a given state.
 
     Args:
@@ -642,9 +632,8 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
-def _apply_rotation_1q(  # pylint: disable=too-many-return-statements
-    op, state, is_state_batched, compute_coeffs
-):
+# pylint: disable-next=too-many-return-statements
+def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
 
     Args:
@@ -833,13 +822,7 @@ def apply_multicontrolledx(
 
 
 @apply_operation.register
-def apply_grover(
-    op: qp.GroverOperator,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
+def apply_grover(op: qp.GroverOperator, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
     wires) or via standard matrix based methods (else)."""
     if len(op.wires) < 9:
@@ -917,7 +900,6 @@ def apply_snapshot(
     return state
 
 
-# pylint:disable=import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
     op: qp.pulse.ParametrizedEvolution,
@@ -965,6 +947,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     """
 
     try:
+        # pylint: disable=import-outside-toplevel
         import jax
         from jax.experimental.ode import odeint
 

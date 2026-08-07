@@ -26,7 +26,6 @@ from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
     from pennylane.wires import AbstractQubit
 except ImportError:
@@ -59,9 +58,8 @@ else:
     ):
         raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
 
-    # pylint: disable=unused-argument
     @allocate_prim.def_abstract_eval
-    def _allocate_primitive_abstract_eval(
+    def _allocate_primitive_abstract_eval(  # pylint: disable=unused-argument
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
         return [AbstractQubit() for _ in range(num_wires)]
@@ -73,9 +71,8 @@ else:
     def _deallocate_primitive_impl(*wires):
         raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
 
-    # pylint: disable=unused-argument
     @deallocate_prim.def_abstract_eval
-    def _deallocate_primitive_abstract_eval(*wires):
+    def _deallocate_primitive_abstract_eval(*wires):  # pylint: disable=unused-argument
         return []
 
 

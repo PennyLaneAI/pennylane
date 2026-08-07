@@ -14,8 +14,6 @@
 """Tests trainable circuits using the Autograd interface."""
 
 import numpy as np
-
-# pylint:disable=no-self-use
 import pytest
 
 import pennylane as qp
@@ -32,9 +30,7 @@ class TestGradients:
         wires = 2 if diff_method == "hadamard" else 1
         dev = device(wires=wires + (diff_method == "hadamard"))
 
-        qnode_kwargs = {
-            "diff_method": diff_method,
-        }
+        qnode_kwargs = {"diff_method": diff_method}
 
         if diff_method == "hadamard":
             tol += 0.01
@@ -115,9 +111,7 @@ class TestGradients:
         x = pnp.array(0.543)
         y = pnp.array(-0.654)
 
-        qnode_kwargs = {
-            "diff_method": diff_method,
-        }
+        qnode_kwargs = {"diff_method": diff_method}
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires - 1}
 
@@ -158,9 +152,7 @@ class TestGradients:
         x = pnp.array(0.543)
         y = pnp.array(-0.654, requires_grad=False)
 
-        qnode_kwargs = {
-            "diff_method": diff_method,
-        }
+        qnode_kwargs = {"diff_method": diff_method}
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires - 1}
 

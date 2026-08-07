@@ -16,8 +16,6 @@ Tests for the QAOAEmbedding template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -37,9 +35,9 @@ def test_standard_validity():
     qp.ops.functions.assert_valid(op)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test _flatten and _unflatten methods."""
+    # pylint: disable=protected-access
     features = [1.0, 2.0]
     layer1 = [0.1, -0.3, 1.5]
     layer2 = [3.1, 0.2, -2.8]

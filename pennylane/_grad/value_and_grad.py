@@ -28,10 +28,10 @@ from .grad import _args_and_argnums, _setup_h, _setup_method, _ShapedArray
 _has_jax = find_spec("jax") is not None
 
 
-# pylint: disable=unused-argument, too-many-arguments
 @lru_cache
 def _get_value_and_grad_prim():
     """Create a primitive for value and gradient computations."""
+
     if not _has_jax:  # pragma: no cover
         return None
 
@@ -42,6 +42,7 @@ def _get_value_and_grad_prim():
     value_and_grad_prim.prim_type = "higher_order"
 
     @value_and_grad_prim.def_impl
+    # pylint: disable-next=unused-argument
     def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid value '{method=}' without QJIT.")
@@ -53,8 +54,8 @@ def _get_value_and_grad_prim():
         res = jax.value_and_grad(func, argnums=argnums)(*args)
         return jax.tree_util.tree_leaves(res)
 
-    # pylint: disable=unused-argument
     @value_and_grad_prim.def_abstract_eval
+    # pylint: disable-next=unused-argument
     def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
         in_avals = tuple(args[i] for i in argnums)
         grad_avals = (
@@ -130,8 +131,7 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     return new_func
 
 
-# pylint: disable=too-few-public-methods
-class value_and_grad:
+class value_and_grad:  # pylint: disable=too-few-public-methods
     """A :func:`~.qjit`-compatible transformation for returning the result and jacobian of a
     function.
 

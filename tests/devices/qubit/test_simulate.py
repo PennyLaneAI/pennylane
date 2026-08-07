@@ -44,8 +44,7 @@ ml_frameworks_list = [
 ]
 
 
-class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
+class TestCurrentlyUnsupportedCases:  # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -57,7 +56,6 @@ class TestCurrentlyUnsupportedCases:
 def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
-    # pylint: disable=too-few-public-methods
     class MyOperator(qp.operation.Operator):
         num_wires = 1
 
@@ -71,20 +69,13 @@ def test_custom_operation():
     assert qp.math.allclose(result, -1.0)
 
 
-# pylint: disable=too-few-public-methods
 class TestSparsePipeline:
     """System tests for the sparse pipelines."""
 
     ground_state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
     cat_state = np.array([1, 0, 0, 0, 0, 0, 0, 1]) / np.sqrt(2)
 
-    @pytest.mark.parametrize(
-        "state",
-        [
-            ground_state,
-            cat_state,
-        ],
-    )
+    @pytest.mark.parametrize("state", [ground_state, cat_state])
     def test_sparse_op(self, state):
         """Test that a sparse QubitUnitary operation works on default.qubit with expval measurement."""
         mat = sp.sparse.csr_matrix([[0, 1], [1, 0]])
@@ -113,8 +104,7 @@ class TestSparsePipeline:
         assert qp.math.allclose(res, expected)
 
 
-# pylint: disable=too-few-public-methods
-class TestStatePrepBase:
+class TestStatePrepBase:  # pylint: disable=too-few-public-methods
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -234,7 +224,6 @@ class TestBasicCircuit:
         assert qp.math.allclose(g[0], -torch.cos(phi))
         assert qp.math.allclose(g[1], -torch.sin(phi))
 
-    # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
     def test_tf_results_and_backprop(self):
         """Tests execution and gradients of a simple circuit with tensorflow."""
@@ -591,7 +580,6 @@ class TestDebugger:
             torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),
         )
 
-    # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
     def test_debugger_tf(self):
         """Tests debugger with tensorflow."""
@@ -1242,10 +1230,7 @@ class TestQInfoMeasurements:
 class TestTreeTraversalStack:
     """Unit tests for TreeTraversalStack"""
 
-    @pytest.mark.parametrize(
-        "max_depth",
-        [0, 1, 10, 100],
-    )
+    @pytest.mark.parametrize("max_depth", [0, 1, 10, 100])
     def test_init_with_depth(self, max_depth):
         """Test that TreeTraversalStack is initialized correctly with given ``max_depth``"""
         tree_stack = TreeTraversalStack(max_depth)
@@ -1351,12 +1336,12 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert qp.math.allclose(result, qp.math.array([0.5, 0.5]))
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs, qp.sample, qp.var])
     @pytest.mark.parametrize("meas_obj", [qp.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"])
+    # pylint: disable-next=too-many-arguments
     def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
@@ -1498,7 +1483,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
-        # pylint:disable = singleton-comparison, import-outside-toplevel
+        # pylint: disable=singleton-comparison
 
         qscript = qp.tape.QuantumScript(
             [

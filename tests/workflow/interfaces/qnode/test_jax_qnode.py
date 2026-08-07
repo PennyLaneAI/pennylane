@@ -13,7 +13,7 @@
 # limitations under the License.
 """Integration tests for using the JAX-Python interface with a QNode"""
 
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
+# pylint: disable=too-many-arguments
 
 from itertools import product
 
@@ -103,7 +103,7 @@ class TestQNode:
 
     def test_changing_trainability(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
-    ):  # pylint:disable=unused-argument
+    ):  # pylint: disable=unused-argument
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -213,7 +213,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "reversed-direct"
 
-        class MyU3(qp.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qp.U3):
 
             name = "MyU3"
 
@@ -267,7 +267,7 @@ class TestQNode:
 
     def test_jacobian_options(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed
-    ):  # pylint:disable=unused-argument
+    ):  # pylint: disable=unused-argument
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
@@ -509,11 +509,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (2,)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (4,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -588,11 +588,11 @@ class TestVectorValuedQNode:
         assert len(res) == 2
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
+        assert res[0].shape == ()
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -723,11 +723,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
+        assert res[0].shape == ()
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -794,7 +794,7 @@ class TestShotsIntegration:
 
         # execute with shots=100
         res = qp.set_shots(shots=100)(circuit)(a, b)
-        assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
+        assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
@@ -870,9 +870,9 @@ class TestQubitIntegration:
         assert isinstance(res, tuple)
 
         assert isinstance(res[0], jax.Array)
-        assert res[0].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (10,)
         assert isinstance(res[1], jax.Array)
-        assert res[1].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (10,)
 
     def test_counts(self, dev_name, diff_method, grad_on_execution, device_vjp, seed):
         """Test counts works as expected"""
@@ -909,7 +909,6 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, dev_name, diff_method, grad_on_execution, device_vjp, seed):
         """Test that the gradient of chained QNodes works without error"""
-        # pylint:disable=too-few-public-methods
 
         class Template(qp.templates.StronglyEntanglingLayers):
             def decomposition(self):
@@ -953,10 +952,7 @@ class TestQubitIntegration:
         w1 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
         w2 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
-        weights = [
-            jax.numpy.array(np.random.random(w1)),
-            jax.numpy.array(np.random.random(w2)),
-        ]
+        weights = [jax.numpy.array(np.random.random(w1)), jax.numpy.array(np.random.random(w2))]
 
         grad_fn = jax.grad(cost)
         res = grad_fn(weights)
@@ -1357,7 +1353,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
+            assert res.dtype is np.dtype("complex128")
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1434,7 +1430,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):
             grad_method = None
 
             def decomposition(self):
@@ -1652,7 +1648,7 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 @pytest.mark.parametrize(
     "dev_name,diff_method,grad_on_execution, device_vjp", device_and_diff_method
 )
-class TestReturn:  # pylint:disable=too-many-public-methods
+class TestReturn:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
 
     def test_grad_single_measurement_param(

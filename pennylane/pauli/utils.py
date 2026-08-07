@@ -95,7 +95,7 @@ def is_pauli_word(observable):
 
 
 @singledispatch
-def _is_pauli_word(observable):  # pylint:disable=unused-argument
+def _is_pauli_word(observable):  # pylint: disable=unused-argument
     """
     Private implementation of is_pauli_word, to prevent all of the
     registered functions from appearing in the Sphinx docs.
@@ -107,9 +107,7 @@ def _is_pauli_word(observable):  # pylint:disable=unused-argument
 @_is_pauli_word.register(PauliY)
 @_is_pauli_word.register(PauliZ)
 @_is_pauli_word.register(Identity)
-def _is_pw_pauli(
-    observable: PauliX | PauliY | PauliZ | Identity,
-):
+def _is_pw_pauli(observable: PauliX | PauliY | PauliZ | Identity):
     return True
 
 
@@ -274,7 +272,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     return binary_pauli
 
 
-def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-branches
+def binary_to_pauli(binary_vector, wire_map=None):
     """Converts a binary vector of even dimension to an Operator instance.
 
     This functions follows the convention that the first half of binary vector components specify
@@ -650,9 +648,8 @@ def are_pauli_words_qwc(lst_pauli_words):
         op_names = [op.name] if not isinstance(op.name, list) else op.name
         op_wires = op.wires.tolist()
 
-        for op_name, wire in zip(
-            op_names, op_wires, strict=True
-        ):  # iterate over wires of the observable,
+        # iterate over wires of the observable,
+        for op_name, wire in zip(op_names, op_wires, strict=True):
             latest_op_name = latest_op_name_per_wire.get(wire, "Identity")
             if latest_op_name != op_name and (
                 op_name != "Identity" and latest_op_name != "Identity"
@@ -1024,9 +1021,7 @@ def diagonalize_pauli_word(pauli_word):
 
 
 @qp.QueuingManager.stop_recording()
-def diagonalize_qwc_pauli_words(
-    qwc_grouping,
-):
+def diagonalize_qwc_pauli_words(qwc_grouping):
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
@@ -1155,14 +1150,7 @@ pauli_mult_dict = {
     "Z": "Z",
 }
 
-pauli_coeff = {
-    "ZX": 1.0j,
-    "XZ": -1.0j,
-    "ZY": -1.0j,
-    "YZ": 1.0j,
-    "XY": 1.0j,
-    "YX": -1.0j,
-}
+pauli_coeff = {"ZX": 1.0j, "XZ": -1.0j, "ZY": -1.0j, "YZ": 1.0j, "XY": 1.0j, "YX": -1.0j}
 
 
 def _binary_matrix_from_pws(terms, num_qubits, wire_map=None):

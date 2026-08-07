@@ -15,14 +15,14 @@
 This module contains tests for the Resources container class.
 """
 
+# pylint: disable=too-few-public-methods,comparison-with-itself,protected-access
+
 from collections import defaultdict
 from dataclasses import dataclass, field
 
 import pytest
 
 from pennylane.estimator.resources_base import Resources
-
-# pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself,protected-access
 
 
 @dataclass(frozen=True)

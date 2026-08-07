@@ -329,7 +329,7 @@ def to_zx(tape, expand_measurements=False):
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
 
-    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
+    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     # Please keep in mind to keep this in sync with the pennylane.decomposition.gate_sets.PYZX,

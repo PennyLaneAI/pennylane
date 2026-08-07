@@ -15,6 +15,8 @@
 Contains the GQSP template.
 """
 
+# pylint: disable=protected-access
+
 import copy
 
 from pennylane import capture, ops
@@ -114,13 +116,11 @@ class GQSP(Operation):
         # Data contains (angles, derived_data_from_unitary, unitary)
         return cls(angles=data[0], unitary=data[-1], control=metadata[0])
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, unitary, angles, control):
+    def _primitive_bind_call(cls, unitary, angles, control):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(unitary, angles, wires=control)
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["unitary"] = ops.functions.map_wires(
@@ -221,7 +221,6 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
 add_decomps(GQSP, _GQSP_decomposition)
 
-# pylint: disable=protected-access
 if GQSP._primitive is not None:
 
     @GQSP._primitive.def_impl

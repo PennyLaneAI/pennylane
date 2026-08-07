@@ -17,8 +17,6 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=use-implicit-booleaness-not-comparison,no-self-use,too-many-arguments
-
 
 class TestMultiRZ:
     """Test the Resource MultiRZ class."""
@@ -135,11 +133,7 @@ class TestMultiRZ:
         """Test that the controlled resources are as expected"""
 
         op = qre.MultiRZ(num_wires=3, precision=1e-3)
-        op2 = qre.Controlled(
-            op,
-            num_ctrl_wires,
-            num_zero_ctrl,
-        )
+        op2 = qre.Controlled(op, num_ctrl_wires, num_zero_ctrl)
 
         assert (
             op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, op.resource_params)
@@ -484,13 +478,7 @@ class TestPCPhase:
         with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
             qre.PCPhase(num_wires=2, dim=2, wires=[0, 1, 2])
 
-    @pytest.mark.parametrize(
-        "num_wires, dim, rot_precision",
-        [
-            (2, 2, 1e-5),
-            (3, 4, 1e-5),
-        ],
-    )
+    @pytest.mark.parametrize("num_wires, dim, rot_precision", [(2, 2, 1e-5), (3, 4, 1e-5)])
     def test_resource_params(self, num_wires, dim, rot_precision):
         """Test that the resource params are correct."""
         op = qre.PCPhase(num_wires, dim, rotation_precision=rot_precision)
@@ -500,13 +488,7 @@ class TestPCPhase:
             "rotation_precision": rot_precision,
         }
 
-    @pytest.mark.parametrize(
-        "num_wires, dim, rot_precision",
-        [
-            (2, 2, 1e-5),
-            (3, 4, 1e-5),
-        ],
-    )
+    @pytest.mark.parametrize("num_wires, dim, rot_precision", [(2, 2, 1e-5), (3, 4, 1e-5)])
     def test_resource_rep(self, num_wires, dim, rot_precision):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(

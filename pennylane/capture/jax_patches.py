@@ -59,9 +59,7 @@ JAX 0.7.x only has ``DynamicJaxprTrace`` — the ``StagingJaxprTrace`` from olde
 JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 """
 
-# pylint: disable=too-many-arguments
-# pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
-# pylint: disable=protected-access,possibly-used-before-assignment
+# pylint: disable=too-many-arguments,protected-access,possibly-used-before-assignment
 
 has_jax = True
 try:
@@ -124,6 +122,7 @@ def _add_make_eqn_helper():
         Returns:
             (eqn, out_tracers): TracingEqn and output tracers
         """
+        # pylint: disable=too-many-function-args
         source_info = source_info or source_info_util.new_source_info()
         ctx = ctx or JaxprEqnContext(
             compute_on.current_compute_type(),
@@ -189,9 +188,7 @@ def _patch_dyn_shape_staging_rule():
         return out_tracers[0]
 
     # Return just the core patch - the wrappers will call the patched version
-    return [
-        (lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule),
-    ]
+    return [(lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule)]
 
 
 def _patch_pjit_infer_params():
@@ -235,9 +232,7 @@ def _patch_pjit_infer_params():
         # Fix: ensure list + list, not tuple + list
         return p, list(p.consts) + args_flat
 
-    return [
-        (pjit, "_infer_params_internal", patched_infer_params_internal),
-    ]
+    return [(pjit, "_infer_params_internal", patched_infer_params_internal)]
 
 
 def _patch_pjit_staging_rule():

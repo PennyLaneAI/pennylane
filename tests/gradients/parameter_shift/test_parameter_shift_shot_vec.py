@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
 
-# pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
 from functools import partial
 
 import pytest
@@ -44,21 +43,18 @@ def grad_fn(tape, dev, fn=qp.gradients.param_shift, **kwargs):
     return fn(dev.execute(tapes))
 
 
-# pylint: disable=too-few-public-methods
 class RY_with_F(qp.RY):
     """Custom variant of qp.RY with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_with_F(qp.RX):
     """Custom variant of qp.RX with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_par_dep_recipe(qp.RX):
     """RX operation with a parameter-dependent grad recipe."""
 
@@ -382,10 +378,7 @@ class TestParamShift:
         for g in grad:
             assert isinstance(g, tuple)
             assert len(g) == len(tape.trainable_params)
-            for (
-                a,
-                b,
-            ) in zip(g, _expected):
+            for a, b in zip(g, _expected):
                 assert np.allclose(a, b, atol=shot_vec_tol)
 
     @pytest.mark.slow
@@ -501,20 +494,20 @@ class TestParamShift:
 
 
 # The first line of pylint disable is for cost1 through cost6
-# pylint: disable=no-self-argument, not-an-iterable
-# pylint: disable=too-many-public-methods
 @pytest.mark.slow
 @pytest.mark.parametrize("broadcast", [False, True])
-class TestParameterShiftRule:
+class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     """Unit tests for the param_shift function used with a device that has a
     shot vector defined"""
+
+    # pylint: disable=no-self-argument,not-an-iterable
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     @pytest.mark.parametrize("G", [qp.RX, qp.RY, qp.RZ, qp.PhaseShift])
+    # pylint: disable-next=too-many-arguments
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast, seed):
         """Tests that the automatic gradients of Pauli rotations are correct."""
-        # pylint: disable=too-many-arguments
 
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
@@ -559,9 +552,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
-    def test_Rot_gradient(
-        self, mocker, theta, shift, broadcast, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_Rot_gradient(self, mocker, theta, shift, broadcast, seed):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
 
@@ -871,9 +862,7 @@ class TestParameterShiftRule:
             assert np.allclose(res[1], expval_expected[1], atol=finite_diff_tol)
 
     @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qp.RY, 0), (qp.RX, RY_with_F, 1)])
-    def test_fallback_probs(
-        self, RX, RY, argnum, mocker, broadcast
-    ):  # pylint:disable=too-many-arguments
+    def test_fallback_probs(self, RX, RY, argnum, mocker, broadcast):
         """Test that fallback gradient functions are correctly used with probs"""
         spy = mocker.spy(qp.gradients, "finite_diff")
         dev = qp.device("default.qubit", wires=3)
@@ -1396,9 +1385,8 @@ class TestParameterShiftRule:
         res = dev.execute(tape)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
         for r in res:
-            assert qp.math.allclose(
-                r, expected, atol=0.10
-            )  # around 97% pass chance for the correct sampling
+            # around 97% pass chance for the correct sampling
+            assert qp.math.allclose(r, expected, atol=0.10)
 
         # circuit jacobians
         tapes, fn = qp.gradients.param_shift(tape, broadcast=broadcast)
@@ -1960,9 +1948,8 @@ class TestParameterShiftRule:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.array(arr)
 
             def __init__(self, *args, **kwargs):
@@ -2146,12 +2133,7 @@ probs = qp.probs(wires=[1, 0])
 var_involutory = qp.var(proj)
 var_non_involutory = qp.var(hermitian)
 
-single_scalar_output_measurements = [
-    expval,
-    probs,
-    var_involutory,
-    var_non_involutory,
-]
+single_scalar_output_measurements = [expval, probs, var_involutory, var_non_involutory]
 
 single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
 
@@ -2193,9 +2175,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -2220,9 +2201,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wire]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            qp.RY(x, wires=[op_wire])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))
@@ -2258,12 +2238,10 @@ class TestReturn:
         y = 0.213
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
-            qp.RY(
-                y, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(y, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -2290,15 +2268,13 @@ class TestReturn:
 
         with qp.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
-                qp.RY(
-                    params[idx], wires=[w]
-                )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                qp.RY(params[idx], wires=[w])
 
             w = op_wires[-1]
             # Extra op - 5 measurements in total
-            qp.RY(
-                params[5], wires=[w]
-            )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+            # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+            qp.RY(params[5], wires=[w])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))

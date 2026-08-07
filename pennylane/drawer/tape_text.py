@@ -37,9 +37,8 @@ class _CurrentTotals:
     bit_totals: list[str]
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
-class _Config:
+class _Config:  # pylint: disable=too-many-instance-attributes
     """Dataclass containing attributes needed for updating the strings to be drawn for each layer"""
 
     wire_map: dict
@@ -240,8 +239,7 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     return totals
 
 
-# pylint: disable=too-many-arguments
-def tape_text(
+def tape_text(  # pylint: disable=too-many-arguments
     tape,
     wire_order=None,
     *,

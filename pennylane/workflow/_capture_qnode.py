@@ -135,17 +135,9 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
     """Calculate the abstract output shapes for the given measurements."""
 
     if jax.config.jax_enable_x64:
-        dtype_map = {
-            float: jax.numpy.float64,
-            int: jax.numpy.int64,
-            complex: jax.numpy.complex128,
-        }
+        dtype_map = {float: jax.numpy.float64, int: jax.numpy.int64, complex: jax.numpy.complex128}
     else:
-        dtype_map = {
-            float: jax.numpy.float32,
-            int: jax.numpy.int32,
-            complex: jax.numpy.complex64,
-        }
+        dtype_map = {float: jax.numpy.float32, int: jax.numpy.int32, complex: jax.numpy.complex64}
 
     shapes = []
     if not shots:
@@ -181,7 +173,6 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-# pylint: disable=unused-arguments
 @debug_logger
 @qnode_prim.def_impl
 def _(*args, **kwargs):
@@ -225,8 +216,7 @@ def custom_staging_rule(
 pe.custom_staging_rules[qnode_prim] = custom_staging_rule
 
 
-# pylint: disable=too-many-arguments
-def _qnode_batching_rule(
+def _qnode_batching_rule(  # pylint: disable=too-many-arguments
     batched_args,
     batch_dims,
     *,

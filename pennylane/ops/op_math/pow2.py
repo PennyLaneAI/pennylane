@@ -125,7 +125,6 @@ class Pow2(SymbolicOp2):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
     def has_sparse_matrix(self) -> bool:
@@ -139,18 +138,17 @@ class Pow2(SymbolicOp2):
             return math.linalg.matrix_power(mat, z)
         return fractional_matrix_power(mat, z)
 
-    # pylint: disable=arguments-differ
     @staticmethod
     @override
-    def compute_sparse_matrix(base=None, z=0, format="csr"):
+    def compute_sparse_matrix(base=None, z=0, format="csr"):  # pylint: disable=arguments-differ
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(**base.arguments)
             return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
+    # pylint: disable-next=invalid-overridden-method,arguments-differ
     def has_decomposition(self):
 
         if isinstance(self.z, int) and self.z > 0:
@@ -168,7 +166,7 @@ class Pow2(SymbolicOp2):
 
     @staticmethod
     @override
-    def compute_decomposition(base, z):
+    def compute_decomposition(base, z):  # pylint: disable=arguments-differ
         try:
             return base.pow(z)
         except PowUndefinedError as e:
@@ -182,12 +180,12 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
-    def compute_diagonalizing_gates(base, z):  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(base, z):  # pylint: disable=unused-argument,arguments-differ
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -221,13 +219,13 @@ class Pow2(SymbolicOp2):
 
     @staticmethod
     @override
-    def compute_eigvals(base, z):
+    def compute_eigvals(base, z):  # pylint: disable=arguments-differ
         base_eigvals = base.eigvals()
         return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
+    # pylint: disable-next=invalid-overridden-method,arguments-differ
     def has_generator(self):
         return self.base.has_generator
 
@@ -250,9 +248,9 @@ class Pow2(SymbolicOp2):
     def pow(self, z):
         return [Pow2(base=self.base, z=self.z * z)]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
+    # pylint: disable-next=invalid-overridden-method,arguments-differ
     def has_adjoint(self):
         return isinstance(self.z, int)
 
@@ -310,7 +308,6 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
     return qp.pow(op, z)
 
 
-# pylint: disable=protected-access,unused-argument
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
 @register_resources(lambda base, z: {abstractify(base): z})
 def repeat_pow_base(base, z):
@@ -318,13 +315,12 @@ def repeat_pow_base(base, z):
     is a non-negative integer."""
 
     @qp.for_loop(0, z)
-    def _loop(i):
+    def _loop(i):  # pylint: disable=unused-argument
         qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1})
 def merge_powers(base, z):
     """Decompose nested powers by combining them."""
@@ -336,7 +332,6 @@ def _flip_pow_adjoint_resource(base, z):
     return {qp.adjoint(Pow2(base.base, z=z)): 1}
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(_flip_pow_adjoint_resource)
 def flip_pow_adjoint(base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
@@ -360,7 +355,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 
     @register_condition(_condition_fn)
     @register_resources(_resource_fn)
-    def _impl(base, z, **__):  # pylint: disable=unused-argument
+    def _impl(base, z, **__):
         z_mod_period = z % period
         if z_mod_period == 1:
             apply(base)

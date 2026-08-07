@@ -64,14 +64,7 @@ test_matrix = [
         Shots(None),
     ],
     # 3
-    [
-        "default.qubit",
-        replace(
-            ExecutionConfig(),
-            gradient_method="backprop",
-        ),
-        Shots(None),
-    ],
+    ["default.qubit", replace(ExecutionConfig(), gradient_method="backprop"), Shots(None)],
     # 4
     [
         "default.qubit",
@@ -83,14 +76,7 @@ test_matrix = [
         Shots(None),
     ],
     # 5
-    [
-        "default.qubit",
-        replace(
-            ExecutionConfig(),
-            gradient_method="adjoint",
-        ),
-        Shots(None),
-    ],
+    ["default.qubit", replace(ExecutionConfig(), gradient_method="adjoint"), Shots(None)],
     # 6
     [
         "reference.qubit",

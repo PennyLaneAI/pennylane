@@ -15,6 +15,8 @@
 Test the core resource estimation functionality.
 """
 
+# pylint: disable=no-self-use,arguments-differ,too-many-public-methods,too-few-public-methods
+
 from collections import defaultdict
 
 import pytest
@@ -32,8 +34,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
-
-# pylint: disable= no-self-use, arguments-differ, too-many-public-methods, too-few-public-methods
 
 
 def _circuit_w_expval(circ):
@@ -493,13 +493,7 @@ class TestEstimateResources:
 
         actual_resources = estimate(my_circuit, gate_set={"Hadamard", "X"})()
 
-        expected_gates = defaultdict(
-            int,
-            {
-                resource_rep(qre.Hadamard): 1,
-                resource_rep(qre.X): 1,
-            },
-        )
+        expected_gates = defaultdict(int, {resource_rep(qre.Hadamard): 1, resource_rep(qre.X): 1})
         expected_resources = Resources(
             zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=expected_gates
         )
@@ -639,9 +633,8 @@ class TestEstimateResources:
     def test_custom_controlled_decomposition_labs(self):
         """Test that a custom controlled decomposition can be set and used."""
 
-        def custom_ctrl_RZ(
-            num_ctrl_wires, num_zero_ctrl, target_resource_params
-        ):  # pylint: disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params):
             return [GateCount(resource_rep(qre.X), count=3)]
 
         rc = ResourceConfig()

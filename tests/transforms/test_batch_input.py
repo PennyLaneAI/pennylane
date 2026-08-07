@@ -15,8 +15,6 @@
 Unit tests for the ``batch_inputs`` transform.
 """
 
-# pylint: disable=too-few-public-methods,no-value-for-parameter,comparison-with-callable
-
 import pytest
 
 import pennylane as qp
@@ -285,7 +283,7 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
-    # pylint:disable=not-an-iterable
+    # pylint: disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 

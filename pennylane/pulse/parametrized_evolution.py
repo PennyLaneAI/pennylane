@@ -366,9 +366,7 @@ class ParametrizedEvolution(Operation):
     _name = "ParametrizedEvolution"
     grad_method = "A"
 
-    # pylint: disable=too-many-arguments
-
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
@@ -501,9 +499,8 @@ class ParametrizedEvolution(Operation):
             **dict(odeint_kwargs),
         )
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self._has_matrix
 
     def matrix(self, wire_order=None):

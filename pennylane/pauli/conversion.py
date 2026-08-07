@@ -70,9 +70,8 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
     if is_sparse and shape[0] == 0:
         raise ValueError("Cannot decompose an empty matrix.")
 
-    if (
-        shape[0] & (shape[0] - 1) != 0
-    ):  # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
+    # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
+    if shape[0] & (shape[0] - 1) != 0:
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )
@@ -90,7 +89,7 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
     return num_qubits, wire_order
 
 
-def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
+def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
@@ -461,9 +460,8 @@ def _validate_sparse_matrix_shape(shape):
         raise ValueError(
             f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
         )
-    if (
-        shape[0] & (shape[0] - 1) != 0
-    ):  # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
+    # 2 powers are of 100... binary, minus 1 to get 011..., sharing no common bit; any other integers share at least one bit with their minus one
+    if shape[0] & (shape[0] - 1) != 0:
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )

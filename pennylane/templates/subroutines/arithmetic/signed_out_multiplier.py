@@ -321,7 +321,7 @@ class SignedOutMultiplier(Operator):
         output_wires: WiresLike,
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         wires_list = [x_wires, y_wires, output_wires, work_wires]
         wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
@@ -352,13 +352,7 @@ class SignedOutMultiplier(Operator):
         work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
         output_wires_zeroed = self.hyperparameters["output_wires_zeroed"]
 
-        return SignedOutMultiplier(
-            x_wires,
-            y_wires,
-            output_wires,
-            work_wires,
-            output_wires_zeroed,
-        )
+        return SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed)
 
     @property
     def resource_params(self) -> dict:

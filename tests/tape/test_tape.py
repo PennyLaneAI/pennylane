@@ -14,6 +14,7 @@
 """Unit tests for the QuantumTape"""
 
 # pylint: disable=protected-access,too-few-public-methods
+
 import copy
 
 import numpy as np
@@ -25,10 +26,7 @@ from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import (
-    ExpectationMP,
-    ProbabilityMP,
-)
+from pennylane.measurements import ExpectationMP, ProbabilityMP
 from pennylane.tape import QuantumTape
 from pennylane.transforms import decompose
 

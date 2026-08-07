@@ -15,8 +15,8 @@
 Unit tests for the HardwareHamiltonian class.
 """
 
-# pylint: disable=too-few-public-methods,redefined-outer-name,too-many-arguments
-# pylint: disable=import-outside-toplevel
+# pylint: disable=redefined-outer-name,too-many-arguments
+
 import numpy as np
 import pytest
 
@@ -402,9 +402,7 @@ class TestTransmonInteraction:
                 qubit_freq=[1, 2, 3], wires=[0, 1], connections=[], coupling=[]
             )
 
-    def test_wires_and_connections_and_not_containing_each_other_raise_warning(
-        self,
-    ):
+    def test_wires_and_connections_and_not_containing_each_other_raise_warning(self):
         """Test that when wires and connections to not contain each other, a warning is raised"""
         with pytest.warns(UserWarning, match="Caution, wires and connections do not match."):
             _ = qp.pulse.transmon_interaction(
@@ -465,9 +463,7 @@ class TestTransmonSettings:
         assert settings1 != settings2
         assert settings0 == settings2
 
-    def test_add_two_settings(
-        self,
-    ):
+    def test_add_two_settings(self):
         """Test that two settings are correctly added"""
         settings0 = TransmonSettings(connections0, qubit_freq0, g0, [0.0] * len(qubit_freq0))
         settings1 = TransmonSettings(connections1, qubit_freq1, g1, [0.0] * len(qubit_freq1))
@@ -476,9 +472,7 @@ class TestTransmonSettings:
         assert settings.qubit_freq == qubit_freq0 + qubit_freq1
         assert settings.coupling == g0 + g1
 
-    def test_add_two_settings_with_one_anharmonicity_None(
-        self,
-    ):
+    def test_add_two_settings_with_one_anharmonicity_None(self):
         """Test that two settings are correctly added when one has non-trivial anharmonicity"""
         anharmonicity = [1.0] * len(qubit_freq0)
         settings0 = TransmonSettings(connections0, qubit_freq0, g0, anharmonicity=anharmonicity)
@@ -532,9 +526,7 @@ class TestIntegration:
         assert qp.math.isclose(res, res_jit)
 
     @pytest.mark.jax
-    def test_jitted_qnode_multidrive(
-        self,
-    ):
+    def test_jitted_qnode_multidrive(self):
         """Test that a transmon system with multiple drive terms can be
         executed within a jitted qnode."""
         import jax

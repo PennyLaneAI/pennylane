@@ -15,7 +15,8 @@
 Unit tests for the compiler subpackage.
 """
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable=too-few-public-methods
+
 from unittest.mock import patch
 
 import mcm_utils
@@ -32,10 +33,8 @@ jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.catalyst
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
-
-# pylint: disable=too-few-public-methods, too-many-public-methods
+from jax import numpy as jnp  # pylint: disable=wrong-import-order,wrong-import-position
+from jax.core import ShapedArray  # pylint: disable=wrong-import-order,wrong-import-position
 
 
 @pytest.fixture
@@ -151,13 +150,7 @@ class TestCatalyst:
         )
         assert jnp.allclose(result, expected)
 
-    @pytest.mark.parametrize(
-        "_in,_out",
-        [
-            (0, False),
-            (1, True),
-        ],
-    )
+    @pytest.mark.parametrize("_in,_out", [(0, False), (1, True)])
     def test_variable_capture_multiple_devices(self, _in, _out):
         """Test variable capture using multiple backend devices."""
         dev = qp.device("lightning.qubit", wires=2)
@@ -187,9 +180,7 @@ class TestCatalyst:
             res1 = params1["a"][0][0] + params2[1]
             return jnp.sin(res1)
 
-        params1 = {
-            "a": [[0.1], 0.2],
-        }
+        params1 = {"a": [[0.1], 0.2]}
         params2 = (0.6, 0.8)
         expected = 0.78332691
         result = workflow1(params1, params2)
@@ -203,10 +194,7 @@ class TestCatalyst:
         def circuit1(params):
             qp.RX(params[0], wires=0)
             qp.RX(params[1], wires=1)
-            return {
-                "w0": qp.expval(qp.PauliZ(0)),
-                "w1": qp.expval(qp.PauliZ(1)),
-            }
+            return {"w0": qp.expval(qp.PauliZ(0)), "w1": qp.expval(qp.PauliZ(1))}
 
         jitted_fn = qp.qjit(circuit1)
 
@@ -609,11 +597,11 @@ class TestCatalystControlFlow:
                 return (x + 1) ** 2
 
             @conditional.else_if(x < -2)
-            def conditional_elif():  # pylint: disable=unused-variable
+            def conditional_elif():
                 return x + 1
 
             @conditional.otherwise
-            def conditional_false_fn():  # pylint: disable=unused-variable
+            def conditional_false_fn():
                 return -(x + 1)
 
             return conditional()
@@ -894,14 +882,7 @@ class TestCatalystSample:
 class TestCatalystMCMs:
     """Test dynamic_one_shot with Catalyst."""
 
-    @pytest.mark.parametrize(
-        "measure_f",
-        [
-            qp.counts,
-            qp.expval,
-            qp.probs,
-        ],
-    )
+    @pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs])
     @pytest.mark.parametrize("meas_obj", [qp.PauliZ(0), [0], "mcm"])
     def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple

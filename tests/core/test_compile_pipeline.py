@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit and integration tests for the compile pipeline."""
 
-# pylint: disable=no-member, protected-access
+# pylint: disable=protected-access
 
 from copy import copy
 
@@ -30,12 +30,7 @@ from pennylane.core.transforms.compile_pipeline import (
     null_postprocessing,
 )
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.transforms.core import (
-    BoundTransform,
-    CompilePipeline,
-    TransformError,
-    transform,
-)
+from pennylane.transforms.core import BoundTransform, CompilePipeline, TransformError, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 
@@ -44,13 +39,13 @@ def first_valid_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)
     return [tape], lambda x: x
 
 
 def expand_transform(
     tape: QuantumScript,
-    index: int,  # pylint:disable=unused-argument
+    index: int,  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
@@ -62,7 +57,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape2 = tape._ops.pop(index)
 
     def fn(results):
         return qp.math.sum(results)
@@ -115,8 +110,7 @@ class TestUtilityHelpers:
         assert out2 == (4.0, 9.0)
 
 
-# pylint: disable=too-many-public-methods
-class TestCompilePipelineDunders:
+class TestCompilePipelineDunders:  # pylint: disable=too-many-public-methods
     """Test the dunder methods."""
 
     def test_bool(self):
@@ -754,7 +748,7 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
-        compile_pipeline._ipython_display_()  # pylint: disable=protected-access
+        compile_pipeline._ipython_display_()
         captured = capsys.readouterr()
         assert str(compile_pipeline) + "\n" == captured.out
 
@@ -782,8 +776,7 @@ class TestCompilePipelineDunders:
     def test_str_adds_ellipses(self):
         """Tests that the string representation uses ellipses for long kwargs."""
 
-        # pylint:disable=unused-argument
-        def verbose_transform(
+        def verbose_transform(  # pylint: disable=unused-argument
             tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
@@ -1324,7 +1317,7 @@ class TestCompilePipelineCall:
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             new_ops = list(tape.operations)
-            new_ops.pop(index)  # pylint:disable=protected-access
+            new_ops.pop(index)
             return (
                 qp.tape.QuantumScript(new_ops, tape.measurements, shots=tape.shots),
             ), single_null_postprocessing
@@ -1391,17 +1384,13 @@ class TestCompilePipelineCall:
         postprocessing0 = fn.keywords["postprocessing_stack"][0]
         assert postprocessing0.func is _batch_postprocessing
         assert postprocessing0.args == tuple()
-        assert postprocessing0.keywords["individual_fns"] == [
-            add_one,
-        ]
+        assert postprocessing0.keywords["individual_fns"] == [add_one]
         assert postprocessing0.keywords["slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
         assert postprocessing1.args == tuple()
-        assert postprocessing1.keywords["individual_fns"] == [
-            scale_two,
-        ]
+        assert postprocessing1.keywords["individual_fns"] == [scale_two]
         assert postprocessing1.keywords["slices"] == [slice(0, 1)]
 
         results = (1.0,)
@@ -1423,17 +1412,13 @@ class TestCompilePipelineCall:
         postprocessing0 = fn.keywords["postprocessing_stack"][0]
         assert postprocessing0.func is _batch_postprocessing
         assert postprocessing0.args == tuple()
-        assert postprocessing0.keywords["individual_fns"] == [
-            scale_two,
-        ]
+        assert postprocessing0.keywords["individual_fns"] == [scale_two]
         assert postprocessing0.keywords["slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
         assert postprocessing1.args == tuple()
-        assert postprocessing1.keywords["individual_fns"] == [
-            add_one,
-        ]
+        assert postprocessing1.keywords["individual_fns"] == [add_one]
         assert postprocessing1.keywords["slices"] == [slice(0, 1)]
 
         results = (1.0,)
@@ -1466,9 +1451,8 @@ class TestCompilePipelineCall:
         orig2 = qp.tape.QuantumScript(
             [op], [qp.expval(qp.sum(qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)))]
         )
-        orig3 = qp.tape.QuantumScript(
-            [op], [qp.expval(qp.sum(*(qp.PauliX(i) for i in range(5))))]
-        )  # contributes 5 terms
+        # contributes 5 terms
+        orig3 = qp.tape.QuantumScript([op], [qp.expval(qp.sum(*(qp.PauliX(i) for i in range(5))))])
 
         batch, fn = prog((orig1, orig2, orig3))
 
@@ -1680,14 +1664,12 @@ class TestCompilePipelineCall:
 
         # Create a dummy device with a custom preprocess_transforms method
         class DummyDevice(qp.devices.Device):
-            def preprocess_transforms(
-                self, execution_config=None
-            ):  # pylint: disable=unused-argument
+            def preprocess_transforms(self, execution_config=None):
                 prog = CompilePipeline()
                 prog.add_transform(qp.defer_measurements)
                 return prog
 
-            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
+            def execute(self, circuits, execution_config=None):
                 return [0] * len(circuits)
 
         original_dev = DummyDevice()
@@ -1819,7 +1801,7 @@ class TestCompilePipelineIntegration:
         assert pipeline[1].tape_transform is second_valid_transform
 
 
-class TestMarkers:
+class TestMarkers:  # pylint: disable=too-many-public-methods
     """Tests markers in a compile pipeline"""
 
     def test_add_marker(self):
@@ -1860,10 +1842,7 @@ class TestMarkers:
         """Tests that labels must be strings."""
 
         pipeline = CompilePipeline()
-        with pytest.raises(
-            ValueError,
-            match="Marker label must be a string",
-        ):
+        with pytest.raises(ValueError, match="Marker label must be a string"):
             pipeline.add_marker(undefined_label)
 
     @pytest.mark.parametrize("undefined_level", [-1, 0.5, 10])

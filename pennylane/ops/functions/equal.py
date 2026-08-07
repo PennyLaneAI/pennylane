@@ -15,7 +15,7 @@
 This module contains the qp.equal function.
 """
 
-# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
 
 from collections.abc import Iterable
 from functools import singledispatch
@@ -617,11 +617,7 @@ def _check_pytree_value(
 
 
 @_equal_dispatch.register
-def _equal_pauliword(
-    op1: PauliWord,
-    op2: PauliWord,
-    **kwargs,
-):
+def _equal_pauliword(op1: PauliWord, op2: PauliWord, **kwargs):
     if op1 != op2:
         if set(op1) != set(op2):
             err = "Different wires in Pauli words."
@@ -684,9 +680,9 @@ def _equal_paulisentence(
 
 
 @_equal_dispatch.register
-# pylint: disable=protected-access
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     """Determine whether two Prod or Sum objects are equal"""
+    # pylint: disable=protected-access
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
 

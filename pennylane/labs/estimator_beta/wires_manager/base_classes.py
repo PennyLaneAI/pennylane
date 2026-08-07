@@ -60,9 +60,8 @@ class Allocate:
         self._restored = restored
         self._num_wires = num_wires
 
-    def equal(
-        self, other: "Allocate"
-    ) -> bool:  # We avoid overriding `__eq__` due to concerns with hashing
+    # We avoid overriding `__eq__` due to concerns with hashing
+    def equal(self, other: "Allocate") -> bool:
         """Determine if two instances of the class are equal."""
         if not isinstance(other, self.__class__):
             return False
@@ -194,9 +193,8 @@ class Deallocate:
         self._num_wires = num_wires
         self._allocated_register = allocated_register
 
-    def equal(
-        self, other: "Deallocate"
-    ) -> bool:  # We avoid overriding `__eq__` due to concerns with hashing
+    # We avoid overriding `__eq__` due to concerns with hashing
+    def equal(self, other: "Deallocate") -> bool:
         """Determine if two instances of the class are equal."""
         if not isinstance(other, self.__class__):
             return False
@@ -280,9 +278,8 @@ class MarkQubits:
         context.append(self)
         return self
 
-    def equal(
-        self, other: "MarkQubits"
-    ):  # We avoid overriding `__eq__` due to concerns with hashing
+    # We avoid overriding `__eq__` due to concerns with hashing
+    def equal(self, other: "MarkQubits"):
         """Check if two MarkQubits instances are equal."""
         return (self.__class__ == other.__class__) and (self.wires.toset() == other.wires.toset())
 

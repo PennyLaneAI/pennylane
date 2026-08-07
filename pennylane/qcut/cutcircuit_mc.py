@@ -46,7 +46,7 @@ from .utils import (
 )
 
 
-def _cut_circuit_mc_expand(
+def _cut_circuit_mc_expand(  # pylint: disable=unused-argument
     tape: QuantumScript,
     classical_processing_fn: Callable | None = None,
     max_depth: int = 1,
@@ -56,7 +56,6 @@ def _cut_circuit_mc_expand(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument
 
     def processing_fn(res):
         return res[0]
@@ -65,7 +64,7 @@ def _cut_circuit_mc_expand(
 
 
 @partial(transform, expand_transform=_cut_circuit_mc_expand)
-def cut_circuit_mc(
+def cut_circuit_mc(  # pylint: disable=unused-argument
     tape: QuantumScript,
     classical_processing_fn: Callable | None = None,
     auto_cutter: bool | Callable = False,
@@ -414,7 +413,6 @@ def cut_circuit_mc(
         >>> circuit(x)
         tensor(-0.776, requires_grad=True)
     """
-    # pylint: disable=unused-argument
 
     if len(tape.measurements) != 1:
         raise ValueError(
@@ -537,16 +535,7 @@ def _pauliZ(wire):
     return sample(ops.Z(wire))
 
 
-MC_MEASUREMENTS = [
-    _identity,
-    _identity,
-    _pauliX,
-    _pauliX,
-    _pauliY,
-    _pauliY,
-    _pauliZ,
-    _pauliZ,
-]
+MC_MEASUREMENTS = [_identity, _identity, _pauliX, _pauliX, _pauliY, _pauliY, _pauliZ, _pauliZ]
 
 
 def expand_fragment_tapes_mc(

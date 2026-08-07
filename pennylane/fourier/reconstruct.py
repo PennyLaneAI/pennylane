@@ -83,11 +83,7 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
         use the Fourier transform reconstruction if this derivative is needed.
         """
         _x = x - x0 - shifts
-        return math.tensordot(
-            math.sinc(a * _x) / math.sinc(b * _x),
-            evals,
-            axes=[[0], [0]],
-        )
+        return math.tensordot(math.sinc(a * _x) / math.sinc(b * _x), evals, axes=[[0], [0]])
 
     return _reconstruction
 
@@ -99,6 +95,7 @@ _warn_text_f0_ignored = (
 )
 
 
+# pylint: disable-next=too-many-arguments
 def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
 
@@ -124,7 +121,6 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum`` .
         This function is a purely classical function. Furthermore, it is fully differentiable.
     """
-    # pylint: disable=too-many-arguments
 
     have_f0 = f0 is not None
     have_shifts = shifts is not None
@@ -212,12 +208,12 @@ def _parse_ids(ids, info_dict):
     return ids
 
 
+# pylint: disable-next=too-many-arguments
 def _parse_shifts(shifts, R, arg_name, par_idx, atol, need_f0):
     """Processes shifts for a single reconstruction and determines
     wheter the function at the reconstruction point, ``f0`` will be
     needed.
     """
-    # pylint: disable=too-many-arguments
     _shifts = shifts.get(arg_name)
     if _shifts is not None:
         _shifts = _shifts.get(par_idx)
@@ -619,7 +615,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         evaluations and reduce the number of calls to :math:`5`.
 
     """
-    # pylint: disable=cell-var-from-loop, unused-argument
+    # pylint: disable=cell-var-from-loop
 
     atol = 1e-8
     ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, spectra, shifts, atol)
@@ -634,7 +630,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         interface = math.get_interface(args[0])
 
-        def constant_fn(x):
+        def constant_fn(x):  # pylint: disable=unused-argument
             """Univariate reconstruction of a constant Fourier series."""
             return f0
 

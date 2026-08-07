@@ -16,9 +16,9 @@ This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
 
-import autograd
-
 # pylint: disable=too-many-branches
+
+import autograd
 import numpy as np
 
 from pennylane import math
@@ -227,12 +227,10 @@ def compute_vjp_multi(dy, jac, num=None):
                 dy_interface == "tensorflow"
             ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 # TF needs a different path for Hessian support
-                return math.array(
-                    math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
-                )  # Scalar value per observable output
-            return math.array(
-                math.einsum("i,i...", dy, jac), like=dy[0]
-            )  # Scalar value per observable output
+                # Scalar value per observable output
+                return math.array(math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0])
+            # Scalar value per observable output
+            return math.array(math.einsum("i,i...", dy, jac), like=dy[0])
         # NOTE: We want any potential failure to fall back here, so catch every exception type
         # TODO: Catalogue and update for expected exception types
         except Exception:  # pylint: disable=broad-except

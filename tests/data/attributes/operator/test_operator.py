@@ -234,7 +234,7 @@ def test_value_init_not_supported():
     """Test that a ValueError is raised if attempting to serialize an unsupported operator
     using the ``DatasetOperator`` attribute type."""
 
-    class NotSupported(Operator):  # pylint: disable=too-few-public-methods, unnecessary-ellipsis
+    class NotSupported(Operator):
         """An operator."""
 
     with pytest.raises(

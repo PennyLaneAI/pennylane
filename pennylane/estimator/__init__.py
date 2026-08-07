@@ -20,12 +20,7 @@ from .resources_base import Resources
 
 from .resource_config import ResourceConfig
 
-from .resource_operator import (
-    ResourceOperator,
-    CompressedResourceOp,
-    GateCount,
-    resource_rep,
-)
+from .resource_operator import ResourceOperator, CompressedResourceOp, GateCount, resource_rep
 
 from .estimate import estimate
 

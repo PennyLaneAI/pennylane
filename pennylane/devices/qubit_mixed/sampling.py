@@ -15,7 +15,6 @@
 Submodule for sampling a qubit mixed state.
 """
 
-# pylint: disable=too-many-positional-arguments
 from collections.abc import Callable
 
 import numpy as np
@@ -52,8 +51,7 @@ def _apply_diagonalizing_gates(
     return state
 
 
-# pylint:disable = too-many-arguments
-def _measure_with_samples_diagonalizing_gates(
+def _measure_with_samples_diagonalizing_gates(  # pylint: disable=too-many-arguments
     mps: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -112,7 +110,7 @@ def _measure_with_samples_diagonalizing_gates(
     return processed_samples[0]
 
 
-def _measure_classical_shadow(
+def _measure_classical_shadow(  # pylint: disable=too-many-arguments,unused-argument
     mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
@@ -140,7 +138,6 @@ def _measure_classical_shadow(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    # pylint: disable=unused-argument
 
     # the list contains only one element based on how we group measurements
     mp = mp[0]
@@ -168,15 +165,10 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None):
             First row: measurement outcomes (0 or 1).
             Second row: Pauli basis recipe (0=X, 1=Y, 2=Z).
     """
-    return mp.process_density_matrix_with_shots(
-        state,
-        wire_order,
-        shots,
-        rng=rng,
-    )
+    return mp.process_density_matrix_with_shots(state, wire_order, shots, rng=rng)
 
 
-def _measure_hamiltonian_with_samples(
+def _measure_hamiltonian_with_samples(  # pylint: disable=too-many-arguments
     mp: list[ExpectationMP],
     state: np.ndarray,
     shots: Shots,
@@ -209,7 +201,7 @@ def _measure_hamiltonian_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-def _measure_sum_with_samples(
+def _measure_sum_with_samples(  # pylint: disable=too-many-arguments
     mp: list[ExpectationMP],
     state: np.ndarray,
     shots: Shots,
@@ -240,7 +232,7 @@ def _measure_sum_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-def sample_state(
+def sample_state(  # pylint: disable=too-many-arguments
     state,
     shots: int,
     is_state_batched: bool = False,
@@ -282,7 +274,7 @@ def sample_state(
     return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key)
 
 
-def measure_with_samples(
+def measure_with_samples(  # pylint: disable=too-many-arguments
     measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,

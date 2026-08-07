@@ -15,7 +15,6 @@
 Unit tests for the the arithmetic qubit operations
 """
 
-# pylint: disable=too-many-arguments
 import copy
 import itertools
 
@@ -245,17 +244,12 @@ class TestQubitSum:
 class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
-    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Tests the flatten and unflatten methods"""
+        # pylint: disable=protected-access
         wires = qp.wires.Wires((0, 1, 2, 3))
         work_wires = qp.wires.Wires(4)
-        op = qp.IntegerComparator(
-            2,
-            geq=False,
-            wires=(0, 1, 2, 3),
-            work_wires=(4),
-        )
+        op = qp.IntegerComparator(2, geq=False, wires=(0, 1, 2, 3), work_wires=(4,))
 
         data, metadata = op._flatten()
         assert data == tuple()
@@ -469,7 +463,6 @@ class TestIntegerComparator:
         tape2 = qp.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qp.Identity) for op in tape2.operations)
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_power(self):
         """Test ``pow`` method."""
         op = qp.IntegerComparator(3, wires=[0, 1, 2, 3])

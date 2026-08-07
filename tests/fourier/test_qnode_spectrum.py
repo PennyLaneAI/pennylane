@@ -15,7 +15,6 @@
 Tests for the Fourier spectrum transform.
 """
 
-# pylint: disable=too-few-public-methods
 from collections import OrderedDict
 
 import numpy as np
@@ -200,7 +199,6 @@ process_id_cases_unknown_arg = [
 class TestHelpers:
     """Tests for helper functions."""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "circuit, enc_args, argnum, enc_args_exp, argnum_exp",
         process_id_cases,
@@ -213,10 +211,7 @@ class TestHelpers:
         assert all(np.issubdtype(type(num), int) for num in argnum)
         assert np.allclose(argnum, argnum_exp)
 
-    @pytest.mark.parametrize(
-        "circuit, enc_args, argnum",
-        process_id_cases_unknown_arg,
-    )
+    @pytest.mark.parametrize("circuit, enc_args, argnum", process_id_cases_unknown_arg)
     def test_process_ids_unknown_arg(self, circuit, enc_args, argnum):
         dev = qp.device("default.qubit", wires=2)
         qnode = qp.QNode(circuit, dev)

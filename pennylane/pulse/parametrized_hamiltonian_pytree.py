@@ -142,9 +142,8 @@ class LazyDotPytree:
         aux_data = None
         return (children, aux_data)
 
-    # pylint: disable=unused-argument
     @classmethod
-    def tree_unflatten(cls, aux_data, children):
+    def tree_unflatten(cls, aux_data, children):  # pylint: disable=unused-argument
         """Function used by ``jax`` to unflatten the ``JaxLazyDot`` pytree.
 
         Args:

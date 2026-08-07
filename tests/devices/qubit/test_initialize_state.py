@@ -25,7 +25,6 @@ from pennylane.devices.qubit import create_initial_state
 class TestInitializeState:
     """Test the functions in initialize_state.py"""
 
-    # pylint:disable=unused-argument,too-few-public-methods
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 

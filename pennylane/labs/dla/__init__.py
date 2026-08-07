@@ -42,9 +42,7 @@ Utility functions
 
 """
 
-from .recursive_cartan_decomp import (
-    recursive_cartan_decomp,
-)
+from .recursive_cartan_decomp import recursive_cartan_decomp
 from .dense_util import (
     check_orthonormal,
     pauli_coefficients,

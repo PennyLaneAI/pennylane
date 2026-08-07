@@ -22,11 +22,7 @@ from pennylane import math
 alphabet_array = math.array(list(alphabet))
 
 
-def get_einsum_mapping(
-    op: qp.operation.Operator,
-    state,
-    is_state_batched: bool = False,
-):
+def get_einsum_mapping(op: qp.operation.Operator, state, is_state_batched: bool = False):
     r"""Finds the indices for einsum to apply kraus operators to a mixed state
     Args:
         op (Operator): Operator to apply to the quantum state
@@ -72,8 +68,7 @@ def get_einsum_mapping(
     )
 
 
-# pylint: disable=too-many-arguments
-def _map_indices_apply_channel(
+def _map_indices_apply_channel(  # pylint: disable=too-many-arguments
     *, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices
 ):
     """Map indices to einsum string

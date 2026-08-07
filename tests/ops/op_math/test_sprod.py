@@ -29,10 +29,7 @@ from pennylane.wires import Wires
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier, qp.WireCut)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -158,9 +155,8 @@ class TestInitialization:
         """Test that the diagonalizing gates are correct."""
         diag_sprod_op = SProd(1.23, qp.PauliX(wires=0))
         diagonalizing_gates = diag_sprod_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = (
-            qp.PauliX(wires=0).diagonalizing_gates()[0].matrix()
-        )  # scaling doesn't change diagonalizing gates
+        # scaling doesn't change diagonalizing gates
+        true_diagonalizing_gates = qp.PauliX(wires=0).diagonalizing_gates()[0].matrix()
 
         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
@@ -209,9 +205,9 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_flatten_unflatten(self, op_scalar_tup):
+        # pylint: disable=protected-access
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
 
@@ -262,7 +258,6 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=False`
         has `has_matrix=True` as well."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qp.RX):
             """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
@@ -275,7 +270,6 @@ class TestMscMethods:
     def test_has_diagonalizing_gates(self, value):
         """Test that SProd defers has_diagonalizing_gates to base operator."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -744,7 +738,7 @@ class TestProperties:
     def test_is_verified_hermitian_abstract(self):
         """Test that is_verified_hermitian works with abstract coefficients."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def float_arg(x):
             op = x * qp.X(0)
@@ -891,7 +885,7 @@ class TestSimplify:
         sprod_op = SProd(
             2, SProd(2, qp.RZ(1.32, wires=0)) + qp.Identity(wires=0) + qp.RX(1.9, wires=1)
         )
-        final_op = qp.ops.Sum(  # pylint:disable=no-member
+        final_op = qp.ops.Sum(
             SProd(4, qp.RZ(1.32, wires=0)),
             SProd(2, qp.Identity(wires=0)),
             SProd(2, qp.RX(1.9, wires=1)),
@@ -1072,8 +1066,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1.23 in results  # pylint:disable=unsupported-membership-test
-        assert -1.23 not in results  # pylint:disable=unsupported-membership-test
+        assert 1.23 in results  # pylint: disable=unsupported-membership-test
+        assert -1.23 not in results  # pylint: disable=unsupported-membership-test
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op

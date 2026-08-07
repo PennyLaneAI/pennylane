@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
 
-# pylint:disable=protected-access,unused-argument, wrong-import-position
+# pylint: disable=protected-access,unused-argument,wrong-import-position
 
 import pytest
 
@@ -77,7 +77,6 @@ class TestDecomposeInterpreter:
     @pytest.mark.parametrize("op", [qp.RX(1.5, 0), qp.RZ(1.5, 0)])
     def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""
-        # pylint: disable=unnecessary-lambda-assignment
         stopping_condition = lambda op: op.name == "RX"
         interpreter = DecomposeInterpreter(stopping_condition=stopping_condition)
         assert interpreter.stopping_condition(op) == stopping_condition(op)

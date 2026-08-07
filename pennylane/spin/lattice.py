@@ -17,15 +17,13 @@ This file contains functions and classes to create a
 the necessary information about a lattice.
 """
 
+# pylint: disable=too-many-arguments,too-many-instance-attributes,too-few-public-methods,too-many-branches
+
 import itertools
 
 import scipy as sp
 
 from pennylane import math
-
-# pylint: disable=too-many-arguments, too-many-instance-attributes
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-branches
 
 
 class Lattice:

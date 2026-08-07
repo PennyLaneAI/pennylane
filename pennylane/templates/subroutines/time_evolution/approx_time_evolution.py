@@ -16,6 +16,7 @@ Contains the ApproxTimeEvolution template.
 """
 
 # pylint: disable=protected-access
+
 import copy
 from collections import defaultdict
 
@@ -175,9 +176,8 @@ class ApproxTimeEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(*coeffs_and_time, wires, hamiltonian, n):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -341,9 +341,7 @@ class MPSPrep(Operation):
 
     resource_keys = {"bond_dimensions", "num_sites", "num_work_wires"}
 
-    def __init__(
-        self, mps, wires, work_wires=None, right_canonicalize=False
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False):
 
         _validate_mps_shape(mps)
 
@@ -397,8 +395,8 @@ class MPSPrep(Operation):
             self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
         )
 
-    # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, mps, wires, work_wires=None, right_canonicalize=False):
         return super()._primitive_bind_call(
             *mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
@@ -413,9 +411,8 @@ class MPSPrep(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(
-        mps, wires, work_wires, right_canonicalize=False
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(mps, wires, work_wires, right_canonicalize=False):
         r"""Representation of the operator as a product of other operators.
         The decomposition follows Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
@@ -487,9 +484,8 @@ class MPSPrep(Operation):
             d, k = vectors.shape
             new_columns = qp.math.array(np.random.RandomState(42).random((d, d - k)))
             unitary_matrix, R = qp.math.linalg.qr(qp.math.hstack([vectors, new_columns]))
-            unitary_matrix *= qp.math.sign(
-                qp.math.diag(R)
-            )  # Enforce uniqueness for QR decomposition
+            # Enforce uniqueness for QR decomposition
+            unitary_matrix *= qp.math.sign(qp.math.diag(R))
 
             ops.append(qp.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires))
 
@@ -504,15 +500,13 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
         return type.__call__(MPSPrep, mps, wires=wires, **kwargs)
 
 
-def _mps_prep_decomposition_resources(
-    bond_dimensions, num_sites, num_work_wires
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _mps_prep_decomposition_resources(bond_dimensions, num_sites, num_work_wires):
     return {resource_rep(qp.QubitUnitary, num_wires=1 + num_work_wires): num_sites}
 
 
-def _work_wires_bond_dimension_condition(
-    bond_dimensions, num_sites, num_work_wires
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _work_wires_bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):
     max_bond_dimension = max(bond_dimensions[:-1])
 
     return (

@@ -15,8 +15,6 @@
 Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 
-# pylint: disable=no-self-use,too-many-arguments,protected-access
-
 import numpy as np
 import pytest
 
@@ -98,10 +96,7 @@ def ops_fixture():
 @pytest.fixture(name="obs")
 def obs_fixture():
     """A fixture of observables to go after the queue fixture."""
-    return [
-        qp.expval(qp.PauliX(wires=0)),
-        qp.expval(qp.Hermitian(np.identity(4), wires=[1, 2])),
-    ]
+    return [qp.expval(qp.PauliX(wires=0)), qp.expval(qp.Hermitian(np.identity(4), wires=[1, 2]))]
 
 
 @pytest.fixture(name="circuit")
@@ -129,7 +124,6 @@ def circuit_measure_multiple_with_max_twice():
     )
 
 
-# pylint: disable=too-many-public-methods
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
 
@@ -154,17 +148,7 @@ class TestCircuitGraph:
 
         a = {(graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list()}
 
-        b = {
-            (0, 3),
-            (1, 3),
-            (2, 4),
-            (3, 5),
-            (3, 6),
-            (4, 5),
-            (5, 7),
-            (5, 8),
-            (6, 8),
-        }
+        b = {(0, 3), (1, 3), (2, 4), (3, 5), (3, 6), (4, 5), (5, 7), (5, 8), (6, 8)}
         assert a == b
 
     def test_ancestors_and_descendants_example(self, ops, obs):

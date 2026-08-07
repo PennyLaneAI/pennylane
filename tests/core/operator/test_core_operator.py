@@ -15,6 +15,8 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
+# pylint: disable=protected-access,redefined-outer-name,too-few-public-methods,too-many-public-methods,unused-argument
+
 import copy
 from collections.abc import Callable
 
@@ -27,19 +29,12 @@ from pennylane import numpy as pnp
 from pennylane.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import parameter_frequencies
-from pennylane.operation import (
-    _UNSET_BATCH_SIZE,
-    operation_derivative,
-)
+from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
-# pylint: disable=use-implicit-booleaness-not-comparison
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -350,7 +345,7 @@ class TestOperatorConstruction:
             num_wires = 1
 
         op = DummyOp(wires=0)
-        op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
+        op.name = "MyOp"
         assert op.name == "MyOp"
 
     def test_default_hyperparams(self):
@@ -362,7 +357,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires):  # pylint:disable=super-init-not-called
+            def __init__(self, wires):  # pylint: disable=super-init-not-called
                 pass
 
         op = MyOp(wires=0)
@@ -377,7 +372,7 @@ class TestOperatorConstruction:
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
+            def __init__(self, wires, basis_state=None):  # pylint: disable=super-init-not-called
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]
@@ -657,7 +652,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_decomposition(x, wires=None):
                 return [qp.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -736,7 +731,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_diagonalizing_gates(x, wires=None):
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -827,7 +822,7 @@ class TestModificationMethods:
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
-        op._pauli_rep = qp.pauli.PauliSentence(  # pylint:disable=attribute-defined-outside-init
+        op._pauli_rep = qp.pauli.PauliSentence(
             {
                 qp.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,
                 qp.pauli.PauliWord({0: "Z", 1: "X", 2: "Y"}): 2.2,
@@ -1194,10 +1189,7 @@ class TestOperatorIntegration:
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qp.CNOT(wires=[0, 1])
-        final_op = qp.sum(
-            qp.CNOT(wires=[0, 1]),
-            qp.s_prod(5, qp.Identity([0, 1])),
-        )
+        final_op = qp.sum(qp.CNOT(wires=[0, 1]), qp.s_prod(5, qp.Identity([0, 1])))
         qp.assert_equal(sum_op, final_op)
 
     def test_sub_rsub_and_neg_dunder_methods(self):
@@ -1513,7 +1505,7 @@ class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):  # pylint:disable=arguments-differ
+    def compute_matrix(theta):
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -1549,7 +1541,7 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
@@ -1641,11 +1633,9 @@ class TestStatePrepBase:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        # pylint:disable=unused-argument,too-few-public-methods
         def state_vector(self, wire_order=None):
             return self.parameters[0]
 
-    # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_initial_state(self):
         """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
@@ -1656,8 +1646,6 @@ class TestStatePrepBase:
 
         class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
-
-            # pylint:disable=abstract-class-instantiated
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
@@ -1685,7 +1673,6 @@ class TestCriteria:
         assert not qp.operation.is_trainable(self.cnot)
 
 
-# pylint: disable=too-few-public-methods
 class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 
@@ -1767,13 +1754,7 @@ class TestNewOpMath:
             with pytest.raises(TypeError, match="unsupported operand type"):
                 _ = op - "foo"
 
-        @pytest.mark.parametrize(
-            "x0, x1",
-            [
-                (X2(0), X2(1)),
-                (qp.PauliX(0), qp.PauliX(1)),
-            ],
-        )
+        @pytest.mark.parametrize("x0, x1", [(X2(0), X2(1)), (qp.PauliX(0), qp.PauliX(1))])
         def test_op_with_scalar(self, x0, x1):
             """Tests adding/subtracting ops with scalars."""
             for op in [x0 + 1, 1 + x0]:
@@ -1813,13 +1794,7 @@ class TestNewOpMath:
             qp.assert_equal(op[1], op1)
             qp.assert_equal(op[2], op2)
 
-        @pytest.mark.parametrize(
-            "base",
-            [
-                qp.PauliY(0),
-                MultiRot([np.pi], [0], "Y"),
-            ],
-        )
+        @pytest.mark.parametrize("base", [qp.PauliY(0), MultiRot([np.pi], [0], "Y")])
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="unsupported operand type"):
@@ -1883,13 +1858,7 @@ class TestNewOpMath:
             assert nested.scalar == 1.0
             qp.assert_equal(nested.base, op)
 
-        @pytest.mark.parametrize(
-            "base",
-            [
-                qp.PauliY(0),
-                MultiRot([np.pi], [0], "Y"),
-            ],
-        )
+        @pytest.mark.parametrize("base", [qp.PauliY(0), MultiRot([np.pi], [0], "Y")])
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="non-int of type"):
@@ -1950,13 +1919,7 @@ class TestNewOpMath:
             qp.assert_equal(op.base, base)
             assert op.z == power
 
-        @pytest.mark.parametrize(
-            "base",
-            [
-                qp.PauliY(0),
-                MultiRot([np.pi], [0], "Y"),
-            ],
-        )
+        @pytest.mark.parametrize("base", [qp.PauliY(0), MultiRot([np.pi], [0], "Y")])
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="unsupported operand type"):
@@ -2018,7 +1981,6 @@ def test_docstring_example_of_operator_class(tol):
     class FlipAndRotate(qp.operation.Operation):
         grad_method = "A"
 
-        # pylint: disable=too-many-arguments,too-many-positional-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
@@ -2037,7 +1999,7 @@ def test_docstring_example_of_operator_class(tol):
             return (0,)
 
         @staticmethod
-        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+        def compute_decomposition(angle, wires, do_flip):
             op_list = []
             if do_flip:
                 op_list.append(qp.PauliX(wires=wires[1]))
@@ -2082,9 +2044,9 @@ def test_custom_operator_is_jax_pytree():
     qp.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# pylint: disable=unused-import,no-name-in-module
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
+    # pylint: disable=unused-import
 
     attr_name = "non_existent_attr"
     with pytest.raises(
@@ -2093,12 +2055,10 @@ def test_get_attr():
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 
     with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
-        from pennylane.operation import (
-            non_existent_attr,
-        )  # error is raised if non-existent attribute imported
+        # error is raised if non-existent attribute imported
+        from pennylane.operation import non_existent_attr
 
     from pennylane.operation import StatePrep
 
-    assert (
-        StatePrep is qp.operation.StatePrepBase
-    )  # StatePrep imported from operation.py is an alias for StatePrepBase
+    # StatePrep imported from operation.py is an alias for StatePrepBase
+    assert StatePrep is qp.operation.StatePrepBase

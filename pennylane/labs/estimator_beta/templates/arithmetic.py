@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane arithmetic subroutines."""
 
+# pylint: disable=arguments-differ,signature-differs
+
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -20,8 +22,6 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
 )
 from pennylane.wires import WiresLike
-
-# pylint: disable=arguments-differ,unused-argument,signature-differs,too-many-arguments
 
 
 class LabsPhaseAdder(ResourceOperator):
@@ -330,11 +330,7 @@ class LabsAdder(ResourceOperator):
             cmpr_factors_and_counts=((phase_shift, num_x_wires + 1),),
             num_wires=num_x_wires + 1,
         )
-        ctrl_sum_N = qre.Controlled.resource_rep(
-            prod_phase_shifts_n_plus_one,
-            1,
-            0,
-        )
+        ctrl_sum_N = qre.Controlled.resource_rep(prod_phase_shifts_n_plus_one, 1, 0)
 
         qft_cnot_qft_dag = qre.ChangeOpBasis.resource_rep(
             cmpr_compute_op=qft_n_plus_one,

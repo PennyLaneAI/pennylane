@@ -16,6 +16,7 @@ Unit tests for functions needed for qubit tapering.
 """
 
 # pylint: disable=too-many-arguments
+
 import functools
 
 import pytest
@@ -366,13 +367,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
 def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_wires, result):
     r"""Test that transform_hf returns the correct result."""
 
-    tapered_hf_state = taper_hf(
-        generators,
-        paulixops,
-        paulix_sector,
-        num_electrons,
-        num_wires,
-    )
+    tapered_hf_state = taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires)
     assert np.all(tapered_hf_state == result)
 
 
@@ -701,6 +696,7 @@ def test_consistent_taper_ops(operation, op_gen):
         evolved_state = np.matmul(qp.matrix(operation, wire_order=range(len(hf_state))), state)
         ob_tap_mat = functools.reduce(
             np.matmul,
+            # pylint: disable-next=not-an-iterable
             [qp.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],
         )
         evolved_state_tapered = np.matmul(ob_tap_mat, state_tapered)

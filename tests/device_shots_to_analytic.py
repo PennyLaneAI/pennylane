@@ -43,8 +43,7 @@ def shots_to_analytic(dev: qp.devices.Device) -> qp.devices.Device:
     analytic_dev = copy.deepcopy(dev)
     original_execute = analytic_dev.execute
 
-    # pylint: disable=unused-argument
-    def new_execute(self, circuits, execution_config=None):
+    def new_execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         execution_config = execution_config or qp.devices.ExecutionConfig()
         results = []
         for c in circuits:

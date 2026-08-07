@@ -15,8 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
-# pylint: disable=no-self-use,unbalanced-tuple-unpacking
+# pylint: disable=redefined-outer-name,unbalanced-tuple-unpacking
 
 from functools import partial
 
@@ -34,9 +33,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
-from tests.capture.capture_utils import (
-    extract_all_primitives,
-)
+from tests.capture.capture_utils import extract_all_primitives
 
 
 @pytest.fixture
@@ -127,13 +124,7 @@ class TestCond:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, selector, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize(
-        "selector, arg, expected",
-        [
-            (1, 10, 20),
-            (0, 10, 30),
-        ],
-    )
+    @pytest.mark.parametrize("selector, arg, expected", [(1, 10, 20), (0, 10, 30)])
     def test_cond_true_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and false branches."""
         true_fn, false_fn, _, _, _, _ = testing_functions
@@ -144,11 +135,7 @@ class TestCond:
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qp.cond(
-                pred > 0,
-                true_fn,
-                false_fn,
-            )
+            return qp.cond(pred > 0, true_fn, false_fn)
 
         result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -157,13 +144,7 @@ class TestCond:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize(
-        "selector, arg",
-        [
-            (1, 10.0),
-            (0, 10.0),
-        ],
-    )
+    @pytest.mark.parametrize("selector, arg", [(1, 10.0), (0, 10.0)])
     def test_gradient(self, testing_functions, selector, arg, decorator):
         """Test the gradient of the conditional."""
         from pennylane.capture.primitives import jacobian_prim
@@ -176,11 +157,7 @@ class TestCond:
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qp.cond(
-                pred > 0,
-                true_fn,
-                false_fn,
-            )
+            return qp.cond(pred > 0, true_fn, false_fn)
 
         test_func = qp.grad(func(selector))
 
@@ -217,11 +194,7 @@ class TestCond:
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qp.cond(
-                pred > 0,
-                true_fn,
-                false_fn,
-            )
+            return qp.cond(pred > 0, true_fn, false_fn)
 
         result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -566,18 +539,17 @@ def circuit_branches(pred, arg1, arg2):
     return qp.expval(qp.Z(wires=0))
 
 
-# pylint: disable=unused-argument
 @qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
 
     qp.RX(0.10, wires=0)
 
-    def true_fn(arg1, arg2):
+    def true_fn(arg1, arg2):  # pylint: disable=unused-argument
         qp.RY(arg1, wires=0)
         return 7, 4.6, qp.S(wires=0), True
 
-    def false_fn(arg1, arg2):
+    def false_fn(arg1, arg2):  # pylint: disable=unused-argument
         qp.RZ(arg2, wires=0)
         return 2, 2.2, qp.T(wires=0), False
 
@@ -596,15 +568,13 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     def true_fn_1(arg):
         return True, qp.RX(arg, wires=0)
 
-    # pylint: disable=unused-argument
-    def false_fn_1(arg):
+    def false_fn_1(arg):  # pylint: disable=unused-argument
         return False, qp.RY(0.1, wires=0)
 
     def true_fn_2(arg):
         return qp.RX(arg, wires=0)
 
-    # pylint: disable=unused-argument
-    def false_fn_2(arg):
+    def false_fn_2(arg):  # pylint: disable=unused-argument
         return qp.RY(0.1, wires=0)
 
     dyn_pred_2, _ = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
@@ -727,9 +697,8 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
 
-    @pytest.mark.xfail(
-        strict=False
-    )  # currently using single branch statistics, sometimes gives good results
+    # currently using single branch statistics, sometimes gives good results
+    @pytest.mark.xfail(strict=False)
     @pytest.mark.parametrize("shots", [None, 300])
     @pytest.mark.parametrize(
         "params, expected",
@@ -934,7 +903,7 @@ class TestDynamicShapeValidation:
     def test_one_dynamic_shape_other_not(self):
         """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
 
-        def true_fn(n):  # pylint: disable=unused-argument
+        def true_fn(n):
             return jax.numpy.ones((2, n))
 
         def false_fn(n):

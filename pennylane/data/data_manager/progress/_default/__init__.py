@@ -45,11 +45,9 @@ class Task:
             self.total = total
 
 
-class TerminalInfo:
+class TerminalInfo:  # pylint: disable=too-few-public-methods
     """Contains information on  the dimensions of
     the terminal."""
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self):
         self.columns, self.lines = shutil.get_terminal_size()
@@ -108,7 +106,6 @@ class DefaultProgress:
         elif task_id < self._term_info.max_display_lines:
             self._task_display_lines[task_id] = self._get_task_display_line(self.tasks[task_id])
 
-    # pylint: disable = too-many-arguments
     def update(
         self,
         task_id: int,
@@ -163,12 +160,7 @@ class DefaultProgress:
         else:
             end = "\r"
 
-        print(
-            *self._task_display_lines,
-            sep="\n",
-            end=end,
-            flush=True,
-        )
+        print(*self._task_display_lines, sep="\n", end=end, flush=True)
 
 
 def make_progress() -> DefaultProgress:

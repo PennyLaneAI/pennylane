@@ -15,7 +15,6 @@ r"""
 Contains the StronglyEntanglingLayers template.
 """
 
-# pylint: disable=too-many-arguments
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
@@ -188,9 +187,8 @@ class StronglyEntanglingLayers(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, ranges, imprimitive=CNOT
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, ranges, imprimitive=CNOT):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -283,12 +281,7 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
     def layers(l):
         @for_loop(n_wires)
         def rot_loop(i):
-            Rot(
-                weights[..., l, i, 0],
-                weights[..., l, i, 1],
-                weights[..., l, i, 2],
-                wires=wires[i],
-            )
+            Rot(weights[..., l, i, 0], weights[..., l, i, 1], weights[..., l, i, 2], wires=wires[i])
 
         def imprim_true():
             @for_loop(n_wires)

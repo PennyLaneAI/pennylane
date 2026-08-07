@@ -645,10 +645,7 @@ class TestQuditExpvalBatchedEdgeCases:
             key=key,
         )
         batched_fn = build_qudit_expval_func(config)
-        mc_vals, _ = batched_fn(
-            jnp.array(params),
-            observables=(override_l, override_m),
-        )
+        mc_vals, _ = batched_fn(jnp.array(params), observables=(override_l, override_m))
 
         exact_config, _ = _make_config_one_param_per_gate(
             d,

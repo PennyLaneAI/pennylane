@@ -234,9 +234,7 @@ class Superposition(Operation):
 
     resource_keys = {"num_wires", "num_coeffs", "bases"}
 
-    def __init__(
-        self, coeffs, bases, wires, work_wire
-    ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
+    def __init__(self, coeffs, bases, wires, work_wire):
 
         if not all(
             all(qp.math.isclose(i, 0.0) or qp.math.isclose(i, 1.0) for i in b) for b in bases
@@ -416,9 +414,8 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 
 
 @register_resources(_superposition_resources)
-def _superposition_decomposition(
-    coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
-):
+# pylint: disable-next=unused-argument
+def _superposition_decomposition(coeffs, bases, wires, target_wires, work_wire):
     dic_state = dict(zip(bases, coeffs, strict=True))
     perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}

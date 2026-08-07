@@ -58,14 +58,7 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-CONSTANTS = {
-    "π": np.pi,
-    "τ": np.pi * 2,
-    "ℇ": np.e,
-    "pi": np.pi,
-    "tau": np.pi * 2,
-    "e": np.e,
-}
+CONSTANTS = {"π": np.pi, "τ": np.pi * 2, "ℇ": np.e, "pi": np.pi, "tau": np.pi * 2, "e": np.e}
 
 
 def _eval_unary_op(operand: any, operator: str, line: int):
@@ -84,12 +77,12 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     if operator == "~":
         return ~operand
     # we shouldn't ever get this error if the parser did its job right
-    raise SyntaxError(  # pragma: no covers
+    raise SyntaxError(  # pragma: no cover
         f"Invalid operator {operator} encountered in unary expression " f"on line {line}."
     )  # pragma: no cover
 
 
-# pylint: disable = too-many-branches
+# pylint: disable-next=too-many-branches
 def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     """
     Evaluates an assignment.
@@ -137,7 +130,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
-# pylint: disable=too-many-return-statements, too-many-branches
+# pylint: disable-next=too-many-return-statements,too-many-branches
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
@@ -500,12 +493,13 @@ class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
-# pylint: disable=unused-argument, no-self-use, too-many-public-methods
-class QasmInterpreter:
+class QasmInterpreter:  # pylint: disable=too-many-public-methods
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
     visitor function on each node.
     """
+
+    # pylint: disable=unused-argument,no-self-use
 
     def __init__(self):
         """

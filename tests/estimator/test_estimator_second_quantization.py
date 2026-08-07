@@ -16,6 +16,7 @@ Unit tests for functions needed for resource estimation with the double factoriz
 """
 
 # pylint: disable=too-many-arguments
+
 import pytest
 
 import pennylane as qp
@@ -69,12 +70,7 @@ def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
     assert np.allclose(est.beta, beta)
 
 
-@pytest.mark.parametrize(
-    ("one", "two_phys", "two_chem"),
-    [
-        (one_h2, two_h2_ph, two_h2),
-    ],
-)
+@pytest.mark.parametrize(("one", "two_phys", "two_chem"), [(one_h2, two_h2_ph, two_h2)])
 def test_df_notation_conversion(one, two_phys, two_chem):
     r"""Test that the DoubleFactorization class initiates correct two-electron integrals."""
     est = qp.estimator.DoubleFactorization(one, two_phys, chemist_notation=False)
@@ -161,11 +157,7 @@ def test_estimation_cost_error(norm, error):
     ("constants", "cost_ref", "k_ref"),
     [  # The reference costs and k values are obtained manually, by computing the cost for a range
         # of k values and selecting the k that gives the minimum cost.
-        (
-            (26, 1, 0, 15.0, -1),
-            27,
-            1,
-        ),
+        ((26, 1, 0, 15.0, -1), 27, 1),
         (
             (26, 1, 0, 1, 0),
             11,

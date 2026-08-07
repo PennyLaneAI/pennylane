@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
 
-import numpy as np
-
 # pylint: disable=protected-access
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -287,7 +287,6 @@ class TestSnapshot:
         qp.assert_equal(target_mp, new_op.hyperparameters["measurement"])
         assert new_op.tag == "my tag"
 
-    # pylint: disable=unused-argument
     @pytest.mark.capture
     @pytest.mark.parametrize("measurement", (None, "state"))
     def test_capture_measurement(self, measurement):

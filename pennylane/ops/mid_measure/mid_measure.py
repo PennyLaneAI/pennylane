@@ -123,7 +123,6 @@ class MidMeasure(Operator):
     batch_size = None
     resource_keys = set()
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None = None,

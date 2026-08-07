@@ -23,9 +23,6 @@ from pennylane.ftqc import QubitMgr
 from pennylane.ftqc.utils import parity
 from pennylane.ops import MeasurementValue, MidMeasure
 
-# pylint: disable=too-few-public-methods, too-many-public-methods
-
-
 num_qubits_vals = [1, 3, 7]
 acquire_num_vals = [0, 1, 5]
 offsets_vals = [0, 8, 9]
@@ -83,10 +80,7 @@ def test_parity_measurement_values(args, expected_outcome):
     assert par.processing_fn(*args) == expected_outcome
 
 
-@pytest.mark.parametrize(
-    "args, expected_outcome",
-    [((0, 1, 1), 1), ((0, 0, 1), 0), ((1, 1, 1), 0)],
-)
+@pytest.mark.parametrize("args, expected_outcome", [((0, 1, 1), 1), ((0, 0, 1), 0), ((1, 1, 1), 0)])
 def test_parity_mvs_and_constant(args, expected_outcome):
     """Test that passing a sequence of MeasurementValues and a constant to the parity
     function returns the expected MeasurementValue with the correct processing function."""

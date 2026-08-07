@@ -15,13 +15,13 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=no-self-use
+
 import pytest
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
-
-# pylint: disable=no-self-use
 
 
 class TestOutOfPlaceIntegerComparator:
@@ -233,27 +233,13 @@ class TestRegisterEquality:
         with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.RegisterEquality(register_size=None)
 
-    @pytest.mark.parametrize(
-        "register_size",
-        (
-            10,
-            6,
-            2,
-        ),
-    )
+    @pytest.mark.parametrize("register_size", (10, 6, 2))
     def test_resource_params(self, register_size):
         """Test that the resource params are correct."""
         op = qre.RegisterEquality(register_size)
         assert op.resource_params == {"register_size": register_size}
 
-    @pytest.mark.parametrize(
-        "register_size",
-        (
-            10,
-            6,
-            2,
-        ),
-    )
+    @pytest.mark.parametrize("register_size", (10, 6, 2))
     def test_resource_rep(self, register_size):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(

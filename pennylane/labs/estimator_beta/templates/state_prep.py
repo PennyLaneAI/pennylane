@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""This module contains resource operators for state preparation templates."""
 
+# pylint: disable=arguments-differ,too-many-arguments
+
 import numpy as np
 
 import pennylane.labs.estimator_beta as qre
@@ -24,8 +26,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.wires import WiresLike
-
-# pylint: disable=arguments-differ, too-many-arguments
 
 
 class LabsMottonenStatePreparation(ResourceOperator):
@@ -455,11 +455,9 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         gate_list.append(GateCount(mcx, num_mcx))
 
         if not identity_encoding:
-            gate_list.append(
-                qre.Deallocate(allocated_register=identification_reg)
-            )  # deallocate identification register
-        gate_list.append(
-            qre.Deallocate(allocated_register=enumeration_reg)
-        )  # deallocate enumeration register
+            # deallocate identification register
+            gate_list.append(qre.Deallocate(allocated_register=identification_reg))
+        # deallocate enumeration register
+        gate_list.append(qre.Deallocate(allocated_register=enumeration_reg))
 
         return gate_list

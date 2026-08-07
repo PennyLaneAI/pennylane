@@ -26,8 +26,6 @@ from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use, too-few-public-methods
-
 
 class DummyOp(qre.ResourceOperator):
     resource_keys = {"num_wires"}
@@ -47,11 +45,7 @@ class DummyOp(qre.ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_wires) -> list[GateCount]:
-        return [
-            Allocate(num_wires),
-            GateCount(qre.X.resource_rep()),
-            Deallocate(num_wires),
-        ]
+        return [Allocate(num_wires), GateCount(qre.X.resource_rep()), Deallocate(num_wires)]
 
 
 class TestAdjoint:
@@ -188,14 +182,7 @@ class TestAdjoint:
 class TestControlled:
     """Tests for the Controlled resource Op"""
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
-        (
-            (1, 0),
-            (2, 0),
-            (3, 2),
-        ),
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ((1, 0), (2, 0), (3, 2)))
     @pytest.mark.parametrize(
         "base_type, base_args",
         (
@@ -369,14 +356,7 @@ class TestControlled:
         assert qre.estimate(ctrl_op) == ctrl_res
         assert qre.estimate(ctrl_ctrl_op) == ctrl_ctrl_res
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values",
-        (
-            (1, 0),
-            (2, 0),
-            (3, 2),
-        ),
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values", ((1, 0), (2, 0), (3, 2)))
     @pytest.mark.parametrize(
         "base_op",
         (
@@ -628,7 +608,6 @@ class TestChangeOpBasis:
         cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
         assert cb_op.wires is None
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "compute_op, target_op, uncompute_op, expected_res",
         (
@@ -779,7 +758,7 @@ class TestChangeOpBasis:
             ),
         ),
     )
-    def test_controlled_resource_decomp(
+    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
         self, compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res
     ):
         """Test that the controlled resource decomposition is correct."""

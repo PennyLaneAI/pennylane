@@ -15,7 +15,8 @@
 This module contains the :class:`Device` abstract base class.
 """
 
-# pylint: disable=use-maxsplit-arg,protected-access
+# pylint: disable=use-maxsplit-arg
+
 import abc
 import warnings
 from collections import OrderedDict
@@ -66,6 +67,7 @@ class _LegacyMeta(abc.ABCMeta):
         return super().__instancecheck__(instance)
 
 
+# pylint: disable-next=too-many-public-methods,too-many-instance-attributes
 class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
@@ -77,7 +79,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
@@ -362,7 +363,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         return cls._capabilities
 
-    # pylint: disable=too-many-branches,unused-argument
+    # pylint: disable-next=unused-argument,too-many-branches
     def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -830,9 +831,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         source of :meth:`execute` for more details).
         """
 
-        # pylint: disable=no-self-use
         class MockContext:
             """Mock class as a default for the with statement in execute()."""
+
+            # pylint: disable=no-self-use
 
             def __enter__(self):
                 pass
@@ -885,7 +887,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             "The given observable must either be a pennylane.operation.Operator class or a string."
         )
 
-    def check_validity(self, queue, observables):
+    def check_validity(self, queue, observables):  # pylint: disable=too-many-branches
         """Checks whether the operations and observables in queue are all supported by the device.
 
         Args:

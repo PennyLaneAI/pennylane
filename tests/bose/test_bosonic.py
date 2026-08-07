@@ -104,7 +104,6 @@ bw21 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+"
 bw22 = BoseWord({(0, 0): "-", (1, 0): "+"})
 
 
-# pylint: disable=too-many-public-methods
 class TestBoseWord:
     """
     Tests for BoseWord
@@ -335,7 +334,7 @@ class TestBoseWord:
         assert bw.adjoint() == bw_dag
 
 
-class TestBoseWordArithmetic:
+class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
     WORDS_MUL = (
         (
             bw1,
@@ -490,11 +489,8 @@ class TestBoseWordArithmetic:
         (bw3, (1 + 3j), BoseSentence({bw3: 1, bw4: (1 + 3j)})),  # complex
         (bw1, np.array([5]), BoseSentence({bw1: 1, bw4: 5})),  # numpy array
         (bw2, pnp.array([2.8]), BoseSentence({bw2: 1, bw4: 2.8})),  # pennylane numpy array
-        (
-            bw1,
-            pnp.array([2, 2])[0],
-            BoseSentence({bw1: 1, bw4: 2}),
-        ),  # pennylane tensor with no length
+        # pennylane tensor with no length
+        (bw1, pnp.array([2, 2])[0], BoseSentence({bw1: 1, bw4: 2})),
         (bw4, 2, BoseSentence({bw4: 3})),  # BoseWord is Identity
     ]
 
@@ -558,11 +554,8 @@ class TestBoseWordArithmetic:
         (bw3, (1 + 3j), BoseSentence({bw3: 1, bw4: -(1 + 3j)})),  # complex
         (bw1, np.array([5]), BoseSentence({bw1: 1, bw4: -5})),  # numpy array
         (bw2, pnp.array([2.8]), BoseSentence({bw2: 1, bw4: -2.8})),  # pennylane numpy array
-        (
-            bw1,
-            pnp.array([2, 2])[0],
-            BoseSentence({bw1: 1, bw4: -2}),
-        ),  # pennylane tensor with no length
+        # pennylane tensor with no length
+        (bw1, pnp.array([2, 2])[0], BoseSentence({bw1: 1, bw4: -2})),
         (bw4, 2, BoseSentence({bw4: -1})),  # BoseWord is Identity
     ]
 
@@ -584,11 +577,8 @@ class TestBoseWordArithmetic:
         (bw3, (1 + 3j), BoseSentence({bw3: -1, bw4: (1 + 3j)})),  # complex
         (bw1, np.array([5]), BoseSentence({bw1: -1, bw4: 5})),  # numpy array
         (bw2, pnp.array([2.8]), BoseSentence({bw2: -1, bw4: 2.8})),  # pennylane numpy array
-        (
-            bw1,
-            pnp.array([2, 2])[0],
-            BoseSentence({bw1: -1, bw4: 2}),
-        ),  # pennylane tensor with no length
+        # pennylane tensor with no length
+        (bw1, pnp.array([2, 2])[0], BoseSentence({bw1: -1, bw4: 2})),
         (bw4, 2, BoseSentence({bw4: 1})),  # BoseWord is Identity
     ]
 
@@ -789,12 +779,7 @@ class TestBoseSentence:
         assert str(bs) == str_rep
         assert repr(bs) == f"BoseSentence({dict(bs)})"
 
-    tup_bs_wires = (
-        (bs1, {0, 1, 3, 4}),
-        (bs2, {0, 1, 3, 4}),
-        (bs3, {0, 3, 4}),
-        (bs4, set()),
-    )
+    tup_bs_wires = ((bs1, {0, 1, 3, 4}), (bs2, {0, 1, 3, 4}), (bs3, {0, 3, 4}), (bs4, set()))
 
     @pytest.mark.parametrize("bs, wires", tup_bs_wires)
     def test_wires(self, bs, wires):
@@ -862,7 +847,7 @@ class TestBoseSentence:
         assert bs.adjoint() == bs_dag
 
 
-class TestBoseSentenceArithmetic:
+class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
     tup_bs_mult = (  # computed by hand
         (
             bs1,
@@ -933,21 +918,12 @@ class TestBoseSentenceArithmetic:
         (bs2, 3.4, BoseSentence({bw1: -1.23 * 3.4, bw2: -4j * 3.4, bw3: 0.5 * 3.4})),  # float
         (bs1, 3j, BoseSentence({bw1: 3.69j, bw2: -12, bw3: -1.5j})),  # complex
         (bs5, 10, BoseSentence({})),  # null operator times constant
-        (
-            bs1,
-            np.array([2]),
-            BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2}),
-        ),  # numpy array
-        (
-            bs1,
-            pnp.array([2]),
-            BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2}),
-        ),  # pennylane numpy array
-        (
-            bs1,
-            pnp.array([2, 2])[0],
-            BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2}),
-        ),  # pennylane tensor with no length
+        # numpy array
+        (bs1, np.array([2]), BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2})),
+        # pennylane numpy array
+        (bs1, pnp.array([2]), BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2})),
+        # pennylane tensor with no length
+        (bs1, pnp.array([2, 2])[0], BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2})),
     )
 
     @pytest.mark.parametrize("bs, number, result", SENTENCES_AND_NUMBERS_MUL)
@@ -997,11 +973,8 @@ class TestBoseSentenceArithmetic:
 
     SENTENCES_AND_CONSTANTS_ADD = [
         (BoseSentence({bw1: 1.2, bw3: 3j}), 3, BoseSentence({bw1: 1.2, bw3: 3j, bw4: 3})),  # int
-        (
-            BoseSentence({bw1: 1.2, bw3: 3j}),
-            1.3,
-            BoseSentence({bw1: 1.2, bw3: 3j, bw4: 1.3}),
-        ),  # float
+        # float
+        (BoseSentence({bw1: 1.2, bw3: 3j}), 1.3, BoseSentence({bw1: 1.2, bw3: 3j, bw4: 1.3})),
         (
             BoseSentence({bw1: -1.2, bw3: 3j}),  # complex
             (1 + 2j),
@@ -1076,11 +1049,8 @@ class TestBoseSentenceArithmetic:
         (bs1, 3, BoseSentence({bw1: 1.23, bw2: 4j, bw3: -0.5, bw4: -3})),  # int
         (bs2, -2.7, BoseSentence({bw1: -1.23, bw2: -4j, bw3: 0.5, bw4: 2.7})),  # float
         (bs3, 2j, BoseSentence({bw3: -0.5, bw4: (1 - 2j)})),  # complex
-        (
-            BoseSentence({bw1: 1.2, bw3: 3j}),
-            -4,
-            BoseSentence({bw1: 1.2, bw3: 3j, bw4: 4}),
-        ),  # negative int
+        # negative int
+        (BoseSentence({bw1: 1.2, bw3: 3j}), -4, BoseSentence({bw1: 1.2, bw3: 3j, bw4: 4})),
         (
             BoseSentence({bw1: 1.2, bw3: 3j}),
             np.array([3]),

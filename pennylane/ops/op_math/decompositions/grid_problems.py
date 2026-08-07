@@ -58,11 +58,7 @@ class Ellipse:
         - 2z * log(λ) = log(d / a) => z = 0.5 * log(d / a) / log(λ)
     """
 
-    def __init__(
-        self,
-        D: tuple[float, float, float],
-        p: tuple[float, float] = (0, 0),
-    ):
+    def __init__(self, D: tuple[float, float, float], p: tuple[float, float] = (0, 0)):
         self.a, self.b, self.d = D
         self.p = p
         self.z = 0.5 * math.log2(self.d / self.a) / math.log2(_LAMBDA)
@@ -251,8 +247,7 @@ class EllipseState:
         e2.b *= (-1) ** k
         return EllipseState(e1, e2), k
 
-    # pylint: disable=too-many-branches
-    def reduce_skew(self) -> tuple[GridOp, EllipseState]:
+    def reduce_skew(self) -> tuple[GridOp, EllipseState]:  # pylint: disable=too-many-branches
         """Reduce the skew of the state.
 
         This uses Step Lemma described in Appendix A.6 of arXiv:1403.2975.
@@ -350,7 +345,6 @@ class GridOp:
         to an element being :math:`a = a_0 + a_1 / \sqrt{2}`.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         a: tuple[int, int],
@@ -514,12 +508,7 @@ class GridOp:
 
     def transpose(self) -> GridOp:
         """Transpose the grid operation."""
-        return GridOp(
-            self.d,
-            self.b,
-            self.c,
-            self.a,
-        )
+        return GridOp(self.d, self.b, self.c, self.a)
 
     def adj2(self) -> GridOp:
         """Compute the sqrt(2)-conjugate of the grid operation."""
@@ -623,9 +612,8 @@ class GridIterator:
         for ix in range(self.max_trials):
             # Update the radius of the unit disk.
             radius = 2**-k
-            e2_ = Ellipse(
-                (radius, 0, radius), (0, 0)
-            )  # Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
+            # Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
+            e2_ = Ellipse((radius, 0, radius), (0, 0))
             # Apply the grid operation to the state and solve the two-dimensional grid problem.
             state = EllipseState(e1, e2_).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
@@ -715,8 +703,7 @@ class GridIterator:
             if e1.contains(x1, y1) and e2.contains(x2, y2):
                 yield solution
 
-    # pylint:disable = too-many-arguments, too-many-branches
-    def solve_upright_problem(
+    def solve_upright_problem(  # pylint: disable=too-many-branches
         self,
         state: EllipseState,
         bbox1: tuple[float],
@@ -822,12 +809,7 @@ class GridIterator:
         return 1 + int(upper_bound_b - lower_bound_b)
 
     @staticmethod
-    def solve_one_dim_problem(
-        x0: float,
-        x1: float,
-        y0: float,
-        y1: float,
-    ) -> Iterable[ZSqrtTwo]:
+    def solve_one_dim_problem(x0: float, x1: float, y0: float, y1: float) -> Iterable[ZSqrtTwo]:
         r"""Iterates the solutions to the one dimensional grid problem given intervals :math:`[x0, x1]` and :math:`[y0, y1]`.
 
         Given two real intervals :math:`[x0, x1]` and :math:`[y0, y1]`

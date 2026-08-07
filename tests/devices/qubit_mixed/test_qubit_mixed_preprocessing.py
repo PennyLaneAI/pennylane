@@ -31,7 +31,6 @@ from pennylane.devices.default_mixed import (
 from pennylane.exceptions import DecompositionWarning, DeviceError
 
 
-# pylint: disable=protected-access
 def test_mid_circuit_measurement_preprocessing():
     """Test mid-circuit measurement preprocessing not supported with default.mixed device."""
     dev = DefaultMixed(wires=2)
@@ -62,22 +61,19 @@ def test_mid_circuit_measurement_preprocessing():
 class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit in qubit devices."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
     def decomposition(self):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
 
@@ -95,7 +91,6 @@ def custom_decomps():
         yield
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 
@@ -206,10 +201,7 @@ class TestPreprocessing:
                 False,
             ),
             # Complex LinearCombination
-            (
-                qp.Hamiltonian([0.3, 0.7], [qp.prod(qp.PauliX(0), qp.PauliZ(1)), qp.PauliY(2)]),
-                True,
-            ),
+            (qp.Hamiltonian([0.3, 0.7], [qp.prod(qp.PauliX(0), qp.PauliZ(1)), qp.PauliY(2)]), True),
         ],
     )
     def test_accepted_observable(self, obs, expected):
@@ -335,13 +327,7 @@ class TestPreprocessing:
             with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
                 program(tapes)
 
-    @pytest.mark.parametrize(
-        "readout_err, req_warn",
-        [
-            (0.1, True),
-            (None, False),
-        ],
-    )
+    @pytest.mark.parametrize("readout_err, req_warn", [(0.1, True), (None, False)])
     @pytest.mark.parametrize(
         "measurements",
         [
@@ -419,5 +405,4 @@ class TestPreprocessing:
         assert dev._prng_key is seed
 
         # Verify that the device's _rng is initialized appropriately
-        # pylint: disable=protected-access
         assert dev._rng is not None

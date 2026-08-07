@@ -86,9 +86,7 @@ class IQP(Operation):
 
     resource_keys = {"spin_sym", "pattern", "num_wires"}
 
-    def __init__(
-        self, weights, wires, pattern, spin_sym=False
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, weights, wires, pattern, spin_sym=False):
         if len(pattern) != len(weights):
             raise ValueError(
                 "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
@@ -109,8 +107,8 @@ class IQP(Operation):
         }
         super().__init__(wires=wires)
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(weights, num_wires, pattern, spin_sym) -> TensorLike:
         layers = []
 
@@ -155,9 +153,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
 
 
 @register_resources(_instantaneous_quantum_polynomial_resources)
-def _instantaneous_quantum_polynomial_decomposition(
-    wires, weights, pattern, spin_sym, **__
-):  # pylint: disable=unused-argument, too-many-arguments
+def _instantaneous_quantum_polynomial_decomposition(wires, weights, pattern, spin_sym, **__):
     num_wires = len(wires)
 
     if spin_sym:

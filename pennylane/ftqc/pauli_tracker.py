@@ -28,19 +28,9 @@ from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
 from .decomposition import _cnot_xz_corrections, _single_xz_corrections
 from .operations import RotXZX
 
-_OPS_TO_XZ = {
-    I: (0, 0),
-    X: (1, 0),
-    Y: (1, 1),
-    Z: (0, 1),
-}
+_OPS_TO_XZ = {I: (0, 0), X: (1, 0), Y: (1, 1), Z: (0, 1)}
 
-_XZ_TO_OPS = {
-    (0, 0): I,
-    (1, 0): X,
-    (1, 1): Y,
-    (0, 1): Z,
-}
+_XZ_TO_OPS = {(0, 0): I, (1, 0): X, (1, 1): Y, (0, 1): Z}
 
 _PAULIS = (X, Y, Z, I)
 

@@ -15,8 +15,6 @@
 Unit tests for the `pennylane.draw_text` function.
 """
 
-# pylint: disable=import-outside-toplevel
-
 from copy import copy
 
 import pytest
@@ -73,8 +71,7 @@ tape = qp.tape.QuantumScript.from_queue(q_tape)
 def test_error_if_unsupported_object_in_tape():
     """Test an error is raised if there's an unsupported object in the tape."""
 
-    # pylint: disable=too-few-public-methods
-    class DummyObj:
+    class DummyObj:  # pylint: disable=too-few-public-methods
         wires = qp.wires.Wires(2)
 
     _tape = qp.tape.QuantumScript([DummyObj()], [])
@@ -83,7 +80,7 @@ def test_error_if_unsupported_object_in_tape():
         qp.drawer.tape_text(_tape)
 
 
-class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-positional-arguments
+class TestHelperFunctions:  # pylint: disable=too-many-arguments
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(
@@ -718,7 +715,6 @@ single_op_tests_data = [
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
     ),
     (
-        # pylint:disable=no-member
         qp.ops.op_math.Controlled(qp.PauliY(3), (0, 1, 2), [0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
     ),

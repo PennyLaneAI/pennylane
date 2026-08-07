@@ -85,12 +85,10 @@ def _get_polynomial(f, mod, *variable_sizes):
 
         start = 0
         for wire_length in variable_sizes:
-            segment = bin_list[
-                start : start + wire_length
-            ]  # segment corresponding to the i-th variable
-            decimal = int(
-                "".join(map(str, segment)), 2
-            )  # decimal representation of the i-th variable
+            # segment corresponding to the i-th variable
+            segment = bin_list[start : start + wire_length]
+            # decimal representation of the i-th variable
+            decimal = int("".join(map(str, segment)), 2)
             decimal_values.append(decimal)
             start += wire_length
 
@@ -278,7 +276,7 @@ class OutPoly(Operation):
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         r"""Initialize the OutPoly class"""
 
         registers_wires = [*input_registers, output_wires]
@@ -391,7 +389,7 @@ class OutPoly(Operation):
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=unused-argument, arguments-differ
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

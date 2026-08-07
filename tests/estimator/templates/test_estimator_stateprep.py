@@ -23,8 +23,6 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.templates.stateprep import AliasSampling, MPSPrep, QROMStatePreparation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 
-# pylint: disable=no-self-use,too-many-arguments
-
 
 class TestBasisStatePrep:
     """Test the BasisStatePrep class."""
@@ -34,19 +32,13 @@ class TestBasisStatePrep:
         with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
             qre.BasisState(num_wires=2, wires=[0, 1, 2])
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        (10, 6, 4),
-    )
+    @pytest.mark.parametrize("num_wires", (10, 6, 4))
     def test_resource_params(self, num_wires):
         """Test that the resource params are correct."""
         op = qre.BasisState(num_wires)
         assert op.resource_params == {"num_wires": num_wires}
 
-    @pytest.mark.parametrize(
-        "num_wires",
-        (10, 6, 4),
-    )
+    @pytest.mark.parametrize("num_wires", (10, 6, 4))
     def test_resource_rep(self, num_wires):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(qre.BasisState, num_wires, {"num_wires": num_wires})
@@ -82,23 +74,13 @@ class TestUniformStatePrep:
         with pytest.raises(ValueError, match="Expected 2 wires, got 3"):
             qre.UniformStatePrep(num_states=4, wires=[0, 1, 2])
 
-    @pytest.mark.parametrize(
-        "num_states",
-        (10, 6, 4),
-    )
+    @pytest.mark.parametrize("num_states", (10, 6, 4))
     def test_resource_params(self, num_states):
         """Test that the resource params are correct."""
         op = qre.UniformStatePrep(num_states)
         assert op.resource_params == {"num_states": num_states}
 
-    @pytest.mark.parametrize(
-        "num_states, num_wires",
-        (
-            (10, 4),
-            (6, 3),
-            (4, 2),
-        ),
-    )
+    @pytest.mark.parametrize("num_states, num_wires", ((10, 4), (6, 3), (4, 2)))
     def test_resource_rep(self, num_states, num_wires):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
@@ -174,14 +156,7 @@ class TestAliasSampling:
         with pytest.raises(ValueError, match="Expected 4 wires, got 3"):
             qre.AliasSampling(num_coeffs=10, wires=[0, 1, 2])
 
-    @pytest.mark.parametrize(
-        "num_coeffs, precision",
-        (
-            (10, None),
-            (6, None),
-            (4, 1e-6),
-        ),
-    )
+    @pytest.mark.parametrize("num_coeffs, precision", ((10, None), (6, None), (4, 1e-6)))
     def test_resource_params(self, num_coeffs, precision):
         """Test that the resource params are correct."""
         op = qre.AliasSampling(num_coeffs, precision=precision)

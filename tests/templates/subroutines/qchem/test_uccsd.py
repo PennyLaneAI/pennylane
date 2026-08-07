@@ -15,9 +15,9 @@
 Tests for the UCCSD template.
 """
 
-import numpy as np
+# pylint: disable=too-many-arguments
 
-# pylint: disable=protected-access,too-many-arguments
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -289,9 +289,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats", test_data_decomposition_new)
     # Note: UCCSD is not capture compatible
-    def test_decomposition_new(
-        self, s_wires, d_wires, weights, n_repeats
-    ):  # pylint: disable=unused-argument
+    def test_decomposition_new(self, s_wires, d_wires, weights, n_repeats):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.UCCSD(
             weights,
@@ -551,15 +549,7 @@ class TestInterfaces:
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
         # Test with n_repeats=2
-        weights = pnp.array(
-            np.random.random(
-                size=(
-                    2,
-                    2,
-                )
-            ),
-            requires_grad=True,
-        )
+        weights = pnp.array(np.random.random(size=(2, 2)), requires_grad=True)
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
@@ -736,15 +726,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
         # Test with n_repeats=2
-        weights = torch.tensor(
-            np.random.random(
-                size=(
-                    2,
-                    2,
-                )
-            ),
-            requires_grad=True,
-        )
+        weights = torch.tensor(np.random.random(size=(2, 2)), requires_grad=True)
         circuit = qp.QNode(circuit_template, dev)
         circuit2 = qp.QNode(circuit_decomposed, dev)
 

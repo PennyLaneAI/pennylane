@@ -15,7 +15,8 @@
 Tests for mitigation transforms.
 """
 
-# pylint:disable=no-self-use, unnecessary-lambda-assignment, protected-access
+# pylint: disable=protected-access
+
 import pytest
 from packaging import version
 
@@ -73,7 +74,6 @@ def same_tape(tape1, tape2):
 class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
-    # pylint:disable = unnecessary-lambda-assignment
     folding = lambda *args, **kwargs: tape_base
     extrapolate = lambda *args, **kwargs: [3.141]
 
@@ -123,11 +123,7 @@ class TestMitigateWithZNE:
     def test_shots_preserved(self):
         """Tests that the mitigated circuits contain the same shots as the original circuit"""
 
-        _tape = qp.tape.QuantumScript(
-            [qp.RX(0.1, wires=0)],
-            [qp.expval(qp.PauliZ(0))],
-            shots=1000,
-        )
+        _tape = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.PauliZ(0))], shots=1000)
         tapes, _ = mitigate_with_zne(_tape, [1, 2, 3], fold_global, exponential_extrapolate)
         assert all(t.shots.total_shots == 1000 for t in tapes)
 
@@ -144,11 +140,7 @@ class TestMitigateWithZNE:
         shapes = qp.SimplifiedTwoDesign.shape(n_layers, n_wires)
         w1, w2 = (np.random.random(s) for s in shapes)
 
-        @mitigate_with_zne(
-            scale_factors=[1, 2, 3],
-            folding=fold_global,
-            extrapolate=extrapolate,
-        )
+        @mitigate_with_zne(scale_factors=[1, 2, 3], folding=fold_global, extrapolate=extrapolate)
         @qp.qnode(dev_noise)
         def mitigated_circuit(w1, w2):
             qp.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -219,14 +211,13 @@ class TestMitigateWithZNE:
         )
         rng = np.random.default_rng(seed=seed)
         inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
-        result_orig = mitigated_qnode_orig(inputs)  # pylint: disable=not-callable
-        result_expanded = mitigated_qnode_expanded(inputs)  # pylint: disable=not-callable
+        result_orig = mitigated_qnode_orig(inputs)
+        result_expanded = mitigated_qnode_expanded(inputs)
         # !TODO: double check if this shape mismatch needs to be taken care of from user side PR6684
         assert qp.math.allclose(
             np.array(result_orig).flatten(), np.array(result_expanded).flatten()
         )
 
-    # pylint:disable=not-callable
     def test_zne_with_noise_models(self):
         """Test that mitigate_with_zne transform works with noise models"""
         fcond = qp.noise.wires_in([0, 1])
@@ -249,7 +240,6 @@ class TestMitigateWithZNE:
         mitigated_result = 0.39843788456
         assert qp.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
 
-    # pylint:disable=not-callable
     def test_zne_error_with_channels(self):
         """Test that mitigate_with_zne transform raises correct error with channels"""
         fcond = qp.noise.wires_in([0, 1])
@@ -486,9 +476,7 @@ class TestMitiqIntegration:
         assert np.allclose(exact_val, [1, 1])
         assert all(mitigated_err < noisy_err)
 
-    @pytest.mark.xfail(
-        reason="Using external tape transforms breaks differentiability",
-    )
+    @pytest.mark.xfail(reason="Using external tape transforms breaks differentiability")
     def test_grad(self):
         """Tests if the gradient is calculated successfully."""
         from mitiq.zne.inference import RichardsonFactory
@@ -578,7 +566,6 @@ class TestDifferentiableZNE:
 
     def test_polyfit(self):
         """Testing the custom diffable _polyfit function"""
-        # pylint: disable=protected-access
         x = np.linspace(1, 4, 4)
         y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = _polyfit(x, y, 2)
@@ -671,9 +658,7 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = jnp.array(
-            [np.pi / 4, np.pi / 4],
-        )
+        theta = jnp.array([np.pi / 4, np.pi / 4])
 
         res = mitigated_qnode(theta)
         assert qp.math.allclose(res, out_ideal, atol=1e-2)
@@ -700,9 +685,7 @@ class TestDifferentiableZNE:
             mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
-        theta = jnp.array(
-            [np.pi / 4, np.pi / 4],
-        )
+        theta = jnp.array([np.pi / 4, np.pi / 4])
 
         res = mitigated_qnode(theta)
         assert qp.math.allclose(res, out_ideal, atol=1e-2)
@@ -807,9 +790,7 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = jnp.array(
-            [np.pi / 4, np.pi / 6],
-        )
+        theta = jnp.array([np.pi / 4, np.pi / 6])
 
         res = qp.math.stack(mitigated_qnode(theta))
         assert qp.math.allclose(res, out_ideal_multi, atol=1e-2)
@@ -837,9 +818,7 @@ class TestDifferentiableZNE:
             mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
-        theta = jnp.array(
-            [np.pi / 4, np.pi / 6],
-        )
+        theta = jnp.array([np.pi / 4, np.pi / 6])
 
         res = qp.math.stack(mitigated_qnode(theta))
         assert qp.math.allclose(res, out_ideal_multi, atol=1e-2)

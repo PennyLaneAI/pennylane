@@ -195,7 +195,7 @@ class QDrift(Operation):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
-    def __init__(self, hamiltonian, time, n=1, seed=None):  # pylint: disable=too-many-arguments
+    def __init__(self, hamiltonian, time, n=1, seed=None):
         r"""Initialize the QDrift class"""
 
         _check_hamiltonian_type(hamiltonian)

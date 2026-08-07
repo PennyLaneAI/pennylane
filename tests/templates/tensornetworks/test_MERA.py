@@ -15,9 +15,9 @@
 Tests for the MERA template.
 """
 
-import numpy as np
-
 # pylint: disable=too-many-arguments,too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -108,9 +108,9 @@ def circuit3_MERA(weights, wires):
     qp.StronglyEntanglingLayers(SELWeights5, wires=[wires[0], wires[1]])
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     def block(weights, wires):
         qp.CNOT(wires=[wires[0], wires[1]])
@@ -147,14 +147,7 @@ def test_flatten_unflatten():
 class TestIndicesMERA:
     """Test function that computes MERA indices"""
 
-    @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
-        [
-            (5, 3),
-            (9, 5),
-            (11, 7),
-        ],
-    )
+    @pytest.mark.parametrize(("n_wires", "n_block_wires"), [(5, 3), (9, 5), (11, 7)])
     def test_exception_n_block_wires_uneven(self, n_wires, n_block_wires):
         """Verifies that an exception is raised if n_block_wires is not even."""
 
@@ -163,14 +156,7 @@ class TestIndicesMERA:
         ):
             compute_indices(range(n_wires), n_block_wires)
 
-    @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
-        [
-            (3, 4),
-            (6, 8),
-            (10, 14),
-        ],
-    )
+    @pytest.mark.parametrize(("n_wires", "n_block_wires"), [(3, 4), (6, 8), (10, 14)])
     def test_exception_n_block_wires_large(self, n_wires, n_block_wires):
         """Verifies that an exception is raised when n_block_wires is too large."""
 
@@ -357,10 +343,7 @@ class TestTemplateInputs:
 class TestAttributes:
     """Tests additional methods and attributes"""
 
-    @pytest.mark.parametrize(
-        ("wires", "n_block_wires"),
-        [(range(7), 4), (range(13), 6)],
-    )
+    @pytest.mark.parametrize(("wires", "n_block_wires"), [(range(7), 4), (range(13), 6)])
     def test_get_n_blocks_warning(self, wires, n_block_wires):
         """Test that get_n_blocks() warns the user when there are too many wires."""
         with pytest.warns(
@@ -386,10 +369,7 @@ class TestAttributes:
         assert qp.MERA.get_n_blocks(wires, n_block_wires) == expected_n_blocks
 
     @pytest.mark.filterwarnings("ignore")
-    @pytest.mark.parametrize(
-        ("wires", "n_block_wires"),
-        [(range(4), 5), (range(9), 20)],
-    )
+    @pytest.mark.parametrize(("wires", "n_block_wires"), [(range(4), 5), (range(9), 20)])
     def test_get_n_blocks_error(self, wires, n_block_wires):
         """Test that the number of blocks attribute raises an error when n_block_wires is too large."""
 

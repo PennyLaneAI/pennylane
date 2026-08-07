@@ -15,7 +15,6 @@ r"""
 Contains the CommutingEvolution template.
 """
 
-# pylint: disable-msg=too-many-arguments
 import copy
 
 from pennylane import capture, math
@@ -132,12 +131,10 @@ class CommutingEvolution(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
-        }
+        return {"words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys())}
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
-        # pylint: disable=import-outside-toplevel,too-many-positional-arguments
+        # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -175,9 +172,8 @@ class CommutingEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        time, *_, wires, hamiltonian, **__
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(time, *_, wires, hamiltonian, **__):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

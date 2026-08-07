@@ -35,8 +35,4 @@ from .arithmetic import (
     LabsModExp,
 )
 
-from .state_prep import (
-    LabsCosineWindow,
-    LabsMottonenStatePreparation,
-    LabsSumOfSlatersPrep,
-)
+from .state_prep import LabsCosineWindow, LabsMottonenStatePreparation, LabsSumOfSlatersPrep

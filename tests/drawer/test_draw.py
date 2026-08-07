@@ -15,7 +15,6 @@
 Integration tests for the draw transform
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import partial
 
 import pytest
@@ -355,10 +354,8 @@ class TestLayering:
         assert draw(circ)() == expected
 
 
-class TestMidCircuitMeasurements:
+class TestMidCircuitMeasurements:  # pylint: disable=too-many-public-methods
     """Tests for drawing mid-circuit measurements and classical conditions."""
-
-    # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("device_name", ["default.qubit"])
     def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):

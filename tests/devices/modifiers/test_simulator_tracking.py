@@ -15,7 +15,6 @@
 Tests for qp.devices.modifiers.simulator_tracking.
 """
 
-# pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
 import pennylane as qp
 from pennylane.devices.modifiers import simulator_tracking
 

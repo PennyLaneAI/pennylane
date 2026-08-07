@@ -46,8 +46,7 @@ def test_expval_identity_nowires_LQ():
         _ = qnode()
 
 
-# pylint: disable=too-many-public-methods
-class TestExpval:
+class TestExpval:  # pylint: disable=too-many-public-methods
     """Tests for the expval function"""
 
     @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
@@ -120,9 +119,7 @@ class TestExpval:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qp.device("default.qubit", wires=2, seed=seed)
@@ -142,9 +139,7 @@ class TestExpval:
     @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_composite_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_composite_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
         dev = qp.device("default.qubit", seed=seed)
@@ -217,7 +212,6 @@ class TestExpval:
         """Test that the shape is correct."""
 
         res = qp.expval(obs)
-        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 
@@ -321,12 +315,7 @@ class TestExpval:
         assert qp.math.allequal(compute_expval(state), expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "state,expected",
-        [
-            ([[1.0, 0.0], [0.0, 1.0]], [0.0]),
-        ],
-    )
+    @pytest.mark.parametrize("state,expected", [([[1.0, 0.0], [0.0, 1.0]], [0.0])])
     def test_tf_function_density_matrix(self, state, expected):
         """Test that tf.function does not break process_density_matrix"""
         import tensorflow as tf
@@ -388,13 +377,7 @@ class TestExpval:
 
         assert qp.math.allequal(energy_batched, energy)
 
-    @pytest.mark.parametrize(
-        "wire, expected",
-        [
-            (0, 0.0),
-            (1, 1.0),
-        ],
-    )
+    @pytest.mark.parametrize("wire, expected", [(0, 0.0), (1, 1.0)])
     def test_estimate_expectation_with_counts(self, wire, expected):
         """Test that the expectation value of an observable is estimated correctly using counts"""
         counts = {"000": 100, "100": 100}

@@ -29,9 +29,8 @@ from pennylane.workflow import construct_execution_config, resolution
 from pennylane.workflow.qnode import _make_execution_config
 
 
-# pylint: disable=too-many-branches
 @transform
-def add_noise(tape, noise_model, level="user"):
+def add_noise(tape, noise_model, level="user"):  # pylint: disable=too-many-branches
     """Insert operations according to a provided noise model.
 
     Circuits passed through this quantum transform will be updated to apply the
@@ -332,10 +331,7 @@ def _get_full_transform_program(qnode, gradient_fn):
     program = copy(qnode.compile_pipeline)
 
     if getattr(gradient_fn, "expand_transform", False):
-        program.add_transform(
-            transform(gradient_fn.expand_transform),
-            **qnode.gradient_kwargs,
-        )
+        program.add_transform(transform(gradient_fn.expand_transform), **qnode.gradient_kwargs)
 
     mcm_config = {
         "postselect_mode": qnode.execute_kwargs["postselect_mode"],
@@ -347,9 +343,7 @@ def _get_full_transform_program(qnode, gradient_fn):
     return program + qnode.device.preprocess_transforms(config)
 
 
-def _validate_level(
-    level: str | int | slice,
-) -> None:
+def _validate_level(level: str | int | slice) -> None:
     """Check that the level specification is valid.
 
     Args:
@@ -526,7 +520,7 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
     _validate_level(level)
     if gradient_fn == "unset":
         config = construct_execution_config(qnode, resolve=False)()
-        # pylint: disable = protected-access
+        # pylint: disable=protected-access
         config = resolution._resolve_diff_method(config, qnode.device)
         gradient_fn = config.gradient_method
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
@@ -551,10 +545,10 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
     return full_transform_program[level]
 
 
-# pylint:disable = protected-access
 @add_noise.custom_qnode_transform
 def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     """QNode execution wrapper for supporting ``add_noise`` with levels"""
+    # pylint: disable=protected-access
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
 

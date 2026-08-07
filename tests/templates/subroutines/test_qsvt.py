@@ -15,7 +15,6 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 
-# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
 
 import pytest
@@ -526,15 +525,7 @@ class TestQSVTMatrix:
         assert np.allclose(qp.matrix(op), default_matrix)
         assert qp.math.get_interface(qp.matrix(op)) == "tensorflow"
 
-    @pytest.mark.parametrize(
-        ("A", "phis"),
-        [
-            (
-                [[0.1, 0.2], [0.3, 0.4]],
-                [0.1, 0.2, 0.3],
-            )
-        ],
-    )
+    @pytest.mark.parametrize(("A", "phis"), [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2, 0.3])])
     def test_QSVT_grad(self, A, phis):
         """Test that qp.grad results are the same as finite difference results"""
 
@@ -709,9 +700,7 @@ class Testqsvt:
             (qp.Z(0) - qp.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
         ],
     )
-    def test_raise_error(
-        self, A, poly, block_encoding, encoding_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_raise_error(self, A, poly, block_encoding, encoding_wires, msg_match):
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
@@ -870,13 +859,7 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(100, 0)),
         ],
     )
-    @pytest.mark.parametrize(
-        "angle_solver",
-        [
-            ("root-finding"),
-            ("iterative"),
-        ],
-    )
+    @pytest.mark.parametrize("angle_solver", [("root-finding"), ("iterative")])
     def test_correctness_QSP_angles_finding(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
@@ -907,13 +890,7 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(100, 0)),
         ],
     )
-    @pytest.mark.parametrize(
-        "angle_solver",
-        [
-            ("root-finding"),
-            ("iterative"),
-        ],
-    )
+    @pytest.mark.parametrize("angle_solver", [("root-finding"), ("iterative")])
     def test_correctness_QSP_angles_finding_with_jax(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
@@ -943,13 +920,7 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(100, 0)),
         ],
     )
-    @pytest.mark.parametrize(
-        "angle_solver",
-        [
-            ("root-finding"),
-            ("iterative"),
-        ],
-    )
+    @pytest.mark.parametrize("angle_solver", [("root-finding"), ("iterative")])
     def test_correctness_QSVT_angles(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
@@ -1127,10 +1098,7 @@ class TestIterativeSolver:
         ref = qp.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.parametrize(
-        "x",
-        list([0.1, 0.2, 0.3, 0.4]),
-    )
+    @pytest.mark.parametrize("x", list([0.1, 0.2, 0.3, 0.4]))
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast_scipy(self, x, degree):
         """Test internal function _qsp_iterate_broadcast_scipy"""
@@ -1151,7 +1119,7 @@ class TestIterativeSolver:
     def test_W_of_x_scipy(self, x):
         """Test internal function _W_of_x_scipy"""
         try:
-            import jax  # pylint:disable=unused-import
+            import jax  # pylint: disable=unused-import
 
             interface = "jax"
         except ModuleNotFoundError:

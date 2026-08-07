@@ -24,8 +24,7 @@ except ImportError:
     has_jax = False
 
 
-# pylint: disable=unused-argument
-def constant(scalar, time):
+def constant(scalar, time):  # pylint: disable=unused-argument
     r"""Returns the given ``scalar``, for use in defining a :class:`~.ParametrizedHamiltonian` with a
     trainable coefficient.
 

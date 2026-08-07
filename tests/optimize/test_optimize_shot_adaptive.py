@@ -14,6 +14,7 @@
 """Tests for the shot adaptive optimizer"""
 
 # pylint: disable=unused-argument
+
 import pytest
 
 import pennylane as qp
@@ -677,8 +678,7 @@ class TestOptimization:
         assert opt.shots_used > min_shots
 
 
-class TestStepAndCost:
-    # pylint: disable=too-few-public-methods
+class TestStepAndCost:  # pylint: disable=too-few-public-methods
     """Tests for the step_and_cost method"""
 
     @pytest.mark.slow

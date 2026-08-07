@@ -19,8 +19,7 @@ import os
 from logging import Filter
 
 
-# pylint: disable=too-few-public-methods
-class LocalProcessFilter(Filter):
+class LocalProcessFilter(Filter):  # pylint: disable=too-few-public-methods
     """
     Filters logs not originating from the current executing Python process ID.
     """
@@ -35,8 +34,7 @@ class LocalProcessFilter(Filter):
         return False
 
 
-# pylint: disable=too-few-public-methods
-class DebugOnlyFilter(Filter):
+class DebugOnlyFilter(Filter):  # pylint: disable=too-few-public-methods
     """
     Filters logs that are less verbose than the DEBUG level (CRITICAL, ERROR, WARN & INFO).
     """

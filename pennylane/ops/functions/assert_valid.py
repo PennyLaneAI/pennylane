@@ -78,7 +78,6 @@ def _assert_equal_ops(ops0, ops1, error_msg: str):
                 raise AssertionError(error_msg) from e
 
 
-# pylint: disable=too-many-branches
 def _check_decomposition(op, skip_wire_mapping):
     """Checks involving the decomposition."""
     if not op.has_decomposition:
@@ -88,7 +87,6 @@ def _check_decomposition(op, skip_wire_mapping):
             qp.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )()
-        # pylint: disable=expression-not-assigned
         _, args, kwargs = _get_decomp_args(op)
         _assert_error_raised(
             op.compute_decomposition,
@@ -217,6 +215,7 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
+# pylint: disable-next=too-many-branches
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
@@ -467,9 +466,9 @@ def _check_copy(op, skip_deepcopy):
             raise AssertionError("deep copied op must also be equal") from e
 
 
-# pylint: disable=import-outside-toplevel, protected-access
 def _check_pytree(op):
     """Check that the operator is a pytree."""
+    # pylint: disable=import-outside-toplevel,protected-access
     data, metadata = op._flatten()
     try:
         assert hash(metadata), "metadata must be hashable"
@@ -532,7 +531,7 @@ def _check_capture(op):
     if isinstance(op, qp.templates.SubroutineOp):
         return
     try:
-        import jax
+        import jax  # pylint: disable=import-outside-toplevel
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "assert_valid(..., skip_capture=False) requires JAX to validate program capture. "
@@ -550,7 +549,7 @@ def _check_capture(op):
         def test_fn(*args):
             op = jax.tree_util.tree_unflatten(struct, args)
             if isinstance(op, Operator2):
-                op._bind_primitive()
+                op._bind_primitive()  # pylint: disable=protected-access
                 return op.tracer
             return op
 
@@ -650,8 +649,7 @@ def _get_signature(op):
     return op.data, {"wires": op.wires, **op.hyperparameters}
 
 
-# pylint: disable=too-many-arguments
-def _assert_valid_operator2(
+def _assert_valid_operator2(  # pylint: disable=too-many-arguments
     op: qp.core.Operator2,
     skip_deepcopy=False,
     skip_differentiation=False,
@@ -723,8 +721,7 @@ def _assert_valid_operator2(
     _check_bind_new_parameters_op2(op)
 
 
-# pylint: disable=too-many-arguments
-def assert_valid(
+def assert_valid(  # pylint: disable=too-many-arguments
     op: qp.core.Operator,
     *,
     skip_deepcopy=False,

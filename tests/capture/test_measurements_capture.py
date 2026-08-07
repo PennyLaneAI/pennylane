@@ -15,9 +15,9 @@
 Tests for capturing measurements.
 """
 
-import numpy as np
+# pylint: disable=protected-access,unnecessary-lambda
 
-# pylint: disable=protected-access
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -38,28 +38,18 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable-next=wrong-import-position
+# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractMeasurement, operator_p
-from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position,no-name-in-module
-    assert_eqn_matches_op,
-)
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def _get_shapes_for(*measurements, shots=qp.measurements.Shots(None), num_device_wires=0):
     if jax.config.jax_enable_x64:
-        dtype_map = {
-            float: jax.numpy.float64,
-            int: jax.numpy.int64,
-            complex: jax.numpy.complex128,
-        }
+        dtype_map = {float: jax.numpy.float64, int: jax.numpy.int64, complex: jax.numpy.complex128}
     else:
-        dtype_map = {
-            float: jax.numpy.float32,
-            int: jax.numpy.int32,
-            complex: jax.numpy.complex64,
-        }
+        dtype_map = {float: jax.numpy.float32, int: jax.numpy.int32, complex: jax.numpy.complex64}
 
     shapes = []
     if not shots:
@@ -281,7 +271,6 @@ def test_primitive_none_behavior():
     be created, but it just won't be captured into jaxpr.
     """
 
-    # pylint: disable=too-few-public-methods
     class MyMeasurement(qp.measurements.MeasurementProcess):
         pass
 
@@ -297,7 +286,6 @@ def test_primitive_none_behavior():
     assert len(jaxpr.eqns) == 0
 
 
-# pylint: disable=unnecessary-lambda
 creation_funcs = [
     lambda: qp.state(),
     lambda: qp.density_matrix(wires=(0, 1)),
@@ -413,7 +401,6 @@ class TestExpvalVar:
     def test_capture_operator2(self, m_type, defined_outside):
         """Test that the expectation value of an observable can be captured."""
 
-        # pylint: disable=too-few-public-methods
         class PauliX(qp.core.Operator2):
             """Operator2 version of X."""
 

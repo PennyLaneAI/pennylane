@@ -149,11 +149,7 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments
     return all_obs
 
 
-def _empirical_fourier_moments(
-    L_visible: jnp.ndarray,
-    X_data: jnp.ndarray,
-    d: int,
-) -> jnp.ndarray:
+def _empirical_fourier_moments(L_visible: jnp.ndarray, X_data: jnp.ndarray, d: int) -> jnp.ndarray:
     """Compute the empirical Fourier moment for each sampled observable from the dataset.
 
     For each Fourier index vector :math:`\\mathbf{l}`, computes
@@ -190,11 +186,7 @@ def _pp_term(mu_p_hat: jnp.ndarray, m: int) -> jnp.ndarray:
     return (m * jnp.abs(mu_p_hat) ** 2 - 1.0) / (m - 1)
 
 
-def _qq_term(
-    mu_q_hat: jnp.ndarray,
-    mean_y_sq: jnp.ndarray,
-    s: int,
-) -> jnp.ndarray:
+def _qq_term(mu_q_hat: jnp.ndarray, mean_y_sq: jnp.ndarray, s: int) -> jnp.ndarray:
     """Compute the unbiased model–model U-statistic contribution to the MMD.
 
     Removes the diagonal self-pairs from :math:`|\\hat{\\mu}_q|^2`:
@@ -217,10 +209,7 @@ def _qq_term(
     return (s * jnp.abs(mu_q_hat) ** 2 - mean_y_sq) / (s - 1)
 
 
-def _pq_cross_term(
-    mu_p_hat: jnp.ndarray,
-    mu_q_hat: jnp.ndarray,
-) -> jnp.ndarray:
+def _pq_cross_term(mu_p_hat: jnp.ndarray, mu_q_hat: jnp.ndarray) -> jnp.ndarray:
     """Compute the data–model cross term of the MMD.
 
     :math:`PQ(l) = 2 \\operatorname{Re}(\\hat{\\mu}_p(l)^* \\hat{\\mu}_q(l))`.

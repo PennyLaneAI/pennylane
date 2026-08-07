@@ -17,10 +17,7 @@ test of a quantum register and a classical integer."""
 from pennylane import capture, compiler, cond, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X
 from pennylane.templates.subroutines import Elbow
 from pennylane.wires import Wires, WiresLike
@@ -97,7 +94,7 @@ class LeftClassicalComparator(Operation):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         target_wire = Wires(target_wire)
         x_wires = Wires(x_wires)
@@ -192,9 +189,8 @@ class LeftClassicalComparator(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        x_wires, L, target_wire, work_wires, comparator
-    ):  # pylint: disable=arguments-differ, too-many-arguments
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(x_wires, L, target_wire, work_wires, comparator):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -267,11 +263,7 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
             resources[X] += 1
         return resources
 
-    resources = {
-        Elbow: n - 1,
-        CNOT: n - 1,
-        X: 0,
-    }
+    resources = {Elbow: n - 1, CNOT: n - 1, X: 0}
 
     bit_0 = _get_specific_bit(L, 0)
     if bit_0:

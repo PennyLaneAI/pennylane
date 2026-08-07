@@ -137,10 +137,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
 
-    return_single_level: bool = isinstance(level, (int, str)) and level not in (
-        "all",
-        "all-mlir",
-    )
+    return_single_level: bool = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
 
     # Easier to assume level is always a sorted list of int levels
     level = preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)

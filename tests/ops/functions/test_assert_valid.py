@@ -15,12 +15,12 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+# pylint: disable=unused-argument
+
 import string
 from pickle import PicklingError
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 import scipy.sparse
 
@@ -247,12 +247,12 @@ class TestDecompositionErrors:
             num_wires = 3
 
         @qp.register_resources({qp.S: 3})
-        def rule(wires):  # pylint: disable=unused-argument
+        def rule(wires):
             @qp.for_loop(3)
             def loop(i):
                 qp.S(i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         _test_decomposition_rule(MyOp([0, 1, 2]), rule)
 
@@ -261,12 +261,12 @@ class TestDecompositionErrors:
         """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
 
         @qp.register_resources({OneWireDynOp: 3})
-        def rule(phi, wires):  # pylint: disable=unused-argument
+        def rule(phi, wires):
             @qp.for_loop(3)
             def loop(i):
                 OneWireDynOp(phi, wires=i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
 
@@ -357,7 +357,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():  # pylint: disable=signature-differs
+        def compute_eigvals():
             return [-1, 1]
 
     with pytest.raises(
@@ -781,7 +781,7 @@ class TestOperator2AssertValid:
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
-            def __init__(self, phi, wires):  # pylint: disable=unused-argument
+            def __init__(self, phi, wires):
                 super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)

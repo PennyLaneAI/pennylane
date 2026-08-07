@@ -107,9 +107,8 @@ def symmetry_generators(h):
 
     # Get reduced row echelon form of binary matrix
     rref_binary_matrix = binary_finite_reduced_row_echelon(binary_matrix)
-    rref_binary_matrix_red = rref_binary_matrix[
-        ~np.all(rref_binary_matrix == 0, axis=1)
-    ]  # remove all-zero rows
+    # remove all-zero rows
+    rref_binary_matrix_red = rref_binary_matrix[~np.all(rref_binary_matrix == 0, axis=1)]
 
     # Get kernel (i.e., nullspace) for trimmed binary matrix using gaussian elimination
     nullspace = _kernel(rref_binary_matrix_red)
@@ -557,9 +556,8 @@ def _build_generator(operation, wire_order, op_gen=None):
         coeffs = 1.0
 
         if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
-            coeffs = functools.reduce(
-                lambda i, j: i * j, operation.parameters
-            )  # coeffs from operation
+            # coeffs from operation
+            coeffs = functools.reduce(lambda i, j: i * j, operation.parameters)
 
         mat1 = scipy.linalg.expm(1j * qp.matrix(op_gen, wire_order=wire_order) * coeffs)
         mat2 = qp.matrix(operation, wire_order=wire_order)
@@ -575,9 +573,7 @@ def _build_generator(operation, wire_order, op_gen=None):
     return op_gen
 
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
-# pylint: disable=inconsistent-return-statements
-def taper_operation(
+def taper_operation(  # pylint: disable=too-many-arguments
     operation, generators, paulixops, paulix_sector, wire_order, op_wires=None, op_gen=None
 ):
     r"""Transform a gate operation with a Clifford operator and then taper qubits.
@@ -705,6 +701,7 @@ def taper_operation(
 
             V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
     """
+    # pylint: disable=inconsistent-return-statements
 
     # maintain a flag to track functional form of the operation
     callable_op = callable(operation)

@@ -118,15 +118,7 @@ class TestCommuteControlled:
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = [
-            "PauliX",
-            "RX",
-            "CNOT",
-            "Toffoli",
-            "SX",
-            "PauliX",
-            "CRX",
-        ]
+        names_expected = ["PauliX", "RX", "CNOT", "Toffoli", "SX", "PauliX", "CRX"]
         wires_expected = [
             Wires(2),
             Wires(2),
@@ -268,7 +260,6 @@ class TestCommuteControlled:
     def test_push_mixed_with_matrix(self, direction):
         """Test that arbitrary gates after controlled gates on controls *and*
         targets get properly pushed."""
-        # pylint:disable=too-many-function-args
 
         def qfunc():
             qp.PauliX(wires=1)

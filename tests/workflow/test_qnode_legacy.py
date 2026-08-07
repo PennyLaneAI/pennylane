@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
-import copy
+# pylint: disable=protected-access
 
-# pylint: disable=import-outside-toplevel, protected-access, no-member
+import copy
 import warnings
 from functools import partial
 
@@ -57,11 +57,9 @@ class DummyDevice(qp.devices.LegacyDevice):
     def reset(self):
         pass
 
-    # pylint: disable=unused-argument
     def apply(self, operation, wires, par):
         return 0.0
 
-    # pylint: disable=unused-argument
     def expval(self, observable, wires, par):
         return 0.0
 
@@ -73,13 +71,10 @@ class DeviceDerivatives(DummyDevice):
 
     def capabilities(self):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            provides_jacobian=True,
-        )
+        capabilities.update(provides_jacobian=True)
         return capabilities
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -600,9 +595,8 @@ class TestIntegration:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        @qnode(
-            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
-        )  # <--- we only choose one trainable parameter
+        # <--- we only choose one trainable parameter
+        @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -800,7 +794,7 @@ class TestIntegration:
             circuit()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
 
@@ -813,9 +807,7 @@ class TestCompilePipelineIntegration:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @just_pauli_x_out
@@ -869,15 +861,11 @@ class TestCompilePipelineIntegration:
             return results[0]
 
         @qp.transform
-        def just_pauli_x_out(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def just_pauli_x_out(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),), null_postprocessing
 
         @qp.transform
-        def repeat_operations(
-            tape: QuantumScript,
-        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        def repeat_operations(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qp.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -969,7 +957,6 @@ class TestCompilePipelineIntegration:
         assert circuit() == 100
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
@@ -992,7 +979,6 @@ class TestTapeExpansion:
 
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1026,12 +1012,11 @@ class TestTapeExpansion:
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
     @pytest.mark.autograd
-    def test_no_gradient_expansion(self, mocker):
+    def test_no_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1063,12 +1048,11 @@ class TestTapeExpansion:
             assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):
+    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class PhaseShift(qp.PhaseShift):
             """custom phase shift."""
 
@@ -1392,7 +1376,7 @@ class TestDefaultQubitLegacySeeding:
 
         # Manually simulate what happens on a new execution:
         # The execute() method sets _fresh_execution = True
-        dev._fresh_execution = True  # pylint: disable=protected-access
+        dev._fresh_execution = True
 
         # Second execution should produce the same result
         result2 = circuit()

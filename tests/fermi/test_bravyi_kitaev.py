@@ -49,10 +49,7 @@ FERMI_WORDS_AND_OPS = [
         FermiWord({(0, 0): "-"}),
         2,
         # trivial case of an annihilation operator with two qubits , 0 -> (X_0 @ X_1 + iY_0 @ X_1) / 2
-        (
-            [(0.5 + 0j), (0.0 + 0.5j)],
-            [qp.PauliX(0) @ qp.PauliX(1), qp.PauliY(0) @ qp.PauliX(1)],
-        ),
+        ([(0.5 + 0j), (0.0 + 0.5j)], [qp.PauliX(0) @ qp.PauliX(1), qp.PauliY(0) @ qp.PauliX(1)]),
     ),
     (
         FermiWord({(0, 0): "+", (1, 0): "-"}),
@@ -110,10 +107,7 @@ FERMI_WORDS_AND_OPS = [
         FermiWord({(0, 5): "+", (1, 5): "-", (2, 5): "+", (3, 5): "-"}),
         6,
         # obtained with openfermion using: binary_code_transform(FermionOperator('5^ 5 5^ 5'), parity_code(n_qubits)) with 6 qubits
-        (
-            [(0.5 + 0j), (-0.5 + 0j)],
-            [qp.Identity(0), qp.PauliZ(4) @ qp.PauliZ(5)],
-        ),
+        ([(0.5 + 0j), (-0.5 + 0j)], [qp.Identity(0), qp.PauliZ(4) @ qp.PauliZ(5)]),
     ),
     (
         FermiWord({(0, 3): "+", (1, 3): "-", (2, 3): "+", (3, 1): "-"}),

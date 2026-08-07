@@ -15,7 +15,6 @@
 Tests for the gradients.finite_difference module.
 """
 
-# pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -448,14 +447,7 @@ class TestFiniteDiff:
 
         transform = [qp.math.shape(qp.gradients.finite_diff(c)(x)) for c in circuits]
 
-        expected_shapes = [
-            (3,),
-            (1, 3),
-            (2, 3),
-            (4, 3),
-            (1, 4, 3),
-            (2, 4, 3),
-        ]
+        expected_shapes = [(3), (1, 3), (2, 3), (4, 3), (1, 4, 3), (2, 4, 3)]
         assert all(t == q for t, q in zip(transform, expected_shapes))
 
     def test_special_observable_qnode_differentiation(self):
@@ -492,7 +484,6 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
-        # pylint: disable=too-few-public-methods
         class SpecialObservable(qp.operation.Operator):
             """SpecialObservable"""
 
@@ -500,7 +491,6 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 
@@ -508,9 +498,8 @@ class TestFiniteDiff:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.asarray(arr)
 
             def __init__(self, *args, **kwargs):

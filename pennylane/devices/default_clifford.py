@@ -15,8 +15,6 @@
 This module contains the Clifford simulator using ``stim``.
 """
 
-# pylint: disable=no-member
-
 import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
@@ -419,8 +417,7 @@ class DefaultClifford(Device):
         """The name of the device."""
         return "default.clifford"
 
-    # pylint:disable = too-many-arguments, too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
@@ -549,12 +546,7 @@ class DefaultClifford(Device):
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
         return results
 
-    def simulate(
-        self,
-        circuit: QuantumScript,
-        seed=None,
-        debugger=None,
-    ) -> Result:
+    def simulate(self, circuit: QuantumScript, seed=None, debugger=None) -> Result:
         """Simulate a single quantum script.
 
         Args:
@@ -641,7 +633,6 @@ class DefaultClifford(Device):
             ShadowExpvalMP: self._sample_expval_shadow,
         }
 
-    # pylint: disable=too-many-positional-arguments
     def _apply_snapshot(
         self,
         circuit: QuantumScript,
@@ -868,7 +859,6 @@ class DefaultClifford(Device):
         z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         return 2 ** (-self._measure_stabilizer_entropy(z_stabs, list(meas.wires), log_base=2))
 
-    # pylint: disable=protected-access
     @staticmethod
     def _measure_stabilizer_entropy(stabilizer, wires, log_base=None):
         r"""Computes the Rényi entanglement entropy using stabilizer information.
@@ -919,8 +909,7 @@ class DefaultClifford(Device):
 
         return entropy / math.log(log_base)
 
-    # pylint: disable=too-many-branches
-    def _measure_probability(self, meas, _, **kwargs):
+    def _measure_probability(self, meas, _, **kwargs):  # pylint: disable=too-many-branches
         r"""Measure the probability of each computational basis state.
 
         Computes the probability for each of the computational basis state vector iteratively
@@ -1074,9 +1063,8 @@ class DefaultClifford(Device):
         meas_wire = stim_circuit.num_qubits
 
         bits = []
-        recipes = np.random.RandomState(meas_seed).randint(
-            3, size=(shots, meas_wire)
-        )  # Random Pauli basis to be used for measurements
+        # Random Pauli basis to be used for measurements
+        recipes = np.random.RandomState(meas_seed).randint(3, size=(shots, meas_wire))
 
         for recipe in recipes:
             bits.append(
@@ -1091,9 +1079,8 @@ class DefaultClifford(Device):
     def _sample_expval_shadow(self, meas, stim_circuit, shots, seed):
         """Measures expectation value of a Pauli observable using
         classical shadows from the state of simulator device."""
-        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            ClassicalShadow,
-        )
+        # tach-ignore
+        from pennylane.shadows import ClassicalShadow  # pylint: disable=import-outside-toplevel
 
         bits, recipes = self._sample_classical_shadow(meas, stim_circuit, shots, seed)
         # TODO: Benchmark scaling for larger number of circuits for this existing functionality

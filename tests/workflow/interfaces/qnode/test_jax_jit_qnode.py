@@ -13,7 +13,8 @@
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
-# pylint: disable=too-many-arguments,too-few-public-methods,protected-access
+# pylint: disable=too-many-arguments
+
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
@@ -61,10 +62,7 @@ H_FOR_SPSA = 0.05
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution,device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution,device_vjp", device_test_cases)
 class TestQNode:
     """Test that using the QNode with JAX integrates with the PennyLane
     stack"""
@@ -317,10 +315,7 @@ class TestQNode:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestVectorValuedQNode:
     """Test that using vector-valued QNodes with JAX integrate with the
     PennyLane stack"""
@@ -568,11 +563,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (2,)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (4,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
@@ -869,8 +864,8 @@ class TestShotsIntegration:
             circuit(a, b)
 
         # execute with shots=100
-        res = qp.set_shots(shots=100)(circuit)(a, b)  # pylint: disable=unexpected-keyword-arg
-        assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
+        res = qp.set_shots(shots=100)(circuit)(a, b)
+        assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
@@ -893,7 +888,6 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
-        # pylint: disable=unused-argument
         a, b = jax.numpy.array([0.543, -0.654])
 
         dev = DefaultQubit()
@@ -1020,10 +1014,7 @@ class TestShotsIntegration:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
@@ -1147,10 +1138,7 @@ class TestQubitIntegration:
         w1 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
         w2 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
-        weights = [
-            jax.numpy.array(np.random.random(w1)),
-            jax.numpy.array(np.random.random(w2)),
-        ]
+        weights = [jax.numpy.array(np.random.random(w1)), jax.numpy.array(np.random.random(w2))]
 
         grad_fn = jax.jit(jax.grad(cost))
         res = grad_fn(weights)
@@ -1206,10 +1194,7 @@ class TestQubitIntegration:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution,device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution,device_vjp", device_test_cases)
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 
@@ -1623,10 +1608,7 @@ class TestQubitIntegrationHigherOrder:
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
     with the JAX interface"""
@@ -1956,10 +1938,7 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution,device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution,device_vjp", device_test_cases)
 class TestJIT:
     """Test JAX JIT integration with the QNode and automatic resolution of the
     correct JAX interface variant."""
@@ -2010,7 +1989,7 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_hermitian(
+    def test_hermitian(  # pylint: disable=unused-argument
         self, dev_name, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface, seed
     ):
         """Test that the jax device works with qp.Hermitian and jitting even
@@ -2019,7 +1998,6 @@ class TestJIT:
         Note: before a fix, the cases of shots=10 and shots=1000 were failing due
         to different reasons, hence the parametrization in the test.
         """
-        # pylint: disable=unused-argument
         if dev_name == "reference.qubit":
             pytest.xfail("diagonalize_measurements do not support Hermitians (sc-72911)")
 
@@ -2048,12 +2026,11 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_probs_obs_none(
+    def test_probs_obs_none(  # pylint: disable=unused-argument
         self, dev_name, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface, seed
     ):
         """Test that the jax device works with qp.probs, a MeasurementProcess
         that has obs=None even when shots>0."""
-        # pylint: disable=unused-argument
         if diff_method in ["backprop", "adjoint"]:
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
@@ -2155,7 +2132,7 @@ class TestJIT:
 
         def cost(x, y, idx):
             res = circuit(x, y)
-            return res[idx]  # pylint:disable=unsubscriptable-object
+            return res[idx]
 
         x = jax.numpy.array(1.0)
         y = jax.numpy.array(2.0)
@@ -2177,7 +2154,6 @@ class TestJIT:
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
-    # pylint: disable=unused-argument
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_matrix_parameter(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface, seed
@@ -2197,7 +2173,6 @@ class TestJIT:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        # pylint: disable=unused-argument
         @qp.qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,
@@ -2224,10 +2199,7 @@ class TestJIT:
 @pytest.mark.parametrize("shots", [None, 10000])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian with different return types."""
 
@@ -2863,10 +2835,7 @@ hessian_fn = [
 
 @pytest.mark.parametrize("hessian", hessian_fn)
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestReturnHessian:
     """Class to test the shape of the Hessian with different return types."""
 
@@ -3225,10 +3194,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
 @pytest.mark.parametrize("argnums", [0, 1, [0, 1]])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
-@pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution, device_vjp",
-    device_test_cases,
-)
+@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution, device_vjp", device_test_cases)
 class TestSubsetArgnums:
     def test_single_measurement(
         self,
@@ -3357,7 +3323,6 @@ class TestSubsetArgnums:
 class TestSinglePrecision:
     """Tests for compatibility with single precision mode."""
 
-    # pylint: disable=import-outside-toplevel
     def test_type_conversion_fallback(self):
         """Test that if the type isn't int, float, or complex, we still have a fallback."""
         from pennylane.workflow.interfaces.jax_jit import _jax_dtype

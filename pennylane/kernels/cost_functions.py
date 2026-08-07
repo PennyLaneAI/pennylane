@@ -23,7 +23,7 @@ from pennylane.math import frobenius_inner_product
 from .utils import square_kernel_matrix
 
 
-def polarity(
+def polarity(  # pylint: disable=too-many-arguments
     X,
     Y,
     kernel,
@@ -88,7 +88,6 @@ def polarity(
     >>> qp.kernels.polarity(X, Y, kernel)
     np.float64(0.2196...)
     """
-    # pylint: disable=too-many-arguments
     K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
     if rescale_class_labels:
@@ -103,13 +102,7 @@ def polarity(
     return frobenius_inner_product(K, T, normalize=normalize)
 
 
-def target_alignment(
-    X,
-    Y,
-    kernel,
-    assume_normalized_kernel=False,
-    rescale_class_labels=True,
-):
+def target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
     r"""Target alignment of a given kernel function.
 
     This function is an alias for :func:`~.kernels.polarity` with ``normalize=True``.

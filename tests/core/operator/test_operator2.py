@@ -12,7 +12,8 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=redefined-outer-name,protected-access,too-few-public-methods
+# pylint: disable=protected-access
+
 # TODO: [sc-120817] Add interface tests
 # TODO: [sc-120982] Add integration tests
 
@@ -45,8 +46,7 @@ from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-public-methods
-class TestInitSubclass:
+class TestInitSubclass:  # pylint: disable=too-many-public-methods
     """Tests for the validation performed in ``Operator2.__init_subclass__``."""
 
     def test_str_argnames_converted_to_tuple(self):
@@ -76,7 +76,7 @@ class TestInitSubclass:
             static_argnames = ("s2", "s1")
             hybrid_argnames = ("h2", "h1")
 
-            # pylint: disable=useless-parent-delegation, too-many-arguments
+            # pylint: disable-next=too-many-arguments
             def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
                 super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
 
@@ -89,7 +89,6 @@ class TestInitSubclass:
 
             compilable_argnames = ("c3", "c2", "c1")
 
-            # pylint: disable=useless-parent-delegation
             def __init__(self, c1, wires, c2, c3):
                 super().__init__(c1, wires, c2, c3)
 
@@ -178,8 +177,9 @@ class TestInitSubclass:
         """Test that every parameter in the signature must appear in some ``**_argnames`` tuple."""
 
         with pytest.raises(TypeError, match="not classified in any argnames"):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 # ``phi`` is not in any argnames tuple
                 def __init__(self, phi, wires):
                     super().__init__(phi, wires=wires)
@@ -237,8 +237,9 @@ class TestInitSubclass:
         with pytest.raises(
             TypeError, match="'wire_sizes' must have the same length as 'wire_argnames'"
         ):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 wire_argnames = ("wires", "ctrl_wires")
                 wire_sizes = (1, 1, 1)
 
@@ -252,8 +253,9 @@ class TestInitSubclass:
             TypeError,
             match="Expected wire_size == None for 'pytree_wires' as it is a hybrid wire argument",
         ):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 wire_argnames = ("pytree_wires",)
                 hybrid_argnames = ("pytree_wires",)
                 wire_sizes = (2,)
@@ -266,8 +268,9 @@ class TestInitSubclass:
         """Test that ``wire_sizes`` entries must be positive integers or ``None``."""
 
         with pytest.raises(TypeError, match="'wire_sizes' must be a sequence of"):
-            # pylint: disable=unused-variable
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 wire_sizes = (invalid_size,)
 
                 def __init__(self, wires):
@@ -315,18 +318,13 @@ class TestInitSubclass:
     def test_arg_specs_wire_sizes_mismatch_error(self):
         """Test that ``arg_specs`` and ``wire_sizes`` must agree on wire counts."""
 
-        with pytest.raises(
-            TypeError,
-            match="Number of wires specified for 'wires' does not match",
-        ):
-            # pylint: disable=unused-variable
+        with pytest.raises(TypeError, match="Number of wires specified for 'wires' does not match"):
+
             class Op(Operator2):
+                # pylint: disable=unused-variable
                 dynamic_argnames = ("phi",)
                 wire_sizes = (3,)
-                arg_specs = {
-                    "phi": AbstractArray((), float),
-                    "wires": AbstractWires(2),
-                }
+                arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
                 def __init__(self, phi, wires):
                     super().__init__(phi, wires=wires)
@@ -338,7 +336,6 @@ class TestInitSubclass:
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": float}
 
-            # pylint: disable=useless-parent-delegation
             def __init__(self, phi, wires):
                 super().__init__(phi, wires)
 
@@ -364,7 +361,6 @@ class TestInitSubclass:
             wire_argnames = ()
 
             def __init__(self):
-                # pylint: disable=useless-parent-delegation
                 super().__init__()
 
         assert Op.has_fixed_sig is True
@@ -417,10 +413,7 @@ class TestInitSubclass:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(-1),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(-1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -483,10 +476,7 @@ class TestInitSubclass:
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "pytree_wires")
             hybrid_argnames = ("pytree_wires",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, pytree_wires, wires):
                 super().__init__(phi, [Wires(w) for w in pytree_wires], wires=wires)
@@ -510,8 +500,7 @@ class TestOperatorInit:
             dynamic_argnames = ("phi",)
             static_argnames = ("method",)
 
-            # pylint: disable=unused-argument
-            def __init__(self, phi, wires, method="auto"):
+            def __init__(self, phi, wires, method="auto"):  # pylint: disable=unused-argument
                 super().__init__(phi, Wires(wires))
 
         op = Op(0.5, wires=0)
@@ -700,10 +689,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -721,10 +707,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -743,10 +726,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((2,), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -762,10 +742,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), int),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((), int), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -781,10 +758,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -797,10 +771,7 @@ class TestInitExpectedArgtypesValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(2)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -817,12 +788,7 @@ class TestProperties:
     def test_arguments(self):
         """Test that ``arguments`` maps all arguments to their values."""
         op = FullOp(0.5, "info", [], wires=0)
-        assert op.arguments == {
-            "phi": 0.5,
-            "static": "info",
-            "hybrid": [],
-            "wires": Wires([0]),
-        }
+        assert op.arguments == {"phi": 0.5, "static": "info", "hybrid": [], "wires": Wires([0])}
 
     def test_dynamic_args(self):
         """Test that ``dynamic_args`` is set correctly."""
@@ -883,10 +849,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -901,10 +864,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (1,)
-            arg_specs = {
-                "phi": AbstractArray((2,), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -917,10 +877,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (1,)
-            arg_specs = {
-                "phi": AbstractArray((2,), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -939,10 +896,7 @@ class TestBroadcasting:
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
-            arg_specs = {
-                "phi": AbstractArray((), int),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((), int), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -956,10 +910,7 @@ class TestBroadcasting:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((2, 3), float),
-                "wires": AbstractWires(1),
-            }
+            arg_specs = {"phi": AbstractArray((2, 3), float), "wires": AbstractWires(1)}
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -1391,7 +1342,7 @@ class TestDunderMethods:
             wire_argnames = ("wires",)
             arg_specs = {"wires": Wire[1]}
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
         op = Op(Wire[1])
@@ -1400,7 +1351,7 @@ class TestDunderMethods:
         class Op2(Operator2):
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
         op = Op2(Wire[1])
@@ -1609,7 +1560,6 @@ class TestLabel:
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
-            # pylint: disable=unused-argument
             def label(self, decimals=None, base_label=None, cache=None):
                 return "custom_label"
 
@@ -1832,7 +1782,6 @@ class TestHasRepresentations:
         """Test that ``has_matrix`` is True when ``matrix`` is overridden."""
 
         class WithMatrix(Operator2):
-            # pylint: disable=unused-argument
             def matrix(self, wire_order=None):
                 return np.eye(2)
 
@@ -1862,7 +1811,6 @@ class TestHasRepresentations:
         """Test that ``has_sparse_matrix`` is True when ``sparse_matrix`` is overridden."""
 
         class WithSparse(Operator2):
-            # pylint: disable=unused-argument
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2))
 
@@ -1946,10 +1894,11 @@ class TestHasRepresentations:
         assert WithGen.has_generator is True
 
 
-# pylint: disable=unused-argument,too-many-public-methods
-class TestRepresentations:
+class TestRepresentations:  # pylint: disable=too-many-public-methods
     """Tests for the various operator representation methods
     (and their corresponding ``compute_**`` static methods)."""
+
+    # pylint: disable=unused-argument
 
     def test_adjoint_default_error(self):
         """Test that the default ``adjoint`` raises ``AdjointUndefinedError``."""
@@ -2448,7 +2397,6 @@ class TestStatePrepBase:
         class MyStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
-            # pylint: disable=useless-parent-delegation
             def __init__(self, wires):
                 super().__init__(wires)
 
@@ -2462,8 +2410,7 @@ class TestStatePrepBase:
     def test_interface_not_implemented(self):
         """Tests that an error is raised if an interface isn't implemented."""
 
-        # pylint: disable=useless-parent-delegation,abstract-method
-        class BadStatePrep(StatePrepBase2):
+        class BadStatePrep(StatePrepBase2):  # pylint: disable=abstract-method
             wire_argnames = ("wires",)
 
             def __init__(self, wires):
@@ -2472,7 +2419,7 @@ class TestStatePrepBase:
             # state_vector is not implemented!
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
-            BadStatePrep(0)  # pylint: disable=abstract-class-instantiated
+            BadStatePrep(0)
 
 
 class TestLegacyGradMethodProperty:
@@ -2494,7 +2441,7 @@ class TestLegacyGradMethodProperty:
     def test_generator_gives_frequencies(self):
         """Tests that a generator can create parameter frequencies which returns analytic."""
 
-        class GenOp(DynOp):
+        class GenOp(DynOp):  # pylint: disable=too-few-public-methods
             @override
             def generator(self):
                 return -0.5 * qp.Z(0)

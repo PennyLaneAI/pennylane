@@ -19,7 +19,7 @@ import pytest
 pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 
-# pylint: disable = wrong-import-position
+# pylint: disable=wrong-import-position
 import jax.numpy as jnp
 from jax import make_jaxpr
 from jax.core import eval_jaxpr
@@ -108,12 +108,7 @@ def test_slicing(array_in, index, new_value, array_out):
             jnp.array([[1.0, 1.0, 1.0, 99.0], [1.0, 1.0, 1.0, 99.0], [1.0, 1.0, 1.0, 99.0]]),
         ),
         # Complex numbers
-        (
-            jnp.array([1 + 1j, 2 + 2j]),
-            0,
-            3 - 3j,
-            jnp.array([3 - 3j, 2 + 2j]),
-        ),
+        (jnp.array([1 + 1j, 2 + 2j]), 0, 3 - 3j, jnp.array([3 - 3j, 2 + 2j])),
     ],
 )
 def test_non_trivial_indexing(array_in, index, new_value, array_out):

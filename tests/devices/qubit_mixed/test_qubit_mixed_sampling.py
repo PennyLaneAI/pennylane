@@ -14,8 +14,6 @@
 # limitations under the License.
 """Unit tests for sampling states in devices/qubit_mixed."""
 
-# pylint: disable=unused-argument,too-many-arguments, import-outside-toplevel
-
 import numpy as np
 import pytest
 
@@ -275,11 +273,7 @@ class TestMeasurements:
         hamiltonian = qp.Hamiltonian(coeffs, obs)
         shots = Shots(10000)
 
-        result = measure_with_samples(
-            [qp.expval(hamiltonian)],
-            state,
-            shots,
-        )[0]
+        result = measure_with_samples([qp.expval(hamiltonian)], state, shots)[0]
         assert isinstance(result, (float, np.floating)), "Result is not a floating point number"
 
     def test_measure_sum_with_samples_partitioned_shots(self):
@@ -297,11 +291,7 @@ class TestMeasurements:
         shots = Shots((100, 200))
 
         # Perform measurement
-        result = measure_with_samples(
-            [mp],
-            state,
-            shots,
-        )
+        result = measure_with_samples([mp], state, shots)
 
         # Check that result is a tuple of results
         assert isinstance(result, tuple), "Result is not a tuple for partitioned shots"

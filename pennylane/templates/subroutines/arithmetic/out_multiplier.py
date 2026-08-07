@@ -216,7 +216,7 @@ class OutMultiplier(Operation):
         mod=None,
         work_wires: WiresLike = (),
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):  # pylint: disable=too-many-arguments
 
         work_wires = [] if work_wires is None else work_wires
         num_work_wires = len(work_wires)
@@ -308,7 +308,7 @@ class OutMultiplier(Operation):
         mod,
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=arguments-differ, too-many-arguments, unused-argument
+    ):  # pylint: disable=arguments-differ,too-many-arguments
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -387,7 +387,7 @@ def _out_multiplier_with_qft(
     work_wires: WiresLike,
     output_wires_zeroed: bool,
     **_,
-):  # pylint: disable=too-many-arguments, unused-argument
+):  # pylint: disable=too-many-arguments
     OutMultiplier.compute_decomposition(
         x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
     )
@@ -450,7 +450,7 @@ def _out_multiplier_with_adder(
     work_wires: WiresLike,
     output_wires_zeroed: bool,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):  # pylint: disable=unused-argument,too-many-arguments
     """Implementation of Schoolbook multiplication via controlled adders as sole building block,
     except for a potential simplification for the very first adder.
     The j-th building block adds y⋅x_{n-1-j}⋅2^j to the output register, by controlling the
@@ -667,7 +667,7 @@ def _out_multiplier_with_caddsub(
     work_wires: WiresLike,
     output_wires_zeroed: bool,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):  # pylint: disable=unused-argument,too-many-arguments
     """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
     combined with some correction steps. After appending a work wire to the output register,
     effectively multiplying it with two, we first have a bulk computation with n steps (where

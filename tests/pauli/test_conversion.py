@@ -95,18 +95,14 @@ hamiltonian_ps = (
 )
 
 
-# pylint: disable=too-many-public-methods
-class TestDecomposition:
+class TestDecomposition:  # pylint: disable=too-many-public-methods
     """Tests the pauli_decompose function"""
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
     def test_wrong_shape(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="The matrix should have shape",
-        ):
+        with pytest.raises(ValueError, match="The matrix should have shape"):
             qp.pauli_decompose(hamiltonian)
 
     def test_not_hermitian(self):
@@ -155,7 +151,6 @@ class TestDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -556,20 +551,14 @@ class TestPhasedDecomposition:
     def test_wrong_shape_non_square(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="The matrix should be square",
-        ):
+        with pytest.raises(ValueError, match="The matrix should be square"):
             _generalized_pauli_decompose(hamiltonian, padding=False)
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((5, 5)), np.ones((3, 3))])
     def test_wrong_shape_non_power_two(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="Dimension of the matrix should be a power of 2",
-        ):
+        with pytest.raises(ValueError, match="Dimension of the matrix should be a power of 2"):
             _generalized_pauli_decompose(hamiltonian, padding=False)
 
     def test_hide_identity_true(self):
@@ -615,7 +604,6 @@ class TestPhasedDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -638,8 +626,6 @@ class TestPhasedDecomposition:
 
         assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
-
-    # pylint: disable = consider-using-generator
 
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
@@ -726,7 +712,7 @@ class TestPhasedDecomposition:
             coeffs = qp.pauli_decompose(mat).coeffs
             assert qp.math.get_interface(coeffs[0]) == interface
 
-    # pylint: disable = superfluous-parens
+    # pylint: disable=superfluous-parens
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
@@ -881,11 +867,7 @@ class TestPauliSentence:
         ):
             pauli_sentence(op)
 
-    words = (
-        PauliWord({0: "X"}),
-        PauliWord({0: "X", 1: "Y"}),
-        PauliWord({"a": "X", 0: "Y"}),
-    )
+    words = (PauliWord({0: "X"}), PauliWord({0: "X", 1: "Y"}), PauliWord({"a": "X", 0: "Y"}))
 
     @pytest.mark.parametrize("pw", words)
     def test_trivial_pauli_word(self, pw):

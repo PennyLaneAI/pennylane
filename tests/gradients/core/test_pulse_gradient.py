@@ -30,14 +30,11 @@ from pennylane.gradients.pulse_gradient import (
 )
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.jax
 class TestSplitEvolOps:
     """Tests for the helper method _split_evol_ops that samples a splitting time and splits up
     a ParametrizedEvolution operation at the sampled time, inserting a Pauli rotation about the
     provided Pauli word with angles +- pi/2."""
-
-    # pylint: disable=unnecessary-lambda-assignment
 
     # Need to wrap the Hamiltonians in a callable in order to use `qp.pulse` functions, as
     # the tests would otherwise fail when used without JAX.
@@ -61,8 +58,8 @@ class TestSplitEvolOps:
         (ham_single_q_const, [0.3], 2.3, qp.dot([1.9], [qp.PauliZ(0)]), "Z"),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("ham, params, time, ob, word", split_evol_ops_test_cases_pauliword)
+    # pylint: disable-next=too-many-arguments
     def test_with_pauliword(self, ham, params, time, ob, word, seed):
         """Test that _split_evol_ops returns the right ops with correct
         relations to the input operation for a Pauli word as ``ob``."""
@@ -253,8 +250,6 @@ class TestParshiftAndIntegrate:
     """Test the helper routine ``_parshift_and_integrate``. Most tests use uniform
     return types and parameters, so that we can test against simple tensor contractions."""
 
-    # pylint: disable=too-many-arguments
-
     @pytest.mark.parametrize("multi_term", [1, 4])
     @pytest.mark.parametrize("meas_shape", [(), (4,)])
     @pytest.mark.parametrize("par_shape", [(), (3,), (2, 7)])
@@ -281,11 +276,7 @@ class TestParshiftAndIntegrate:
             psr_coeffs = np.random.random(num_shifts)
 
         results_shape = (num_split_times * num_shifts * multi_term,) + meas_shape
-        new_results_shape = (
-            multi_term,
-            num_split_times,
-            num_shifts,
-        ) + meas_shape
+        new_results_shape = (multi_term, num_split_times, num_shifts) + meas_shape
         results = np.random.random(results_shape)
 
         prefactor = 0.3214
@@ -338,11 +329,7 @@ class TestParshiftAndIntegrate:
             psr_coeffs = np.random.random(num_shifts)
 
         results_shape = (num_shifts * multi_term, (num_split_times + 2)) + meas_shape
-        new_results_shape = (
-            multi_term,
-            num_shifts,
-            num_split_times + 2,
-        ) + meas_shape
+        new_results_shape = (multi_term, num_shifts, num_split_times + 2) + meas_shape
         results = np.random.random(results_shape)
 
         prefactor = 0.3214
@@ -401,10 +388,7 @@ class TestParshiftAndIntegrate:
             cjacs = np.random.random(cjac_shape)
             psr_coeffs = np.random.random(num_shifts)
 
-        results_shape = (
-            num_split_times * num_shifts * multi_term,
-            num_meas_or_shots,
-        ) + meas_shape
+        results_shape = (num_split_times * num_shifts * multi_term, num_meas_or_shots) + meas_shape
         new_results_shape = (
             multi_term,
             num_split_times,
@@ -829,7 +813,7 @@ class TestStochPulseGrad:
             ),
         ),
     )
-    def test_all_zero_grads(self, ops, arg, exp_shapes):  # pylint:disable=unused-argument
+    def test_all_zero_grads(self, ops, arg, exp_shapes):
         """Test that a zero gradient is returned when all trainable parameters are
         identified to have zero gradient in advance."""
         import jax
@@ -1307,7 +1291,7 @@ class TestStochPulseGrad:
         jax.clear_caches()
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_shots_attribute(self, shots):  # pylint:disable=unused-argument
+    def test_shots_attribute(self, shots):
         """Tests that the shots attribute is copied to the new tapes"""
         tape = qp.tape.QuantumTape([], [qp.expval(qp.PauliZ(0)), qp.probs([1, 2])], shots=shots)
         with pytest.warns(UserWarning, match="Attempted to compute the gradient of a tape with no"):
@@ -1759,10 +1743,9 @@ class TestStochPulseGradIntegration:
 
 
 @pytest.mark.jax
-class TestStochPulseGradDiff:
+class TestStochPulseGradDiff:  # pylint: disable=too-few-public-methods
     """Test that stoch_pulse_grad is differentiable."""
 
-    # pylint: disable=too-few-public-methods
     @pytest.mark.slow
     def test_jax(self):
         """Test that stoch_pulse_grad is differentiable with JAX."""

@@ -15,9 +15,9 @@
 Unit tests for the CosineWindow template.
 """
 
-import numpy as np
-
 # pylint: disable=too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -37,14 +37,7 @@ def test_standard_validity():
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize(
-        "wires",
-        [
-            [0, 1],
-            [0, 1, 2, 3, 4],
-            ["a", "b", "c", "d", "e", "f"],
-        ],
-    )
+    @pytest.mark.parametrize("wires", [[0, 1], [0, 1, 2, 3, 4], ["a", "b", "c", "d", "e", "f"]])
     def test_decomposition_new(self, wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.CosineWindow(wires=wires)
@@ -52,15 +45,7 @@ class TestDecomposition:
         for rule in qp.list_decomps(qp.CosineWindow):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.parametrize(
-        "wires",
-        [
-            [0, 1],
-            [0, 1, 2],
-            [0, 1, 2, 3],
-            [0, 1, 2, 3, 4],
-        ],
-    )
+    @pytest.mark.parametrize("wires", [[0, 1], [0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, 4]])
     @pytest.mark.capture
     def test_decomposition_new_capture(self, wires):
         """Tests the decomposition rule implemented with the new system."""

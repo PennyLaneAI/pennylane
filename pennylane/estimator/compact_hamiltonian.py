@@ -337,11 +337,7 @@ class PauliHamiltonian:
         else:
             hashable_param = tuple(_sort_and_freeze(group) for group in self._pauli_terms)
 
-        hashable_params = (
-            self._num_qubits,
-            hashable_param,
-            self._one_norm,
-        )
+        hashable_params = (self._num_qubits, hashable_param, self._one_norm)
         return hash(hashable_params)
 
     @property

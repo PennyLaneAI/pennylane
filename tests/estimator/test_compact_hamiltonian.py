@@ -24,12 +24,7 @@ from pennylane.estimator import (
     VibrationalHamiltonian,
     VibronicHamiltonian,
 )
-from pennylane.estimator.compact_hamiltonian import (
-    _sort_and_freeze,
-    _validate_pauli_terms,
-)
-
-# pylint: disable=too-many-arguments
+from pennylane.estimator.compact_hamiltonian import _sort_and_freeze, _validate_pauli_terms
 
 
 class TestPauliHamiltonian:
@@ -202,9 +197,8 @@ class TestPauliHamiltonian:
         """Test the hash method works as expected"""
         ph1 = qre.PauliHamiltonian(**input_args)
         ph2 = qre.PauliHamiltonian(**input_args)
-        ph3 = qre.PauliHamiltonian(
-            num_qubits=5, pauli_terms={"X": 5}
-        )  # some other PauliHamiltonian
+        # some other PauliHamiltonian
+        ph3 = qre.PauliHamiltonian(num_qubits=5, pauli_terms={"X": 5})
 
         assert ph1 == ph2
         assert ph1 != ph3
@@ -235,14 +229,8 @@ class TestPauliHamiltonian:
     def test_hash_and_equality_dict(self):
         """Test that hash and equality are independant of
         the order of terms in the pauli_terms dictionary"""
-        ph1 = qre.PauliHamiltonian(
-            num_qubits=10,
-            pauli_terms={"XX": 5, "YY": 10, "Z": 1},
-        )
-        ph2 = qre.PauliHamiltonian(
-            num_qubits=10,
-            pauli_terms={"YY": 10, "Z": 1, "XX": 5},
-        )
+        ph1 = qre.PauliHamiltonian(num_qubits=10, pauli_terms={"XX": 5, "YY": 10, "Z": 1})
+        ph2 = qre.PauliHamiltonian(num_qubits=10, pauli_terms={"YY": 10, "Z": 1, "XX": 5})
 
         assert ph1 == ph2
         assert hash(ph1) == hash(ph2)
@@ -315,21 +303,9 @@ def test_validate_pauli_terms(pauli_terms, error_type, error_message):
 
 def test_sort_and_freeze():
     """Test the private sort and freeze function behaves as expected"""
-    pauli_terms = {
-        "XX": 30,
-        "ZZ": 76,
-        "X": 10,
-        "YXY": 105,
-        "YY": 15,
-    }
+    pauli_terms = {"XX": 30, "ZZ": 76, "X": 10, "YXY": 105, "YY": 15}
 
-    expected_result = (
-        ("X", 10),
-        ("XX", 30),
-        ("YXY", 105),
-        ("YY", 15),
-        ("ZZ", 76),
-    )
+    expected_result = (("X", 10), ("XX", 30), ("YXY", 105), ("YY", 15), ("ZZ", 76))
     assert _sort_and_freeze(pauli_terms) == expected_result
 
 

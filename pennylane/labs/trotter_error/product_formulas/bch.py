@@ -193,10 +193,7 @@ def _bch_symbols(
     head = SymbolNode("Head")
     tail = SymbolNode("Tail")
 
-    terms = {
-        head: {symbols[0]: 1.0},
-        tail: _bch_symbols(symbols[1:], max_order, symmetric),
-    }
+    terms = {head: {symbols[0]: 1.0}, tail: _bch_symbols(symbols[1:], max_order, symmetric)}
 
     bch_ht = _bch(head, tail, max_order, symmetric)
     bch_final = defaultdict(float)

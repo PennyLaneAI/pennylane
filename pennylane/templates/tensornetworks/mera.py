@@ -15,8 +15,6 @@
 Contains the MERA template.
 """
 
-# pylint: disable=too-many-arguments
-
 import warnings
 from collections.abc import Callable
 

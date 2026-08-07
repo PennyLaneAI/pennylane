@@ -21,12 +21,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError, TransformError
-from pennylane.measurements import (
-    CountsMP,
-    ExpectationMP,
-    ProbabilityMP,
-    SampleMP,
-)
+from pennylane.measurements import CountsMP, ExpectationMP, ProbabilityMP, SampleMP
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.transforms import dynamic_one_shot
 from pennylane.transforms.dynamic_one_shot import (
@@ -36,8 +31,6 @@ from pennylane.transforms.dynamic_one_shot import (
     get_legacy_capabilities,
     parse_native_mid_circuit_measurements,
 )
-
-# pylint: disable=too-few-public-methods, too-many-arguments
 
 
 def test_pass_name():
@@ -123,7 +116,7 @@ def test_postselect_mode():
 def test_hw_like_with_jax(use_jit, diff_method, seed):
     """Test that invalid shots are replaced with INTEGER_MIN_VAL if
     postselect_mode="hw-like" with JAX"""
-    import jax  # pylint: disable=import-outside-toplevel
+    import jax
 
     shots = 10
     dev = qp.device("default.qubit", seed=jax.random.PRNGKey(seed))
@@ -309,12 +302,13 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
     return (raw_results,)
 
 
-# pylint: disable=too-many-arguments, import-outside-toplevel
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "numpy", None])
 @pytest.mark.parametrize("use_interface_for_results", [True, False])
 class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
+
+    # pylint: disable=too-many-arguments
 
     @pytest.mark.parametrize("measure_f", (qp.expval, qp.probs, qp.sample, qp.var))
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])

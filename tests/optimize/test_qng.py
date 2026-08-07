@@ -14,6 +14,7 @@
 """Tests for the QNG optimizer"""
 
 # pylint: disable=too-few-public-methods
+
 import pytest
 import scipy as sp
 

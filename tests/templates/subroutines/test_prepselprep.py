@@ -15,7 +15,8 @@
 Tests for the PrepSelPrep template.
 """
 
-# pylint: disable=protected-access,import-outside-toplevel
+# pylint: disable=protected-access
+
 import copy
 
 import numpy as np
@@ -190,10 +191,7 @@ class TestPrepSelPrep:
         assert qp.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     lcu1 = qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
-    ops1 = [
-        qp.Z(2) @ qp.GlobalPhase(0, [2]),
-        qp.prod(qp.X(1) @ qp.X(2), qp.GlobalPhase(0, [1, 2])),
-    ]
+    ops1 = [qp.Z(2) @ qp.GlobalPhase(0, [2]), qp.prod(qp.X(1) @ qp.X(2), qp.GlobalPhase(0, [1, 2]))]
     coeffs1 = lcu1.terms()[0]
 
     @pytest.mark.parametrize(

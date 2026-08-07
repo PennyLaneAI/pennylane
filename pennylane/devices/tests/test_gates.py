@@ -16,10 +16,7 @@ Tests that application of gates and state preparations
 works correctly an a device.
 """
 
-# pylint: disable=no-self-use
-# pylint: disable=too-many-arguments
-
-# pylint: disable=unnecessary-lambda-assignment
+# pylint: disable=too-many-arguments,unnecessary-lambda-assignment
 
 from cmath import exp
 from math import cos, sin, sqrt
@@ -294,12 +291,7 @@ single_qubit = [
 
 # list of all parametrized single-qubit gates
 # taking a single parameter
-single_qubit_param = [
-    (qp.PhaseShift, phase_shift),
-    (qp.RX, rx),
-    (qp.RY, ry),
-    (qp.RZ, rz),
-]
+single_qubit_param = [(qp.PhaseShift, phase_shift), (qp.RX, rx), (qp.RY, ry), (qp.RZ, rz)]
 # list of all non-parametrized two-qubit gates
 two_qubit = [
     (qp.CNOT, CNOT),
@@ -351,8 +343,7 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 # ===============================================================
 
 
-# pylint: disable=too-few-public-methods
-class TestSupportedGates:
+class TestSupportedGates:  # pylint: disable=too-few-public-methods
     """Test that the device can implement all gates that it claims to support."""
 
     @pytest.mark.parametrize("operation", all_ops)

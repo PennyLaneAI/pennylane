@@ -22,10 +22,7 @@ from pennylane.data.attributes.json import DatasetJSON
 pytestmark = pytest.mark.data
 
 
-@pytest.mark.parametrize(
-    "value",
-    ["string", 1, {"one": "two"}, None, [1, "two"]],
-)
+@pytest.mark.parametrize("value", ["string", 1, {"one": "two"}, None, [1, "two"]])
 class TestDatasetJSON:
     def test_value_init(self, value):
         """Test that DatasetJSON is correctly value-initialized."""

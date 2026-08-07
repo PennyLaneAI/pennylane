@@ -15,6 +15,8 @@
 This submodule tests the base classes for resource operators.
 """
 
+# pylint: disable=protected-access,unused-argument,comparison-with-itself
+
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
@@ -27,8 +29,6 @@ import pennylane.estimator.ops as qre_ops
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
-
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
 
 class DummyX(ResourceOperator):
@@ -69,13 +69,7 @@ class TestCompressedResourceOp:
         ("X", DummyX, 1, {"num_wires": 1}, "X"),
     )
 
-    compressed_op_names = (
-        "DummyX",
-        "DummyQFT",
-        "DummyQSVT",
-        "DummyTrotterProduct",
-        "X",
-    )
+    compressed_op_names = ("DummyX", "DummyQFT", "DummyQSVT", "DummyTrotterProduct", "X")
 
     @pytest.mark.parametrize(
         "name, op_type, num_wires, parameters, name_param", compressed_ops_and_params_lst
@@ -333,6 +327,7 @@ class DummyOp_decomps(ResourceOperator):
         return [GateCount(rx, max_register_size)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -343,7 +338,7 @@ class DummyOp_decomps(ResourceOperator):
         return [GateCount(cnot, max_register_size), GateCount(rx, max_register_size)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params):
+    def adjoint_resource_decomp(cls, target_resource_params):  # pylint: disable=signature-differs
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
         """
@@ -353,6 +348,7 @@ class DummyOp_decomps(ResourceOperator):
         return [GateCount(rx, max_register_size), GateCount(h, 2 * max_register_size)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z, target_resource_params):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -396,7 +392,7 @@ class TestResourceOperator:
 
     def test_equality_false(self):
         """Test that the __eq__ method returns False if the input operator is not ResourceOperator."""
-        assert not qre_ops.X() == qp.X(0)
+        assert qre_ops.X() != qp.X(0)
 
     ops_to_queue = [
         Hadamard(wires=[0]),
@@ -418,11 +414,7 @@ class TestResourceOperator:
 
     def test_dequeue(self):
         """Test that we can remove a resource operator correctly."""
-        ops_to_remove = (
-            self.ops_to_queue[0],
-            [self.ops_to_queue[2]],
-            self.ops_to_queue[0:3],
-        )
+        ops_to_remove = (self.ops_to_queue[0], [self.ops_to_queue[2]], self.ops_to_queue[0:3])
 
         expected_queues = (
             self.ops_to_queue[1:],
@@ -465,13 +457,7 @@ class TestResourceOperator:
         op2 = CNOT()
         resources = op1.add_series(op2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
@@ -482,13 +468,7 @@ class TestResourceOperator:
         res2 = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_series(res2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=2, gate_types=gt)
         assert resources == expected_resources
 
@@ -504,13 +484,7 @@ class TestResourceOperator:
         op2 = CNOT()
         resources = op1.add_parallel(op2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
@@ -521,13 +495,7 @@ class TestResourceOperator:
         res2 = Resources(zeroed_wires=0, any_state_wires=0, algo_wires=2, gate_types=gt2)
         resources = op1.add_parallel(res2)
 
-        gt = defaultdict(
-            int,
-            {
-                DummyCmprsRep("RX", 1.23): 1,
-                DummyCmprsRep("CNOT", None): 1,
-            },
-        )
+        gt = defaultdict(int, {DummyCmprsRep("RX", 1.23): 1, DummyCmprsRep("CNOT", None): 1})
         expected_resources = Resources(zeroed_wires=0, algo_wires=3, gate_types=gt)
         assert resources == expected_resources
 
@@ -552,7 +520,7 @@ class TestResourceOperator:
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
         op1 = X
-        assert op1.resource_keys == set()  # pylint: disable=comparison-with-callable
+        assert op1.resource_keys == set()
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""

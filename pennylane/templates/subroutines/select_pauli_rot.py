@@ -15,6 +15,8 @@ r"""
 Contains the SelectPauliRot template.
 """
 
+# pylint: disable=protected-access
+
 from pennylane import math
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
@@ -100,9 +102,7 @@ class SelectPauliRot(Operation):
 
     resource_keys = {"num_wires", "rot_axis"}
 
-    def __init__(
-        self, angles, control_wires, target_wire, rot_axis="Z"
-    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(self, angles, control_wires, target_wire, rot_axis="Z"):
 
         self.hyperparameters["control_wires"] = Wires(control_wires)
         self.hyperparameters["target_wire"] = Wires(target_wire)
@@ -146,8 +146,8 @@ class SelectPauliRot(Operation):
             rot_axis=self.hyperparameters["rot_axis"],
         )
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, angles, control_wires, target_wire, **kwargs):
         wires = [*control_wires, target_wire]
         return super()._primitive_bind_call(angles, wires=wires, **kwargs)
@@ -156,8 +156,8 @@ class SelectPauliRot(Operation):
         """Return the operator's decomposition using its parameters and hyperparameters."""
         return self.compute_decomposition(self.parameters[0], **self.hyperparameters)
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(angles, control_wires, target_wire, rot_axis):
         r"""
         Computes the decomposition operations for the given state vector.
@@ -235,7 +235,6 @@ def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
 
-# pylint: disable=protected-access
 if SelectPauliRot._primitive is not None:
 
     @SelectPauliRot._primitive.def_impl

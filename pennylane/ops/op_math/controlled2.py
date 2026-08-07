@@ -14,6 +14,8 @@
 
 """Defines the base class for controlled operators."""
 
+# pylint: disable=unused-argument,protected-access,no-value-for-parameter
+
 from collections.abc import Sequence
 from inspect import signature
 from textwrap import dedent
@@ -47,8 +49,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
-
-# pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
@@ -124,7 +124,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         return obj
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         base: Operator,
         control_wires: WiresLike,
@@ -183,7 +183,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         super().__init__(**self._init_args)
 
     @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+    def __abstract_init__(  # pylint: disable=arguments-differ
         self,
         base: Operator,
         control_wires: WiresLike | AbstractWires,
@@ -319,7 +319,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_matrix(base, control_wires, control_values, **_):
         base_matrix = base.matrix()
         interface = math.get_interface(base_matrix)
@@ -350,7 +350,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
         target_matrix = _get_sparse_matrix(base)
 
@@ -367,8 +367,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
-    def compute_eigvals(base, control_wires, **_):
+    def compute_eigvals(base, control_wires, **_):  # pylint: disable=arguments-differ
         base_eigvals = base.eigvals()
         num_target_wires = len(base.wires)
         num_control_wires = len(control_wires)
@@ -378,8 +377,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=invalid-overridden-method,arguments-differ
         return self.base.has_adjoint
 
     @override
@@ -408,20 +406,17 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=invalid-overridden-method,arguments-differ
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
-    def compute_diagonalizing_gates(base, **_):
+    def compute_diagonalizing_gates(base, **_):  # pylint: disable=arguments-differ
         return base.diagonalizing_gates()
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=invalid-overridden-method,arguments-differ
         return self.base.has_generator
 
     @override
@@ -486,7 +481,7 @@ def _bool_array_to_int(arr: list[bool]):
 # There are a couple of reasons for defining this as a distinct subclass of Controlled2 instead
 # of having just a single Controlled2 class that serve both as a base class interface and a
 # concrete operator type. See the PR description of #9647 for more details.
-class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
+class ControlledOp2(Controlled2):
     """Represents a controlled version of an arbitrary base operator.
 
     Args:
@@ -519,7 +514,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
     # overridden with a different signature, we must override __init__ so that the signature
     # of the __init__ is correctly retrieved as the signature of the operator subclass.
-    def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
+    def __init__(
         self,
         base: Operator,
         control_wires: WiresLike,
@@ -557,7 +552,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             return
 
         if self.base.tracer is None:
-            # pylint: disable=protected-access
             self.base._bind_primitive()
             # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
             # In that case, there is nothing to do, so return early.
@@ -660,7 +654,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
         _x_flips()
         qp.ctrl(
-            base_rule._impl,  # pylint: disable=protected-access
+            base_rule._impl,
             control=control_wires,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
@@ -745,7 +739,6 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -799,7 +792,6 @@ def _ctrl_single_work_wire_resource(
     }
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""

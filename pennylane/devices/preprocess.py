@@ -15,7 +15,7 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 
-# pylint: disable=protected-access, too-many-arguments
+# pylint: disable=protected-access,too-many-arguments
 
 import os
 import warnings
@@ -34,15 +34,9 @@ from pennylane.exceptions import (
     WireError,
 )
 from pennylane.math import is_abstract, requires_grad
-from pennylane.measurements import (
-    counts,
-    sample,
-)
+from pennylane.measurements import counts, sample
 from pennylane.ops import Snapshot
-from pennylane.transforms import (
-    diagonalize_measurements,
-    resolve_dynamic_wires,
-)
+from pennylane.transforms import diagonalize_measurements, resolve_dynamic_wires
 from pennylane.transforms.core import transform
 from pennylane.transforms.decompose import (
     _construct_and_solve_decomp_graph,
@@ -161,7 +155,7 @@ def validate_device_wires(
                     new_ops = list(tape.operations)
                 modified = True
                 new_mp = copy(mp)
-                new_mp._wires = wires  # pylint:disable=protected-access
+                new_mp._wires = wires
                 new_ops[i] = Snapshot(
                     measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
                 )
@@ -173,7 +167,7 @@ def validate_device_wires(
         if not mp.obs and not mp.wires:
             modified = True
             new_mp = copy(mp)
-            new_mp._wires = wires  # pylint:disable=protected-access
+            new_mp._wires = wires
             measurements[m_idx] = new_mp
     if modified:
         tape = tape.copy(ops=new_ops, measurements=measurements)
@@ -266,7 +260,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(  # pylint: disable = too-many-positional-arguments
+def decompose(
     tape: QuantumScript,
     stopping_condition: Callable[[Operator], bool],
     stopping_condition_shots: Callable[[Operator], bool] | None = None,
@@ -755,9 +749,8 @@ def _get_diagonalized_tape_and_wires(tape):
 
     measured_wires = set()
     for m in diagonalized_tape.measurements:
-        measured_wires.update(
-            m.wires.tolist()
-        )  # ToDo: add test confirming that the wire order can be weird and this still works
+        # ToDo: add test confirming that the wire order can be weird and this still works
+        measured_wires.update(m.wires.tolist())
     measured_wires = list(measured_wires)
 
     return diagonalized_tape, measured_wires

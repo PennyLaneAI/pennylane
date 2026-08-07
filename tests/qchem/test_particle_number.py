@@ -62,10 +62,7 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     assert isinstance(n, qp.ops.Sum)
 
     wire_order = n_ref.wires
-    assert np.allclose(
-        qp.matrix(n, wire_order=wire_order),
-        qp.matrix(n_ref, wire_order=wire_order),
-    )
+    assert np.allclose(qp.matrix(n, wire_order=wire_order), qp.matrix(n_ref, wire_order=wire_order))
 
 
 @pytest.mark.parametrize(

@@ -82,43 +82,43 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
 
 
 @single_qubit_zyz_angles.register
-def _(op: Hadamard):  # pylint: disable=unused-argument
+def _(op: Hadamard):
     # H = RZ(0) RY(\pi/2) RZ(\pi)
     return (np.pi, np.pi / 2, 0.0, np.pi / 2)
 
 
 @single_qubit_zyz_angles.register
-def _(op: PauliX):  # pylint: disable=unused-argument
+def _(op: PauliX):
     # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
     return (np.pi / 2, np.pi, -np.pi / 2, np.pi / 2)
 
 
 @single_qubit_zyz_angles.register
-def _(op: PauliY):  # pylint: disable=unused-argument
+def _(op: PauliY):
     # Y = RZ(0) RY(\pi) RZ(0)
     return (0.0, np.pi, 0.0, np.pi / 2)
 
 
 @single_qubit_zyz_angles.register
-def _(op: PauliZ):  # pylint: disable=unused-argument
+def _(op: PauliZ):
     # Z = RZ(0) RY(0) RZ(\pi)
     return (np.pi, 0.0, 0.0, np.pi / 2)
 
 
 @single_qubit_zyz_angles.register
-def _(op: S):  # pylint: disable=unused-argument
+def _(op: S):
     # S = RZ(0) RY(0) RZ(\pi/2)
     return (np.pi / 2, 0.0, 0.0, np.pi / 4)
 
 
 @single_qubit_zyz_angles.register
-def _(op: T):  # pylint: disable=unused-argument
+def _(op: T):
     # T = RZ(0) RY(0) RZ(\pi/4)
     return (np.pi / 4, 0.0, 0.0, np.pi / 8)
 
 
 @single_qubit_zyz_angles.register
-def _(op: SX):  # pylint: disable=unused-argument
+def _(op: SX):
     # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
     return (np.pi / 2, np.pi / 2, -np.pi / 2, np.pi / 4)
 

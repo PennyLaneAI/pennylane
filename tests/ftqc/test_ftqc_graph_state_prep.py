@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
 import networkx as nx
@@ -202,13 +201,7 @@ class TestGraphStatePrep:
         queue = GraphStatePrep.compute_decomposition(wires=range(len(wires)), graph=q)
         assert len(queue) == expected
 
-    @pytest.mark.parametrize(
-        "one_qubit_ops, two_qubit_ops",
-        [
-            (qp.H, qp.CZ),
-            (qp.X, qp.CNOT),
-        ],
-    )
+    @pytest.mark.parametrize("one_qubit_ops, two_qubit_ops", [(qp.H, qp.CZ), (qp.X, qp.CNOT)])
     def test_decompose(self, one_qubit_ops, two_qubit_ops):
         """Test the decomposition method of the GraphStatePrep class."""
         lattice = generate_lattice([2, 2, 2], "cubic")
@@ -251,13 +244,7 @@ class TestGraphStatePrep:
         for idx, op in enumerate(queue[: len(wires)]):
             assert op.wires[0] == wires[idx]
 
-    @pytest.mark.parametrize(
-        "one_qubit_ops, two_qubit_ops",
-        [
-            (qp.H, qp.CZ),
-            (qp.X, qp.CNOT),
-        ],
-    )
+    @pytest.mark.parametrize("one_qubit_ops, two_qubit_ops", [(qp.H, qp.CZ), (qp.X, qp.CNOT)])
     def test_wires_graph_mismatch(self, one_qubit_ops, two_qubit_ops):
         """Test for wire-graph label mismatches."""
         wires = [0, 1, 2, 3]

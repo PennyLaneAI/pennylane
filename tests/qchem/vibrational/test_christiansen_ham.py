@@ -91,13 +91,7 @@ with h5py.File(cform_file, "r") as f:
     D3 = f["D3"][()]
 
 
-@pytest.mark.parametrize(
-    "ordered",
-    [
-        True,
-        False,
-    ],
-)
+@pytest.mark.parametrize("ordered", [True, False])
 def test_christiansen_bosonic(ordered):
     """Test that christiansen_bosonic produces the correct bosonic operator."""
     christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3, ordered=ordered)

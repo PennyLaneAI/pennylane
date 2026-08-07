@@ -21,9 +21,9 @@ import pennylane as qp
 from pennylane import numpy as np
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     def acquaintances(index, *_, use_CNOT=True, **__):
         return qp.CNOT(index) if use_CNOT else qp.CZ(index)
@@ -52,9 +52,10 @@ def test_flatten_unflatten():
     assert new_op is not op
 
 
-# pylint: disable=too-many-arguments
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
+
+    # pylint: disable=too-many-arguments
 
     @pytest.mark.parametrize(
         ("wires", "acquaintances", "weights", "fermionic", "shift"),
@@ -252,6 +253,7 @@ class TestInputs:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_ccl2_exceptions(self, wires, acquaintances, weights, fermionic, shift, msg_match):
         """Test that TwoLocalSwapNetwork throws an exception if the parameters have illegal
         shapes, types or values."""
@@ -283,15 +285,7 @@ class TestInputs:
 class TestAttributes:
     """Test additional methods and attributes"""
 
-    @pytest.mark.parametrize(
-        "n_wires, expected_shape",
-        [
-            (2, (1,)),
-            (4, (6,)),
-            (5, (10,)),
-            (6, (15,)),
-        ],
-    )
+    @pytest.mark.parametrize("n_wires, expected_shape", [(2, (1)), (4, (6)), (5, (10)), (6, (15))])
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor."""
 
@@ -475,8 +469,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-# pylint: disable=too-few-public-methods
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Test that the parameter-shift rule for this template matches that of backprop."""
 
     def test_ps_rule_gradient(self, tol):

@@ -15,9 +15,9 @@
 Tests for the Fourier reconstruction transform.
 """
 
-from functools import reduce
+# pylint: disable=too-many-arguments,too-few-public-methods,consider-using-dict-items
 
-# pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
+from functools import reduce
 from inspect import signature
 from itertools import chain
 
@@ -294,14 +294,7 @@ class TestReconstructEqu:
         assert spy.call_count == num_frequency * 2 + 1
         assert fun_close(fun, rec)
 
-    all_scales = [
-        [1],
-        [0],
-        [1, 1],
-        [1, 2],
-        [1, 5],
-        [1, 2, 10],
-    ]
+    all_scales = [[1], [0], [1, 1], [1, 2], [1, 5], [1, 2, 10]]
 
     @pytest.mark.parametrize("scales", all_scales)
     def test_with_qnode(self, scales, mocker):
@@ -503,13 +496,7 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(fun, rec)
 
-    all_scales = [
-        [1.3],
-        [1.02, 1.59],
-        [0.08, 20.2],
-        [1.2, 5.0001],
-        [1.0, 2.0, 3.0],
-    ]
+    all_scales = [[1.3], [1.02, 1.59], [0.08, 20.2], [1.2, 5.0001], [1.0, 2.0, 3.0]]
 
     @pytest.mark.parametrize("scales", all_scales)
     def test_with_qnode(self, scales, mocker):
@@ -686,13 +673,7 @@ class TestPrepareJobs:
     def test_with_nums_frequency(self, ids, nums_frequency, tol):
         """Test the prepared jobs when using nums_frequency."""
 
-        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
-            ids,
-            nums_frequency,
-            None,
-            None,
-            atol=tol,
-        )
+        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, None, None, atol=tol)
 
         # Check ids
         if ids is None:
@@ -749,8 +730,7 @@ def qnode_3(X, Y):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
-# pylint: disable=unused-argument
-def qnode_4(x):
+def qnode_4(x):  # pylint: disable=unused-argument
     return qp.expval(qp.PauliX(0))
 
 
@@ -822,11 +802,12 @@ test_cases_qnodes = [
 ]
 
 
-# pylint: disable=cell-var-from-loop
 class TestReconstruct:
     """Tests the integration of ``_reconstruct_equ`` and ``_reconstruct_gen`` via
     the full ``reconstruct`` function as well as the differentiability of the
     reconstructed function with respect to their single scalar argument."""
+
+    # pylint: disable=cell-var-from-loop
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",

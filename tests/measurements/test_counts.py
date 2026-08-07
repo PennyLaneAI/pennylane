@@ -405,8 +405,8 @@ class TestProcessSamples:
             assert r == {"0": 2}
 
 
-class TestCountsIntegration:
-    # pylint:disable=too-many-public-methods,not-an-iterable
+class TestCountsIntegration:  # pylint: disable=too-many-public-methods
+    # pylint: disable=not-an-iterable
 
     def test_counts_all_outcomes_with_mcm(self):
         """Test that all outcomes are present in results if requested."""
@@ -485,11 +485,7 @@ class TestCountsIntegration:
         def circuit():
             qp.RX(0.54, wires=0)
 
-            return (
-                qp.counts(qp.PauliZ(0)),
-                qp.expval(qp.PauliX(1)),
-                qp.var(qp.PauliY(2)),
-            )
+            return (qp.counts(qp.PauliZ(0)), qp.expval(qp.PauliX(1)), qp.var(qp.PauliY(2)))
 
         result = circuit()
 
@@ -524,11 +520,7 @@ class TestCountsIntegration:
         @qp.set_shots(n_sample)
         @qp.qnode(dev)
         def circuit():
-            return (
-                qp.counts(qp.PauliZ(0)),
-                qp.counts(qp.PauliZ(1)),
-                qp.counts(qp.PauliZ(2)),
-            )
+            return (qp.counts(qp.PauliZ(0)), qp.counts(qp.PauliZ(1)), qp.counts(qp.PauliZ(2)))
 
         result = circuit()
 
@@ -623,9 +615,7 @@ class TestCountsIntegration:
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    def test_counts_binned(
-        self, shot_vec, interface, wires, basis_state
-    ):  # pylint:disable=too-many-arguments
+    def test_counts_binned(self, shot_vec, interface, wires, basis_state):
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
         dev = qp.device("default.qubit", wires=3)

@@ -73,7 +73,6 @@ Functions
 ---------
 """
 
-# pylint: disable=import-outside-toplevel
 import argparse
 import pathlib
 import subprocess
@@ -134,9 +133,10 @@ def test_device(
 
     """
     try:
-        import pytest  # pylint: disable=unused-import
-        import pytest_mock  # pylint: disable=unused-import
-        import flaky  # pylint: disable=unused-import
+        # pylint: disable=unused-import,import-outside-toplevel
+        import pytest
+        import pytest_mock
+        import flaky
     except ImportError as e:
         raise ImportError(
             "The device tests requires the following Python packages:"
@@ -214,7 +214,7 @@ def cli():
 
         $ pl-device-test --device default.qubit --shots 1234 --tb=short -x
     """
-    from .conftest import pytest_addoption
+    from .conftest import pytest_addoption  # pylint: disable=import-outside-toplevel
 
     parser = argparse.ArgumentParser(
         description="See below for available options and commands for working with the PennyLane device tests."

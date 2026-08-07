@@ -13,8 +13,6 @@
 # limitations under the License.
 """Integration tests for using the Autograd interface with shot vectors and with a QNode"""
 
-# pylint: disable=too-many-arguments
-
 import pytest
 
 import pennylane as qp
@@ -35,11 +33,7 @@ qubit_device_and_diff_method = [
     ["default.qubit", "spsa", spsa_kwargs],
 ]
 
-TOLS = {
-    "finite-diff": 0.3,
-    "parameter-shift": 1e-2,
-    "spsa": 0.3,
-}
+TOLS = {"finite-diff": 0.3, "parameter-shift": 1e-2, "spsa": 0.3}
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)

@@ -25,8 +25,6 @@ from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import finite_diff
 
-# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
-
 h_val = 0.1
 
 default_shot_vector = (1000, 2000, 3000)
@@ -421,7 +419,6 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
-        # pylint: disable=too-few-public-methods
         class SpecialObservable(qp.operation.Operator):
             """SpecialObservable"""
 
@@ -429,7 +426,6 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 
@@ -437,9 +433,8 @@ class TestFiniteDiff:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.array(arr)
 
             def __init__(self, *args, **kwargs):
@@ -1103,12 +1098,7 @@ probs = qp.probs(wires=[1, 0])
 var_involutory = qp.var(proj)
 var_non_involutory = qp.var(hermitian)
 
-single_scalar_output_measurements = [
-    expval,
-    probs,
-    var_involutory,
-    var_non_involutory,
-]
+single_scalar_output_measurements = [expval, probs, var_involutory, var_non_involutory]
 
 single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
 
@@ -1135,9 +1125,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -1162,9 +1151,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wire]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            qp.RY(x, wires=[op_wire])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))
@@ -1200,12 +1188,10 @@ class TestReturn:
         y = 0.213
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
-            qp.RY(
-                y, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(y, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -1232,17 +1218,15 @@ class TestReturn:
 
         with qp.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
-                qp.RY(
-                    params[idx], wires=[w]
-                )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                qp.RY(params[idx], wires=[w])
 
             # The following asserts that there actually is a w defined, or raises an
             # error if op_wires was empty
             w = op_wires[-1]
             # Extra op - 5 measurements in total
-            qp.RY(
-                params[5], wires=[w]
-            )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+            # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+            qp.RY(params[5], wires=[w])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))

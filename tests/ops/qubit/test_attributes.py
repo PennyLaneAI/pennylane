@@ -84,13 +84,7 @@ class TestAttribute:
         assert len(new_attribute) == 8
 
 
-single_scalar_single_wire_ops = [
-    "RX",
-    "RY",
-    "RZ",
-    "PhaseShift",
-    "U1",
-]
+single_scalar_single_wire_ops = ["RX", "RY", "RZ", "PhaseShift", "U1"]
 
 single_scalar_multi_wire_ops = [
     "ControlledPhaseShift",
@@ -111,18 +105,11 @@ single_scalar_multi_wire_ops = [
     "FermionicSWAP",
 ]
 
-two_scalar_single_wire_ops = [
-    "U2",
-]
+two_scalar_single_wire_ops = ["U2"]
 
-three_scalar_single_wire_ops = [
-    "Rot",
-    "U3",
-]
+three_scalar_single_wire_ops = ["Rot", "U3"]
 
-three_scalar_multi_wire_ops = [
-    "CRot",
-]
+three_scalar_multi_wire_ops = ["CRot"]
 
 # When adding an operation to the following list, you
 # actually need to write a new test!
@@ -471,7 +458,7 @@ class TestSupportsBroadcasting:
         assert np.allclose(mat2, expected_mat)
 
 
-all_qubit_operators = sorted(qp.ops.qubit.__all__)  # pylint: disable=no-member
+all_qubit_operators = sorted(qp.ops.qubit.__all__)
 unitarily_generated_ops = sorted(list(has_unitary_generator))
 
 

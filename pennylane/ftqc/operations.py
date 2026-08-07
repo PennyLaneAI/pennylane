@@ -60,7 +60,6 @@ class RotXZX(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    # pylint: disable = too-many-arguments, too-many-positional-arguments
     def __init__(self, phi, theta, omega, wires):
         super().__init__(phi, theta, omega, wires=wires)
 
@@ -93,11 +92,7 @@ class RotXZX(Operation):
         [RX(1.2, wires=[0]), RZ(2.3, wires=[0]), RX(3.4, wires=[0])]
 
         """
-        decomp_ops = [
-            RX(phi, wires=wires),
-            RZ(theta, wires=wires),
-            RX(omega, wires=wires),
-        ]
+        decomp_ops = [RX(phi, wires=wires), RZ(theta, wires=wires), RX(omega, wires=wires)]
         return decomp_ops
 
     def adjoint(self):

@@ -21,9 +21,7 @@ from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess, StateMeasurement
-from pennylane.measurements import (
-    ExpectationMP,
-)
+from pennylane.measurements import ExpectationMP
 from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
@@ -161,8 +159,7 @@ def sum_of_terms_method(
     )
 
 
-# pylint: disable=too-many-return-statements,too-many-branches
-def get_measurement_function(
+def get_measurement_function(  # pylint: disable=too-many-return-statements,too-many-branches
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.

@@ -280,7 +280,6 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
     """
 
-    # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
@@ -312,12 +311,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)
-def _sos_state_prep(
-    coefficients,
-    *_,
-    indices=None,
-    **all_wires,
-):  # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
+def _sos_state_prep(coefficients, *_, indices=None, **all_wires):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     n = len(all_wires["wires"])
     num_entries = len(indices)

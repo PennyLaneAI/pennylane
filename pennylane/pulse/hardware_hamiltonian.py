@@ -311,7 +311,6 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     """
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         coeffs,
@@ -472,8 +471,7 @@ def amplitude_and_phase(trig_fn, amp, phase, hz_to_rads=2 * np.pi):
     return AmplitudeAndPhase(trig_fn, amp, phase, hz_to_rads=hz_to_rads)
 
 
-# pylint:disable = too-few-public-methods
-class AmplitudeAndPhase:
+class AmplitudeAndPhase:  # pylint: disable=too-few-public-methods
     """Class storing combined amplitude and phase callable if either or both
     of amplitude or phase are callable."""
 

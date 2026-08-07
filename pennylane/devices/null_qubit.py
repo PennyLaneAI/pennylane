@@ -110,13 +110,7 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
-def _(
-    mp: StateMP | ProbabilityMP,
-    num_device_wires: int,
-    shots: int | None,
-    batch_size,
-    interface,
-):
+def _(mp: StateMP | ProbabilityMP, num_device_wires: int, shots: int | None, batch_size, interface):
     num_wires = len(mp.wires) or num_device_wires
     state = [1.0] + [0.0] * (2**num_wires - 1)
     if batch_size is not None:
@@ -232,8 +226,7 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
@@ -307,10 +300,10 @@ class NullQubit(Device):
         """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return execution_config
 
-    # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
     ) -> tuple[CompilePipeline, ExecutionConfig]:
+        # pylint: disable=cell-var-from-loop
         if execution_config is None:
             execution_config = ExecutionConfig()
 

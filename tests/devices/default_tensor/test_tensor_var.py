@@ -15,6 +15,8 @@
 Tests for the variance calculation on the DefaultTensor device.
 """
 
+# pylint: disable=too-many-arguments,redefined-outer-name
+
 import numpy as np
 import pytest
 
@@ -28,8 +30,6 @@ VARPHI = np.linspace(0.02, 1, 3)
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
-
-# pylint: disable=too-many-arguments, redefined-outer-name
 
 
 @pytest.fixture(
@@ -290,10 +290,7 @@ class TestOperatorArithmetic:
     def test_integration(self, phi, dev):
         """Test a Combination of `Sum`, `SProd`, and `Prod`."""
 
-        obs = qp.sum(
-            qp.s_prod(2.3, qp.PauliZ(0)),
-            -0.5 * qp.prod(qp.PauliY(0), qp.PauliZ(1)),
-        )
+        obs = qp.sum(qp.s_prod(2.3, qp.PauliZ(0)), -0.5 * qp.prod(qp.PauliY(0), qp.PauliZ(1)))
 
         tape = qp.tape.QuantumScript(
             [qp.RX(phi, wires=[0]), qp.RX(-1.1 * phi, wires=[0])],

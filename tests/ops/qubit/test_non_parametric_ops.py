@@ -15,7 +15,6 @@
 Unit tests for the available non-parametric qubit operations
 """
 
-# pylint: disable=too-few-public-methods
 import copy
 import itertools
 
@@ -618,10 +617,7 @@ class TestMultiControlledX:
 
     def test_str_control_values_error(self):
         """Tests that control_values specified with a bit string is deprecated."""
-        with pytest.raises(
-            ValueError,
-            match="control_values must be boolean or int",
-        ):
+        with pytest.raises(ValueError, match="control_values must be boolean or int"):
             _ = qp.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
     @pytest.mark.parametrize(
@@ -1096,7 +1092,7 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 
-class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
+class TestSpecialPowDecomps:
     """Tests special decomposition rules for Pow of operators."""
 
     @pytest.mark.parametrize("batched", [True, False])
@@ -1282,7 +1278,6 @@ op_pauli_rep = (
 
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
-    # pylint: disable=protected-access
     assert op.pauli_rep == rep
 
 
@@ -1336,7 +1331,7 @@ class TestPauliRep:
     )
     def test_lazy_implementation(self, op, _):
         """Checks if the ._pauli_rep attribute is only computed when needed."""
-        # pylint: disable=unused-variable, protected-access
+        # pylint: disable=unused-variable,protected-access
         assert op._pauli_rep is None
         pauli_rep = op.pauli_rep
         assert op._pauli_rep is not None

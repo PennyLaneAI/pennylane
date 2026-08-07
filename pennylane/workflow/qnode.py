@@ -121,10 +121,7 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
     return pytrees.unflatten(results, qfunc_output_structure)
 
 
-def _validate_mcm_config(
-    postselect_mode: str | None,
-    mcm_method: str | None,
-) -> None:
+def _validate_mcm_config(postselect_mode: str | None, mcm_method: str | None) -> None:
     qp.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
@@ -186,8 +183,7 @@ def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transf
     )
 
 
-# pylint: disable=too-many-instance-attributes
-class QNode:
+class QNode:  # pylint: disable=too-many-instance-attributes
     r"""Represents a quantum node in the hybrid computational graph.
 
     A *quantum node* contains a `quantum function <https://docs.pennylane.ai/en/stable/introduction/circuits.html#intro-vcirc-qfunc>`__
@@ -501,8 +497,7 @@ class QNode:
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
@@ -725,7 +720,6 @@ class QNode:
         if self._shots_override_device:
             updated_qn._shots_override_device = True
 
-        # pylint: disable=protected-access
         updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
         return updated_qn
 
@@ -828,10 +822,10 @@ qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 
 
-# pylint: disable=protected-access
 @Transform.generic_register
 def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
+    # pylint: disable=protected-access
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)

@@ -15,9 +15,9 @@
 Unit tests for the SimplifiedTwoDesign template.
 """
 
-import numpy as np
+# pylint: disable=too-few-public-methods
 
-# pylint: disable=too-many-arguments,too-few-public-methods
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -41,7 +41,7 @@ def test_standard_validity():
 
 @pytest.mark.system
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-class TestCorrectness:  # pylint: disable=too-few-public-methods
+class TestCorrectness:
     """Tests the correctness of the template in a qnode."""
 
     @pytest.mark.parametrize(

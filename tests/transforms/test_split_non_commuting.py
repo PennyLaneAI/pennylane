@@ -25,26 +25,11 @@ from pennylane.transforms.split_non_commuting import ShotDistFunction
 
 # Two qubit-wise commuting groups: [[0, 3], [1, 2, 4]]
 # Four groups based on wire overlaps: [[0, 2], [1], [3], [4]]
-single_term_obs_list = [
-    qp.X(0),
-    qp.Y(0),
-    qp.Z(1),
-    qp.X(0) @ qp.Y(1),
-    qp.Y(0) @ qp.Z(1),
-    qp.I(0),
-]
+single_term_obs_list = [qp.X(0), qp.Y(0), qp.Z(1), qp.X(0) @ qp.Y(1), qp.Y(0) @ qp.Z(1), qp.I(0)]
 
-single_term_qwc_groups = [
-    [qp.X(0), qp.X(0) @ qp.Y(1)],
-    [qp.Y(0), qp.Z(1), qp.Y(0) @ qp.Z(1)],
-]
+single_term_qwc_groups = [[qp.X(0), qp.X(0) @ qp.Y(1)], [qp.Y(0), qp.Z(1), qp.Y(0) @ qp.Z(1)]]
 
-single_term_wires_groups = [
-    [qp.X(0), qp.Z(1)],
-    [qp.Y(0)],
-    [qp.X(0) @ qp.Y(1)],
-    [qp.Y(0) @ qp.Z(1)],
-]
+single_term_wires_groups = [[qp.X(0), qp.Z(1)], [qp.Y(0)], [qp.X(0) @ qp.Y(1)], [qp.Y(0) @ qp.Z(1)]]
 
 # contains the following observables: X(0), Y(0), Y(0) @ Z(1), X(1), Z(1), X(0) @ Y(1)
 # qwc groups: [[0, 5], [1, 3, 4], [2]]
@@ -57,14 +42,7 @@ complex_obs_list = [
     1.5 * qp.I(0),  # identity
 ]
 
-complex_no_grouping_obs = [
-    qp.X(0),
-    qp.Y(0),
-    qp.Y(0) @ qp.Z(1),
-    qp.X(1),
-    qp.Z(1),
-    qp.X(0) @ qp.Y(1),
-]
+complex_no_grouping_obs = [qp.X(0), qp.Y(0), qp.Y(0) @ qp.Z(1), qp.X(1), qp.Z(1), qp.X(0) @ qp.Y(1)]
 
 
 def complex_no_grouping_processing_fn(results):
@@ -194,7 +172,7 @@ class TestSplitNonCommuting:
     ):
         """Tests that precomputed grouping of a single Hamiltonian is used."""
 
-        H.grouping_indices = grouping_indices  # pylint: disable=protected-access
+        H.grouping_indices = grouping_indices
         initial_tape = qp.tape.QuantumScript([qp.X(0)], [qp.expval(H)], shots=100)
         tapes, fn = split_non_commuting(initial_tape)
         assert len(tapes) == len(grouping_indices)
@@ -359,9 +337,7 @@ class TestSplitNonCommuting:
             ),
         ],
     )
-    def test_grouping_strategies(
-        self, obs, groups, results, expected_result, grouping_strategy
-    ):  # pylint: disable=too-many-arguments
+    def test_grouping_strategies(self, obs, groups, results, expected_result, grouping_strategy):
         """Tests wire-based grouping and qwc grouping."""
 
         initial_tape = qp.tape.QuantumScript(
@@ -387,11 +363,7 @@ class TestSplitNonCommuting:
         )
         tapes, fn = split_non_commuting(initial_tape, grouping_strategy=grouping_strategy)
         assert len(tapes) == 1
-        assert tapes[0].measurements == [
-            qp.expval(qp.X(0)),
-            qp.expval(qp.Y(1)),
-            qp.expval(qp.Z(2)),
-        ]
+        assert tapes[0].measurements == [qp.expval(qp.X(0)), qp.expval(qp.Y(1)), qp.expval(qp.Z(2))]
         assert tapes[0].shots.total_shots == 100
         assert tapes[0].operations == [qp.X(0)]
         assert qp.math.allclose(fn([[0.1, 0.2, 0.3]]), [0.1, 0.2 + 0.3])
@@ -595,13 +567,7 @@ class TestQNodeIntegration:
 
     @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
     @pytest.mark.parametrize("shots", [None, 10, [10, 20, 30]])
-    @pytest.mark.parametrize(
-        "params",
-        [
-            [0.1, 0.2, 0.3],
-            [[0.1, 0.1], [0.2, 0.2], [0.3, 0.3]],
-        ],
-    )
+    @pytest.mark.parametrize("params", [[0.1, 0.2, 0.3], [[0.1, 0.1], [0.2, 0.2], [0.3, 0.3]]])
     def test_measurement_of_single_hamiltonian(self, grouping_strategy, shots, params):
         """Tests executing a QNode returning a single measurement of a Hamiltonian."""
 
@@ -627,13 +593,7 @@ class TestQNodeIntegration:
 
     @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
     @pytest.mark.parametrize("shots", [10, [10, 20, 30]])
-    @pytest.mark.parametrize(
-        "params",
-        [
-            [0.1, 0.2, 0.3],
-            [[0.1, 0.1], [0.2, 0.2], [0.3, 0.3]],
-        ],
-    )
+    @pytest.mark.parametrize("params", [[0.1, 0.2, 0.3], [[0.1, 0.1], [0.2, 0.2], [0.3, 0.3]]])
     def test_general_circuits(self, grouping_strategy, shots, params):
         """Tests executing a QNode with different grouping strategies on a typical circuit."""
 

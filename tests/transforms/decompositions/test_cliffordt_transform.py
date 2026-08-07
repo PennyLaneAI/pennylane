@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
-# pylint: disable=too-many-public-methods
-
 import math
 from functools import reduce
 
@@ -41,7 +39,6 @@ INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
 
 
-# pylint: disable=too-few-public-methods
 class CustomOneQubitOperation(qp.operation.Operation):
     num_wires = 1
 
@@ -50,7 +47,6 @@ class CustomOneQubitOperation(qp.operation.Operation):
         return qp.math.conj(qp.math.transpose(qp.S.compute_matrix()))
 
 
-# pylint: disable=too-few-public-methods
 class CustomTwoQubitOperation(qp.operation.Operation):
     num_wires = 2
 
@@ -307,10 +303,7 @@ class TestCliffordCompile:
         error = qp.math.sqrt(qp.math.real(qp.math.trace(qp.math.conj(diff).T @ diff)) / 2)
         assert error < epsilon
 
-    @pytest.mark.parametrize(
-        "op",
-        [CustomOneQubitOperation(wires=0)],
-    )
+    @pytest.mark.parametrize("op", [CustomOneQubitOperation(wires=0)])
     def test_zxz_rotation_decomposition(self, op):
         """Test single-qubit gates are decomposed correctly using ZXZ rotations"""
 
@@ -335,10 +328,7 @@ class TestCliffordCompile:
         )
         qp.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
-    @pytest.mark.parametrize(
-        "op",
-        [CustomTwoQubitOperation(wires=[0, 1])],
-    )
+    @pytest.mark.parametrize("op", [CustomTwoQubitOperation(wires=[0, 1])])
     def test_su4_rotation_decomposition(self, op):
         """Test two-qubit gates are decomposed correctly using SU(4) rotations"""
 
@@ -501,7 +491,7 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        class SomethingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class SomethingOp(qp.operation.Operation):
             pass
 
         tape = qp.tape.QuantumScript([SomethingOp(wires=[0, 1, 2])])
@@ -513,10 +503,7 @@ class TestCliffordCompile:
     def test_raise_with_rot_decomposition(self, op):
         """Test that exception is correctly raise when decomposing parametrized gates for which we already don't have a recipe"""
 
-        with pytest.raises(
-            ValueError,
-            match="qp.RX, qp.RY, qp.RZ, qp.Rot and qp.PhaseShift",
-        ):
+        with pytest.raises(ValueError, match="qp.RX, qp.RY, qp.RZ, qp.Rot and qp.PhaseShift"):
             _rot_decompose(op)
 
     def test_zero_global_phase(self):
@@ -544,7 +531,6 @@ class TestCliffordCompile:
         ):
             decomposed_qfunc()
 
-    # pylint: disable= import-outside-toplevel
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("method, kwargs", [("sk", {"max_depth": 3}), ("gridsynth", {})])
     def test_clifford_decompose_interfaces(self, method, kwargs):
@@ -629,9 +615,9 @@ class TestCliffordCompile:
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
+        # pylint: disable=protected-access
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
@@ -683,10 +669,10 @@ class TestCliffordCached:
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
     def test_cached_with_rtol(self):
         """Test that caches are correctly identified as compatible or
         incompatible with a relative threshold for epsilon."""
+        # pylint: disable=protected-access
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
@@ -710,7 +696,6 @@ class TestCliffordCached:
 class TestCatalyst:
     """Unit tests for catalyst integration."""
 
-    # pylint: disable=import-outside-toplevel
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
         """Test that the catalyst integration is working correctly."""

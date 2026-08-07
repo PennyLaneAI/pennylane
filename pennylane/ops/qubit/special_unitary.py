@@ -16,7 +16,8 @@ This submodule contains the operation SpecialUnitary and
 its utility functions.
 """
 
-# pylint: disable=arguments-differ, import-outside-toplevel
+# pylint: disable=arguments-differ,import-outside-toplevel
+
 from functools import lru_cache, reduce
 from itertools import product
 from typing import Literal
@@ -714,11 +715,7 @@ class TmpPauliRot(PauliRot):
     has_matrix = False
 
     @staticmethod
-    def compute_decomposition(
-        theta: TensorLike,
-        wires: WiresLike,
-        pauli_word: str,
-    ):
+    def compute_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.

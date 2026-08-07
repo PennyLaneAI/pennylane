@@ -59,13 +59,12 @@ class TestParametricMidMeasure:
         """Test that we can flatten and unflatten the ParametricMidMeasure"""
 
         op = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="XY")
-        data, metadata = op._flatten()  # pylint: disable = protected-access
+        data, metadata = op._flatten()  # pylint: disable=protected-access
 
         assert hash(metadata)  # metadata must be hashable
 
-        unflattened_op = ParametricMidMeasure._unflatten(  # pylint: disable = protected-access
-            data, metadata
-        )
+        # pylint: disable-next=protected-access
+        unflattened_op = ParametricMidMeasure._unflatten(data, metadata)
         assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.jax
@@ -241,11 +240,11 @@ class TestMidMeasureXAndY:
         """Test that we can flatten and unflatten the ParametricMidMeasure"""
 
         op = mp_class(Wires(0), meas_uid="m1")
-        data, metadata = op._flatten()  # pylint: disable = protected-access
+        data, metadata = op._flatten()  # pylint: disable=protected-access
 
         assert hash(metadata)  # metadata must be hashable
 
-        unflattened_op = mp_class._unflatten(data, metadata)  # pylint: disable = protected-access
+        unflattened_op = mp_class._unflatten(data, metadata)  # pylint: disable=protected-access
         assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.jax
@@ -374,9 +373,7 @@ class TestMeasureFunctions:
     @pytest.mark.parametrize("plane", ["XY", "YZ", "XZ"])
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
-    def test_measure_arbitrary_basis(  # pylint: disable=too-many-arguments, too-many-positional-arguments
-        self, wire, angle, plane, reset, postselect
-    ):
+    def test_measure_arbitrary_basis(self, wire, angle, plane, reset, postselect):
         """Test that measure_arbitrary_basis queues the expected ParametricMidMeasure
         and returns a linked MeasurementValue"""
 
@@ -494,7 +491,6 @@ class TestMeasureFunctions:
         assert mp.postselect == postselect
         assert isinstance(mp, MidMeasure)
 
-    # pylint: disable=too-many-positional-arguments, too-many-arguments
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, np.pi / 2, "XY")]
@@ -502,6 +498,7 @@ class TestMeasureFunctions:
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
+    # pylint: disable-next=too-many-arguments
     def test_x_and_y_with_program_capture(self, meas_func, angle, plane, wire, reset, postselect):
         """Test that the measure_ functions are captured as expected"""
         import jax
@@ -536,7 +533,7 @@ class TestMeasureFunctions:
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
     @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax"])
-    def test_arbitrary_basis_with_program_capture(
+    def test_arbitrary_basis_with_program_capture(  # pylint: disable=too-many-arguments
         self, angle, plane, wire, reset, postselect, angle_type
     ):
         """Test that the measure_ functions are captured as expected"""
@@ -930,7 +927,7 @@ class TestWorkflows:
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_diagonalize_mcms_returns_parametrized_mcms(
         self, mcm_method, shots, angle, angle_type, use_jit
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
         by the QNode"""
 

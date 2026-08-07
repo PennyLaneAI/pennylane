@@ -65,9 +65,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z):
         """Test the correctness of the OutAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -83,7 +82,6 @@ class TestOutAdder:
         if mod is None:
             mod = 2 ** len(output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)[0, :]))),
             (x + y + z) % mod,
@@ -142,9 +140,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
@@ -258,7 +255,6 @@ class TestOutAdder:
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )

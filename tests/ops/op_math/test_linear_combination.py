@@ -15,7 +15,8 @@
 Tests for the LinearCombination class.
 """
 
-# pylint: disable=too-many-public-methods, too-few-public-methods
+# pylint: disable=too-many-public-methods
+
 from collections.abc import Iterable
 from copy import copy
 
@@ -353,11 +354,7 @@ mul_LinearCombinations = [
         ),
     ),
     # The result is the zero LinearCombination
-    (
-        0.0,
-        qp.ops.LinearCombination([1], [X(0)]),
-        qp.ops.LinearCombination([0], [X(0)]),
-    ),
+    (0.0, qp.ops.LinearCombination([1], [X(0)]), qp.ops.LinearCombination([0], [X(0)])),
     (
         0.0,
         qp.ops.LinearCombination([1.0, 1.2, 0.1], [X(0), Z(1), X(2)]),
@@ -608,11 +605,11 @@ class TestLinearCombination:
         res = H1 - H2
         qp.assert_equal(qp.simplify(res), true_res)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     @pytest.mark.parametrize("grouping_type", (None, "qwc"))
     def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for LinearCombinations"""
+        # pylint: disable=protected-access
 
         if any(not qp.pauli.is_pauli_word(t) for t in ops) and grouping_type:
             pytest.skip("grouping type must be none if a term is not a pauli word.")
@@ -622,9 +619,8 @@ class TestLinearCombination:
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
         assert len(data) == 2
-        assert qp.math.allequal(
-            data[0], H._coeffs
-        )  # Previously checking "is" instead of "==", problem?
+        # Previously checking "is" instead of "==", problem?
+        assert qp.math.allequal(data[0], H._coeffs)
         assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
@@ -1280,10 +1276,7 @@ class TestLinearCombinationSparseMatrix:
         """Tests that sparse_LinearCombination returns a scipy.sparse.csr_matrix object"""
 
         coeffs = [-0.25, 0.75]
-        obs = [
-            X(wires=[0]) @ Z(wires=[1]),
-            Y(wires=[0]) @ Z(wires=[1]),
-        ]
+        obs = [X(wires=[0]) @ Z(wires=[1]), Y(wires=[0]) @ Z(wires=[1])]
         H = qp.ops.LinearCombination(coeffs, obs)
 
         sparse_matrix = H.sparse_matrix()
@@ -1731,7 +1724,6 @@ class TestLinearCombinationDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    # pylint: disable=superfluous-parens
     @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""
@@ -1782,7 +1774,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         grad = (coeffs.grad, param.grad)
 
         # differentiating a cost that combines circuits with
@@ -1824,7 +1816,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1953,10 +1945,10 @@ class TestLinearCombinationDifferentiation:
             grad_fn(coeffs, param)
 
 
-# pylint: disable=protected-access
 @pytest.mark.capture
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
+    # pylint: disable=protected-access
 
     from pennylane.capture.primitives import operator_p
 

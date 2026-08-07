@@ -15,8 +15,6 @@
 Tests for the gradients.pulse_odegen module.
 """
 
-# pylint:disable=import-outside-toplevel, use-implicit-booleaness-not-comparison
-
 import copy
 
 import numpy as np
@@ -133,13 +131,7 @@ class TestOneParameterGenerators:
             expected = -1j * T * expand_matrix(term.matrix(), term.wires, H.wires)
             assert qp.math.allclose(gen, expected)
 
-    @pytest.mark.parametrize(
-        "terms",
-        [
-            [X(0), Z(0), Y(0)],
-            [Y("a") @ X(3), X(3) @ Z("a")],
-        ],
-    )
+    @pytest.mark.parametrize("terms", [[X(0), Z(0), Y(0)], [Y("a") @ X(3), X(3) @ Z("a")]])
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
     def test_with_noncommuting_const_terms_ham(self, terms, t):
         """Test that the generators are correct for a Hamiltonian with multiple
@@ -155,10 +147,7 @@ class TestOneParameterGenerators:
                 p * expand_matrix(term.matrix(), term.wires, H.wires)
                 for p, term in zip(params, terms)
             ]
-            exp = jnp.sum(
-                jnp.array(summands),
-                axis=0,
-            )
+            exp = jnp.sum(jnp.array(summands), axis=0)
             return jax.scipy.linalg.expm(-1j * T * exp)
 
         num_terms = len(terms)
@@ -465,10 +454,8 @@ all_ops = [[rot := qp.PauliRot(0.3, "IXZ", [0, 1, "a"])], [rot, qp.RY(0.3, 5), X
 
 
 @pytest.mark.jax
-class TestInsertOp:
+class TestInsertOp:  # pylint: disable=too-few-public-methods
     """Test the utility _insert_op."""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("ops_and_meas, op_idx", ops_meas_and_op_ids)
     @pytest.mark.parametrize("ops", all_ops)
@@ -1060,7 +1047,7 @@ class TestPulseOdegenTape:
         # TODO: remove once #2155 is resolved
         tape_with_shots = qp.workflow.construct_tape(circuit)([x, y])
         tape_with_shots.trainable_params = [0, 1]
-        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint:disable=protected-access
+        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint: disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1])
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
@@ -1142,7 +1129,7 @@ class TestPulseOdegenTape:
         # TODO: remove once #2155 is resolved
         tape_with_shots = qp.workflow.construct_tape(circuit)([x, y, z])
         tape_with_shots.trainable_params = [0, 1, 2]
-        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint:disable=protected-access
+        tape_with_shots._shots = qp.measurements.Shots(shots)  # pylint: disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1, 2])
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 
@@ -1423,12 +1410,7 @@ class TestPulseOdegenIntegration:
             qp.evolve(ham)(params, 0.1)
             return qp.expval(Y(0) @ X(1))
 
-        qnode_pulse_grad = qp.QNode(
-            ansatz,
-            dev,
-            interface="jax",
-            diff_method=pulse_odegen,
-        )
+        qnode_pulse_grad = qp.QNode(ansatz, dev, interface="jax", diff_method=pulse_odegen)
         qnode_backprop = qp.QNode(ansatz, dev, interface="jax")
 
         with qp.Tracker(dev) as tracker:
@@ -1474,12 +1456,11 @@ class TestPulseOdegenIntegration:
 
 
 @pytest.mark.jax
-class TestPulseOdegenDiff:
+class TestPulseOdegenDiff:  # pylint: disable=too-few-public-methods
     """Test that pulse_odegen is differentiable, i.e. that computing
     the derivative with pulse_odegen is differentiable a second time,
     yielding the Hessian."""
 
-    # pylint: disable=too-few-public-methods
     @pytest.mark.slow
     def test_jax(self):
         """Test that pulse_odegen is differentiable,

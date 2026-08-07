@@ -17,9 +17,9 @@ This module contains functions and classes to create a
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
 
-import collections
-
 # pylint: disable=too-many-arguments,too-many-instance-attributes
+
+import collections
 import itertools
 import warnings
 
@@ -96,13 +96,7 @@ class Molecule:
         unit="bohr",
     ):
         if (
-            basis_name.lower()
-            not in [
-                "sto-3g",
-                "6-31g",
-                "6-311g",
-                "cc-pvdz",
-            ]
+            basis_name.lower() not in ["sto-3g", "6-31g", "6-311g", "cc-pvdz"]
             and load_data is False
         ):
             raise ValueError(
@@ -267,7 +261,7 @@ class Molecule:
         0.01825128
         """
         # molecular coefficients are set by other modules
-        c = self.mo_coefficients[index]  # pylint:disable=unsubscriptable-object
+        c = self.mo_coefficients[index]  # pylint: disable=unsubscriptable-object
 
         def orbital(x, y, z):
             r"""Evaluate a molecular orbital at a given position.

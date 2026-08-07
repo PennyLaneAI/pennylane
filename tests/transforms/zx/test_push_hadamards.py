@@ -26,7 +26,7 @@ from pennylane.core.qscript import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
 
-_pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
+_pyzx_010 = Version(pyzx.__version__) >= Version("0.10")
 
 
 def test_import_pyzx_error(monkeypatch):
@@ -70,14 +70,7 @@ class TestPushHadamards:
 
         assert new_qs.operations == []
 
-    @pytest.mark.parametrize(
-        "num_gates, expected_ops",
-        (
-            (1, [qp.S(0)]),
-            (2, [qp.Z(0)]),
-            (4, []),
-        ),
-    )
+    @pytest.mark.parametrize("num_gates, expected_ops", ((1, [qp.S(0)]), (2, [qp.Z(0)]), (4, [])))
     def test_S_gate_simplification(self, num_gates, expected_ops):
         """Test S gate simplification/cancellation."""
         ops = [qp.S(0)] * num_gates
@@ -133,15 +126,7 @@ class TestPushHadamards:
             ):
                 qp.transforms.zx.push_hadamards(qs)
 
-    @pytest.mark.parametrize(
-        "measurements",
-        (
-            [],
-            [qp.expval(qp.Z(0))],
-            [qp.probs()],
-            [qp.state()],
-        ),
-    )
+    @pytest.mark.parametrize("measurements", ([], [qp.expval(qp.Z(0))], [qp.probs()], [qp.state()]))
     def test_transformed_tape(self, measurements):
         """Test that the operations of the transformed tape match the expected operations
         and that the original measurements are not touched."""
@@ -159,12 +144,7 @@ class TestPushHadamards:
 
         (transformed_tape,), _ = qp.transforms.zx.push_hadamards(original_tape)
 
-        expected_ops = [
-            qp.T(wires=0),
-            qp.T(wires=1),
-            qp.Hadamard(wires=2),
-            qp.CNOT(wires=[2, 1]),
-        ]
+        expected_ops = [qp.T(wires=0), qp.T(wires=1), qp.Hadamard(wires=2), qp.CNOT(wires=[2, 1])]
 
         assert transformed_tape.operations == expected_ops
         assert transformed_tape.measurements == measurements

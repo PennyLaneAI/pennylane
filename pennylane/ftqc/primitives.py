@@ -20,6 +20,4 @@ from .parametric_midmeasure import _create_parametrized_mid_measure_primitive
 
 measure_in_basis_prim = _create_parametrized_mid_measure_primitive()
 
-__all__ = [
-    "measure_in_basis_prim",
-]
+__all__ = ["measure_in_basis_prim"]

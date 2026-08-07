@@ -13,8 +13,8 @@
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
 
-# pylint: disable=too-many-arguments,unexpected-keyword-arg,no-member,comparison-with-callable, no-name-in-module
-# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
+# pylint: disable=too-many-arguments,use-dict-literal
+
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -218,22 +218,12 @@ class TestQNode:
         loss = res[0] + res[1]
 
         loss.backward()
-        expected = [
-            -np.sin(a_val) + np.sin(a_val) * np.sin(b_val),
-            -np.cos(a_val) * np.cos(b_val),
-        ]
+        expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
     # TODO: fix this behavior with float: already present before return type.
-    def test_jacobian_dtype(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_jacobian_dtype(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test calculating the jacobian with a different datatype"""
         gradient_kwargs = {}
         if not "lightning" in getattr(dev, "name", "").lower():
@@ -275,14 +265,7 @@ class TestQNode:
         assert a.grad.dtype is torch.float32
         assert b.grad.dtype is torch.float32
 
-    def test_jacobian_options(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_jacobian_options(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test setting jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite-diff and spsa")
@@ -344,10 +327,7 @@ class TestQNode:
         loss = res[0] + res[1]
         loss.backward()
 
-        expected = [
-            -np.sin(a_val) + np.sin(a_val) * np.sin(b_val),
-            -np.cos(a_val) * np.cos(b_val),
-        ]
+        expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
         assert np.allclose([a.grad, b.grad], expected, atol=tol, rtol=0)
 
         # make the second QNode argument a constant
@@ -369,14 +349,7 @@ class TestQNode:
         expected = -np.sin(a_val) + np.sin(a_val) * np.sin(b_val)
         assert np.allclose(a.grad, expected, atol=tol, rtol=0)
 
-    def test_classical_processing(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_classical_processing(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test classical processing within the quantum tape"""
         a = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
@@ -513,7 +486,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class MyU3(qp.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qp.U3):
 
             name = "MyU3"
 
@@ -780,14 +753,7 @@ class TestQubitIntegration:
         assert np.allclose(jac[1][0], res_2, atol=tol, rtol=0)
         assert np.allclose(jac[1][1], res_3, atol=tol, rtol=0)
 
-    def test_chained_qnodes(
-        self,
-        interface,
-        dev,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-    ):
+    def test_chained_qnodes(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test that the gradient of chained QNodes works without error"""
         gradient_kwargs = {}
         if diff_method == "hadamard":
@@ -929,10 +895,7 @@ class TestQubitIntegration:
         assert isinstance(hess, torch.Tensor)
         assert tuple(hess.shape) == (2, 2, 2)
 
-        expected_res = [
-            0.5 + 0.5 * np.cos(a) * np.cos(b),
-            0.5 - 0.5 * np.cos(a) * np.cos(b),
-        ]
+        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
         assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
         expected_g = [
@@ -1253,7 +1216,7 @@ class TestTapeExpansion:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):
             grad_method = None
             has_generator = False
 
@@ -1310,7 +1273,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):
             grad_method = None
 
             def decomposition(self):
@@ -1663,10 +1626,8 @@ qubit_device_and_diff_method_and_grad_on_execution = [
     qubit_device_and_diff_method_and_grad_on_execution,
 )
 @pytest.mark.parametrize("shots", [None, 10000])
-class TestReturn:
+class TestReturn:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
-
-    # pylint:disable=too-many-public-methods
 
     def test_grad_single_measurement_param(
         self, dev, diff_method, grad_on_execution, device_vjp, shots

@@ -15,7 +15,8 @@
 Tests for the trotter_fragmented module (CGF scheme only).
 """
 
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter,too-many-arguments,too-many-nested-blocks,redefined-outer-name,too-few-public-methods
+
 import itertools
 import math
 import os
@@ -26,8 +27,6 @@ from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane.labs.templates.trotter_fragmented import trotter_fragmented
-
-# pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods
 
 
 def _random_orthogonal(n, rng):
@@ -58,11 +57,7 @@ def toy_hamiltonian():
 
     core_tensors = np.concatenate([np.expand_dims(one_body_core_full, axis=0), core_2b], axis=0)
     leaf_tensors = np.concatenate([np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0)
-    hamiltonian = {
-        "core_tensors": core_tensors,
-        "leaf_tensors": leaf_tensors,
-        "nuc_constant": 0.7,
-    }
+    hamiltonian = {"core_tensors": core_tensors, "leaf_tensors": leaf_tensors, "nuc_constant": 0.7}
     return hamiltonian, num_modes, n_states
 
 
@@ -338,9 +333,8 @@ def h2s_hamiltonian():
 def test_catalyst_legacy_frontend():
     """Test that the template runs while using the legacy catalyst frontend"""
 
-    with qp.decomposition.toggle_graph_ctx(
-        True
-    ):  # safe alternative to avoid enabling graph globally on the labs test runner
+    # safe alternative to avoid enabling graph globally on the labs test runner
+    with qp.decomposition.toggle_graph_ctx(True):
         L = 2
         M = 2
         N = 2
@@ -352,14 +346,7 @@ def test_catalyst_legacy_frontend():
 
         registers = qp.registers({"hadamard": 1, "system": M * N})
 
-        target_gates = {
-            "Hadamard",
-            "BasisRotation",
-            "RZ",
-            "IsingZZ",
-            "CNOT",
-            "ForLoop",
-        }
+        target_gates = {"Hadamard", "BasisRotation", "RZ", "IsingZZ", "CNOT", "ForLoop"}
 
         @qp.qjit
         @qp.transforms.decompose(gate_set=target_gates)
@@ -395,10 +382,7 @@ def test_catalyst_legacy_frontend():
 class TestStepScaling:
     """Test that doubling Trotter steps reduces error by ~4x (1/N^2)."""
 
-    @pytest.mark.parametrize(
-        "num_steps",
-        [(2), (4), (8), (16)],
-    )
+    @pytest.mark.parametrize("num_steps", [(2), (4), (8), (16)])
     def test_step_quartic_scaling(self, toy_hamiltonian, num_steps):
         """Doubling number of steps should reduce subspace error by ~4x."""
         ham, num_modes, n_states = toy_hamiltonian

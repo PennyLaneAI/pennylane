@@ -15,9 +15,9 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
-import numpy as np
-
 # pylint: disable=too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -67,13 +67,10 @@ class TestDecomposition:
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
     @pytest.mark.capture
-    def test_decomposition_new_capture(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new_capture(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
+        weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
@@ -82,13 +79,10 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
-    def test_decomposition_new(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
+        weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
@@ -97,7 +91,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):
         """Checks the queue for the default settings."""
-        # pylint: disable=too-many-arguments
 
         if batch_dim is not None:
             weight_shape = (batch_dim,) + weight_shape
@@ -189,13 +182,13 @@ class TestDecomposition:
 
 @pytest.mark.jax
 @pytest.mark.capture
-# pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_strongly_entangling_plxpr(self):
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
+        # pylint: disable=protected-access
         import jax
         from jax import numpy as jnp
 
@@ -254,7 +247,7 @@ class TestDynamicDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_strongly_entangling_state(
         self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
-    ):  # pylint:disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
 
         import jax

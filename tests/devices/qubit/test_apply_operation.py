@@ -56,13 +56,7 @@ def apply_operation_sparse_wrapped(op, state, is_state_batched: bool = False):
     return apply_operation_csr_matrix(op, state, is_state_batched)
 
 
-methods = [
-    apply_operation_einsum,
-    apply_operation_tensordot,
-    apply_operation,
-]
-
-# pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
+methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
 
 
 def test_custom_operator_with_matrix():
@@ -75,7 +69,6 @@ def test_custom_operator_with_matrix():
         ]
     )
 
-    # pylint: disable=too-few-public-methods
     class CustomOp(Operation):
         """Custom Operation"""
 
@@ -162,10 +155,7 @@ class TestSparseOperation:
         U_sp = qp.QubitUnitary(csr_matrix(U), wires=range(3))
 
         # Apply the operation
-        with pytest.raises(
-            TypeError,
-            match="State should not be sparse",
-        ):
+        with pytest.raises(TypeError, match="State should not be sparse"):
             apply_operation_csr_matrix(U_sp, state)
 
     @pytest.mark.parametrize("N", range(4, 10, 2))
@@ -992,7 +982,7 @@ class TestRXCalcGrad:
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestBroadcasting:
     """Tests that broadcasted operations are applied correctly."""
 
     # include operations both with batch_size==1 and batch_size>1
@@ -1086,7 +1076,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         param = qp.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qp.RX(param, 0)
-        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
 
@@ -1198,7 +1188,6 @@ class TestApplyGroverOperator:
     )
     def test_dispatching(self, op_wires, state_wires, einsum_called, tensordot_called, mocker):
         """Test that apply_operation dispatches to einsum, tensordot and the kernel correctly."""
-        # pylint: disable=too-many-arguments
         state = np.random.random([2] * state_wires) + 1j * np.random.random([2] * state_wires)
 
         op = qp.GroverOperator(list(range(op_wires)))
@@ -1361,7 +1350,6 @@ class TestApplyGroverOperator:
 class TestMultiControlledXKernel:
     """Test the specialized kernel for MultiControlledX and its dispatching."""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "num_op_wires, num_state_wires, einsum_called, tdot_called",
         [
@@ -1520,7 +1508,6 @@ class TestLargeTFCornerCases:
         assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
 
 
-# pylint: disable=too-few-public-methods
 class TestConditionalsAndMidMeasure:
     """Test dispatching for mid-circuit measurements and conditionals."""
 

@@ -13,7 +13,8 @@
 # limitations under the License.
 """Unit tests for matrix expand functions."""
 
-# pylint: disable=too-few-public-methods,too-many-public-methods
+# pylint: disable=too-many-public-methods
+
 from functools import reduce
 
 import numpy as np
@@ -533,7 +534,6 @@ class TestExpandMatrix:
 
             num_wires = 2
 
-            # pylint: disable=arguments-differ
             @staticmethod
             def compute_matrix():
                 """Compute the matrix of the DummyOp."""
@@ -918,7 +918,7 @@ class TestPartialTrace:
 
         # Attempt to trace over an invalid wire
         with pytest.raises(Exception) as e:
-            import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
+            import tensorflow as tf
 
             qp.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
             assert e.type in (
@@ -1009,11 +1009,7 @@ class TestSqrtMatrix:
     """Tests for the sqrt_matrix function."""
 
     # NOTE: make sure the matrix is positive definite
-    dm_list = [
-        np.array([[1, 0], [0, 1]]),
-        np.array([[1, 0], [0, 2]]),
-        np.array([[4, 2], [2, 3]]),
-    ]
+    dm_list = [np.array([[1, 0], [0, 1]]), np.array([[1, 0], [0, 2]]), np.array([[4, 2], [2, 3]])]
     shape_list = range(2, 10)
     # NOTE: sqrt_matrix is frequently used by BlockEncode
     #       here below are some test matrices that are used

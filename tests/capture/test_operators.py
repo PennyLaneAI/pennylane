@@ -15,9 +15,9 @@
 Integration tests for the capture of pennylane operations into jaxpr.
 """
 
-import numpy as np
-
 # pylint: disable=protected-access
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -27,9 +27,7 @@ jax = pytest.importorskip("jax")
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
-    assert_eqn_matches_op,
-)
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -71,7 +69,6 @@ def test_operators_constructed_when_plxpr_enabled():
 def test_fallback_if_primitive_still_None():
     """Test that if the primitive is None (no jax or something went wrong) that the instance is simply created."""
 
-    # pylint: disable=too-few-public-methods
     class MyOp(qp.operation.Operator):
         """A dummy operator."""
 
@@ -591,9 +588,8 @@ class TestAbstractDunders:
 
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[2].invars[0].val == 3
-        assert (
-            jaxpr.eqns[2].invars[1] == jaxpr.eqns[1].outvars[0]
-        )  # the sprod from the previous step
+        # the sprod from the previous step
+        assert jaxpr.eqns[2].invars[1] == jaxpr.eqns[1].outvars[0]
 
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)

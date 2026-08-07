@@ -29,11 +29,11 @@ stim = pytest.importorskip("stim")
 pytestmark = pytest.mark.external
 
 
-# pylint: disable=protected-access
 def test_applied_modifiers():
     """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
+    # pylint: disable=protected-access
     dev = qp.device("default.clifford")
     assert dev._applied_modifiers == [
         qp.devices.modifiers.single_tape_support,
@@ -322,10 +322,7 @@ def test_meas_probs_large(seed):
 
 
 @pytest.mark.parametrize("shots", [1024, 4096])
-@pytest.mark.parametrize(
-    "ops",
-    [None, qp.PauliY(0), qp.PauliX(0) @ qp.PauliY(1)],
-)
+@pytest.mark.parametrize("ops", [None, qp.PauliY(0), qp.PauliX(0) @ qp.PauliY(1)])
 def test_meas_counts(shots, ops, seed):
     """Test if counts are returned with shots given in the clifford device."""
 
@@ -350,13 +347,7 @@ def test_meas_counts(shots, ops, seed):
 
 
 @pytest.mark.parametrize("shots", [1024, 10240])
-@pytest.mark.parametrize(
-    "ops",
-    [
-        qp.PauliZ(0),
-        qp.PauliZ(0) @ qp.PauliY(1),
-    ],
-)
+@pytest.mark.parametrize("ops", [qp.PauliZ(0), qp.PauliZ(0) @ qp.PauliY(1)])
 def test_meas_classical_shadows(shots, ops, seed):
     """Test if classical shadows measurements are returned with shots
     given in the clifford device."""
@@ -425,7 +416,7 @@ def test_prep_snap_clifford(circuit):
 )
 def test_pl_to_stim(pl_op, stim_op):
     """Test that the PennyLane operation get converted to Stim operation"""
-    op, wires = _pl_op_to_stim(pl_op)  # pylint:disable=protected-access
+    op, wires = _pl_op_to_stim(pl_op)
     assert op == stim_op[0]
     assert wires == " ".join(map(str, stim_op[1]))
 
@@ -520,12 +511,7 @@ def test_tracker():
         res_s = dev_c.execute(qscript, conf_d)
         assert np.allclose(res_c, res_s)
 
-    assert tracker.totals == {
-        "batches": 2,
-        "simulations": 2,
-        "executions": 2,
-        "results": 0.0,
-    }
+    assert tracker.totals == {"batches": 2, "simulations": 2, "executions": 2, "results": 0.0}
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
     assert tracker.history.pop("resources")[0] == qp.resource.SpecsResources(
         num_allocs=2,
@@ -533,11 +519,7 @@ def test_tracker():
         measurement_processes={"expval(PauliZ)": 1},
         circuit_depth=2,
     )
-    assert tracker.history == {
-        "batches": [1, 1],
-        "simulations": [1, 1],
-        "executions": [1, 1],
-    }
+    assert tracker.history == {"batches": [1, 1], "simulations": [1, 1], "executions": [1, 1]}
 
 
 def test_debugger():

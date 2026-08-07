@@ -15,6 +15,8 @@
 Tests for :class:`pennylane.data.progress`
 """
 
+# pylint: disable=redefined-outer-name
+
 import shutil
 
 import pytest
@@ -23,8 +25,6 @@ import pennylane.data.data_manager.progress
 import pennylane.data.data_manager.progress._default
 from pennylane.data.data_manager.progress import Progress, Task
 from pennylane.data.data_manager.progress._default import term
-
-# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
@@ -95,8 +95,7 @@ class TestDefaultProgress:
     def terminal_size(self, monkeypatch):
         """Patches terminal size for testing."""
 
-        def get_terminal_size(fallback=None):
-            # pylint: disable=unused-argument
+        def get_terminal_size(fallback=None):  # pylint: disable=unused-argument
             return (40, 4)
 
         monkeypatch.setattr(shutil, "get_terminal_size", get_terminal_size)

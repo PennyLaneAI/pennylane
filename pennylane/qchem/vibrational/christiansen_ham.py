@@ -13,13 +13,13 @@
 # limitations under the License.
 """The functions related to the construction of the Christiansen form Hamiltonian."""
 
+# pylint: disable=too-many-branches,too-many-nested-blocks
+
 import numpy as np
 
 from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
-
-# pylint: disable = too-many-branches,too-many-nested-blocks,
 
 
 def christiansen_bosonic(one, two=None, three=None, ordered=True):
@@ -134,12 +134,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
                     for h_l in range(modals[l]):
                         for k_m in range(modals[m]):
                             for h_m in range(modals[m]):
-                                i0, i1, i2, i3 = (
-                                    (l, k_l),
-                                    (m, k_m),
-                                    (l, h_l),
-                                    (m, h_m),
-                                )
+                                i0, i1, i2, i3 = ((l, k_l), (m, k_m), (l, h_l), (m, h_m))
                                 w = BoseWord(
                                     {
                                         (0, idx[i0]): "+",

@@ -17,6 +17,8 @@ Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
 
+# pylint: disable=too-many-branches
+
 from inspect import isclass, signature
 
 from pennylane import math, measurements
@@ -39,8 +41,6 @@ from pennylane.ops import (
 from pennylane.ops.functions import map_wires, simplify
 from pennylane.templates import ControlledSequence
 from pennylane.wires import Wires
-
-# pylint: disable = too-many-branches
 
 
 class WiresIn(BooleanFn):
@@ -334,7 +334,7 @@ def _get_ops(val):
 
 def _check_arithmetic_ops(op1, op2):
     """Helper method for comparing two arithmetic operators based on type check of the bases"""
-    # pylint: disable = unnecessary-lambda-assignment
+    # pylint: disable=unnecessary-lambda-assignment
 
     if isinstance(op1, (Adjoint, Controlled, ControlledSequence)) or isinstance(
         op2, (Adjoint, Controlled, ControlledSequence)
@@ -500,10 +500,7 @@ class MeasEq(BooleanFn):
                 )
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
-
-        mp_ops = list(
-            getattr(op, "__name__", op.__class__.__name__) for op in self.condition
-        )  # pylint: disable=protected_access
+        mp_ops = list(getattr(op, "__name__", op.__class__.__name__) for op in self.condition)
         mp_names = [
             repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)
             for idx, op in enumerate(mp_ops)

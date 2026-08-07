@@ -118,9 +118,7 @@ class TestCircuitGraphHash:
 
     returntype6 = qp.state
 
-    numeric_observable_queue = [
-        (returntype6, "PauliX[0]|||StateMP!Identity[]"),
-    ]
+    numeric_observable_queue = [(returntype6, "PauliX[0]|||StateMP!Identity[]")]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_state(self, obs, expected_string):
@@ -140,9 +138,7 @@ class TestCircuitGraphHash:
 
     returntype7 = qp.density_matrix
 
-    numeric_observable_queue = [
-        (returntype7, "|||DensityMatrixMP!Identity[0, 1]"),
-    ]
+    numeric_observable_queue = [(returntype7, "|||DensityMatrixMP!Identity[0, 1]")]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_density_mat(self, obs, expected_string):
@@ -530,9 +526,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             qp.RY(y, wires=[1])
             qp.RZ(0.3, wires=[2])
             qp.CNOT(wires=[0, 1])
-            return qp.expval(
-                qp.PauliZ(0) @ qp.PauliX(1)
-            )  # <------------- qp.PauliZ(0) @ qp.PauliX(1)
+            # <------------- qp.PauliZ(0) @ qp.PauliX(1)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         node2 = qp.QNode(circuit2, dev)
         tape = qp.workflow.construct_tape(node2)(x, y)

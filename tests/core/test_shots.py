@@ -92,12 +92,7 @@ class TestShotCopies:
 
     sc_data = (ShotCopies(1, 1), ShotCopies(100, 1), ShotCopies(100, 2), ShotCopies(10, 100))
 
-    str_data = (
-        "1 shots",
-        "100 shots",
-        "100 shots x 2",
-        "10 shots x 100",
-    )
+    str_data = ("1 shots", "100 shots", "100 shots x 2", "10 shots x 100")
 
     @pytest.mark.parametrize("expected_str, sc", list(zip(str_data, sc_data)))
     def test_str(self, expected_str, sc):
@@ -125,17 +120,17 @@ class TestShotsConstruction:
         x = Shots(123)
         y = Shots(x)
         assert y is x
-        assert y._frozen  # pylint:disable=protected-access
+        assert y._frozen  # pylint: disable=protected-access
 
         z = copy.copy(x)
         assert z is x
-        assert z._frozen  # pylint:disable=protected-access
+        assert z._frozen  # pylint: disable=protected-access
 
     def test_deepcopy(self):
         x = Shots([1, 1, 2, 3])
         y = copy.deepcopy(x)
         assert y is x
-        assert y._frozen  # pylint:disable=protected-access
+        assert y._frozen  # pylint: disable=protected-access
 
     def test_None(self):
         """Tests the constructor when shots is None."""
@@ -159,12 +154,7 @@ class TestShotsConstruction:
         assert shots.total_shots == 11
         assert isinstance(shots.shot_vector, tuple)
 
-    shot_data = (
-        Shots(None),
-        Shots(10),
-        Shots((1, 10, 100)),
-        Shots((1, 10, 10, 100, 100, 100)),
-    )
+    shot_data = (Shots(None), Shots(10), Shots((1, 10, 100)), Shots((1, 10, 10, 100, 100, 100)))
 
     str_data = (
         "Shots(total=None)",

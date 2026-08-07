@@ -13,7 +13,8 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 
-# pylint: disable=import-outside-toplevel,too-many-return-statements
+# pylint: disable=import-outside-toplevel,too-many-return-statements,redefined-outer-name
+
 import functools
 from collections.abc import Sequence
 from operator import attrgetter
@@ -24,12 +25,11 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
-from . import single_dispatch  # pylint:disable=unused-import
+from . import single_dispatch  # pylint: disable=unused-import
 from .interface_utils import get_interface
 from .utils import cast, cast_like, requires_grad
 
 
-# pylint:disable=redefined-outer-name
 def array(*args, like=None, **kwargs):
     """Creates an array or tensor object of the target framework.
 
@@ -729,9 +729,8 @@ def scatter(indices, array, new_dims, like=None):
     return np.scatter(indices, array, new_dims, like=like)
 
 
-# pylint: disable=too-many-arguments
 @multi_dispatch(argnum=[0, 2])
-def scatter_element_add(
+def scatter_element_add(  # pylint: disable=too-many-arguments
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
 ):
     """In-place addition of a multidimensional value over various

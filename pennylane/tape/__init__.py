@@ -28,8 +28,8 @@ from .operation_recorder import OperationRecorder
 from .tape import QuantumTape, QuantumTapeBatch
 
 
-# pylint: disable=import-outside-toplevel
 def __getattr__(key):
+    # pylint: disable=import-outside-toplevel
     if key == "plxpr_to_tape":
         from .plxpr_conversion import plxpr_to_tape
 

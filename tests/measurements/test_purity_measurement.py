@@ -13,13 +13,13 @@
 # limitations under the License.
 """Tests for the purity measurement process"""
 
+# pylint: disable=too-many-arguments
+
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.measurements import PurityMP
-
-# pylint: disable=too-many-arguments
 
 
 def expected_purity_ising_xx(param):
@@ -357,7 +357,7 @@ class TestPurityIntegration:
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         purity = circuit(param)
-        purity.backward()  # pylint: disable=no-member
+        purity.backward()
         grad_purity = param.grad
 
         assert qp.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)

@@ -15,8 +15,7 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 
-# pylint: disable=eval-used, unused-argument
-
+# pylint: disable=eval-used,unused-argument
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -30,10 +29,7 @@ from pennylane.exceptions import MatrixUndefinedError
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier, qp.WireCut)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -87,7 +83,6 @@ def _get_pw(w, pauli_op):
     return qp.pauli.PauliWord({w: pauli_op})
 
 
-# pylint: disable=unused-argument
 def sum_using_dunder_method(*summands):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
@@ -199,10 +194,7 @@ class TestInitialization:
         w0, w1, w2, w3 = [0, 1, 2, 3]
         coeffs = [0.5, -0.5]
 
-        obs = [
-            qp.X(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.Z(w3),
-            qp.X(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.Z(w3),
-        ]
+        obs = [qp.X(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.Z(w3), qp.X(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.Z(w3)]
 
         H = qp.dot(coeffs, obs)
         _, H_ops = H.terms()
@@ -636,7 +628,6 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.operation.Operation):
             num_wires = 1
 
@@ -907,12 +898,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        ops_to_sum = (
-            qp.RZ(1.32, wires=0),
-            qp.Identity(wires=0),
-            qp.RX(1.9, wires=1),
-            qp.PauliX(0),
-        )
+        ops_to_sum = (qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1), qp.PauliX(0))
         s1 = qp.sum(ops_to_sum[0], ops_to_sum[1])
         s2 = qp.sum(s1, ops_to_sum[2])
         nested_sum = qp.sum(s2, ops_to_sum[3])
@@ -1098,9 +1084,8 @@ class TestSortWires:
             qp.Z("three"),
             qp.CRY(1, ["test", 2]),
         ]
-        sorted_list = Sum._sort(  # pylint: disable=protected-access
-            op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5}
-        )
+        # pylint: disable-next=protected-access
+        sorted_list = Sum._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
         final_list = [
             qp.Y(0),
             qp.CRX(1, ["test", 2]),
@@ -1266,9 +1251,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert np.allclose(
-            2, list(results.keys())[0]
-        )  # rounding errors due to float type of measurement outcome
+        # rounding errors due to float type of measurement outcome
+        assert np.allclose(2, list(results.keys())[0])
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Sum op in the measurement process."""
@@ -1303,8 +1287,7 @@ class TestIntegration:
         assert tape.trainable_params == [1]
 
 
-# pylint: disable=too-few-public-methods
-class TestArithmetic:
+class TestArithmetic:  # pylint: disable=too-few-public-methods
     """Test arithmetic decomposition methods."""
 
     def test_adjoint(self):

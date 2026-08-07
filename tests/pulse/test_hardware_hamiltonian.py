@@ -15,7 +15,6 @@
 Unit tests for the HardwareHamiltonian class.
 """
 
-# pylint: disable=too-few-public-methods, import-outside-toplevel
 import numpy as np
 import pytest
 
@@ -62,7 +61,6 @@ rydberg_settings = RydbergSettings(atom_coordinates, 1)
 class TestHardwareHamiltonian:
     """Unit tests for the properties of the HardwareHamiltonian class."""
 
-    # pylint: disable=protected-access, comparison-with-callable
     def test_initialization(self):
         """Test the HardwareHamiltonian class is initialized correctly."""
         rm = HardwareHamiltonian(coeffs=[], observables=[])
@@ -83,14 +81,7 @@ class TestHardwareHamiltonian:
         ):
             _ = H1 + H2
 
-    @pytest.mark.parametrize(
-        "settings",
-        [
-            None,
-            transmon_settings,
-            rydberg_settings,
-        ],
-    )
+    @pytest.mark.parametrize("settings", [None, transmon_settings, rydberg_settings])
     def test_add_hardware_hamiltonian(self, settings):
         """Test that the __add__ dunder method works correctly."""
         with qp.queuing.AnnotatedQueue() as q:
@@ -117,10 +108,7 @@ class TestHardwareHamiltonian:
         assert qp.math.allequal(sum_rm.coeffs, [1, 2, 2])
         for op1, op2 in zip(sum_rm.ops, [qp.PauliX(4), qp.PauliZ(8), qp.PauliY(8)]):
             qp.assert_equal(op1, op2)
-        assert sum_rm.pulses == [
-            HardwarePulse(1, 2, 3, [4, 8]),
-            HardwarePulse(5, 6, 7, 8),
-        ]
+        assert sum_rm.pulses == [HardwarePulse(1, 2, 3, [4, 8]), HardwarePulse(5, 6, 7, 8)]
         assert sum_rm.settings == settings
 
     def test__repr__(self):
@@ -294,7 +282,6 @@ class TestHardwareHamiltonian:
         H_global(params, 2)  # no error raised
 
 
-# pylint: disable=no-member
 class TestInteractionWithOperators:
     """Test that the interaction between a ``HardwareHamiltonian`` and other operators work as
     expected."""
@@ -305,11 +292,7 @@ class TestInteractionWithOperators:
         (3 * qp.PauliZ(0), 3),
         (qp.ops.SProd(3, qp.PauliZ(0)), 3),
     )
-    ops = (
-        qp.PauliX(2),
-        qp.PauliX(2) @ qp.PauliX(3),
-        qp.CNOT([0, 1]),
-    )
+    ops = (qp.PauliX(2), qp.PauliX(2) @ qp.PauliX(3), qp.CNOT([0, 1]))
 
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
     def test_add_special_operators(self, H, coeff):
@@ -709,10 +692,7 @@ class TestIntegration:
             qp.evolve(Hd + H1 + H2 + H3)(params, ts)
             return qp.expval(H_obj)
 
-        params = (
-            jnp.array([1.0, jnp.pi]),
-            jnp.array([jnp.pi / 2, 0.5]),
-        )
+        params = (jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
         res = qnode(params)
         res_jit = qnode_jit(params)
 

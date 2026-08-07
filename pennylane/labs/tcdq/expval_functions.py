@@ -156,8 +156,7 @@ def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndar
     return bitflips, mask_XY, y_phase
 
 
-# pylint: disable=too-many-arguments
-def _core_expval_execution(
+def _core_expval_execution(  # pylint: disable=too-many-arguments
     gates_params: ArrayLike,
     phase_fn_params: ArrayLike | None,
     samples: jnp.ndarray,
@@ -205,9 +204,7 @@ def _core_expval_execution(
     return jnp.mean(expvals, axis=1), std_err
 
 
-def build_expval_func(
-    config: CircuitConfig,
-) -> Callable:
+def build_expval_func(config: CircuitConfig) -> Callable:
     """Build an estimator for Pauli expectation values of a qubit IQP circuit.
 
     Returns a pure function that estimates the expectation value of each Pauli
@@ -280,8 +277,7 @@ def build_expval_func(
     default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
     default_obs_data = None if config.observables is None else _prep_observables(config.observables)
 
-    # pylint: disable=too-many-arguments
-    def expval_execution(
+    def expval_execution(  # pylint: disable=too-many-arguments
         gates_params: ArrayLike,
         phase_fn_params: ArrayLike | None = None,
         observables: ArrayLike | None = None,

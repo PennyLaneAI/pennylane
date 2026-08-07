@@ -13,6 +13,8 @@
 # limitations under the License.
 """Transform to diagonalize measurements on a tape, assuming all measurements are commuting."""
 
+# pylint: disable=unused-argument
+
 from copy import copy
 from functools import singledispatch
 
@@ -25,8 +27,6 @@ from pennylane.tape.tape import (
     rotations_and_diagonal_measurements,
 )
 from pennylane.transforms.core import transform
-
-# pylint: disable=unused-argument
 
 _default_supported_obs = (qp.Z, qp.Identity)
 

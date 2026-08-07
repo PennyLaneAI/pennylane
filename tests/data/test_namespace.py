@@ -53,8 +53,7 @@ def _assert_legacy_namespace(attrs, *names):
         assert f"qml.data.{name}" in attrs
 
 
-# pylint: disable=too-many-statements
-def _legacy_h2_dataset_bind():
+def _legacy_h2_dataset_bind():  # pylint: disable=too-many-statements
     """Create a hardcoded H2-like dataset using the legacy namespace."""
     bind = hdf5.create_group()
     bind.attrs["qml.data.type_id"] = "dataset"
@@ -123,11 +122,7 @@ def _legacy_h2_dataset_bind():
 
 def test_attribute_info_reads_legacy_namespace():
     """Test that metadata stored with the old namespace can still be read."""
-    attrs = {
-        "qml.data.type_id": "scalar",
-        "qml.data.py_type": "float",
-        "qml.__data_len__": 2,
-    }
+    attrs = {"qml.data.type_id": "scalar", "qml.data.py_type": "float", "qml.__data_len__": 2}
 
     info = AttributeInfo(attrs)
 
@@ -194,31 +189,19 @@ def test_attribute_info_deduplicating_counters():
 
 def test_attribute_info_save_updates_legacy_attrs_without_duplicate_fields():
     """Test that saving extra metadata into legacy attrs preserves logical fields."""
-    attrs = {
-        "qml.data.type_id": "scalar",
-        "qml.data.doc": "legacy docs",
-        "qml.__data_len__": 2,
-    }
+    attrs = {"qml.data.type_id": "scalar", "qml.data.doc": "legacy docs", "qml.__data_len__": 2}
 
     AttributeInfo(doc="updated docs", data_interface="numpy").save(AttributeInfo(attrs))
 
     info = AttributeInfo(attrs)
-    assert dict(info) == {
-        "type_id": "scalar",
-        "doc": "updated docs",
-        "data_interface": "numpy",
-    }
+    assert dict(info) == {"type_id": "scalar", "doc": "updated docs", "data_interface": "numpy"}
     _assert_namespace(attrs, "doc", "data_interface")
     assert len(info) == 3
 
 
 def test_attribute_info_deduplicates_namespaced_keys_on_write():
     """Test that duplicated metadata keys are treated as one logical field."""
-    attrs = {
-        "qml.data.doc": "legacy docs",
-        "qp.data.doc": "new docs",
-        "qml.__data_len__": 1,
-    }
+    attrs = {"qml.data.doc": "legacy docs", "qp.data.doc": "new docs", "qml.__data_len__": 1}
     info = AttributeInfo(attrs)
     assert info["doc"] == "new docs"
 
@@ -324,11 +307,7 @@ def test_legacy_namespace_qchem_dataset_read_update_and_copy():
     loaded = Dataset(_legacy_h2_dataset_bind())
     _assert_legacy_namespace(loaded.bind.attrs, "type_id", "data_name", "identifiers")
     assert loaded.data_name == "qchem"
-    assert loaded.identifiers == {
-        "molname": "H2",
-        "basis": "STO-3G",
-        "bondlength": "0.742",
-    }
+    assert loaded.identifiers == {"molname": "H2", "basis": "STO-3G", "bondlength": "0.742"}
     assert np.array_equal(loaded.hf_state, np.array([1, 1, 0, 0]))
     assert loaded.fci_energy == -1.136189454088
     qp.assert_equal(

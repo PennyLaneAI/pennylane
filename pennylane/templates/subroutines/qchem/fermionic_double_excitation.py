@@ -16,6 +16,7 @@ Contains the FermionicDoubleExcitation template.
 """
 
 # pylint: disable=too-many-arguments,protected-access
+
 import copy
 
 import numpy as np
@@ -544,10 +545,7 @@ class FermionicDoubleExcitation(Operation):
         wires1 = Wires(wires1)
         wires2 = Wires(wires2)
 
-        self._hyperparameters = {
-            "wires1": wires1,
-            "wires2": wires2,
-        }
+        self._hyperparameters = {"wires1": wires1, "wires2": wires2}
 
         wires = wires1 + wires2
         super().__init__(weight, wires=wires)
@@ -1057,9 +1055,8 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
 
 
 @register_resources(_fermionic_double_excitation_resources)
-def _fermionic_double_excitation_decomopsition(
-    weight, wires, wires1, wires2
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _fermionic_double_excitation_decomopsition(weight, wires, wires1, wires2):
     s = wires1[0]
     r = wires1[-1]
     q = wires2[0]

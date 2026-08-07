@@ -147,10 +147,7 @@ class TestGradientMultiargs:
         """Tests multiarg gradients with exp and tanh functions."""
         x = -2.5
         y = 1.5
-        gradf = lambda x, y: (
-            np.exp(x / 3) / 3 * np.tanh(y),
-            np.exp(x / 3) * (1 - np.tanh(y) ** 2),
-        )
+        gradf = lambda x, y: (np.exp(x / 3) / 3 * np.tanh(y), np.exp(x / 3) * (1 - np.tanh(y) ** 2))
         f = lambda x, y: np.exp(x / 3) * np.tanh(y)
 
         # gradient wrt first argument
@@ -261,7 +258,6 @@ class TestGrad:
         with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
             grad_fn(arr1)
 
-    # pylint: disable=no-value-for-parameter
     def test_agrees_with_autograd(self, tol):
         """Test that the grad function agrees with autograd"""
 

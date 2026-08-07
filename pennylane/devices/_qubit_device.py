@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ,too-many-branches,no-member,arguments-renamed,too-many-arguments
+# pylint: disable=arguments-differ,too-many-branches,no-member,arguments-renamed
 import abc
 import inspect
 import itertools
@@ -67,7 +67,7 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
-class QubitDevice(Device):
+class QubitDevice(Device):  # pylint: disable=too-many-public-methods
     """Abstract base class for PennyLane qubit devices.
 
     The following abstract method **must** be defined:
@@ -106,8 +106,6 @@ class QubitDevice(Device):
         r_dtype: Real floating point precision type.
         c_dtype: Complex floating point precision type.
     """
-
-    # pylint: disable=too-many-public-methods
 
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
@@ -267,11 +265,7 @@ class QubitDevice(Device):
             self.shots = shots_copy
             return tuple(results)
         # apply all circuit operations
-        self.apply(
-            circuit.operations,
-            rotations=self._get_diagonalizing_gates(circuit),
-            **kwargs,
-        )
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
         if has_mcm:
             mid_measurements = kwargs["mid_measurements"]
 
@@ -573,9 +567,8 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def statistics(
-        self, circuit: QuantumScript, shot_range=None, bin_size=None
-    ):  # pylint: disable=too-many-statements
+    # pylint: disable-next=too-many-statements
+    def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -860,7 +853,7 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        # pylint:disable = import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         if math.is_abstract(state_probability) and math.get_interface(state_probability) == "jax":
             import jax
 
@@ -989,10 +982,7 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (
-            QuantumFunctionError,
-            NotImplementedError,
-        ) as e:  # pragma: no cover
+        except (QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1019,10 +1009,7 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (
-            QuantumFunctionError,
-            NotImplementedError,
-        ) as e:  # pragma: no cover
+        except (QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1128,9 +1115,8 @@ class QubitDevice(Device):
         Returns:
             float: expectation value estimate.
         """
-        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            ClassicalShadow,
-        )
+        # tach-ignore
+        from pennylane.shadows import ClassicalShadow  # pylint: disable=import-outside-toplevel
 
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
@@ -1277,11 +1263,10 @@ class QubitDevice(Device):
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
     @staticmethod
-    def _get_batch_size(tensor, expected_shape, expected_size):
+    def _get_batch_size(tensor, expected_shape, expected_size):  # pylint: disable=unused-argument
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape. As QubitDevice does not natively support broadcasting,
         it always reports no batch size, that is ``batch_size=None``"""
-        # pylint: disable=unused-argument
         return None
 
     def marginal_prob(self, prob, wires=None):
@@ -1752,6 +1737,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
+    # pylint: disable-next=no-self-use
     def _get_diagonalizing_gates(self, circuit: QuantumScript) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -1766,7 +1752,6 @@ class QubitDevice(Device):
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
-        # pylint:disable=no-self-use
         return circuit.diagonalizing_gates
 
     def _is_lightning_device(self):

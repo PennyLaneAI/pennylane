@@ -17,6 +17,7 @@ from quantum chemistry applications.
 """
 
 # pylint: disable=arguments-differ
+
 import functools
 
 import numpy as np
@@ -25,10 +26,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
-    pow_rotation,
-)
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -194,7 +192,7 @@ class SingleExcitation(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -275,11 +273,7 @@ class SingleExcitation(Operation):
 
 
 def _single_excitation_resources():
-    return {
-        qp.Hadamard: 2,
-        qp.CNOT: 2,
-        qp.RY: 2,
-    }
+    return {qp.Hadamard: 2, qp.CNOT: 2, qp.RY: 2}
 
 
 @register_resources(_single_excitation_resources)
@@ -367,7 +361,7 @@ class SingleExcitationMinus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -451,15 +445,7 @@ class SingleExcitationMinus(Operation):
 
 
 def _single_excitation_minus_decomp_resources():
-    return {
-        qp.Hadamard: 2,
-        qp.CY: 1,
-        qp.CNOT: 2,
-        qp.RY: 2,
-        qp.S: 1,
-        qp.RZ: 1,
-        qp.GlobalPhase: 1,
-    }
+    return {qp.Hadamard: 2, qp.CY: 1, qp.CNOT: 2, qp.RY: 2, qp.S: 1, qp.RZ: 1, qp.GlobalPhase: 1}
 
 
 @register_resources(_single_excitation_minus_decomp_resources)
@@ -538,7 +524,7 @@ class SingleExcitationPlus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -615,15 +601,7 @@ class SingleExcitationPlus(Operation):
 
 
 def _single_excitation_plus_decomp_resources():
-    return {
-        qp.Hadamard: 2,
-        qp.CY: 1,
-        qp.CNOT: 2,
-        qp.RY: 2,
-        qp.S: 1,
-        qp.RZ: 1,
-        qp.GlobalPhase: 1,
-    }
+    return {qp.Hadamard: 2, qp.CY: 1, qp.CNOT: 2, qp.RY: 2, qp.S: 1, qp.RZ: 1, qp.GlobalPhase: 1}
 
 
 @register_resources(_single_excitation_plus_decomp_resources)
@@ -742,7 +720,7 @@ class DoubleExcitation(Operation):
     mask_s[12, 3] = 1
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -986,7 +964,7 @@ class DoubleExcitationPlus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1079,7 +1057,7 @@ class DoubleExcitationMinus(Operation):
         return qp.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1218,7 +1196,7 @@ class OrbitalRotation(Operation):
     mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1421,7 +1399,7 @@ class FermionicSWAP(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1534,13 +1512,7 @@ class FermionicSWAP(Operation):
 
 
 def _fermionic_swap_decomp_resources():
-    return {
-        qp.Hadamard: 4,
-        qp.MultiRZ(Float, Wire[2]): 2,
-        qp.RX: 4,
-        qp.RZ: 2,
-        qp.GlobalPhase: 1,
-    }
+    return {qp.Hadamard: 4, qp.MultiRZ(Float, Wire[2]): 2, qp.RX: 4, qp.RZ: 2, qp.GlobalPhase: 1}
 
 
 @register_resources(_fermionic_swap_decomp_resources)

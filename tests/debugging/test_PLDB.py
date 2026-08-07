@@ -24,9 +24,10 @@ import pennylane as qp
 from pennylane.debugging import PLDB, pldb_device_manager
 
 
-# pylint: disable=protected-access
 class TestPLDB:
     """Test the interactive debugging integration"""
+
+    # pylint: disable=protected-access
 
     def test_pldb_init(self):
         """Test that PLDB initializes correctly"""
@@ -94,10 +95,7 @@ class TestPLDB:
 
         PLDB.reset_active_dev()  # clean up the debugger active devices
 
-    dev_names = (
-        "default.qubit",
-        "lightning.qubit",
-    )
+    dev_names = ("default.qubit", "lightning.qubit")
 
     @pytest.mark.parametrize("device_name", dev_names)
     def test_get_active_device(self, device_name):
@@ -203,7 +201,7 @@ def test_measure(mock_method, measurement_process):
     with qp.queuing.AnnotatedQueue() as queue:
         ops = [qp.X(0), qp.Y(1), qp.Z(0)] + [qp.Hadamard(i) for i in range(3)]
         measurements = [qp.expval(qp.X(2)), qp.state(), qp.probs(), qp.var(qp.Z(3))]
-        qp.debugging.debugger._measure(measurement_process)
+        qp.debugging.debugger._measure(measurement_process)  # pylint: disable=protected-access
 
     executed_tape = qp.tape.QuantumScript.from_queue(queue)
     expected_tape = qp.tape.QuantumScript(ops, measurements)
@@ -213,9 +211,8 @@ def test_measure(mock_method, measurement_process):
     expected_debugging_tape = qp.tape.QuantumScript(ops, measurements + [measurement_process])
     executed_debugging_tape = mock_method.call_args.args[0][0]
 
-    qp.assert_equal(
-        expected_debugging_tape, executed_debugging_tape
-    )  # _execute was called with new measurements
+    # _execute was called with new measurements
+    qp.assert_equal(expected_debugging_tape, executed_debugging_tape)
 
 
 @patch.object(PLDB, "_execute")

@@ -15,10 +15,10 @@
 Unit tests for the metric tensor transform.
 """
 
+# pylint: disable=too-many-arguments,too-many-statements
+
 import importlib
 
-# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
-# pylint: disable=not-callable,too-many-statements, too-many-positional-arguments
 import pytest
 from scipy.linalg import block_diag
 
@@ -815,7 +815,7 @@ class TestMetricTensor:
             mt_tapes, post_processing = qp.metric_tensor(tape)
         res = post_processing(qp.execute(mt_tapes, dev, None))
 
-        assert mt_tapes == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert mt_tapes == []
         assert res == ()
 
 
@@ -843,8 +843,7 @@ def fubini_ansatz1(params, wires=None):
     qp.RX(fixed_pars[2], wires=1)
 
 
-def fubini_ansatz2(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz2(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qp.RX(fixed_pars[1], wires=0)
@@ -857,8 +856,7 @@ def fubini_ansatz2(params, wires=None):
     qp.adjoint(qp.RX(params1, wires=1))
 
 
-def fubini_ansatz3(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz3(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     params2 = params[2]
@@ -879,8 +877,7 @@ def fubini_ansatz3(params, wires=None):
     qp.RZ(params2, wires=2)
 
 
-def fubini_ansatz4(params00, params_rest, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz4(params00, params_rest, wires=None):  # pylint: disable=unused-argument
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
@@ -910,8 +907,7 @@ def fubini_ansatz7(x, wires=None):
     qp.RX(x, wires=0)
 
 
-def fubini_ansatz8(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz8(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qp.RX(fixed_pars[1], wires=[0])
@@ -1106,7 +1102,6 @@ class TestFullMetricTensor:
             return qp.expval(qp.PauliZ(0))
 
         argnums = range(0, len(params)) if len(params) > 1 else None
-        # pylint:disable=unexpected-keyword-arg
         mt_fn = qp.metric_tensor(circuit, argnums=argnums, approx=None)
         if use_jit:
             mt_fn = jax.jit(mt_fn)
@@ -1193,8 +1188,7 @@ class TestFullMetricTensor:
             assert qp.math.allclose(mt, expected)
 
 
-def diffability_ansatz_0(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_0(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RX(weights[1], wires=0)
     qp.CNOT(wires=[0, 1])
@@ -1215,8 +1209,7 @@ def expected_diag_jac_0(weights):
     )
 
 
-def diffability_ansatz_1(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_1(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RY(weights[1], wires=0)
     qp.CNOT(wires=[0, 1])
@@ -1237,8 +1230,7 @@ def expected_diag_jac_1(weights):
     )
 
 
-def diffability_ansatz_2(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_2(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RY(weights[1], wires=1)
     qp.CNOT(wires=[0, 1])

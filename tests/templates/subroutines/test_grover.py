@@ -89,16 +89,7 @@ decomp_3wires = [
 
 
 def decomposition_wires(wires):
-    wire_order = [
-        wires[0],
-        wires[1],
-        wires[2],
-        wires,
-        wires[2],
-        wires[0],
-        wires[1],
-        wires,
-    ]
+    wire_order = [wires[0], wires[1], wires[2], wires, wires[2], wires[0], wires[1], wires]
     return wire_order
 
 
@@ -127,11 +118,7 @@ def test_grover_diffusion_matrix(n_wires):
     oplist.append(PauliZ.compute_matrix())
 
     ctrl_str = [0] * (n_wires - 1)
-    CX = MultiControlledX(
-        control_values=ctrl_str,
-        wires=wires,
-        work_wires=None,
-    ).matrix()
+    CX = MultiControlledX(control_values=ctrl_str, wires=wires, work_wires=None).matrix()
 
     M = functools.reduce(np.kron, oplist)
     G = M @ CX @ M
@@ -307,7 +294,6 @@ def test_jax_jit():
 
 @pytest.mark.jax
 @pytest.mark.capture
-# pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
@@ -315,6 +301,7 @@ class TestDynamicDecomposition:
     @pytest.mark.xfail(reason="arrays should never be in metadata")
     def test_grover_plxpr(self):
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
+        # pylint: disable=protected-access
         import jax
 
         from pennylane.capture.primitives import for_loop_prim, operator_p
@@ -383,9 +370,7 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize(
         "gate_set", [[qp.Hadamard, qp.CNOT, qp.PauliX, qp.GlobalPhase, qp.RZ], None]
     )
-    def test_grover(
-        self, max_expansion, gate_set, wires, work_wires, autograph
-    ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
+    def test_grover(self, max_expansion, gate_set, wires, work_wires, autograph):
         """Test that Grover gives correct result after dynamic decomposition."""
 
         import jax

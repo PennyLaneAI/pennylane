@@ -208,8 +208,9 @@ class ResourceOperator(ABC):
 
     num_wires: int | None = None
 
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def __init__(self, *args, wires=None, **kwargs) -> None:
+
         self.wires = None
         if wires is not None:
             wires = Wires(wires)
@@ -282,7 +283,6 @@ class ResourceOperator(ABC):
     def resource_decomp(cls, *args, **kwargs) -> list[GateCount]:
         r"""Returns a list of actions that define the resources of the operator."""
 
-    # pylint: disable=import-outside-toplevel
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
@@ -298,9 +298,8 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import (
-            apply_adj,
-        )
+        # pylint: disable=import-outside-toplevel
+        from pennylane.estimator.ops.op_math.symbolic import apply_adj
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -310,7 +309,6 @@ class ResourceOperator(ABC):
             gate_lst.append(apply_adj(gate))
         return gate_lst
 
-    # pylint: disable=import-outside-toplevel
     @classmethod
     def controlled_resource_decomp(
         cls,
@@ -335,9 +333,8 @@ class ResourceOperator(ABC):
             target_resource_params (dict | None): A dictionary containing the resource parameters
                 of the target operator.
         """
-        from pennylane.estimator.ops.op_math.symbolic import (
-            apply_controlled,
-        )
+        # pylint: disable=import-outside-toplevel
+        from pennylane.estimator.ops.op_math.symbolic import apply_controlled
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -439,15 +436,12 @@ class ResourceOperator(ABC):
     __rmatmul__ = __matmul__
 
     @classmethod
-    def tracking_name(cls, *args, **kwargs) -> str:
+    def tracking_name(cls, *args, **kwargs) -> str:  # pylint: disable=unused-argument
         r"""Returns a name used to track the operator during resource estimation."""
         return cls.__name__
 
 
-def _dequeue(
-    op_to_remove: ResourceOperator | Iterable,
-    context: QueuingManager = QueuingManager,
-):
+def _dequeue(op_to_remove: ResourceOperator | Iterable, context: QueuingManager = QueuingManager):
     """Remove the given resource operator(s) from the Operator queue."""
     if not isinstance(op_to_remove, Iterable):
         op_to_remove = [op_to_remove]

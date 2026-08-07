@@ -118,9 +118,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         return math.dot(probabilities, self.eigvals())
 
 
-def expval(
-    op: Operator | MeasurementValue,
-) -> ExpectationMP:
+def expval(op: Operator | MeasurementValue) -> ExpectationMP:
     r"""Expectation value of the supplied observable.
 
     **Example:**

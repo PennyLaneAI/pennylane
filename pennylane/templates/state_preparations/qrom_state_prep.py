@@ -103,10 +103,7 @@ class QROMStatePreparation(Operation):
         reduce the overall resource requirements on the implementation.
     """
 
-    # pylint: disable=too-many-positional-arguments
-    def __init__(
-        self, state_vector, wires, precision_wires, work_wires=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, state_vector, wires, precision_wires, work_wires=None):
 
         n_amplitudes = qp.math.shape(state_vector)[0]
         if n_amplitudes != 2 ** len(Wires(wires)):
@@ -168,9 +165,8 @@ class QROMStatePreparation(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(
-        state_vector, wires, input_wires, precision_wires, work_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(state_vector, wires, input_wires, precision_wires, work_wires):
         r"""
         Computes the decomposition operations for the given state vector.
 

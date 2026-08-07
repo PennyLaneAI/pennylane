@@ -62,9 +62,7 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
         return cast(type[SparseT], self._supported_sparse_dict()[self.info["sparse_array_class"]])
 
     @classmethod
-    def consumes_types(
-        cls,
-    ) -> tuple[type[SparseArray | SparseMatrix], ...]:
+    def consumes_types(cls) -> tuple[type[SparseArray | SparseMatrix], ...]:
         return (
             bsr_array,
             coo_array,

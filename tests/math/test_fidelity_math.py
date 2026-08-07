@@ -29,11 +29,7 @@ jnp = pytest.importorskip("jax.numpy")
 class TestFidelityMath:
     """Tests for Fidelity function between two states (state vectors or density matrix)."""
 
-    state_vectors = [
-        ([1, 0], [0, 1], 0),
-        ([0, 1], [0, 1], 1.0),
-        ([1, 0], [1, 1] / np.sqrt(2), 0.5),
-    ]
+    state_vectors = [([1, 0], [0, 1], 0), ([0, 1], [0, 1], 1.0), ([1, 0], [1, 1] / np.sqrt(2), 0.5)]
 
     density_mats = [
         ([[1, 0], [0, 0]], [[0.5, 0], [0, 0.5]], 0.5),
@@ -42,13 +38,7 @@ class TestFidelityMath:
         ([[0, 0], [0, 1]], [[0.5, 0.5], [0.5, 0.5]], 0.5),
     ]
 
-    array_funcs = [
-        lambda x: x,
-        onp.array,
-        np.array,
-        jnp.array,
-        torch.tensor,
-    ]
+    array_funcs = [lambda x: x, onp.array, np.array, jnp.array, torch.tensor]
 
     check_state = [True, False]
 
@@ -291,8 +281,6 @@ def expected_grad_multi2(x):
 
 class TestGradient:
     """Test the gradient of qp.math.fidelity"""
-
-    # pylint: disable=too-many-arguments
 
     cost_fns = [
         (cost_fn_single, expected_res_single, expected_grad_single),

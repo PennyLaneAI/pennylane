@@ -13,7 +13,8 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
+# pylint: disable=protected-access,import-outside-toplevel,unnecessary-lambda
+
 from importlib import import_module
 
 # pylint: disable=wrong-import-order
@@ -81,7 +82,6 @@ ar.register_function("scipy", "ndim", np.ndim)
 def sparse_matrix_power(A, n):
     """Dispatch to the appropriate sparse matrix power function."""
     try:  # pragma: no cover
-        # pylint: disable=import-outside-toplevel
         from scipy.sparse.linalg import matrix_power
 
         # added in scipy 1.12.0
@@ -333,12 +333,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "gather"] = "tensorflow"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "concat"] = "tensorflow"
 
 
-tf_fft_functions = [
-    "fft",
-    "ifft",
-    "fft2",
-    "ifft2",
-]
+tf_fft_functions = ["fft", "ifft", "fft2", "ifft2"]
 
 
 for fn in tf_fft_functions:
@@ -925,8 +920,7 @@ ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 
 
-# pylint: disable=unused-argument
-def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):
+def _asarray_jax(x, dtype=None, requires_grad=False, **kwargs):  # pylint: disable=unused-argument
     return _i("jax").numpy.array(x, dtype=dtype, **kwargs)
 
 
@@ -957,7 +951,6 @@ ar.register_function(
     lambda x, index, value, **kwargs: x.at[tuple(index)].add(value, **kwargs),
 )
 ar.register_function("jax", "unstack", list)
-# pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
 ar.register_function(
     "jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x), axis=-1)

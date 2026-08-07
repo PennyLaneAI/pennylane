@@ -13,6 +13,8 @@
 # limitations under the License.
 """This module contains the necessary helper functions for setting up the workflow for execution."""
 
+# pylint: disable=import-outside-toplevel
+
 from __future__ import annotations
 
 from copy import copy
@@ -83,7 +85,6 @@ def _validate_jax_version() -> None:
         )
 
 
-# pylint: disable=import-outside-toplevel
 # TensorFlow tests were disabled during deprecation
 def _use_tensorflow_autograph() -> bool:  # pragma: no cover
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""

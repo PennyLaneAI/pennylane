@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the classical shadows measurement processes"""
 
+# pylint: disable=dangerous-default-value,too-many-arguments
+
 import copy
 import itertools
 
@@ -25,8 +27,6 @@ from pennylane import numpy as np
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
-
-# pylint: disable=dangerous-default-value, too-many-arguments
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
@@ -655,7 +655,7 @@ class TestExpvalMeasurement:
         res = qp.shadow_expval(H, k=10)
 
         copied_res = copy.copy(res)
-        assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
+        assert type(copied_res) == type(res)
         assert copied_res._shortname == res._shortname  # pylint: disable=protected-access
         qp.assert_equal(copied_res.H, res.H)
         assert copied_res.k == res.k
@@ -802,9 +802,8 @@ class TestExpvalForward:
             circuit(qp.Hadamard(0) @ qp.Hadamard(2))
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.all_interfaces
-class TestExpvalForwardInterfaces:
+class TestExpvalForwardInterfaces:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_qft_expval(self, interface, k=1, obs=obs_qft, expected=expected_qft):

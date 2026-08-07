@@ -98,8 +98,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-# pylint: disable=unused-argument
-def autograd_execute(
+def autograd_execute(  # pylint: disable=unused-argument
     tapes: QuantumScriptBatch,
     execute_fn: ExecuteFn,
     jpc: qp.workflow.jacobian_products.JacobianProductCalculator,
@@ -160,12 +159,7 @@ def _to_autograd(result: ResultBatch) -> ResultBatch:
 
 
 @autograd.extend.primitive
-def _execute(
-    parameters,
-    tapes,
-    execute_fn,
-    jpc,
-):
+def _execute(parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argument
     """Autodifferentiable wrapper around a way of executing tapes.
 
     Args:
@@ -180,14 +174,7 @@ def _execute(
     return _to_autograd(execute_fn(tapes))
 
 
-# pylint: disable=unused-argument
-def vjp(
-    ans,
-    parameters,
-    tapes,
-    execute_fn,
-    jpc,
-):
+def vjp(ans, parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argument
     """Returns the vector-Jacobian product operator for a batch of quantum tapes.
 
     Args:

@@ -15,7 +15,6 @@ r"""
 Contains the quantum-number-preserving GateFabric template.
 """
 
-# pylint: disable=too-many-arguments
 import numpy as np
 
 from pennylane import capture, math
@@ -214,10 +213,7 @@ class GateFabric(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
-        self._hyperparameters = {
-            "init_state": tuple(init_state),
-            "include_pi": include_pi,
-        }
+        self._hyperparameters = {"init_state": tuple(init_state), "include_pi": include_pi}
 
         super().__init__(weights, wires=wires)
 
@@ -247,9 +243,8 @@ class GateFabric(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, init_state, include_pi
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, init_state, include_pi):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

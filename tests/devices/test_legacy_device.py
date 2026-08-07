@@ -15,6 +15,8 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
+# pylint: disable=redefined-outer-name
+
 from collections import OrderedDict
 
 import numpy as np
@@ -28,8 +30,6 @@ from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
-
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
 
 
 @pytest.fixture(scope="function")
@@ -189,8 +189,8 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
-# pylint: disable=pointless-statement
 def test_invalid_attribute_in_devices_raises_error():
+    # pylint: disable=pointless-statement
     with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
         qp.devices.blabla
 
@@ -216,8 +216,6 @@ def test_gradients_record():
 
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
-
-    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_operations returns the correct result
@@ -285,12 +283,12 @@ class TestDeviceSupportedLogic:
         assert dev._all_multi_term_obs_supported(circuit)  # pylint: disable=protected-access
 
 
-class TestInternalFunctions:  # pylint:disable=too-many-public-methods
+class TestInternalFunctions:  # pylint: disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
-    # pylint: disable=unnecessary-dunder-call
     def test_repr(self, mock_device_supporting_paulis):
         """Tests the __repr__ function"""
+        # pylint: disable=unnecessary-dunder-call
         dev = mock_device_supporting_paulis()
         assert "<Device device (wires=1, shots=1000) at " in dev.__repr__()
 
@@ -309,11 +307,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Tests the function Device.check_validity with valid queue and observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.PauliZ(0))]
 
@@ -325,10 +319,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         dev = mock_device_supporting_prod()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliZ(wires=1),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliZ(wires=1)]
 
         observables = [
             qp.expval(qp.PauliX(0) @ qp.PauliZ(1)),
@@ -342,10 +333,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         dev = mock_device_supporting_prod()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliZ(wires=1),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliZ(wires=1)]
 
         unsupported_nested_observables = [qp.expval(qp.PauliZ(0) @ (qp.PauliX(1) @ qp.PauliY(2)))]
 
@@ -356,11 +344,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Tests the function Device.check_validity with prod support capability"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.PauliZ(0) @ qp.PauliX(1))]
 
@@ -372,11 +356,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Tests the function Device.check_validity with invalid queue and valid observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.RX(1.0, wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.RX(1.0, wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.PauliZ(0))]
 
@@ -387,11 +367,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Tests the function Device.check_validity with valid queue and invalid observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
         observables = [qp.expval(qp.Hadamard(0))]
 
@@ -579,8 +555,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert len(recwarn) == 0
 
 
-# pylint: disable=too-few-public-methods
-class TestClassmethods:
+class TestClassmethods:  # pylint: disable=too-few-public-methods
     """Test the classmethods of Device"""
 
     def test_capabilities(self, mock_device_with_capabilities):
@@ -593,9 +568,9 @@ class TestClassmethods:
 class TestOperations:
     """Tests the logic related to operations"""
 
-    # pylint: disable=protected-access
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
+        # pylint: disable=protected-access
         dev = mock_device()
 
         assert dev._shots == 1000
@@ -616,9 +591,9 @@ class TestOperations:
         ):
             dev.shots = shots
 
-    # pylint: disable=pointless-statement
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
+        # pylint: disable=pointless-statement
         dev = mock_device()
 
         with pytest.raises(
@@ -633,17 +608,9 @@ class TestOperations:
         op_queue raises no error"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         queue_at_pre_measure = []
 
@@ -661,17 +628,9 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         call_history = []
         with monkeypatch.context() as m:
@@ -690,17 +649,9 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.Hadamard(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.Hadamard(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
@@ -739,9 +690,9 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
+        # pylint: disable=pointless-statement
         dev = mock_device()
 
         with pytest.raises(
@@ -757,17 +708,9 @@ class TestObservables:
         op_queue raises no error"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         queue_at_pre_measure = []
 
@@ -805,17 +748,9 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods()
 
-        queue = [
-            qp.PauliX(wires=0),
-            qp.PauliY(wires=1),
-            qp.PauliZ(wires=2),
-        ]
+        queue = [qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=2)]
 
-        observables = [
-            qp.expval(qp.Hadamard(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.Hadamard(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(queue, observables)
@@ -841,9 +776,9 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
-    # pylint: disable=pointless-statement
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
+        # pylint: disable=pointless-statement
         dev = mock_device()
 
         with pytest.raises(
@@ -860,19 +795,11 @@ class TestParameters:
         p0 = 0.54
         p1 = -0.32
 
-        queue = [
-            qp.RX(p0, wires=0),
-            qp.PauliY(wires=1),
-            qp.Rot(0.432, 0.123, p1, wires=2),
-        ]
+        queue = [qp.RX(p0, wires=0), qp.PauliY(wires=1), qp.Rot(0.432, 0.123, p1, wires=2)]
 
         parameters = {0: (0, 0), 1: (2, 3)}
 
-        observables = [
-            qp.expval(qp.PauliZ(0)),
-            qp.var(qp.PauliZ(1)),
-            qp.sample(qp.PauliZ(2)),
-        ]
+        observables = [qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))]
 
         p_mapping = {}
 
@@ -905,16 +832,16 @@ class TestDeviceInit:
     def test_has_partitioned_shots(self):
         """Tests _has_partitioned_shots returns correct values"""
         dev = DefaultQubitLegacy(wires=1, shots=100)
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()  # pylint: disable=protected-access
 
         dev.shots = [10, 20]
-        assert dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert dev._has_partitioned_shots()  # pylint: disable=protected-access
 
         dev.shots = 10
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()  # pylint: disable=protected-access
 
         dev.shots = None
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()  # pylint: disable=protected-access
 
 
 class TestBatchExecution:
@@ -989,8 +916,8 @@ class TestBatchExecution:
 class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
-    # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
     class SomeDevice(qp.devices.LegacyDevice):
+        # pylint: disable=unused-argument
         name = ""
         short_name = ""
         pennylane_requires = ""
@@ -1011,13 +938,13 @@ class TestGrouping:
         def supports_observable(self, *args, **kwargs):
             return True
 
-    # pylint: disable=attribute-defined-outside-init
     @pytest.mark.parametrize("use_grouping", (True, False))
     def test_batch_transform_checks_use_grouping_property(self, use_grouping, mocker):
         """If the device specifies `use_grouping=False`, the batch transform
         method won't expand the hamiltonian when the measured hamiltonian has
         grouping indices.
         """
+        # pylint: disable=attribute-defined-outside-init
 
         H = qp.Hamiltonian([1.0, 1.0], [qp.PauliX(0), qp.PauliY(0)], grouping_type="qwc")
         qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])

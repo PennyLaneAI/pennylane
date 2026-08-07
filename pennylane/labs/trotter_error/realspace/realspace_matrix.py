@@ -13,6 +13,8 @@
 # limitations under the License.
 """The RealspaceMatrix class"""
 
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import math
@@ -25,8 +27,6 @@ from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.realspace import HOState, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 from pennylane.labs.trotter_error.realspace.realspace_operator import RealspaceSum
-
-# pylint: disable=protected-access
 
 
 class RealspaceMatrix(Fragment):
@@ -290,11 +290,7 @@ class RealspaceMatrix(Fragment):
         for key in r_keys.difference(l_keys):
             new_blocks[key] = other._blocks[key]
 
-        return RealspaceMatrix(
-            self.states,
-            self.modes,
-            new_blocks,
-        )
+        return RealspaceMatrix(self.states, self.modes, new_blocks)
 
     def __sub__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
@@ -323,11 +319,7 @@ class RealspaceMatrix(Fragment):
         for key in r_keys.difference(l_keys):
             new_blocks[key] = (-1) * other._blocks[key]
 
-        return RealspaceMatrix(
-            self.states,
-            self.modes,
-            new_blocks,
-        )
+        return RealspaceMatrix(self.states, self.modes, new_blocks)
 
     def __mul__(self, scalar: float) -> RealspaceMatrix:
         new_blocks = {}

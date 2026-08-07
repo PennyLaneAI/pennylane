@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=protected-access
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -23,14 +25,8 @@ from pennylane.core.measurements import (
     SampleMeasurement,
     StateMeasurement,
 )
-from pennylane.measurements import (
-    ClassicalShadowMP,
-    SampleMP,
-    StateMP,
-)
+from pennylane.measurements import ClassicalShadowMP, SampleMP, StateMP
 from pennylane.wires import Wires
-
-# pylint: disable=too-few-public-methods, unused-argument, protected-access
 
 
 class NotValidMeasurement(MeasurementProcess):
@@ -44,7 +40,7 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
@@ -65,7 +61,7 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
@@ -171,7 +167,7 @@ class TestMeasurementTransform:
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {1000: 1}  # pylint:disable=protected-access
+        assert circuit() == {1000: 1}
 
     def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""

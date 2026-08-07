@@ -13,9 +13,9 @@
 # limitations under the License.
 """Simulate a quantum script."""
 
-import logging
-
 # pylint: disable=protected-access
+
+import logging
 from collections import Counter
 from functools import partial, singledispatch
 
@@ -29,13 +29,7 @@ from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import ShotCopies, Shots
 from pennylane.logging import debug_logger
 from pennylane.math.interface_utils import Interface
-from pennylane.measurements import (
-    CountsMP,
-    ExpectationMP,
-    ProbabilityMP,
-    SampleMP,
-    VarianceMP,
-)
+from pennylane.measurements import CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP
 from pennylane.ops import MidMeasure
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
@@ -104,8 +98,7 @@ class TreeTraversalStack:
 class _FlexShots(Shots):
     """Shots class that allows zero shots."""
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, shots=None):
+    def __init__(self, shots=None):  # pylint: disable=super-init-not-called
         if isinstance(shots, int):
             self.total_shots = shots
             self.shot_vector = (ShotCopies(shots, 1),)
@@ -392,8 +385,7 @@ def simulate(
     )
 
 
-# pylint: disable=too-many-branches,too-many-statements
-def simulate_tree_mcm(
+def simulate_tree_mcm(  # pylint: disable=too-many-branches,too-many-statements
     circuit: QuantumScript,
     debugger=None,
     **execution_kwargs,

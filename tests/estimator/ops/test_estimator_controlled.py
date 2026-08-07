@@ -37,8 +37,6 @@ from pennylane.estimator.resource_operator import CompressedResourceOp, GateCoun
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
-
 
 class TestCH:
     """Test the Resource CH operation"""
@@ -80,11 +78,7 @@ class TestCH:
         num_ctrl_wires = 3
         num_zero_ctrl = 1
 
-        expected_op = qre.Controlled(
-            qre.Hadamard(),
-            num_ctrl_wires=4,
-            num_zero_ctrl=1,
-        )
+        expected_op = qre.Controlled(qre.Hadamard(), num_ctrl_wires=4, num_zero_ctrl=1)
         expected_res = [GateCount(expected_op.resource_rep_from_op())]
 
         assert self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == expected_res
@@ -155,10 +149,7 @@ class TestCY:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
 
@@ -230,10 +221,7 @@ class TestCZ:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         assert self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == [expected_res]
@@ -301,10 +289,7 @@ class TestCSWAP:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         assert self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == [expected_res]
@@ -373,10 +358,7 @@ class TestCCZ:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         assert self.op.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl) == [expected_res]
@@ -441,10 +423,7 @@ class TestCNOT:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
     def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
@@ -513,10 +492,7 @@ class TestTemporaryAND:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
     def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
@@ -577,10 +553,7 @@ class TestToffoli:
         assert self.op.resource_decomp(elbow="left") == expected_rep
         assert self.op.textbook_resource_decomp(elbow="left") == expected_rep
 
-        expected_rep = [
-            GateCount(Hadamard.resource_rep(), 1),
-            GateCount(CZ.resource_rep(), 1),
-        ]
+        expected_rep = [GateCount(Hadamard.resource_rep(), 1), GateCount(CZ.resource_rep(), 1)]
         assert self.op.resource_decomp(elbow="right") == expected_rep
         assert self.op.textbook_resource_decomp(elbow="right") == expected_rep
 
@@ -625,10 +598,7 @@ class TestToffoli:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
     def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         num_ctrl_wires = len(ctrl_wires)
@@ -664,14 +634,7 @@ class TestMultiControlledX:
         MultiControlledX(2, 1),
     )
 
-    res_params = (
-        (1, 0),
-        (2, 0),
-        (1, 1),
-        (2, 1),
-        (3, 2),
-        (5, 3),
-    )
+    res_params = ((1, 0), (2, 0), (1, 1), (2, 1), (3, 2), (5, 3))
 
     expected_resources = (
         [GateCount(CNOT.resource_rep(), 1)],
@@ -704,10 +667,7 @@ class TestMultiControlledX:
 
     @staticmethod
     def _prep_params(num_control, num_zero_ctrl):
-        return {
-            "num_ctrl_wires": num_control,
-            "num_zero_ctrl": num_zero_ctrl,
-        }
+        return {"num_ctrl_wires": num_control, "num_zero_ctrl": num_zero_ctrl}
 
     @pytest.mark.parametrize("params, expected_res", list(zip(res_params, expected_resources)))
     def test_resources(self, params, expected_res):
@@ -774,10 +734,7 @@ class TestMultiControlledX:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "ctrl_wires, ctrl_values, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
     def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
         """Test that the controlled resources are as expected"""
         op = MultiControlledX(3, 2)
@@ -860,10 +817,7 @@ class TestCRX:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         assert self.op.controlled_resource_decomp(
@@ -900,10 +854,7 @@ class TestCRY:
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
 
-        expected_resources = [
-            GateCount(CNOT.resource_rep(), 2),
-            GateCount(RY.resource_rep(), 2),
-        ]
+        expected_resources = [GateCount(CNOT.resource_rep(), 2), GateCount(RY.resource_rep(), 2)]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
@@ -939,10 +890,7 @@ class TestCRY:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         assert self.op.controlled_resource_decomp(
@@ -973,10 +921,7 @@ class TestCRZ:
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
 
-        expected_resources = [
-            GateCount(CNOT.resource_rep(), 2),
-            GateCount(RZ.resource_rep(), 2),
-        ]
+        expected_resources = [GateCount(CNOT.resource_rep(), 2), GateCount(RZ.resource_rep(), 2)]
         assert self.op.resource_decomp(**self.op.resource_params) == expected_resources
 
     def test_resource_rep(self):
@@ -1012,10 +957,7 @@ class TestCRZ:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         assert self.op.controlled_resource_decomp(
@@ -1101,10 +1043,7 @@ class TestCRot:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         assert self.op.controlled_resource_decomp(
@@ -1141,9 +1080,7 @@ class TestControlledPhaseShift:
         """Test the resource parameters"""
 
         op = ControlledPhaseShift()
-        assert op.resource_params == {
-            "precision": None
-        }  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.resource_params == {"precision": None}
 
     def test_resource_rep(self):
         """Test the compressed representation"""
@@ -1211,10 +1148,7 @@ class TestControlledPhaseShift:
         ),
     )
 
-    @pytest.mark.parametrize(
-        "num_ctrl_wires, num_zero_ctrl, expected_res",
-        ctrl_data,
-    )
+    @pytest.mark.parametrize("num_ctrl_wires, num_zero_ctrl, expected_res", ctrl_data)
     def test_resource_controlled(self, num_ctrl_wires, num_zero_ctrl, expected_res):
         """Test that the controlled resources are as expected"""
         op = qre.ControlledPhaseShift()

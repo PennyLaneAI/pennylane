@@ -13,7 +13,8 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure.py functionality"""
 
-# pylint: disable=too-few-public-methods, protected-access
+# pylint: disable=protected-access
+
 from copy import copy
 
 import numpy as np
@@ -57,10 +58,10 @@ class TestPauliVSpace:
 
         assert all(isinstance(op, PauliSentence) for op in vspace.basis)
         assert np.allclose(
-            vspace._M, [[1 / np.sqrt(2), 1.0], [1 / np.sqrt(2), 0.0]]
-        ) or np.allclose(
-            vspace._M, [[1 / np.sqrt(2), 0.0], [1 / np.sqrt(2), 1.0]]
-        )  # the ordering is random as it is taken from a dictionary that has no natural ordering
+            vspace._M,
+            [[1 / np.sqrt(2), 1.0], [1 / np.sqrt(2), 0.0]],
+            # the ordering is random as it is taken from a dictionary that has no natural ordering
+        ) or np.allclose(vspace._M, [[1 / np.sqrt(2), 0.0], [1 / np.sqrt(2), 1.0]])
         assert vspace.basis == ops1[:-1]
         assert vspace._rank == 2
         assert vspace._num_pw == 2

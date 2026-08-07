@@ -177,7 +177,6 @@ class TestSingleReturnExecute:
         (qp.Hermitian(herm, wires=[1, 0]), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, interface, shots):
         """Return a single prob."""
@@ -323,7 +322,6 @@ class TestMultipleReturns:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, shots):
         """Return multiple probs."""
@@ -355,9 +353,9 @@ class TestMultipleReturns:
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
+    # pylint: disable-next=too-many-arguments
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, shots):
         """Return multiple different measurements."""
 
@@ -666,7 +664,6 @@ class TestSameMeasurementShotVector:
         (qp.Hermitian(herm, wires=[3, 2]), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1", probs_data)
     @pytest.mark.parametrize("op2,wires2", list(reversed(probs_data2)))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2):
@@ -1201,7 +1198,6 @@ class TestQubitDeviceNewUnits:
     def test_unsupported_observable_return_type_raise_error(self):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
-        # pylint: disable=too-few-public-methods
         class DummyMeasurement(MeasurementProcess):
             _shortname = "SomeUnsupportedReturnType"
 

@@ -26,8 +26,7 @@ from pennylane import math
 from pennylane.core.operator import Operation
 
 
-# pylint: disable=too-many-positional-arguments
-def kahypar_cut(
+def kahypar_cut(  # pylint: disable=too-many-arguments
     graph,
     num_fragments: int,
     imbalance: int = None,
@@ -97,7 +96,7 @@ def kahypar_cut(
     >>> cut_edges
     [(Wrapped(CNOT(wires=[0, 'a'])), Wrapped(RZ(0.24, wires=[0])), 0)]
     """
-    # pylint: disable=too-many-arguments, import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     try:
         import kahypar
     except ImportError as e:

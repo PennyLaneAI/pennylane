@@ -15,7 +15,8 @@
 Unit tests for the ParametrizedEvolution class
 """
 
-# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access,possibly-unused-variable
+# pylint: disable=unused-argument,too-few-public-methods,protected-access
+
 from functools import reduce
 
 import numpy as np
@@ -274,7 +275,6 @@ class TestInitialization:
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, mxstep=10)
 
-        # pylint:disable = use-implicit-booleaness-not-comparison
         assert ev.parameters == []
         assert ev.num_params == 0
         assert ev.t is None
@@ -485,7 +485,6 @@ class TestInitialization:
 class TestMatrix:
     """Test matrix method."""
 
-    # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test matrix method for a time independent hamiltonian."""
         H = time_independent_hamiltonian()
@@ -575,7 +574,6 @@ class TestIntegration:
         duration = time if qp.math.ndim(time) == 0 else time[1] - time[0]
         assert qp.math.isclose(res, qp.math.cos(4 * duration))
 
-    # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test the execution of a time independent hamiltonian."""
         import jax

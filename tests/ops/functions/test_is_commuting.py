@@ -16,6 +16,7 @@ Unittests for is_commuting
 """
 
 # pylint: disable=too-many-public-methods
+
 import pytest
 
 import pennylane as qp
@@ -38,7 +39,6 @@ control_base_map_data = [
 ]
 
 
-# pylint: disable=too-few-public-methods
 class DummyOp(qp.operation.Operator):
     """An operator that hasn't been seen before."""
 
@@ -310,45 +310,25 @@ class TestCommutingFunction:
         commutation = qp.is_commuting(qp.CNOT(wires=wires[0]), qp.CSWAP(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1, 2], [1, 2]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1, 2], [1, 2]], False)])
     def test_cswap_cnot(self, wires, res):
         """Commutation between CSWAP and CNOT."""
         commutation = qp.is_commuting(qp.CSWAP(wires=wires[0]), qp.CNOT(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1, 2], [2, 1, 0]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1, 2], [2, 1, 0]], False)])
     def test_cswap_cswap(self, wires, res):
         """Commutation between CSWAP and CSWAP."""
         commutation = qp.is_commuting(qp.CSWAP(wires=wires[0]), qp.CSWAP(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0, 1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0, 1]], False)])
     def test_cnot_swap(self, wires, res):
         """Commutation between CNOT and SWAP."""
         commutation = qp.is_commuting(qp.CNOT(wires=wires[0]), qp.SWAP(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0, 1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0, 1]], False)])
     def test_swap_cnot(self, wires, res):
         """Commutation between SWAP and CNOT."""
         commutation = qp.is_commuting(qp.SWAP(wires=wires[0]), qp.CNOT(wires=wires[1]))
@@ -383,25 +363,13 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], True),
-            ([[0, 1], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], True), ([[0, 1], [1]], True)])
     def test_cphase_z(self, wires, res):
         """Commutation between CPhase and PauliZ."""
         commutation = qp.is_commuting(qp.CPhase(0.2, wires=wires[0]), qp.PauliZ(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], True),
-            ([[0, 1], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], True), ([[0, 1], [1]], True)])
     def test_cphase_phase(self, wires, res):
         """Commutation between CPhase and Phase."""
         commutation = qp.is_commuting(
@@ -409,49 +377,25 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], False),
-            ([[0, 1], [1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], False), ([[0, 1], [1]], False)])
     def test_cphase_paulix(self, wires, res):
         """Commutation between CPhase and PauliX."""
         commutation = qp.is_commuting(qp.CPhase(0.2, wires=wires[0]), qp.PauliX(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], True),
-            ([[0, 1], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], True), ([[0, 1], [1]], True)])
     def test_cphase_zero_paulix(self, wires, res):
         """Commutation between CPhase(0.0) and PauliX."""
         commutation = qp.is_commuting(qp.CPhase(0.0, wires=wires[0]), qp.PauliX(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], True),
-            ([[0, 1], [1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], True), ([[0, 1], [1]], False)])
     def test_crx_pauliz(self, wires, res):
         """Commutation between CRX(0.1) and PauliZ."""
         commutation = qp.is_commuting(qp.CRX(0.1, wires=wires[0]), qp.PauliZ(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], True),
-            ([[0, 1], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], True), ([[0, 1], [1]], True)])
     def test_crx_zero_pauliz(self, wires, res):
         """Commutation between CRX(0.0) and PauliZ."""
         commutation = qp.is_commuting(qp.CRX(0.0, wires=wires[0]), qp.PauliZ(wires=wires[1]))
@@ -459,61 +403,31 @@ class TestCommutingFunction:
         commutation = qp.is_commuting(qp.PauliZ(wires=wires[1]), qp.CRX(0.0, wires=wires[0]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], False),
-            ([[0, 1], [1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], False), ([[0, 1], [1]], False)])
     def test_crz_paulix(self, wires, res):
         """Commutation between CRZ(0.1) and PauliX."""
         commutation = qp.is_commuting(qp.CRZ(0.1, wires=wires[0]), qp.PauliX(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], True),
-            ([[0, 1], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], True), ([[0, 1], [1]], True)])
     def test_crz_zero_paulix(self, wires, res):
         """Commutation between CRZ(0.0) and PauliX."""
         commutation = qp.is_commuting(qp.CRZ(0.0, wires=wires[0]), qp.PauliX(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], False),
-            ([[0, 1], [1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], False), ([[0, 1], [1]], False)])
     def test_cry_hadamard(self, wires, res):
         """Commutation between CRY(0.1) and Hadamard."""
         commutation = qp.is_commuting(qp.CRY(0.1, wires=wires[0]), qp.Hadamard(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], True),
-            ([[0, 1], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], True), ([[0, 1], [1]], True)])
     def test_cry_zero_hadamard(self, wires, res):
         """Commutation between CRY(0.0) and Hadamard."""
         commutation = qp.is_commuting(qp.CRY(0.0, wires=wires[0]), qp.Hadamard(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_rot_x_simplified(self, wires, res):
         """Commutation between Rot(np.pi / 2, 0.1, -np.pi / 2) and PauliX."""
         commutation = qp.is_commuting(
@@ -521,25 +435,13 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_rot_y_simplified(self, wires, res):
         """Commutation between Rot(0, 0.1, 0) and PauliY."""
         commutation = qp.is_commuting(qp.Rot(0, 0.1, 0, wires=wires[0]), qp.PauliY(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_rot_z_simplified(self, wires, res):
         """Commutation between Rot(0.1, 0.0, 0.2) and PauliZ."""
         commutation = qp.is_commuting(
@@ -547,13 +449,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_rot_hadamard_simplified(self, wires, res):
         """Commutation between Rot(np.pi, np.pi / 2, 0) and Hadamard."""
         commutation = qp.is_commuting(
@@ -561,13 +457,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], False),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], False), ([[0], [1]], True)])
     def test_rot_z(self, wires, res):
         """Commutation between Rot(0.1, 0.2, 0.3) and PauliZ."""
         commutation = qp.is_commuting(
@@ -575,13 +465,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [1]], True),
-            ([[0, 1], [0]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [1]], True), ([[0, 1], [0]], False)])
     def test_crot_x_simplified(self, wires, res):
         """Commutation between CRot(np.pi / 2, 0.1, -np.pi / 2) and PauliX."""
         commutation = qp.is_commuting(
@@ -589,25 +473,13 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [1]], True),
-            ([[0, 1], [0]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [1]], True), ([[0, 1], [0]], False)])
     def test_crot_y_simplified(self, wires, res):
         """Commutation between CRot(0, 0.1, 0) and PauliY."""
         commutation = qp.is_commuting(qp.CRot(0, 0.1, 0, wires=wires[0]), qp.PauliY(wires=wires[1]))
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [1]], True),
-            ([[0, 1], [0]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [1]], True), ([[0, 1], [0]], True)])
     def test_crot_z_simplified(self, wires, res):
         """Commutation between CRot(0.1, 0, 0.2) and PauliZ."""
         commutation = qp.is_commuting(
@@ -615,13 +487,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [1]], True),
-            ([[0, 1], [0]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [1]], True), ([[0, 1], [0]], False)])
     def test_crot_hadamard_simplified(self, wires, res):
         """Commutation between CRot(np.pi, np.pi / 2, 0) and Hadamard."""
         op1 = qp.CRot(np.pi, np.pi / 2, 0, wires=wires[0])
@@ -629,13 +495,7 @@ class TestCommutingFunction:
         assert qp.is_commuting(op1, op2) == res
         assert qp.is_commuting(op2, op1) == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [1]], False),
-            ([[0, 1], [0]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [1]], False), ([[0, 1], [0]], True)])
     def test_crot_z(self, wires, res):
         """Commutation between CRot(0.1, 0.2, 0.3) and PauliZ."""
         commutation = qp.is_commuting(
@@ -643,13 +503,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_u2_y_simplified(self, wires, res):
         """Commutation between U2(2*np.pi, -2*np.pi) and PauliY."""
         commutation = qp.is_commuting(
@@ -657,13 +511,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_u2_x_simplified(self, wires, res):
         """Commutation between U2(np.pi/2, -np.pi/2) and PauliX."""
         commutation = qp.is_commuting(
@@ -671,13 +519,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], False),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], False), ([[0], [1]], True)])
     def test_u2_u2(self, wires, res):
         """Commutation between U2(0.1, 0.2) and U2(0.3, 0.1)."""
         commutation = qp.is_commuting(
@@ -685,13 +527,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], False),
-            ([[0, 1], [1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], False), ([[0, 1], [1]], False)])
     def test_crot_u2(self, wires, res):
         """Commutation between CRot(0.1, 0.2, 0.3) and U2(0.4, 0.5)."""
         commutation = qp.is_commuting(
@@ -699,13 +535,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0]], False),
-            ([[0, 1], [1]], False),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0, 1], [0]], False), ([[0, 1], [1]], False)])
     def test_u2_crot(self, wires, res):
         """Commutation between U2(0.1, 0.2) and CRot(0.3, 0.4, 0.5)."""
         commutation = qp.is_commuting(
@@ -729,13 +559,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_u3_simplified_z(self, wires, res):
         """Commutation between U3(0.0, 0.1, 0.0) and PauliZ."""
         commutation = qp.is_commuting(
@@ -743,13 +567,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_u3_simplified_y(self, wires, res):
         """Commutation between U3(0.1, 0.0, 0.0) and PauliY."""
         commutation = qp.is_commuting(
@@ -757,13 +575,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], True),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], True), ([[0], [1]], True)])
     def test_u3_simplified_x(self, wires, res):
         """Commutation between U3(0.1, -np.pi/2, np.pi/2) and PauliX."""
         commutation = qp.is_commuting(
@@ -771,13 +583,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], False),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], False), ([[0], [1]], True)])
     def test_u3_rot(self, wires, res):
         """Commutation between U3(0.1, 0.2, 0.3) and Rot(0.3, 0.2, 0.1)."""
         commutation = qp.is_commuting(
@@ -785,13 +591,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], False),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], False), ([[0], [1]], True)])
     def test_u3_identity_barrier(self, wires, res):
         """Commutation between U3(0.0, 0.0, 0.0) and Barrier."""
         commutation = qp.is_commuting(
@@ -799,13 +599,7 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0]], False),
-            ([[0], [1]], True),
-        ],
-    )
+    @pytest.mark.parametrize("wires,res", [([[0], [0]], False), ([[0], [1]], True)])
     def test_barrier_u3_identity(self, wires, res):
         """Commutation between Barrier and U3(0.0, 0.0, 0.0)."""
         commutation = qp.is_commuting(
@@ -884,12 +678,7 @@ class TestCommutingFunction:
         with pytest.raises(QuantumFunctionError, match="Operation PauliRot not supported."):
             qp.is_commuting(qp.PauliX(wires=0), qp.PauliRot(1, "X", wires=0))
 
-    @pytest.mark.parametrize(
-        "op, name",
-        [
-            (qp.exp(qp.PauliX(0), 1.2), "Exp"),
-        ],
-    )
+    @pytest.mark.parametrize("op, name", [(qp.exp(qp.PauliX(0), 1.2), "Exp")])
     def test_composite_arithmetic_ops_not_supported(self, op, name):
         """Test that giving a non supported operation raises an error."""
 

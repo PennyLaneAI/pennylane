@@ -41,12 +41,7 @@ dev = device("default.qubit")
 @qnode(dev)
 def bb_quantum(data, control_wires, target_wires, work_wires, address):
     BasisEmbedding(address, wires=control_wires)
-    BBQRAM(
-        data,
-        control_wires=control_wires,
-        target_wires=target_wires,
-        work_wires=work_wires,
-    )
+    BBQRAM(data, control_wires=control_wires, target_wires=target_wires, work_wires=work_wires)
     return probs(wires=target_wires)
 
 
@@ -105,14 +100,8 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
         ),
     ],
 )
-def test_bb_quantum(
-    data,
-    control_wires,
-    target_wires,
-    work_wires,
-    address,
-    probabilities,
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def test_bb_quantum(data, control_wires, target_wires, work_wires, address, probabilities):
 
     if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
         data, control_wires, target_wires, work_wires = (
@@ -258,21 +247,15 @@ def test_bbqram_decomposition_new(
     portL_wires,
     portR_wires,
 ):  # pylint: disable=too-many-arguments
-    op = BBQRAM(
-        data,
-        control_wires,
-        target_wires,
-        [bus] + dir_wires + portL_wires + portR_wires,
-    )
+    op = BBQRAM(data, control_wires, target_wires, [bus] + dir_wires + portL_wires + portR_wires)
 
     for rule in list_decomps(BBQRAM):
         _test_decomposition_rule(op, rule)
 
 
 @qnode(dev)
-def hybrid_quantum(
-    data, control_wires, target_wires, work_wires, k, address
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def hybrid_quantum(data, control_wires, target_wires, work_wires, k, address):
     BasisEmbedding(address, wires=control_wires)
     HybridQRAM(
         data,
@@ -515,14 +498,7 @@ def test_hybrid_quantum(
             jnp.array(work_wires),
         )
 
-    real_probs = hybrid_quantum(
-        data,
-        control_wires,
-        target_wires,
-        work_wires,
-        k,
-        address,
-    )
+    real_probs = hybrid_quantum(data, control_wires, target_wires, work_wires, k, address)
     assert np.allclose(probabilities, real_probs)
     tape = workflow.construct_tape(hybrid_quantum, level="device")(
         data,
@@ -695,9 +671,8 @@ def test_hybrid_raises(params, error, match):
 
 
 @qnode(dev)
-def select_only_quantum(
-    data, control_wires, target_wires, select_wires, select_value, address
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def select_only_quantum(data, control_wires, target_wires, select_wires, select_value, address):
     BasisEmbedding(address, wires=control_wires)
     SelectOnlyQRAM(
         data,
@@ -1187,16 +1162,8 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
-def test_select_decomposition_new(
-    data, control_wires, target_wires, select_wires, select_value
-):  # pylint: disable=too-many-arguments
-    op = SelectOnlyQRAM(
-        data,
-        control_wires,
-        target_wires,
-        select_wires,
-        select_value,
-    )
+def test_select_decomposition_new(data, control_wires, target_wires, select_wires, select_value):
+    op = SelectOnlyQRAM(data, control_wires, target_wires, select_wires, select_value)
 
     for rule in list_decomps(SelectOnlyQRAM):
         _test_decomposition_rule(op, rule)
@@ -1234,11 +1201,7 @@ def test_ffqram_postselected_probabilities(amplitudes, address, wires):
 
     @qnode(dev)
     def circuit():
-        FFQRAM(
-            amplitudes=amplitudes,
-            wires=wires["address"] + wires["register"],
-            address=address,
-        )
+        FFQRAM(amplitudes=amplitudes, wires=wires["address"] + wires["register"], address=address)
         # Post-select the register qubit in |1>
         measure(wires["register"], postselect=1)
         return probs(wires=wires["address"])
@@ -1279,11 +1242,7 @@ def test_ffqram_success_probability(amplitudes, address, wires):
 
     @qnode(dev)
     def circuit():
-        FFQRAM(
-            amplitudes=amplitudes,
-            wires=wires["address"] + wires["register"],
-            address=address,
-        )
+        FFQRAM(amplitudes=amplitudes, wires=wires["address"] + wires["register"], address=address)
         # No post-selection here: read P(register = 0/1) directly.
         return probs(wires=wires["register"])
 
@@ -1323,13 +1282,7 @@ def test_ffqram_init_validation_errors(amplitudes, address, error_msg):
         FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=address)
 
 
-@pytest.mark.parametrize(
-    "amplitudes",
-    [
-        [0.0, 0.0],
-        [[0.0, 0.0], [np.sqrt(0.3), np.sqrt(0.7)]],
-    ],
-)
+@pytest.mark.parametrize("amplitudes", [[0.0, 0.0], [[0.0, 0.0], [np.sqrt(0.3), np.sqrt(0.7)]]])
 def test_ffqram_decomposition_zero_norm_error(amplitudes):
     """Check that FFQRAM cannot normalize zero-norm amplitudes."""
     op = FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=["000", "001"])

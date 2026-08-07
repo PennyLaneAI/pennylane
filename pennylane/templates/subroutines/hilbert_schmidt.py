@@ -15,6 +15,8 @@
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 
+# pylint: disable=protected-access
+
 import copy
 from collections import defaultdict
 from collections.abc import Iterable
@@ -113,15 +115,14 @@ class HilbertSchmidt(Operation):
     resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
-        # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
         V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
 
         def _get_tracer(op):
             if isinstance(op, Operator2):
                 if op.tracer is None:
-                    # pylint: disable-next=protected-access
                     op._bind_primitive()
                 return op.tracer if op.tracer is not None else op
             return op
@@ -149,11 +150,7 @@ class HilbertSchmidt(Operation):
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
-    def __init__(
-        self,
-        V: Operator | Iterable[Operator],
-        U: Operator | Iterable[Operator],
-    ) -> None:
+    def __init__(self, V: Operator | Iterable[Operator], U: Operator | Iterable[Operator]) -> None:
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
         if not all(isinstance(op, Operator) for op in u_ops):
             raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
@@ -164,10 +161,7 @@ class HilbertSchmidt(Operation):
             raise ValueError("The argument 'V' must be an Operator or an iterable of Operators.")
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
-        self._hyperparameters = {
-            "U": u_ops,
-            "V": v_ops,
-        }
+        self._hyperparameters = {"U": u_ops, "V": v_ops}
 
         if len(u_wires) != len(v_wires):
             raise ValueError("U and V must have the same number of wires.")
@@ -217,13 +211,12 @@ class HilbertSchmidt(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -267,7 +260,6 @@ class HilbertSchmidt(Operation):
         return decomp_ops
 
 
-# pylint: disable=protected-access
 if HilbertSchmidt._primitive is not None:
 
     @HilbertSchmidt._primitive.def_impl
@@ -413,7 +405,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         return clone
 
 
-# pylint: disable=protected-access
 if LocalHilbertSchmidt._primitive is not None:
 
     @LocalHilbertSchmidt._primitive.def_impl
@@ -476,9 +467,8 @@ def _up_to_last_layer(
     def collect_wires_in_order(ops):
         accumulator = []
         for operator in ops:
-            for wire_index in range(  # pylint: disable=consider-using-enumerate
-                len(operator.wires)
-            ):
+            # pylint: disable-next=consider-using-enumerate
+            for wire_index in range(len(operator.wires)):
                 if capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
                 else:

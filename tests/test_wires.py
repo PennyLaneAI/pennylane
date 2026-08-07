@@ -33,8 +33,7 @@ else:
     jax = None
 
 
-# pylint: disable=too-many-public-methods, too-many-positional-arguments
-class TestWires:
+class TestWires:  # pylint: disable=too-many-public-methods
     """Tests for the ``Wires`` class."""
 
     def test_error_if_wires_none(self):
@@ -140,9 +139,7 @@ class TestWires:
         wires = Wires(iterable)
         assert len(wires) == len(iterable)
 
-    def test_contains(
-        self,
-    ):
+    def test_contains(self):
         """Tests the __contains__() method."""
 
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
@@ -157,9 +154,7 @@ class TestWires:
         assert [0, 4] not in wires
         assert [4] not in wires
 
-    def test_contains_wires(
-        self,
-    ):
+    def test_contains_wires(self):
         """Tests the dedicated contains_wires() method."""
 
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
@@ -170,9 +165,8 @@ class TestWires:
 
         assert not wires.contains_wires(0)  # wrong type
         assert not wires.contains_wires([0, 1])  # wrong type
-        assert not wires.contains_wires(
-            Wires([4, 5])
-        )  # looks up 4 and 5 in wires, which are not present
+        # looks up 4 and 5 in wires, which are not present
+        assert not wires.contains_wires(Wires([4, 5]))
 
     def test_add_two_wires_objects(self):
         """Tests that wires objects add correctly."""
@@ -380,9 +374,9 @@ class TestWires:
         assert Wires([1, 2, 3]) != (1, 5, 3)
         assert (1, 5, 3) != Wires([1, 2, 3])
 
-    # pylint: disable=protected-access
     def test_hash_cached(self):
         """Test that the hash of a Wires object is being cached."""
+        # pylint: disable=protected-access
         wires = Wires([0, 1])
         assert wires._hash is None
         h = hash(wires)
@@ -513,7 +507,6 @@ class TestWires:
             (Wires([]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4, 5]), Wires([1, 2, 3, 4, 5])),
         ],
     )
-    # pylint: disable=too-many-arguments
     def test_multiple_union(self, wire_a, wire_b, wire_c, wire_d, expected):
         """
         Test the union operation (|) with multiple Wires objects.

@@ -84,7 +84,7 @@ class TestRotGateFusion:
             qp.Rot(*qp.math.transpose(angles_1), wires=0)
             qp.Rot(*qp.math.transpose(angles_2), wires=0)
 
-        matrix_expected = qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+        matrix_expected = qp.matrix(original_ops, [0])()
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         # The reshape is only used in the _mixed_batching test. Otherwise it is irrelevant.
@@ -104,10 +104,8 @@ class TestRotGateFusion:
         ([[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]], [-0.9, 1.2, 0.6]),  # (2, None)
         ([-0.9, 1.2, 0.6], [[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]]),  # (None, 2)
         ([-0.9, 1.2, 0.6], [[[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]]] * 4),  # (None, (4, 2))
-        (
-            [[[-0.9, 1.2, 0.6]] * 2] * 4,
-            [[[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]]] * 4,
-        ),  # ((4, 2), (4, 2))
+        # ((4, 2), (4, 2))
+        ([[[-0.9, 1.2, 0.6]] * 2] * 4, [[[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]]] * 4),
     ]
 
     @pytest.mark.parametrize("angles_1, angles_2", mixed_batched_angles)
@@ -173,7 +171,6 @@ class TestRotGateFusion:
         angles_1, angles_2 = np.transpose(special_angles, (1, 0, 2))
         self.run_interface_test(angles_1, angles_2)
 
-    # pylint: disable=too-many-arguments
     def run_jacobian_test(self, all_angles, jac_fn, is_batched, jit_fn=None, array_fn=None):
         """Execute standard test lines for testing Jacobians with different interfaces.
         #Note that the transpose calls only are relevant for tests with batching."""
@@ -184,7 +181,7 @@ class TestRotGateFusion:
                 qp.Rot(angles1[..., 0], angles1[..., 1], angles1[..., 2], wires=0)
                 qp.Rot(angles2[..., 0], angles2[..., 1], angles2[..., 2], wires=0)
 
-            return qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+            return qp.matrix(original_ops, [0])()
 
         def mat_from_fuse(angles):
             angles1, angles2 = angles[..., 0, :], angles[..., 1, :]

@@ -52,7 +52,7 @@ def _update_resource_dict(
 PBCDepth = namedtuple("PBCDepth", ["any_commuting_depth", "qubit_disjoint_depth"])
 
 
-def _mlir_resources_to_specs_resources(
+def _mlir_resources_to_specs_resources(  # pylint: disable=too-many-branches
     all_data: dict[str, Any],
     focus: str,
     fn_resources: dict[str, SpecsResources | None],
@@ -81,7 +81,6 @@ def _mlir_resources_to_specs_resources(
             names in the output. (modified in-place by this function)
     """
 
-    # pylint: disable=too-many-branches
     # This method would not benefit from being broken up further, the parsing logic just requires
     # several branches
 
@@ -188,9 +187,7 @@ def _mlir_resources_to_specs_resources(
         fn_resources[focus] = SpecsResources(**kwargs)
 
 
-def _get_resources_from_analysis_pass(
-    all_data: dict[str, Any],
-) -> list[SpecsResources]:
+def _get_resources_from_analysis_pass(all_data: dict[str, Any]) -> list[SpecsResources]:
     resource_data = {}
 
     for fn_name in all_data.keys():
@@ -210,12 +207,7 @@ def _get_resources_from_analysis_pass(
     return [resource_data[fn].subs() for fn, data in all_data.items() if data["qnode"]]
 
 
-def _execute_analysis_pass(
-    new_qnode,
-    compile_options,
-    *args,
-    **kwargs,
-):  # pragma: no cover
+def _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs):  # pragma: no cover
     """
     Helper function to compile the QNode with the resource analysis pass inserted, which will output
     the necessary JSON files for MLIR analysis.
@@ -257,7 +249,7 @@ def _execute_analysis_pass(
         )
 
 
-def resources_from_analysis_pass(
+def resources_from_analysis_pass(  # pylint: disable=too-many-arguments
     qjit,
     original_qnode,
     level: int | tuple[int] | list[int],
@@ -296,7 +288,7 @@ def resources_from_analysis_pass(
             corresponding resource information.
     """
 
-    # pylint: disable=protected-access,too-many-arguments
+    # pylint: disable=protected-access
 
     new_qnode = copy.deepcopy(original_qnode)
     iter_pipeline = new_qnode._compile_pipeline

@@ -15,9 +15,9 @@
 Unit tests for the ``broadcast_expand`` transform.
 """
 
-import numpy as np
+# pylint: disable=unused-argument
 
-# pylint: disable=too-few-public-methods, unused-argument
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -31,13 +31,7 @@ def get_device(name="default.qubit", wires=2, seed=None):
 
 def make_ops(x, y, z):
     """Queue three parametrized and two unparametrized operations and return them."""
-    ops = [
-        qp.RX(x, wires=0),
-        qp.PauliY(0),
-        qp.RX(y, wires=1),
-        qp.RZ(z, wires=1),
-        qp.Hadamard(1),
-    ]
+    ops = [qp.RX(x, wires=0), qp.PauliY(0), qp.RX(y, wires=1), qp.RZ(z, wires=1), qp.Hadamard(1)]
     return ops
 
 
@@ -301,7 +295,6 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_jax(self, params, obs, exp_fn, use_jit, diff_method, seed):
         """Test that the expansion works with jax and is differentiable."""
-        # pylint: disable=too-many-arguments
         import jax
 
         jax.config.update("jax_enable_x64", True)

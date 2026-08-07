@@ -12,6 +12,8 @@
 # limitations under the License.
 """Tests for ``pennylane.core.operator.utils``."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
@@ -22,8 +24,6 @@ from pennylane.core.operator.utils import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
-
-# pylint: disable=useless-parent-delegation,too-few-public-methods
 
 
 class TestAbstractifyBasics:
@@ -281,11 +281,7 @@ class TestAbstractifyOperatorClasses:
         class FixedSigOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
-            arg_specs = {
-                "phi": Float,
-                "wires": Wire[2],
-                "ctrl_wires": Wire[1],
-            }
+            arg_specs = {"phi": Float, "wires": Wire[2], "ctrl_wires": Wire[1]}
 
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)

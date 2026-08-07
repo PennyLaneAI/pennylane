@@ -57,7 +57,7 @@ def test_resources():
 
 @pytest.mark.system
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-class TestCorrectness:  # pylint: disable=too-few-public-methods
+class TestCorrectness:
     """Tests the correctness of the template in a qnode."""
 
     @pytest.mark.parametrize(
@@ -242,11 +242,7 @@ def test_exceptions(weights, wires, msg_match):
 
     @qp.qnode(dev)
     def circuit():
-        qp.ParticleConservingU2(
-            weights=weights,
-            wires=wires,
-            init_state=init_state,
-        )
+        qp.ParticleConservingU2(weights=weights, wires=wires, init_state=init_state)
         return qp.expval(qp.PauliZ(0))
 
     with pytest.raises(ValueError, match=msg_match):

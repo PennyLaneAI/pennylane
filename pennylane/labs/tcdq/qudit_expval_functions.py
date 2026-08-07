@@ -331,8 +331,7 @@ def _obs_phase_matrix(
     )
 
 
-# pylint: disable=too-many-arguments
-def _build_all_weight_groups(
+def _build_all_weight_groups(  # pylint: disable=too-many-arguments
     gen_np: np.ndarray,
     pm_np: np.ndarray,
     gate_weights: np.ndarray,
@@ -358,7 +357,7 @@ def _build_all_weight_groups(
     return weight_data
 
 
-def _accumulate_phase_diffs(
+def _accumulate_phase_diffs(  # pylint: disable=too-many-arguments
     gates_params: ArrayLike,
     weight_data: list[WeightGroupData],
     n_obs: int,
@@ -439,9 +438,7 @@ def _compute_mc_statistics(
     return expvals, cov, mean_y_sq
 
 
-def build_qudit_expval_func(
-    config: QuditCircuitConfig,
-) -> Callable:
+def build_qudit_expval_func(config: QuditCircuitConfig) -> Callable:
     """Build an estimator for expectation values of a qudit IQP circuit.
 
     Returns a pure function that estimates the complex expectation value

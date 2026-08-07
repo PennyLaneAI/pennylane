@@ -78,12 +78,11 @@ ARGNAME_CATEGORIES = (
 )
 
 
+# pylint: disable-next=too-many-public-methods,too-many-instance-attributes
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
     """
-
-    # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     _operator_version = 2
 
@@ -600,7 +599,7 @@ class Operator2(metaclass=OperatorMeta):
         """
         return cls.adjoint != Operator2.adjoint
 
-    def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator2":  # pylint: disable=no-self-use
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
         TODO: [sc-120844] Fix docstring after Adjoint is added
@@ -671,7 +670,7 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
     # ----------------------- Operator representations -----------------------
     # ------------------------------------------------------------------------
-    # pylint: disable=unused-argument,comparison-with-callable,no-self-use
+    # pylint: disable=no-self-use
 
     @staticmethod
     def compute_matrix(*args, **kwargs) -> TensorLike:
@@ -1655,15 +1654,13 @@ def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
 
 
 if has_jax:
-    # pylint: disable=import-outside-toplevel,ungrouped-imports
     from pennylane.capture.custom_primitives import QpPrimitive
 
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments,unused-argument
     @operator_p.def_impl
-    def _op_impl(
+    def _op_impl(  # pylint: disable=too-many-arguments,unused-argument
         *all_args,
         op_cls,
         wire_lens,
@@ -1968,7 +1965,6 @@ class StatePrepBase2(Operator2, is_baseclass=True):
             array: A state vector for all wires in a circuit
         """
 
-    # pylint: disable=unused-argument
     def label(
         self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
     ) -> str:

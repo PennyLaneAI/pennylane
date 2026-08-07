@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -43,8 +45,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.wires import Wires
-
-# pylint: disable=too-few-public-methods, unused-argument
 
 
 def test_measurements_module_getattr():
@@ -182,10 +182,10 @@ valid_meausurements = [
 ]
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize("mp", valid_meausurements)
 def test_flatten_unflatten(mp):
     """Test flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     data, metadata = mp._flatten()
     assert hash(metadata)
@@ -209,10 +209,7 @@ def test_jax_pytree_integration(mp):
 class TestStatisticsQueuing:
     """Tests for annotating the return types of the statistics functions"""
 
-    @pytest.mark.parametrize(
-        "op",
-        [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard, qp.Identity],
-    )
+    @pytest.mark.parametrize("op", [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard, qp.Identity])
     def test_annotating_obs_return_type(self, stat_func, return_type, op):
         """Test that the return_type related info is updated for a
         measurement"""
@@ -377,12 +374,14 @@ class TestProperties:
         m1 = qp.measure("b")
         m2 = qp.measure(0)
         m3 = qp.measure(1)
+        # pylint: disable-next=protected-access
         m2.measurements[0]._hyperparameters["meas_uid"] = m0.measurements[0]._hyperparameters[
             "meas_uid"
-        ]  # pylint: disable=protected-access
+        ]
+        # pylint: disable-next=protected-access
         m3.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
             "meas_uid"
-        ]  # pylint: disable=protected-access
+        ]
 
         wire_map = {"a": 0, "b": 1}
 
@@ -437,7 +436,6 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qp.math.sum(samples[..., self.wires])
 
@@ -458,7 +456,7 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 

@@ -15,9 +15,9 @@
 Unit tests for the RandomLayers template.
 """
 
-import numpy as np
-
 # pylint: disable=too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -57,9 +57,9 @@ def test_hyperparameters():
     }
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the behavior of the flatten and unflatten methods."""
+    # pylint: disable=protected-access
     weights = np.array([[0.1, -2.1, 1.4]])
     op = qp.RandomLayers(weights, wires=(0, 1))
 

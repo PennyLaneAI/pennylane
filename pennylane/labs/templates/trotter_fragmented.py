@@ -13,11 +13,11 @@
 # limitations under the License.
 """Contains the Trotter templates for fragmented Hamiltonians."""
 
+# pylint: disable=too-many-arguments,no-value-for-parameter,unused-argument
+
 import numpy as np
 
 import pennylane as qp
-
-# pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
 has_jax = True
 try:
@@ -140,7 +140,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
             )
             return hamiltonian
 
-        trotter_steps(hamiltonian)  # pylint: disable=no-value-for-parameter
+        trotter_steps(hamiltonian)
 
         U_tensor = hamiltonian["leaf_tensors"]
         very_last_U = _transpose_leaf(U_tensor[1], frag_scheme)

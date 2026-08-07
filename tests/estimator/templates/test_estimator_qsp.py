@@ -18,8 +18,6 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, ResourceOperator
 
-# pylint: disable=no-self-use, too-many-arguments
-
 
 class DummyOp(ResourceOperator):
     def __init__(self, wires):
@@ -34,7 +32,6 @@ class DummyOp(ResourceOperator):
     def resource_rep(cls):
         return CompressedResourceOp(cls, 1, {})
 
-    # pylint: disable=unused-argument
     @classmethod
     def resource_decomp(cls, **kwargs):
         return []
@@ -96,13 +93,7 @@ class TestQSVT:
         assert qsvt.encoding_dims == (1, 1)
         assert qsvt.block_encoding == qre.resource_rep(qre.RX)
 
-    @pytest.mark.parametrize(
-        "encoding_dims, poly_deg",
-        [
-            (2, 3),
-            ((2, 4), 2),
-        ],
-    )
+    @pytest.mark.parametrize("encoding_dims, poly_deg", [(2, 3), ((2, 4), 2)])
     def test_resource_params(self, encoding_dims, poly_deg):
         """Test that the resource params are correct."""
         op = DummyOp(wires=[0])
@@ -118,13 +109,7 @@ class TestQSVT:
             "poly_deg": poly_deg,
         }
 
-    @pytest.mark.parametrize(
-        "encoding_dims, poly_deg",
-        [
-            (2, 3),
-            ((2, 4), 2),
-        ],
-    )
+    @pytest.mark.parametrize("encoding_dims, poly_deg", [(2, 3), ((2, 4), 2)])
     def test_resource_rep(self, encoding_dims, poly_deg):
         """Test that the compressed representation is correct."""
         op = DummyOp(wires=[0])
@@ -197,7 +182,6 @@ class TestQSP:
             def resource_rep(cls):
                 return CompressedResourceOp(cls, 2, {})
 
-            # pylint: disable=unused-argument
             @classmethod
             def resource_decomp(cls, **kwargs):
                 return []
@@ -356,13 +340,7 @@ class TestGQSP:
         with pytest.raises(ValueError, match=error_msg):
             _ = qre.GQSP.resource_rep(op, d_plus, d_minus)
 
-    @pytest.mark.parametrize(
-        "poly_deg, neg_poly_deg, rot_precision",
-        (
-            (5, 0, 1e-5),
-            (10, 5, None),
-        ),
-    )
+    @pytest.mark.parametrize("poly_deg, neg_poly_deg, rot_precision", ((5, 0, 1e-5), (10, 5, None)))
     def test_resource_params(self, poly_deg, neg_poly_deg, rot_precision):
         """Test that the resource params for GQSP are correct."""
         op = qre.RX(0.1, wires=0)
@@ -373,13 +351,7 @@ class TestGQSP:
         assert gqsp.resource_params["rotation_precision"] == rot_precision
         assert gqsp.resource_params["cmpr_signal_op"].op_type == qre.RX
 
-    @pytest.mark.parametrize(
-        "poly_deg, neg_poly_deg, rot_precision",
-        (
-            (5, 0, 1e-5),
-            (10, 5, None),
-        ),
-    )
+    @pytest.mark.parametrize("poly_deg, neg_poly_deg, rot_precision", ((5, 0, 1e-5), (10, 5, None)))
     def test_resource_rep(self, poly_deg, neg_poly_deg, rot_precision):
         """Test that the compressed representation for GQSP is correct."""
         op = qre.RX(0.1, wires=0)

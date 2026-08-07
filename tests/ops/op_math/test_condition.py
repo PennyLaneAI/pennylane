@@ -120,8 +120,7 @@ class TestCond:
             qp.RY(x, wires=1)
             qp.PauliZ(1)
 
-        def g(x):
-            # pylint: disable=unused-argument
+        def g(x):  # pylint: disable=unused-argument
             qp.PauliY(1)
 
         tape = getattr(self, tape)(f, g, r, terminal_measurement)
@@ -440,7 +439,6 @@ class TestProperties:
     def test_has_matrix(self, value):
         """Test that Conditional defers has_matrix to base operator."""
 
-        # pylint:disable=too-few-public-methods
         class DummyOp(Operator):
             num_wires = 1
             has_matrix = value
@@ -454,7 +452,6 @@ class TestProperties:
     def test_has_adjoint(self, value):
         """Test that Conditional defers has_adjoint to base operator."""
 
-        # pylint:disable=too-few-public-methods
         class DummyOp(Operator):
             num_wires = 1
             has_adjoint = value
@@ -468,7 +465,6 @@ class TestProperties:
     def test_has_diagonalizing_gates(self, value):
         """Test that Conditional defers has_adjoint to base operator."""
 
-        # pylint:disable=too-few-public-methods
         class DummyOp(Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -622,7 +618,7 @@ class TestPythonFallback:
                 return y**2
 
             @conditional.otherwise
-            def conditional_false_fn(y):  # pylint: disable=unused-variable
+            def conditional_false_fn(y):
                 return -y
 
             return conditional(x + 1)
@@ -639,11 +635,11 @@ class TestPythonFallback:
                 return y**2
 
             @conditional.else_if(x < -2)
-            def conditional_elif(y):  # pylint: disable=unused-variable
+            def conditional_elif(y):
                 return y
 
             @conditional.otherwise
-            def conditional_false_fn(y):  # pylint: disable=unused-variable
+            def conditional_false_fn(y):
                 return -y
 
             return conditional(x + 1)

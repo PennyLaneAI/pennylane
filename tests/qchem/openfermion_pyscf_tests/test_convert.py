@@ -17,6 +17,7 @@ PennyLane object.
 """
 
 # pylint: disable=too-many-arguments,protected-access
+
 import os
 import sys
 
@@ -427,10 +428,7 @@ def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
         qp.qchem.convert.import_operator(qOp, format=lib_name)
 
 
-invalid_ops = (
-    qp.prod(qp.PauliX(0), qp.Hadamard(1)),
-    qp.sum(qp.PauliZ(0), qp.Hadamard(1)),
-)
+invalid_ops = (qp.prod(qp.PauliX(0), qp.Hadamard(1)), qp.sum(qp.PauliZ(0), qp.Hadamard(1)))
 
 
 @pytest.mark.parametrize("op", invalid_ops)
@@ -547,13 +545,7 @@ op_1 = (
 op_2 = openfermion.QubitOperator("Z0 Y1", 2.3e-6j)
 
 
-@pytest.mark.parametrize(
-    ("qubit_op", "tol"),
-    [
-        (op_1, 1e-8),
-        (op_2, 1e-10),
-    ],
-)
+@pytest.mark.parametrize(("qubit_op", "tol"), [(op_1, 1e-8), (op_2, 1e-10)])
 def test_exception_import_operator(qubit_op, tol):
     r"""Test that a warning is raised if the QubitOperator contains complex coefficients.
     Currently, the Hamiltonian class does not support complex coefficients.
@@ -753,12 +745,7 @@ def test_integration_mol_file_to_vqe_cost(
     to generate `QNode`"""
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
-    qubit_hamiltonian = qchem.decompose(
-        hf_file,
-        mapping=mapping,
-        core=core,
-        active=active,
-    )
+    qubit_hamiltonian = qchem.decompose(hf_file, mapping=mapping, core=core, active=active)
 
     vqe_hamiltonian = qp.qchem.convert.import_operator(
         qubit_hamiltonian, wires=custom_wires, format="openfermion"

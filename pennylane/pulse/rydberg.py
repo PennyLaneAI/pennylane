@@ -117,9 +117,8 @@ def rydberg_interaction(
             if atom_distance > max_distance:
                 continue
             # factor 2pi converts interaction coefficient from standard to angular frequency
-            Vij = (
-                2 * np.pi * interaction_coeff / (abs(atom_distance) ** 6)
-            )  # van der Waals potential
+            # van der Waals potential
+            Vij = 2 * np.pi * interaction_coeff / (abs(atom_distance) ** 6)
             coeffs.append(Vij)
             with QueuingManager.stop_recording():
                 observables.append(prod(Projector([1], wire1), Projector([1], wire2)))

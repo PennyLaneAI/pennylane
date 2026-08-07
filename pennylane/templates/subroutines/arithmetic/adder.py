@@ -18,11 +18,7 @@ Contains the Adder template.
 from collections import defaultdict
 
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    change_op_basis_resource_rep,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, change_op_basis_resource_rep, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
@@ -159,9 +155,7 @@ class Adder(Operation):
 
     resource_keys = {"num_x_wires", "mod"}
 
-    def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()):
 
         x_wires = Wires(x_wires)
         work_wires = Wires(() if work_wires is None else work_wires)

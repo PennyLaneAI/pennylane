@@ -15,6 +15,8 @@
 Unit tests for functions needed for computing a spin Hamiltonian.
 """
 
+# pylint: disable=too-many-arguments
+
 import re
 
 import pytest
@@ -31,8 +33,6 @@ from pennylane.spin import (
     spin_hamiltonian,
     transverse_ising,
 )
-
-# pylint: disable=too-many-arguments
 
 
 def test_coupling_error():

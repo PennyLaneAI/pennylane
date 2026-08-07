@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure.py functionality"""
 
-# pylint: disable=too-few-public-methods, protected-access
-
 import numpy as np
 import pytest
 
@@ -138,11 +136,7 @@ class TestLieClosure:
     @pytest.mark.parametrize("pauli", [True, False])
     def test_lie_closure_with_PauliWords(self, pauli):
         """Test that lie_closure works properly with PauliWords"""
-        gen = [
-            PauliWord({0: "X", 1: "X"}),
-            PauliWord({0: "Z"}),
-            PauliWord({1: "Z"}),
-        ]
+        gen = [PauliWord({0: "X", 1: "X"}), PauliWord({0: "Z"}), PauliWord({1: "Z"})]
         dla = gen + [
             PauliWord({0: "Y", 1: "X"}),
             PauliWord({0: "X", 1: "Y"}),
@@ -276,9 +270,8 @@ class TestLieClosure:
 
         generators = [Z(i) for i in range(n)]
         generators += [Y(i) for i in range(n)]
-        generators += [
-            (I(i) - Z(i)) @ (I(i + 1) - X(i + 1)) for i in range(n - 1)
-        ]  # generator of CNOT gate
+        # generator of CNOT gate
+        generators += [(I(i) - Z(i)) @ (I(i + 1) - X(i + 1)) for i in range(n - 1)]
 
         vspace = qp.lie_closure(generators, matrix=matrix)
 
@@ -289,16 +282,9 @@ class TestLieClosure:
 
 XX = PauliWord({0: "X", 1: "X"})
 YY = PauliWord({0: "Y", 1: "Y"})
-ops1 = [
-    PauliSentence({XX: 1.0, YY: 1.0}),
-    PauliSentence({XX: 1.0}),
-    PauliSentence({YY: 2.0}),
-]
+ops1 = [PauliSentence({XX: 1.0, YY: 1.0}), PauliSentence({XX: 1.0}), PauliSentence({YY: 2.0})]
 
-ops2 = [
-    PauliSentence({XX: 1.0, YY: 1.0}),
-    PauliSentence({XX: 1.0}),
-]
+ops2 = [PauliSentence({XX: 1.0, YY: 1.0}), PauliSentence({XX: 1.0})]
 
 ops2plusY10 = ops2 + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
 
@@ -360,11 +346,7 @@ class TestLieClosureDense:
 
     def test_lie_closure_dense_with_PauliWords(self):
         """Test that lie_closure_dense works properly with PauliWords"""
-        gen = [
-            PauliWord({0: "X", 1: "X"}),
-            PauliWord({0: "Z"}),
-            PauliWord({1: "Z"}),
-        ]
+        gen = [PauliWord({0: "X", 1: "X"}), PauliWord({0: "Z"}), PauliWord({1: "Z"})]
         dla = gen + [
             PauliWord({0: "Y", 1: "X"}),
             PauliWord({0: "X", 1: "Y"}),

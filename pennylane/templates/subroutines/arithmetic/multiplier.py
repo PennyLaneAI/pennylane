@@ -118,9 +118,7 @@ class Multiplier(Operation):
 
     resource_keys = {"num_x_wires", "mod", "num_work_wires"}
 
-    def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()):
 
         x_wires = Wires(x_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -200,9 +198,8 @@ class Multiplier(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        k, x_wires: WiresLike, mod, work_wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -255,11 +252,7 @@ class Multiplier(Operation):
         return [op1, target_op, op2]
 
 
-def _multiplier_decomposition_resources(
-    num_x_wires,
-    mod,
-    num_work_wires,
-) -> dict:
+def _multiplier_decomposition_resources(num_x_wires, mod, num_work_wires) -> dict:
     num_wires_aux = num_work_wires - 1 if mod != 2**num_x_wires else num_x_wires
     cs_base_params = {
         "base_class": PhaseAdder,

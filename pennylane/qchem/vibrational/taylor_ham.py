@@ -13,13 +13,13 @@
 # limitations under the License.
 """The functions related to the construction of the Taylor form Hamiltonian."""
 
+# pylint: disable=import-outside-toplevel
+
 import itertools
 
 import numpy as np
 
 from pennylane.bose import BoseSentence, BoseWord, binary_mapping, unary_mapping
-
-# pylint: disable=import-outside-toplevel
 
 
 def _import_sklearn():
@@ -738,8 +738,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     return ham.normal_order()
 
 
-# pylint: disable=too-many-positional-arguments, too-many-arguments
-def taylor_hamiltonian(
+def taylor_hamiltonian(  # pylint: disable=too-many-arguments
     pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
 ):
     r"""Returns Taylor vibrational Hamiltonian.

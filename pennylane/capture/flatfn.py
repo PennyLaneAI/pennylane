@@ -24,8 +24,7 @@ except ImportError:
     has_jax = False
 
 
-# pylint: disable=too-few-public-methods
-class FlatFn:
+class FlatFn:  # pylint: disable=too-few-public-methods
     """Wrap a function so that it caches the pytree shape of the output into the ``out_tree``
     property, so that the results can be repacked later. It also returns flattened results
     instead of the original result object.

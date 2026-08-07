@@ -35,10 +35,9 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     return autograd_jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
 
-# pylint: disable=import-outside-toplevel, unused-argument
-def _tf_jac(
-    classical_function, argnums, *args, **kwargs
-) -> TensorLike:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+# pylint: disable-next=unused-argument
+def _tf_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
+    # pylint: disable=import-outside-toplevel
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
@@ -48,8 +47,9 @@ def _tf_jac(
     return tape.jacobian(gate_params, args)
 
 
-# pylint: disable=import-outside-toplevel, unused-argument
+# pylint: disable-next=unused-argument
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
+    # pylint: disable=import-outside-toplevel
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     from torch.autograd.functional import jacobian
@@ -57,8 +57,8 @@ def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     return jacobian(partial(classical_function, **kwargs), args)
 
 
-# pylint: disable=import-outside-toplevel
 def _jax_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
+    # pylint: disable=import-outside-toplevel
     import jax
 
     if argnums is None:
@@ -77,7 +77,7 @@ _jac_map = {
 }
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None, **kwargs):
     """Returns the trainable gate parameters for a given QNode input.
 
@@ -85,9 +85,7 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     it cleanly works with all interfaces.
     """
     # tach-ignore
-    from pennylane.workflow import (  # tach-ignore # pylint: disable=import-outside-toplevel
-        construct_tape,
-    )
+    from pennylane.workflow import construct_tape  # pylint: disable=import-outside-toplevel
 
     tape = construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
@@ -110,9 +108,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     import jax  # pylint: disable=import-outside-toplevel
 
     # tach-ignore
-    from pennylane.workflow import (  # tach-ignore # pylint: disable=import-outside-toplevel
-        construct_tape,
-    )
+    from pennylane.workflow import construct_tape  # pylint: disable=import-outside-toplevel
 
     tag = jax.core.TraceTag()
     with jax.core.take_current_trace() as parent_trace:

@@ -174,7 +174,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step_and_cost(
+    def step_and_cost(  # pylint: disable=arguments-differ
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
         """Update the parameter array :math:`x` with one step of the optimizer and return the
@@ -200,7 +200,6 @@ class QNGOptimizer(GradientDescentOptimizer):
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
             prior to the step
         """
-        # pylint: disable=arguments-differ
         if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "
@@ -229,8 +228,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         return new_args, forward
 
-    # pylint: disable=arguments-differ
-    def step(
+    def step(  # pylint: disable=arguments-differ
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
         """Update the parameter array :math:`x` with one step of the optimizer.
@@ -304,9 +302,8 @@ def _flatten_np(x):
         Any: elements of x in depth-first order
     """
     if isinstance(x, pnp.ndarray):
-        yield from _flatten_np(
-            x.flat
-        )  # should we allow object arrays? or just "yield from x.flat"?
+        # should we allow object arrays? or just "yield from x.flat"?
+        yield from _flatten_np(x.flat)
     elif isinstance(x, Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
         # Since Wires are always flat, just yield.

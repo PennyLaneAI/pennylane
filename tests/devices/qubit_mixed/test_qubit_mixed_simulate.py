@@ -23,8 +23,7 @@ from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, 
 ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
-# pylint: disable=too-few-public-methods
-class TestResultInterface:
+class TestResultInterface:  # pylint: disable=too-few-public-methods
     """Test that the result interface is correct."""
 
     @pytest.mark.all_interfaces
@@ -40,7 +39,6 @@ class TestResultInterface:
         assert qp.math.get_interface(res) == interface
 
 
-# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
@@ -135,11 +133,7 @@ class TestBasicCircuit:
         # ⟨X⟩ = ⟨ψ|X|ψ⟩ = 0
         # ⟨Y⟩ = ⟨ψ|Y|ψ⟩ = -sin(phi)
         # ⟨Z⟩ = ⟨ψ|Z|ψ⟩ = cos(phi)
-        expected_measurements = (
-            0,
-            -np.sin(phi),
-            np.cos(phi),
-        )
+        expected_measurements = (0, -np.sin(phi), np.cos(phi))
 
         assert isinstance(result, tuple)
         assert len(result) == 3
@@ -363,11 +357,7 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("x", [0.732, 0.488])
     def test_single_expval(self, x, interface, seed):
         """Test a simple circuit with a single expval measurement"""
-        qs = qp.tape.QuantumScript(
-            [qp.RY(x, wires=0)],
-            [qp.expval(qp.PauliZ(0))],
-            shots=10000,
-        )
+        qs = qp.tape.QuantumScript([qp.RY(x, wires=0)], [qp.expval(qp.PauliZ(0))], shots=10000)
         result = simulate(qs, rng=seed, interface=interface)
         if not interface == "jax":
             assert isinstance(result, np.float64)

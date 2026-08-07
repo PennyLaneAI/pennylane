@@ -15,7 +15,8 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments,protected-access
+
 import copy
 
 import numpy as np
@@ -63,9 +64,8 @@ def probs_to_unitary(probs):
            [ 0.5   ,  0.1667,  0.1667, -0.8333]])
     """
 
-    if not math.is_abstract(
-        sum(probs)
-    ):  # skip check and error if jitting to avoid JAX tracer errors
+    # skip check and error if jitting to avoid JAX tracer errors
+    if not math.is_abstract(sum(probs)):
         if not math.allclose(sum(probs), 1) or min(probs) < 0:
             raise ValueError(
                 "A valid probability distribution of non-negative numbers that sum to one "
@@ -343,9 +343,8 @@ class QuantumMonteCarlo(Operation):
     resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
 
     @classmethod
-    def _primitive_bind_call(
-        cls, probs, func, target_wires, estimation_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires):
         # handle target wires and estimation wires
         return cls._primitive.bind(
             probs,
@@ -405,7 +404,6 @@ class QuantumMonteCarlo(Operation):
         super().__init__(A, R, Q, wires=wires)
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         for key in ["estimation_wires", "target_wires"]:
@@ -419,13 +417,11 @@ class QuantumMonteCarlo(Operation):
         return 3
 
     @staticmethod
-    def compute_decomposition(
-        A, R, Q, wires, estimation_wires, target_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(A, R, Q, wires, estimation_wires, target_wires):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
-
 
 
         .. seealso:: :meth:`~.QuantumMonteCarlo.decomposition`.
@@ -451,7 +447,6 @@ class QuantumMonteCarlo(Operation):
         return op_list
 
 
-# pylint: disable=protected-access
 if QuantumMonteCarlo._primitive is not None:
 
     @QuantumMonteCarlo._primitive.def_impl
@@ -474,9 +469,8 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_res
 
 
 @register_resources(_quantum_monte_carlo_resources)
-def _quantum_monte_carlo_decomposition(
-    A, R, Q, wires, estimation_wires, target_wires
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _quantum_monte_carlo_decomposition(A, R, Q, wires, estimation_wires, target_wires):
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
     QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)

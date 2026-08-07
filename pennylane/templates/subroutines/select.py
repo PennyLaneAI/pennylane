@@ -15,6 +15,8 @@
 Contains the Select template.
 """
 
+# pylint: disable=protected-access
+
 from collections import Counter, defaultdict
 from itertools import product
 
@@ -358,15 +360,10 @@ class Select(Operation):
         }
 
     def _flatten(self):
-        return tuple(self.ops), (
-            self.control,
-            self.work_wires,
-            self.partial,
-        )
+        return tuple(self.ops), (self.control, self.work_wires, self.partial)
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, ops, control, **kwargs):
+    def _primitive_bind_call(cls, ops, control, **kwargs):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(*ops, wires=control, **kwargs)
 
     @classmethod
@@ -376,7 +373,6 @@ class Select(Operation):
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, ops, control, work_wires=None, partial=False):
         control = Wires(control)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -456,8 +452,8 @@ class Select(Operation):
             self.ops, control=self.control, partial=self.partial, work_wires=self.work_wires
         )
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(ops, control, partial: bool = False, work_wires=None):
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -757,7 +753,6 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires):
     num_ops = len(op_reps)
     if num_ops == 0:
@@ -981,6 +976,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     return ops_decomp
 
 
+# pylint: disable-next=unused-argument
 def _unary_condition(op_reps, num_control_wires, partial, num_work_wires):
     return num_work_wires >= num_control_wires - 1
 
@@ -1081,7 +1077,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
     return dict(resources)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
     return num_work_wires >= 1
 
@@ -1133,7 +1129,6 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
 add_decomps(Select, _select_decomp_multi_control_work_wire)
 
-# pylint: disable=protected-access
 if Select._primitive is not None:
 
     @Select._primitive.def_impl

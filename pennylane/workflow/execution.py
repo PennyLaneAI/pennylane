@@ -48,8 +48,7 @@ if TYPE_CHECKING:
     from pennylane.workflow.resolution import SupportedDiffMethods
 
 
-# pylint: disable=too-many-arguments
-def execute(
+def execute(  # pylint: disable=too-many-arguments
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
     diff_method: Callable | SupportedDiffMethods | Transform | None = None,

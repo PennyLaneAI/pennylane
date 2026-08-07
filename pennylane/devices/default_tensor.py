@@ -16,6 +16,7 @@ This module contains the default.tensor device to perform tensor network simulat
 """
 
 # pylint: disable=protected-access
+
 import copy
 import warnings
 from collections.abc import Callable
@@ -40,11 +41,7 @@ from pennylane.devices.preprocess import (
     validate_observables,
 )
 from pennylane.exceptions import DeviceError, WireError
-from pennylane.measurements import (
-    ExpectationMP,
-    StateMP,
-    VarianceMP,
-)
+from pennylane.measurements import ExpectationMP, StateMP, VarianceMP
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
 from pennylane.typing import Result, ResultBatch, TensorLike
@@ -188,10 +185,9 @@ def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
         warnings.warn("The keyword argument 'cutoff' is not used for the 'tn' method. ")
 
 
-# pylint: disable=unused-argument
 @simulator_tracking
 @single_tape_support
-class DefaultTensor(Device):
+class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
     """A PennyLane device to perform tensor network simulations of quantum circuits using
     `quimb <https://github.com/jcmgray/quimb/>`_.
 
@@ -369,8 +365,6 @@ class DefaultTensor(Device):
             Similarly, using the ``default.qubit`` device results in a much slower simulation.
     """
 
-    # pylint: disable=too-many-instance-attributes
-
     _device_options = (
         "contract",
         "contraction_optimizer",
@@ -381,13 +375,7 @@ class DefaultTensor(Device):
         "method",
     )
 
-    def __init__(
-        self,
-        wires=None,
-        method="mps",
-        c_dtype=np.complex128,
-        **kwargs,
-    ) -> None:
+    def __init__(self, wires=None, method="mps", c_dtype=np.complex128, **kwargs) -> None:
         if not has_quimb:
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
@@ -605,10 +593,7 @@ class DefaultTensor(Device):
 
         return replace(config, **updated_values, device_options=new_device_options)
 
-    def preprocess(
-        self,
-        execution_config: ExecutionConfig | None = None,
-    ):
+    def preprocess(self, execution_config: ExecutionConfig | None = None):
         """This function defines the device compile pipeline to be applied and an updated device configuration.
 
         Args:
@@ -960,7 +945,6 @@ class DefaultTensor(Device):
         )
 
 
-# pylint: disable=no-member
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
@@ -1041,7 +1025,7 @@ def apply_operation_core_trotter_product(ops: qp.TrotterProduct, device):
     ops = ops._hyperparameters["base"].operands
     decomp = _recursive_expression(time / n, order, ops)[::-1] * n
     for o in decomp:
-        mat = qp.matrix(o).astype(device._c_dtype)  # pylint: disable=no-member
+        mat = qp.matrix(o).astype(device._c_dtype)
         device._quimb_circuit.apply_gate(mat, *o.wires, parametrize=None)
 
 
@@ -1056,7 +1040,7 @@ def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
     ket = device._quimb_circuit.copy()
     for op in obs:
-        mat = qp.matrix(op).astype(device._c_dtype)  # pylint: disable=no-member
+        mat = qp.matrix(op).astype(device._c_dtype)
         ket.apply_gate(mat, *op.wires, parametrize=None)
     return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
 

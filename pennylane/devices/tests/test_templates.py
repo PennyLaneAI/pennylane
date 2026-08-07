@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests that various templates work correctly on a device."""
 
-# pylint: disable=no-self-use
-
 # Can generate a list of all templates using the following code:
 #
 # from inspect import getmembers, isclass
@@ -50,7 +48,7 @@ def check_op_supported(op, dev):
             pytest.skip("operation not supported on the device")
 
 
-class TestTemplates:  # pylint:disable=too-many-public-methods
+class TestTemplates:  # pylint: disable=too-many-public-methods
     """Test various templates."""
 
     def test_AQFT(self, device, tol, shots):
@@ -382,7 +380,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
+            # pylint: disable-next=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -423,7 +421,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
+            # pylint: disable-next=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -633,7 +631,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             )
             return qp.probs(estimation_wires)
 
-        # pylint:disable=unsubscriptable-object
+        # pylint: disable-next=unsubscriptable-object
         phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
         res = (1 - np.cos(np.pi * phase_estimated)) / 2
         expected = 0.3086582838174551
@@ -653,10 +651,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         @qp.qnode(dev, shots=shots)
         def circuit():
             qp.StatePrep(eigenvector, wires=target_wires)
-            qp.QuantumPhaseEstimation(
-                unitary,
-                estimation_wires=estimation_wires,
-            )
+            qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
             return qp.probs(estimation_wires)
 
         res = np.argmax(circuit()) / 2**n_estimation_wires
@@ -775,7 +770,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         """Test the TwoLocalSwapNetwork template."""
         dev = device(3)
 
-        def acquaintances(index, wires, param=None):  # pylint:disable=unused-argument
+        def acquaintances(index, wires, param=None):  # pylint: disable=unused-argument
             return qp.CNOT(index)
 
         @qp.qnode(dev, shots=shots)

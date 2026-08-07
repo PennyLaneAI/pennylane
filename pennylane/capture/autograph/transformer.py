@@ -292,7 +292,7 @@ def autograph_source(fn):
     )
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
     """Context decorator that disables AutoGraph for the given function/context.
 

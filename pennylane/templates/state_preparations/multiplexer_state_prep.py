@@ -91,7 +91,7 @@ class MultiplexerStatePreparation(Operator2):
         super().__init__(state_vector, wires=wires)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _multiplexer_state_prep_decomposition_resources(state_vector, wires, check=False) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
     num_wires = len(wires)
@@ -107,9 +107,7 @@ def _multiplexer_state_prep_decomposition_resources(state_vector, wires, check=F
 
 
 @register_resources(_multiplexer_state_prep_decomposition_resources, exact=False)
-def _multiplexer_state_prep_decomposition(
-    state_vector, wires, **_
-):  # pylint: disable=arguments-differ
+def _multiplexer_state_prep_decomposition(state_vector, wires, **_):
     r"""
     Computes the decomposition operations for the given state vector.
 

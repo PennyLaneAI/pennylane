@@ -15,8 +15,6 @@
 Unit tests for `qp.about`.
 """
 
-# pylint: disable=protected-access
-
 import contextlib
 import importlib
 import io

@@ -59,9 +59,7 @@ class TestSemiAdder:
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, work_wires, x, y):
         """Test the correctness of the SemiAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -78,7 +76,6 @@ class TestSemiAdder:
         sample = output[0]
 
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(sample[0, :]))),
             (x + y) % 2 ** len(y_wires),
@@ -123,20 +120,14 @@ class TestSemiAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.SemiAdder(x_wires, y_wires, work_wires)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
-        x_wires, y_wires, work_wires = (
-            [0, 1, 2, 3, 4],
-            [5, 6, 7, 8, 9],
-            [10, 11, 12, 13],
-        )
+        x_wires, y_wires, work_wires = ([0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13])
 
         adder_decomposition = qp.SemiAdder(x_wires, y_wires, work_wires).compute_decomposition(
             x_wires, y_wires, work_wires
@@ -149,22 +140,12 @@ class TestSemiAdder:
         assert names.count("Adjoint(TemporaryAND)") == 4
         assert names.count("CNOT") == 21
 
-    @pytest.mark.parametrize(
-        ("x_wires"),
-        [
-            [0, 1, 2],
-            [0, 1],
-            [0, 1, 2, 3],
-        ],
-    )
+    @pytest.mark.parametrize(("x_wires"), [[0, 1, 2], [0, 1], [0, 1, 2, 3]])
     def test_decomposition_rule(self, x_wires):
         """Tests that SemiAdder is decomposed properly."""
 
         for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(
-                qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
-                rule,
-            )
+            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
@@ -190,7 +171,6 @@ class TestSemiAdder:
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),

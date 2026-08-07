@@ -15,7 +15,6 @@
 Unit tests for the batch params transform.
 """
 
-# pylint:disable=comparison-with-callable
 import pytest
 
 import pennylane as qp
@@ -238,7 +237,6 @@ def test_multi_returns():
 
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
-    # pylint:disable=not-an-iterable
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params
@@ -260,7 +258,7 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
-    # pylint:disable=not-an-iterable
+    # pylint: disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 

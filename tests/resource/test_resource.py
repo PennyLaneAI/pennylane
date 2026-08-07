@@ -15,9 +15,9 @@
 Test base Resource class and its associated methods
 """
 
-import dataclasses
+# pylint: disable=protected-access,disallowed-name
 
-# pylint: disable=unnecessary-dunder-call,protected-access,disallowed-name
+import dataclasses
 import textwrap
 from dataclasses import FrozenInstanceError
 
@@ -461,10 +461,7 @@ class TestNestedDictHelpers:
 
     def test_collect_vars_through_lists_and_tuples(self):
         """Using pytrees, variables should also be found inside lists and tuples."""
-        data = {
-            "a": [Expression({("x",): 1}), 2],
-            "b": (3, {"c": Expression({("y",): 1})}),
-        }
+        data = {"a": [Expression({("x"): 1}), 2], "b": (3, {"c": Expression({("y"): 1})})}
         assert set(_collect_vars(data)) == {"x", "y"}
 
     def test_subs_pytree_flat(self):
@@ -488,10 +485,7 @@ class TestNestedDictHelpers:
 
     def test_subs_pytree_through_lists_and_tuples(self):
         """Using pytrees, substitution should also reach into lists and tuples, preserving type."""
-        data = {
-            "a": [Expression({("x",): 1}), 2],
-            "b": (3, {"c": Expression({("x",): 2})}),
-        }
+        data = {"a": [Expression({("x"): 1}), 2], "b": (3, {"c": Expression({("x"): 2})})}
         result = _subs_pytree(data, {"x": 5})
         assert result == {"a": [5, 2], "b": (3, {"c": 10})}
         assert isinstance(result["a"], list)
@@ -798,10 +792,7 @@ class TestSpecsResources:
         assert s["total_quantum_operations"] == s.total_quantum_operations
 
         # Try nonexistent key
-        with pytest.raises(
-            KeyError,
-            match="key 'potato' not available. Options are ",
-        ):
+        with pytest.raises(KeyError, match="key 'potato' not available. Options are "):
             _ = s["potato"]
 
     def test_str(self, example_specs_resource):
@@ -879,7 +870,7 @@ class TestPBCSpecsResources:
             TypeError,
             match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",
         ):
-            PBCSpecsResources(
+            PBCSpecsResources(  # pylint: disable=missing-kwoa
                 counts={"Hadamard": 1, "CNOT": 2},
                 measurement_processes={"expval(PauliZ)": 1},
                 num_allocs=2,
@@ -2006,11 +1997,7 @@ class TestIPythonDisplays:
 
     def test_empty_resources_ipython_display(self):
         """Test the IPython display of an empty SpecsResources instance."""
-        s = SpecsResources(
-            counts={},
-            measurement_processes={},
-            num_allocs=1,
-        )
+        s = SpecsResources(counts={}, measurement_processes={}, num_allocs=1)
         actual = s._repr_markdown_()
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |

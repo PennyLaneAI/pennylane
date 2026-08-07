@@ -98,7 +98,6 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
-# pylint: disable=too-few-public-methods
 class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 
@@ -326,10 +325,7 @@ TEST_BIND_LINEARCOMBINATION = [
 ]
 
 
-@pytest.mark.parametrize(
-    "H, new_coeffs, expected_H",
-    TEST_BIND_LINEARCOMBINATION,
-)
+@pytest.mark.parametrize("H, new_coeffs, expected_H", TEST_BIND_LINEARCOMBINATION)
 def test_linear_combination(H, new_coeffs, expected_H):
     """Test that `bind_new_parameters` with `LinearCombination` returns a new
     operator with the new parameters without mutating the original

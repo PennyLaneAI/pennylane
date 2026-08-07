@@ -376,10 +376,7 @@ class TestMixerHamiltonians:
         with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
             qaoa.bit_flip_mixer(Graph(graph), n)
 
-    @pytest.mark.parametrize(
-        ("graph", "n", "target_hamiltonian"),
-        make_bit_flip_mixer_test_cases(),
-    )
+    @pytest.mark.parametrize(("graph", "n", "target_hamiltonian"), make_bit_flip_mixer_test_cases())
     def test_bit_flip_mixer_output(self, graph, n, target_hamiltonian):
         """Tests that the output of the bit-flip mixer is correct"""
         hamiltonian = qaoa.bit_flip_mixer(graph, n)
@@ -421,13 +418,7 @@ def make_max_cut_test_cases():
 
     cost_hamiltonians = [qp.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
 
-    mixer_coeffs = [
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-    ]
+    mixer_coeffs = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
     mixer_terms = [
         [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
@@ -442,13 +433,7 @@ def make_max_cut_test_cases():
     return list(zip(GRAPHS, cost_hamiltonians, mixer_hamiltonians))
 
 
-CONSTRAINED = [
-    True,
-    True,
-    True,
-    False,
-    False,
-]
+CONSTRAINED = [True, True, True, False, False]
 
 
 def make_max_independent_test_cases():
@@ -625,13 +610,7 @@ def make_min_vertex_cover_test_cases():
 def make_max_clique_test_cases():
     """Generates the test cases for the max clique problem"""
 
-    cost_coeffs = [
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [0.75, 0.25, 0.25, 1],
-        [0.75, 0.25, 0.25, 1],
-    ]
+    cost_coeffs = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [0.75, 0.25, 0.25, 1], [0.75, 0.25, 0.25, 1]]
 
     cost_terms = [
         [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
@@ -1060,7 +1039,6 @@ class TestCostHamiltonians:
         assert cost_h.grouping_indices is not None
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"),
         make_max_weighted_cycle_test_cases(),
@@ -1088,8 +1066,7 @@ class TestCostHamiltonians:
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
 
-# pylint: disable=too-few-public-methods
-class TestUtils:
+class TestUtils:  # pylint: disable=too-few-public-methods
     """Tests that the utility functions are working properly"""
 
     # pylint: disable=protected-access
@@ -1196,10 +1173,7 @@ class TestLayers:
         ],
     ]
 
-    @pytest.mark.parametrize(
-        ("cost", "gates"),
-        cost_layer_test_cases,
-    )
+    @pytest.mark.parametrize(("cost", "gates"), cost_layer_test_cases)
     def test_cost_layer_output(self, cost, gates):
         """Tests that the gates of the cost layer is correct"""
 
@@ -1238,8 +1212,7 @@ class TestIntegration:
             qaoa.mixer_layer(alpha, mixer_h)
 
         # Repeatedly applies layers of the QAOA ansatz
-        # pylint: disable=unused-argument
-        def circuit(params, **kwargs):
+        def circuit(params, **kwargs):  # pylint: disable=unused-argument
             for w in wires:
                 qp.Hadamard(wires=w)
 
@@ -1278,8 +1251,7 @@ class TestIntegration:
             qaoa.mixer_layer(alpha, mixer_h)
 
         # Repeatedly applies layers of the QAOA ansatz
-        # pylint: disable=unused-argument
-        def circuit(params, **kwargs):
+        def circuit(params, **kwargs):  # pylint: disable=unused-argument
             for w in wires:
                 qp.Hadamard(wires=w)
 
@@ -1300,8 +1272,7 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# pylint: disable=too-many-public-methods
-class TestCycles:
+class TestCycles:  # pylint: disable=too-many-public-methods
     """Tests that ``cycle`` module functions are behaving correctly"""
 
     @pytest.mark.parametrize("g", [nx.lollipop_graph(4, 1), lollipop_graph_rx(4, 1)])
@@ -1501,10 +1472,7 @@ class TestCycles:
             destination_indxs = set(np.argwhere(column != 0).flatten().tolist())
             assert destination_indxs.issubset(invalid_bitstrings_indx)
 
-    @pytest.mark.parametrize(
-        "g",
-        [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])],
-    )
+    @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_cycle_mixer_error(self, g):
         """Test if the cycle_mixer raises ValueError"""
         # Find Hamiltonian and its matrix representation
@@ -1781,12 +1749,7 @@ class TestCycles:
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
-        expected_ops = [
-            qp.Identity(0),
-            qp.PauliZ(1) @ qp.PauliZ(0),
-            qp.PauliZ(0),
-            qp.PauliZ(1),
-        ]
+        expected_ops = [qp.Identity(0), qp.PauliZ(1) @ qp.PauliZ(0), qp.PauliZ(0), qp.PauliZ(1)]
         expected_coeffs = [2, 2, -2, -2]
 
         expected_hamiltonian = qp.Hamiltonian(expected_coeffs, expected_ops)
@@ -1874,8 +1837,7 @@ class TestCycles:
     def test_out_flow_constraint_raises(self):
         """Test the out-flow constraint function may raise an error."""
 
-        # pylint: disable=super-init-not-called
-        class OtherDirectedGraph(nx.DiGraph):
+        class OtherDirectedGraph(nx.DiGraph):  # pylint: disable=too-few-public-methods
             def __init__(self, *args, **kwargs):
                 pass
 
@@ -1897,8 +1859,7 @@ class TestCycles:
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qp.device("default.qubit", wires=wires)
 
-        # pylint: disable=unused-argument
-        def states(basis_state, **kwargs):
+        def states(basis_state, **kwargs):  # pylint: disable=unused-argument
             qp.BasisState(basis_state, wires=range(wires))
 
         @qp.qnode(dev)
@@ -2001,8 +1962,7 @@ class TestCycles:
     def test_net_flow_constraint_undirected_raises_error(self):
         """Test the net-flow constraint function may raise an error."""
 
-        # pylint: disable=super-init-not-called
-        class OtherDirectedGraph(nx.DiGraph):
+        class OtherDirectedGraph(nx.DiGraph):  # pylint: disable=too-few-public-methods
             def __init__(self, *args, **kwargs):
                 pass
 
@@ -2025,8 +1985,7 @@ class TestCycles:
         # Find the energies corresponding to each possible bitstring
         dev = qp.device("default.qubit", wires=wires)
 
-        # pylint: disable=unused-argument
-        def states(basis_state, **kwargs):
+        def states(basis_state, **kwargs):  # pylint: disable=unused-argument
             qp.BasisState(basis_state, wires=range(wires))
 
         @qp.qnode(dev)
@@ -2051,15 +2010,12 @@ class TestCycles:
                 for edge in edges:
                     for n in edge:
                         all_nodes.append(n)
-                inner_nodes = all_nodes[
-                    1:-1
-                ]  # find all nodes in all edges excluding the first and last nodes
-                nodes_out = [
-                    inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 == 0
-                ]  # find the nodes each edge is leaving
-                node_in = [
-                    inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 != 0
-                ]  # find the nodes each edge is entering
+                # find all nodes in all edges excluding the first and last nodes
+                inner_nodes = all_nodes[1:-1]
+                # find the nodes each edge is leaving
+                nodes_out = [inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 == 0]
+                # find the nodes each edge is entering
+                node_in = [inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 != 0]
                 if nodes_out == node_in and (
                     len([all_nodes[0]] + nodes_out) == len(set([all_nodes[0]] + nodes_out))
                 ):  # check that each edge connect to the next via a common node and that no node is crossed more than once

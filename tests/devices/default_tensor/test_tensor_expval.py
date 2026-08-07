@@ -15,6 +15,8 @@
 Tests for the expectation value calculations on the DefaultTensor device.
 """
 
+# pylint: disable=redefined-outer-name
+
 import numpy as np
 import pytest
 
@@ -28,8 +30,6 @@ VARPHI = np.linspace(0.02, 1, 3)
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
-
-# pylint: disable=too-many-arguments, redefined-outer-name
 
 
 @pytest.fixture(
@@ -134,7 +134,6 @@ class TestExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "Obs, Op, expected_fn",
         [
@@ -166,6 +165,7 @@ class TestExpval:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_single_wire_observables_expectation(self, Obs, Op, expected_fn, theta, phi, tol, dev):
         """Test that expectation values for single wire observables are correct"""
 
@@ -282,10 +282,7 @@ class TestOperatorArithmetic:
     def test_integration(self, phi, dev):
         """Test a Combination of `Sum`, `SProd`, and `Prod`."""
 
-        obs = qp.sum(
-            qp.s_prod(2.3, qp.PauliZ(0)),
-            -0.5 * qp.prod(qp.PauliY(0), qp.PauliZ(1)),
-        )
+        obs = qp.sum(qp.s_prod(2.3, qp.PauliZ(0)), -0.5 * qp.prod(qp.PauliY(0), qp.PauliZ(1)))
 
         tape = qp.tape.QuantumScript(
             [qp.RX(phi, wires=[0]), qp.RX(-1.1 * phi, wires=[0])],

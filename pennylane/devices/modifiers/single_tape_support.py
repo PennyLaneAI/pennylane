@@ -143,7 +143,6 @@ def _make_execute_and_compute_vjp(batch_execute_and_compute_vjp):
     return execute_and_compute_vjp
 
 
-# pylint: disable=protected-access
 def single_tape_support(cls: type) -> type:
     """Modifies all functions to accept single tapes in addition to batches. This allows the definition
     of the device class to purely focus on executing batches.
@@ -175,6 +174,7 @@ def single_tape_support(cls: type) -> type:
     of :class:`~pennylane.tape.QuantumTape` objects, not a single value.
 
     """
+    # pylint: disable=protected-access
     if not issubclass(cls, Device):
         raise ValueError("single_tape_support only accepts subclasses of pennylane.devices.Device")
 

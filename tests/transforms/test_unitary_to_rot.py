@@ -278,9 +278,9 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
+    # pylint: disable-next=unused-argument
     def test_unitary_to_rot_jax_jit(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
-        # pylint: disable=unused-argument
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)

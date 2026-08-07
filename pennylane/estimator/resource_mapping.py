@@ -191,10 +191,7 @@ def _(op: qops.MultiRZ):
 
 @_map_to_resource_op.register
 def _(op: qops.PauliRot):
-    return re_ops.PauliRot(
-        pauli_string=op.hyperparameters["pauli_word"],
-        wires=op.wires,
-    )
+    return re_ops.PauliRot(pauli_string=op.hyperparameters["pauli_word"], wires=op.wires)
 
 
 @_map_to_resource_op.register
@@ -309,11 +306,7 @@ def _(op: qtemps.QFT):
 
 @_map_to_resource_op.register
 def _(op: qtemps.AQFT):
-    return re_temps.AQFT(
-        order=op.hyperparameters["order"],
-        num_wires=len(op.wires),
-        wires=op.wires,
-    )
+    return re_temps.AQFT(order=op.hyperparameters["order"], num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
@@ -486,11 +479,7 @@ def _(op: qtemps.TrotterProduct):
 @_map_to_resource_op.register
 def _(op: qtemps.MPSPrep):
     max_bond_dim = max(data.shape[-1] for data in op.mps)
-    return re_temps.MPSPrep(
-        num_mps_matrices=len(op.mps),
-        max_bond_dim=max_bond_dim,
-        wires=op.wires,
-    )
+    return re_temps.MPSPrep(num_mps_matrices=len(op.mps), max_bond_dim=max_bond_dim, wires=op.wires)
 
 
 @_map_to_resource_op.register
@@ -568,9 +557,7 @@ def _(op: Prod):
 
 @_map_to_resource_op.register
 def _(op: Adjoint | AdjointOperation):
-    return re_ops.Adjoint(
-        base_op=_map_to_resource_op(op.base),
-    )
+    return re_ops.Adjoint(base_op=_map_to_resource_op(op.base))
 
 
 @_map_to_resource_op.register

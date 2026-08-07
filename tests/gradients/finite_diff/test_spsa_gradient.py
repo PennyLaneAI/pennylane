@@ -26,15 +26,12 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 
-# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
-
-def coordinate_sampler(indices, num_params, idx, rng=None):
+def coordinate_sampler(indices, num_params, idx, rng=None):  # pylint: disable=unused-argument
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
-    # pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -137,23 +134,20 @@ class TestSpsaGradient:
     def test_sampler_argument(self, seed):
         """Make sure that custom samplers can be created as defined in the docs of spsa_grad."""
 
-        def sampler_required_kwarg(
-            indices, num_params, *args, rng
-        ):  # pylint:disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def sampler_required_kwarg(indices, num_params, *args, rng):
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        def sampler_required_arg_or_kwarg(
-            indices, num_params, idx_rep, rng
-        ):  # pylint:disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def sampler_required_arg_or_kwarg(indices, num_params, idx_rep, rng):
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        def sampler_required_arg(
-            indices, num_params, foo, idx_rep, rng, /
-        ):  # pylint:disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def sampler_required_arg(indices, num_params, foo, idx_rep, rng, /):
             """This should fail since spsa_grad passes rng as a kwarg."""
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
@@ -543,14 +537,7 @@ class TestSpsaGradient:
 
         transform = [qp.math.shape(spsa_grad(c)(x)) for c in circuits]
 
-        expected = [
-            (3,),
-            (1, 3),
-            (2, 3),
-            (4, 3),
-            (1, 4, 3),
-            (2, 4, 3),
-        ]
+        expected = [(3), (1, 3), (2, 3), (4, 3), (1, 4, 3), (2, 4, 3)]
 
         assert all(t == q for t, q in zip(transform, expected))
 
@@ -582,8 +569,6 @@ class TestSpsaGradient:
         class SpecialObservable(qp.operation.Operator):
             """SpecialObservable"""
 
-            # pylint:disable=too-few-public-methods
-
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
                 return []
@@ -591,7 +576,6 @@ class TestSpsaGradient:
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
-            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})

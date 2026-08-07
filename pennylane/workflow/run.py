@@ -160,12 +160,7 @@ def _construct_ml_execution_pipeline(
     for i in range(1, config.derivative_order):
         differentiable = i > 1
         ml_boundary_execute = _get_ml_boundary_execute(config, differentiable=differentiable)
-        execute_fn = partial(
-            ml_boundary_execute,
-            execute_fn=execute_fn,
-            jpc=jpc,
-            device=device,
-        )
+        execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc, device=device)
         jpc = TransformJacobianProducts(
             execute_fn,
             config.gradient_method,
@@ -175,7 +170,6 @@ def _construct_ml_execution_pipeline(
     return jpc, execute_fn
 
 
-# pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
     resolved_execution_config: ExecutionConfig, differentiable=False
 ) -> Callable:
@@ -192,6 +186,7 @@ def _get_ml_boundary_execute(
     Raises:
         pennylane.QuantumFunctionError: If the required package for the specified interface is not installed.
     """
+    # pylint: disable=import-outside-toplevel
     interface = resolved_execution_config.interface
     grad_on_execution = resolved_execution_config.grad_on_execution
     device_vjp = resolved_execution_config.use_device_jacobian_product
@@ -303,10 +298,7 @@ def run(
             config, device, inner_transform_program
         )
 
-        ml_execute = _get_ml_boundary_execute(
-            config,
-            differentiable=config.derivative_order > 1,
-        )
+        ml_execute = _get_ml_boundary_execute(config, differentiable=config.derivative_order > 1)
         results = ml_execute(
             tapes,
             device,
@@ -326,10 +318,7 @@ def run(
         # higher order derivatives
         config = replace(config, interface=Interface.JAX)
 
-    ml_execute = _get_ml_boundary_execute(
-        config,
-        differentiable=config.derivative_order > 1,
-    )
+    ml_execute = _get_ml_boundary_execute(config, differentiable=config.derivative_order > 1)
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives

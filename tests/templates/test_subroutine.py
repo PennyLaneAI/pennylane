@@ -14,6 +14,7 @@
 """Tests for Subroutine and SubroutineOp"""
 
 # pylint: disable=unused-argument
+
 import inspect
 from collections import Counter, defaultdict
 from functools import partial
@@ -75,10 +76,7 @@ class TestInitialization:
 
         S = Subroutine(WireArgnames, wire_argnames=("reg1", "reg2"))
 
-        assert S.wire_argnames == (
-            "reg1",
-            "reg2",
-        )
+        assert S.wire_argnames == ("reg1", "reg2")
         assert S.dynamic_argnames == ("x", "y")
 
     def test_static_argnames_and_setup_inputs(self):
@@ -92,10 +90,7 @@ class TestInitialization:
 
         S = Subroutine(T, setup_inputs=setup_inputs, static_argnames=("z",))
         assert S.static_argnames == ("z",)
-        assert S.dynamic_argnames == (
-            "x",
-            "y",
-        )
+        assert S.dynamic_argnames == ("x", "y")
 
         a, k = S.setup_inputs(0.5, 1.2, "a", [1, 2, 3])
         assert a == (0.5, 1.2)
@@ -206,10 +201,7 @@ def test_fallback_creating_resources_AbstractArray():
 
     @partial(Subroutine, static_argnames="rotation")
     def f(params, wires, rotation):
-        for (
-            p,
-            w,
-        ) in zip(params["a"], wires):
+        for p, w in zip(params["a"], wires):
             qp.PauliRot(p, rotation, w)
         qp.MultiControlledX(wires)
 
@@ -387,7 +379,7 @@ class TestSubroutineCapture:
     def test_setup_inputs_program_capture(self):
         """Test that setup_inputs can make inputs hashable for use with program capture."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def my_setup_inputs(wires, pauli_words):
             return (), {"wires": wires, "pauli_words": tuple(pauli_words)}
@@ -403,7 +395,6 @@ class TestSubroutineCapture:
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
-        # pylint: disable=protected-access
         assert inner_jaxpr.eqns[-1].primitive == qp.capture.primitives.operator_p
         assert inner_jaxpr.eqns[-1].params["op_cls"] is qp.PauliRot
         assert inner_jaxpr.eqns[-1].params["pauli_word"][0] == ("X",)
@@ -465,7 +456,7 @@ class TestSubroutineCapture:
     def test_autograph_not_propagated_through(self):
         """Test that autograph would propagate through a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(x, wires):
@@ -484,7 +475,7 @@ class TestSubroutineCapture:
     def test_manual_autograph_use(self):
         """Test that autograph can be manually applied to a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         @qp.capture.run_autograph
@@ -503,7 +494,7 @@ class TestSubroutineCapture:
     def test_stack_wires(self):
         """Test that wire arguments to a subroutine are stacked"""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(wires):
@@ -681,7 +672,6 @@ class TestGraphDecomposition:
         )
         assert rp["signature_key"] == key
 
-    # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
 
@@ -1050,7 +1040,6 @@ class TestGraphDecomposition:
             for i in range(params.shape[0]):
                 qp.RY(params[i], wires[i])
 
-        # pylint: disable=too-few-public-methods
         class SubroutineDemoOp(qp.operation.Operator):
 
             resource_keys = frozenset(())
@@ -1107,10 +1096,7 @@ class TestGraphDecomposition:
 
         @partial(Subroutine, static_argnames="rotation")
         def f(params, wires, rotation):
-            for (
-                p,
-                w,
-            ) in zip(params, wires):
+            for p, w in zip(params, wires):
                 qp.PauliRot(p, rotation, w)
             qp.MultiControlledX(wires)
 

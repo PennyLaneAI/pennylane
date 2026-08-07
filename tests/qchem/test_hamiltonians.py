@@ -15,9 +15,9 @@
 Unit tests for functions needed for computing the Hamiltonian.
 """
 
-import numpy as np
-
 # pylint: disable=too-many-arguments,too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -122,13 +122,7 @@ def test_error_torch_data_molecular_hamiltonian():
         ),
     ],
 )
-@pytest.mark.parametrize(
-    "use_jax",
-    [
-        (False),
-        pytest.param(True, marks=pytest.mark.jax),
-    ],
-)
+@pytest.mark.parametrize("use_jax", [(False), pytest.param(True, marks=pytest.mark.jax)])
 def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref, use_jax):
     r"""Test that electron_integrals returns the correct values."""
 
@@ -145,13 +139,7 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
     assert pnp.allclose(two, two_ref)
 
 
-@pytest.mark.parametrize(
-    "use_jax",
-    [
-        (False),
-        pytest.param(True, marks=pytest.mark.jax),
-    ],
-)
+@pytest.mark.parametrize("use_jax", [(False), pytest.param(True, marks=pytest.mark.jax)])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "h_ref"),
     [
@@ -223,13 +211,7 @@ def test_fermionic_hamiltonian(use_jax, symbols, geometry, alpha, h_ref):
     assert h.keys() == h_ref.keys()
 
 
-@pytest.mark.parametrize(
-    "use_jax",
-    [
-        (False),
-        pytest.param(True, marks=pytest.mark.jax),
-    ],
-)
+@pytest.mark.parametrize("use_jax", [(False), pytest.param(True, marks=pytest.mark.jax)])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "h_ref_data"),
     [
@@ -309,13 +291,7 @@ def test_diff_hamiltonian(use_jax, symbols, geometry, h_ref_data):
     )
 
 
-@pytest.mark.parametrize(
-    "use_jax",
-    [
-        (False),
-        pytest.param(True, marks=pytest.mark.jax),
-    ],
-)
+@pytest.mark.parametrize("use_jax", [(False), pytest.param(True, marks=pytest.mark.jax)])
 def test_diff_hamiltonian_active_space(use_jax):
     r"""Test that diff_hamiltonian works when an active space is defined."""
 
@@ -351,13 +327,7 @@ def test_diff_hamiltonian_active_space(use_jax):
         ),
     ],
 )
-@pytest.mark.parametrize(
-    "use_jax",
-    [
-        (False),
-        pytest.param(True, marks=pytest.mark.jax),
-    ],
-)
+@pytest.mark.parametrize("use_jax", [(False), pytest.param(True, marks=pytest.mark.jax)])
 def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, use_jax):
     r"""Test that diff_hamiltonian has an ascending wire order."""
     if use_jax:

@@ -16,6 +16,7 @@ Contains the MPS template.
 """
 
 # pylint: disable=too-many-arguments
+
 import warnings
 
 from pennylane import math
@@ -63,11 +64,7 @@ def compute_indices_MPS(wires, n_block_wires, offset=None):
 
     return tuple(
         tuple(wires[idx] for idx in range(j, j + n_block_wires))
-        for j in range(
-            0,
-            n_layers,
-            n_step,
-        )
+        for j in range(0, n_layers, n_step)
         if not j + n_block_wires > len(wires)
     )
 
@@ -230,9 +227,8 @@ class MPS(Operation):
         return 0 if self._weights is None else 1
 
     @staticmethod
-    def compute_decomposition(
-        weights=None, wires=None, ind_gates=None, block=None, **kwargs
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights=None, wires=None, ind_gates=None, block=None, **kwargs):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

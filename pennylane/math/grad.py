@@ -23,7 +23,6 @@ from pennylane._grad import jacobian as _autograd_jacobian
 from .interface_utils import get_interface
 
 
-# pylint: disable=import-outside-toplevel
 def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
@@ -62,6 +61,7 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     RuntimeError: element 0 of tensors does not require grad and does not have a grad_fn
 
     """
+    # pylint: disable=import-outside-toplevel
 
     argnums_integer = False
     if isinstance(argnums, int):
@@ -103,9 +103,9 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     return compute_grad
 
 
-# pylint: disable=import-outside-toplevel
 def _torch_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via torch."""
+    # pylint: disable=import-outside-toplevel
     from torch.autograd.functional import jacobian as _torch_jac
 
     argnums_torch = (argnums,) if isinstance(argnums, int) else argnums
@@ -129,12 +129,11 @@ def _torch_jac(f, argnums, args, kwargs):
     return jac[0] if isinstance(argnums, int) else jac
 
 
-# pylint: disable=import-outside-toplevel
 def _tensorflow_jac(
     f, argnums, args, kwargs
 ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Calculate a jacobian via tensorflow"""
-    import tensorflow as tf
+    import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
     with tf.GradientTape() as tape:
         y = f(*args, **kwargs)
@@ -155,7 +154,6 @@ def _tensorflow_jac(
     return g[0] if argnums_integer else g
 
 
-# pylint: disable=import-outside-toplevel
 def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the Jacobian in a jax-like manner for any interface.
 
@@ -229,6 +227,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """
 
     def compute_jacobian(*args, **kwargs):
+        # pylint: disable=import-outside-toplevel
         interface = get_interface(*args)
 
         if interface == "autograd":

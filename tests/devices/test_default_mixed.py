@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
 
 # pylint: disable=protected-access
+
 import pytest
 
 import pennylane as qp
@@ -62,7 +63,6 @@ class TestDefaultMixedInit:
     @pytest.mark.jax
     def test_seed_jax(self):
         """Test JAX PRNGKey seed initialization"""
-        # pylint: disable=import-outside-toplevel
         import jax
 
         dev = DefaultMixed(wires=1, seed=jax.random.PRNGKey(0))
@@ -107,7 +107,6 @@ class TestDefaultMixedInit:
         ), "The interface should be set to numpy for an invalid gradient method"
 
 
-# pylint: disable=too-few-public-methods
 class TestDefaultMixedTrainability:
     """Integration tests for DefaultMixed trainable parameters"""
 
@@ -126,11 +125,7 @@ class TestDefaultMixedTrainability:
             return qp.expval(qp.PauliZ(0))
 
         # Create a QNode with the specified interface
-        circuit = qp.QNode(
-            circuit,
-            dev,
-            interface=interface,
-        )
+        circuit = qp.QNode(circuit, dev, interface=interface)
         # Execute the circuit
         result = circuit(param)
         # Check that the result is a tensor with the correct interface
@@ -144,13 +139,7 @@ class TestDefaultMixedTrainability:
         """Test that the trainable parameters are correctly applied to initial state"""
         num_qubits = 2
         dev = DefaultMixed(wires=num_qubits)
-        state = qp.math.array(
-            [
-                1.0,
-            ],
-            like=interface,
-            requires_grad=True,
-        )
+        state = qp.math.array([1.0], like=interface, requires_grad=True)
 
         # Make a trainable, parametrized circuit
         def circuit_StatePrep(state):
@@ -159,11 +148,7 @@ class TestDefaultMixedTrainability:
             return [qp.expval(qp.PauliZ(wires=q)) for q in range(num_qubits)]
 
         # Create a QNode with the specified interface
-        circuit = qp.QNode(
-            circuit_StatePrep,
-            dev,
-            interface=interface,
-        )
+        circuit = qp.QNode(circuit_StatePrep, dev, interface=interface)
         # Execute the circuit
         result = circuit(state)
         # Check that the result is a tensor with the correct interface

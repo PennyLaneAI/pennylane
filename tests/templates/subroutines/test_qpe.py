@@ -63,7 +63,7 @@ class TestDecomposition:
         assert qscript[3].base.z == qscript2[3].base.z
         assert qscript[3].control_wires == qscript2[3].control_wires
 
-        assert isinstance(qscript[-1], qp.ops.op_math.Adjoint)  # pylint: disable=no-member
+        assert isinstance(qscript[-1], qp.ops.op_math.Adjoint)
         qp.assert_equal(qscript[-1].base, qp.QFT(wires=(1, 2)))
 
         assert np.allclose(qscript[1].matrix(), qscript[1].matrix())
@@ -72,7 +72,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
     def test_phase_estimated(self, phase):
         """Tests that the QPE circuit can correctly estimate the phase of a simple RX rotation."""
-        # pylint: disable=cell-var-from-loop
         estimates = []
         wire_range = range(2, 10)
 
@@ -116,7 +115,6 @@ class TestDecomposition:
     def test_phase_estimated_two_qubit(self):
         """Tests that the QPE circuit can correctly estimate the phase of a random two-qubit
         unitary."""
-        # pylint: disable=cell-var-from-loop
 
         unitary = unitary_group.rvs(4, random_state=1967)
         eigvals, eigvecs = np.linalg.eig(unitary)
@@ -167,7 +165,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 4))
     def test_phase_estimated_single_ops(self, param):
         """Tests that the QPE works correctly for a single operator"""
-        # pylint: disable=cell-var-from-loop
 
         unitary = qp.RX(param, wires=[0])
 
@@ -211,7 +208,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 4))
     def test_phase_estimated_ops(self, param):
         """Tests that the QPE works correctly for compound operators"""
-        # pylint: disable=cell-var-from-loop
 
         unitary = qp.RX(param, wires=[0]) @ qp.CNOT(wires=[0, 1])
 
@@ -272,10 +268,7 @@ class TestDecomposition:
         ):
             qp.QuantumPhaseEstimation(unitary, target_wires=[1], estimation_wires=[2, 3])
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="No estimation wires specified.",
-        ):
+        with pytest.raises(QuantumFunctionError, match="No estimation wires specified."):
             qp.QuantumPhaseEstimation(unitary)
 
     def test_map_wires(self):
@@ -284,15 +277,7 @@ class TestDecomposition:
 
         unitary = qp.RX(np.pi / 4, wires=[0]) @ qp.CNOT(wires=[0, 1])
         qpe = qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
-        new_qpe = qp.map_wires(
-            qpe,
-            wire_map={
-                0: 2,
-                1: 3,
-                2: 4,
-                3: 5,
-            },
-        )
+        new_qpe = qp.map_wires(qpe, wire_map={0: 2, 1: 3, 2: 4, 3: 5})
 
         assert list(new_qpe.wires) == [2, 3, 4, 5]
         assert list(new_qpe._hyperparameters["target_wires"]) == [2, 3]
@@ -323,7 +308,7 @@ class TestDecomposition:
 
             return qp.state()
 
-        assert qp.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
+        assert qp.math.isclose(qpe_circuit()[0], 1)
 
     @pytest.mark.jax
     def test_jit(self):

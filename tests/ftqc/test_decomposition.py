@@ -398,10 +398,7 @@ class TestMBQCFormalismConversion:
         res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.1)
 
-    @pytest.mark.parametrize(
-        "gate, wire",
-        [(qp.X, 2), (qp.Y, 1), (qp.Z, 0)],
-    )
+    @pytest.mark.parametrize("gate, wire", [(qp.X, 2), (qp.Y, 1), (qp.Z, 0)])
     def test_pauli_gates_are_updated(self, gate, wire):
         """Test that the wires on Pauli operators are updated to match the physical
         location of the state after application of the preceding MCM operations"""

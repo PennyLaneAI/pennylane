@@ -15,6 +15,8 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 
+# pylint: disable=protected-access,redefined-outer-name,too-many-arguments
+
 import os
 import re
 from pathlib import Path, PosixPath
@@ -44,13 +46,11 @@ from .support import (
 
 has_rich = False
 try:
-    import rich  # pylint:disable=unused-import
+    import rich  # pylint: disable=unused-import
 
     has_rich = True
 except ImportError:
     pass
-
-# pylint:disable=protected-access,redefined-outer-name
 
 
 pytestmark = pytest.mark.data
@@ -91,8 +91,7 @@ _data_struct = {
 }
 
 
-# pylint:disable=unused-argument
-def get_mock(url, timeout=1.0):
+def get_mock(url, timeout=1.0):  # pylint: disable=unused-argument
     """Return the foldermap or data_struct according to URL"""
     resp = MagicMock(ok=True)
     resp.json.return_value = _folder_map if "foldermap" in url else _data_struct
@@ -139,8 +138,7 @@ def httpserver_listen_address():
     return ("localhost", 8888)
 
 
-# pylint:disable=unused-argument
-# pylint:disable=dangerous-default-value
+# pylint: disable-next=unused-argument,dangerous-default-value
 def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json"}):
     """Return mocked get response depending on json content."""
     resp = MagicMock(ok=True)
@@ -151,8 +149,7 @@ def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json
     return resp
 
 
-# pylint:disable=unused-argument
-def graphql_mock(url, query, variables=None):
+def graphql_mock(url, query, variables=None):  # pylint: disable=unused-argument
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
         if variables["datasetClassId"] == "mqt-bench":
@@ -174,8 +171,7 @@ def graphql_mock(url, query, variables=None):
     return json_data
 
 
-# pylint:disable=unused-argument
-def graphql_mock_qchem(url, query, variables=None):
+def graphql_mock_qchem(url, query, variables=None):  # pylint: disable=unused-argument
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
         json_data = _list_attrs_resp
@@ -188,12 +184,12 @@ def graphql_mock_qchem(url, query, variables=None):
     return json_data
 
 
-def get_dataset_urls_mock(class_id, parameters):
+def get_dataset_urls_mock(class_id, parameters):  # pylint: disable=unused-argument
     """Returns an empty response for the ``get_dataset_urls`` function."""
     return []
 
 
-def head_mock(url, timeout=None):
+def head_mock(url, timeout=None):  # pylint: disable=unused-argument
     """Return a fake header stating content-length is 1."""
     return NamedTuple("Head", headers=dict)(headers={"Content-Length": 10000})
 
@@ -214,8 +210,7 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     qp.data.Dataset._write_file(content, os.path.join(dest_folder, filename))
 
 
-# pylint:disable=unused-argument
-def wait_mock_fixture(_futures, return_when=None):
+def wait_mock_fixture(_futures, return_when=None):  # pylint: disable=unused-argument
     """Patch to avoid raising exceptions after collecting threads."""
     return MagicMock(done=[])
 
@@ -269,21 +264,14 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_success(
-        self,
-        mock_input,
-        mock_sleep,
-        mock_load,
-        side_effect,
-    ):  # pylint:disable=too-many-arguments, redefined-outer-name
+    # pylint: disable-next=unused-argument
+    def test_load_interactive_success(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
-    def test_load_interactive_without_confirm(
-        self, mock_input, _mock_sleep, mock_load
-    ):  # pylint:disable=redefined-outer-name
+    def test_load_interactive_without_confirm(self, mock_input, _mock_sleep, mock_load):
         """Test that load_interactive returns None if the user doesn't confirm."""
         mock_input.side_effect = [
             "qspin",
@@ -316,9 +304,9 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_invalid_inputs(
+    def test_load_interactive_invalid_inputs(  # pylint: disable=unused-argument
         self, mock_input, _mock_sleep, mock_load, side_effect, error_message
-    ):  # pylint: disable=redefined-outer-name
+    ):
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
@@ -342,13 +330,8 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_qchem(
-        self,
-        mock_input,
-        mock_sleep,
-        mock_load,
-        side_effect,
-    ):
+    # pylint: disable-next=unused-argument
+    def test_load_interactive_qchem(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
@@ -363,7 +346,7 @@ class TestMiscHelpers:
         assert qp.data.list_data_names() == ["other", "qchem", "qspin"]
 
     @patch.object(requests, "get", get_mock)
-    def test_list_datasets(self, tmp_path):
+    def test_list_datasets(self, tmp_path):  # pylint: disable=unused-argument
         """Test that list_datasets returns either the S3 foldermap, or the local tree."""
         assert qp.data.list_datasets() == {
             "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
@@ -405,7 +388,7 @@ class TestMiscHelpers:
 
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
-    # pylint:disable=too-many-arguments
+    # pylint: disable-next=unused-argument
     def mock(data_path, dest, attributes, force, block_size, pbar_task):
         dset = Dataset.open(Path(dest), "w")
         if attributes:
@@ -418,7 +401,6 @@ def mock_download_dataset(monkeypatch):
     return mock
 
 
-# pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
@@ -453,7 +435,6 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
     }
 
 
-# pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
@@ -517,7 +498,7 @@ def test_load_except(monkeypatch, tmp_path):
 )
 def test_download_dataset_full_or_partial(
     download_full, download_partial, attributes, dest_exists, force, called_partial
-):  # pylint: disable=too-many-arguments
+):
     """Test that _download_dataset calls ``_download_partial()`` if ``attributes`` is not None,
     or the dataset already exists at ``dest``, and that it only calls ``_download_full()`` if
     the dataset does not exist at ``dest`` and ``attributes`` is None.
@@ -782,7 +763,4 @@ class TestGetGraphql:
             pennylane.data.data_manager.graphql.GraphQLError,
             match="Errors in request: Mock error message.",
         ):
-            pennylane.data.data_manager.graphql.get_graphql(
-                GRAPHQL_URL,
-                error_query,
-            )
+            pennylane.data.data_manager.graphql.get_graphql(GRAPHQL_URL, error_query)

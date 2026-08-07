@@ -15,6 +15,8 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 
+# pylint: disable=arguments-differ,too-many-arguments,super-init-not-called
+
 import numpy as np
 
 from pennylane.estimator.compact_hamiltonian import (
@@ -47,8 +49,6 @@ from .subroutines import (
     Select,
     SemiAdder,
 )
-
-# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
 
 class TrotterProduct(ResourceOperator):
@@ -406,11 +406,7 @@ class TrotterCDF(ResourceOperator):
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
         """
-        return {
-            "cdf_ham": self.cdf_ham,
-            "num_steps": self.num_steps,
-            "order": self.order,
-        }
+        return {"cdf_ham": self.cdf_ham, "num_steps": self.num_steps, "order": self.order}
 
     @classmethod
     def resource_rep(
@@ -444,11 +440,7 @@ class TrotterCDF(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "cdf_ham": cdf_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
+        params = {"cdf_ham": cdf_ham, "num_steps": num_steps, "order": order}
         num_wires = 2 * cdf_ham.num_orbitals
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -758,11 +750,7 @@ class TrotterTHC(ResourceOperator):
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
         """
-        return {
-            "thc_ham": self.thc_ham,
-            "num_steps": self.num_steps,
-            "order": self.order,
-        }
+        return {"thc_ham": self.thc_ham, "num_steps": self.num_steps, "order": self.order}
 
     @classmethod
     def resource_rep(
@@ -796,11 +784,7 @@ class TrotterTHC(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "thc_ham": thc_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
+        params = {"thc_ham": thc_ham, "num_steps": num_steps, "order": order}
         num_wires = thc_ham.tensor_rank * 2
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -2029,11 +2013,7 @@ class TrotterPauli(ResourceOperator):
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
         """
-        return {
-            "pauli_ham": self.pauli_ham,
-            "num_steps": self.num_steps,
-            "order": self.order,
-        }
+        return {"pauli_ham": self.pauli_ham, "num_steps": self.num_steps, "order": self.order}
 
     @classmethod
     def resource_rep(
@@ -2070,11 +2050,7 @@ class TrotterPauli(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "pauli_ham": pauli_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
+        params = {"pauli_ham": pauli_ham, "num_steps": num_steps, "order": order}
         num_wires = pauli_ham.num_qubits
         return CompressedResourceOp(cls, num_wires, params)
 

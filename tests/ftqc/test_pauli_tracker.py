@@ -192,10 +192,7 @@ class TestPauliTracker:
         ],
     )
     def test_apply_clifford_ops_xz_value_err(self, clifford_op, xz):
-        with pytest.raises(
-            ValueError,
-            match="Please ensure xz are either 0 or 1.",
-        ):
+        with pytest.raises(ValueError, match="Please ensure xz are either 0 or 1."):
             _ = commute_clifford_op(clifford_op, xz)
 
 

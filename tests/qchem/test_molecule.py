@@ -16,6 +16,7 @@ Unit tests for the molecule object.
 """
 
 # pylint: disable=too-many-arguments
+
 import pytest
 
 from pennylane import numpy as np

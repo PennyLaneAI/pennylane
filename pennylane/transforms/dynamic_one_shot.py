@@ -28,13 +28,7 @@ from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError, TransformError
-from pennylane.measurements import (
-    CountsMP,
-    ExpectationMP,
-    ProbabilityMP,
-    SampleMP,
-    VarianceMP,
-)
+from pennylane.measurements import CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -56,8 +50,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-# pylint: disable=unused-argument
-def _expand_fn(
+def _expand_fn(  # pylint: disable=unused-argument
     tape: QuantumScript, postselect_mode=None, **_
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     if not any(is_mcm(o) for o in tape.operations):
@@ -323,8 +316,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-# pylint: disable=too-many-arguments
-def _handle_measurement_qjit(
+def _handle_measurement_qjit(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,
@@ -342,10 +334,7 @@ def _handle_measurement_qjit(
 
     result = results[m_count]
     if isinstance(m, CountsMP):
-        res = (
-            result[0][0],
-            math.sum(result[1] * math.reshape(is_valid, (-1, 1)), axis=0),
-        )
+        res = (result[0][0], math.sum(result[1] * math.reshape(is_valid, (-1, 1)), axis=0))
         return res, m_count + 1
     result = math.squeeze(result)
     if isinstance(m, SampleMP) and result.ndim == 1:
@@ -353,8 +342,7 @@ def _handle_measurement_qjit(
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
-# pylint: disable=too-many-arguments
-def _handle_measurement(
+def _handle_measurement(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,
@@ -460,7 +448,6 @@ def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=No
     return samples[is_valid]
 
 
-# pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
@@ -474,7 +461,6 @@ def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mod
     return math.sum(math.squeeze(samples) * is_valid) / math.sum(is_valid)
 
 
-# pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples, axis=0)

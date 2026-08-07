@@ -43,6 +43,7 @@ Note that we must provide the expected output shape for the function to use pure
 """
 
 # pylint: disable=unused-argument,too-many-arguments
+
 from functools import partial
 
 import jax

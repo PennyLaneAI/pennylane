@@ -133,7 +133,7 @@ class QNGOptimizerQJIT:
         self.approx = approx
         self.lam = lam
 
-    def init(self, params):
+    def init(self, params):  # pylint: disable=unused-argument,no-self-use
         """Return the initial state of the optimizer.
 
         Args:
@@ -149,8 +149,6 @@ class QNGOptimizerQJIT:
             the ``optax``-like interface for all Jax-based quantum-specific optimizers.
 
         """
-        # pylint:disable=unused-argument
-        # pylint:disable=no-self-use
         return None
 
     def step(self, qnode, params, state, **kwargs):

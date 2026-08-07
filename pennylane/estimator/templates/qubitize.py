@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
+# pylint: disable=signature-differs,arguments-differ,too-many-arguments
+
 from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.ops.op_math.controlled_ops import MultiControlledX, Toffoli
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
@@ -29,8 +31,6 @@ from pennylane.estimator.templates.stateprep import PrepTHC
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=signature-differs, arguments-differ, too-many-arguments
 
 
 class QubitizeTHC(ResourceOperator):
@@ -134,18 +134,12 @@ class QubitizeTHC(ResourceOperator):
         self.rotation_precision = rotation_precision
 
         if prep_op is None:
-            prep_op = PrepTHC(
-                thc_ham,
-                coeff_precision=coeff_precision,
-            )
+            prep_op = PrepTHC(thc_ham, coeff_precision=coeff_precision)
         _dequeue(prep_op)
         self.prep_op = prep_op.resource_rep_from_op()
 
         if select_op is None:
-            select_op = SelectTHC(
-                thc_ham,
-                rotation_precision=rotation_precision,
-            )
+            select_op = SelectTHC(thc_ham, rotation_precision=rotation_precision)
         _dequeue(select_op)
         self.select_op = select_op.resource_rep_from_op()
 

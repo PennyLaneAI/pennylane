@@ -71,7 +71,7 @@ def test_weights_affect_graph_decomposition():
     ]
 
 
-class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOp(Operation):
     resource_keys = set()
 
     @property
@@ -79,7 +79,7 @@ class CustomOp(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
+class AnotherOp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -89,7 +89,7 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOpDynamicWireDecomp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -118,7 +118,7 @@ def _decomp_without_work_wire(wires, **__):
     qp.Toffoli(wires=wires[::1])
 
 
-class LargeOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class LargeOpDynamicWireDecomp(Operation):
     """A larger custom operation."""
 
     resource_keys = set()
@@ -285,11 +285,7 @@ class TestDecomposeGraphEnabled:
             gate_set={"RY", "RZ", "CZ", "Hadamard", "GlobalPhase"},
             alt_decomps={qp.CNOT: [my_cnot]},
         )
-        assert new_tape.operations == [
-            qp.H(0),
-            qp.CZ(wires=[1, 0]),
-            qp.H(0),
-        ]
+        assert new_tape.operations == [qp.H(0), qp.CZ(wires=[1, 0]), qp.H(0)]
 
     @pytest.mark.integration
     def test_alt_decomp(self):
@@ -321,7 +317,7 @@ class TestDecomposeGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOpWithFallback(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOpWithFallback(Operation):
             """Dummy custom op."""
 
             resource_keys = set()
@@ -629,10 +625,7 @@ class TestDecomposeGraphEnabled:
     def test_minimize_work_wires(self):
         """Tests that the number of allocations can be minimized."""
 
-        @qp.register_resources(
-            {qp.CNOT: 2, LargeOpDynamicWireDecomp: 2},
-            work_wires={"zeroed": 1},
-        )
+        @qp.register_resources({qp.CNOT: 2, LargeOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1})
         def _some_decomp(wires):
             with qp.allocation.allocate(1, state="zero", restored=True) as work_wires:
                 qp.CNOT([wires[0], work_wires[0]])

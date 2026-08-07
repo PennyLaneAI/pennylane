@@ -198,10 +198,7 @@ class TestControlledDecompositionZYZ:
         [
             (
                 qp.ops.Prod(qp.PauliX(0), qp.PauliX(0)),  # type: ignore
-                [
-                    qp.CNOT(wires=[1, 0]),
-                    qp.CNOT(wires=[1, 0]),
-                ],
+                [qp.CNOT(wires=[1, 0]), qp.CNOT(wires=[1, 0])],
             ),
             (
                 qp.s_prod(1j, qp.PauliX(0)),
@@ -593,7 +590,6 @@ class TestMultiControlledUnitary:
     def test_invalid_op_matrix(self):
         """Tests that an error is raised when op does not define a matrix"""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -653,12 +649,7 @@ class TestMultiControlledUnitary:
         ),
     ]
 
-    gen_ops = [
-        qp.PauliX(0),
-        qp.PauliZ(0),
-        qp.Hadamard(0),
-        qp.Rot(0.123, 0.456, 0.789, wires=0),
-    ]
+    gen_ops = [qp.PauliX(0), qp.PauliZ(0), qp.Hadamard(0), qp.Rot(0.123, 0.456, 0.789, wires=0)]
 
     @pytest.mark.parametrize("op", gen_ops + su2_gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
@@ -750,10 +741,7 @@ class TestMultiControlledUnitary:
 
         actual_ops = _decompose_multicontrolled_unitary(op, control_wires)
         expected_op = qp.ctrl(op, control_wires)
-        res = qp.matrix(
-            qp.tape.QuantumScript(actual_ops),
-            wire_order=control_wires + [0],
-        )
+        res = qp.matrix(qp.tape.QuantumScript(actual_ops), wire_order=control_wires + [0])
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
@@ -762,11 +750,7 @@ class TestMultiControlledUnitary:
 class TestControlledUnitaryRecursive:
     """tests for qp.ops._decompose_recursive"""
 
-    gen_ops = [
-        qp.PauliX(0),
-        qp.PauliZ(0),
-        qp.Hadamard(0),
-    ]
+    gen_ops = [qp.PauliX(0), qp.PauliZ(0), qp.Hadamard(0)]
     controlled_wires = tuple(list(range(1, 1 + n)) for n in range(1, 6))
 
     @pytest.mark.parametrize("op", gen_ops)
@@ -815,7 +799,6 @@ class TestMCXDecomposition:
     def test_wrong_work_wire_type(self):
         """Test that an error is raised if the work wire type is not 'zeroed' or 'borrowed'."""
 
-        # pylint: disable=protected-access
         control_wires = [0, 1]
         target_wire = 2
 
@@ -858,7 +841,6 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0] * len(work_wires), wires=work_wires)
-            # pylint: disable=missing-kwoa
             decompose_mcx_many_workers_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
@@ -883,7 +865,6 @@ class TestMCXDecomposition:
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on the case where there is one work wire."""
 
-        # pylint: disable=protected-access
         control_wires = Wires(range(n_ctrl_wires))
         target_wire = n_ctrl_wires
         work_wires = n_ctrl_wires + 1
@@ -929,7 +910,6 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0], wires=work_wire)
-            # pylint: disable=missing-kwoa
             decompose_mcx_one_worker_explicit(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
@@ -1069,7 +1049,6 @@ class TestMCXDecomposition:
     def test_integration_multi_controlled_x(self, n_ctrl_wires, work_wire_type):
         """Test that the new decompositions are integrated with the operation."""
 
-        # pylint: disable=protected-access
         control_wires = list(range(n_ctrl_wires))
         target_wire = n_ctrl_wires
 
@@ -1119,7 +1098,6 @@ class TestMCXDecomposition:
     def test_private_mcx_decomposition_raises_error(self):
         """Test that an error is raised if not enough work wires are provided"""
 
-        # pylint: disable=protected-access
         control_wires = Wires(range(5))
         target_wire = 5
         work_wires = Wires([6])
@@ -1131,10 +1109,7 @@ class TestMCXDecomposition:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "num_control_wires, num_work_wires",
-        [(4, 1), (4, 2)],
-    )
+    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(4, 1), (4, 2)])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""

@@ -98,8 +98,7 @@ def _convert_to_prod(op_or_func):
     )
 
 
-# pylint: disable=inconsistent-return-statements
-def change_op_basis(
+def change_op_basis(  # pylint: disable=inconsistent-return-statements
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
     uncompute_op: Operator | Callable | None = None,
@@ -259,8 +258,8 @@ class ChangeOpBasis(CompositeOp):
     def _flatten(self):
         return tuple(reversed(self.operands)), tuple()
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
@@ -340,7 +339,6 @@ class ChangeOpBasis(CompositeOp):
         """
         return self[1].is_verified_hermitian
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -351,9 +349,8 @@ class ChangeOpBasis(CompositeOp):
             _ = [queuing.apply(op) for op in reversed(self)]
         return list(self[::-1])
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -385,7 +382,6 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     return resources
 
 
-# pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
     queuing.apply(base.operands[2])
@@ -405,7 +401,7 @@ def _controlled_change_op_basis_resources(
     base_class,
     base_params,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):  # pylint: disable=unused-argument,too-many-arguments
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
@@ -442,9 +438,8 @@ def _controlled_change_op_basis_decomposition(
     queuing.apply(base.operands[0])
 
 
-# pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):
+def _change_op_basis_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:
         queuing.apply(op)
 

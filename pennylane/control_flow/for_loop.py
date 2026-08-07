@@ -330,9 +330,8 @@ def _get_for_loop_qfunc_prim():
         setup_env=setup_env,
     )
 
-    # pylint: disable=too-many-arguments
     @for_loop_prim.def_impl
-    def _impl(
+    def _impl(  # pylint: disable=too-many-arguments
         start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
     ):
         # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
@@ -352,8 +351,8 @@ def _get_for_loop_qfunc_prim():
 
         return fn_res
 
-    # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
+    # pylint: disable-next=unused-argument
     def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
         args_slice = slice(*args_slice)
         abstract_shapes_slice = slice(*abstract_shapes_slice)
@@ -362,7 +361,7 @@ def _get_for_loop_qfunc_prim():
     return for_loop_prim
 
 
-class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-arguments
+class ForLoopCallable:  # pylint: disable=too-few-public-methods
     """Base class to represent a for loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.

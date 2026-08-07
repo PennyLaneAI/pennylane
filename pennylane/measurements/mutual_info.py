@@ -46,17 +46,12 @@ class MutualInfoMP(StateMeasurement):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
         return (None, None), metadata
 
-    def __init__(
-        self,
-        wires: Sequence[Wires] | None = None,
-        log_base: float | None = None,
-    ):
+    def __init__(self, wires: Sequence[Wires] | None = None, log_base: float | None = None):
         self.log_base = log_base
         super().__init__(wires=wires)
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
+    def _primitive_bind_call(cls, wires: Sequence, **kwargs):  # pylint: disable=arguments-differ
         if cls._wires_primitive is None:  # pragma: no cover
             # just a safety check
             return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover

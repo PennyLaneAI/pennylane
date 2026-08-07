@@ -75,7 +75,6 @@ class TestDefaultBitMap:
 
     def test_empty(self):
         """Test creating empty bit map"""
-        # pylint: disable=use-implicit-booleaness-not-comparison
         bit_map = default_bit_map([])
         assert bit_map == {}
 
@@ -185,10 +184,8 @@ class TestConvertWireOrder:
         assert full_wire_map == used_wire_map == {2: 0, 1: 1, 0: 2, 4: 3, 3: 4, 5: 5}
 
 
-class TestUnwrapControls:
+class TestUnwrapControls:  # pylint: disable=too-few-public-methods
     """Tests the ``unwrap_controls`` utility function."""
-
-    # pylint:disable=too-few-public-methods
 
     @pytest.mark.parametrize(
         "op,expected_control_wires,expected_control_values,expected_base_cls",
@@ -255,7 +252,6 @@ class TestUnwrapControls:
         assert isinstance(base, expected_base_cls)
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 class TestCwireConnections:
     """Tests for the cwire_connections helper method."""
 
@@ -362,12 +358,7 @@ class TestCwireConnections:
         assert new_bit_map == bit_map
 
         # should not draw cwire for m2 if there is no usage of it
-        layers = [
-            m0.measurements,
-            m1.measurements,
-            m2.measurements,
-            [qp.expval(m0), qp.expval(m1)],
-        ]
+        layers = [m0.measurements, m1.measurements, m2.measurements, [qp.expval(m0), qp.expval(m1)]]
         bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
         new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 3]], 1: [[1, 3]]}
@@ -375,12 +366,7 @@ class TestCwireConnections:
         assert new_bit_map == bit_map
 
         # should not draw cwire for m1 if there is no usage of it
-        layers = [
-            m0.measurements,
-            m1.measurements,
-            m2.measurements,
-            [qp.expval(m0), qp.expval(m2)],
-        ]
+        layers = [m0.measurements, m1.measurements, m2.measurements, [qp.expval(m0), qp.expval(m2)]]
         bit_map = {m0.measurements[0]: 0, m2.measurements[0]: 1}
         new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 3]], 1: [[2, 3]]}

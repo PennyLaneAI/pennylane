@@ -67,8 +67,8 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
-# pylint: disable=unused-argument
 @singledispatch
+# pylint: disable-next=unused-argument
 def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int) -> str:
     try:
         gate = OPENQASM_GATES[op.name]

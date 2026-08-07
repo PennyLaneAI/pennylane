@@ -13,21 +13,18 @@
 # limitations under the License.
 """Tests for the algebraic prerequisites such as rings and matrices for Clifford+T decomposition."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 
-# pylint: disable=too-few-public-methods
-
 
 class TestZSqrtTwo:
     """Tests for the ZSqrtTwo class."""
 
-    @pytest.mark.parametrize(
-        "a, b",
-        [(0, 0), (2, 1), (3, -2), (-4, 0), (0, 5)],
-    )
+    @pytest.mark.parametrize("a, b", [(0, 0), (2, 1), (3, -2), (-4, 0), (0, 5)])
     def test_init_and_repr(self, a, b):
         """Test that ZSqrtTwo initializes correctly and has correct representations."""
         z_sqrt_two = ZSqrtTwo(a, b)
@@ -35,7 +32,7 @@ class TestZSqrtTwo:
         assert z_sqrt_two.b == b
 
         assert repr(z_sqrt_two) == f"ZSqrtTwo(a={a}, b={b})"
-        # pylint:disable=condition-evals-to-constant
+        # pylint: disable=condition-evals-to-constant
         assert (
             str(z_sqrt_two)
             == (f"{a}" if a else "" + " + " if a and b else "" + f"{b}√2" if b else "")
@@ -254,9 +251,8 @@ class TestSO3Matrix:
         str_repr = str_repr.rstrip(", \n") + "]" + (f" * 1 / √2^{so3k}" if so3k else "")
         assert str(so3_matrix) == str_repr
 
-        assert np.allclose(
-            so3_matrix.parity_mat, np.array([[1, 0, 0], [0, 0, 0], [1, 0, 0]])
-        )  # Computed manually
+        # Computed manually
+        assert np.allclose(so3_matrix.parity_mat, np.array([[1, 0, 0], [0, 0, 0], [1, 0, 0]]))
         assert np.allclose(so3_matrix.parity_vec, [1, 0, 1])  # Computed manually
 
         z3 = ZOmega()

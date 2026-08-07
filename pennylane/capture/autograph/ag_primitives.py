@@ -112,8 +112,7 @@ def _assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def if_stmt(
+def if_stmt(  # pylint: disable=too-many-arguments
     pred: bool,
     true_fn: Callable[[], Any],
     false_fn: Callable[[], Any],
@@ -206,8 +205,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
-# pylint: disable=too-many-positional-arguments
-def _call_pennylane_for(
+def _call_pennylane_for(  # pylint: disable=too-many-arguments
     start,
     stop,
     step,
@@ -465,14 +463,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
         # HOTFIX: pass through calls of known PennyLane wrapper functions
-        if fn in (
-            qp.adjoint,
-            qp.ctrl,
-            qp.grad,
-            qp.jacobian,
-            qp.vjp,
-            qp.jvp,
-        ):
+        if fn in (qp.adjoint, qp.ctrl, qp.grad, qp.jacobian, qp.vjp, qp.jvp):
             if not args:
                 raise ValueError(f"{fn.__name__} requires at least one argument")
 
@@ -496,11 +487,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             def passthrough_wrapper(*args, **kwargs):
                 return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
 
-            return fn(
-                passthrough_wrapper,
-                *args[1:],
-                **(kwargs if kwargs is not None else {}),
-            )
+            return fn(passthrough_wrapper, *args[1:], **(kwargs if kwargs is not None else {}))
 
         # For QNode calls, we employ a wrapper to forward the quantum function call to autograph
         if isinstance(fn, qp.QNode):
@@ -583,8 +570,7 @@ class PRange:
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods
-class PEnumerate(enumerate):
+class PEnumerate(enumerate):  # pylint: disable=too-few-public-methods
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.
     """
@@ -596,8 +582,4 @@ class PEnumerate(enumerate):
         self.start_idx = start
 
 
-py_builtins_map = {
-    **ag_py_builtins.BUILTIN_FUNCTIONS_MAP,
-    "range": PRange,
-    "enumerate": PEnumerate,
-}
+py_builtins_map = {**ag_py_builtins.BUILTIN_FUNCTIONS_MAP, "range": PRange, "enumerate": PEnumerate}

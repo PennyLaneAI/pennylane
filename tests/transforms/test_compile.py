@@ -245,7 +245,7 @@ class TestCompileIntegration:
             def decomposition(self):
                 return [qp.Hadamard(i) for i in self.wires]
 
-            def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
+            def state_vector(self, wire_order=None):
                 return self.parameters[0]
 
         state_prep_op = DummyStatePrep([1, 1], wires=[0, 1])
@@ -348,8 +348,8 @@ class TestCompileIntegration:
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
-        # pylint: disable=expression-not-assigned
         def qfunc(x, params):
+            # pylint: disable=expression-not-assigned
             qp.templates.AngleEmbedding(x, wires=range(3))
             qp.adjoint(qp.adjoint(qp.templates.BasicEntanglerLayers(params, wires=range(3)))) ** 2
             return qp.expval(qp.PauliZ(wires=2))

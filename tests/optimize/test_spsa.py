@@ -228,7 +228,6 @@ class TestSPSAOptimizer:
         k = 1
         ck = c / k**gamma
         ak = a / (A + k) ** alpha
-        # pylint:disable=too-many-function-args
         deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
 
         args = (multid_array,)
@@ -510,8 +509,5 @@ class TestSPSAOptimizer:
     def test_not_A_nor_maxiter_provided(self):
         """Test that if the objective function is not a
         scalar function, an error is raised."""
-        with pytest.raises(
-            TypeError,
-            match="One of the parameters maxiter or A must be provided.",
-        ):
+        with pytest.raises(TypeError, match="One of the parameters maxiter or A must be provided."):
             qp.SPSAOptimizer()

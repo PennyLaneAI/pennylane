@@ -33,9 +33,4 @@ def wraps(target):
     return functools.wraps(target, assigned=AUTOGRAPH_WRAPPER_ASSIGNMENTS)
 
 
-__all__ = (
-    "autograph_source",
-    "run_autograph",
-    "disable_autograph",
-    "wraps",
-)
+__all__ = ("autograph_source", "run_autograph", "disable_autograph", "wraps")

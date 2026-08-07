@@ -15,7 +15,8 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking,wrong-import-position
+# pylint: disable=protected-access,unbalanced-tuple-unpacking,wrong-import-position
+
 import pytest
 
 import pennylane as qp
@@ -56,7 +57,6 @@ class SimplifyInterpreter(PlxprInterpreter):
         return new_mp
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 def test_env_and_initialized():
     """Test that env is initialized at the start."""
 
@@ -357,8 +357,7 @@ def handle_add_3(self, x):  # pylint: disable=unused-argument
     return x + scalar
 
 
-#  pylint: disable=too-many-public-methods
-class TestHigherOrderPrimitiveRegistrations:
+class TestHigherOrderPrimitiveRegistrations:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_transform(self, lazy):
         """Test the higher order adjoint transform."""
@@ -659,7 +658,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
         assert jaxpr0.eqns[0].primitive.name == "mul"
-        assert jaxpr0.eqns[1].primitive == qp.RX._primitive  # pylint: disable=protected-access
+        assert jaxpr0.eqns[1].primitive == qp.RX._primitive
 
         assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
 

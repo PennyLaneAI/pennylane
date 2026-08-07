@@ -109,11 +109,7 @@ class TestSnapshotTape:
         assert "snapshot_tags" in fn_no_meas.keywords
         assert len(fn_no_meas.keywords["snapshot_tags"]) == num_snapshots
         assert all(key in fn_no_meas.keywords["snapshot_tags"] for key in expected_keys)
-        assert fn_no_meas(["a", 1, 2]) == {
-            0: "a",
-            "very_important_state": 1,
-            2: 2,
-        }
+        assert fn_no_meas(["a", 1, 2]) == {0: "a", "very_important_state": 1, 2: 2}
 
     def test_snapshot_fails_with_non_str_tags(self):
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):
@@ -279,9 +275,9 @@ class TestSnapshotGeneral:
 class TestSnapshotSupportedQNode:
     """Test the Snapshot instruction for simulators."""
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_default_qubit_with_backprob_and_adjoint(self, diff_method):
+        # pylint: disable=protected-access
         dev = qp.device("default.qubit")
 
         assert qp.debugging.snapshot._is_snapshot_compatible(dev)
@@ -308,10 +304,10 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_mixed(self, method):
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
+        # pylint: disable=protected-access
         dev = qp.device("default.mixed", wires=2)
 
         assert qp.debugging.snapshot._is_snapshot_compatible(dev)

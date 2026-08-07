@@ -16,6 +16,7 @@ Unit tests for the available built-in parametric qubit operations.
 """
 
 # pylint: disable=too-few-public-methods,too-many-public-methods
+
 import copy
 from functools import partial, reduce
 
@@ -177,10 +178,10 @@ class TestOperations:
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_flatten_unflatten(self, op):
         """Test that the flatten and unflatten methods work as expected."""
+        # pylint: disable=protected-access
         _, metadata = op._flatten()
         assert hash(metadata)
 
@@ -1062,12 +1063,7 @@ class TestMatrix:
         assert np.allclose(mat, np.diag([1, 1, 1, 1])[[0, 2, 1, 3]], atol=tol, rtol=0)
         mat = qp.PSWAP(z, wires=[0, 1]).matrix()
         assert qp.math.shape(mat) == (batch_size, 4, 4)
-        assert np.allclose(
-            mat,
-            np.diag([1, 1, 1, 1])[[0, 2, 1, 3]],
-            atol=tol,
-            rtol=0,
-        )
+        assert np.allclose(mat, np.diag([1, 1, 1, 1])[[0, 2, 1, 3]], atol=tol, rtol=0)
 
         def get_expected(theta):
             return np.array(
@@ -2402,7 +2398,6 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
-        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2445,7 +2440,6 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
-        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2831,10 +2825,7 @@ class TestPauliRot:
         assert repr(op) == "PauliRot(theta=1.234, pauli_word=XYX, wires=[0, 1, 2])"
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
-    @pytest.mark.parametrize(
-        "pauli_word,expected_matrix",
-        PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA,
-    )
+    @pytest.mark.parametrize("pauli_word,expected_matrix", PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA)
     def test_PauliRot_matrix_parametric(self, theta, pauli_word, expected_matrix, tol):
         """Test parametrically that the PauliRot matrix is correct."""
 
@@ -2849,10 +2840,7 @@ class TestPauliRot:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "theta,pauli_word,expected_matrix",
-        PAULI_ROT_MATRIX_TEST_DATA,
-    )
+    @pytest.mark.parametrize("theta,pauli_word,expected_matrix", PAULI_ROT_MATRIX_TEST_DATA)
     def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
         """Test non-parametrically that the PauliRot matrix is correct."""
 
@@ -2877,11 +2865,10 @@ class TestPauliRot:
             (np.pi / 11, "IIIXYZ", "XYZ", [0, 1, 2, 3, 4, 5], [3, 4, 5]),
         ],
     )
-    def test_PauliRot_matrix_identity(
+    def test_PauliRot_matrix_identity(  # pylint: disable=too-many-arguments
         self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
     ):
         """Test PauliRot matrix correctly accounts for identities."""
-        # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         res = qp.PauliRot.compute_matrix(theta, pauli_word)
         expected = qp.math.expand_matrix(
@@ -3116,13 +3103,7 @@ class TestPauliRot:
         with pytest.raises(ValueError, match="wrong number of wires"):
             qp.PauliRot(0.5, "X", wires=[])
 
-    @pytest.mark.parametrize(
-        "pauli_word,wires",
-        [
-            ("XYZ", [0, 1]),
-            ("XYZ", [0, 1, 2, 3]),
-        ],
-    )
+    @pytest.mark.parametrize("pauli_word,wires", [("XYZ", [0, 1]), ("XYZ", [0, 1, 2, 3])])
     def test_init_incorrect_pauli_word_length_error(self, pauli_word, wires):
         """Test that __init__ throws an error if a Pauli word of wrong length is supplied."""
 
@@ -4129,7 +4110,6 @@ class TestParametricPow:
         assert qp.math.allclose(qp.math.linalg.matrix_power(op_mat, n), pow_mat)
 
 
-# pylint:disable = use-implicit-booleaness-not-comparison
 def test_diagonalization_static_global_phase():
     """Test the static compute_diagonalizing_gates method for the GlobalPhase operation."""
     assert qp.GlobalPhase.compute_diagonalizing_gates(0.123, wires=1) == []

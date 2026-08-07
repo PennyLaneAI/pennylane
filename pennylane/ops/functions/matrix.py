@@ -15,6 +15,8 @@
 This module contains the qp.matrix function.
 """
 
+# pylint: disable=too-many-branches
+
 from collections.abc import Sequence
 from functools import partial
 
@@ -26,8 +28,6 @@ from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MatrixUndefinedError, TransformError
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import PostprocessingFn, TensorLike
-
-# pylint: disable=too-many-branches
 
 
 def catalyst_qjit(qnode):

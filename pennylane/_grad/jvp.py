@@ -34,9 +34,9 @@ def _get_shape(x):
     return getattr(x, "shape", jax.numpy.shape(x))
 
 
-# pylint: disable=unused-argument
 @lru_cache
 def _get_jvp_prim():
+
     if not has_jax:  # pragma: no cover
         return None
 
@@ -47,7 +47,7 @@ def _get_jvp_prim():
     jvp_prim.prim_type = "higher_order"
 
     @jvp_prim.def_impl
-    def _jvp_impl(*args, jaxpr, fn, method, h, argnums):
+    def _jvp_impl(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
         params = list(args[: len(jaxpr.invars)])
         dparams = list(args[len(jaxpr.invars) :])
 
@@ -62,7 +62,7 @@ def _get_jvp_prim():
         return (*results, *dresults)
 
     @jvp_prim.def_abstract_eval
-    def _jvp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
+    def _jvp_abstract_eval(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
         return 2 * [v.aval for v in jaxpr.outvars]
 
     return jvp_prim
@@ -97,10 +97,11 @@ def _validate_tangents(params, dparams, argnums):
             )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
+    from jax.tree_util import tree_leaves, tree_unflatten
 
     if not isinstance(params, Sequence):
         raise ValueError(f"params must be a Sequence in qp.jvp. Got type {type(params)}.")
@@ -135,7 +136,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     return results, dresults
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def jvp(f, params, tangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
 

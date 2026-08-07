@@ -148,7 +148,7 @@ class SuperpositionTHC(Operation):
         mu_wires: WiresLike,
         nu_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         mu_wires = Wires(mu_wires)
         nu_wires = Wires(nu_wires)
@@ -236,9 +236,8 @@ class SuperpositionTHC(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        M, N, mu_wires, nu_wires, work_wires
-    ):  # pylint: disable=arguments-differ, too-many-arguments
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(M, N, mu_wires, nu_wires, work_wires):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -263,9 +262,8 @@ class SuperpositionTHC(Operation):
         return q.queue
 
 
-def _left_inequalities(
-    M, N, mu_wires, nu_wires, work_wires, keep_eq=False
-):  # pylint:disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     r"""Apply the inequality tests that flag a valid THC index pair.
 
     Computes the comparisons that define the valid index set onto dedicated flag
@@ -356,11 +354,7 @@ def _controlled_rep(base_class, num_control_wires, num_work_wires):
 
 def _controlled_z(num_control_wires, num_work_wires):
     """Resources for a borrowed-work multi-controlled ``Z``."""
-    return ctrl(
-        Z(Wire[1]),
-        control=Wire[num_control_wires],
-        work_wires=Wire[num_work_wires],
-    )
+    return ctrl(Z(Wire[1]), control=Wire[num_control_wires], work_wires=Wire[num_work_wires])
 
 
 def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
@@ -413,7 +407,6 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
 
 @register_resources(_superposition_thc_resources)
 def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
-    # pylint: disable=too-many-arguments
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires return to the zero
@@ -480,9 +473,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    adjoint(
-        lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
-    )()  # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
+    # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
     RY(angle, wires=work_wires[0])
 
 

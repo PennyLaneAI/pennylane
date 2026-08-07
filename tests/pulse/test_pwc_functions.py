@@ -15,7 +15,6 @@
 Unit tests for the convenience functions used in pulsed programming.
 """
 
-# pylint: disable=import-outside-toplevel
 import inspect
 from functools import partial
 
@@ -150,9 +149,8 @@ class TestPWC_from_function:
             # pwc functions should match initial function between times i-1 and i,
             # i.e. points just before time i should always match
             assert f_initial(2, i) == f_pwc(2, i * 0.99)
-            assert f_initial(2, i) == f_decorated(
-                2, i * 0.99
-            )  # 0.99*i because for edge point, f_pwc(i) is 0
+            # 0.99*i because for edge point, f_pwc(i) is 0
+            assert f_initial(2, i) == f_decorated(2, i * 0.99)
 
     @pytest.mark.parametrize("num_bins", [10, 15, 21])
     def test_num_bins_is_correct(self, num_bins):
@@ -221,7 +219,7 @@ class TestPWC_from_function:
 class TestIntegration:
     """Test integration of pwc functions with the pulse module."""
 
-    def integral_pwc(  # pylint:disable = too-many-arguments
+    def integral_pwc(  # pylint: disable=too-many-arguments
         self, t1, t2, num_bins, integration_bounds, fn, params, pwc_from_function=False
     ):
         """Helper function that integrates a pwc function."""

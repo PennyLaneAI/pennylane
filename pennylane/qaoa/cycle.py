@@ -16,6 +16,7 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 """
 
 # pylint: disable=unnecessary-comprehension
+
 import itertools
 from collections.abc import Iterable
 from typing import TYPE_CHECKING

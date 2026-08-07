@@ -14,6 +14,8 @@
 Tests for symbolic_array
 """
 
+# pylint: disable=protected-access
+
 import numpy as np
 import pytest
 
@@ -23,9 +25,8 @@ pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    symbolic_array_prim,
-)
+# pylint: disable-next=wrong-import-position
+from pennylane.capture.primitives import symbolic_array_prim
 
 
 def test_error_without_capture():
@@ -56,7 +57,6 @@ def test_error_if_bad_dimesion(bad_dimension):
         jax.make_jaxpr(f)()
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize("shape", [(), (4, 3), (5, 2, 1)])
 @pytest.mark.parametrize(
     "dtype, converted_dtype",

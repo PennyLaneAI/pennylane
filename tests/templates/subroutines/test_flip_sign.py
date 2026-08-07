@@ -117,15 +117,7 @@ class TestFlipSign:
         ):
             qp.FlipSign(state, wires)
 
-    @pytest.mark.parametrize(
-        "state, wires",
-        [
-            ([1, 0], []),
-            (2, []),
-            (3, ()),
-            (1, {}),
-        ],
-    )
+    @pytest.mark.parametrize("state, wires", [([1, 0], []), (2, []), (3, ()), (1, {})])
     def test_wire_empty_error(self, state, wires):
         """Assert error raised when given empty wires"""
         with pytest.raises(ValueError, match="At least one wire is required."):

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
 
+# pylint: disable=too-many-public-methods
+
 import pickle
 from copy import copy, deepcopy
 
@@ -31,8 +33,6 @@ from pennylane.fermi.fermionic import (
     _to_string,
     from_string,
 )
-
-# pylint: disable=too-many-public-methods
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw1_dag = FermiWord({(0, 1): "+", (1, 0): "-"})
@@ -434,11 +434,8 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: 5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: 2.8})),  # pennylane numpy array
-        (
-            fw1,
-            pnp.array([2, 2])[0],
-            FermiSentence({fw1: 1, fw4: 2}),
-        ),  # pennylane tensor with no length
+        # pennylane tensor with no length
+        (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: 1, fw4: 2})),
         (fw4, 2, FermiSentence({fw4: 3})),  # FermiWord is Identity
     ]
 
@@ -502,11 +499,8 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: -(1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: -5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: -2.8})),  # pennylane numpy array
-        (
-            fw1,
-            pnp.array([2, 2])[0],
-            FermiSentence({fw1: 1, fw4: -2}),
-        ),  # pennylane tensor with no length
+        # pennylane tensor with no length
+        (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: 1, fw4: -2})),
         (fw4, 2, FermiSentence({fw4: -1})),  # FermiWord is Identity
     ]
 
@@ -528,11 +522,8 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: -1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: -1, fw4: 5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: -1, fw4: 2.8})),  # pennylane numpy array
-        (
-            fw1,
-            pnp.array([2, 2])[0],
-            FermiSentence({fw1: -1, fw4: 2}),
-        ),  # pennylane tensor with no length
+        # pennylane tensor with no length
+        (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: -1, fw4: 2})),
         (fw4, 2, FermiSentence({fw4: 1})),  # FermiWord is Identity
     ]
 
@@ -734,12 +725,7 @@ class TestFermiSentence:
         assert str(fs) == str_rep
         assert repr(fs) == f"FermiSentence({dict(fs)})"
 
-    tup_fs_wires = (
-        (fs1, {0, 1, 3, 4}),
-        (fs2, {0, 1, 3, 4}),
-        (fs3, {0, 3, 4}),
-        (fs4, set()),
-    )
+    tup_fs_wires = ((fs1, {0, 1, 3, 4}), (fs2, {0, 1, 3, 4}), (fs3, {0, 3, 4}), (fs4, set()))
 
     @pytest.mark.parametrize("fs, wires", tup_fs_wires)
     def test_wires(self, fs, wires):
@@ -916,21 +902,12 @@ class TestFermiSentenceArithmetic:
         (fs2, 3.4, FermiSentence({fw1: -1.23 * 3.4, fw2: -4j * 3.4, fw3: 0.5 * 3.4})),  # float
         (fs1, 3j, FermiSentence({fw1: 3.69j, fw2: -12, fw3: -1.5j})),  # complex
         (fs5, 10, FermiSentence({})),  # null operator times constant
-        (
-            fs1,
-            np.array([2]),
-            FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
-        ),  # numpy array
-        (
-            fs1,
-            pnp.array([2]),
-            FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
-        ),  # pennylane numpy array
-        (
-            fs1,
-            pnp.array([2, 2])[0],
-            FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
-        ),  # pennylane tensor with no length
+        # numpy array
+        (fs1, np.array([2]), FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2})),
+        # pennylane numpy array
+        (fs1, pnp.array([2]), FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2})),
+        # pennylane tensor with no length
+        (fs1, pnp.array([2, 2])[0], FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2})),
     )
 
     @pytest.mark.parametrize("fs, number, result", SENTENCES_AND_NUMBERS_MUL)
@@ -980,11 +957,8 @@ class TestFermiSentenceArithmetic:
 
     SENTENCES_AND_CONSTANTS_ADD = [
         (FermiSentence({fw1: 1.2, fw3: 3j}), 3, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3})),  # int
-        (
-            FermiSentence({fw1: 1.2, fw3: 3j}),
-            1.3,
-            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 1.3}),
-        ),  # float
+        # float
+        (FermiSentence({fw1: 1.2, fw3: 3j}), 1.3, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 1.3})),
         (
             FermiSentence({fw1: -1.2, fw3: 3j}),  # complex
             (1 + 2j),
@@ -1059,11 +1033,8 @@ class TestFermiSentenceArithmetic:
         (fs1, 3, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5, fw4: -3})),  # int
         (fs2, -2.7, FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5, fw4: 2.7})),  # float
         (fs3, 2j, FermiSentence({fw3: -0.5, fw4: (1 - 2j)})),  # complex
-        (
-            FermiSentence({fw1: 1.2, fw3: 3j}),
-            -4,
-            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 4}),
-        ),  # negative int
+        # negative int
+        (FermiSentence({fw1: 1.2, fw3: 3j}), -4, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 4})),
         (
             FermiSentence({fw1: 1.2, fw3: 3j}),
             np.array([3]),
@@ -1239,15 +1210,12 @@ class TestFermiSentenceArithmetic:
     def test_from_string(self, string, result_fw):
         assert from_string(string) == result_fw
 
-    tup_fw_string_error = (
-        "0+ a-",
-        "0+ 1-? 3+ 4-",
-    )
+    tup_fw_string_error = ("0+ a-", "0+ 1-? 3+ 4-")
 
     @pytest.mark.parametrize("string", tup_fw_string_error)
     def test_from_string_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
-            from_string(string)  # pylint: disable=pointless-statement
+            from_string(string)
 
     fw_string = (
         (fw1, "0+ 1-"),

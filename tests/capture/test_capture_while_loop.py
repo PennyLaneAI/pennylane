@@ -27,10 +27,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
-from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
-    extract_all_primitives,
-)
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import while_loop_prim
+from tests.capture.capture_utils import extract_all_primitives
 
 
 class TestCaptureWhileLoop:
@@ -503,9 +502,8 @@ class TestCaptureWhileLoopDynamicShapes:
 
         def f(sz):
 
-            # pylint: disable=unused-argument
             @qp.while_loop(lambda i, a: i < 5)
-            def loop(i, a):
+            def loop(i, a):  # pylint: disable=unused-argument
                 return i + 1, jnp.ones([sz])
 
             _, a2 = loop(0, jnp.ones([sz]))
@@ -546,8 +544,7 @@ class TestCaptureWhileLoopDynamicShapes:
         Encountered in benchmarking suite.
         """
 
-        # pylint: disable=too-few-public-methods
-        class ThingWithShape:
+        class ThingWithShape:  # pylint: disable=too-few-public-methods
 
             def __init__(self):
                 pass

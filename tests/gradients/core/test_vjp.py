@@ -686,6 +686,5 @@ class TestBatchVJP:
         expected_jac = [-0.5 * np.cos(data) * np.sin(x0 + x1), 0.5 * np.cos(data) * np.sin(x0 + x1)]
         expected_vjp = np.tensordot(expected_jac, dy, axes=[[0, 1], [1, 0]])
         assert qp.math.shape(vjp) == (1, 2)  # num tapes, num trainable tape parameters
-        assert np.allclose(
-            vjp, expected_vjp
-        )  # Both parameters essentially feed into the same RX rotation
+        # Both parameters essentially feed into the same RX rotation
+        assert np.allclose(vjp, expected_vjp)

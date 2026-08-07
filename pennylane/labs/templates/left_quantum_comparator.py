@@ -16,10 +16,7 @@
 from pennylane import capture, compiler, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X
 from pennylane.templates.subroutines import Elbow
 from pennylane.wires import Wires, WiresLike
@@ -98,7 +95,7 @@ class LeftQuantumComparator(Operation):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         target_wire = Wires(target_wire)
         x_wires = Wires(x_wires)
@@ -172,9 +169,8 @@ class LeftQuantumComparator(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        x_wires, y_wires, target_wire, work_wires, comparator
-    ):  # pylint: disable=arguments-differ, too-many-arguments
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(x_wires, y_wires, target_wire, work_wires, comparator):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -203,10 +199,7 @@ class LeftQuantumComparator(Operation):
 
 def _left_quantum_comparator_resources(num_y_wires, comparator):
 
-    resources = {
-        Elbow: num_y_wires,
-        CNOT: 2 + 5 * (num_y_wires - 1),
-    }
+    resources = {Elbow: num_y_wires, CNOT: 2 + 5 * (num_y_wires - 1)}
 
     if comparator in [">=", "<="]:
         resources[X] = 1
@@ -215,9 +208,8 @@ def _left_quantum_comparator_resources(num_y_wires, comparator):
 
 
 @register_resources(_left_quantum_comparator_resources, exact=True)
-def _left_quantum_comparator(
-    x_wires, y_wires, target_wire, work_wires, comparator, **_
-):  # pylint: disable=too-many-arguments
+def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparator, **_):
+    # pylint: disable=no-value-for-parameter
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]
@@ -237,7 +229,6 @@ def _left_quantum_comparator(
         y_wires = math.array(y_wires, like="jax")
         used_work_wires = math.array(used_work_wires, like="jax")
 
-    # pylint: disable=no-value-for-parameter
     @for_loop(1, len(x_wires))
     def _loop(i):
         CNOT(wires=[x_wires[i], y_wires[i]])

@@ -145,11 +145,7 @@ def _conjugate_state_with(k, state, axes_left, axes_right):
     The `axes_left` and `axes_right` arguments are taken from the ambient variable space
     and `axes_right` is assumed to incorporate the tensor product and the transposition
     of k.conj() simultaneously."""
-    return math.tensordot(
-        math.tensordot(k, state, axes_left),
-        math.conj(k),
-        axes_right,
-    )
+    return math.tensordot(math.tensordot(k, state, axes_left), math.conj(k), axes_right)
 
 
 def apply_operation_einsum(
@@ -508,15 +504,7 @@ def apply_phaseshift(op: qp.PhaseShift, state, is_state_batched: bool = False, d
 
 # !TODO: in the future investigate if there's other missing operations
 # satisfying this condition.
-SYMMETRIC_REAL_OPS = (
-    qp.CNOT,
-    qp.MultiControlledX,
-    qp.Toffoli,
-    qp.SWAP,
-    qp.CSWAP,
-    qp.CZ,
-    qp.CH,
-)
+SYMMETRIC_REAL_OPS = (qp.CNOT, qp.MultiControlledX, qp.Toffoli, qp.SWAP, qp.CSWAP, qp.CZ, qp.CH)
 
 
 def apply_symmetric_real_op(
@@ -570,13 +558,7 @@ for op_class in SYMMETRIC_REAL_OPS:
 
 
 @apply_operation.register
-def apply_grover(
-    op: qp.GroverOperator,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
+def apply_grover(op: qp.GroverOperator, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
     wires) or via standard matrix based methods (else)."""
     if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
@@ -650,9 +632,8 @@ def apply_snapshot(
         array: the unchanged quantum state
     """
     if debugger and debugger.active:
-        measurement = op.hyperparameters.get(
-            "measurement", None
-        )  # default: None, meaning no measurement, simply copy the state
+        # default: None, meaning no measurement, simply copy the state
+        measurement = op.hyperparameters.get("measurement", None)
         if op.hyperparameters["shots"] == "workflow":
             shots = execution_kwargs.get("tape_shots")
         else:

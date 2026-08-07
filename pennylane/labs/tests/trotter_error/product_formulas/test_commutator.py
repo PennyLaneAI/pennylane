@@ -190,10 +190,7 @@ def test_bilinear_expansion():
 
     # Expansion for 'X' is A (order 1)
     # Expansion for 'Y' is B (order 1) + 0.5 * [B, C] (order 2)
-    terms_expansions = {
-        X: {A: 1.0},
-        Y: {B: 1.0, CommutatorNode(B, C): 0.5},
-    }
+    terms_expansions = {X: {A: 1.0}, Y: {B: 1.0, CommutatorNode(B, C): 0.5}}
 
     result = bilinear_expansion(
         commutator_node=commutator_to_evaluate,
@@ -206,10 +203,7 @@ def test_bilinear_expansion():
     expected_order_2_term = CommutatorNode(A, B)
     expected_order_3_term = CommutatorNode(A, CommutatorNode(B, C))
 
-    expected_result = {
-        expected_order_2_term: 0.5,
-        expected_order_3_term: 0.25,
-    }
+    expected_result = {expected_order_2_term: 0.5, expected_order_3_term: 0.25}
 
     assert len(result) == len(expected_result)
     for result_dict, expected_dict in zip(result, expected_result):
@@ -279,11 +273,7 @@ def test_bilinear_expansion_nested_structure():
     # X = A
     # Y = B
     # Z = C + 0.5 * [D, E]
-    terms_expansions = {
-        X: {A: 1.0},
-        Y: {B: 1.0},
-        Z: {C: 1.0, CommutatorNode(D, E): 0.5},
-    }
+    terms_expansions = {X: {A: 1.0}, Y: {B: 1.0}, Z: {C: 1.0, CommutatorNode(D, E): 0.5}}
 
     result = bilinear_expansion(
         commutator_node=commutator_to_evaluate,

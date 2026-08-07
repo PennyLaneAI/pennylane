@@ -129,7 +129,7 @@ def test_decomposition(hamiltonian, expected_decomposition):
         (qp.PauliX("a") @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
-def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
+def test_decomposition_new(hamiltonian, control):
     """Tests the decomposition rule implemented with the new system."""
     op = qp.Qubitization(hamiltonian, control=control)
     for rule in qp.list_decomps(qp.Qubitization):

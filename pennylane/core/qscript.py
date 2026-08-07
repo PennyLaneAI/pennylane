@@ -16,7 +16,7 @@ This module defines the QuantumScript object responsible for storing quantum ope
 executed by a device.
 """
 
-# pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-public-methods
 
 import contextlib
 import copy
@@ -40,9 +40,7 @@ QS = TypeVar("QS", bound="QuantumScript")
 _UNSET_BATCH_SIZE = -1
 
 
-def process_queue(
-    queue: AnnotatedQueue,
-) -> tuple[list[Operator], list[MeasurementProcess]]:
+def process_queue(queue: AnnotatedQueue) -> tuple[list[Operator], list[MeasurementProcess]]:
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
@@ -622,7 +620,7 @@ class QuantumScript:
         self,
         trainable_only: bool = True,
         operations_only: bool = False,
-        **kwargs,  # pylint:disable=unused-argument
+        **kwargs,  # pylint: disable=unused-argument
     ) -> list[TensorLike]:
         """Return the parameters incident on the quantum script operations.
 
@@ -724,9 +722,7 @@ class QuantumScript:
         """
 
         # pylint: disable=import-outside-toplevel # tach-ignore
-        from pennylane.ops.functions import (
-            bind_new_parameters,
-        )
+        from pennylane.ops.functions import bind_new_parameters
 
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
@@ -921,9 +917,8 @@ class QuantumScript:
         Returns:
             .CircuitGraph: the circuit graph object
         """
-        from pennylane.circuit_graph import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            CircuitGraph,
-        )
+        # tach-ignore
+        from pennylane.circuit_graph import CircuitGraph  # pylint: disable=import-outside-toplevel
 
         if self._graph is None:
             self._graph = CircuitGraph(
@@ -962,15 +957,12 @@ class QuantumScript:
         """
         if self._specs is None:
             # pylint: disable=import-outside-toplevel # tach-ignore
-            from pennylane.resource.resource import (
-                resources_from_tape,
-            )
+            from pennylane.resource.resource import resources_from_tape
 
             resources = resources_from_tape(self)
             self._specs = {"resources": resources, "shots": self.shots}
         return self._specs
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
         wire_order: Iterable[Hashable] | None = None,
@@ -993,9 +985,8 @@ class QuantumScript:
         Returns:
             str: the circuit representation of the quantum script
         """
-        from pennylane.drawer import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            tape_text,
-        )
+        # tach-ignore
+        from pennylane.drawer import tape_text  # pylint: disable=import-outside-toplevel
 
         return tape_text(
             self,
@@ -1153,10 +1144,8 @@ def _get_base_obs(observables):
 
     overlapping_ops_observables = []
 
-    from pennylane.ops.op_math import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        CompositeOp,
-        SymbolicOp,
-    )
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.ops.op_math import CompositeOp, SymbolicOp  # tach-ignore
 
     while any(isinstance(o, (CompositeOp, SymbolicOp)) for o in observables):
 

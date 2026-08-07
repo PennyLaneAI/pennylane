@@ -522,7 +522,6 @@ def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
     return None
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(
     op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
@@ -530,6 +529,7 @@ def _(
     custom_mapping=None,
     **kwargs,
 ):
+    # pylint: disable=import-outside-toplevel
     from qualtran.bloqs.phase_estimation import RectangularWindowState
     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
@@ -543,10 +543,10 @@ def _(
     )
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
+    # pylint: disable=import-outside-toplevel
     from qualtran.bloqs.qft import QFTTextBook
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
@@ -556,10 +556,10 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     return QFTTextBook(len(op.wires))
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     """Mapping for QROM that defaults to either ``QROAMClean`` or ``SelectSwapQROM``"""
+    # pylint: disable=import-outside-toplevel
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
@@ -576,10 +576,10 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     return SelectSwapQROM.build_from_data(data)
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.ModExp, map_ops=True, custom_mapping=None, **kwargs):
     """Mapping for ``ModExp``"""
+    # pylint: disable=import-outside-toplevel
     from qualtran.bloqs.cryptography.rsa import ModExp
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
@@ -1004,7 +1004,7 @@ class FromBloq(Operation):
         return f'FromBloq({self.hyperparameters["bloq"]}, wires={self.wires})'
 
     @staticmethod
-    def compute_decomposition(wires, bloq):  # pylint: disable=arguments-differ, too-many-branches
+    def compute_decomposition(wires, bloq):  # pylint: disable=arguments-differ,too-many-branches
         ops = []
 
         if len(wires) != bloq.signature.n_qubits():
@@ -1088,9 +1088,8 @@ class FromBloq(Operation):
 
         return ops
 
-    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method,arguments-renamed
         r"""Return if the ``Bloq`` has a valid matrix representation."""
         bloq = self.hyperparameters["bloq"]
         matrix = bloq.tensor_contract()

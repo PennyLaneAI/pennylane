@@ -15,9 +15,9 @@
 Tests for the ArbitraryUnitary template.
 """
 
-import numpy as np
-
 # pylint: disable=too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -239,14 +239,7 @@ class TestInputs:
 class TestAttributes:
     """Tests class attributes and methods."""
 
-    @pytest.mark.parametrize(
-        "n_wires, expected_shape",
-        [
-            (1, (3,)),
-            (2, (15,)),
-            (3, (63,)),
-        ],
-    )
+    @pytest.mark.parametrize("n_wires, expected_shape", [(1, (3)), (2, (15)), (3, (63))])
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 

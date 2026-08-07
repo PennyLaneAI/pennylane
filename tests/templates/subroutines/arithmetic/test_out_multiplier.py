@@ -196,9 +196,9 @@ class TestOutMultiplier:
             ([0, 1], [3, 4, 5], [6, 7, 8], None, None),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, seed):
         """Test the correctness of the OutMultiplier template output."""
-        # pylint: disable=too-many-arguments
         all_wires = (x_wires, y_wires, output_wires, work_wires)
         _test_mult_correctness(all_wires, mod, OutMultiplier.compute_decomposition, seed)
 
@@ -263,9 +263,8 @@ class TestOutMultiplier:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
@@ -295,13 +294,7 @@ class TestOutMultiplier:
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
-        x_wires, y_wires, output_wires, mod, work_wires = (
-            [0, 1, 2],
-            [3, 5],
-            [6, 8],
-            3,
-            [9, 10],
-        )
+        x_wires, y_wires, output_wires, mod, work_wires = ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10])
         multiplier_decomposition = (
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             .compute_decomposition(
@@ -457,7 +450,6 @@ class TestOutMultiplier:
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         out = circuit()[0, :]
 
         assert np.allclose(2 ** np.arange(3, -1, -1) @ out, (x * y) % mod)

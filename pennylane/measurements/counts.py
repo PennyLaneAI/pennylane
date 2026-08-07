@@ -15,6 +15,8 @@
 This module contains the qp.counts measurement.
 """
 
+# pylint: disable=protected-access,unused-argument
+
 import warnings
 from collections.abc import Sequence
 
@@ -52,7 +54,6 @@ class CountsMP(SampleMeasurement):
 
     _shortname = "counts"
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         obs: Operator | None = None,
@@ -233,8 +234,8 @@ class CountsMP(SampleMeasurement):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
-    # pylint: disable=redefined-outer-name
     def process_counts(self, counts: dict, wire_order: Wires) -> dict:
+        # pylint: disable=redefined-outer-name
         mapped_counts = self._map_counts(counts, wire_order)
         if self.all_outcomes:
             self._include_all_outcomes(mapped_counts)
@@ -292,7 +293,6 @@ class CountsMP(SampleMeasurement):
                 outcome_counts[outcome_binary] = 0
 
 
-# pylint: disable=protected-access, unused-argument
 if CountsMP._wires_primitive is not None:
 
     CountsMP._wires_primitive.multiple_results = True
@@ -328,7 +328,6 @@ if CountsMP._wires_primitive is not None:
         return keys, values
 
 
-# pylint: disable=protected-access, unused-argument
 if CountsMP._mcm_primitive is not None:
 
     CountsMP._mcm_primitive.multiple_results = True
@@ -356,11 +355,7 @@ if CountsMP._mcm_primitive is not None:
         return keys, values
 
 
-def counts(
-    op=None,
-    wires=None,
-    all_outcomes=False,
-) -> CountsMP:
+def counts(op=None, wires=None, all_outcomes=False) -> CountsMP:
     r"""Sample from the supplied observable, with the number of shots
     determined from QNode,
     returning the number of counts for each sample. If no observable is provided then basis state

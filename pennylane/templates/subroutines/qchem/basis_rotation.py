@@ -318,7 +318,7 @@ class BasisRotation(Operator2):
         super().__init__(unitary_matrix, wires=wires)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _basis_rotation_decomp_resources(unitary_matrix, wires, check=False):
     dim = math.shape(unitary_matrix)[0]
 

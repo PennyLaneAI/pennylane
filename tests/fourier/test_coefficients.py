@@ -15,7 +15,6 @@
 Unit tests for :mod:`fourier` coefficient and spectra calculations.
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import partial
 
 import pytest
@@ -51,7 +50,6 @@ def fourier_function(freq_dict, x):
 class TestExceptions:
     """Test that exceptions for ill-formatted inputs are raised."""
 
-    # pylint: disable=unused-argument
     def dummy_fn(self, *args, **kwargs):
         """Dummy function that returns None."""
 
@@ -70,8 +68,7 @@ class TestExceptions:
             coefficients(self.dummy_fn, n_inputs, 2, True, filter_threshold=threshold)
 
 
-# pylint: disable=too-few-public-methods
-class TestFourierCoefficientSingleVariable:
+class TestFourierCoefficientSingleVariable:  # pylint: disable=too-few-public-methods
     """Test that the Fourier coefficients of a single-variable function are computed correctly"""
 
     @pytest.mark.parametrize(

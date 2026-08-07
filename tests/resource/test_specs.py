@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 
-# pylint: disable=invalid-sequence-index
 from functools import partial
 
 import pytest
@@ -23,10 +22,7 @@ from pennylane import numpy as pnp
 from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
 
-devices_list = [
-    (qp.device("default.qubit"), None),
-    (qp.device("default.qubit", wires=2), 2),
-]
+devices_list = [(qp.device("default.qubit"), None), (qp.device("default.qubit", wires=2), 2)]
 
 
 @pytest.mark.parametrize("key", ["bad_value", 123, "num_observables", "gradient_fn", "interface"])
@@ -515,10 +511,7 @@ Batched tape c:
     Wire allocations: 3
     Circuit Depth: 5"""
 
-    @pytest.mark.parametrize(
-        "device,num_wires",
-        devices_list,
-    )
+    @pytest.mark.parametrize("device,num_wires", devices_list)
     def test_num_wires_source_of_truth(self, device, num_wires):
         """Tests that num_wires behaves differently on old and new devices."""
 
@@ -584,7 +577,7 @@ class TestSpecsGraphModeExclusive:
     def test_specs_num_work_wires_calculation(self, num_device_wires, expected_decomp):
         """Test that qp.specs correctly calculates num_work_wires and uses appropriate decomposition."""
 
-        class MyCustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyCustomOp(qp.operation.Operator):
             num_wires = 1
 
         @qp.register_resources({qp.H: 2})  # Fallback: 2 H gates
@@ -620,7 +613,7 @@ class TestSpecsGraphModeExclusive:
     def test_specs_num_work_wires_with_insufficient_wires(self):
         """Test that qp.specs correctly reports work wires when decomposition fallback is used."""
 
-        class MyLimitedOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyLimitedOp(qp.operation.Operator):
             num_wires = 1
 
         @qp.register_resources({qp.H: 1})  # Fallback that uses 1 H gate

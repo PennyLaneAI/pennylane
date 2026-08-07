@@ -15,7 +15,7 @@
 This module contains the qp.bind_new_parameters function.
 """
 
-# pylint:disable=missing-function-docstring
+# pylint: disable=missing-function-docstring
 
 import copy
 from collections.abc import Sequence
@@ -78,12 +78,8 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         return new_op
 
 
-# pylint: disable=too-many-arguments
 @bind_new_parameters.register
-def bind_new_dynamic_arguments(
-    op: Operator2,
-    dynamic_args: Sequence[TensorLike],
-) -> Operator2:
+def bind_new_dynamic_arguments(op: Operator2, dynamic_args: Sequence[TensorLike]) -> Operator2:
     kwargs = op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
     return op.__class__(*dynamic_args, **kwargs)
 

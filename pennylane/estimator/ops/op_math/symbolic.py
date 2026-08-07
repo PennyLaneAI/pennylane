@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 
+# pylint: disable=arguments-differ,super-init-not-called,signature-differs
+
 from collections.abc import Iterable
 from functools import singledispatch
 
@@ -25,8 +27,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
 
 class Adjoint(ResourceOperator):
@@ -183,7 +183,6 @@ class Adjoint(ResourceOperator):
         return [GateCount(base_cmpr_op)]
 
     @staticmethod
-    # pylint: disable=arguments-renamed
     def tracking_name(base_cmpr_op: CompressedResourceOp) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
@@ -409,11 +408,7 @@ class Controlled(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(
-        base_cmpr_op: CompressedResourceOp,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-    ):
+    def tracking_name(base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int, num_zero_ctrl: int):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
         return f"C({base_name}, num_ctrl_wires={num_ctrl_wires},num_zero_ctrl={num_zero_ctrl})"
@@ -492,10 +487,7 @@ class Pow(ResourceOperator):
                 * base_params (dict): the resource parameters required to extract the cost of the base operator
                 * z (int): the power that the operator is being raised to
         """
-        return {
-            "base_cmpr_op": self.base_op,
-            "pow_z": self.pow_z,
-        }
+        return {"base_cmpr_op": self.base_op, "pow_z": self.pow_z}
 
     @classmethod
     def resource_rep(cls, base_cmpr_op: CompressedResourceOp, pow_z: int) -> CompressedResourceOp:
@@ -675,9 +667,8 @@ class Prod(ResourceOperator):
             ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
             num_unique_wires_required = max(op.num_wires for op in cmpr_ops)
 
-            if (
-                len(ops_wires) < num_unique_wires_required
-            ):  # If factors didn't provide enough wire labels
+            # If factors didn't provide enough wire labels
+            if len(ops_wires) < num_unique_wires_required:
                 self.wires = None  # we assume they all act on the same set
                 self.num_wires = num_unique_wires_required
 
@@ -726,9 +717,8 @@ class Prod(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
-        cls, cmpr_factors_and_counts, num_wires: int
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def resource_decomp(cls, cmpr_factors_and_counts, num_wires: int):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -853,9 +843,8 @@ class ChangeOpBasis(ResourceOperator):
                 for op in [self.cmpr_target_op, self.cmpr_compute_op, self.cmpr_uncompute_op]
             )
 
-            if (
-                len(ops_wires) < num_unique_wires_required
-            ):  # If factors didn't provide enough wire labels
+            # If factors didn't provide enough wire labels
+            if len(ops_wires) < num_unique_wires_required:
                 self.wires = None
                 self.num_wires = num_unique_wires_required
 
@@ -986,11 +975,7 @@ class ChangeOpBasis(ResourceOperator):
           'Z': 1,
           'Hadamard': 2
         """
-        return [
-            GateCount(cmpr_compute_op),
-            GateCount(cmpr_target_op),
-            GateCount(cmpr_uncompute_op),
-        ]
+        return [GateCount(cmpr_compute_op), GateCount(cmpr_target_op), GateCount(cmpr_uncompute_op)]
 
     @classmethod
     def controlled_resource_decomp(
@@ -1024,11 +1009,7 @@ class ChangeOpBasis(ResourceOperator):
             num_ctrl_wires=num_ctrl_wires,
             num_zero_ctrl=num_zero_ctrl,
         )
-        return [
-            GateCount(compute_op),
-            GateCount(ctrl_target_op),
-            GateCount(uncompute_op),
-        ]
+        return [GateCount(compute_op), GateCount(ctrl_target_op), GateCount(uncompute_op)]
 
 
 @singledispatch
@@ -1067,9 +1048,8 @@ def _(action: Deallocate):
     return Allocate(action.num_wires)
 
 
-# pylint: disable=unused-argument
 @singledispatch
-def apply_controlled(
+def apply_controlled(  # pylint: disable=unused-argument
     action: GateCount | Allocate | Deallocate, num_ctrl_wires: int, num_zero_ctrl: int
 ) -> GateCount | Allocate | Deallocate:
     """Create the controlled version of a resource-tracking gate.
@@ -1093,9 +1073,5 @@ def apply_controlled(
 @apply_controlled.register
 def _(action: GateCount, num_ctrl_wires, num_zero_ctrl):
     gate = action.gate
-    c_gate = Controlled.resource_rep(
-        gate,
-        num_ctrl_wires,
-        num_zero_ctrl=num_zero_ctrl,
-    )
+    c_gate = Controlled.resource_rep(gate, num_ctrl_wires, num_zero_ctrl=num_zero_ctrl)
     return GateCount(c_gate, action.count)

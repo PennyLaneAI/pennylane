@@ -14,6 +14,8 @@
 """This module contains functions to calculate potential energy surfaces
 per normal modes on a grid."""
 
+# pylint: disable=too-many-arguments,too-many-function-args
+
 import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -32,16 +34,12 @@ from pennylane.qchem.vibrational.vibrational_class import (
     optimize_geometry,
 )
 
-# pylint: disable=too-many-arguments,too-many-function-args,too-many-positional-arguments
-
 # constants
 # TODO: Make this code work in atomic units only.
-HBAR = (
-    sp.constants.hbar * (1000 * sp.constants.Avogadro) * (10**20)
-)  # kg*(m^2/s) to (amu)*(angstrom^2/s)
-BOHR_TO_ANG = (
-    sp.constants.physical_constants["Bohr radius"][0] * 1e10
-)  # factor to convert bohr to angstrom
+# kg*(m^2/s) to (amu)*(angstrom^2/s)
+HBAR = sp.constants.hbar * (1000 * sp.constants.Avogadro) * (10**20)
+# factor to convert bohr to angstrom
+BOHR_TO_ANG = sp.constants.physical_constants["Bohr radius"][0] * 1e10
 CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
 #: Maximum imaginary part for a valid vibrational frequency in cm^-1.

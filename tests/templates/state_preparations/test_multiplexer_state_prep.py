@@ -16,8 +16,6 @@ Unit tests for the MultiplexerStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -252,10 +250,7 @@ class TestMultiplexerStatePreparation:
             for wire in wires:
                 qp.Hadamard(wire)
 
-            qp.MultiplexerStatePreparation(
-                state,
-                wires=wires,
-            )
+            qp.MultiplexerStatePreparation(state, wires=wires)
             return qp.probs(wires)
 
         jit_circuit = jax.jit(circuit)

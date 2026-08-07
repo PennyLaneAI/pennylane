@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the probs module"""
 
-# pylint:disable=too-many-arguments
-
 from collections.abc import Sequence
 
 import numpy as np
@@ -42,10 +40,8 @@ def fixture_init_state():
     return _init_state
 
 
-class TestProbs:
+class TestProbs:  # pylint: disable=too-many-public-methods
     """Tests for the probs function"""
-
-    # pylint:disable=too-many-public-methods
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -276,10 +272,7 @@ class TestProbs:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
-    @pytest.mark.parametrize(
-        "subset_wires",
-        [[3, 1, 0]],
-    )
+    @pytest.mark.parametrize("subset_wires", [[3, 1, 0]])
     def test_process_density_matrix_medium(self, interface, subset_wires):
         """Test processing of a random generated, medium-sized density matrices."""
         # Define a density matrix for a 4-qubit system
@@ -287,10 +280,7 @@ class TestProbs:
         B = np.random.rand(size, size)
         dm_np = B + B.conjugate().T
         dm_np = dm_np / np.trace(dm_np)
-        dm = qp.math.array(
-            dm_np,
-            like=interface,
-        )
+        dm = qp.math.array(dm_np, like=interface)
 
         wires = qp.wires.Wires(range(4))
         # Process the entire batch of density matrices
@@ -299,12 +289,10 @@ class TestProbs:
         # Trace out the second qubit (qubit indexed 2) and calculate probabilities for qubits 3, 1, 0
         # We need to sum over the indices corresponding to the second qubit, which are in positions 4, 5, 6, 7, ...
         # and their strides in the flattened array are 4 (since 2^2)
-        reshaped_dm = dm_np.reshape(
-            (2, 2, 2, 2, 2, 2, 2, 2)
-        )  # Reshape to (2^8) with each qubit getting a dimension
-        reduced_dm = np.einsum(
-            "ijklmnkp->ljipnm", reshaped_dm
-        )  # Sum over the second qubit (k, m -> trace out)
+        # Reshape to (2^8) with each qubit getting a dimension
+        reshaped_dm = dm_np.reshape((2, 2, 2, 2, 2, 2, 2, 2))
+        # Sum over the second qubit (k, m -> trace out)
+        reduced_dm = np.einsum("ijklmnkp->ljipnm", reshaped_dm)
 
         # Reshape back to a 8x8 matrix to get the density matrix for qubits 3, 1, 0
         reduced_dm = reduced_dm.reshape((8, 8))
@@ -387,9 +375,7 @@ class TestProbs:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that probs for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qp.device("default.qubit", wires=2, seed=seed)
@@ -414,9 +400,7 @@ class TestProbs:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
-    def test_observable_is_measurement_value_list(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value_list(self, shots, phi, tol, tol_stochastic, seed):
         """Test that probs for mid-circuit measurement values
         are correct for a measurement value list."""
 
@@ -665,7 +649,6 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, seed):
         """Test that the correct probability is returned."""
-        # pylint:disable=too-many-arguments
         dev = qp.device("default.qubit", wires=4)
 
         state = init_state(4, seed)
@@ -723,7 +706,6 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_operation_prob(self, operation, wire, init_state, tol, seed):
         "Test the rotated probability with different wires and rotating operations."
-        # pylint:disable=too-many-arguments
         dev = qp.device("default.qubit", wires=4)
 
         state = init_state(4, seed)

@@ -35,16 +35,15 @@ TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
-LIST_CORE_DEVICES = {
-    "default.qubit",
-}
+LIST_CORE_DEVICES = {"default.qubit"}
 
 
 @pytest.fixture(scope="function")
-def tol(shots):  # pylint: disable=redefined-outer-name
+def tol(shots):
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
     probing analytic or non-analytic devices, which allows us to define the
     standard for deterministic or stochastic test results dynamically."""
+    # pylint: disable=redefined-outer-name
 
     if shots is None:
         return float(os.environ.get("TOL", TOL))
@@ -116,8 +115,9 @@ def shots(request) -> None | int:
 
 
 @pytest.fixture
-def validate_diff_method(device, diff_method, shots):  # pylint: disable=redefined-outer-name
+def validate_diff_method(device, diff_method, shots):
     """Skip tests if a device does not support a diff_method"""
+    # pylint: disable=redefined-outer-name
     if diff_method in {"parameter-shift", "hadamard"}:
         return
     if diff_method == "backprop" and shots is not None:
@@ -133,7 +133,7 @@ def fixture_device(device_kwargs):
     """Fixture to create a device."""
 
     # internally used by pytest
-    __tracebackhide__ = True  # pylint:disable=unused-variable
+    __tracebackhide__ = True  # pylint: disable=unused-variable
 
     def _device(wires):
         device_kwargs["wires"] = wires

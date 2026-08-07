@@ -25,16 +25,16 @@ from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp
 
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(Operator):
     pass
 
 
 class TestMarkedOp:
     """Tests for the 'MarkedOp' operator."""
 
-    # pylint:disable=protected-access
     def test_flatten_unflatten(self):
         """Tests the unflatten and flatten methods."""
+        # pylint: disable=protected-access
 
         op = MarkedOp(qp.X(0), marker="my-x")
         data, metadata = op._flatten()

@@ -18,6 +18,7 @@ core parametrized gates.
 """
 
 # pylint: disable=arguments-differ
+
 import functools
 from collections import Counter
 from operator import matmul
@@ -197,7 +198,7 @@ class MultiRZ(Operator2):
         return MultiRZ(theta, wires=self.wires)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
@@ -299,12 +300,7 @@ class PauliRot(Operator2):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(
-        self,
-        theta: TensorLike,
-        pauli_word: str,
-        wires: WiresLike,
-    ):
+    def __init__(self, theta: TensorLike, pauli_word: str, wires: WiresLike):
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
@@ -378,9 +374,8 @@ class PauliRot(Operator2):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=unused-argument
+    def compute_matrix(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -457,9 +452,8 @@ class PauliRot(Operator2):
         )
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -937,9 +931,8 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values,
     }
 
 
-def _ctrl_phase_shift(
-    phi, target_wire, subspace, control_wires, control_values, work_wires
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values, work_wires):
     r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
     target qubit/wire.
 
@@ -1158,7 +1151,7 @@ class IsingXX(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1223,11 +1216,7 @@ class IsingXX(Operation):
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
-            qp.CNOT(wires=wires),
-            RX(phi, wires=[wires[0]]),
-            qp.CNOT(wires=wires),
-        ]
+        decomp_ops = [qp.CNOT(wires=wires), RX(phi, wires=[wires[0]]), qp.CNOT(wires=wires)]
         return decomp_ops
 
     def adjoint(self) -> "IsingXX":
@@ -1346,14 +1335,10 @@ class IsingYY(Operation):
         [CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1])]
 
         """
-        return [
-            qp.CY(wires=wires),
-            RY(phi, wires=[wires[0]]),
-            qp.CY(wires=wires),
-        ]
+        return [qp.CY(wires=wires), RY(phi, wires=[wires[0]]), qp.CY(wires=wires)]
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1522,14 +1507,10 @@ class IsingZZ(Operation):
         [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """
-        return [
-            qp.CNOT(wires=wires),
-            RZ(phi, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-        ]
+        return [qp.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), qp.CNOT(wires=wires)]
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1572,7 +1553,7 @@ class IsingZZ(Operation):
         return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1756,7 +1737,7 @@ class IsingXY(Operation):
         ]
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1809,7 +1790,7 @@ class IsingXY(Operation):
         return diags * np.eye(4) + math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1954,7 +1935,7 @@ class PSWAP(Operation):
         ]
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2001,7 +1982,7 @@ class PSWAP(Operation):
         )
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2145,7 +2126,7 @@ class CPhaseShift00(Operation):
         return super().label(decimals=decimals, base_label="Rϕ(00)", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2189,7 +2170,7 @@ class CPhaseShift00(Operation):
         return math.diag([exp_part, 1, 1, 1])
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2368,7 +2349,7 @@ class CPhaseShift01(Operation):
         return super().label(decimals=decimals, base_label="Rϕ(01)", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2412,7 +2393,7 @@ class CPhaseShift01(Operation):
         return math.diag([1, exp_part, 1, 1])
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2581,7 +2562,7 @@ class CPhaseShift10(Operation):
         return super().label(decimals=decimals, base_label="Rϕ(10)", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2625,7 +2606,7 @@ class CPhaseShift10(Operation):
         return math.diag([1, 1, exp_part, 1])
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,

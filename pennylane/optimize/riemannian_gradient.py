@@ -125,7 +125,7 @@ def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
     return tapes_plus + tapes_minus, calculate_omegas
 
 
-class RiemannianGradientOptimizer:
+class RiemannianGradientOptimizer:  # pylint: disable=too-many-instance-attributes
     r"""Riemannian gradient optimizer.
 
     Riemannian gradient descent algorithms can be used to optimize a function directly on a Lie group
@@ -227,8 +227,6 @@ class RiemannianGradientOptimizer:
     -2.2283086057521713
     """
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
-    # pylint: disable=too-many-instance-attributes
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
         if not isinstance(circuit, QNode):
             raise TypeError(f"circuit must be a QNode, received {type(circuit)}")

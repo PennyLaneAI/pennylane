@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for select templates."""
 
+# pylint: disable=arguments-differ,super-init-not-called,signature-differs
+
 from collections import defaultdict
 
 import numpy as np
@@ -28,8 +30,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,super-init-not-called, signature-differs
 
 
 class SelectTHC(ResourceOperator):
@@ -115,7 +115,7 @@ class SelectTHC(ResourceOperator):
 
     resource_keys = {"thc_ham", "num_batches", "rotation_precision", "select_swap_depth"}
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         thc_ham: THCHamiltonian,
         num_batches: int = 1,
@@ -596,9 +596,7 @@ class SelectPauli(ResourceOperator):
             self.num_wires = num_wires
 
     @classmethod
-    def resource_decomp(
-        cls, pauli_ham: PauliHamiltonian
-    ) -> list[GateCount]:  # pylint: disable=unused-argument
+    def resource_decomp(cls, pauli_ham: PauliHamiltonian) -> list[GateCount]:
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:

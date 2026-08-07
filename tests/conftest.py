@@ -16,6 +16,7 @@ Pytest configuration file for PennyLane test suite.
 """
 
 # pylint: disable=unused-import
+
 import os
 import pathlib
 import sys
@@ -84,12 +85,12 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qp.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qp.devices.LegacyDevice(wires=2)
 
 
-# pylint: disable=protected-access
 @pytest.fixture
 def tear_down_hermitian():
+    # pylint: disable=protected-access
     yield None
     qp.Hermitian._eigs = {}
 
@@ -119,7 +120,7 @@ def seed(request):
 
     """
 
-    fixture_manager = request._fixturemanager  # pylint:disable=protected-access
+    fixture_manager = request._fixturemanager  # pylint: disable=protected-access
     fixture_defs = fixture_manager.getfixturedefs("seed", request.node)
     original_fixture_def = fixture_defs[0]  # the original seed fixture provided by pytest-rng
     original_seed = original_fixture_def.func(request)
@@ -208,8 +209,7 @@ except ImportError as e:
     jax_available = False
 
 
-# pylint: disable=unused-argument
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc):  # pylint: disable=unused-argument
     if jax_available:
         jax.config.update("jax_enable_x64", True)
 
@@ -309,10 +309,7 @@ def pytest_runtest_setup(item):
     """Automatically skip tests if interfaces are not installed"""
     # Autograd is assumed to be installed
     interfaces = {"torch", "jax"}
-    available_interfaces = {
-        "torch": torch_available,
-        "jax": jax_available,
-    }
+    available_interfaces = {"torch": torch_available, "jax": jax_available}
 
     allowed_interfaces = [
         allowed_interface

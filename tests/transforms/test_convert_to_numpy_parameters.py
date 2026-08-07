@@ -43,13 +43,7 @@ def test_convert_arrays_to_numpy(framework, shots):
 
     numpy_data = np.array(0.62)
 
-    ops = [
-        qp.StatePrep(state, 0),
-        qp.RX(x, 0),
-        qp.RY(y, 1),
-        qp.CNOT((0, 1)),
-        qp.RZ(numpy_data, 0),
-    ]
+    ops = [qp.StatePrep(state, 0), qp.RX(x, 0), qp.RY(y, 1), qp.CNOT((0, 1)), qp.RZ(numpy_data, 0)]
     m = [qp.state(), qp.expval(qp.Hermitian(M, 0))]
 
     qs = qp.tape.QuantumScript(ops, m, shots=shots)

@@ -14,8 +14,6 @@
 
 """Tests for the transform ``qp.transform.split_to_single_terms``"""
 
-# pylint: disable=import-outside-toplevel,unnecessary-lambda
-
 import numpy as np
 import pytest
 
@@ -23,13 +21,7 @@ import pennylane as qp
 from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.split_to_single_terms import null_postprocessing
 
-single_term_obs_list = [
-    qp.X(0),
-    qp.Y(0),
-    qp.Z(1),
-    qp.X(0) @ qp.Y(1),
-    qp.Y(0) @ qp.Z(1),
-]
+single_term_obs_list = [qp.X(0), qp.Y(0), qp.Z(1), qp.X(0) @ qp.Y(1), qp.Y(0) @ qp.Z(1)]
 
 
 # contains the following observables: X(0), Y(0), Y(0) @ Z(1), X(1), Z(1), X(0) @ Y(1)
@@ -42,7 +34,6 @@ complex_obs_list = [
 ]
 
 
-# pylint: disable=too-few-public-methods
 class NoTermsDevice(qp.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 
@@ -141,11 +132,7 @@ class TestUnits:
         )
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
-        assert tapes[0].measurements == [
-            qp.expval(qp.X(0)),
-            qp.expval(qp.Y(1)),
-            qp.expval(qp.X(2)),
-        ]
+        assert tapes[0].measurements == [qp.expval(qp.X(0)), qp.expval(qp.Y(1)), qp.expval(qp.X(2))]
         assert fn(([0.1, 0.2, 0.3],)) == (0.1 + 0.2, 0.3 + 0.2)
 
     def test_multiple_sums_duplicated(self):
@@ -156,11 +143,7 @@ class TestUnits:
         )
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
-        assert tapes[0].measurements == [
-            qp.expval(qp.X(0)),
-            qp.expval(qp.X(1)),
-            qp.expval(qp.Y(1)),
-        ]
+        assert tapes[0].measurements == [qp.expval(qp.X(0)), qp.expval(qp.X(1)), qp.expval(qp.Y(1))]
         assert fn(([0.1, 0.2, 0.3],)) == (0.1 + 0.1, 0.2 + 0.3 + 0.3)
 
     @pytest.mark.parametrize("batch_type", (tuple, list))
@@ -194,10 +177,7 @@ class TestUnits:
     def test_tape_with_non_pauli_obs(self, non_pauli_obs):
         """Tests that the tape is split correctly when containing non-Pauli observables"""
 
-        measurements = [
-            qp.expval(qp.X(0) + qp.Y(0) + qp.X(1)),
-            qp.expval(non_pauli_obs + qp.Z(3)),
-        ]
+        measurements = [qp.expval(qp.X(0) + qp.Y(0) + qp.X(1)), qp.expval(non_pauli_obs + qp.Z(3))]
         tape = qp.tape.QuantumScript([qp.RX(1.2, 0)], measurements=measurements)
 
         tapes, fn = split_to_single_terms(tape)

@@ -29,9 +29,8 @@ from pennylane.exceptions import DecompositionWarning, DeviceError
 class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
     def decomposition(self):
@@ -41,22 +40,19 @@ class NoMatOp(qp.operation.Operation):
 class MatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def decomposition(self):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class MyTemplate(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [
             qp.RX(self.data[0], self.wires[0]),
@@ -65,13 +61,11 @@ class MyTemplate(qp.operation.Operation):
         ]
 
 
-# pylint: disable=too-few-public-methods
 class CustomIsingXX(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [qp.IsingXX(self.data[0], self.wires)]
 
@@ -108,39 +102,34 @@ def custom_decomps():
         yield
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
 
-# pylint: disable=too-few-public-methods
 class HasDiagonalizingGatesOp(qp.operation.Operator):
     """Dummy observable that has diagonalizing gates."""
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method,no-self-argument
     @classproperty
+    # pylint: disable-next=no-self-argument
     def has_diagonalizing_gates(cls):
         return True
 
 
-# pylint: disable=too-few-public-methods
 class CustomizedSparseOp(qp.operation.Operator):
     def __init__(self, wires):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
-    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument, arguments-differ
+    def compute_sparse_matrix(self, U):  # pylint: disable=unused-argument
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -305,7 +294,6 @@ class TestConfigSetup:
             dev.setup_execution_config(config)
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 
@@ -458,9 +446,8 @@ class TestPreprocessing:
             def generator(self):
                 return qp.PauliX(0)
 
-            # pylint: disable=arguments-renamed, invalid-overridden-method
             @property
-            def has_matrix(self):
+            def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
                 return True
 
         @qp.register_resources({qp.RX: 1})
@@ -1150,7 +1137,7 @@ class TestAdjointDiffTapeValidation:
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestDefaultQubitGraphModeExclusive:
+class TestDefaultQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
     """Tests for DefaultQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
 

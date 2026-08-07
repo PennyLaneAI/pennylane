@@ -36,10 +36,11 @@ def test_error_raised_graph_disabled():
         circuit()
 
 
-# pylint: disable=protected-access
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestInspectDecompGraph:
     """Tests the decomp_inspector transform."""
+
+    # pylint: disable=protected-access
 
     def test_non_existent_op(self):
         """Tests that the correct message is produced for a non existent op."""

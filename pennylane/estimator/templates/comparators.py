@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
+# pylint: disable=arguments-differ
+
 import pennylane.estimator as qre
 from pennylane.estimator.ops.op_math.symbolic import apply_adj
 from pennylane.estimator.resource_operator import (
@@ -23,8 +25,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,unused-argument
 
 
 class SingleQubitComparator(ResourceOperator):

@@ -103,7 +103,7 @@ class TestMutualInfoUnitTests:
     )
     def test_process_density_matrix_mutual_info(
         self, interface, wires0, wires1, log_base, expected_mutual_info
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test mutual information calculation for non-overlapping subsystems."""
         # Define a pure, entangled two-qubit state (|00> + |11>) / sqrt(2)
         dm = qp.math.array(
@@ -460,7 +460,7 @@ class TestIntegration:
 
         param = torch.tensor(param, requires_grad=True)
         out = circuit(param)
-        out.backward()  # pylint: disable=no-member
+        out.backward()
 
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5

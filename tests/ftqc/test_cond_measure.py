@@ -162,19 +162,13 @@ class TestValidation:
         input1 = {attribute: inp[0]}
         input2 = {attribute: inp[1]}
 
-        with pytest.raises(
-            ValueError,
-            match="behaviour must be consistent for both branches",
-        ):
+        with pytest.raises(ValueError, match="behaviour must be consistent for both branches"):
             m = qp.measure(0)
             cond_measure(m, partial(measure_y, **input1), partial(measure_x, **input2))(0)
 
     def test_mismatched_wires_raises_error(self):
 
-        with pytest.raises(
-            ValueError,
-            match="behaviour must be consistent for both branches",
-        ):
+        with pytest.raises(ValueError, match="behaviour must be consistent for both branches"):
             m = qp.measure(0)
             cond_measure(m, partial(measure_y, wires=0), partial(measure_x, wires=1))()
 

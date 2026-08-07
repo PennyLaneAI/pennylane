@@ -16,6 +16,7 @@ Unit tests for the available qubit state preparation operations.
 """
 
 # pylint: disable=protected-access
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -30,13 +31,13 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 def test_subclasshook_state_prep_base():
     """Test that anything that inherits from StatePrepBase2 is a StatePrepBase."""
 
-    class NewOp(StatePrepBase2):  # pylint: disable=too-few-public-methods
+    class NewOp(StatePrepBase2):
         """dummy operator2"""
 
-        def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+        def __init__(self, wires):
             super().__init__(wires)
 
-        def state_vector(self, wire_order):  # pylint: disable=signature-differs, unused-argument
+        def state_vector(self, wire_order):  # pylint: disable=signature-differs
             return [0, 1]
 
     new_op = NewOp(wires=0)
@@ -58,7 +59,6 @@ class TestStandardValidityBasisState:
     @pytest.mark.jax
     def test_assert_valid(self):
         """Test standard validity."""
-        # pylint: disable=import-outside-toplevel
         state = np.array([0, 1])
         wires = qp.wires.Wires([0, 1])
         op = qp.BasisState(state, wires=wires)
@@ -99,7 +99,6 @@ class TestStandardValidityBasisState:
     @pytest.mark.parametrize("wires_traced", [True, False])
     def test_jit_compatibility(self, state_traced, wires_traced):
         """Test compatibility with jax.jit."""
-        # pylint: disable=import-outside-toplevel
         import jax
 
         state = np.array([0, 1, 0])
@@ -138,7 +137,7 @@ class TestStandardValidityBasisState:
         wires = qp.wires.Wires([1, 0, 2])
         closure_wires = wires
         if wires_traced:
-            import jax  # pylint: disable=import-outside-toplevel
+            import jax
 
             wires = jax.numpy.array(wires)
 
@@ -207,22 +206,13 @@ class TestDecomposition:
         assert isinstance(ops2[0], qp.X)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "state",
-        [
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [1, 1, 0],
-            [1, 1, 1],
-        ],
-    )
+    @pytest.mark.parametrize("state", [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [1, 1, 1]])
     def test_BasisState_abstract_decomposition_correctness(self, state):
         """Test that the abstract decomposition of BasisState produces the correct
         state vector when compiled and executed via ``qjit``.  Uses BasisEmbedding
         which delegates to BasisState.compute_decomposition through the abstract
         (traced) path, exercising the GlobalPhase+RX decomposition end-to-end."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         n_wires = len(state)
         dev = qp.device("lightning.qubit", wires=n_wires)
@@ -241,23 +231,14 @@ class TestDecomposition:
         assert np.allclose(result, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "state",
-        [
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [1, 1, 0],
-            [1, 1, 1],
-        ],
-    )
+    @pytest.mark.parametrize("state", [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [1, 1, 1]])
     def test_BasisState_abstract_decomposition_correctness_jax_jit(self, state):
         """Test that the abstract decomposition of BasisState produces the correct
         state vector when traced through ``jax.jit``.  Uses ``reference.qubit``
         which decomposes BasisState with abstract parameters, exercising the
         GlobalPhase+RX decomposition end-to-end without requiring Catalyst."""
-        import jax  # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+        import jax
+        import jax.numpy as jnp
 
         n_wires = len(state)
 
@@ -366,13 +347,7 @@ class TestStatePrepIntegration:
 
         assert np.allclose(circuit(), expected)
 
-    @pytest.mark.parametrize(
-        "state",
-        [
-            (np.array([1, 1, 1, 1])),
-            (np.array([1, 1j, 1j, 1])),
-        ],
-    )
+    @pytest.mark.parametrize("state", [(np.array([1, 1, 1, 1])), (np.array([1, 1j, 1j, 1]))])
     @pytest.mark.parametrize("validate_norm", [True, False])
     def test_StatePrep_normalize(self, state, validate_norm):
         """Test that StatePrep normalizes the input state correctly."""
@@ -510,7 +485,7 @@ class TestStateVector:
             weight_shapes = {"weights": (1)}
             return qp.qnn.TorchLayer(qlayer, weight_shapes)
 
-        class SimpleQuantumModel(torch.nn.Module):  # pylint:disable=too-few-public-methods
+        class SimpleQuantumModel(torch.nn.Module):  # pylint: disable=too-few-public-methods
             def __init__(self):
                 super().__init__()
                 self.quantum_layer = QuantumLayer()

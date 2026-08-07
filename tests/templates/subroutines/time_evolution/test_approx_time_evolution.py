@@ -32,9 +32,9 @@ def test_standard_validity():
     qp.ops.functions.assert_valid(op)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the _flatten and _unflatten methods."""
+    # pylint: disable=protected-access
     H = 2.0 * qp.PauliX(0) + 3.0 * qp.PauliY(0)
     t = 0.1
     op = qp.ApproxTimeEvolution(H, t, n=20)
@@ -443,7 +443,6 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-# pylint: disable=protected-access, unexpected-keyword-arg
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",

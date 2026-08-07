@@ -15,7 +15,8 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=protected-access,unused-argument
+
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -31,10 +32,7 @@ from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier, qp.WireCut)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -122,7 +120,7 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -131,7 +129,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:  # pylint: disable=too-many-public-methods
     """Test the initialization."""
 
     @pytest.mark.parametrize("id", ("foo", "bar"))
@@ -165,11 +163,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             [1.0],
             [qp.prod(qp.Hadamard(0), X(1), X(2))],
         ),  # trivial product
-        (
-            qp.prod(qp.Hadamard(0), X(1), qp.Identity(2)),
-            [1.0],
-            [qp.prod(qp.Hadamard(0), X(1))],
-        ),
+        (qp.prod(qp.Hadamard(0), X(1), qp.Identity(2)), [1.0], [qp.prod(qp.Hadamard(0), X(1))]),
         (
             qp.prod(qp.Hadamard(0), qp.s_prod(4, X(1)), qp.s_prod(2, X(2))),
             [2 * 4],
@@ -207,21 +201,15 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
     PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
         (qp.prod(X(0), X(1), X(2)), [1.0], [qp.prod(X(0), X(1), X(2))]),  # trivial product
-        (
-            qp.prod(X(0), X(1), X(2), qp.Identity(0)),
-            [1.0],
-            [qp.prod(X(0), X(1), X(2))],
-        ),  # trivial product
+        # trivial product
+        (qp.prod(X(0), X(1), X(2), qp.Identity(0)), [1.0], [qp.prod(X(0), X(1), X(2))]),
         (
             qp.prod(X(0), qp.s_prod(4, X(1)), qp.s_prod(2, X(2))),
             [2 * 4],
             [qp.prod(X(0), X(1), X(2))],
         ),  # product with scalar products inside
-        (
-            qp.prod(X(0), qp.s_prod(4, X(0)), qp.s_prod(2, X(1))),
-            [2 * 4],
-            [X(1)],
-        ),  # product with scalar products on same wire
+        # product with scalar products on same wire
+        (qp.prod(X(0), qp.s_prod(4, X(0)), qp.s_prod(2, X(1))), [2 * 4], [X(1)]),
         (
             qp.prod(X(0), qp.s_prod(4, Y(0)), qp.s_prod(2, X(1))),
             [1j * 2 * 4],
@@ -522,8 +510,7 @@ def test_empty_repr():
     assert repr(Prod()) == "Prod()"
 
 
-# pylint: disable=too-many-public-methods
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     """Test matrix-related methods."""
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops)
@@ -879,7 +866,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        class DummyOp(qp.operation.Operation):  # pylint:disable=too-few-public-methods
+        class DummyOp(qp.operation.Operation):
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -903,7 +890,6 @@ class TestProperties:
     @pytest.mark.tf
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
-        # pylint:disable=invalid-unary-operand-type
         import tensorflow as tf
 
         theta = tf.Variable(1.23)
@@ -998,7 +984,6 @@ class TestProperties:
 
         assert qp.math.allclose(op.eigvals(), op2.eigvals())
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -1185,10 +1170,7 @@ class TestSimplify:
 
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
-        prod_op = qp.prod(
-            qp.RX(1.23, wires=0),
-            qp.RX(-1.23, wires=0),
-        )
+        prod_op = qp.prod(qp.RX(1.23, wires=0), qp.RX(-1.23, wires=0))
         final_op = qp.Identity(0)
         simplified_op = prod_op.simplify()
         qp.assert_equal(final_op, simplified_op)
@@ -1422,8 +1404,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in results  # pylint:disable=unsupported-membership-test
-        assert -1 not in results  # pylint:disable=unsupported-membership-test
+        assert 1 in results  # pylint: disable=unsupported-membership-test
+        assert -1 not in results  # pylint: disable=unsupported-membership-test
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -1692,22 +1674,12 @@ class TestDecomposition:
     @pytest.mark.jax
     def test_controlled_prod_basic_validity(self):
         """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
-        op = qp.ctrl(
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
-            control=[4, 5, 6],
-            work_wires=[7, 8, 9],
-        )
+        op = qp.ctrl(qp.prod(qp.X(0), qp.X(1), qp.X(2)), control=[4, 5, 6], work_wires=[7, 8, 9])
         qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(
-        "control_values",
-        [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]],
-    )
-    @pytest.mark.parametrize(
-        "work_wires",
-        [[7, 8, 9], [7]],
-    )
+    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
+    @pytest.mark.parametrize("work_wires", [[7, 8, 9], [7]])
     def test_controlled_prod_decomposition_new(self, control_values, work_wires):
         """The registered ``C(Prod)`` rule decomposes controlled products.
 
@@ -1727,10 +1699,7 @@ class TestDecomposition:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "num_control_wires, num_work_wires",
-        [(3, 1), (3, 2), (4, 1), (5, 3)],
-    )
+    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(3, 1), (3, 2), (4, 1), (5, 3)])
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.

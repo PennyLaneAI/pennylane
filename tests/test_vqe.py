@@ -139,8 +139,7 @@ big_hamiltonian_grad = (
 # Ansatz
 
 
-# pylint: disable=unused-argument
-def custom_fixed_ansatz(params, wires=None):
+def custom_fixed_ansatz(params, wires=None):  # pylint: disable=unused-argument
     """Custom fixed ansatz"""
     qp.RX(0.5, wires=0)
     qp.RX(-1.2, wires=1)
@@ -259,11 +258,10 @@ class TestVQE:
         cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
         assert cost([]) == sum(expected)
 
-    # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, shots, seed):
+    def test_optimize_torch(self, shots, seed):  # pylint: disable=unused-argument
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
 
@@ -307,11 +305,10 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
-    # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_tf(self, shots, seed):
+    def test_optimize_tf(self, shots, seed):  # pylint: disable=unused-argument
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
@@ -353,7 +350,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -401,7 +397,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_multiple_terms_autograd(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
@@ -457,7 +452,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    # pylint: disable=protected-access
     @pytest.mark.torch
     def test_optimize_multiple_terms_torch(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
@@ -513,7 +507,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    # pylint: disable=protected-access
     @pytest.mark.tf
     def test_optimize_multiple_terms_tf(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
@@ -569,7 +562,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of a Hamiltonian cost function is accessible
@@ -711,11 +703,11 @@ PARAMS = rng.uniform(low=0, high=2 * np.pi, size=_shape)
 class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
-    # pylint: disable=cell-var-from-loop
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
+        # pylint: disable=cell-var-from-loop
 
         coeffs = [1.0] * len(observables)
         dev = qp.device("default.qubit", wires=3)
@@ -914,7 +906,7 @@ class TestNewVQE:
         w = torch.tensor(PARAMS, requires_grad=True)
 
         res = circuit(w)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         dc = w.grad.detach().numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
@@ -992,7 +984,7 @@ class TestInterfaces:
         backward compatibility)"""
         dev = qp.device("default.qubit", wires=1)
 
-        def ansatz(params, **kwargs):
+        def ansatz(params, **kwargs):  # pylint: disable=unused-argument
             qp.RX(params[0], wires=0)
             qp.RY(params[1], wires=0)
 
@@ -1021,7 +1013,7 @@ class TestInterfaces:
 
         dev = qp.device("default.qubit", wires=1)
 
-        def ansatz(params, **kwargs):
+        def ansatz(params, **kwargs):  # pylint: disable=unused-argument
             qp.RX(params[0], wires=0)
             qp.RY(params[1], wires=0)
 
@@ -1052,7 +1044,7 @@ class TestInterfaces:
 
         dev = qp.device("default.qubit", wires=1)
 
-        def ansatz(params, **kwargs):
+        def ansatz(params, **kwargs):  # pylint: disable=unused-argument
             qp.RX(params[0], wires=0)
             qp.RY(params[1], wires=0)
 

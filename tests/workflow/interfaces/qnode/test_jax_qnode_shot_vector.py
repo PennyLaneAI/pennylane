@@ -14,6 +14,7 @@
 """Integration tests for using the jax interface with shot vectors and with a QNode"""
 
 # pylint: disable=too-many-arguments,too-many-public-methods
+
 import pytest
 from flaky import flaky
 
@@ -38,11 +39,7 @@ interface_and_qubit_device_and_diff_method = [
     ["jax"] + inner_list for inner_list in qubit_device_and_diff_method
 ]
 
-TOLS = {
-    "finite-diff": 0.3,
-    "parameter-shift": 1e-2,
-    "spsa": 0.32,
-}
+TOLS = {"finite-diff": 0.3, "parameter-shift": 1e-2, "spsa": 0.32}
 
 jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 

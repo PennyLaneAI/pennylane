@@ -15,7 +15,6 @@
 Unit tests for the qubit matrix-based operations.
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import reduce
 
 import numpy as np
@@ -39,16 +38,10 @@ class TestQubitUnitaryCSR:
     def test_compute_matrix_blocked(self):
         """Test that when csr_matrix is used, the compute_matrix method works correctly."""
         U = csr_matrix(I)
-        with pytest.raises(
-            qp.operation.MatrixUndefinedError,
-            match="U is sparse matrix",
-        ):
+        with pytest.raises(qp.operation.MatrixUndefinedError, match="U is sparse matrix"):
             qp.QubitUnitary.compute_matrix(U)
 
-        with pytest.raises(
-            qp.operation.MatrixUndefinedError,
-            match="U is sparse matrix",
-        ):
+        with pytest.raises(qp.operation.MatrixUndefinedError, match="U is sparse matrix"):
             op = qp.QubitUnitary(U, wires=[0])
             op.matrix()
 
@@ -79,20 +72,14 @@ class TestQubitUnitaryCSR:
         op = qp.QubitUnitary(sparse, wires=[0, 1])
         assert isinstance(op.sparse_matrix(), csr_matrix)
 
-    @pytest.mark.parametrize(
-        "dense",
-        [H, I, S, T, X, Z],
-    )
+    @pytest.mark.parametrize("dense", [H, I, S, T, X, Z])
     def test_csr_matrix_init_success(self, dense):
         """Test that a valid 2-wire csr_matrix can be instantiated, covering necessary single-qubit gates."""
         # 4x4 Identity as a csr_matrix
         sparse = csr_matrix(dense)
         op = qp.QubitUnitary(sparse, wires=[0])
         assert isinstance(op.sparse_matrix(), csr_matrix)  # Should still be sparse
-        with pytest.raises(
-            qp.operation.MatrixUndefinedError,
-            match="U is sparse matrix",
-        ):
+        with pytest.raises(qp.operation.MatrixUndefinedError, match="U is sparse matrix"):
             assert qp.math.allclose(op.matrix(), dense)
 
     def test_csr_matrix_shape_mismatch(self):
@@ -552,11 +539,8 @@ class TestQubitUnitary:
             (qp.matrix(qp.SWAP(wires=[0, 1]) @ qp.GlobalPhase(3))),  # 3 cnots
             (qp.matrix(qp.Hadamard(wires=[0]) @ qp.RX(2, wires=1))),  # 0 cnots
             (qp.matrix(qp.RX(-1, wires=[0]) @ qp.RZ(-5, wires=1))),  # 0 cnots
-            (
-                qp.matrix(
-                    qp.MottonenStatePreparation(np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1])
-                )
-            ),  # 2 cnots
+            # 2 cnots
+            (qp.matrix(qp.MottonenStatePreparation(np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1]))),
         ],
     )
     def test_qubit_unitary_correct_global_phase(self, U):
@@ -1147,7 +1131,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             loss = circuit(x)
 
         grad = tape.gradient(loss, x)
-        expected = -tf.math.sin(x)  # pylint: disable=invalid-unary-operand-type
+        expected = -tf.math.sin(x)
         assert np.allclose(grad, expected)
 
 

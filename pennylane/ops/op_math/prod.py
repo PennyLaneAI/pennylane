@@ -272,7 +272,6 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_verified_hermitian for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -342,12 +341,11 @@ class Prod(CompositeOp):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(self):
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -479,9 +477,8 @@ def _prod_resources(resources):
     return resources
 
 
-# pylint: disable=unused-argument
 @qp.register_resources(_prod_resources)
-def _prod_decomp(*_, wires=None, operands, **__):
+def _prod_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in reversed(operands):
         qp.apply(op)
 
@@ -489,11 +486,7 @@ def _prod_decomp(*_, wires=None, operands, **__):
 qp.add_decomps(Prod, _prod_decomp)
 
 
-def _ctrl_prod_resources(
-    num_control_wires,
-    base_params,
-    **_,
-):
+def _ctrl_prod_resources(num_control_wires, base_params, **_):
     factor_reps = base_params["resources"]
 
     resources = Counter()
@@ -525,11 +518,7 @@ def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **_
     qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
-def _ctrl_prod_resources_with_one_work_wire(
-    num_control_wires,
-    base_params,
-    **_,
-):
+def _ctrl_prod_resources_with_one_work_wire(num_control_wires, base_params, **_):
     factor_reps = base_params["resources"]  # {rep: count} from Prod
     multicx_rep = resource_rep(
         qp.MultiControlledX,
@@ -574,10 +563,7 @@ qp.add_decomps(
 )
 
 
-def _multi_temporary_and_all_ones(
-    control,
-    work_wires,
-):
+def _multi_temporary_and_all_ones(control, work_wires):
     """Controlled decomposition using a ``TemporaryAND`` ladder.
 
     Assumes all control values are 1 and returns the last ancilla as the
@@ -596,7 +582,7 @@ def _multi_temporary_and_all_ones(
     def _ladder(i):
         qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
 
-    _ladder()  # pylint: disable = no-value-for-parameter
+    _ladder()  # pylint: disable=no-value-for-parameter
 
     return work_wires[num_needed - 1]
 

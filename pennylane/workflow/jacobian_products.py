@@ -427,11 +427,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-            logger.debug(
-                "DeviceDerivatives created with (%s, %s)",
-                device,
-                execution_config,
-            )
+            logger.debug("DeviceDerivatives created with (%s, %s)", device, execution_config)
 
         self._device = device
         self._execution_config = execution_config

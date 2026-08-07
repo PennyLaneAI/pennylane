@@ -188,10 +188,7 @@ class Permute(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "permutation": self.hyperparameters["permutation"],
-            "wires": self.wires,
-        }
+        return {"permutation": self.hyperparameters["permutation"], "wires": self.wires}
 
     @property
     def num_params(self):

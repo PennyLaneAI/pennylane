@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for qchem operations."""
 
+# pylint: disable=arguments-differ
+
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -21,8 +23,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ
 
 
 class SingleExcitation(ResourceOperator):

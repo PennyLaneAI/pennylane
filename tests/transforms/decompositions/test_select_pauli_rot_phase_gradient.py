@@ -17,15 +17,11 @@
 import warnings
 
 import numpy as np
-
-# pylint: disable=no-value-for-parameter
 import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms.decompositions import (
-    make_selectpaulirot_to_phase_gradient_decomp,
-)
+from pennylane.transforms.decompositions import make_selectpaulirot_to_phase_gradient_decomp
 from pennylane.wires import WireError
 
 
@@ -119,12 +115,7 @@ def test_as_fixed_decomps(prec, num_controls):
         return qp.state()
 
     specs = qp.specs(circuit)(angles)["resources"].quantum_operations
-    expected_specs = {
-        "QROM": 2,
-        "CNOT": 2 * prec,
-        "PauliX": 2 * prec,
-        "SemiAdder": 1,
-    }
+    expected_specs = {"QROM": 2, "CNOT": 2 * prec, "PauliX": 2 * prec, "SemiAdder": 1}
     assert expected_specs == specs
 
 
@@ -156,30 +147,16 @@ def test_integration_multi_wire(rot_axis, seed):
         angle_wires, phase_grad_wires, work_wires
     )
 
-    gs = {
-        "QROM",
-        "SemiAdder",
-        "CNOT",
-        "PauliX",
-        "GlobalPhase",
-        "StatePrep",
-        "Adjoint(StatePrep)",
-    }
+    gs = {"QROM", "SemiAdder", "CNOT", "PauliX", "GlobalPhase", "StatePrep", "Adjoint(StatePrep)"}
 
     # Depending on the rot_axis, additional operators
     # are expected in the decomposition
     if rot_axis == "Y":
-        gs |= {
-            "S",
-            "Adjoint(S)",
-        }
+        gs |= {"S", "Adjoint(S)"}
     if rot_axis in ("X", "Y"):
         gs |= {"Hadamard"}
 
-    @qp.decompose(
-        gate_set=gs,
-        fixed_decomps={qp.SelectPauliRot: custom_decomp},
-    )
+    @qp.decompose(gate_set=gs, fixed_decomps={qp.SelectPauliRot: custom_decomp})
     @qp.qnode(qp.device("default.qubit", wires=all_wires))
     def circuit(in_state):
         qp.StatePrep(in_state, wires=sys_wires)  # input state
@@ -187,9 +164,8 @@ def test_integration_multi_wire(rot_axis, seed):
         qp.SelectPauliRot(
             angles, control_wires=ctrl_wires, target_wire=target_wire, rot_axis=rot_axis
         )
-        qp.adjoint(
-            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
-        )  # uncompute phase gradient state
+        # uncompute phase gradient state
+        qp.adjoint(qp.StatePrep(phase_grad_state, wires=phase_grad_wires))
         return qp.state()
 
     # random input state
@@ -256,14 +232,7 @@ def test_capture_compatibility():
     _test_decomposition_rule(op, custom_decomp)
 
 
-@pytest.mark.parametrize(
-    "rot_axis, expected_op",
-    [
-        ("X", qp.RX),
-        ("Y", qp.RY),
-        ("Z", qp.RZ),
-    ],
-)
+@pytest.mark.parametrize("rot_axis, expected_op", [("X", qp.RX), ("Y", qp.RY), ("Z", qp.RZ)])
 def test_rot_axis_zero_controls(rot_axis, expected_op):
     """Test the 0-control-wire edge case for all rotation axes."""
     angle_wires = qp.wires.Wires(["aux_0"])

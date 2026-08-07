@@ -22,8 +22,6 @@ from pennylane.estimator.ops import GlobalPhase, Identity
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
-
 
 class TestIdentity:
     """Test ResourceIdentity"""

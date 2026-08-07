@@ -27,8 +27,6 @@ from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=consider-using-generator
-
 
 # -----------------------------
 # Wires Data Structure
@@ -80,7 +78,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
+class BBQRAM(Operation):
     r"""Bucket-brigade QRAM with explicit bus routing using 3 wires per node. Bucket-brigade QRAM
     achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`, where :math:`N` is
     the size of the classical data register being queried. For more theoretical details on how this
@@ -201,7 +199,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         control_wires = Wires(control_wires)
 
         if isinstance(data, (list, tuple)):
@@ -246,9 +244,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             control_wires, target_wires, bus_wire, dir_wires, portL_wires, portR_wires
         )
 
-        self._hyperparameters = {
-            "wire_manager": wire_manager,
-        }
+        self._hyperparameters = {"wire_manager": wire_manager}
 
         super().__init__(data, wires=all_wires)
 
@@ -328,7 +324,7 @@ def _leaf_ops_for_bit(wire_manager, data, n_k, j):
 
 
 @register_resources(_bucket_brigade_qram_resources, exact=False)
-def _bucket_brigade_qram_decomposition(data, wire_manager, **__):  # pylint: disable=unused-argument
+def _bucket_brigade_qram_decomposition(data, wire_manager, **__):
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
     n_k = len(control_wires)
@@ -461,11 +457,7 @@ class HybridQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {
-        "num_target_wires",
-        "num_select_wires",
-        "num_tree_control_wires",
-    }
+    resource_keys = {"num_target_wires", "num_select_wires", "num_tree_control_wires"}
 
     def __init__(
         self,
@@ -474,7 +466,7 @@ class HybridQRAM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         k: int,  # define the select part size, remaining part is tree part
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         if isinstance(data, (list, tuple)):
             data = math.array(data)
@@ -606,9 +598,8 @@ def _bits(value: int, length: int) -> list[int]:
     return [(value >> (length - 1 - i)) & 1 for i in range(length)]
 
 
-def _tree_leaf_ops_for_bit_block_ctrl(
-    data, j, block_index, tree_wire_manager, n_tree, signal
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _tree_leaf_ops_for_bit_block_ctrl(data, j, block_index, tree_wire_manager, n_tree, signal):
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
     # For each leaf index p of the tree (n_tree bits)
@@ -640,11 +631,7 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
             ctrl(SWAP(wires=[in_w, R]), control=[signal, d], control_values=[1, 1])
 
             # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
-            ctrl(
-                SWAP(wires=[in_w, L]),
-                control=[signal, d],
-                control_values=[1, 0],
-            )
+            ctrl(SWAP(wires=[in_w, L]), control=[signal, d], control_values=[1, 0])
 
 
 def _swap_controlled_on_signal(tree_wire_manager, signal, level, k):
@@ -687,9 +674,8 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
             ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
 
 
-def _block_tree_query_ops(
-    data, block_index, tree_wire_manager, n_tree, k, signal
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _block_tree_query_ops(data, block_index, tree_wire_manager, n_tree, k, signal):
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
     # 1) address loading for the tree (controlled on signal)
@@ -725,9 +711,7 @@ def _block_tree_query_ops(
 
 
 @register_resources(_hybrid_qram_resources, exact=False)
-def _hybrid_qram_decomposition(
-    data, tree_wire_manager, select_wires, signal_wire, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+def _hybrid_qram_decomposition(data, tree_wire_manager, select_wires, signal_wire, **_):
     k = len(select_wires)
 
     signal = signal_wire[0]
@@ -867,14 +851,8 @@ class SelectOnlyQRAM(Operation):
 
     grad_method = None
 
-    resource_keys = {
-        "select_value",
-        "num_control_wires",
-        "num_select_wires",
-        "num_target_wires",
-    }
+    resource_keys = {"select_value", "num_control_wires", "num_select_wires", "num_target_wires"}
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         data: TensorLike | Sequence[str],
@@ -977,7 +955,7 @@ def _flip_controls(control_wires, control_vals):
 @register_resources(_select_only_qram_resources, exact=False)
 def _select_only_qram_decomposition(
     data, select_value, select_wires, control_wires, target_wires, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)

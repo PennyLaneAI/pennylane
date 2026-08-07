@@ -25,9 +25,7 @@ from pennylane.workflow import _resolve_interface
 
 def test_auto_with_numpy():
     """Test that 'auto' interface resolves to numpy correctly."""
-    tapes = [
-        QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))]),
-    ]
+    tapes = [QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))])]
     resolved_interface = _resolve_interface("auto", tapes)
     assert resolved_interface == Interface.NUMPY
 
@@ -36,13 +34,10 @@ def test_auto_with_numpy():
 def test_auto_with_tf():
     """Test that 'auto' interface resolves to 'tf' correctly."""
     try:
-        # pylint: disable=import-outside-toplevel
         import tensorflow as tf
     except ImportError:
         pytest.skip("TensorFlow is not installed.")
-    tapes = [
-        QuantumScript([qp.RX(tf.Variable(0.5), wires=0)], [qp.expval(qp.PauliZ(0))]),
-    ]
+    tapes = [QuantumScript([qp.RX(tf.Variable(0.5), wires=0)], [qp.expval(qp.PauliZ(0))])]
     resolved_interface = _resolve_interface("auto", tapes)
     assert resolved_interface == Interface.TF
 
@@ -52,9 +47,7 @@ def test_auto_with_autograd():
     """Test that 'auto' interface resolves to 'autograd' correctly."""
 
     x = pnp.array([0.5], requires_grad=True)
-    tapes = [
-        QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
-    ]
+    tapes = [QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))])]
     resolved_interface = _resolve_interface("auto", tapes)
     assert resolved_interface == Interface.AUTOGRAD
 
@@ -63,24 +56,19 @@ def test_auto_with_autograd():
 def test_auto_with_jax():
     """Test that 'auto' interface resolves to 'jax' correctly.."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
 
-    tapes = [
-        QuantumScript([qp.RX(jnp.array(0.5), wires=0)], [qp.expval(qp.PauliZ(0))]),
-    ]
+    tapes = [QuantumScript([qp.RX(jnp.array(0.5), wires=0)], [qp.expval(qp.PauliZ(0))])]
     resolved_interface = _resolve_interface("auto", tapes)
     assert resolved_interface == Interface.JAX
 
 
 def test_auto_with_unsupported_interface():
     """Test that 'auto' interface resolves to None correctly."""
-    # pylint: disable=import-outside-toplevel
     import networkx as nx
 
-    # pylint: disable=too-few-public-methods
     class DummyCustomGraphOp(qp.operation.Operation):
         """Dummy custom operation for testing purposes."""
 
@@ -100,16 +88,12 @@ def test_auto_with_unsupported_interface():
 def test_tf_autograph():
     """Test that 'tf' interface resolves to 'tf-autograph' in graph mode."""
     try:
-        # pylint: disable=import-outside-toplevel
         import tensorflow as tf
     except ImportError:
         pytest.skip("TensorFlow is not installed.")
 
-    # pylint: disable=not-context-manager
     with tf.Graph().as_default():
-        tapes = [
-            QuantumScript([qp.RX(tf.constant(0.5), wires=0)], [qp.expval(qp.PauliZ(0))]),
-        ]
+        tapes = [QuantumScript([qp.RX(tf.constant(0.5), wires=0)], [qp.expval(qp.PauliZ(0))])]
         resolved_interface = _resolve_interface("tf", tapes)
 
     assert resolved_interface == Interface.TF_AUTOGRAPH
@@ -119,15 +103,12 @@ def test_tf_autograph():
 def test_jax():
     """Test that non-abstract JAX parameters in tapes resolve to 'jax'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
 
     x = jnp.pi / 2
-    tapes = [
-        QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
-    ]
+    tapes = [QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))])]
     assert not qp.math.is_abstract(x)
 
     resolved_interface_abstract = _resolve_interface("jax", tapes)
@@ -138,7 +119,6 @@ def test_jax():
 def test_jax_jit():
     """Test that abstract JAX parameters in tapes resolve to 'jax-jit'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax
         import jax.numpy as jnp
     except ImportError:
@@ -150,9 +130,7 @@ def test_jax_jit():
     @jax.jit
     def abstract_func(x):
         assert qp.math.is_abstract(x)
-        tapes = [
-            QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
-        ]
+        tapes = [QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))])]
         assert _resolve_interface("jax", tapes) == Interface.JAX_JIT
 
     abstract_func(param)
@@ -160,8 +138,6 @@ def test_jax_jit():
 
 def test_unsupported():
     """Test that an unsupported interface raises an error."""
-    tapes = [
-        QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))]),
-    ]
+    tapes = [QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))])]
     with pytest.raises(ValueError, match="'.*' is not a valid Interface."):
         _resolve_interface("unsupported_interface", tapes)

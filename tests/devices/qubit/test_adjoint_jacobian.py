@@ -162,7 +162,7 @@ class TestAdjointJacobian:
                 return qp.PauliX(self.wires) * 1.2
 
             @staticmethod
-            def compute_matrix(angle):  # pylint: disable=arguments-differ
+            def compute_matrix(angle):
                 """Matrix representation of MyOp, just the same as a reparametrized RX."""
                 return qp.RX.compute_matrix(-2.4 * angle)
 
@@ -302,10 +302,7 @@ class TestAdjointJacobian:
 
         par = np.array(0.6)
 
-        ops = [
-            qp.RY(par, wires=0),
-            qp.QubitUnitary(np.eye(2), wires=0),
-        ]
+        ops = [qp.RY(par, wires=0), qp.QubitUnitary(np.eye(2), wires=0)]
         qs = QuantumScript(ops, [qp.expval(qp.PauliZ(0))], trainable_params=[0])
 
         grad_adjoint = adjoint_jacobian(qs)
@@ -458,10 +455,7 @@ class TestAdjointJVP:
         par = np.array(0.6)
         tangents = (0.45,)
 
-        ops = [
-            qp.RY(par, wires=0),
-            qp.QubitUnitary(np.eye(2), wires=0),
-        ]
+        ops = [qp.RY(par, wires=0), qp.QubitUnitary(np.eye(2), wires=0)]
         qs = QuantumScript(ops, [qp.expval(qp.PauliZ(0))], trainable_params=[0])
 
         jvp_adjoint = adjoint_jvp(qs, tangents)
@@ -808,10 +802,7 @@ class TestAdjointVJP:
         par = np.array(0.6)
         cotangents = (0.45,)
 
-        ops = [
-            qp.RY(par, wires=0),
-            qp.QubitUnitary(np.eye(2), wires=0),
-        ]
+        ops = [qp.RY(par, wires=0), qp.QubitUnitary(np.eye(2), wires=0)]
         qs = QuantumScript(ops, [qp.expval(qp.PauliZ(0))], trainable_params=[0])
 
         vjp_adjoint = adjoint_vjp(qs, cotangents)

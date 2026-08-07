@@ -38,7 +38,6 @@ _VALID_PAULI_CHARS = "XYZ"
 class PauliMeasure(Operator):
     """A Pauli product measurement."""
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         pauli_word: str,
@@ -143,14 +142,7 @@ def _get_array_types():
 
 @lru_cache
 def _get_non_array_iterables():
-    return (
-        list,
-        tuple,
-        Wires,
-        range,
-        qp.capture.autograph.ag_primitives.PRange,
-        set,
-    )
+    return (list, tuple, Wires, range, qp.capture.autograph.ag_primitives.PRange, set)
 
 
 def _setup_wires(wires):

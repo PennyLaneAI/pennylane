@@ -339,9 +339,8 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, base, **kwargs):
+    def _primitive_bind_call(cls, base, **kwargs):  # pylint: disable=arguments-differ
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
@@ -397,8 +396,8 @@ class Adjoint(SymbolicOp):
         base_matrix = self.base.matrix(wire_order=wire_order)
         return moveaxis(conj(base_matrix), -2, -1)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 
@@ -406,7 +405,6 @@ class Adjoint(SymbolicOp):
         base_matrix = self.base.sparse_matrix(wire_order=wire_order)
         return transpose(conj(base_matrix)).asformat(format=format)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return self.base.has_adjoint or self.base.has_decomposition
@@ -421,17 +419,16 @@ class Adjoint(SymbolicOp):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
         return conj(self.base.eigvals())
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -488,9 +485,8 @@ class AdjointOperation(Adjoint, Operation):
     def grad_method(self):
         return self.base.grad_method
 
-    # pylint: disable=missing-function-docstring
     @property
-    def grad_recipe(self):
+    def grad_recipe(self):  # pylint: disable=missing-function-docstring
         return self.base.grad_recipe
 
     @property
@@ -500,9 +496,8 @@ class AdjointOperation(Adjoint, Operation):
 
         return parameter_frequencies(self.base)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):

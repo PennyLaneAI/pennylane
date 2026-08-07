@@ -45,8 +45,7 @@ def _to_bool_cond_fn(cond_fn):
 
 
 def _body_consts_extracted_cond(cond_fn):
-    # pylint: disable=unused-argument
-    def new_cond_fn(args, body_consts):
+    def new_cond_fn(args, body_consts):  # pylint: disable=unused-argument
         return cond_fn(*args)
 
     return new_cond_fn
@@ -263,14 +262,7 @@ def _get_while_loop_qfunc_prim():
     )
 
     @while_loop_prim.def_impl
-    def _impl(
-        *args,
-        jaxpr_body_fn,
-        jaxpr_cond_fn,
-        body_slice,
-        cond_slice,
-        args_slice,
-    ):
+    def _impl(*args, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice):
         body_slice = slice(*body_slice)
         cond_slice = slice(*cond_slice)
         args_slice = slice(*args_slice)
@@ -292,7 +284,7 @@ def _get_while_loop_qfunc_prim():
     return while_loop_prim
 
 
-class WhileLoopCallable:  # pylint:disable=too-few-public-methods
+class WhileLoopCallable:  # pylint: disable=too-few-public-methods
     """Base class to represent a while loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.

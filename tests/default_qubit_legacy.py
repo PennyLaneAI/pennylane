@@ -76,7 +76,6 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument, too-many-arguments, too-many-instance-attributes
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -103,6 +102,8 @@ class DefaultQubitLegacy(QubitDevice):
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
     """
+
+    # pylint: disable=unused-argument,too-many-arguments
 
     name = "Default qubit PennyLane plugin (Legacy)"
     short_name = "default.qubit.legacy"
@@ -277,7 +278,6 @@ class DefaultQubitLegacy(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    # pylint: disable=arguments-differ
     def _get_batch_size(self, tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""
@@ -296,7 +296,6 @@ class DefaultQubitLegacy(QubitDevice):
         result = super().execute(circuit, **kwargs)
         return result
 
-    # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
@@ -380,7 +379,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _apply_global_phase(self, state, operation: qp.GlobalPhase):  # pylint: disable=no-self-use
+    def _apply_global_phase(self, state, operation: qp.GlobalPhase):
         """Applies a :class:`~.GlobalPhase` operation to the state."""
         return qp.math.exp(-1j * operation.data[0]) * state
 
@@ -702,7 +701,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._real(res)
 
-    def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
+    def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
 
         Args:
@@ -1029,7 +1028,6 @@ class DefaultQubitLegacy(QubitDevice):
         rng = np.random.default_rng(effective_seed)
 
         basis_states = np.arange(number_of_states)
-        # pylint:disable = import-outside-toplevel
         if (
             qp.math.is_abstract(state_probability)
             and qp.math.get_interface(state_probability) == "jax"

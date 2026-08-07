@@ -50,12 +50,7 @@ def dummy_transform(qnode):
 )
 def test_preprocess_levels(level, output, expect_warnings):
     """Test that _preprocess_level_input works correctly"""
-    marker_to_level = {
-        "foo": 2,
-        "bar": 3,
-        # Treat MLIR lowering as level 4
-        "baz": 5,
-    }
+    marker_to_level = {"foo": 2, "bar": 3, "baz": 5}
 
     if expect_warnings:
         with pytest.warns(
@@ -131,13 +126,6 @@ def test_get_marker_level_map():
     pipeline += qp.transform(pass_name="cancel_inverses")
     pipeline.add_marker("m4")
 
-    expected_mapping = {
-        "m0": 0,
-        "m1": 1,
-        # MLIR happens at level 2
-        "m2": 3,
-        "m3": 3,
-        "m4": 5,
-    }
+    expected_mapping = {"m0": 0, "m1": 1, "m2": 3, "m3": 3, "m4": 5}
 
     assert get_marker_level_map(pipeline) == expected_mapping

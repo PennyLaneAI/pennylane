@@ -15,6 +15,8 @@
 Tests for the pennylane.qnn.torch module.
 """
 
+# pylint: disable=unnecessary-dunder-call
+
 import math
 from unittest import mock
 
@@ -25,8 +27,6 @@ import pennylane as qp
 from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
-
-# pylint: disable=unnecessary-dunder-call
 
 
 def indices_up_to(n_max):
@@ -72,7 +72,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
     """Unit tests for the pennylane.qnn.torch.TorchLayer class."""
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_torch(self, get_circuit, monkeypatch):  # pylint: disable=no-self-use
+    def test_no_torch(self, get_circuit, monkeypatch):
         """Test if an ImportError is raised when instantiated without PyTorch"""
         c, w = get_circuit
         with monkeypatch.context() as m:
@@ -81,7 +81,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
                 TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_input(self):  # pylint: disable=no-self-use
+    def test_no_input(self):
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of TorchLayer"""
         dev = qp.device("default.qubit", wires=1)
@@ -95,7 +95,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_input_in_weight_shapes(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
+    def test_input_in_weight_shapes(self, get_circuit, n_qubits):
         """Test if a ValueError is raised when instantiated with a weight_shapes dictionary that
         contains the shape of the input argument given by the input_arg class attribute of
         TorchLayer"""
@@ -108,7 +108,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_weight_shape_unspecified(self, get_circuit):  # pylint: disable=no-self-use
+    def test_weight_shape_unspecified(self, get_circuit):
         """Test if a ValueError is raised when instantiated with a weight missing from the
         weight_shapes dictionary"""
         c, w = get_circuit
@@ -117,7 +117,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_pos(self):  # pylint: disable=no-self-use
+    def test_var_pos(self):
         """Test if a TypeError is raised when instantiated with a variable number of positional
         arguments"""
         dev = qp.device("default.qubit", wires=1)
@@ -131,7 +131,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword(self, n_qubits, output_dim):  # pylint: disable=no-self-use
+    def test_var_keyword(self, n_qubits, output_dim):
         """Test that variable number of keyword arguments works"""
         dev = qp.device("default.qubit", wires=n_qubits)
         w = {
@@ -168,7 +168,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_nonspecified_init(self, get_circuit, monkeypatch):  # pylint: disable=no-self-use
+    def test_nonspecified_init(self, get_circuit, monkeypatch):
         """Test if weights are initialized according to the uniform distribution in [0, 2 pi]"""
         c, w = get_circuit
 
@@ -180,7 +180,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert kwargs["b"] == 2 * math.pi
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_callable_init(self, get_circuit, monkeypatch):  # pylint: disable=no-self-use
+    def test_callable_init(self, get_circuit, monkeypatch):
         """Test if weights are initialized according to the callable function specified in the
         init_method argument."""
         c, w = get_circuit
@@ -197,7 +197,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert data == normal_().tolist()
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_fixed_init(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
+    def test_fixed_init(self, get_circuit, n_qubits):
         """Test if weights are initialized according to the value specified in the
         init_method argument."""
         c, w = get_circuit
@@ -217,7 +217,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert weight.data.tolist() == init_method[name].tolist()
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_fixed_init_raises_error(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
+    def test_fixed_init_raises_error(self, get_circuit, n_qubits):
         """Test that a ValueError is raised when using a Tensor with the wrong shape."""
         c, w = get_circuit
 
@@ -235,7 +235,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_init_missing_weights(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
+    def test_init_missing_weights(self, get_circuit, n_qubits):
         """Test that a KeyError is raised when using an init_method with missing weights."""
         c, w = get_circuit
 
@@ -251,7 +251,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_fixed_and_callable_init(self, get_circuit):  # pylint: disable=no-self-use
+    def test_fixed_and_callable_init(self, get_circuit):
         """Test if weights are initialized according to the callables and values specified in the
         init_method argument."""
         c, w = get_circuit
@@ -280,7 +280,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
                 assert data == init_method[name].tolist()
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults(self, n_qubits, output_dim):  # pylint: disable=no-self-use
+    def test_non_input_defaults(self, n_qubits, output_dim):
         """Test that everything works when default arguments that are not the input argument are
         present in the QNode"""
         dev = qp.device("default.qubit", wires=n_qubits)
@@ -318,7 +318,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_qnode_weights_shapes(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
+    def test_qnode_weights_shapes(self, get_circuit, n_qubits):
         """Test if the weights in qnode_weights have the correct shape"""
         c, w = get_circuit
         layer = TorchLayer(c, w)
@@ -337,7 +337,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert weight.shape == ideal_shapes[name]
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_qnode_weights_registered(self, get_circuit):  # pylint: disable=no-self-use
+    def test_qnode_weights_registered(self, get_circuit):
         """Test if the weights in qnode_weights are registered to the internal _parameters
         dictionary and that requires_grad == True"""
         c, w = get_circuit
@@ -353,7 +353,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert layer.w2 is layer._parameters["w2"]  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_evaluate_qnode(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
+    def test_evaluate_qnode(self, get_circuit, n_qubits):
         """Test if the _evaluate_qnode() method works correctly, i.e., that it gives the same
         result as calling the QNode directly"""
         c, w = get_circuit
@@ -368,9 +368,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("shots", [5, [5, 5]])
-    def test_evaluate_qnode_shots(
-        self, get_circuit_shots, n_qubits, shots
-    ):  # pylint: disable=no-self-use
+    def test_evaluate_qnode_shots(self, get_circuit_shots, n_qubits, shots):
         """Tests _evaluate_qnode() works with different type of shots"""
 
         c, w = get_circuit_shots
@@ -393,9 +391,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert layer_out.shape == circuit_out.shape
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_evaluate_qnode_shuffled_args(
-        self, get_circuit, output_dim, n_qubits
-    ):  # pylint: disable=no-self-use
+    def test_evaluate_qnode_shuffled_args(self, get_circuit, output_dim, n_qubits):
         """Test if the _evaluate_qnode() method works correctly when the inputs argument is not the
         first positional argument, i.e., that it gives the same result as calling the QNode
         directly"""
@@ -424,17 +420,14 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_evaluate_qnode_default_input(
-        self, get_circuit, output_dim, n_qubits
-    ):  # pylint: disable=no-self-use
+    def test_evaluate_qnode_default_input(self, get_circuit, output_dim, n_qubits):
         """Test if the _evaluate_qnode() method works correctly when the inputs argument is a
         default argument, i.e., that it gives the same result as calling the QNode directly"""
         c, w = get_circuit
 
         @qp.qnode(qp.device("default.qubit", wires=n_qubits), interface="torch")
-        def c_default(
-            w1, w2, w3, w4, w5, w6, w7, inputs=None
-        ):  # pylint: disable=too-many-arguments
+        # pylint: disable-next=too-many-arguments
+        def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):
             """Version of the circuit with inputs as a default argument"""
             qp.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qp.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
@@ -456,9 +449,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_forward_single_input(
-        self, get_circuit, output_dim, n_qubits
-    ):  # pylint: disable=no-self-use
+    def test_forward_single_input(self, get_circuit, output_dim, n_qubits):
         """Test if the forward() method accepts a single input (i.e., not with an extra batch
         dimension) and returns a tensor of the right shape"""
         c, w = get_circuit
@@ -469,7 +460,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert layer_out.shape == torch.Size((output_dim,))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_forward(self, get_circuit, output_dim, n_qubits):  # pylint: disable=no-self-use
+    def test_forward(self, get_circuit, output_dim, n_qubits):
         """Test if the forward() method accepts a batched input and returns a tensor of the right
         shape"""
         c, w = get_circuit
@@ -510,9 +501,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2, 4, 6])
     @pytest.mark.parametrize("middle_dim", [2, 5, 8])
-    def test_forward_broadcasting(
-        self, get_circuit, output_dim, middle_dim, batch_size, n_qubits
-    ):  # pylint: disable=too-many-arguments,no-self-use
+    def test_forward_broadcasting(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
         """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
         right shape by broadcasting. Also tests if gradients are still backpropagated correctly."""
         c, w = get_circuit
@@ -531,7 +520,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert layer_out.shape == torch.Size((batch_size, middle_dim, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_str_repr(self, get_circuit):  # pylint: disable=no-self-use
+    def test_str_repr(self, get_circuit):
         """Test the __str__ and __repr__ representations"""
         c, w = get_circuit
         layer = TorchLayer(c, w)
@@ -540,7 +529,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert layer.__repr__() == "<Quantum Torch Layer: func=circuit>"
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_gradients(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
+    def test_gradients(self, get_circuit, n_qubits):
         """Test if the gradients of the TorchLayer are equal to the gradients of the circuit when
         taken with respect to the trainable variables"""
         c, w = get_circuit
@@ -681,13 +670,12 @@ class TestTorchLayerIntegration:
     @pytest.mark.parametrize("dtype", ["float32", "float64"])
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
-    def test_step_module(
-        self, module, batch_size, n_qubits, output_dim, dtype
-    ):  # pylint: disable=redefined-outer-name,too-many-arguments,no-self-use
+    def test_step_module(self, module, batch_size, n_qubits, output_dim, dtype):
         """Test if a module that includes TorchLayers can perform one optimization step. This
         test checks that some of the parameters in the module are different after one step.
         The module is composed of two TorchLayers sandwiched between Linear neural network layers,
         and the dataset is simply input and output vectors of zeros."""
+        # pylint: disable=redefined-outer-name
         if dtype == "float32":
             dtype = torch.float32
         else:
@@ -714,11 +702,10 @@ class TestTorchLayerIntegration:
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_module_gradients(
-        self, module, output_dim, n_qubits, get_circuit
-    ):  # pylint: disable=redefined-outer-name,no-self-use
+    def test_module_gradients(self, module, output_dim, n_qubits, get_circuit):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the module"""
+        # pylint: disable=redefined-outer-name
         _, w = get_circuit
 
         x = torch.zeros((2, n_qubits))
@@ -734,11 +721,10 @@ class TestTorchLayerIntegration:
         assert len(gradients) == 2 * len(w) + 6  # six parameters come from classical layers
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_module_state_dict(
-        self, module, get_circuit
-    ):  # pylint: disable=redefined-outer-name,no-self-use
+    def test_module_state_dict(self, module, get_circuit):
         """Test if the state dictionary output by the module contains all the expected trainable
         parameters"""
+        # pylint: disable=redefined-outer-name
         _, w = get_circuit
 
         state_dict = module.state_dict()
@@ -753,8 +739,8 @@ class TestTorchLayerIntegration:
         assert dict_keys == all_params
         assert len(dict_keys) == len(all_params)
 
-    # pylint: disable=unused-argument
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    # pylint: disable-next=unused-argument
     def test_save_model(self, get_circuit, n_qubits, output_dim, tmpdir):
         """Test if the model can be saved and loaded"""
         qlayer = TorchLayer(*get_circuit)
@@ -801,16 +787,14 @@ def test_vjp_is_unwrapped_for_param_shift():
 
     device = qp.device("default.qubit", wires=nqubits)
 
-    class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+    class DummyOp(qp.operation.Operation):
         """Dummy operation."""
 
         num_wires = 1
         num_params = 1
 
         @staticmethod
-        def compute_matrix(
-            *params,
-        ):  # pylint: disable=arguments-differ
+        def compute_matrix(*params):
             z = params[0]
             return np.diag([z, z])
 

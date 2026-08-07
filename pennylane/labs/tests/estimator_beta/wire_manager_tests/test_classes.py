@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Tests for the base classes used when tracking qubits for resource estimation."""
 
+# pylint: disable=too-many-arguments
+
 import pytest
 
 from pennylane.core.queuing import AnnotatedQueue
@@ -23,8 +25,6 @@ from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     MarkQubits,
 )
 from pennylane.wires import Wires
-
-# pylint: disable=too-many-arguments
 
 
 class TestAllocate:
@@ -546,9 +546,8 @@ class TestMarkQubits:
 
         marked_qubits2 = MarkQubits(wires=[1, 2, 3])
         assert marked_qubits.equal(marked_qubits2)
-        assert hash(marked_qubits) != hash(
-            marked_qubits2
-        )  # we need the hash to be different for queuing
+        # we need the hash to be different for queuing
+        assert hash(marked_qubits) != hash(marked_qubits2)
 
         marked_qubits3 = MarkQubits(wires=[3, 2, 1])
         assert marked_qubits.equal(marked_qubits3)

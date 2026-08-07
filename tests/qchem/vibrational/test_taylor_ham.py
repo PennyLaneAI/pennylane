@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit Tests for the Taylor Hamiltonian construction functions."""
 
+# pylint: disable=too-many-arguments
+
 import os
 import sys
 
@@ -37,8 +39,6 @@ from pennylane.qchem.vibrational.taylor_ham import (
     taylor_hamiltonian,
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-
-# pylint: disable=no-name-in-module
 from tests.qchem.vibrational.test_ref_files.pes_object import (
     expected_coeffs_x_arr,
     expected_coeffs_y_arr,
@@ -382,7 +382,6 @@ def test_taylor_kinetic():
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     (
         "taylor_1D_coeffs",
@@ -446,10 +445,7 @@ def test_taylor_hamiltonian(mapping):
     taylor_ham = taylor_hamiltonian(pes_object_2D, 4, 2, mapping=mapping)
     taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, uloc=uloc)
 
-    mapping_functions = {
-        "binary": binary_mapping,
-        "unary": unary_mapping,
-    }
+    mapping_functions = {"binary": binary_mapping, "unary": unary_mapping}
     expected_ham = mapping_functions[mapping](bose_operator=taylor_bos)
 
     assert len(expected_ham) == len(taylor_ham)

@@ -98,7 +98,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
         super().__init__(stepsize, approx, lam)
         self.momentum = momentum
 
-    def init(self, params):
+    def init(self, params):  # pylint: disable=no-self-use
         """Return the initial state of the optimizer. This state is always initialized as an
         array of zeros with the same shape and type of the given array of parameters.
 
@@ -108,7 +108,6 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
         Returns:
             array: initial state of the optimizer
         """
-        # pylint:disable=no-self-use
         return math.zeros_like(params)
 
     def _apply_grad(self, mt, grad, params, state):

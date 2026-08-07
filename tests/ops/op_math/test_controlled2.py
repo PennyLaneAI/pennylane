@@ -13,6 +13,8 @@
 
 """Tests for the Controlled2 class."""
 
+# pylint: disable=unused-argument
+
 import copy
 import pickle
 from typing import override
@@ -29,8 +31,6 @@ from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, OneWireDynOp
-
-# pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
 
 
 class CustomBase(Operator2):
@@ -119,7 +119,6 @@ class TestControlled2:
     def test_capture(self):
         """Tests that the base operator is removed from the jaxpr."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         from tests.capture.capture_utils import assert_eqn_matches_op

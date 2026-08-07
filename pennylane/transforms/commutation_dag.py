@@ -122,7 +122,7 @@ def _merge_no_duplicates(*iterables):
             yield val
 
 
-class CommutationDAGNode:
+class CommutationDAGNode:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     r"""Class to store information about a quantum operation in a node of the
     commutation DAG.
 
@@ -135,10 +135,6 @@ class CommutationDAGNode:
         reachable (bool): Attribute used to check reachability by pairwise commutation.
     """
 
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-arguments
-    # pylint: disable=too-few-public-methods
-
     __slots__ = [
         "op",
         "wires",
@@ -150,7 +146,7 @@ class CommutationDAGNode:
         "reachable",
     ]
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         op=None,
         wires=None,
@@ -367,7 +363,6 @@ class CommutationDAG:
         """
         return len(self._multi_graph)
 
-    # pylint: disable=no-member
     def draw(self, filename="dag.png"):  # pragma: no cover
         """Draw the DAG object.
 
@@ -402,7 +397,7 @@ class CommutationDAG:
         from networkx.drawing.nx_pydot import to_pydot
 
         dot = to_pydot(draw_graph)
-        dot.write_png(filename)
+        dot.write_png(filename)  # pylint: disable=no-member
 
     def _pred_update(self, node_id):
         self.get_node(node_id).predecessors = []

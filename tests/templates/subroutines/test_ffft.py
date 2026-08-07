@@ -137,7 +137,7 @@ def test_ffft_circuit(wires, expected_circuit):
 @pytest.mark.parametrize("wires, expected_circuit", _ffft_circuit_cases)
 def test_ffft_circuit_capture(wires, expected_circuit):
     """Test that FFFT decomposes into the correct operations under capture."""
-    import jax  # pylint: disable=import-outside-toplevel
+    import jax
 
     op = FFFT(wires)
     rule = qp.list_decomps(FFFT)[0]

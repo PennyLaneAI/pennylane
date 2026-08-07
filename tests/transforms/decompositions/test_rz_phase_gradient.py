@@ -15,8 +15,6 @@
 """Tests for ``qp.transforms.decompositions.make_rz_to_phase_gradient_decomp``"""
 
 import numpy as np
-
-# pylint: disable=no-value-for-parameter, disable=too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -164,9 +162,8 @@ def test_integration_multi_wire(seed):
         qp.StatePrep(in_state, wires=wires)  # input state
         qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
         qp.RZ(phi, wires)
-        qp.adjoint(
-            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
-        )  # uncompute phase gradient state
+        # uncompute phase gradient state
+        qp.adjoint(qp.StatePrep(phase_grad_state, wires=phase_grad_wires))
         return qp.state()
 
     # random input state
@@ -190,7 +187,6 @@ def test_integration_multi_wire(seed):
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
-    # pylint: disable=import-outside-toplevel
     import jax
     import jax.numpy as jnp
 

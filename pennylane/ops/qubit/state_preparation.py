@@ -16,9 +16,9 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 
-from importlib.util import find_spec
-
 # pylint: disable=too-many-branches,arguments-differ
+
+from importlib.util import find_spec
 from warnings import warn
 
 import numpy as np
@@ -398,7 +398,6 @@ class StatePrep(StatePrepBase):
                 state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         state: TensorLike | csr_matrix,
@@ -433,8 +432,8 @@ class StatePrep(StatePrepBase):
         else:
             super()._check_batching()
 
-    # pylint: disable=unused-argument
     @staticmethod
+    # pylint: disable-next=unused-argument
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -461,9 +460,7 @@ class StatePrep(StatePrepBase):
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
 
-        return tuple(
-            self.parameters,
-        ), (metadata, self.wires)
+        return tuple(self.parameters), (metadata, self.wires)
 
     @classmethod
     def _unflatten(cls, data, metadata):

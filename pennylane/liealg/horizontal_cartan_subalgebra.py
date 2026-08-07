@@ -13,7 +13,8 @@
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments, possibly-used-before-assignment
+# pylint: disable=too-many-arguments,possibly-used-before-assignment
+
 import copy
 from collections.abc import Iterable
 from itertools import combinations, combinations_with_replacement
@@ -268,9 +269,8 @@ def horizontal_cartan_subalgebra(
         iteration += 1
 
     np_a = _gram_schmidt(np_a)  # orthogonalize Abelian subalgebra
-    np_k = op_to_adjvec(
-        k, g, is_orthogonal=is_orthogonal
-    )  # adjoint vectors of k space for re-ordering
+    # adjoint vectors of k space for re-ordering
+    np_k = op_to_adjvec(k, g, is_orthogonal=is_orthogonal)
     np_oldg = math.vstack([np_k, np_m])
     np_k = _gram_schmidt(np_k)
 

@@ -13,9 +13,9 @@
 # limitations under the License.
 """This module contains functions to perform VSCF calculation."""
 
-import numpy as np
+# pylint: disable=too-many-arguments
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+import numpy as np
 
 
 def _build_fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):

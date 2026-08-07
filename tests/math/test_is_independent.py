@@ -15,9 +15,9 @@
 Unit tests for the :func:`pennylane.math.is_independent` function.
 """
 
-import numpy as np
-
 # pylint: disable=too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -88,20 +88,15 @@ overlooked_lambdas = [
     lambda x: 1.0 if abs(x) < 1e-5 else 0.0,  # delta for x!=0 is not okay
 ]
 
-args_overlooked_lambdas = [
-    (2.0,),
-    (-2.0,),
-]
+args_overlooked_lambdas = [(2.0), (-2.0)]
 
 
-def const_circuit(x, y):
-    # pylint: disable=unused-argument
+def const_circuit(x, y):  # pylint: disable=unused-argument
     qp.RX(0.1, wires=0)
     return qp.expval(qp.PauliZ(0))
 
 
-def dependent_circuit(x, y, z):
-    # pylint: disable=unused-argument
+def dependent_circuit(x, y, z):  # pylint: disable=unused-argument
     qp.RX(0.1, wires=0)
     qp.RY(y / 2, wires=0)
     qp.RZ(qp.math.sin(z), wires=0)
@@ -348,11 +343,7 @@ class TestIsIndependentTorch:
         lambda x: (np.ones(3), -0.1),
     ]
 
-    args_constant = [
-        (0.1, torch.tensor([-2.1, 0.1])),
-        (1.2,),
-        (torch.ones((2, 3)),),
-    ]
+    args_constant = [(0.1, torch.tensor([-2.1, 0.1])), (1.2), (torch.ones((2, 3)))]
 
     dependent_functions = [
         qp.QNode(dependent_circuit, dev, interface=interface),

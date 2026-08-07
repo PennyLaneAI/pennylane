@@ -16,6 +16,7 @@ Unit tests for the ``RotosolveOptimizer``.
 """
 
 # pylint: disable=too-many-arguments,too-few-public-methods
+
 import functools
 
 import pytest
@@ -195,12 +196,10 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
-    # pylint: disable=unused-argument
-    def test_number_of_function_calls(
+    def test_number_of_function_calls(  # pylint: disable=unused-argument
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
-        # pylint: disable=too-many-arguments
         num_calls = 0
 
         @functools.wraps(fun)
@@ -224,7 +223,7 @@ class TestWithClassicalFunction:
         opt.step(_fun, *param, nums_frequency=nums_freq)
         assert num_calls == exp_num_calls
 
-    def test_single_step_convergence(
+    def test_single_step_convergence(  # pylint: disable=unused-argument
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
@@ -234,11 +233,7 @@ class TestWithClassicalFunction:
         # Make only the first argument trainable
         param = (np.array(param[0], requires_grad=True),) + param[1:]
         # Only one argument is marked as trainable -> All other arguments have to stay fixed
-        new_param_step = opt.step(
-            fun,
-            *param,
-            nums_frequency=nums_freq,
-        )
+        new_param_step = opt.step(fun, *param, nums_frequency=nums_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step = (new_param_step,)
@@ -247,11 +242,7 @@ class TestWithClassicalFunction:
 
         # With trainable parameters, training should happen
         param = tuple(np.array(p, requires_grad=True) for p in param)
-        new_param_step = opt.step(
-            fun,
-            *param,
-            nums_frequency=nums_freq,
-        )
+        new_param_step = opt.step(fun, *param, nums_frequency=nums_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step = (new_param_step,)
@@ -264,12 +255,7 @@ class TestWithClassicalFunction:
         )
 
         # Now with step_and_cost and trainable params
-        # pylint:disable=unbalanced-tuple-unpacking
-        new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            nums_frequency=nums_freq,
-        )
+        new_param_step_and_cost, old_cost = opt.step_and_cost(fun, *param, nums_frequency=nums_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step_and_cost = (new_param_step_and_cost,)
@@ -282,7 +268,7 @@ class TestWithClassicalFunction:
         )
         assert np.isclose(old_cost, fun(*param))
 
-    def test_full_output(
+    def test_full_output(  # pylint: disable=unused-argument
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
@@ -290,12 +276,7 @@ class TestWithClassicalFunction:
         param = tuple(np.array(p, requires_grad=True) for p in param)
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
-        _, y_output_step = opt.step(
-            fun,
-            *param,
-            nums_frequency=nums_freq,
-            full_output=True,
-        )
+        _, y_output_step = opt.step(fun, *param, nums_frequency=nums_freq, full_output=True)
         new_param, old_cost, y_output_step_and_cost = opt.step_and_cost(
             fun,
             *param,
@@ -325,11 +306,7 @@ def test_multiple_steps(fun, x_min, param, num_freq):
     opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
     for _ in range(3):
-        param = opt.step(
-            fun,
-            *param,
-            nums_frequency=num_freq,
-        )
+        param = opt.step(fun, *param, nums_frequency=num_freq)
         # The following accounts for the unpacking functionality for length-one param
         if len(x_min) == 1:
             param = (param,)
@@ -346,10 +323,7 @@ classical_functions_deact = [
     lambda x, y: -np.cos(x + 0.12) * 0.872 + np.sin(y[0] - 2.01) - np.cos(y[1] - 1.35) * 0.111,
     lambda x, y, z: -np.cos(x + 0.12) * 0.872 + np.sin(y - 2.01) - np.cos(z - 1.35) * 0.111,
 ]
-classical_minima_deact = [
-    (-0.12, [0.8, 0.1]),
-    (-0.12, 0.2, 1.35),
-]
+classical_minima_deact = [(-0.12, [0.8, 0.1]), (-0.12, 0.2, 1.35)]
 classical_params_deact = [
     (np.array(0.3, requires_grad=True), np.array([0.8, 0.1], requires_grad=False)),
     (
@@ -384,11 +358,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         substep_kwargs = None
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
-        new_param_step = opt.step(
-            fun,
-            *param,
-            nums_frequency=num_freq,
-        )
+        new_param_step = opt.step(fun, *param, nums_frequency=num_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step = (new_param_step,)
@@ -400,12 +370,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
             atol=1e-5,
         )
 
-        # pylint:disable=unbalanced-tuple-unpacking
-        new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            nums_frequency=num_freq,
-        )
+        new_param_step_and_cost, old_cost = opt.step_and_cost(fun, *param, nums_frequency=num_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step_and_cost = (new_param_step_and_cost,)
@@ -461,11 +426,7 @@ def postprocessing_qnode(x, y, z):
 
 
 qnodes = [scalar_qnode, array_qnode, postprocessing_qnode]
-qnode_params = [
-    (0.2,),
-    (np.array([0.1, -0.3, 2.9]), 1.3, [0.2, 0.1]),
-    (1.2, -2.3, -0.2),
-]
+qnode_params = [(0.2), (np.array([0.1, -0.3, 2.9]), 1.3, [0.2, 0.1]), (1.2, -2.3, -0.2)]
 qnode_nums_frequency = [
     {"x": {(): num_wires}},
     {"x": {(0,): 1, (1,): 1, (2,): 1}, "y": {(): 2 * num_wires}, "z": {(0,): 1, (1,): 2}},
@@ -499,19 +460,13 @@ class TestWithQNodes:
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         repack_param = len(param) == 1
-        new_param_step = opt.step(
-            qnode,
-            *param,
-            nums_frequency=nums_frequency,
-            spectra=spectra,
-        )
+        new_param_step = opt.step(qnode, *param, nums_frequency=nums_frequency, spectra=spectra)
         if repack_param:
             new_param_step = (new_param_step,)
 
         assert (np.isscalar(new_param_step) and np.isscalar(param)) or len(new_param_step) == len(
             param
         )
-        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
             *param,
@@ -541,12 +496,7 @@ class TestWithQNodes:
         initial_cost = qnode(*param)
 
         for _ in range(3):
-            param = opt.step(
-                qnode,
-                *param,
-                nums_frequency=nums_frequency,
-                spectra=spectra,
-            )
+            param = opt.step(qnode, *param, nums_frequency=nums_frequency, spectra=spectra)
             # The following accounts for the unpacking functionality for length-1 param
             if repack_param:
                 param = (param,)

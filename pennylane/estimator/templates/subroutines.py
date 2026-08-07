@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
+# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called,signature-differs
+
 import math
 from collections import defaultdict
 
@@ -30,8 +32,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
 
 
 class OutOfPlaceSquare(ResourceOperator):
@@ -172,11 +172,7 @@ class IQP(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of qubits the operation acts upon
         """
-        return {
-            "spin_sym": self.spin_sym,
-            "pattern": self.pattern,
-            "num_wires": self.num_wires,
-        }
+        return {"spin_sym": self.spin_sym, "pattern": self.pattern, "num_wires": self.num_wires}
 
     @classmethod
     def resource_rep(cls, num_wires, pattern, spin_sym) -> CompressedResourceOp:
@@ -282,12 +278,7 @@ class SelectOnlyQRAM(ResourceOperator):
     .. seealso:: :class:`~.SelectOnlyQRAM`
     """
 
-    resource_keys = {
-        "data",
-        "num_control_wires",
-        "select_value",
-        "num_select_wires",
-    }
+    resource_keys = {"data", "num_control_wires", "select_value", "num_select_wires"}
 
     def __init__(
         self,
@@ -628,10 +619,7 @@ class OutMultiplier(ResourceOperator):
 
         toff_count = 2 * a_num_wires * b_num_wires - max(a_num_wires, b_num_wires)
 
-        gate_lst = [
-            GateCount(l_elbow, toff_count),
-            GateCount(r_elbow, toff_count),
-        ]
+        gate_lst = [GateCount(l_elbow, toff_count), GateCount(r_elbow, toff_count)]
 
         return gate_lst
 
@@ -1271,18 +1259,14 @@ class IterativeQPE(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        gate_counts = [
-            GateCount(resource_rep(qre.Hadamard), 2 * num_iter),
-            Allocate(1),
-        ]
+        gate_counts = [GateCount(resource_rep(qre.Hadamard), 2 * num_iter), Allocate(1)]
 
         # Here we want to use this particular decomposition, not any random one the user might override
         gate_counts += ControlledSequence.resource_decomp(base_cmpr_op, num_iter)
 
         num_phase_gates = num_iter * (num_iter - 1) // 2
-        gate_counts.append(
-            GateCount(qre.PhaseShift.resource_rep(), num_phase_gates)
-        )  # Classically controlled PS
+        # Classically controlled PS
+        gate_counts.append(GateCount(qre.PhaseShift.resource_rep(), num_phase_gates))
 
         gate_counts.append(Deallocate(1))
         return gate_counts
@@ -1652,9 +1636,7 @@ class QFT(ResourceOperator):
         ctrl_phase_shift = resource_rep(qre.ControlledPhaseShift)
 
         if num_wires == 1:
-            return [
-                GateCount(hadamard),
-            ]
+            return [GateCount(hadamard)]
 
         return [
             GateCount(hadamard, num_wires),
@@ -1692,10 +1674,7 @@ class QFT(ResourceOperator):
         if num_wires == 1:
             return [GateCount(hadamard)]
 
-        gate_types = [
-            GateCount(hadamard, num_wires),
-            GateCount(swap, num_wires // 2),
-        ]
+        gate_types = [GateCount(hadamard, num_wires), GateCount(swap, num_wires // 2)]
 
         for size_reg in range(1, num_wires):
             ctrl_add = qre.Controlled.resource_rep(
@@ -1828,9 +1807,7 @@ class AQFT(ResourceOperator):
         if order >= num_wires:
             order = num_wires - 1
 
-        gate_types = [
-            GateCount(hadamard, num_wires),
-        ]
+        gate_types = [GateCount(hadamard, num_wires)]
 
         if order > 1 and num_wires > 1:
             gate_types.append(GateCount(cs, num_wires - 1))
@@ -2389,7 +2366,7 @@ class Select(ResourceOperator):
             self.num_wires = minimum_num_wires
 
     @classmethod
-    def resource_decomp(cls, cmpr_ops, num_wires):  # pylint: disable=unused-argument
+    def resource_decomp(cls, cmpr_ops, num_wires):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
@@ -2467,11 +2444,7 @@ class Select(ResourceOperator):
         gate_types[x] = num_zero_controls * 2  # conjugate 0 controls
 
         for cmp_rep in cmpr_ops:
-            ctrl_op = qre.Controlled.resource_rep(
-                cmp_rep,
-                num_ctrl_wires,
-                0,
-            )
+            ctrl_op = qre.Controlled.resource_rep(cmp_rep, num_ctrl_wires, 0)
             gate_types[ctrl_op] += 1
 
         return gate_types
@@ -2624,7 +2597,6 @@ class QROM(ResourceOperator):
         self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
 
-    # pylint: disable=protected-access
     @classmethod
     def resource_decomp(
         cls,
@@ -2704,9 +2676,8 @@ class QROM(ResourceOperator):
 
         # SELECT cost:
         if L_opt > 1:
-            gate_cost.append(
-                GateCount(x, select_restored_prefactor * (2 * (L_opt - 2) + 1))
-            )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+            # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+            gate_cost.append(GateCount(x, select_restored_prefactor * (2 * (L_opt - 2) + 1)))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -2753,6 +2724,7 @@ class QROM(ResourceOperator):
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
+        # pylint: disable-next=protected-access
         W_opt = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -2782,9 +2754,8 @@ class QROM(ResourceOperator):
 
         # SELECT cost:
         if L_opt > 1:
-            gate_cost.append(
-                GateCount(x, select_restored_prefactor * (2 * (L_opt - 1)))
-            )  # conjugate 0 controlled toffolis
+            # conjugate 0 controlled toffolis
+            gate_cost.append(GateCount(x, select_restored_prefactor * (2 * (L_opt - 1))))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -2818,9 +2789,8 @@ class QROM(ResourceOperator):
 
             gate_cost.append(Deallocate(1))  # temp wires
             if restored:
-                gate_cost.append(
-                    Deallocate((W_opt - 1) * size_bitstring)
-                )  # release Swap registers + temp wires
+                # release Swap registers + temp wires
+                gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))
         return gate_cost
 
     @classmethod
@@ -2933,9 +2903,8 @@ class QROM(ResourceOperator):
         gate_cost = []
 
         if num_data_blocks > 1:
-            gate_cost.append(
-                GateCount(x, count * (2 * (num_data_blocks - 2) + 1))
-            )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+            # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+            gate_cost.append(GateCount(x, count * (2 * (num_data_blocks - 2) + 1)))
             gate_cost.append(
                 GateCount(
                     cnot,
@@ -3025,6 +2994,7 @@ class QROM(ResourceOperator):
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
+        # pylint: disable-next=protected-access
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -3254,19 +3224,12 @@ class SelectPauliRot(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        rotation_gate_map = {
-            "X": qre.RX,
-            "Y": qre.RY,
-            "Z": qre.RZ,
-        }
+        rotation_gate_map = {"X": qre.RX, "Y": qre.RY, "Z": qre.RZ}
 
         gate = resource_rep(rotation_gate_map[rot_axis], {"precision": precision})
         cnot = resource_rep(qre.CNOT)
 
-        gate_lst = [
-            GateCount(gate, 2**num_ctrl_wires),
-            GateCount(cnot, 2**num_ctrl_wires),
-        ]
+        gate_lst = [GateCount(gate, 2**num_ctrl_wires), GateCount(cnot, 2**num_ctrl_wires)]
 
         return gate_lst
 
@@ -3670,9 +3633,8 @@ class Qubitization(ResourceOperator):
 
         self.prep_op = prep_op.resource_rep_from_op()
         self.select_op = select_op.resource_rep_from_op()
-        self.num_wires = (
-            select_op.num_wires
-        )  # The Walk operator acts on the same set of wires as sel
+        # The Walk operator acts on the same set of wires as sel
+        self.num_wires = select_op.num_wires
 
         prep_wires = prep_op.wires or Wires([])
         sel_wires = select_op.wires or Wires([])

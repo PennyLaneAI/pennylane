@@ -24,7 +24,7 @@ from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, 
 from pennylane.wires import Wires
 
 
-class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
+class DynCanonOp(Operator2):
     """Operator with a dynamic parameter and wires that performs canonicalization."""
 
     dynamic_argnames = ("phi",)
@@ -123,16 +123,13 @@ class TestOperatorAbstractInputs:
                 },
             ),
             # Ensures nested arrays don't get flattened
-            (
-                {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
-                {"my_array": Int[2, 2]},
-            ),
+            ({"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)}, {"my_array": Int[2, 2]}),
         ],
     )
     def test_mixed_arg_op(self, hybrid_in, hybrid_out):
         """Tests that different types of arguments canonicalize differently."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             static_argnames = ("static_arg",)
@@ -175,7 +172,7 @@ class TestOperatorAbstractInputs:
     def test_op_with_hybrid_wires(self, hybrid_in, hybrid_out):
         """Tests that different types of arguments canonicalize differently."""
 
-        class HybridWiresOp(Operator2):  # pylint: disable=too-few-public-methods
+        class HybridWiresOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             hybrid_argnames = ("hybrid_arg",)
@@ -185,10 +182,7 @@ class TestOperatorAbstractInputs:
             def __init__(self, hybrid_arg, wires):
                 super().__init__(hybrid_arg, wires=wires)
 
-        op = HybridWiresOp(
-            hybrid_arg=hybrid_in,
-            wires=AbstractWires(1),
-        )
+        op = HybridWiresOp(hybrid_arg=hybrid_in, wires=AbstractWires(1))
         assert op.hybrid_arg == hybrid_out
 
     @pytest.mark.parametrize(
@@ -221,7 +215,7 @@ class TestOperatorAbstractInputs:
     ):
         """Tests that the final op.wires is the sum of all abstract wires."""
 
-        class WireTrackingOp(Operator2):  # pylint: disable=too-few-public-methods
+        class WireTrackingOp(Operator2):
             hybrid_argnames = ("hybrid_wires",)
             wire_argnames = ("wires", "hybrid_wires", "work_wires")
 
@@ -247,7 +241,7 @@ class TestOperatorAbstractInputs:
     def test_abstract_operator_construction_with_python_builtin_types(self, builtin_type):
         """Tests that you can construct an abstract operator with builtin Python types."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -275,7 +269,7 @@ class TestOperatorAbstractInputs:
     def test_override_abstract_init(self):
         """Tests that an operator can override __abstract_init__."""
 
-        class CustomOp(Operator2):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operator2):
             dynamic_argnames = ("theta",)
 
             wire_argnames = ("wires", "work_wires")
@@ -302,7 +296,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_weak_dtype_is_preserved(self):
         """Tests that canonicalization preserves strength of dtype."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -322,7 +316,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_arg_spec_with_unknown_shape_canonicalizes_only_dtype(self):
         """Tests that only the dtype is promoted."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -340,7 +334,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_arg_spec_canonicalizes_abstract_inputs(self):
         """Tests that abstract inputs are canonicalized when possible."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -368,7 +362,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_valid_arg_spec_with_unknown_shape(self):
         """Tests that using ... in your arg_specs works as expected."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -389,7 +383,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_valid_arg_spec_with_fixed_shape(self):
         """Tests a simple valid arg spec."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -406,7 +400,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
         """Tests arg_spec validation against operators constructed with abstract inputs."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)

@@ -24,8 +24,6 @@ from pennylane.core.qscript import QuantumScript
 from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.noise.add_noise import _get_transform_program, add_noise
 
-# pylint:disable = no-member
-
 
 class TestAddNoise:
     """Tests for the add_noise transform using input tapes"""
@@ -279,7 +277,6 @@ class TestAddNoiseInterface:
 
         assert np.allclose(f1(w1, w2), f2(w1, w2))
 
-    # pylint: disable=unused-argument
     def test_add_noise_with_non_qwc_obs_and_mid_meas(self):
         """Test that the add_noise transform catches and reports errors from the enclosed function."""
 
@@ -287,7 +284,7 @@ class TestAddNoiseInterface:
 
         fcond = qp.noise.wires_in([0, 1])
 
-        def noise(op, **kwargs):
+        def noise(op, **kwargs):  # pylint: disable=unused-argument
             qp.CNOT(wires=[1, 0])
             qp.CRX(kwargs["noise_param"], wires=[0, 1])
 
@@ -319,9 +316,9 @@ class TestAddNoiseInterface:
 
         assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
 
-    # pylint:disable = cell-var-from-loop
     def test_add_noise_with_readout_errors(self):
         """Test that a add_noise works with readout errors."""
+        # pylint: disable=cell-var-from-loop
         dev = qp.device("default.mixed", wires=2)
 
         fc, fn = qp.noise.op_in([qp.RY, qp.RZ]), qp.noise.partial_wires(qp.AmplitudeDamping, 0.4)
@@ -347,10 +344,7 @@ class TestAddNoiseInterface:
         args = [0.1, 0.2, 0.3, 0.4]
 
         results = []
-        for mp in [
-            qp.expval(qp.PauliZ(0) @ qp.PauliZ(1)),
-            qp.var(qp.PauliZ(0) @ qp.PauliZ(1)),
-        ]:
+        for mp in [qp.expval(qp.PauliZ(0) @ qp.PauliZ(1)), qp.var(qp.PauliZ(0) @ qp.PauliZ(1))]:
 
             @qp.qnode(dev)
             def f(w, x, y, z):
@@ -638,9 +632,8 @@ class TestGetTransformProgramHelper:
         dev_program = _get_transform_program(circuit, level="device")
         config = qp.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
         config = qp.device("default.qubit").setup_execution_config(config)
-        assert len(dev_program) == 4 + len(
-            circuit.device.preprocess_transforms(config)
-        )  # currently 8
+        # currently 8
+        assert len(dev_program) == 4 + len(circuit.device.preprocess_transforms(config))
 
         full_program = _get_transform_program(circuit)
         assert dev_program == full_program

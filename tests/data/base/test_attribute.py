@@ -15,7 +15,7 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
-# pylint: disable=unused-argument,unused-variable,too-many-public-methods
+# pylint: disable=unused-variable
 
 from collections.abc import Iterable
 from copy import copy, deepcopy
@@ -228,9 +228,7 @@ class NoDefaultAttribute(DatasetAttribute):
 
     type_id = "test"
 
-    def value_to_hdf5(
-        self, bind_parent: HDF5Group, key: str, value: Any
-    ) -> Any:  # pylint: disable=unused-argument
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Any) -> Any:
         return None
 
     def hdf5_to_value(self, bind: Any) -> Any:
@@ -288,48 +286,25 @@ class TestAttribute:
         with np.printoptions(legacy="1.21"):
             assert repr(attribute(val)) == f"{attribute_type.__name__}({repr(val)})"
 
-    @pytest.mark.parametrize(
-        "val",
-        (
-            "",
-            "abc",
-            0,
-            0.0,
-            np.int64(0),
-            complex(1, 2),
-            None,
-        ),
-    )
+    @pytest.mark.parametrize("val", ("", "abc", 0, 0.0, np.int64(0), complex(1, 2), None))
     def test_str(self, val):
         """Test that __str__ returns the string representation of the value"""
 
         assert str(attribute(val)) == str(val)
 
     @pytest.mark.parametrize("copy_func", [copy, deepcopy])
-    @pytest.mark.parametrize(
-        "val",
-        (
-            "abc",
-            0,
-            0.0,
-            np.int64(0),
-            complex(1, 2),
-            None,
-        ),
-    )
+    @pytest.mark.parametrize("val", ("abc", 0, 0.0, np.int64(0), complex(1, 2), None))
     def test_copy_preserves_values(self, copy_func, val):
         """Test that copy preserves values"""
 
         dset_attr = attribute(val)
         assert copy_func(dset_attr) == dset_attr
 
-    def test_abstract_subclass_not_registered(self):  # pylint: disable=unused-variable
+    def test_abstract_subclass_not_registered(self):
         """Test that a DatasetAttribute subclass marked as
         abstract will not be registered."""
 
-        class AbstractAttribute(
-            DatasetAttribute, abstract=True
-        ):  # pylint: disable=too-few-public-methods
+        class AbstractAttribute(DatasetAttribute, abstract=True):
             """An abstract attribute."""
 
             type_id = "_abstract_test_"
@@ -340,7 +315,7 @@ class TestAttribute:
         """Test that a TypeError is raised if when a subclass of
         a DatasetAttribute has the same type id as another."""
 
-        class Attribute(DatasetAttribute):  # pylint: disable=too-few-public-methods
+        class Attribute(DatasetAttribute):
             """An attribute"""
 
             type_id = "_attr_"
@@ -349,7 +324,7 @@ class TestAttribute:
             TypeError, match=f"DatasetAttribute with type_id '_attr_' already exists: {Attribute}"
         ):
 
-            class Conflicting(DatasetAttribute):  # pylint: disable=too-few-public-methods
+            class Conflicting(DatasetAttribute):
                 """A conflicting attribute"""
 
                 type_id = "_attr_"
@@ -361,9 +336,7 @@ class TestAttribute:
         class MyType:  # pylint: disable=too-few-public-methods
             pass
 
-        class Attribute(
-            DatasetAttribute
-        ):  # pylint: disable=unused-variable, too-few-public-methods
+        class Attribute(DatasetAttribute):
             """An attribute"""
 
             type_id = "_attr_2_"
@@ -377,7 +350,7 @@ class TestAttribute:
             match="Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
         ):
 
-            class Conflicting(DatasetAttribute):  # pylint: disable=too-few-public-methods
+            class Conflicting(DatasetAttribute):
                 """A conflicting attribute"""
 
                 type_id = "_attr_3_"

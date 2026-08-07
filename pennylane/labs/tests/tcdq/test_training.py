@@ -40,8 +40,8 @@ def quadratic_problem():
 
 
 def test_optimization_success(quadratic_problem):
-    # pylint: disable=redefined-outer-name
     """The high-level trainer should drive the quadratic loss close to zero."""
+    # pylint: disable=redefined-outer-name
     loss_fn, _, target, loss_kwargs = quadratic_problem
 
     result = train(
@@ -59,8 +59,8 @@ def test_optimization_success(quadratic_problem):
 
 
 def test_determinism(quadratic_problem):
-    # pylint: disable=redefined-outer-name
     """Repeated runs with the same seed should be bit-identical."""
+    # pylint: disable=redefined-outer-name
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=5, random_state=123)
 
@@ -72,8 +72,8 @@ def test_determinism(quadratic_problem):
 
 
 def test_unroll_consistency(quadratic_problem):
-    # pylint: disable=redefined-outer-name
     """Changing ``unroll_steps`` should not change the optimization trajectory."""
+    # pylint: disable=redefined-outer-name
     loss_fn, _, _, loss_kwargs = quadratic_problem
     seed = 999
 
@@ -88,8 +88,8 @@ def test_unroll_consistency(quadratic_problem):
 
 
 def test_convergence_early_stopping(quadratic_problem):
-    # pylint: disable=redefined-outer-name
     """Training should stop early once the convergence check is satisfied."""
+    # pylint: disable=redefined-outer-name
     loss_fn, _, target, _ = quadratic_problem
 
     params_near = jnp.array([0.01, 0.01])
@@ -105,8 +105,8 @@ def test_convergence_early_stopping(quadratic_problem):
 
 
 def test_validation_handling(quadratic_problem):
-    # pylint: disable=redefined-outer-name
     """Validation losses should be tracked separately from training losses."""
+    # pylint: disable=redefined-outer-name
     loss_fn, params_init, target, _ = quadratic_problem
 
     loss_kwargs = {"params": params_init, "target": target}
@@ -138,8 +138,8 @@ def test_loss_signature_variations():
 
 
 def test_history_logging_manual(quadratic_problem):
-    # pylint: disable=redefined-outer-name
     """The iterator interface should expose per-batch parameters for custom logging."""
+    # pylint: disable=redefined-outer-name
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=10)
 

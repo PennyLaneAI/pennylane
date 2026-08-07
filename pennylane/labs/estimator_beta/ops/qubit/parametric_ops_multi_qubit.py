@@ -16,8 +16,6 @@ r"""Resource operators for parametric multi qubit operations."""
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 
-# pylint: disable = unused-argument
-
 PAULI_ROT_SPECIAL_CASES = {
     "X": lambda eps: [GateCount(qre.resource_rep(qre.RX, {"precision": eps}))],
     "Y": lambda eps: [GateCount(qre.resource_rep(qre.RY, {"precision": eps}))],
@@ -119,10 +117,7 @@ def paulirot_controlled_resource_decomp(
         num_ctrl_wires,
         num_zero_ctrl,
     )
-    s_dagg = qre.resource_rep(
-        qre.Adjoint,
-        {"base_cmpr_op": qre.resource_rep(qre.S)},
-    )
+    s_dagg = qre.resource_rep(qre.Adjoint, {"base_cmpr_op": qre.resource_rep(qre.S)})
     cnot = qre.CNOT.resource_rep()
 
     h_count = 0

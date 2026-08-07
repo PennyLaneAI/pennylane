@@ -35,25 +35,10 @@ from pennylane.transforms.optimization.optimization_utils import _fuse_global_ph
 from pennylane.typing import PostprocessingFn
 
 # Single qubits Clifford+T gates in PL
-_CLIFFORD_T_ONE_GATES = [
-    qp.Identity,
-    qp.X,
-    qp.Y,
-    qp.Z,
-    qp.Hadamard,
-    qp.S,
-    qp.SX,
-    qp.T,
-]
+_CLIFFORD_T_ONE_GATES = [qp.Identity, qp.X, qp.Y, qp.Z, qp.Hadamard, qp.S, qp.SX, qp.T]
 
 # Two qubits Clifford+T gates in PL
-_CLIFFORD_T_TWO_GATES = [
-    qp.CNOT,
-    qp.CY,
-    qp.CZ,
-    qp.SWAP,
-    qp.ISWAP,
-]
+_CLIFFORD_T_TWO_GATES = [qp.CNOT, qp.CY, qp.CZ, qp.SWAP, qp.ISWAP]
 
 # Single-parameter gates in PL
 # note: _simplify_param makes use of their periodic nature,
@@ -73,9 +58,9 @@ _CLIFFORD_T_CACHE = None
 _CATALYST_SKIP_OP_TYPES = ()
 
 
-# pylint: disable=import-outside-toplevel, global-statement
 def _add_catalyst_skip_op_types():
     """Delayed addition of PennyLane-Catalyst skip op types."""
+    # pylint: disable=import-outside-toplevel,global-statement
     global _CATALYST_SKIP_OP_TYPES
     try:
         from catalyst.api_extensions.quantum_operators import MidCircuitMeasure
@@ -195,8 +180,7 @@ def _simplify_param(theta, gate):
     return None
 
 
-# pylint: disable= too-many-branches,
-def _rot_decompose(op):
+def _rot_decompose(op):  # pylint: disable=too-many-branches
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
     :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
     :class:`~.S`, and :class:`~.Hadamard`.
@@ -399,7 +383,6 @@ class _CachedCallable:
             else lru_cache(maxsize=cache_size)(self.cached_decompose)
         )
 
-    # pylint: disable=too-many-arguments
     def compatible(self, method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs):
         """Check compatibility based on `method`, `epsilon`, `cache_eps_rtol` and `method_kwargs`."""
         return (
@@ -431,9 +414,8 @@ class _CachedCallable:
         return self.decompose_fn(op)
 
 
-# pylint: disable=too-many-branches,too-many-statements
 @transform
-def clifford_t_decomposition(
+def clifford_t_decomposition(  # pylint: disable=too-many-branches,too-many-statements
     tape: QuantumScript,
     epsilon=1e-4,
     method="gridsynth",

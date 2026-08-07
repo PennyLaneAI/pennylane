@@ -393,7 +393,6 @@ class DyadicMatrix:
         k (int): Optional integer to scale the matrix by a factor of :math:`1 / \sqrt{2}^k`.
     """
 
-    # pylint:disable = too-many-positional-arguments, too-many-arguments
     def __init__(self, a: ZOmega, b: ZOmega, c: ZOmega, d: ZOmega, k: int = 0) -> None:
         self.a = a
         self.b = b
@@ -426,13 +425,7 @@ class DyadicMatrix:
         if isinstance(other, float) and other.is_integer():
             other = int(other)
 
-        return DyadicMatrix(
-            self.a * other,
-            self.b * other,
-            self.c * other,
-            self.d * other,
-            self.k,
-        )
+        return DyadicMatrix(self.a * other, self.b * other, self.c * other, self.d * other, self.k)
 
     def __add__(self: DyadicMatrix, other: int | float | complex | DyadicMatrix) -> DyadicMatrix:
         """Add two dyadic matrices."""
@@ -489,23 +482,11 @@ class DyadicMatrix:
 
     def conj(self: DyadicMatrix) -> DyadicMatrix:
         """Return the conjugate of the matrix."""
-        return DyadicMatrix(
-            self.a.conj(),
-            self.b.conj(),
-            self.c.conj(),
-            self.d.conj(),
-            self.k,
-        )
+        return DyadicMatrix(self.a.conj(), self.b.conj(), self.c.conj(), self.d.conj(), self.k)
 
     def adj2(self: DyadicMatrix) -> DyadicMatrix:
         """Return the root-2 adjoint of the matrix."""
-        return DyadicMatrix(
-            self.a.adj2(),
-            self.b.adj2(),
-            self.c.adj2(),
-            self.d.adj2(),
-            self.k,
-        )
+        return DyadicMatrix(self.a.adj2(), self.b.adj2(), self.c.adj2(), self.d.adj2(), self.k)
 
     def mult2k(self: DyadicMatrix, k: int) -> DyadicMatrix:
         """Multiply the matrix by :math:`2^k`, i.e., an integer power of 2."""

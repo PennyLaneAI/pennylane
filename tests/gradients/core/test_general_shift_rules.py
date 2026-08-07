@@ -247,11 +247,7 @@ class TestGenerateShiftRule:
         explicitly defined shifts."""
 
         frequencies = (1 / 3, 2 / 3, 4 / 3)
-        custom_shifts = (
-            np.pi / 4,
-            np.pi / 3,
-            2 * np.pi / 3,
-        )
+        custom_shifts = (np.pi / 4, np.pi / 3, 2 * np.pi / 3)
 
         correct_terms = [
             [1.7548361197453346, 0.7853981633974483],
@@ -296,12 +292,7 @@ class TestGenerateShiftRule:
         properly simplified for generators with 4-term rules"""
         frequencies = (0.5, 1)
         generated_terms = generate_shift_rule(frequencies, order=2)
-        correct_terms = [
-            [-0.375, 0],
-            [0.25, np.pi],
-            [0.25, -np.pi],
-            [-0.125, -2 * np.pi],
-        ]
+        correct_terms = [[-0.375, 0], [0.25, np.pi], [0.25, -np.pi], [-0.125, -2 * np.pi]]
         assert np.allclose(generated_terms, correct_terms)
 
     def test_second_order_non_equidistant_shift_rule(self):

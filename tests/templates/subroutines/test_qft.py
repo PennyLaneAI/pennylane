@@ -130,13 +130,13 @@ class TestQFT:
 
 @pytest.mark.jax
 @pytest.mark.capture
-# pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
+        # pylint: disable=protected-access
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
@@ -182,9 +182,7 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize(
         "gate_set", [[qp.Hadamard, qp.CNOT, qp.PhaseShift, qp.GlobalPhase], None]
     )
-    def test_qft(
-        self, max_expansion, gate_set, n_wires, wires, autograph
-    ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
+    def test_qft(self, max_expansion, gate_set, n_wires, wires, autograph):
         """Test that QFT gives correct result after dynamic decomposition."""
 
         import jax

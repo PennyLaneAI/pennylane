@@ -13,7 +13,8 @@
 # limitations under the License.
 """Contains functions for computing classical and quantum fisher information matrices."""
 
-# pylint: disable=import-outside-toplevel, not-callable
+# pylint: disable=import-outside-toplevel,not-callable
+
 from functools import partial
 
 from pennylane import math
@@ -70,9 +71,8 @@ def _compute_cfim(p, dp):
     # Note that casting and being careful about dtypes is necessary as interfaces
     # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
     dp = math.cast_like(dp, p)
-    dp = math.reshape(
-        dp, (len(p), -1)
-    )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
+    # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
+    dp = math.reshape(dp, (len(p), -1))
     dp_over_p = math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
 
     # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
@@ -80,9 +80,7 @@ def _compute_cfim(p, dp):
 
 
 @transform
-def _make_probs(
-    tape: QuantumScript,
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def _make_probs(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Ignores the return types of the provided circuit and creates a new one
     that outputs probabilities"""
     qscript = QuantumScript(tape.operations, [probs(tape.wires)], shots=tape.shots)

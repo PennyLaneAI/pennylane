@@ -182,14 +182,7 @@ def observable_accepts_analytic(obs: Operator, is_expval=False) -> bool:
 def accepted_sample_measurement(m: MeasurementProcess) -> bool:
     """Specifies whether a measurement is accepted when sampling."""
 
-    if not isinstance(
-        m,
-        (
-            SampleMeasurement,
-            ClassicalShadowMP,
-            ShadowExpvalMP,
-        ),
-    ):
+    if not isinstance(m, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
         return False
 
     if m.obs is not None:
@@ -307,11 +300,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
 
     try:
         program((circuit,))
-    except (
-        DecompositionUndefinedError,
-        DeviceError,
-        AttributeError,
-    ):
+    except (DecompositionUndefinedError, DeviceError, AttributeError):
         return False
     return True
 
@@ -554,13 +543,7 @@ class DefaultQubit(Device):
     """
 
     @debug_logger_init
-    def __init__(
-        self,
-        wires=None,
-        shots=None,
-        seed="global",
-        max_workers=None,
-    ) -> None:
+    def __init__(self, wires=None, shots=None, seed="global", max_workers=None) -> None:
         super().__init__(wires=wires, shots=shots)
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
@@ -722,10 +705,7 @@ class DefaultQubit(Device):
             updated_values["gradient_method"] = gradient_method
 
         if config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = gradient_method in {
-                "adjoint",
-                "backprop",
-            }
+            updated_values["use_device_gradient"] = gradient_method in {"adjoint", "backprop"}
         if config.use_device_jacobian_product is None:
             updated_values["use_device_jacobian_product"] = gradient_method == "adjoint"
         if config.grad_on_execution is None:

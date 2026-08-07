@@ -16,8 +16,6 @@ Unit tests for the adjoint_metric_tensor function.
 """
 
 import numpy as onp
-
-# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp
@@ -143,7 +141,6 @@ def fubini_ansatz9(params, wires=None):
 
 
 def fubini_ansatz10(weights, wires=None):
-    # pylint: disable=unused-argument
     qp.templates.BasicEntanglerLayers(weights, wires=[wires[0], wires[1]])
 
 
@@ -489,17 +486,9 @@ class TestAdjointMetricTensorQNode:
             assert qp.math.allclose(mt, expected)
 
 
-diff_fubini_ansatze = [
-    fubini_ansatz0,
-    fubini_ansatz2,
-    fubini_ansatz10,
-]
+diff_fubini_ansatze = [fubini_ansatz0, fubini_ansatz2, fubini_ansatz10]
 
-diff_fubini_params = [
-    fubini_params[0],
-    fubini_params[2],
-    fubini_params[10],
-]
+diff_fubini_params = [fubini_params[0], fubini_params[2], fubini_params[10]]
 
 
 @pytest.mark.parametrize("ansatz, params", list(zip(diff_fubini_ansatze, diff_fubini_params)))

@@ -70,9 +70,8 @@ class MarkedOp(SymbolicOp):
     def resource_params(self) -> dict:
         return {"base": abstractify(self.base)}
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self) -> bool:
+    def has_generator(self) -> bool:  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):

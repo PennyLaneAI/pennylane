@@ -533,8 +533,7 @@ def _remove_existing_cuts(graph):
     return uncut_graph
 
 
-# pylint: disable=too-many-branches
-def fragment_graph(graph):
+def fragment_graph(graph):  # pylint: disable=too-many-branches
     """
     Fragments a graph into a collection of subgraphs as well as returning
     the communication (`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__)
@@ -640,7 +639,7 @@ def fragment_graph(graph):
     prepare_nodes_removed = []
 
     for i, s in enumerate(subgraphs):
-        from networkx import has_path  # pylint: disable=import-outside-toplevel
+        from networkx import has_path
 
         if any(has_path(communication_graph, i, t) for t in terminal_indices):
             subgraphs_connected_to_measurements.append(s)
@@ -661,8 +660,7 @@ def fragment_graph(graph):
     return subgraphs_connected_to_measurements, communication_graph
 
 
-# pylint: disable=too-many-positional-arguments
-def _is_valid_cut(
+def _is_valid_cut(  # pylint: disable=too-many-arguments
     fragments,
     num_cuts,
     max_frag_degree,
@@ -671,7 +669,6 @@ def _is_valid_cut(
     max_free_wires,
 ):
     """Helper function for determining if a cut is a valid canditate."""
-    # pylint: disable=too-many-arguments
 
     k = len(fragments)
     key = (k, max_frag_degree)

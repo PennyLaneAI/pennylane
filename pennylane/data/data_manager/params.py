@@ -86,7 +86,7 @@ class Description(Mapping[ParamName, ParamVal]):
         return f"{type(self).__name__}({repr(self.__data)})"
 
 
-# pylint:disable=too-many-branches
+# pylint: disable-next=too-many-branches
 def format_param_args(param: ParamName, details: Any) -> ParamArg | list[ParamVal]:
     """Ensures each user-inputted parameter is a properly typed list.
     Also provides custom support for certain parameters."""

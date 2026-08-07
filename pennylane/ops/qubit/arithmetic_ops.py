@@ -16,9 +16,9 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 
-from collections import Counter
-
 # pylint: disable=arguments-differ
+
+from collections import Counter
 from copy import copy
 
 import numpy as np
@@ -117,7 +117,7 @@ class QubitCarry(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -290,7 +290,7 @@ class QubitSum(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -346,10 +346,7 @@ class QubitSum(Operation):
         [CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
 
         """
-        decomp_ops = [
-            qp.CNOT(wires=[wires[1], wires[2]]),
-            qp.CNOT(wires=[wires[0], wires[2]]),
-        ]
+        decomp_ops = [qp.CNOT(wires=[wires[1], wires[2]]), qp.CNOT(wires=[wires[0], wires[2]])]
         return decomp_ops
 
     def adjoint(self):
@@ -422,11 +419,7 @@ class IntegerComparator(Operation):
 
     def _flatten(self) -> FlatPytree:
         hp = self.hyperparameters
-        metadata = (
-            ("work_wires", hp["work_wires"]),
-            ("value", hp["value"]),
-            ("geq", hp["geq"]),
-        )
+        metadata = (("work_wires", hp["work_wires"]), ("value", hp["value"]), ("geq", hp["geq"]))
         return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
 
     def __init__(
@@ -484,9 +477,8 @@ class IntegerComparator(Operation):
     ):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
-    # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(
+    def compute_matrix(  # pylint: disable=unused-argument
         control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -555,7 +547,7 @@ class IntegerComparator(Operation):
         return mat
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=unused-argument
         value: int,
         wires: WiresLike,
         geq: bool = True,

@@ -27,7 +27,7 @@ SupportedDeviceAPIs = Device | LegacyDevice
 
 
 @dataclass()
-class CutStrategy:
+class CutStrategy:  # pylint: disable=too-many-instance-attributes
     """
     A circuit-cutting distribution policy for executing (large) circuits on available (comparably
     smaller) devices.
@@ -79,8 +79,6 @@ class CutStrategy:
 
     """
 
-    # pylint: disable=too-many-instance-attributes
-
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
     devices: InitVar[SupportedDeviceAPIs | Sequence[SupportedDeviceAPIs]] = None
 
@@ -104,10 +102,7 @@ class CutStrategy:
     #: Class attribute, threshold for warning about too many partition attempts.
     HIGH_PARTITION_ATTEMPTS: ClassVar[int] = 20
 
-    def __post_init__(
-        self,
-        devices,
-    ):
+    def __post_init__(self, devices):
         """Deriving cutting constraints from given devices and parameters."""
 
         self.max_free_wires = self.max_free_wires
@@ -246,10 +241,7 @@ class CutStrategy:
         return imbalance
 
     @staticmethod
-    def _validate_input(
-        max_wires_by_fragment,
-        max_gates_by_fragment,
-    ):
+    def _validate_input(max_wires_by_fragment, max_gates_by_fragment):
         """Helper parameter checker."""
         if max_wires_by_fragment is not None:
             if not isinstance(max_wires_by_fragment, (list, tuple)):
@@ -378,10 +370,7 @@ class CutStrategy:
                 max_free_gates if max_gates_by_fragment is None else max(max_gates_by_fragment),
                 imbalance_tolerance,
             )
-            cut_kwargs = {
-                "num_fragments": k,
-                "imbalance": imbalance,
-            }
+            cut_kwargs = {"num_fragments": k, "imbalance": imbalance}
             if max_wires_by_fragment is not None:
                 cut_kwargs["max_wires_by_fragment"] = max_wires_by_fragment
             if max_gates_by_fragment is not None:

@@ -90,7 +90,6 @@ class TestInitialization:
     def test_has_diagonalizing_gates(self, value, constructor):
         """Test that Exp defers has_diagonalizing_gates to base operator."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -441,7 +440,7 @@ class TestDecomposition:
     # Order of `qp.ops.qubit.__all__` is not reliable, so
     # must sort for consistent order in testing with multiple
     # workers
-    all_qubit_operators = sorted(qp.ops.qubit.__all__)  # pylint: disable=no-member
+    all_qubit_operators = sorted(qp.ops.qubit.__all__)
 
     def test_sprod_decomposition(self):
         """Test that the exp of an SProd has a decomposition."""
@@ -509,7 +508,7 @@ class TestDecomposition:
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
 
-        op_class = getattr(qp.ops.qubit, op_name)  # pylint:disable=no-member
+        op_class = getattr(qp.ops.qubit, op_name)
 
         if not op_class.has_generator:
             pytest.skip("Operator does not have a generator.")
@@ -601,10 +600,10 @@ class TestMiscMethods:
         op = Exp(qp.PauliX(0), 3)
         assert repr(op) == "Exp(3 PauliX)"
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op_class", [Exp, Evolution])
     def test_flatten_unflatten(self, op_class):
         """Tests the _unflatten and _flatten methods for the Exp and Evolution operators."""
+        # pylint: disable=protected-access
         base = qp.RX(1.2, wires=0)
         op = op_class(base, 2.5)
 
@@ -625,7 +624,7 @@ class TestMiscMethods:
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qp.S(0) @ qp.PauliX(0)
-        op = qp.ops.Exp(base, 3)  # pylint:disable=no-member
+        op = qp.ops.Exp(base, 3)
 
         assert repr(op) == "Exp(3 S(0) @ X(0))"
 
@@ -704,9 +703,8 @@ class TestMiscMethods:
         assert op.hyperparameters.keys() == copied_op.hyperparameters.keys()
 
         for attr, value in vars(copied_op).items():
-            if (
-                attr != "_hyperparameters"
-            ):  # hyperparameters contains base, which can't be compared via ==
+            # hyperparameters contains base, which can't be compared via ==
+            if attr != "_hyperparameters":
                 assert vars(op)[attr] == value
 
         assert len(vars(op).items()) == len(vars(copied_op).items())
@@ -797,7 +795,6 @@ class TestIntegration:
         phi_real = qp.math.cast(phi, tf.float64)
 
         assert qp.math.allclose(res, tf.cos(phi_real))
-        # pylint: disable=invalid-unary-operand-type
         assert qp.math.allclose(phi_grad, -tf.sin(phi))
 
     @pytest.mark.torch
@@ -817,7 +814,7 @@ class TestIntegration:
         res = circuit(phi)
         assert qp.math.allclose(res, torch.cos(phi))
 
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         assert qp.math.allclose(phi.grad, -torch.sin(phi))
 
     @pytest.mark.autograd
@@ -894,7 +891,7 @@ class TestIntegration:
         expected = 0.5 * (torch.exp(x) + torch.exp(-x))
         assert qp.math.allclose(res, expected)
 
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         expected_grad = 0.5 * (torch.exp(x) - torch.exp(-x))
         assert qp.math.allclose(x.grad, expected_grad)
 
@@ -923,7 +920,6 @@ class TestIntegration:
     @pytest.mark.tf
     def test_tf_measurement(self):
         """Test Exp in a measurement with gradient and tensorflow."""
-        # pylint:disable=invalid-unary-operand-type
         import tensorflow as tf
 
         x = tf.Variable(2.0, dtype=tf.float64)

@@ -16,6 +16,7 @@ Unit tests for the available built-in quantum channels.
 """
 
 # pylint: disable=too-few-public-methods
+
 from itertools import product
 
 import numpy as np
@@ -41,15 +42,7 @@ channels_with_one_arg = [
     channel.PhaseDamping,
 ]
 
-two_arg_args = [
-    (0.0, 0.0),
-    (0.0, 0.1),
-    (0.1, 0.0),
-    (1.0, 1.0),
-    (0.0, 1.0),
-    (1.0, 0.0),
-    (0.3, 0.2),
-]
+two_arg_args = [(0.0, 0.0), (0.0, 0.1), (0.1, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0), (0.3, 0.2)]
 
 channels_with_two_args = [channel.GeneralizedAmplitudeDamping, channel.ResetError]
 
@@ -755,7 +748,6 @@ class TestPauliError:
     )
     def test_wrong_parameters(self, operators, p, wires, error, message):
         """Test wrong parametrizations of PauliError"""
-        # pylint: disable=too-many-arguments
         with pytest.raises(error, match=message):
             channel.PauliError(operators, p, wires=wires)
 
@@ -1011,7 +1003,6 @@ class TestThermalRelaxationError:
     def test_t2_le_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg
         for t2 <= t1 give correct Kraus matrices"""
-        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 
@@ -1067,7 +1058,6 @@ class TestThermalRelaxationError:
     def test_t2_g_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg
         for t2 > t1 give correct Kraus matrices"""
-        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 
@@ -1151,11 +1141,4 @@ class TestThermalRelaxationError:
             return qp.expval(qp.PauliZ(0))
 
         gradient = np.squeeze(qp.grad(circuit)(pe))
-        assert np.allclose(
-            gradient,
-            np.array(
-                [
-                    (1 / 0.1) * (circuit(0.1) - circuit(0.0)),
-                ]
-            ),
-        )
+        assert np.allclose(gradient, np.array([(1 / 0.1) * (circuit(0.1) - circuit(0.0))]))

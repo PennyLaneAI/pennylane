@@ -25,14 +25,12 @@ from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 
-# pylint: disable=expression-not-assigned
 
-
-# pylint: disable=protected-access
 @pytest.mark.jax
 @pytest.mark.parametrize("op_type", (qp.HilbertSchmidt, qp.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     U = (qp.Identity("a"), qp.Identity("b"))
     V = (qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=1))
@@ -76,7 +74,6 @@ class TestHilbertSchmidt:
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -399,10 +396,7 @@ class TestHilbertSchmidt:
         U = qp.CNOT(wires=[0, 1])
         V = qp.RZ(0.1, wires=1)
 
-        with pytest.raises(
-            ValueError,
-            match="U and V must have the same number of wires.",
-        ):
+        with pytest.raises(ValueError, match="U and V must have the same number of wires."):
             qp.HilbertSchmidt(V, U)
 
     def test_distinct_wires(self):
@@ -411,10 +405,7 @@ class TestHilbertSchmidt:
         U = qp.Hadamard(wires=0)
         V = qp.RZ(0.1, wires=0)
 
-        with pytest.raises(
-            ValueError,
-            match="Operators in U and V must act on distinct wires.",
-        ):
+        with pytest.raises(ValueError, match="Operators in U and V must act on distinct wires."):
             qp.HilbertSchmidt(V, U)
 
     @pytest.mark.jax
@@ -472,7 +463,6 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -635,7 +625,6 @@ class TestLocalHilbertSchmidt:
             qp.LocalHilbertSchmidt(V, U)
             return qp.probs()
 
-        # pylint: disable=unsubscriptable-object
         def cost_lhst(V, U):
             return 1 - local_hilbert_test(V, U)[0]
 
@@ -682,10 +671,7 @@ class TestLocalHilbertSchmidt:
         U = qp.CNOT(wires=[0, 1])
         V = qp.RZ(0.1, wires=1)
 
-        with pytest.raises(
-            ValueError,
-            match="U and V must have the same number of wires.",
-        ):
+        with pytest.raises(ValueError, match="U and V must have the same number of wires."):
             qp.LocalHilbertSchmidt(V, U)
 
     def test_distinct_wires(self):
@@ -694,10 +680,7 @@ class TestLocalHilbertSchmidt:
         U = qp.Hadamard(wires=0)
         V = qp.RZ(0.1, wires=0)
 
-        with pytest.raises(
-            ValueError,
-            match="Operators in U and V must act on distinct wires.",
-        ):
+        with pytest.raises(ValueError, match="Operators in U and V must act on distinct wires."):
             qp.LocalHilbertSchmidt(V, U)
 
     @pytest.mark.jax

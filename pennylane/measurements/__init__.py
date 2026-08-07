@@ -352,8 +352,8 @@ from .vn_entropy import VnEntropyMP, vn_entropy
 from .shots import add_shots
 
 
-# pylint: disable=import-outside-toplevel
 def __getattr__(name):
+    # pylint: disable=import-outside-toplevel
     import pennylane.ops.mid_measure as ops_measure
 
     # from pennylane.exceptions import PennyLaneDeprecationWarning

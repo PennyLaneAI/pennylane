@@ -17,7 +17,7 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
-# pylint: disable=protected-access, expression-not-assigned
+# pylint: disable=protected-access,expression-not-assigned
 
 import warnings
 
@@ -77,22 +77,12 @@ def test_fig_argument():
 label_data = [
     ({}, ["0", "a", "1.234"]),  # default behaviour
     ({"wire_order": [1.234, "a", 0]}, ["1.234", "a", "0"]),  # provide standard wire order
-    (
-        {"wire_order": ["a", 1.234]},
-        ["a", "1.234", "0"],
-    ),  # wire order that doesn't include all active wires
-    (
-        {"wire_order": ["nope", "not there", 3]},
-        ["0", "a", "1.234"],
-    ),  # wire order includes unused wires
-    (
-        {"wire_order": ["aux", 0, "a", 1.234], "show_all_wires": True},
-        [
-            "aux",
-            "0",
-            "a",
-        ],
-    ),  # show_all_wires=True
+    # wire order that doesn't include all active wires
+    ({"wire_order": ["a", 1.234]}, ["a", "1.234", "0"]),
+    # wire order includes unused wires
+    ({"wire_order": ["nope", "not there", 3]}, ["0", "a", "1.234"]),
+    # show_all_wires=True
+    ({"wire_order": ["aux", 0, "a", 1.234], "show_all_wires": True}, ["aux", "0", "a"]),
 ]
 
 
@@ -563,7 +553,6 @@ class TestControlledGates:
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
         with qp.queuing.AnnotatedQueue() as q_tape:
-            # pylint:disable=no-member
             qubit_unitary = qp.QubitUnitary(qp.RX.compute_matrix(0), wires=4)
             qp.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 
@@ -1115,10 +1104,8 @@ class TestClassicalControl:
         assert ax.patches[3].get_x() == 1 - 0.75 / 2 + 0.2  # 1 - box_length/2 + pad
         assert qp.math.allclose(ax.patches[3].get_y(), 1 - 0.75 / 2 + 0.2)  # 1- box_length/2 + pad
 
-        assert ax.patches[4].center == (
-            1,
-            1 + 0.15 * 0.75,
-        )  # 1 +0.15 *box_length
+        # 1 +0.15 *box_length
+        assert ax.patches[4].center == (1, 1 + 0.15 * 0.75)
         assert isinstance(ax.patches[5], mpl.patches.FancyArrow)
 
         [_, cwire] = ax.lines
@@ -1161,13 +1148,11 @@ class TestClassicalControl:
 
         final_measure_box = ax.patches[15]
         assert final_measure_box.get_x() == 5 - 0.75 / 2 + 0.2  # 5 - box_length/2 + pad
-        assert qp.math.allclose(
-            final_measure_box.get_y(), 1 - 0.75 / 2 + 0.2
-        )  # 1- box_length/2 + pad
+        # 1- box_length/2 + pad
+        assert qp.math.allclose(final_measure_box.get_y(), 1 - 0.75 / 2 + 0.2)
 
-        assert (
-            final_measure_box.get_height() == 0.75 - 2 * 0.2 + 2 * 0.25
-        )  # box_length - 2 * pad + 2 *cwire_scaling
+        # box_length - 2 * pad + 2 *cwire_scaling
+        assert final_measure_box.get_height() == 0.75 - 2 * 0.2 + 2 * 0.25
 
         plt.close()
 

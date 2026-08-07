@@ -16,7 +16,6 @@
 Unit tests for the ParametrizedHamiltonian class
 """
 
-# pylint: disable=no-member, import-outside-toplevel
 import pytest
 
 import pennylane as qp
@@ -180,20 +179,12 @@ class TestCall:
             [0, 2],
         ),  # no H_fixed term, multiple H_parametrized terms
         ([f1], [qp.PauliX(0)], [1], [0, 1]),  # no H_fixed term, one H_parametrized term
-        (
-            [1.2, 2.3],
-            [qp.PauliX(0), qp.PauliY(1)],
-            [],
-            [2, 0],
-        ),  # no H_parametrized term, multiple H_fixed terms
+        # no H_parametrized term, multiple H_fixed terms
+        ([1.2, 2.3], [qp.PauliX(0), qp.PauliY(1)], [], [2, 0]),
         ([1.2], [qp.PauliX(0)], [], [1, 0]),  # no H_parametrized term, one H_fixed term
         ([1, f1], [qp.PauliX(3), qp.PauliY(2)], [1], [1, 1]),  # one of each
-        (
-            [1.2, f1, 2.3, f2],
-            [qp.PauliX(0) for i in range(4)],
-            [1, 2],
-            [2, 2],
-        ),  # multiples of each
+        # multiples of each
+        ([1.2, f1, 2.3, f2], [qp.PauliX(0) for i in range(4)], [1, 2], [2, 2]),
     )
 
     @pytest.mark.parametrize("coeffs, ops, params, num_terms", coeffs_and_ops_and_params)
@@ -250,11 +241,8 @@ class TestInteractionWithOperators:
         (qp.ops.SProd(3, qp.PauliZ(0)), 3),
         (2 * qp.PauliZ(0), 2),
     )
-    ops = (
-        qp.PauliX(2),
-        qp.PauliX(2) @ qp.PauliX(3),
-        qp.CNOT([0, 1]),
-    )  # ToDo: maybe add more operators to test here?
+    # ToDo: maybe add more operators to test here?
+    ops = (qp.PauliX(2), qp.PauliX(2) @ qp.PauliX(3), qp.CNOT([0, 1]))
 
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
     def test_add_special_operators(self, H, coeff):

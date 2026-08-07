@@ -71,8 +71,6 @@ def test_repr():
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
 
-    # pylint: disable=protected-access
-
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is correctly marked"""
 
@@ -151,8 +149,6 @@ class TestGradAnalysis:
 class TestGradMethodValidation:
     """Test the helper function _grad_method_validation."""
 
-    # pylint: disable=protected-access
-
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
         """Test that trainable parameters without grad_method
@@ -174,10 +170,7 @@ class TestGradMethodValidation:
             qp.RX(np.array(0.1, requires_grad=True), wires=0)
             qp.expval(qp.PauliZ(0))
         tape = qp.tape.QuantumScript.from_queue(q)
-        diff_methods = {
-            0: "A",
-            1: "F",
-        }
+        diff_methods = {0: "A", 1: "F"}
         with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
             _validate_gradient_methods(tape, "analytic", diff_methods)
 
@@ -371,7 +364,6 @@ class TestGradientTransformIntegration:
         dev = qp.device("default.qubit", wires=2)
         spy = mocker.spy(qp.gradients.parameter_shift, "expval_param_shift")
 
-        # pylint: disable=too-few-public-methods
         class NonDiffRXGate(qp.RX):
             """A non-differentiable gate that decomposes into RX."""
 
@@ -447,7 +439,6 @@ class TestGradientTransformIntegration:
         y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x, y)
-        # pylint:disable=unexpected-keyword-arg
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
@@ -528,9 +519,8 @@ class TestGradientTransformIntegration:
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
-        def circuit(x, y):
+        def circuit(x, y):  # pylint: disable=unused-argument
             """A quantum circuit that does not use its first parameter."""
-            # pylint: disable=unused-argument
             qp.RX(y[0], wires=0)
             qp.RY(y[0], wires=0)
             qp.RZ(y[1], wires=0)
@@ -647,7 +637,6 @@ class TestGradientTransformIntegration:
         expected = qp.jacobian(circuit)(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_setting_shots(self):
         """Test that setting the number of shots works correctly for
         a gradient transform"""

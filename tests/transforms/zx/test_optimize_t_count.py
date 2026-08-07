@@ -70,14 +70,7 @@ class TestOptimizeTCount:
 
         assert new_qs.operations == []
 
-    @pytest.mark.parametrize(
-        "num_gates, expected_ops",
-        (
-            (1, [qp.S(0)]),
-            (2, [qp.Z(0)]),
-            (4, []),
-        ),
-    )
+    @pytest.mark.parametrize("num_gates, expected_ops", ((1, [qp.S(0)]), (2, [qp.Z(0)]), (4, [])))
     def test_S_gate_simplification(self, num_gates, expected_ops):
         """Test S gate simplification/cancellation."""
         ops = [qp.S(0)] * num_gates
@@ -150,15 +143,7 @@ class TestOptimizeTCount:
 
         assert new_qs.operations == expected_ops
 
-    @pytest.mark.parametrize(
-        "measurements",
-        (
-            [],
-            [qp.expval(qp.Z(0))],
-            [qp.probs()],
-            [qp.state()],
-        ),
-    )
+    @pytest.mark.parametrize("measurements", ([], [qp.expval(qp.Z(0))], [qp.probs()], [qp.state()]))
     def test_transformed_tape(self, measurements):
         """Test that the operations of the transformed tape match the expected operations
         and that the original measurements are not touched."""
@@ -175,12 +160,7 @@ class TestOptimizeTCount:
 
         (transformed_tape,), _ = qp.transforms.zx.optimize_t_count(original_tape)
 
-        expected_ops = [
-            qp.Z(wires=0),
-            qp.CNOT(wires=[0, 1]),
-            qp.S(wires=1),
-            qp.CNOT(wires=[0, 2]),
-        ]
+        expected_ops = [qp.Z(wires=0), qp.CNOT(wires=[0, 1]), qp.S(wires=1), qp.CNOT(wires=[0, 2])]
 
         assert transformed_tape.operations == expected_ops
         assert transformed_tape.measurements == measurements

@@ -210,8 +210,7 @@ def _get_symbol(i):
     return string.ascii_letters[i]
 
 
-# pylint: disable=too-many-branches
-def contract_tensors(
+def contract_tensors(  # pylint: disable=too-many-branches
     tensors: Sequence,
     communication_graph,
     prepare_nodes: Sequence[Sequence[PrepareNode]],

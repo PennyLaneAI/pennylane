@@ -15,6 +15,8 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=too-few-public-methods,too-many-arguments,no-self-use,protected-access,undefined-variable,unused-variable
+
 import math
 from collections import defaultdict
 
@@ -27,8 +29,6 @@ from pennylane.labs.estimator_beta import Allocate, Deallocate
 from pennylane.labs.estimator_beta.templates import LabsQROM
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 from pennylane.math import ceil_log2
-
-# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access, undefined-variable, unused-variable
 
 
 class TestLabsSelectPauliRot:

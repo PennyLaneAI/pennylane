@@ -307,7 +307,6 @@ def _out_square_with_adder_condition(
 def _out_square_with_adder_resources(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> dict:
-    # pylint: disable=unused-argument
     n = num_x_wires
     m = num_output_wires
     resources = defaultdict(int)
@@ -400,7 +399,6 @@ def _out_square_with_caddsub_condition(
 def _out_square_with_caddsub_resources(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> dict:
-    # pylint: disable=unused-argument
     n = num_x_wires
     m = num_output_wires + 1
     resources = defaultdict(int)

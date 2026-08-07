@@ -16,6 +16,7 @@ Unit tests for functions needed for computing matrices.
 """
 
 # pylint: disable=too-many-arguments,too-few-public-methods
+
 import pytest
 
 import pennylane as qp

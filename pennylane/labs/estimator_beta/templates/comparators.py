@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane comparison templates."""
 
+# pylint: disable=signature-differs,arguments-differ
+
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -21,8 +23,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.wires import WiresLike
-
-# pylint: disable= signature-differs, arguments-differ
 
 
 class OutOfPlaceIntegerComparator(ResourceOperator):
@@ -110,11 +110,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
                 * geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
                   ``False``, the comparison made will be :math:`n \lt L`.
         """
-        return {
-            "value": self.value,
-            "register_size": self.register_size,
-            "geq": self.geq,
-        }
+        return {"value": self.value, "register_size": self.register_size, "geq": self.geq}
 
     @classmethod
     def resource_rep(
@@ -291,11 +287,7 @@ class RegisterEquality(ResourceOperator):
 
     resource_keys = {"register_size"}
 
-    def __init__(
-        self,
-        register_size: int | None = None,
-        wires: WiresLike | None = None,
-    ):
+    def __init__(self, register_size: int | None = None, wires: WiresLike | None = None):
         if register_size is None:
             if wires is None:
                 raise ValueError("Must provide at least one of `register_size` and `wires`.")

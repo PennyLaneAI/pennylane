@@ -229,10 +229,7 @@ def test_exception():
     """Test operation wire exception in Solovay-Kitaev"""
     op = qp.SingleExcitation(1.0, wires=[1, 2])
 
-    with pytest.raises(
-        ValueError,
-        match=r"Operator must be a single qubit operation",
-    ):
+    with pytest.raises(ValueError, match=r"Operator must be a single qubit operation"):
         sk_decomposition(op, epsilon=1e-4, max_depth=1)
 
 
@@ -241,7 +238,6 @@ def test_exception_with_qjit():
     """Test operation wire exception in Solovay-Kitaev"""
     pytest.importorskip("catalyst")
     pytest.importorskip("jax")
-    # pylint: disable=import-outside-toplevel
     import jax.numpy as jnp
     from catalyst import qjit
 
@@ -254,7 +250,6 @@ def test_exception_with_qjit():
 def test_exception_with_jit():
     """Test operation wire exception in Solovay-Kitaev"""
     pytest.importorskip("jax")
-    # pylint: disable=import-outside-toplevel
     import jax.numpy as jnp
     from jax import jit
 

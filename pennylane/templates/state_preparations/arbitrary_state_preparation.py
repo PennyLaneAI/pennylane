@@ -100,9 +100,7 @@ class ArbitraryStatePreparation(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
+        return {"num_wires": len(self.wires)}
 
     @property
     def num_params(self):

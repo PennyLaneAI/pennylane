@@ -16,9 +16,9 @@ Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
 
-import warnings
-
 # pylint: disable=not-callable
+
+import warnings
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
@@ -156,8 +156,7 @@ class LegacyDeviceFacade(Device):
         device (qp.device.LegacyDevice): a device that follows the legacy device interface.
     """
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, device: LegacyDevice):
+    def __init__(self, device: LegacyDevice):  # pylint: disable=super-init-not-called
         if isinstance(device, type(self)):
             raise RuntimeError("An already-facaded device can not be wrapped in a facade again.")
 
@@ -217,19 +216,20 @@ class LegacyDeviceFacade(Device):
     def wires(self) -> Wires:
         return self._device.wires
 
-    # pylint: disable=protected-access
     @property
     def shots(self) -> Shots:
+        # pylint: disable=protected-access
         if self._device._shot_vector:
             return Shots(self._device._raw_shot_sequence)
         return Shots(self._device.shots)
 
     @property
     def _debugger(self):
-        return self._device._debugger
+        return self._device._debugger  # pylint: disable=protected-access
 
     @_debugger.setter
     def _debugger(self, new_debugger):
+        # pylint: disable-next=protected-access
         self._device._debugger = new_debugger  # pragma: no cover
 
     def preprocess_transforms(
@@ -241,10 +241,7 @@ class LegacyDeviceFacade(Device):
             execution_config = ExecutionConfig()
 
         if execution_config.mcm_config.mcm_method == "deferred":
-            pipeline.add_transform(
-                defer_measurements,
-                allow_postselect=False,
-            )
+            pipeline.add_transform(defer_measurements, allow_postselect=False)
 
         pipeline.add_transform(legacy_device_batch_transform, device=self._device)
         pipeline.add_transform(legacy_device_expand_fn, device=self._device)
@@ -327,10 +324,7 @@ class LegacyDeviceFacade(Device):
         circuit = QuantumScript([], [], shots=self.shots) if circuit is None else circuit
 
         if execution_config is None or execution_config.gradient_method == "best":
-            validation_methods = (
-                self._validate_backprop_method,
-                self._validate_device_method,
-            )
+            validation_methods = (self._validate_backprop_method, self._validate_device_method)
             return any(validate(circuit) for validate in validation_methods)
 
         if execution_config.gradient_method == "backprop":
@@ -385,11 +379,7 @@ class LegacyDeviceFacade(Device):
         _add_adjoint_transforms(pipeline, name=f"{self.name} + adjoint")
         try:
             pipeline((tape,))
-        except (
-            DecompositionUndefinedError,
-            DeviceError,
-            AttributeError,
-        ):
+        except (DecompositionUndefinedError, DeviceError, AttributeError):
             return False
         return True
 

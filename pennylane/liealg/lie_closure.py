@@ -13,11 +13,11 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 
+# pylint: disable=too-many-arguments
+
 import warnings
 from collections.abc import Iterable
 from copy import copy
-
-# pylint: disable=too-many-arguments
 from itertools import product
 
 import numpy as np
@@ -235,9 +235,8 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
         if len(basis) > 0:
             lhs = trace_inner_product(basis, A)
             B -= math.tensordot(lhs, math.stack(basis), axes=[[0], [0]])
-        if (
-            norm := math.real(math.sqrt(trace_inner_product(B, B)))
-        ) > tol:  # Tolerance for numerical stability
+        # Tolerance for numerical stability
+        if (norm := math.real(math.sqrt(trace_inner_product(B, B)))) > tol:
             B /= math.cast_like(norm, B)
             basis.append(B)
     return math.array(basis)

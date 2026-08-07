@@ -89,12 +89,7 @@ def test_step(circuit, energy_ref, pool):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize(
-    "circuit, energy_ref, pool",
-    [
-        (initial_circuit, energy_h3p, pool_exc),
-    ],
-)
+@pytest.mark.parametrize("circuit, energy_ref, pool", [(initial_circuit, energy_h3p, pool_exc)])
 def test_step_and_cost_drain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is True."""
     opt = qp.AdaptiveOptimizer()
@@ -110,12 +105,7 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize(
-    "circuit, energy_ref, pool",
-    [
-        (initial_circuit, energy_h3p, pool_exc),
-    ],
-)
+@pytest.mark.parametrize("circuit, energy_ref, pool", [(initial_circuit, energy_h3p, pool_exc)])
 def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qp.AdaptiveOptimizer()
@@ -144,10 +134,7 @@ def test_largest_gradient(circuit):
     assert tape.operations[-1].wires == qp.wires.Wires([0, 1, 4, 5])
 
 
-@pytest.mark.parametrize(
-    "circuit",
-    [initial_circuit],
-)
+@pytest.mark.parametrize("circuit", [initial_circuit])
 def test_append_gate(circuit):
     """Test that append_gate properly adds a gate to a circuit."""
 
@@ -170,10 +157,7 @@ def qubit_rotation_circuit():
     return qp.expval(qp.PauliZ(0))
 
 
-@pytest.mark.parametrize(
-    "circuit",
-    [qubit_rotation_circuit],
-)
+@pytest.mark.parametrize("circuit", [qubit_rotation_circuit])
 def test_qubit_rotation(circuit):
     """Test that step function returns correct results for a qubit rotation circuit."""
 
@@ -188,12 +172,7 @@ def test_qubit_rotation(circuit):
     qp.assert_equal(tape.operations[-1], qp.RX(np.array([np.pi]), wires=0))
 
 
-@pytest.mark.parametrize(
-    "interface, diff_method",
-    [
-        ("autograd", "parameter-shift"),
-    ],
-)
+@pytest.mark.parametrize("interface, diff_method", [("autograd", "parameter-shift")])
 def test_circuit_args(interface, diff_method):
     """Test that step_and_cost function uses the correct arguments of the initial circuit."""
 

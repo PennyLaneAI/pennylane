@@ -76,9 +76,7 @@ def _trainable_multipar_stopping_fn(obj):
     return _multipar_stopping_fn(obj)
 
 
-def _expand_trainable_multipar(
-    tape: QuantumScript,
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def _expand_trainable_multipar(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand trainable multi-parameter operations in a quantum tape."""
 
     interface = math.get_interface(*tape.get_parameters())
@@ -113,9 +111,7 @@ def _expand_trainable_multipar(
     is_informative=True,
     use_argnum_in_expand=True,
 )
-def adjoint_metric_tensor(
-    tape: QuantumScript,
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def adjoint_metric_tensor(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 

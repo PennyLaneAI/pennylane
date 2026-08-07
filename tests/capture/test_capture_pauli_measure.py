@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for capturing Pauli product measurements."""
 
-# pylint: disable=wrong-import-order,wrong-import-position,ungrouped-imports
+# pylint: disable=wrong-import-order,wrong-import-position
 
 import pytest
 
@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 
 import jax.numpy as jnp
 
-from pennylane.tape.plxpr_conversion import plxpr_to_tape
+from pennylane.tape.plxpr_conversion import plxpr_to_tape  # pylint: disable=ungrouped-imports
 
 pytestmark = [pytest.mark.capture, pytest.mark.jax]
 

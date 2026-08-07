@@ -26,9 +26,6 @@ from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
-# pylint: disable=unnecessary-lambda-assignment
-# pylint: disable=too-few-public-methods
-
 pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 
@@ -42,9 +39,8 @@ def warnings_as_errors():
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
     def decomposition(self):
@@ -55,9 +51,8 @@ class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return False
 
 
@@ -239,7 +234,7 @@ class TestDecompose:
     def test_decompose_with_mcm(self):
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):
             resource_keys = set()
 
             @property

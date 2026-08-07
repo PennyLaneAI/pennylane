@@ -189,11 +189,7 @@ def qfunc_all_ops(theta):
 transformed_qfunc_all_ops = undo_swaps(qfunc_all_ops)
 
 expected_op_list = ["Hadamard", "RX", "RY"]
-expected_wires_list = [
-    Wires(1),
-    Wires(2),
-    Wires(0),
-]
+expected_wires_list = [Wires(1), Wires(2), Wires(0)]
 
 
 class TestUndoSwapsInterfaces:

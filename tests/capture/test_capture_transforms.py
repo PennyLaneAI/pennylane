@@ -26,10 +26,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable=wrong-import-position
 import pennylane as qp
-from pennylane.capture.primitives import (
-    qnode_prim,
-    transform_prim,
-)
+from pennylane.capture.primitives import qnode_prim, transform_prim
 from pennylane.transforms.core import transform
 from tests.capture.capture_utils import assert_eqn_matches_op
 
@@ -37,9 +34,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 @transform
-def z_to_hadamard(
-    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def z_to_hadamard(tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None):
     """Transform that converts Z gates to H gates."""
     new_ops = [qp.H(wires=op.wires) if isinstance(op, qp.Z) else op for op in tape.operations]
     return [tape.copy(operations=new_ops)], lambda res: res[0]
@@ -62,9 +58,8 @@ def shift_rx_to_end(tape):
 
 
 @transform
-def expval_z_obs_to_x_obs(
-    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def expval_z_obs_to_x_obs(tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None):
     """Transform that converts Z observables for expectation values to X observables.
     This transform works natively with plxpr."""
     new_measurements = [
@@ -174,7 +169,7 @@ class TestCaptureTransforms:
         expected_program = CompilePipeline()
         expected_program.add_transform(z_to_hadamard, *targs, **tkwargs)
         # Manually change targs from tuple to list
-        expected_program[0]._args = tuple(targs)  # pylint: disable=protected-access
+        expected_program[0]._args = tuple(targs)
         assert qnode.compile_pipeline == expected_program
 
         qfunc_jaxpr = qnode_jaxpr.eqns[0].params["qfunc_jaxpr"]

@@ -14,6 +14,8 @@
 
 """Unit tests for the qubit_graph module"""
 
+# pylint: disable=too-few-public-methods
+
 import re
 import uuid
 
@@ -24,8 +26,6 @@ import rustworkx as rx
 import pennylane as qp
 from pennylane.ftqc import QubitGraph
 from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
-
-# pylint: disable=too-few-public-methods
 
 
 class TestQubitGraphsInitialization:
@@ -160,9 +160,8 @@ class TestQubitGraphsInitialization:
         # This is essentially duplicated from the QubitGraph implementation, but it ensures that
         # accidental changes to the production code will result in a test failure
         data_qubits = [("data", i) for i in range(9)]  # 9 data qubits, indexed 0, 1, ..., 8
-        aux_qubits = [
-            ("aux", i) for i in range(9, 17)
-        ]  # 8 auxiliary qubits, indexed 9, 10, ..., 16
+        # 8 auxiliary qubits, indexed 9, 10, ..., 16
+        aux_qubits = [("aux", i) for i in range(9, 17)]
 
         expected_graph = nx.Graph()
         expected_graph.add_nodes_from(data_qubits)
@@ -224,7 +223,6 @@ class TestQubitGraphsInitialization:
 
         # pylint: disable=unsupported-assignment-operation
         qubit0[(0, 0)][(0, 0)] = QubitGraph(g)
-        # pylint: disable=unsubscriptable-object
         qubit0_00_00 = qubit0[(0, 0)][(0, 0)]
         assert set(qubit0_00_00.node_labels) == set(g.nodes)
         assert set(qubit0_00_00.edge_labels) == set(g.edges)
@@ -253,7 +251,6 @@ class TestQubitGraphsInitialization:
 
     def test_init_graph_with_invalid_type_raises_type_error(self):
         """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
-        # pylint: disable=missing-class-docstring
 
         class NotAGraph:
             pass
@@ -746,7 +743,6 @@ class TestQubitGraphsWarnings:
         """Test that initializing a QubitGraph with a graph-like object that is not a networkx.Graph
         object emits a UserWarning.
         """
-        # pylint: disable=missing-class-docstring
 
         class CustomGraph:
             def __init__(self):

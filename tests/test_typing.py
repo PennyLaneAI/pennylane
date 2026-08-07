@@ -36,8 +36,7 @@ class TestTensorLike:
     def test_isinstance_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
-        class UnknownType:
+        class UnknownType:  # pylint: disable=too-few-public-methods
             """Unknown type."""
 
         assert not isinstance(UnknownType(), TensorLike)
@@ -80,8 +79,7 @@ class TestTensorLike:
     def test_subclass_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
-        class UnknownType:
+        class UnknownType:  # pylint: disable=too-few-public-methods
             """Unknown type."""
 
         assert not issubclass(UnknownType, TensorLike)
@@ -117,9 +115,10 @@ class TestTensorLike:
         assert issubclass(tf.Variable, TensorLike)
 
 
-# pylint: disable=protected-access,too-many-public-methods
-class TestAbstractArray:
+class TestAbstractArray:  # pylint: disable=too-many-public-methods
     """Tests for the AbstractArray class."""
+
+    # pylint: disable=protected-access
 
     def test_basic_instance(self):
         """Test a normal instance of AbstractArray."""
@@ -377,9 +376,9 @@ class TestAbstractArray:
         assert a.shape == (2, 3, -1)
         assert a.dtype == dtype
 
-    # pylint: disable=isinstance-second-argument-not-valid-type
     def test_instance_check(self):
         """Test that things can be checked to be instances of a AbstractArray instance."""
+        # pylint: disable=isinstance-second-argument-not-valid-type
 
         a = AbstractArray((4, 2), bool)
         b = AbstractArray((-1, 2), bool)
@@ -393,14 +392,17 @@ class TestAbstractArray:
     def test_instance_check_unknown_rank(self):
         """Test ``isinstance`` when the abstract rank is unknown."""
         aa = AbstractArray(..., np.float64)
+        # pylint: disable-next=isinstance-second-argument-not-valid-type
         assert isinstance(np.ones((4, 2)), aa)
+        # pylint: disable-next=isinstance-second-argument-not-valid-type
         assert isinstance(np.array(0.5), aa)
+        # pylint: disable-next=isinstance-second-argument-not-valid-type
         assert not isinstance(np.ones((4, 2), dtype=np.int64), aa)
 
     def test_instance_check_rejects_non_array(self):
         """Test that non-array objects without a shape fail ``isinstance`` checks."""
         aa = AbstractArray((2,), np.float64)
-        assert not isinstance(0.5, aa)
+        assert not isinstance(0.5, aa)  # pylint: disable=isinstance-second-argument-not-valid-type
 
     def test_weak_type_for_number_dtypes(self):
         """Test that number dtypes are marked as weak types."""

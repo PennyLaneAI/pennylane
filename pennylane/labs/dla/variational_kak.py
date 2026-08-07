@@ -13,7 +13,8 @@
 # limitations under the License.
 """Helper Functionality to compute the kak decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
 import warnings
 from datetime import datetime
 from functools import partial
@@ -347,14 +348,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     return success
 
 
-def run_opt(
-    cost,
-    theta,
-    n_epochs=500,
-    optimizer=None,
-    verbose=False,
-    interrupt_tol=None,
-):
+def run_opt(cost, theta, n_epochs=500, optimizer=None, verbose=False, interrupt_tol=None):
     r"""Boilerplate jax optimization
 
     Args:

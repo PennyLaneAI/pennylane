@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for pennylane.math.single_dispatch"""
 
-# pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
 from unittest.mock import patch
@@ -979,21 +978,11 @@ class TestScipySparse:
 
     matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
 
-    dispatched_linalg_methods = [
-        fn.linalg.expm,
-        fn.linalg.inv,
-        fn.linalg.norm,
-    ]
+    dispatched_linalg_methods = [fn.linalg.expm, fn.linalg.inv, fn.linalg.norm]
 
-    dispatched_linalg_methods_factorization = [
-        fn.linalg.eigs,
-        fn.linalg.eigsh,
-        fn.linalg.svds,
-    ]
+    dispatched_linalg_methods_factorization = [fn.linalg.eigs, fn.linalg.eigsh, fn.linalg.svds]
 
-    dispatched_linalg_methods_linear_solver = [
-        fn.linalg.spsolve,
-    ]
+    dispatched_linalg_methods_linear_solver = [fn.linalg.spsolve]
 
     @pytest.mark.parametrize("matrix", matrix)
     def test_get_interface_scipy(self, matrix):
@@ -1061,7 +1050,6 @@ class TestScipySparse:
             _sparse_matrix_power_bruteforce(A, 1.5)
 
 
-# pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
     """Test the Interface enum class"""
 
@@ -1365,13 +1353,7 @@ class TestInBackprop:
             fn.in_backprop(type("hello", tuple(), {})())
 
 
-shape_test_data = [
-    tuple(),
-    (3,),
-    (2, 2),
-    (3, 2, 2),
-    (2, 1, 1, 2),
-]
+shape_test_data = [tuple(), (3), (2, 2), (3, 2, 2), (2, 1, 1, 2)]
 
 
 @pytest.mark.parametrize(
@@ -2414,10 +2396,8 @@ test_sort_data = [
 ]
 
 
-class TestSortFunction:
+class TestSortFunction:  # pylint: disable=too-few-public-methods
     """Test the sort function works across all interfaces"""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("input, test_output", test_sort_data)
     def test_sort(self, input, test_output):
@@ -2455,10 +2435,8 @@ class TestExpm:
         assert qp.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
 
 
-class TestSize:
+class TestSize:  # pylint: disable=too-few-public-methods
     """Test qp.math.size method."""
-
-    # pylint: disable=too-few-public-methods
 
     array_and_size = [
         ([], 0),
@@ -2469,12 +2447,7 @@ class TestSize:
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("torch", marks=pytest.mark.torch),
-        ],
-    )
+    @pytest.mark.parametrize("interface", [pytest.param("torch", marks=pytest.mark.torch)])
     @pytest.mark.parametrize(("array", "size"), array_and_size)
     def test_size_torch_and_tf(self, array, size, interface):
         """Test size function with the torch and tf interfaces."""

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+# pylint: disable=too-many-arguments
+
 from collections.abc import Sequence
 
 import mcm_utils
@@ -25,9 +27,6 @@ from pennylane.ops import MidMeasure
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
-
-
-# pylint: disable=too-many-arguments
 
 
 def test_combine_measurements_core():
@@ -102,8 +101,7 @@ def test_unsupported_measurement(mcm_method):
         func(*params)
 
 
-# pylint: disable=unused-argument
-def obs_tape(x, y, z, reset=False, postselect=None):
+def obs_tape(x, y, z, reset=False, postselect=None):  # pylint: disable=unused-argument
     qp.RX(x, 0)
     qp.RZ(np.pi / 4, 0)
     m0 = qp.measure(0, reset=reset)
@@ -230,7 +228,7 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
     dev = qp.device("default.qubit", seed=seed)
     param = qp.numpy.array([np.pi / 3, np.pi / 6])
 
-    def func(x, y):
+    def func(x, y):  # pylint: disable=unused-argument
         qp.RX(x, 0)
         m0 = qp.measure(0)
         qp.RX(0.5 * x, 1)
@@ -310,7 +308,6 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
         _ = circuit([0.1, 0.2])
 
 
-# pylint: disable=import-outside-toplevel, not-an-iterable
 @pytest.mark.jax
 class TestJaxIntegration:
     """Integration tests for dynamic_one_shot with jax"""
@@ -321,7 +318,6 @@ class TestJaxIntegration:
     def test_sample_with_prng_key(self, mcm_method, shots, postselect, seed):
         """Test that setting a PRNGKey gives the expected behaviour. With separate calls
         to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
-        # pylint: disable=import-outside-toplevel
         from jax.random import PRNGKey
 
         dev = qp.device("default.qubit", seed=PRNGKey(seed))

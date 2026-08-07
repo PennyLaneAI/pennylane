@@ -43,13 +43,7 @@ class TestValidation:
             _ = get_compile_pipeline(inc)()
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "unsupported_level",
-        (
-            "device",
-            "gradient",
-        ),
-    )
+    @pytest.mark.parametrize("unsupported_level", ("device", "gradient"))
     def test_unsupported_levels_qjit(self, unsupported_level):
         """Tests unsupported levels when the input is QJIT'd QNode."""
 
@@ -64,15 +58,7 @@ class TestValidation:
         ):
             _ = get_compile_pipeline(circuit, level=unsupported_level)()
 
-    @pytest.mark.parametrize(
-        "unsupported_level",
-        (
-            [0],
-            [0, 1],
-            (0,),
-            (0, 1),
-        ),
-    )
+    @pytest.mark.parametrize("unsupported_level", ([0], [0, 1], (0), (0, 1)))
     def test_incorrect_level_type(self, unsupported_level):
         """Tests validation for incorrect level types."""
 
@@ -401,9 +387,7 @@ def test_level_is_slice_qjit(level_slice):
 
     @qp.qjit
     @user_pipeline
-    @qp.qnode(
-        qp.device("null.qubit"),
-    )
+    @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.X(0)
         return qp.expval(qp.Z(0))

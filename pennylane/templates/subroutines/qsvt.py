@@ -15,6 +15,8 @@
 Contains the QSVT template and qsvt wrapper function.
 """
 
+# pylint: disable=protected-access
+
 import copy
 import warnings
 from collections import defaultdict
@@ -499,8 +501,8 @@ class QSVT(Operation):
         data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
         return data, tuple()
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, UA, projectors, **kwargs):  # kwarg is id
         return cls._primitive.bind(UA, *projectors, **kwargs)
 
@@ -514,10 +516,7 @@ class QSVT(Operation):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
 
-        self._hyperparameters = {
-            "UA": UA,
-            "projectors": projectors,
-        }
+        self._hyperparameters = {"UA": UA, "projectors": projectors}
 
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
@@ -525,13 +524,9 @@ class QSVT(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "UA": self.hyperparameters["UA"],
-            "projectors": self.hyperparameters["projectors"],
-        }
+        return {"UA": self.hyperparameters["UA"], "projectors": self.hyperparameters["projectors"]}
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["UA"] = new_op._hyperparameters["UA"].map_wires(wire_map)
@@ -573,9 +568,8 @@ class QSVT(Operation):
         return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
 
     @staticmethod
-    def compute_decomposition(
-        *_data, UA, projectors, **_kwargs
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(*_data, UA, projectors, **_kwargs):
         r"""Representation of the operator as a product of other operators.
 
         The :class:`~.QSVT` is decomposed into alternating block encoding
@@ -643,7 +637,7 @@ class QSVT(Operation):
         return self
 
     @staticmethod
-    def compute_matrix(*args, **kwargs):
+    def compute_matrix(*args, **kwargs):  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -658,7 +652,6 @@ class QSVT(Operation):
         Returns:
             tensor_like: matrix representation
         """
-        # pylint: disable=unused-argument
         op_list = []
         UA = kwargs["UA"]
         projectors = kwargs["projectors"]
@@ -709,7 +702,6 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
 add_decomps(QSVT, _QSVT_decomposition)
 
-# pylint: disable=protected-access
 if QSVT._primitive is not None:
 
     @QSVT._primitive.def_impl
@@ -963,7 +955,6 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     def obj_function(phi):
         # Equation (23) in https://arxiv.org/pdf/2002.11649
 
-        # pylint: disable=import-outside-toplevel
         try:
             from jax import jit, vmap
 
@@ -1063,7 +1054,7 @@ def _obj_function_optax(phi, x, y):
     Returns:
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
+    # pylint: disable=redefined-outer-name,import-outside-toplevel
     import jax
 
     obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
@@ -1074,7 +1065,7 @@ def _obj_function_optax(phi, x, y):
 @partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
 def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
     """Dispatch optimization to the L-BFGS of optax."""
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
+    # pylint: disable=redefined-outer-name,import-outside-toplevel
     import jax
     import optax
 
@@ -1109,7 +1100,7 @@ def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by
     minimizing the distance between the target and qsp polynomial over the grid.
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
+    # pylint: disable=redefined-outer-name,import-outside-toplevel
     import jax
 
     grid_points = _grid_pts(degree, "jax")
@@ -1332,7 +1323,7 @@ def transform_angles(angles, routine1, routine2):
     )
 
 
-# pylint: disable=unused-argument,too-many-return-statements,too-many-branches
+# pylint: disable-next=unused-argument,too-many-return-statements,too-many-branches
 def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP),

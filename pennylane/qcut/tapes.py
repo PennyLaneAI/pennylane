@@ -415,11 +415,7 @@ def _get_measurements(
     return [expval(copy.copy(obs) @ g) for g in group]
 
 
-def _qcut_expand_fn(
-    tape: QuantumScript,
-    max_depth: int = 1,
-    auto_cutter: bool | Callable = False,
-):
+def _qcut_expand_fn(tape: QuantumScript, max_depth: int = 1, auto_cutter: bool | Callable = False):
     """Expansion function for circuit cutting.
 
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.

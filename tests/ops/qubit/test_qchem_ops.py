@@ -15,9 +15,9 @@
 Unit tests for the available qubit operations for quantum chemistry purposes.
 """
 
-import numpy as np
+# pylint: disable=too-few-public-methods
 
-# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
+import numpy as np
 import pytest
 from gate_data import (
     DoubleExcitation,
@@ -904,10 +904,7 @@ class TestOrbitalRotation:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [-0.1, 0.1421],
-    )
+    @pytest.mark.parametrize(("phi"), [-0.1, 0.1421])
     def test_tf_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
         tensorflow interface"""
@@ -930,10 +927,7 @@ class TestOrbitalRotation:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [-0.1, 0.1421],
-    )
+    @pytest.mark.parametrize(("phi"), [-0.1, 0.1421])
     def test_jax_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
@@ -952,10 +946,7 @@ class TestOrbitalRotation:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [-0.1, 0.1421],
-    )
+    @pytest.mark.parametrize(("phi"), [-0.1, 0.1421])
     def test_torch_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
         torch interface"""
@@ -1113,14 +1104,7 @@ class TestFermionicSWAP:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [
-            -0.1,
-            0.2,
-            np.pi / 4,
-        ],
-    )
+    @pytest.mark.parametrize(("phi"), [-0.1, 0.2, np.pi / 4])
     def test_tf(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
         tensorflow interface"""
@@ -1144,14 +1128,7 @@ class TestFermionicSWAP:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [
-            -0.1,
-            0.2,
-            np.pi / 4,
-        ],
-    )
+    @pytest.mark.parametrize(("phi"), [-0.1, 0.2, np.pi / 4])
     def test_jax(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
         jax interface"""

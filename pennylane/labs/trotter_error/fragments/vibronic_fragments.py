@@ -117,19 +117,14 @@ def _position_fragment(
 
 def _momentum_fragment(states: int, modes: int, freqs: ArrayLike) -> RealspaceMatrix:
     """Return the fragment consisting only of momentum operators."""
-    term = RealspaceOperator(
-        modes,
-        ("P", "P"),
-        RealspaceCoeffs(np.diag(freqs) / 2, label="omega"),
-    )
+    term = RealspaceOperator(modes, ("P", "P"), RealspaceCoeffs(np.diag(freqs) / 2, label="omega"))
     word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
 
     return RealspaceMatrix(states, modes, blocks)
 
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
-def _realspace_sum(
+def _realspace_sum(  # pylint: disable=too-many-arguments
     i: int, j: int, states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
 ) -> RealspaceSum:
     """Return a RealspaceSum representation of the ``(i, j)`` block in the RealspaceMatrix"""

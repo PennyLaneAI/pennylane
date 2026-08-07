@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for symbolic resource operators in the estimator_beta module."""
 
+# pylint: disable=no-self-use,too-few-public-methods
+
 from collections import defaultdict
 from functools import partial
 
@@ -26,8 +28,6 @@ from pennylane.labs.estimator_beta.ops.op_math.symbolic import (
     _generate_name,
     mark_subroutine,
 )
-
-# pylint: disable=no-self-use, too-few-public-methods
 
 
 class TestGenerateName:
@@ -65,12 +65,7 @@ class TestGenerateName:
         def my_func(arg1, arg2, kwarg1="a"):  # pylint: disable=unused-argument
             return
 
-        name = _generate_name(
-            my_func,
-            ["arg1", "kwarg1"],
-            *args,
-            **kwargs,
-        )
+        name = _generate_name(my_func, ["arg1", "kwarg1"], *args, **kwargs)
         assert name == "my_func(arg1=10, kwarg1=b)"
 
     def test_kwargs_edge_case(self):
@@ -264,10 +259,7 @@ class TestResourceQfunc:
             qre.X()
 
         op = ResourceQfunc("SubA", qfunc)
-        expected = [
-            GateCount(qre.Z.resource_rep()),
-            GateCount(qre.X.resource_rep()),
-        ]
+        expected = [GateCount(qre.Z.resource_rep()), GateCount(qre.X.resource_rep())]
         assert op.resource_decomp(**op.resource_params) == expected
 
     def test_tracking_name(self):

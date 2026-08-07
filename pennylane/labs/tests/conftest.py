@@ -35,9 +35,7 @@ TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
-LIST_CORE_DEVICES = {
-    "default.qubit",
-}
+LIST_CORE_DEVICES = {"default.qubit"}
 
 
 @pytest.fixture(scope="function")
@@ -114,7 +112,7 @@ def fixture_device(device_kwargs):
     """Fixture to create a device."""
 
     # internally used by pytest
-    __tracebackhide__ = True  # pylint:disable=unused-variable
+    __tracebackhide__ = True  # pylint: disable=unused-variable
 
     def _device(wires):
         device_kwargs["wires"] = wires
@@ -148,7 +146,7 @@ def pytest_runtest_setup(item):
 @pytest.fixture(scope="session", name="mpi4py_support")
 def fixture_mpi4py_support():
     """Fixture to determine whether mpi4py is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
+    # pylint: disable=unused-import,import-outside-toplevel
     try:
         import mpi4py
 
@@ -169,7 +167,7 @@ def skip_if_no_mpi4py_support(mpi4py_support):
 @pytest.fixture(scope="session", name="pyscf_support")
 def fixture_pyscf_support():
     """Fixture to determine whether pyscf is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
+    # pylint: disable=unused-import,import-outside-toplevel
     try:
         import pyscf
 
@@ -190,7 +188,7 @@ def skip_if_no_pyscf_support(pyscf_support):
 @pytest.fixture(scope="session", name="geometric_support")
 def fixture_geometric_support():
     """Fixture to determine whether geometric is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
+    # pylint: disable=unused-import,import-outside-toplevel
     try:
         import geometric
 
@@ -222,7 +220,7 @@ def _convert_to_int_or_float(value):
             return value
 
 
-class StoreDictKeyPair(argparse.Action):
+class StoreDictKeyPair(argparse.Action):  # pylint: disable=too-few-public-methods
     """Argparse action for storing key-value pairs as a dictionary.
 
     For example, calling a CLI program with ``--mydict v1=k1 v2=5``:
@@ -235,8 +233,6 @@ class StoreDictKeyPair(argparse.Action):
     Note that strings will be converted to ints and floats if possible.
 
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs

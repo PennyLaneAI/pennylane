@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pennylane` kernels module.
 """
 
-# pylint: disable=import-outside-toplevel
 import math
 import sys
 from functools import partial
@@ -593,12 +592,7 @@ class TestRegularization:
 
         assert np.allclose(output, expected_output, atol=1e-5)
 
-    @pytest.mark.parametrize(
-        "input",
-        [
-            (np.diag([1, -1])),
-        ],
-    )
+    @pytest.mark.parametrize("input", [np.diag([1, -1])])
     def test_closest_psd_matrix_import_error(self, input, mocker):
         """Test import error raising if cvxpy is not installed."""
         with pytest.raises(ImportError) as import_error:
@@ -607,12 +601,7 @@ class TestRegularization:
 
         assert "CVXPY is required" in str(import_error.value)
 
-    @pytest.mark.parametrize(
-        "input,solver",
-        [
-            (np.diag([1, -1]), "I am not a solver"),
-        ],
-    )
+    @pytest.mark.parametrize("input,solver", [(np.diag([1, -1]), "I am not a solver")])
     @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix_solve_error(self, input, solver):
         """Test verbose error raising if problem.solve crashes."""

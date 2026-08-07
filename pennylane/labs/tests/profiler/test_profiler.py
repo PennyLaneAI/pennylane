@@ -15,6 +15,8 @@
 Test the profiler functionality.
 """
 
+# pylint: disable=no-self-use,too-few-public-methods
+
 from collections import defaultdict
 
 import pytest
@@ -23,8 +25,6 @@ import pennylane as qp
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resources_base import Resources
 from pennylane.labs.profiler import ProfileNode, export_flame_graph_data, profile
-
-# pylint: disable=no-self-use, too-few-public-methods
 
 
 def _basic_circuit():
@@ -165,12 +165,7 @@ class TestProfileNode:
         gate_data = defaultdict(int, {cmpr_op: 4})
         child = ProfileNode()
 
-        node = ProfileNode(
-            cmpr_op=cmpr_op,
-            scalar=4,
-            gate_data=gate_data,
-            children=[child],
-        )
+        node = ProfileNode(cmpr_op=cmpr_op, scalar=4, gate_data=gate_data, children=[child])
 
         assert node.cmpr_op is cmpr_op
         assert node.scalar == 4
@@ -222,12 +217,7 @@ class TestProfileNode:
 
         names_and_scalars = sorted((op.name, data[0]) for op, data in grouped.items())
         # The two CRZ operators differ in precision so they remain separate entries.
-        assert names_and_scalars == [
-            ("CRZ", 1),
-            ("CRZ", 5),
-            ("Hadamard", 6),
-            ("QFT(4)", 1),
-        ]
+        assert names_and_scalars == [("CRZ", 1), ("CRZ", 5), ("Hadamard", 6), ("QFT(4)", 1)]
 
     def test_default_cost_func(self):
         """Test that the default cost function counts the number of T gates."""
@@ -471,13 +461,7 @@ class TestExportFlameGraphData:
         assert parents[0] == ""
 
         # The first few entries match the documented output.
-        assert names[:5] == [
-            "circuit",
-            "Hadamard [x5]",
-            "CRZ [x6]",
-            "CNOT [x12]",
-            "RZ [x12]",
-        ]
+        assert names[:5] == ["circuit", "Hadamard [x5]", "CRZ [x6]", "CNOT [x12]", "RZ [x12]"]
 
     def test_export_root_value_is_total_cost(self):
         """Test that the root value equals the total cost (T count by default)."""

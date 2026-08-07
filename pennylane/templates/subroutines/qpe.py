@@ -15,17 +15,12 @@
 Contains the QuantumPhaseEstimation template.
 """
 
-# pylint: disable=arguments-differ
 import copy
 
 from pennylane import ops
 from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -224,8 +219,8 @@ class QuantumPhaseEstimation(Operation):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
 
-    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["unitary"] = ops.functions.map_wires(
@@ -245,6 +240,7 @@ class QuantumPhaseEstimation(Operation):
         return self
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(*_, unitary, estimation_wires, **__):
         r"""Representation of the QPE circuit as a product of other operators.
 
@@ -262,7 +258,6 @@ class QuantumPhaseEstimation(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        # pylint: disable=arguments-differ
         op_list = [ops.Hadamard(w) for w in estimation_wires]
         pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
         op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires, strict=True))
@@ -292,7 +287,7 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
 
 
 @register_resources(_qpe_decomp_resource)
-def _qpe_decomp(*_, unitary, estimation_wires, **__):  # pylint: disable=unused-argument
+def _qpe_decomp(*_, unitary, estimation_wires, **__):
     for w in estimation_wires:
         ops.Hadamard(w)
     for i, w in enumerate(estimation_wires):

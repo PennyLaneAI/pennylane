@@ -126,10 +126,7 @@ def test_exception():
     """Test operation wire exception in Ross-Selinger"""
     op = qp.SingleExcitation(1.0, wires=[1, 2])
 
-    with pytest.raises(
-        ValueError,
-        match=r"Operator must be a RZ or PhaseShift gate",
-    ):
+    with pytest.raises(ValueError, match=r"Operator must be a RZ or PhaseShift gate"):
         rs_decomposition(op, epsilon=1e-4, max_search_trials=1)
 
 

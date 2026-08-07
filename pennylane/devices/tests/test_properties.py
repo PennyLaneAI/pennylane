@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests that a device has the right attributes, arguments and methods."""
 
-# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qp

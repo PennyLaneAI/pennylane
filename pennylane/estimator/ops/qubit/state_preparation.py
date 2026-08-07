@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for state preparation templates."""
 
+# pylint: disable=arguments-differ
+
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -20,8 +22,6 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-
-# pylint: disable= arguments-differ
 
 
 class BasisState(ResourceOperator):
@@ -73,6 +73,4 @@ class BasisState(ResourceOperator):
             ``GateCount`` objects, where each object represents a specific quantum gate and the
             number of times it appears in the decomposition.
         """
-        return [
-            GateCount(resource_rep(qre.X), num_wires // 2),
-        ]
+        return [GateCount(resource_rep(qre.X), num_wires // 2)]

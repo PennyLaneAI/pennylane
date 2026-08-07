@@ -20,10 +20,7 @@ import pennylane as qp
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 from pennylane.devices import ExecutionConfig, NullQubit, preprocess
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import (
-    ClassicalShadowMP,
-    ShadowExpvalMP,
-)
+from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 
 
 def test_name():
@@ -127,7 +124,6 @@ def test_set_device_target():
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
 
-    # pylint: disable=too-few-public-methods
     class MyOp(qp.operation.Operator):
         pass
 
@@ -780,7 +776,7 @@ class TestSumOfTermsDifferentiability:
         out = self.f(dev, x, style=style)
         assert out == torch.tensor(0)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         assert x.grad == 0
 
     @pytest.mark.xfail(reason="tf can't track derivatives")
@@ -817,7 +813,7 @@ class TestDeviceDifferentiation:
         [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0
 
         actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, config)
@@ -880,7 +876,7 @@ class TestDeviceDifferentiation:
 
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0.0
 
         actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, config)
@@ -1123,13 +1119,7 @@ class TestIntegration:
 
         assert np.array_equal(circuit(), [expected] * 5)
 
-    @pytest.mark.parametrize(
-        "wires,expected",
-        [
-            (None, [1, 0, 0, 0]),
-            (3, [1] + [0] * 7),
-        ],
-    )
+    @pytest.mark.parametrize("wires,expected", [(None, [1, 0, 0, 0]), (3, [1] + [0] * 7)])
     def test_state_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by state."""
         dev = NullQubit(wires=wires)
@@ -1142,13 +1132,7 @@ class TestIntegration:
 
         assert np.array_equal(circuit(), expected)
 
-    @pytest.mark.parametrize(
-        "wires,expected",
-        [
-            (None, [1, 0, 0, 0]),
-            (3, [1] + [0] * 7),
-        ],
-    )
+    @pytest.mark.parametrize("wires,expected", [(None, [1, 0, 0, 0]), (3, [1] + [0] * 7)])
     def test_probs_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by probs."""
         dev = NullQubit(wires=wires)
@@ -1334,7 +1318,7 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
+class TestNullQubitGraphModeExclusive:
     """Tests for NullQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
@@ -1344,7 +1328,7 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         """Test that if a decomposition requires more work wires than available on null.qubit,
         that decomposition is discarded and fallback is used."""
 
-        class MyNullQubitOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyNullQubitOp(qp.operation.Operator):
             num_wires = 1
 
         @qp.register_resources({qp.H: 2})
@@ -1373,7 +1357,7 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         still runs without error on NullQubit."""
 
         # Create a custom operator that's not in the standard gateset
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             num_wires = 2
 
             def decomposition(self):

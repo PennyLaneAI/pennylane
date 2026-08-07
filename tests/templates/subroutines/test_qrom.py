@@ -90,16 +90,7 @@ def test_abstract_init(data):
 @pytest.mark.jax
 def test_assert_valid_qrom():
     """Run standard validity tests."""
-    data = (
-        (0, 0, 0),
-        (0, 0, 1),
-        (1, 1, 1),
-        (0, 1, 1),
-        (0, 0, 0),
-        (1, 0, 1),
-        (1, 1, 0),
-        (1, 1, 1),
-    )
+    data = ((0, 0, 0), (0, 0, 1), (1, 1, 1), (0, 1, 1), (0, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1))
 
     op = qp.QROM(data, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
     qp.ops.functions.assert_valid(op, skip_differentiation=True)
@@ -108,12 +99,7 @@ def test_assert_valid_qrom():
 @pytest.mark.jax
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
-    op = qp.QROM(
-        ((1,), (0,), (0,), (1,)),
-        control_wires=[1, 2],
-        target_wires=[3],
-        work_wires=0,
-    )
+    op = qp.QROM(((1), (0), (0), (1)), control_wires=[1, 2], target_wires=[3], work_wires=0)
     qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
@@ -204,9 +190,7 @@ class TestQROM:
             ),
         ],
     )
-    def test_operation_result(
-        self, data, target_wires, control_wires, work_wires, clean
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, data, target_wires, control_wires, work_wires, clean):
         """Test the correctness of the QROM template output."""
         dev = qp.device("default.qubit")
 
@@ -372,11 +356,9 @@ class TestQROM:
             ),
             ([[1], [0], [0], [1]], [0, 1], [2], [], False),
             ([[1], [0], [0], [1]], [0, 1], [2], [3, 4], False),
-        ],  # pylint: disable=too-many-arguments
+        ],
     )
-    def test_decomposition_new(
-        self, data, control_wires, target_wires, work_wires, clean
-    ):  # pylint: disable=too-many-arguments
+    def test_decomposition_new(self, data, control_wires, target_wires, work_wires, clean):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.QROM(
             data,
@@ -697,12 +679,7 @@ class TestMeasurementQROM:
 
     def test_decomposition_from_base_operator(self):
         """Test that the decomposition extracts arguments from ``base`` (Adjoint path)."""
-        op = qp.QROM(
-            [[1], [0], [0], [1]],
-            control_wires=[0, 1],
-            target_wires=[2],
-            work_wires=[3],
-        )
+        op = qp.QROM([[1], [0], [0], [1]], control_wires=[0, 1], target_wires=[2], work_wires=[3])
         with qp.queuing.AnnotatedQueue() as q_base:
             _qrom_measurement_decomposition(base=op)
         with qp.queuing.AnnotatedQueue() as q_direct:
@@ -719,10 +696,7 @@ class TestMeasurementQROM:
 
     @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "L",
-        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16],
-    )
+    @pytest.mark.parametrize("L", [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
     def test_correctness(self, L, seed):
         """Test correctness of measurement-based QROM for various sizes."""
         rng = np.random.default_rng(seed)
@@ -810,10 +784,7 @@ class TestMeasurementQROM:
 
     @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "L",
-        [3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15],
-    )
+    @pytest.mark.parametrize("L", [3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15])
     def test_out_of_range_maps_to_identity(self, L, seed):
         """Non-partial QROM: indices j in [L, 2**c) must map to the identity.
 

@@ -16,6 +16,8 @@
 This submodule contains the template for the Reflection operation.
 """
 
+# pylint: disable=protected-access
+
 import copy
 
 import numpy as np
@@ -117,8 +119,8 @@ class Reflection(Operation):
         data = (self.hyperparameters["base"], self.parameters[0])
         return data, (self.hyperparameters["reflection_wires"],)
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
         return super()._primitive_bind_call(U, alpha, wires=reflection_wires, **kwargs)
 
@@ -137,10 +139,7 @@ class Reflection(Operation):
         if not set(reflection_wires).issubset(set(U.wires)):
             raise ValueError("The reflection wires must be a subset of the operation wires.")
 
-        self._hyperparameters = {
-            "base": U,
-            "reflection_wires": tuple(reflection_wires),
-        }
+        self._hyperparameters = {"base": U, "reflection_wires": tuple(reflection_wires)}
 
         super().__init__(alpha, *U.data, wires=wires)
 
@@ -153,7 +152,6 @@ class Reflection(Operation):
         }
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["base"] = new_op._hyperparameters["base"].map_wires(wire_map)
@@ -219,11 +217,7 @@ def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wire
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
-    resources = {
-        ops.GlobalPhase: 1,
-        _adjoint_abstract(base_rep): 1,
-        ops.PauliX: 2,
-    }
+    resources = {ops.GlobalPhase: 1, _adjoint_abstract(base_rep): 1, ops.PauliX: 2}
 
     if num_wires > 1:
         resources[
@@ -271,7 +265,6 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
 
 add_decomps(Reflection, _reflection_decomposition)
 
-# pylint: disable=protected-access
 if Reflection._primitive is not None:
 
     @Reflection._primitive.def_impl

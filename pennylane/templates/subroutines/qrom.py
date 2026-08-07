@@ -72,9 +72,8 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
     return new_ops
 
 
-def _select_ops(
-    control_wires, depth, target_wires, swap_wires, data, select_work_wires
-):  # pylint:disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires):
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
@@ -212,7 +211,7 @@ class QROM(Operator2):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-    ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
+    ):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -254,8 +253,7 @@ class QROM(Operator2):
 
         super().__init__(data, control_wires, target_wires, work_wires, clean)
 
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
+    def __abstract_init__(  # pylint: disable=arguments-differ
         self,
         data: AbstractArray | TensorLike | Sequence[str],
         control_wires: AbstractArray | WiresLike,
@@ -321,9 +319,8 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
     return n_select_work_wires
 
 
-def _qrom_decomposition_resources(
-    data, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=too-many-branches
+# pylint: disable-next=too-many-branches
+def _qrom_decomposition_resources(data, control_wires, target_wires, work_wires, clean):
 
     num_bitstrings = len(data)
     num_control_wires = len(control_wires)
@@ -421,9 +418,7 @@ def _qrom_decomposition_resources(
 
 
 @register_resources(_qrom_decomposition_resources)
-def _qrom_decomposition(
-    data, control_wires, target_wires, work_wires, clean, **__
-):  # pylint: disable=unused-argument, too-many-arguments
+def _qrom_decomposition(data, control_wires, target_wires, work_wires, clean, **__):
     if len(control_wires) == 0:
         BasisEmbedding(data[0, :], wires=target_wires)
 
@@ -591,7 +586,7 @@ def _count_tempAND_in_measurement_qrom(k):
     return k - 2
 
 
-def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
+def _qrom_measurement_resources(
     num_bitstrings=None, num_target_wires=None, num_control_wires=None, base_params=None, **_
 ):
     """Resource estimate for the measurement-based QROM decomposition.
@@ -743,7 +738,7 @@ def _build_flag(extra_wires, work_wires):
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-many-branches
+def _qrom_measurement_decomposition(
     data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
 ):
     """QROM decomposition using measurement-based uncomputation.

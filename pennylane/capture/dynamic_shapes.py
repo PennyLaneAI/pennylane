@@ -143,8 +143,7 @@ def determine_abstracted_axes(args):
     return abstracted_axes, abstract_shapes  # pragma: no cover
 
 
-# pylint: disable=unused-argument
-def _default_setup_env(tracers, params):
+def _default_setup_env(tracers, params):  # pylint: disable=unused-argument
     return {}
 
 

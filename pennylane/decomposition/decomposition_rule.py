@@ -350,7 +350,7 @@ def register_resources(
 class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         func: Callable,
         resources: Callable | dict | None = None,
@@ -904,15 +904,12 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
         return self._conditions_met and self._enough_work_wires
 
 
-# pylint: disable=protected-access,too-few-public-methods
 class _DecompInfoCollection:
     """A collection of _DecompInfo."""
 
-    def __init__(
-        self,
-        rule_infos: Sequence[_DecompInfo],
-        show_not_applicable: bool = True,
-    ) -> None:
+    # pylint: disable=protected-access
+
+    def __init__(self, rule_infos: Sequence[_DecompInfo], show_not_applicable: bool = True) -> None:
         self._n_rules_original = len(rule_infos)
         indexed_rule_infos = enumerate(rule_infos)
         self._show_not_applicable = show_not_applicable
@@ -933,7 +930,6 @@ class _DecompInfoCollection:
             return "No applicable decomposition rules (non-applicable rules are excluded)."
         return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rules)
 
-    # pylint: disable=protected-access
     def _repr_markdown_(self) -> str:
         if not self._n_rules_original:
             return "No available decomposition rules."

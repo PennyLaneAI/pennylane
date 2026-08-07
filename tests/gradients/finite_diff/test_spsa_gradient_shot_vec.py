@@ -15,8 +15,6 @@
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
 
-# pylint: disable=abstract-method,too-many-arguments
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -35,12 +33,11 @@ default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
 
 
-def coordinate_sampler(indices, num_params, idx, rng=None):
+def coordinate_sampler(indices, num_params, idx, rng=None):  # pylint: disable=unused-argument
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
-    # pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -306,13 +303,7 @@ class TestSpsaGradient:
 
         tape = qp.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         n = 5
-        tapes, _ = spsa_grad(
-            tape,
-            strategy="forward",
-            approx_order=1,
-            h=h_val,
-            num_directions=n,
-        )
+        tapes, _ = spsa_grad(tape, strategy="forward", approx_order=1, h=h_val, num_directions=n)
 
         # one tape per direction, plus one global call
         assert len(tapes) == n + 1
@@ -466,8 +457,6 @@ class TestSpsaGradient:
         class SpecialObservable(Operator):
             """SpecialObservable"""
 
-            # pylint:disable=too-few-public-methods
-
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
                 return []
@@ -475,7 +464,6 @@ class TestSpsaGradient:
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
-            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
@@ -1216,12 +1204,7 @@ probs = qp.probs(wires=[1, 0])
 var_involutory = qp.var(proj)
 var_non_involutory = qp.var(hermitian)
 
-single_scalar_output_measurements = [
-    expval,
-    probs,
-    var_involutory,
-    var_non_involutory,
-]
+single_scalar_output_measurements = [expval, probs, var_involutory, var_non_involutory]
 
 single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
 
@@ -1248,9 +1231,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -1275,9 +1257,8 @@ class TestReturn:
         x = 0.543
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wire]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+            qp.RY(x, wires=[op_wire])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))
@@ -1313,12 +1294,10 @@ class TestReturn:
         y = 0.213
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RY(
-                x, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
-            qp.RY(
-                y, wires=[op_wires]
-            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(x, wires=[op_wires])
+            # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qp.RY(y, wires=[op_wires])
             qp.apply(meas)  # Measurements act on wires 0 and 1
 
         grad_transform_shots = Shots(shot_vec)
@@ -1345,14 +1324,12 @@ class TestReturn:
 
         with qp.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
-                qp.RY(
-                    params[idx], wires=[w]
-                )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                qp.RY(params[idx], wires=[w])
 
             # Extra op - 5 measurements in total
-            qp.RY(
-                params[5], wires=[op_wires[-1]]
-            )  # Op acts either on wire 4 (non-zero grad) or wire 5 (zero grad)
+            # Op acts either on wire 4 (non-zero grad) or wire 5 (zero grad)
+            qp.RY(params[5], wires=[op_wires[-1]])
 
             # 4 measurements
             qp.expval(qp.PauliZ(wires=0))

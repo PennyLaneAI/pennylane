@@ -136,71 +136,32 @@ tests_compute_jvp_multi = [
     (tuple(jacs[:3]), tangs[0], tuple(expects[:3])),  # scalar return types, scalar parameter
     (tuple(jacs[:3]), tangs[1], tuple(expects[:3])),  # scalar return types, scalar parameter
     (tuple(jacs[2:5]), tangs[0], tuple(expects[2:5])),  # mixed return types, scalar parameter
-    (
-        (jacs[2], jacs[4], jacs[8]),
-        tangs[2],
-        (expects[2], expects[4], expects[8]),
-    ),  # mixed return types, scalar parameter
-    (
-        (jacs[12], jacs[12]),
-        tangs[12],
-        (expects[12], expects[12]),
-    ),  # scalar return types, tensor parameter
-    (
-        (jacs[12], jacs[15]),
-        tangs[12],
-        (expects[12], expects[15]),
-    ),  # mixed return types, tensor parameter
-    (
-        tuple(jacs[18:20]),
-        tangs[18],
-        tuple(expects[18:20]),
-    ),  # scalar return types, multiple scalar parameters
-    (
-        tuple(jacs[21:23]),
-        tangs[18],
-        tuple(expects[21:23]),
-    ),  # tensor return types, multiple scalar parameters
-    (
-        tuple(jacs[24:26]),
-        tangs[24],
-        tuple(expects[24:26]),
-    ),  # tensor return types, multiple scalar parameters
-    (
-        (jacs[18], jacs[19], jacs[22]),
-        tangs[18],
-        (expects[18], expects[19], expects[22]),
-    ),  # mixed return types, multiple scalar parameters
-    (
-        (jacs[30], jacs[30]),
-        tangs[30],
-        (expects[30], expects[30]),
-    ),  # scalar return types, multiple tensor parameter
-    (
-        (jacs[35], jacs[35]),
-        tangs[35],
-        (expects[35], expects[35]),
-    ),  # tensor return types, multiple tensor parameters
-    (
-        (jacs[30], jacs[35]),
-        tangs[30],
-        (expects[30], expects[35]),
-    ),  # mixed return types, multiple tensor parameters
-    (
-        (jacs[33], jacs[33]),
-        tangs[33],
-        (expects[33], expects[33]),
-    ),  # scalar return types, mixed parameters
-    (
-        (jacs[38], jacs[38]),
-        tangs[38],
-        (expects[38], expects[38]),
-    ),  # tensor return types, mixed parameters
-    (
-        (jacs[33], jacs[38]),
-        tangs[33],
-        (expects[33], expects[38]),
-    ),  # mixed return types, mixed parameters
+    # mixed return types, scalar parameter
+    ((jacs[2], jacs[4], jacs[8]), tangs[2], (expects[2], expects[4], expects[8])),
+    # scalar return types, tensor parameter
+    ((jacs[12], jacs[12]), tangs[12], (expects[12], expects[12])),
+    # mixed return types, tensor parameter
+    ((jacs[12], jacs[15]), tangs[12], (expects[12], expects[15])),
+    # scalar return types, multiple scalar parameters
+    (tuple(jacs[18:20]), tangs[18], tuple(expects[18:20])),
+    # tensor return types, multiple scalar parameters
+    (tuple(jacs[21:23]), tangs[18], tuple(expects[21:23])),
+    # tensor return types, multiple scalar parameters
+    (tuple(jacs[24:26]), tangs[24], tuple(expects[24:26])),
+    # mixed return types, multiple scalar parameters
+    ((jacs[18], jacs[19], jacs[22]), tangs[18], (expects[18], expects[19], expects[22])),
+    # scalar return types, multiple tensor parameter
+    ((jacs[30], jacs[30]), tangs[30], (expects[30], expects[30])),
+    # tensor return types, multiple tensor parameters
+    ((jacs[35], jacs[35]), tangs[35], (expects[35], expects[35])),
+    # mixed return types, multiple tensor parameters
+    ((jacs[30], jacs[35]), tangs[30], (expects[30], expects[35])),
+    # scalar return types, mixed parameters
+    ((jacs[33], jacs[33]), tangs[33], (expects[33], expects[33])),
+    # tensor return types, mixed parameters
+    ((jacs[38], jacs[38]), tangs[38], (expects[38], expects[38])),
+    # mixed return types, mixed parameters
+    ((jacs[33], jacs[38]), tangs[33], (expects[33], expects[38])),
 ]
 
 
