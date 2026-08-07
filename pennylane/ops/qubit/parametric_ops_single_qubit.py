@@ -953,7 +953,12 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     qp.GlobalPhase(-phi / 2)
 
 
-def _cphase_to_ppr_resource(base, control_wires, **_):  # pylint: disable=unused-argument
+def _controlled_phase_shift_resource(base, control_wires, **_):  # pylint: disable=unused-argument
+    # A single control wire specializes to ``ControlledPhaseShift``, matching the legacy
+    # behaviour (and its cheaper ``RZ``/``CNOT`` decomposition) rather than the general
+    # phase-polynomial (``PauliRot``) expansion, which is only used for multiple control wires.
+    if len(control_wires) == 1:
+        return {qp.ControlledPhaseShift: 1}
     num_control_wires = len(control_wires)
     resources = {
         qp.PauliRot(Float, pauli_word="Z" * i, wires=Wire[len("Z" * i)]): builtin_math.comb(
@@ -965,22 +970,25 @@ def _cphase_to_ppr_resource(base, control_wires, **_):  # pylint: disable=unused
     return resources
 
 
-@register_resources(_cphase_to_ppr_resource)
-def _cphase_to_ppr(base, control_wires, **_):
-    theta = base.phi
+@register_resources(_controlled_phase_shift_resource)
+def _controlled_phase_shift_decomp(base, control_wires, **_):
     wires = control_wires + base.wires
+    if len(control_wires) == 1:
+        qp.ControlledPhaseShift(base.phi, wires=wires)
+        return
+
     n = len(wires)
     for l in range(1, n + 1):
         for sub_wires in combinations(wires, l):
-            phi = -theta / 2 ** (n - 1) * (-1) ** l
+            phi = -base.phi / 2 ** (n - 1) * (-1) ** l
             qp.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
-    qp.GlobalPhase(-theta / 2**n)
+    qp.GlobalPhase(-base.phi / 2**n)
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
-add_decomps("C(PhaseShift)", flip_zero_control2(_cphase_to_ppr))
+add_decomps("C(PhaseShift)", flip_zero_control2(_controlled_phase_shift_decomp))
 
 
 class Rot(Operation):

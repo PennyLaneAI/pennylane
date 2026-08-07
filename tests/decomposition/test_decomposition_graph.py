@@ -1062,13 +1062,17 @@ class TestSymbolicDecompositions:
             gate_set={"H", "CNOT", "RX", "PhaseShift"},
             alt_decomps={CustomOp: [custom_decomp]},
         )
-        # 10 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX, A(PhaseShift), PhaseShift
-        # 6 decomposition nodes for: A(CustomOp), A(CNOT), A(RX), A(T), A(PhaseShift), A(H)
+        # 12 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX,
+        # A(PhaseShift), PhaseShift, A(RZ), A(GlobalPhase). ``PhaseShift`` and ``T`` are
+        # ``Operator2``, so A(PhaseShift) also decomposes via ``adjoint(_phase_shift_to_rz_gp)``,
+        # which adds the A(RZ) and A(GlobalPhase) operator nodes relative to the legacy model.
+        # 7 decomposition nodes for: A(CustomOp), A(H), A(CNOT), A(RX), A(T), and A(PhaseShift)
+        # (twice: ``adjoint_rotation`` and ``adjoint(_phase_shift_to_rz_gp)``).
         # 1 dummy starting node
-        assert len(graph._graph.nodes()) == 17
-        # 9 edges from ops to decompositions and 6 edges from decompositions to ops.
+        assert len(graph._graph.nodes()) == 20
+        # 11 edges from ops to decompositions and 7 edges from decompositions to ops,
         # and 4 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 19
+        assert len(graph._graph.edges()) == 22
 
         solution = graph.solve()
         kwargs = op.hyperparameters

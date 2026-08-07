@@ -35,6 +35,7 @@ from pennylane.ops import (
     SymbolicOp,
 )
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     QSVT,
@@ -281,6 +282,21 @@ def bind_new_parameters_adjoint(op: Adjoint, params: Sequence[TensorLike]):
 @bind_new_parameters.register
 def bind_new_parameters_adjoint(op: Adjoint2, params: Sequence[TensorLike]):
     return Adjoint2(bind_new_parameters(op.base, params))
+
+
+@bind_new_parameters.register
+def bind_new_parameters_controlled_op2(op: ControlledOp2, params: Sequence[TensorLike]):
+    # A generic ``ControlledOp2`` exposes its base's parameters as ``data`` (the
+    # ``control_values``/``control_wires`` are not trainable), so the new parameters are bound
+    # to the base.
+    new_base = bind_new_parameters(op.base, params)
+    return type(op)(
+        new_base,
+        control_wires=op.control_wires,
+        control_values=op.control_values,
+        work_wires=op.work_wires,
+        work_wire_type=op.work_wire_type,
+    )
 
 
 @bind_new_parameters.register
