@@ -837,6 +837,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removes `pennylane.transforms.decompose.DecomposeInterpreter`
+  [(#9915)](https://github.com/PennyLaneAI/pennylane/pull/9915)
+
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 
