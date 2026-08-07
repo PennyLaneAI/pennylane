@@ -3788,34 +3788,89 @@ class TestSimplify:
 
         dev = qp.device("default.qubit")
 
-        @qp.qnode(dev, interface="jax")
-        def circuit(simplify, wires, *params, **hyperparams):
-            if simplify:
-                qp.simplify(op(*params, wires=wires, **hyperparams))
-            else:
-                op(*params, wires=wires, **hyperparams)
+        if issubclass(op, Operator1):
 
-            return qp.expval(qp.PauliZ(0))
+            @qp.qnode(dev, interface="jax")
+            def circuit(simplify, wires, *params, **hyperparams):
+                if simplify:
+                    qp.simplify(op(*params, wires=wires, **hyperparams))
+                else:
+                    op(*params, wires=wires, **hyperparams)
 
-        unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = self._get_params_wires(unsimplified_op)
-        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
+                return qp.expval(qp.PauliZ(0))
 
-        for i in range(params[0].shape[0]):
-            parameters = [jnp.array(p[i]) for p in params]
+            unsimplified_op = self.get_unsimplified_op(op)
+            params, wires = self._get_params_wires(unsimplified_op)
+            hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
-            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
-            simplified_res = circuit(True, wires, *parameters, **hyperparams)
+            for i in range(params[0].shape[0]):
+                parameters = [jnp.array(p[i]) for p in params]
 
-            unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                False, wires, *parameters, **hyperparams
-            )
-            simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                True, wires, *parameters, **hyperparams
-            )
+                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+                simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
-            assert qp.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
-            assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+                unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                    False, wires, *parameters, **hyperparams
+                )
+                simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                    True, wires, *parameters, **hyperparams
+                )
+
+                assert qp.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+
+        else:
+            @qp.qnode(dev, interface="jax")
+            def circuit(simplify, wires, *args, **kwargs):
+                if simplify:
+                    qp.simplify(op(*args, wires=wires, **kwargs))
+                else:
+                    op(*args, wires=wires, **kwargs)
+            
+                return qp.expval(qp.PauliZ(0))
+
+            unsimplified_op = self.get_unsimplified_op(op)
+
+            angle = next(iter(unsimplified_op.dynamic_args))
+            for i in range(unsimplified_op.dynamic_args[angle].shape[0]):
+                flat_dyn_args = [jnp.array(p[i]) for p in unsimplified_op.dynamic_args.values()]
+
+                unsimplified_res = circuit(
+                    False, 
+                    unsimplified_op.wires, 
+                    *flat_dyn_args, 
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_res = circuit(
+                    True, 
+                    unsimplified_op.wires, 
+                    *flat_dyn_args, 
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+
+                unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(flat_dyn_args))))(
+                    False, 
+                    unsimplified_op.wires, 
+                    *flat_dyn_args, 
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+                simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(flat_dyn_args))))(
+                    True, 
+                    unsimplified_op.wires, 
+                    *flat_dyn_args, 
+                    **unsimplified_op.static_args,
+                    **unsimplified_op.compilable_args,
+                    **unsimplified_op.hybrid_args,
+                )
+
+                assert qp.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+                assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
 
     @pytest.mark.jax
     def test_simplify_rotations_grad_jax_jit(self):
