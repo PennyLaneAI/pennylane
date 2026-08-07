@@ -302,3 +302,42 @@ def test_jax_jit():
     jit_circuit = jax.jit(circuit)
 
     assert qp.math.allclose(circuit(), jit_circuit())
+
+
+@pytest.mark.capture
+def test_capture_decomposition():
+    """Test that grover's decomposition can be captured."""
+
+    import jax
+
+    from pennylane.capture.primitives import for_loop_prim, operator_p
+
+    wires = [0, 1, 2]
+    work_wires = (3, 4)
+
+    rule = functools.partial(
+        qp.list_decomps(qp.GroverOperator)[0], work_wires=work_wires, n_wires=3
+    )
+
+    jaxpr = jax.make_jaxpr(rule)(wires)
+
+    # Validate Jaxpr
+    jaxpr_eqns = jaxpr.eqns
+    # 2 Hadamard loops
+    hadamard_loops_eqns = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
+    assert len(hadamard_loops_eqns) == 2
+    for hadamard_loop in hadamard_loops_eqns:
+        assert hadamard_loop.primitive == for_loop_prim
+        hadamard_inner_eqns = hadamard_loop.params["jaxpr_body_fn"].eqns
+        assert hadamard_inner_eqns[-1].primitive == operator_p
+        assert hadamard_inner_eqns[-1].params["op_cls"] == qp.H
+
+    # 4 remaining operations
+    remaining_ops = [
+        eqn
+        for eqn in jaxpr_eqns
+        # pylint: disable-next=protected-access
+        if eqn.primitive in (qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
+        or (eqn.primitive == operator_p and eqn.params["op_cls"] is qp.PauliZ)
+    ]
+    assert len(remaining_ops) == 4

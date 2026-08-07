@@ -15,6 +15,8 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
+from functools import partial
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods
@@ -394,3 +396,41 @@ class TestInterfaces:
         grads2 = [weights.grad]
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+
+@pytest.mark.capture
+def test_capture_decomposition():
+    """Test the decomposition can be captured."""
+
+    import jax
+
+    from pennylane.capture.primitives import for_loop_prim
+
+    layers = 5
+    n_wires = 3
+    imprimitive = qp.CNOT
+
+    weight_shape = (layers, n_wires, 3)
+    weights = np.random.random(size=weight_shape)
+    wires = list(range(n_wires))
+
+    default_ranges = (1, 2, 1, 2, 1)  # default for this shape
+    rule = partial(
+        qp.list_decomps(qp.StronglyEntanglingLayers)[0],
+        imprimitive=imprimitive,
+        ranges=default_ranges,
+    )
+    jaxpr = jax.make_jaxpr(rule)(weights, wires)
+
+    jaxpr_eqns = jaxpr.eqns
+    layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
+    assert layer_loop_eqn[0].primitive == for_loop_prim
+    layer_inner_eqn = layer_loop_eqn[0].params["jaxpr_body_fn"].eqns
+
+    rot_loop_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == for_loop_prim]
+    assert rot_loop_eqn[0].primitive == for_loop_prim
+    rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
+    assert rot_inner_eqn[-1].primitive == qp.Rot._primitive  # pylint: disable=protected-access
+
+    cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
+    assert cnot_inner_eqn[-1].primitive == qp.CNOT._primitive  # pylint: disable=protected-access
