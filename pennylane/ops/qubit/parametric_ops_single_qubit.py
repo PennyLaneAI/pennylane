@@ -1456,7 +1456,7 @@ class U2(Operation):
         **Example:**
 
         >>> qp.U2.compute_decomposition(1.23, 2.34, wires=0)
-        [Rot(2.34, np.float64(1.5707963267948966), -2.34, wires=[0]), PhaseShift(2.34, wires=[0]), PhaseShift(1.23, wires=[0])]
+        [Rot(2.34, 1.5707963267948966, -2.34, wires=[0]), PhaseShift(2.34, wires=[0]), PhaseShift(1.23, wires=[0])]
 
         """
         pi_half = qp.math.ones_like(delta) * (np.pi / 2)
