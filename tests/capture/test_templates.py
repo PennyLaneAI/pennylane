@@ -353,10 +353,6 @@ class TestModifiedTemplates:
         assert jaxpr.eqns[0].params["op_cls"] == qp.BasisState
         assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
 
-        jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(state=np.array([1, 1, 1]), wires=(0, 1, 2))
-        assert jaxpr.eqns[0].params["op_cls"] == qp.BasisState
-        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
-
     @pytest.mark.parametrize(
         "container", [tuple, list, jnp.array], ids=["tuple", "list", "jnp.array"]
     )
@@ -1790,7 +1786,7 @@ def filter_fn(member: Any) -> bool:
 
     # exception: BasisEmbedding is an alias of BasisState, so it would be filtered away
     # by the logic below
-    if member.__name__ == "BasisState":
+    if member is getattr(qp.templates, "BasisEmbedding", None):
         return True
 
     return member.__module__.startswith("pennylane.templates") and issubclass(
