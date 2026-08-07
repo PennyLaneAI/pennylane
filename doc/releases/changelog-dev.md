@@ -838,7 +838,9 @@
 <h3>Internal changes ⚙️</h3>
 
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
+  Adds Claude and Cursor hooks for performing isort and black on changed files.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
+  [(#9963)](https://github.com/PennyLaneAI/pennylane/pull/9963)
 
 * Adds a CI runner for catalyst tests and removes the catalyst tests from the `external` tests. Now, catalyst
   tests should only be marked `catalyst` and *not* marked `external`.
