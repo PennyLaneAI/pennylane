@@ -14,6 +14,7 @@
 r"""
 Contains the SelectPauliRot template.
 """
+
 from functools import partial
 
 from pennylane import capture, math
@@ -180,10 +181,17 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
         case "X":
             change_op_basis(
                 Hadamard(wires[-1]),
-                partial(_apply_uniform_rotation_dagger, gate=RZ, alpha=angles, control_wires=wires[-2::-1], target_wire=wires[-1]),
+                partial(
+                    _apply_uniform_rotation_dagger,
+                    gate=RZ,
+                    alpha=angles,
+                    control_wires=wires[-2::-1],
+                    target_wire=wires[-1],
+                ),
                 Hadamard(wires[-1]),
             )
         case "Y":
+
             def compute(wires):
                 adjoint(S(wires[-1]))
                 Hadamard(wires[-1])
@@ -194,7 +202,13 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
 
             change_op_basis(
                 partial(compute, wires=wires),
-                partial(_apply_uniform_rotation_dagger, gate=RZ, alpha=angles, control_wires=wires[-2::-1], target_wire=wires[-1]),
+                partial(
+                    _apply_uniform_rotation_dagger,
+                    gate=RZ,
+                    alpha=angles,
+                    control_wires=wires[-2::-1],
+                    target_wire=wires[-1],
+                ),
                 partial(uncompute, wires=wires),
             )
         case "Z":
