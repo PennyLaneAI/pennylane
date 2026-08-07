@@ -267,3 +267,4 @@ from .decomposition_rule import (
     local_decomps,
     DecompCollection,
 )
+from .symbolic_decomposition import make_adjoint_decomp
