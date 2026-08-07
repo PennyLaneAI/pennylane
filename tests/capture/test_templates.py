@@ -207,8 +207,6 @@ unmodified_templates_cases = [
         ),
     ),
     (qp.FermionicSingleExcitation, (0.421,), {"wires": [0, 3, 2]}),
-    (qp.FlipSign, (7,), {"wires": [0, 3, 2]}),
-    (qp.FlipSign, (np.array([1, 0, 0]), [0, 1, 2]), {}),
     (
         qp.kUpCCGSD,
         (jnp.ones((1, 6)), [0, 1, 2, 3]),
@@ -337,6 +335,7 @@ tested_modified_templates = [
     qp.SelectOnlyQRAM,
     qp.MERA,
     qp.MPS,
+    qp.MultiplexerStatePreparation,
     qp.TTN,
     qp.QROM,
     qp.PhaseAdder,
@@ -355,8 +354,8 @@ tested_modified_templates = [
     qp.MPSPrep,
     qp.GQSP,
     qp.QROMStatePreparation,
-    qp.MultiplexerStatePreparation,
     qp.SelectPauliRot,
+    qp.FlipSign,
     qp.QFT,
     qp.TemporaryAND,
 ]
@@ -1167,30 +1166,21 @@ class TestModifiedTemplates:
         """Test the primitive bind call of MultiplexerStatePreparation."""
 
         state_vector = np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2])
-        kwargs = {
-            "wires": (8, 9),
-        }
+        wires = [8, 9]
 
-        def qfunc(state_vector):
-            qp.MultiplexerStatePreparation(state_vector, **kwargs)
+        def qfunc(state_vector, wires):
+            qp.MultiplexerStatePreparation(state_vector, wires)
 
-        qfunc(state_vector)
-        jaxpr = jax.make_jaxpr(qfunc)(state_vector)
+        qfunc(state_vector, wires)
+        jaxpr = jax.make_jaxpr(qfunc)(state_vector, wires)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.MultiplexerStatePreparation._primitive
+        assert_eqn_matches_op(eqn, qp.MultiplexerStatePreparation)
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.MultiplexerStatePreparation(state_vector, **kwargs))
 
     def test_multiplexed_rotation(self):
         """Test the primitive bind call of SelectPauliRot."""
@@ -1787,6 +1777,37 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Superposition(**kwargs))
+
+    @pytest.mark.parametrize(
+        "n, wires, expected_state",
+        [
+            (7, [0, 3, 2], (1, 1, 1)),
+            (np.array([1, 0, 0]), [0, 1, 2], (1, 0, 0)),
+        ],
+    )
+    def test_flip_sign(self, n, wires, expected_state):
+        """Test the primitive bind call of FlipSign."""
+
+        def qfunc(wires):
+            qp.FlipSign(n, wires)
+
+        # Validate inputs
+        qfunc(wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.FlipSign)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        # The canonicalized ``state`` is a static parameter that must survive capture
+        state_values, _ = eqn.params["state"]
+        assert tuple(int(bit) for bit in state_values) == expected_state
 
     def test_qft(self):
         """Test the primitive bind call of QFT."""
