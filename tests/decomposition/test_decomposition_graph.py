@@ -874,8 +874,8 @@ class TestControlledDecompositions:
         # Verify the decompositions
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(**op1.arguments)
+            solution.decomposition(op2)(**op2.arguments)
 
         assert q.queue == [
             qp.PhaseShift(-0.5, wires=[1]),

@@ -1835,7 +1835,7 @@ class TestEigvals:
         # test identity for theta=0
         phi = qp.math.asarray(0.0, like=interface)
         op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
-        assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), np.ones(dim))
+        assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), np.ones(dim))
         assert np.allclose(op.eigvals(), np.ones(dim))
 
         # test arbitrary global phase
@@ -1843,7 +1843,7 @@ class TestEigvals:
         op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
         phi_complex = qp.math.cast_like(phi, 1j)
         expected = np.array([np.exp(-1j * phi_complex)] * dim)
-        assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), expected)
+        assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), expected)
         assert np.allclose(op.eigvals(), expected)
 
         # test arbitrary broadcasted global phase
@@ -1851,7 +1851,7 @@ class TestEigvals:
         phi_complex = qp.math.cast_like(phi, 1j)
         op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
         expected = np.array([np.exp(-1j * p) * np.ones(dim) for p in phi_complex])
-        assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), expected)
+        assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), expected)
         assert np.allclose(op.eigvals(), expected)
 
 
