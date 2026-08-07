@@ -425,7 +425,7 @@ def _controlled_g_phase_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):  # pylint: disable=unused-argument
     num_control_wires = len(control_wires)
-    num_zero_control_values = len(control_values or [])
+    num_zero_control_values = int(qp.math.sum(qp.math.logical_not(control_values)))
     num_work_wires = len(work_wires)
     if num_control_wires == 1 and num_zero_control_values == 1:
         return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
@@ -476,6 +476,7 @@ def _controlled_g_phase_decomp(
         qp.PauliX(w)
 
 
+add_decomps(GlobalPhase, null_decomp)
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
 add_decomps("Pow(GlobalPhase)", pow_rotation2)
 add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
