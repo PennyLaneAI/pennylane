@@ -1063,11 +1063,8 @@ class TestSymbolicDecompositions:
             alt_decomps={CustomOp: [custom_decomp]},
         )
         # 12 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX,
-        # A(PhaseShift), PhaseShift, A(RZ), A(GlobalPhase). ``PhaseShift`` and ``T`` are
-        # ``Operator2``, so A(PhaseShift) also decomposes via ``adjoint(_phase_shift_to_rz_gp)``,
-        # which adds the A(RZ) and A(GlobalPhase) operator nodes relative to the legacy model.
+        # A(PhaseShift), PhaseShift, A(RZ), A(GlobalPhase).
         # 7 decomposition nodes for: A(CustomOp), A(H), A(CNOT), A(RX), A(T), and A(PhaseShift)
-        # (twice: ``adjoint_rotation`` and ``adjoint(_phase_shift_to_rz_gp)``).
         # 1 dummy starting node
         assert len(graph._graph.nodes()) == 20
         # 11 edges from ops to decompositions and 7 edges from decompositions to ops,
