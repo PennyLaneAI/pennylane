@@ -877,6 +877,7 @@
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
+  [(#9981)](https://github.com/PennyLaneAI/pennylane/pull/9981)
   - Multi-qubit, parametric operators are ported:
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
@@ -896,6 +897,7 @@
     - `~.U1`, `~.U2`, `~.U3`
   [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
   [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
+  [(#9981)](https://github.com/PennyLaneAI/pennylane/pull/9981)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
