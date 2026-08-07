@@ -224,7 +224,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
-            ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], Wire[1]): 1,
+            ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], work_wires=Wire[1]): 1,
         }
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
@@ -233,7 +233,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
         ops.Hadamard: 2,
-        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], Wire[1]): 1,
+        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], work_wires=Wire[1]): 1,
     }
 
 
@@ -301,7 +301,7 @@ def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wir
             Wire[num_work_wires],
             work_wire_type,
         ): 2,
-        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], Wire[1]): 1,
+        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], work_wires=Wire[1]): 1,
     }
 
 
