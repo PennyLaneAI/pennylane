@@ -1462,8 +1462,10 @@ def _init_arg_types(op: Operator2) -> None:
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
             # only ever reach this branch if __validate_arg_types is called manually.
-            msg = f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
-            assert exp_type.num_wires == -1 or exp_type.num_wires == len(argval), msg
+            wsize = op.wire_sizes[op.wire_argnames.index(name)]
+            if wsize is not None:
+                msg = f"Expected '{name}' to have length {wsize}, but got {argval}."
+                assert wsize == len(argval), msg
             continue
 
         # Dynamic argument
@@ -1618,9 +1620,9 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # If the wire argument is in arg_specs, the entries in arg_specs
         # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
         # ``-1`` in wire_sizes and arg_specs respectively.
-        if (et := arg_specs.get(wname, None)) is not None:
+        if (et := arg_specs.get(wname, None)) is not None and wsize is not None:
             nwires = et.num_wires
-            if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
+            if nwires not in (-1, wsize):
                 cname = cls.__name__
                 raise TypeError(
                     f"Number of wires specified for '{wname}' does not match the declared "
