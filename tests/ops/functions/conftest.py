@@ -23,8 +23,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator2
-from pennylane.core.operator import Channel, Operation, Operator, StatePrepBase
+from pennylane.core.operator import Channel, Operation, Operator, Operator2, StatePrepBase, StatePrepBase2
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
 from pennylane.fourier.mark import MarkedOp
@@ -104,6 +103,8 @@ _INSTANCES_TO_TEST = [
     (qp.Snapshot(measurement=qp.expval(qp.Z(0)), tag="hi"), {}),
     (qp.Snapshot(tag="tag"), {}),
     (qp.Identity(0), {}),
+    (qp.MultiRZ(0.123, wires=[0, 1, 2]), {}),
+    (qp.MultiRZ(0.123, wires=[0]), {}),
     (qp.Hermitian(np.eye(2), wires=[0]), {"skip_differentiation": True}),
     (
         TrotterizedQfunc(
@@ -187,6 +188,7 @@ _ABSTRACT_OR_META_TYPES = {
     Adjoint2,
     AdjointOperation,
     Operator,
+    Operator2,
     Operation,
     Channel,
     qp.ops.Projector,
@@ -204,6 +206,7 @@ _ABSTRACT_OR_META_TYPES = {
     qp.ops.qubit.StateVectorProjector,
     qp.templates.core.CollectedSubroutine,
     StatePrepBase,
+    StatePrepBase2,
     PowOperation,
     qp.StatePrep,
     qp.FromBloq,
