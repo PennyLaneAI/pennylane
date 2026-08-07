@@ -152,7 +152,7 @@ class TestDecomposeInterpreter:
             assert eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
             j = eqn.params["jaxpr"]
             assert_eqn_matches_op(j.eqns[4], qp.CNOT)
-            assert j.eqns[5].primitive == qp.RX._primitive
+            assert_eqn_matches_op(j.eqns[5], qp.RX)
             assert_eqn_matches_op(j.eqns[6], qp.CNOT)
 
         assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
@@ -264,7 +264,7 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RX)
         assert jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
 
         transformed_f = interpreter(f)
@@ -299,13 +299,13 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RX)
         assert jaxpr.eqns[-1].primitive == qp.ops.Adjoint._primitive
 
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
-            assert transformed_jaxpr.eqns[-1].primitive == qp.RX._primitive
+            assert_eqn_matches_op(transformed_jaxpr.eqns[-1], qp.RX)
         else:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
@@ -561,7 +561,7 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == for_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert inner_jaxpr.eqns[-2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[-2], qp.RX)
         assert inner_jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
 
     def test_ctrl_while_loop(self):
@@ -583,7 +583,7 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == while_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert inner_jaxpr.eqns[-3].primitive == qp.RX._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[-3], qp.RX)
         assert inner_jaxpr.eqns[-2].primitive == qp.ops.Controlled._primitive
         # final primitive is the increment
         assert inner_jaxpr.eqns[-1].primitive.name == "add"
@@ -609,7 +609,7 @@ class TestControlledDecompositions:
 
         # True branch
         branch_jaxpr = jaxpr.eqns[1].params["jaxpr_branches"][0]
-        assert branch_jaxpr.eqns[-2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(branch_jaxpr.eqns[-2], qp.RX)
         assert branch_jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
 
 

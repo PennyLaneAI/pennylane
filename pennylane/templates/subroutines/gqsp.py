@@ -18,7 +18,7 @@ Contains the GQSP template.
 import copy
 
 from pennylane import capture, ops
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -117,7 +117,16 @@ class GQSP(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, unitary, angles, control):
-        return super()._primitive_bind_call(unitary, angles, wires=control)
+
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        return super()._primitive_bind_call(_get_tracer(unitary), angles, wires=control)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

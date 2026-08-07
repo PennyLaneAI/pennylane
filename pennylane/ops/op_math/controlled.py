@@ -1211,10 +1211,7 @@ def base_to_custom_ctrl_op():
     ops_with_custom_ctrl_ops = {
         (qp.SWAP, 1): qp.CSWAP,
         (qp.Hadamard, 1): qp.CH,
-        (qp.RX, 1): qp.CRX,
         (qp.RY, 1): qp.CRY,
-        (qp.RZ, 1): qp.CRZ,
-        (qp.Rot, 1): qp.CRot,
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops
