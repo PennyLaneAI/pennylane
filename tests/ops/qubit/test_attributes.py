@@ -487,7 +487,7 @@ class TestHasUnitaryGenerator:
         op_class = getattr(qp, entry)
         phi = 1.23
         try:
-            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+            wires = [0, 1, 2] if not hasattr(op_class, "num_wires") or op_class.num_wires is None else list(range(op_class.num_wires))
         except TypeError:
             wires = [0, 1, 2]
         if op_class is qp.PauliRot:
