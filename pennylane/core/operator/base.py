@@ -1741,16 +1741,7 @@ class Operation(Operator):
         [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
         For operators that define a generator, the parameter frequencies are directly
-        related to the eigenvalues of the generator:
-
-        >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
-        >>> op.parameter_frequencies
-        [(1,)]
-        >>> gen = qp.generator(op, format="observable")
-        >>> gen_eigvals = qp.eigvals(gen)
-        >>> qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
-        (np.float64(1.0),)
-
+        related to the eigenvalues of the generator and can be computed numerically.
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
         if self.num_params == 1:

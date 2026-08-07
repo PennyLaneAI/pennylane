@@ -98,6 +98,9 @@ class TestDecomposition:
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
+        from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
+            CollectOpsandMeas,
+        )
 
         gate_ops, gate_angles, gate_wires = [], [], []
 
@@ -108,7 +111,10 @@ class TestDecomposition:
             gate_wires.append(list(indices))
 
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
-        queue = op.decomposition()
+        plxpr = qp.capture.make_plxpr(op.decomposition, autograph=False)()
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        queue = collector.state["ops"]
 
         assert len(queue) == len(gate_ops)  # number of gates
 
