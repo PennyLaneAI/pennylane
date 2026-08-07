@@ -21,7 +21,9 @@ from gate_data import QFT
 
 import pennylane as qp
 from pennylane.capture import run_autograph
-from tests.capture.capture_utils import assert_eqn_matches_op
+from tests.capture.capture_utils import (  # pylint: disable=no-name-in-module
+    assert_eqn_matches_op,
+)
 
 
 @pytest.mark.jax
