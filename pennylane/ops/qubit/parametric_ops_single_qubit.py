@@ -1354,30 +1354,6 @@ class U1(Operator2):
         diags = qp.math.exp(qp.math.outer(arg, fac))
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qp.operation.Operator":
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.U1.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Any, Wires): Wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.U1.compute_decomposition(1.234, wires=0)
-        [PhaseShift(1.234, wires=[0])]
-
-        """
-        return [PhaseShift(phi, wires=wires)]
-
     def adjoint(self) -> "U1":
         return U1(-self.phi, wires=self.wires)
 
@@ -1499,37 +1475,6 @@ class U2(Operator2):
         ]
 
         return qp.math.stack([stack_last(row) for row in mat], axis=-2) / np.sqrt(2)
-
-    @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, delta: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.U2.decomposition`.
-
-        Args:
-            phi (TensorLike): azimuthal angle :math:`\phi`
-            delta (TensorLike): quantum phase :math:`\delta`
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.U2.compute_decomposition(1.23, 2.34, wires=0)
-        [Rot(2.34, np.float64(1.5707963267948966), -2.34, wires=[0]), PhaseShift(2.34, wires=[0]), PhaseShift(1.23, wires=[0])]
-
-        """
-        pi_half = qp.math.ones_like(delta) * (np.pi / 2)
-        return [
-            Rot(delta, pi_half, -delta, wires=wires),
-            PhaseShift(delta, wires=wires),
-            PhaseShift(phi, wires=wires),
-        ]
 
     def adjoint(self) -> "U2":
         phi = self.phi
@@ -1697,40 +1642,6 @@ class U3(Operator2):
         ]
 
         return qp.math.stack([stack_last(row) for row in mat], axis=-2)
-
-    @staticmethod
-    def compute_decomposition(
-        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.U3.decomposition`.
-
-        Args:
-            theta (TensorLike): polar angle :math:`\theta`
-            phi (TensorLike): azimuthal angle :math:`\phi`
-            delta (TensorLike): quantum phase :math:`\delta`
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.U3.compute_decomposition(1.23, 2.34, 3.45, wires=0)
-        [Rot(3.45, 1.23, -3.45, wires=[0]),
-        PhaseShift(3.45, wires=[0]),
-        PhaseShift(2.34, wires=[0])]
-
-        """
-        return [
-            Rot(delta, theta, -delta, wires=wires),
-            PhaseShift(delta, wires=wires),
-            PhaseShift(phi, wires=wires),
-        ]
 
     def adjoint(self) -> "U3":
         theta = self.theta
