@@ -21,9 +21,7 @@ from pennylane import math
 
 def create_initial_state(
     wires: qp.wires.Wires | Iterable,
-    prep_operation: (
-        qp.operation.StatePrepBase | qp.operator.StatePrepBase2 | qp.QubitDensityMatrix | None
-    ) = None,
+    prep_operation: qp.operation.StatePrepBase | qp.QubitDensityMatrix | None = None,
     like: str = None,
 ):
     r"""
@@ -31,7 +29,7 @@ def create_initial_state(
 
     Args:
         wires (Union[Wires, Iterable]): The wires to be present in the initial state
-        prep_operation (Optional[StatePrepBase | StatePrepBase2]): An operation to prepare
+        prep_operation (Optional[StatePrepBase]): An operation to prepare
             the initial state
         like (Optional[str]): The machine learning interface used to create the initial state.
             Defaults to None
