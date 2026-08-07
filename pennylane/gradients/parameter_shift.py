@@ -31,7 +31,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import PauliRot, PhaseShift, Prod, prod
+from pennylane.ops import PauliRot, Prod, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
@@ -1342,10 +1342,12 @@ def _handle_adjoint2(op: Adjoint2):
     return parameter_frequencies(op.base)
 
 
-@parameter_frequencies.register(PhaseShift | PauliRot)
-def _handle_rotations(op):
-    """Calculates the parameter frequencies for rotations. A custom dispatch is
-    needed when the phase angle results in the rotation acting as the Identity,
-    leading to degenerate eigenvalues and null parameter frequencies.
+@parameter_frequencies.register
+def _handle_pauli_rot(op: PauliRot):
+    """Calculates the parameter frequencies for a PauliRot.
+
+    This is needed because if the Pauli word is an identity, then the computed
+    parameter frequencies will be ``[()]``, which breaks parameter shift with
+    ``PauliRot``.
     """
-    return [(1,)] * len(op.dynamic_argnames)
+    return [(1,)]
