@@ -27,7 +27,7 @@ from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import Float, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 
@@ -394,6 +394,20 @@ class GlobalPhase(Operator2):
         []
         """
         return []
+
+    def _matrix_wires(self, wire_order: WiresLike | None) -> WiresLike:
+        return self.wires if wire_order is None else wire_order
+
+    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
+        return self.compute_matrix(self.phi, wires=self._matrix_wires(wire_order))
+
+    def sparse_matrix(self, wire_order: WiresLike | None = None, format: str = "csr"):
+        return self.compute_sparse_matrix(
+            self.phi, wires=self._matrix_wires(wire_order), format=format
+        )
+
+    def eigvals(self) -> TensorLike:
+        return self.compute_eigvals(self.phi, wires=self.wires)
 
     def adjoint(self):
         return GlobalPhase(-1 * self.phi, self.wires)
