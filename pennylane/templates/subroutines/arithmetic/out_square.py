@@ -29,7 +29,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -220,7 +220,6 @@ class OutSquare(Operation):
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
     ):
-
         x_wires = Wires(x_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
@@ -411,12 +410,7 @@ def _out_square_with_caddsub_resources(
     loop_size = min(m, n)
     # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
     if n > 1:
-        c_flips = controlled_resource_rep(
-            BasisState,
-            base_params={"num_wires": n - 1},
-            num_control_wires=1,
-            num_zero_control_values=1,
-        )
+        c_flips = ctrl(BasisState(Int[n - 1], Wire[n - 1]), Wire[1])
         resources[c_flips] += 2 * loop_size
 
     # Caching of bit in x onto c_wire, to control on it.

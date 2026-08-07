@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition import adjoint_resource_rep, controlled_resource_rep, resource_rep
+from pennylane.decomposition import adjoint_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
@@ -595,14 +595,11 @@ class TestMeasurementQROM:
     def test_resources_small_cases(self):
         """Test resource estimates for the L <= 1 and L == 2 edge cases."""
         res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
-        assert res_one[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+        assert res_one[qp.BasisState(Int[3], Wire[3])] == 1
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
-        assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
-        assert (
-            res_two[controlled_resource_rep(qp.BasisState, {"num_wires": 3}, num_control_wires=1)]
-            == 1
-        )
+        assert res_two[qp.BasisState(Int[3], Wire[3])] == 1
+        assert res_two[qp.ctrl(qp.BasisState(Int[3], Wire[3]), Wire[1])] == 1
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
@@ -718,6 +715,7 @@ class TestMeasurementQROM:
             assert op_base.wires == op_direct.wires
 
     @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -760,6 +758,7 @@ class TestMeasurementQROM:
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
     @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
@@ -809,6 +808,7 @@ class TestMeasurementQROM:
         assert np.isclose(circuit()[1][0], 1.0)
 
     @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -863,6 +863,7 @@ class TestMeasurementQROM:
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
 
     @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         ("L", "n_extra"),

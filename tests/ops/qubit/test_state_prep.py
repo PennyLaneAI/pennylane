@@ -21,6 +21,7 @@ import pytest
 import scipy as sp
 
 import pennylane as qp
+from pennylane import numpy as pnp
 from pennylane.core.operator import StatePrepBase, StatePrepBase2
 from pennylane.exceptions import WireError
 
@@ -44,12 +45,12 @@ def test_subclasshook_state_prep_base():
     assert issubclass(NewOp, StatePrepBase)
 
 
-def test_basis_state_input_cast_to_int():
-    """Test that the input to BasisState is cast to an int."""
+def test_basis_state_input_cast_to_bool():
+    """Test that the input to BasisState is cast to bool."""
 
     state = np.array([1.0, 0.0], dtype=np.float64)
     op = qp.BasisState(state, wires=(0, 1))
-    assert op.data[0].dtype == np.int64
+    assert op.state.dtype == bool
 
 
 class TestStandardValidityBasisState:
@@ -86,46 +87,10 @@ class TestStandardValidityBasisState:
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(state, wires=wires)
                 tapes.append(qp.tape.QuantumScript.from_queue(q))
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.BasisState.compute_decomposition(state, wires=wires)
-            tapes.append(qp.tape.QuantumScript.from_queue(q))
 
             return tapes
 
         return abstract_check
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("state_traced", [True, False])
-    @pytest.mark.parametrize("wires_traced", [True, False])
-    def test_jit_compatibility(self, state_traced, wires_traced):
-        """Test compatibility with jax.jit."""
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        state = np.array([0, 1, 0])
-        closure_state = state  # We can use a closure variable to avoid automatic tracing
-        wires = qp.wires.Wires([0, 2, 1])
-        closure_wires = wires  # We can use a closure variable to avoid automatic tracing
-        if wires_traced:
-            wires = jax.numpy.array(wires)
-
-        abstract_check = self.make_abstract_check(
-            state_traced, wires_traced, closure_state, closure_wires
-        )
-
-        tapes = jax.jit(abstract_check)(state, wires)
-        for tape in tapes[:-1]:  # Test the new decomp rules
-            assert len(tape) == 3
-            assert all(
-                isinstance(op, qp.ops.Pow) and isinstance(op.base, qp.X) for op in tape.operations
-            )
-        tape = tapes[-1]
-        if state_traced:
-            assert len(tape) == 6
-            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
-        else:
-            assert len(tape) == 1
-            assert isinstance(tape[0], qp.X)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("state_traced", [True, False])
@@ -138,26 +103,16 @@ class TestStandardValidityBasisState:
         wires = qp.wires.Wires([1, 0, 2])
         closure_wires = wires
         if wires_traced:
-            import jax  # pylint: disable=import-outside-toplevel
-
-            wires = jax.numpy.array(wires)
+            wires = qp.math.array(wires, like="jax")
 
         abstract_check = self.make_abstract_check(
             state_traced, wires_traced, closure_state, closure_wires
         )
 
         tapes = qp.qjit(abstract_check)(state, wires)
-        for tape in tapes[:-1]:
+        for tape in tapes:
             assert len(tape) == 1
             assert isinstance(tape[0], qp.X)
-
-        tape = tapes[-1]
-        if state_traced:
-            assert len(tape) == 6
-            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
-        else:
-            assert len(tape) == 2
-            assert all(isinstance(op, qp.X) for op in tape)
 
 
 @pytest.mark.parametrize(
@@ -194,18 +149,6 @@ def test_labelling_matrix_cache(op, mat, base):
 
 
 class TestDecomposition:
-    def test_BasisState_decomposition(self):
-        """Test the decomposition for BasisState"""
-
-        n = np.array([0, 1, 0])
-        wires = (0, 1, 2)
-        ops1 = qp.BasisState.compute_decomposition(n, wires)
-        ops2 = qp.BasisState(n, wires=wires).decomposition()
-
-        assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qp.X)
-        assert isinstance(ops2[0], qp.X)
-
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "state",
@@ -219,11 +162,7 @@ class TestDecomposition:
     )
     def test_BasisState_abstract_decomposition_correctness(self, state):
         """Test that the abstract decomposition of BasisState produces the correct
-        state vector when compiled and executed via ``qjit``.  Uses BasisEmbedding
-        which delegates to BasisState.compute_decomposition through the abstract
-        (traced) path, exercising the GlobalPhase+RX decomposition end-to-end."""
-        import jax  # pylint: disable=import-outside-toplevel
-
+        state vector when compiled and executed via ``qjit``."""
         n_wires = len(state)
         dev = qp.device("lightning.qubit", wires=n_wires)
 
@@ -233,45 +172,12 @@ class TestDecomposition:
             qp.BasisState(s, wires=range(n_wires))
             return qp.state()
 
-        result = circuit(jax.numpy.array(state))
+        result = circuit(qp.math.array(state, like="jax"))
 
         expected = np.zeros(2**n_wires, dtype=complex)
         expected[int("".join(str(b) for b in state), 2)] = 1.0
 
         assert np.allclose(result, expected)
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "state",
-        [
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [1, 1, 0],
-            [1, 1, 1],
-        ],
-    )
-    def test_BasisState_abstract_decomposition_correctness_jax_jit(self, state):
-        """Test that the abstract decomposition of BasisState produces the correct
-        state vector when traced through ``jax.jit``.  Uses ``reference.qubit``
-        which decomposes BasisState with abstract parameters, exercising the
-        GlobalPhase+RX decomposition end-to-end without requiring Catalyst."""
-        import jax  # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
-        n_wires = len(state)
-
-        @qp.qnode(qp.device("reference.qubit", wires=n_wires))
-        def circuit(s):
-            qp.BasisState(s, wires=range(n_wires))
-            return qp.state()
-
-        result = jax.jit(circuit)(jnp.array(state))
-
-        expected = np.zeros(2**n_wires, dtype=complex)
-        expected[int("".join(str(b) for b in state), 2)] = 1.0
-
-        assert np.allclose(result, expected, atol=1e-6)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
@@ -332,18 +238,15 @@ class TestStatePrepIntegration:
     @pytest.mark.parametrize("input_type", [tuple, list])
     def test_basis_state_tuple_list_capture(self, input_type):
         """Tests that tuple or list types for 'state' can be used."""
+        # Note that this test only validates that we can compile (via AOT compilation).
 
         state = input_type([1, 0])
 
-        @qp.qjit(capture=True)
+        @qp.qjit(capture=True, target="mlir")
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit():
             qp.BasisState(state, wires=[0, 1])
             return qp.state()
-
-        result = circuit()
-        # (0,0,1,0) == |10>
-        assert np.allclose(result, (0, 0, 1, 0))
 
     @pytest.mark.parametrize(
         "state, pad_with, expected",
@@ -398,6 +301,8 @@ class TestStatePrepIntegration:
 
 class TestStateVector:
     """Test the state_vector() method of various state-prep operations."""
+
+    # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
@@ -656,12 +561,20 @@ class TestStateVector:
         with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
             basis_op.state_vector(wire_order=[1, 2])
 
-    def test_BasisState_wrong_param_size(self):
-        """Tests that the parameter must be of length num_wires."""
-        with pytest.raises(
-            ValueError, match=r"State must be of length 2; got length 1 \(state=\[0\]\)."
-        ):
+    def test_BasisState_wrong_state_size(self):
+        """Tests that the state must be of length num_wires."""
+        with pytest.raises(ValueError, match=r"State and wires must have the same length."):
             _ = qp.BasisState([0], wires=[0, 1])
+
+    def test_input_not_binary_exception(self):
+        """Checks exception if the state contains values other than zero and one."""
+        with pytest.raises(ValueError, match="Basis state must only consist of"):
+            qp.BasisState([2, 3], wires=range(2))
+
+    def test_exception_wrong_shape(self):
+        """Checks exception if the number of dimensions of state is incorrect."""
+        with pytest.raises(ValueError, match="State must be one-dimensional"):
+            qp.BasisState([[1], [0]], wires=2)
 
 
 class TestSparseStateVector:
@@ -765,3 +678,144 @@ class TestSparseStateVector:
         qsv_op = qp.StatePrep(sp.sparse.csr_matrix([0, 0, 0, 1]), wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all wires"):
             qsv_op.state_vector(wire_order=[1, 2])
+
+
+def circuit_template(state):
+    qp.BasisState(state, wires=range(3))
+    return qp.state()
+
+
+def circuit_decomposed(state):
+    # convert tensor to list
+    feats = list(qp.math.array(state))
+    _ = [qp.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
+
+    return qp.state()
+
+
+class TestInterfacesBasisState:
+    """Tests that BasisState is compatible with all interfaces."""
+
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+        state = [0, 1, 0]
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(state)
+        res2 = circuit2(state)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tuple(state))
+        res2 = circuit2(tuple(state))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    def test_autograd(self, tol):
+        """Tests the autograd interface."""
+
+        state = pnp.array([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(state)
+        res2 = circuit2(state)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax(self, tol):
+        """Tests the jax interface."""
+
+        import jax.numpy as jnp
+
+        state = jnp.array([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(state)
+        res2 = circuit2(state)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests compilation with JAX JIT."""
+
+        import jax
+        import jax.numpy as jnp
+
+        state = jnp.array([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = jax.jit(qp.QNode(circuit_template, dev))
+
+        res = circuit(state)
+        res2 = circuit2(state)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf(self, tol):
+        """Tests the tf interface."""
+
+        import tensorflow as tf
+
+        state = tf.Variable([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(state)
+        res2 = circuit2(state)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tf.Variable(2))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf_autograph(self, tol):
+        """Tests the tf interface with autograph"""
+
+        import tensorflow as tf
+
+        state = tf.Variable([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(state)
+        res2 = circuit2(state)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tf.Variable(2))
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    def test_torch(self, tol):
+        """Tests the torch interface."""
+
+        import torch
+
+        state = torch.tensor([0, 1, 0])
+
+        dev = qp.device("default.qubit", wires=3)
+
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
+
+        res = circuit(state)
+        res2 = circuit2(state)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)

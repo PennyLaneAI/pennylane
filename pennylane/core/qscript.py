@@ -110,10 +110,10 @@ class QuantumScript:
 
         qscript = QuantumScript(ops, [qp.expval(qp.Z(0))])
 
-    >>> list(qscript)
-    [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
-    >>> qscript.operations
-    [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
+    >>> print(list(qscript))
+    [BasisState([1 1], wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
+    >>> print(qscript.operations)
+    [BasisState([1 1], wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> qscript.measurements
     [expval(Z(0))]
 
@@ -121,7 +121,7 @@ class QuantumScript:
 
     >>> for op in qscript:
     ...     print(op)
-    BasisState(array([1, 1]), wires=[0, 'a'])
+    BasisState([1 1], wires=[0, 'a'])
     RX(0.432, wires=[0])
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
@@ -130,8 +130,8 @@ class QuantumScript:
 
     Quantum scripts also support indexing and length determination:
 
-    >>> qscript[0]
-    BasisState(array([1, 1]), wires=[0, 'a'])
+    >>> print(qscript[0])
+    BasisState([1 1], wires=[0, 'a'])
     >>> len(qscript)
     6
 
@@ -392,7 +392,8 @@ class QuantumScript:
 
     @property
     def num_preps(self) -> int:
-        """Returns the index of the first operator that is not an StatePrepBase operator."""
+        """Returns the index of the first operator that is not an StatePrepBase
+        or StatePrepBase operator."""
         idx = 0
         num_ops = len(self.operations)
         while idx < num_ops and isinstance(self.operations[idx], StatePrepBase):
