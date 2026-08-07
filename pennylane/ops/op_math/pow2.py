@@ -112,11 +112,6 @@ class Pow2(SymbolicOp2):
     def name(self) -> str:
         return f"Pow({self.base.name})"
 
-    @property
-    @override
-    def ndim_params(self):
-        return self.base.ndim_params
-
     @override
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)

@@ -1103,7 +1103,7 @@ def _decompose_pcphase(phi, wires, dimension, **_):
 add_decomps(PCPhase, _decompose_pcphase)
 
 
-class IsingXX(Operation):
+class IsingXX(Operator2):
     r"""
     Ising XX coupling gate
 
@@ -1135,14 +1135,18 @@ class IsingXX(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    wires_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -1153,12 +1157,9 @@ class IsingXX(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1201,44 +1202,15 @@ class IsingXX(Operation):
 
         return math.tensordot(c, eye, axes=0) + math.tensordot(js, rev_eye, axes=0)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingXX.decomposition`.
-
-        Args:
-            phi (TensorLike): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingXX.compute_decomposition(1.23, wires=(0,1))
-        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
-
-        """
-        decomp_ops = [
-            qp.CNOT(wires=wires),
-            RX(phi, wires=[wires[0]]),
-            qp.CNOT(wires=wires),
-        ]
-        return decomp_ops
-
     def adjoint(self) -> "IsingXX":
-        (phi,) = self.parameters
+        phi = self.arguments["phi"]
         return IsingXX(-phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingXX(self.data[0] * z, wires=self.wires)]
+        return [IsingXX(self.arguments["phi"] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
-        phi = self.data[0] % (4 * np.pi)
+        phi = self.arguments["phi"] % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1246,7 +1218,8 @@ class IsingXX(Operation):
         return IsingXX(phi, wires=self.wires)
 
 
-def _isingxx_to_cnot_rx_cnot_resources():
+# pylint: disable-next=unused-argument
+def _isingxx_to_cnot_rx_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {qp.CNOT: 2, qp.RX: 1}
 
 
@@ -1257,7 +1230,8 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.CNOT(wires=wires)
 
 
-def _isingxx_to_ppr_resource():
+# pylint: disable-next=unused-argument
+def _isingxx_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1}
 
 
@@ -1267,11 +1241,11 @@ def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot, _isingxx_to_ppr)
-add_decomps("Adjoint(IsingXX)", adjoint_rotation)
-add_decomps("Pow(IsingXX)", pow_rotation)
+add_decomps("Adjoint(IsingXX)", adjoint_rotation2)
+add_decomps("Pow(IsingXX)", pow_rotation2)
 
 
-class IsingYY(Operation):
+class IsingYY(Operator2):
     r"""
     Ising YY coupling gate
 
@@ -1303,14 +1277,18 @@ class IsingYY(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    wires_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     grad_method = "A"
 
@@ -1320,40 +1298,9 @@ class IsingYY(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingYY.decomposition`.
-
-        Args:
-            phi (float): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingYY.compute_decomposition(1.23, wires=(0,1))
-        [CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1])]
-
-        """
-        return [
-            qp.CY(wires=wires),
-            RY(phi, wires=[wires[0]]),
-            qp.CY(wires=wires),
-        ]
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1420,7 +1367,8 @@ class IsingYY(Operation):
         return IsingYY(phi, wires=self.wires)
 
 
-def _isingyy_to_cy_ry_cy_resources():
+# pylint: disable-next=unused-argument
+def _isingyy_to_cy_ry_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {qp.CY: 2, RY: 1}
 
 
@@ -1431,7 +1379,8 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
     qp.CY(wires=wires)
 
 
-def _isingyy_to_ppr_resource():
+# pylint: disable-next=unused-argument
+def _isingyy_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1}
 
 
@@ -1441,11 +1390,11 @@ def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy, _isingyy_to_ppr)
-add_decomps("Adjoint(IsingYY)", adjoint_rotation)
-add_decomps("Pow(IsingYY)", pow_rotation)
+add_decomps("Adjoint(IsingYY)", adjoint_rotation2)
+add_decomps("Pow(IsingYY)", pow_rotation2)
 
 
-class IsingZZ(Operation):
+class IsingZZ(Operator2):
     r"""
     Ising ZZ coupling gate
 
@@ -1478,14 +1427,18 @@ class IsingZZ(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    wires_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -1496,40 +1449,9 @@ class IsingZZ(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike):
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingZZ.decomposition`.
-
-        Args:
-            phi (float): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingZZ.compute_decomposition(1.23, wires=[0, 1])
-        [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
-
-        """
-        return [
-            qp.CNOT(wires=wires),
-            RZ(phi, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-        ]
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1572,7 +1494,8 @@ class IsingZZ(Operation):
         return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1612,14 +1535,14 @@ class IsingZZ(Operation):
         return math.exp(product)
 
     def adjoint(self) -> "IsingZZ":
-        (phi,) = self.parameters
+        phi = self.arguments["phi"]
         return IsingZZ(-phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingZZ(self.data[0] * z, wires=self.wires)]
+        return [IsingZZ(self.arguments["phi"] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
-        phi = self.data[0] % (4 * np.pi)
+        phi = self.arguments["phi"] % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1627,7 +1550,8 @@ class IsingZZ(Operation):
         return IsingZZ(phi, wires=self.wires)
 
 
-def _isingzz_to_cnot_rz_cnot_resources():
+# pylint: disable-next=unused-argument
+def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {qp.CNOT: 2, RZ: 1}
 
 
@@ -1638,7 +1562,8 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.CNOT(wires=wires)
 
 
-def _isingzz_to_ppr_resource():
+# pylint: disable-next=unused-argument
+def _isingzz_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1}
 
 
@@ -1648,11 +1573,11 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
-add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
-add_decomps("Pow(IsingZZ)", pow_rotation)
+add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
+add_decomps("Pow(IsingZZ)", pow_rotation2)
 
 
-class IsingXY(Operation):
+class IsingXY(Operator2):
     r"""
     Ising (XX + YY) coupling gate
 
@@ -1695,14 +1620,18 @@ class IsingXY(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    wires_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
@@ -1720,43 +1649,9 @@ class IsingXY(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingXY.decomposition`.
-
-        Args:
-            phi (float): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingXY.compute_decomposition(1.23, wires=(0,1))
-        [H(0), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), H(0)]
-
-        """
-        return [
-            Hadamard(wires=[wires[0]]),
-            qp.CY(wires=wires),
-            RY(phi / 2, wires=[wires[0]]),
-            RX(-phi / 2, wires=[wires[1]]),
-            qp.CY(wires=wires),
-            Hadamard(wires=[wires[0]]),
-        ]
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1809,7 +1704,8 @@ class IsingXY(Operation):
         return diags * np.eye(4) + math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1847,14 +1743,14 @@ class IsingXY(Operation):
         return math.exp(math.tensordot(0.5j * phi, signs, axes=0))
 
     def adjoint(self) -> "IsingXY":
-        (phi,) = self.parameters
+        phi = self.arguments["phi"]
         return IsingXY(-phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingXY(self.data[0] * z, wires=self.wires)]
+        return [IsingXY(self.arguments["phi"] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
-        phi = self.data[0] % (4 * np.pi)
+        phi = self.arguments["phi"] % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1862,7 +1758,8 @@ class IsingXY(Operation):
         return IsingXY(phi, wires=self.wires)
 
 
-def _isingxy_to_h_cy_resources():
+# pylint: disable-next=unused-argument
+def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {Hadamard: 2, qp.CY: 2, RY: 1, RX: 1}
 
 
@@ -1877,8 +1774,8 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
-add_decomps("Adjoint(IsingXY)", adjoint_rotation)
-add_decomps("Pow(IsingXY)", pow_rotation)
+add_decomps("Adjoint(IsingXY)", adjoint_rotation2)
+add_decomps("Pow(IsingXY)", pow_rotation2)
 
 
 class PSWAP(Operation):
