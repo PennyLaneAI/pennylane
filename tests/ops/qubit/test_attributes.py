@@ -451,6 +451,7 @@ class TestSupportsBroadcasting:
         )
         op.decomposition()
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_pcphase(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""
         dim = 2
