@@ -133,8 +133,8 @@ class BasisState(StatePrepBase2):
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
-        prep_vals = self.parameters[0]
-        prep_vals_int = math.cast(self.parameters[0], int)
+        prep_vals = self.state
+        prep_vals_int = math.cast(self.state, int)
 
         if wire_order is None:
             indices = prep_vals_int
