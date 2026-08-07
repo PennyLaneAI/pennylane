@@ -353,10 +353,6 @@ class TestModifiedTemplates:
         assert jaxpr.eqns[0].primitive == qp.BasisState._primitive
         assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
 
-        jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(features=np.array([1, 1, 1]), wires=(0, 1, 2))
-        assert jaxpr.eqns[0].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
-
     @pytest.mark.parametrize(
         "container", [tuple, list, jnp.array], ids=["tuple", "list", "jnp.array"]
     )
@@ -1785,10 +1781,17 @@ class TestModifiedTemplates:
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
     qp.templates."""
-    return (
-        inspect.isclass(member)
-        and member.__module__.startswith("pennylane.templates")
-        and issubclass(member, qp.operation.Operator)
+
+    if not inspect.isclass(member):
+        return False
+
+    # exception: BasisEmbedding is an alias of BasisState, so it would be filtered away
+    # by the logic below
+    if member is getattr(qp.templates, "BasisEmbedding", None):
+        return True
+
+    return member.__module__.startswith("pennylane.templates") and issubclass(
+        member, qp.operation.Operator
     )
 
 
