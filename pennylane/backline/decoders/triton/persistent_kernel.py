@@ -88,6 +88,3 @@ def _persistent_decoder_kernel(
             )
 
             cursor += 1
-
-
-_persistent_css_decoder_kernel = _persistent_decoder_kernel
