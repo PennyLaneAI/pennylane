@@ -31,10 +31,10 @@ def _persistent_decoder_kernel(
     """Decode ring-buffer requests until completion or shutdown.
 
     ring_u64_ptr: PayloadSlot (64 bytes) = 8 u64 words
-        word 0: syndrome
+        word 0: syndrome packed into one u64, so it cannot exceed 64 bits/checks
         word 1: low32 = decoder_id, high32 = seq
     handoff_u64_ptr: HandoffSlot (16 bytes) = 2 u64 words
-        word 0: correction
+        word 0: correction packed into one u64, so it cannot exceed 64 bits/qubits
         word 1: low32 = seq, high32 = pad
     stop_u32_ptr: single u32 scalar
 
