@@ -201,6 +201,15 @@ from pennylane.noise import NoiseModel
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
+from pennylane.backline import (
+    Controller,
+    Coprocessor,
+    CoprocessorFunction,
+    Node,
+    backline,
+    css_decoder,
+)
+
 from pennylane import spin
 
 from pennylane import liealg
