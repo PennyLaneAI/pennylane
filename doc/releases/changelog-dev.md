@@ -1226,6 +1226,11 @@
   one of its subclasses returned ``True`` if they shared the same data and wires.
   [(#9749)](https://github.com/PennyLaneAI/pennylane/pull/9749)
 
+* Added a :func:`~.pennylane.labs.templates.mps_synthesis` template that
+  synthesizes a right-canonical matrix product state into a quantum circuit via
+  generalized flag decompositions.
+  [(#9971)](https://github.com/PennyLaneAI/pennylane/pull/9971)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1244,6 +1249,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Isabel Nha Minh Le,
 Christina Lee,
 William Maxwell
 Anton Naim Ibrahim,
