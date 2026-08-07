@@ -236,10 +236,11 @@ def build_expval_func(
                 n_samples=None,
                 init_state_elems=None,
                 init_state_amps=None,
-            ) -> (expvals, std_errs)
+            ) -> (expvals, variances)
 
         where ``expvals`` is a real array of shape ``(n_observables,)`` and
-        ``std_errs`` is the estimated standard error of each expectation value.
+        ``variances`` is the variance of each expectation-value estimator
+       
 
     **Example**
 
@@ -257,14 +258,13 @@ def build_expval_func(
     ... )
     >>> expval_fn = jax.jit(build_expval_func(config))
     >>> params = jnp.zeros(len(gates))
-    >>> expvals, std_errs = expval_fn(params)
+    >>> expvals, variances = expval_fn(params)
     >>> expvals.shape
     (2,)
 
     .. seealso::
 
         :class:`~pennylane.labs.tcdq.CircuitConfig`,
-        `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
 
     if config.control_variate and config.phase_fn is not None:
@@ -319,8 +319,8 @@ def build_expval_func(
                 continuous amplitudes of the initial state (P). Defaults to None.
 
         Returns:
-            tuple[jnp.ndarray, jnp.ndarray]: Estimated expectation values and
-            their standard errors.
+            tuple[jnp.ndarray, jnp.ndarray]: Estimated expectation values and the
+            variance of each estimator.
         """
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key
@@ -356,8 +356,8 @@ def build_expval_func(
 
         if not config.control_variate:
             mean = jnp.mean(expvals, axis=1)
-            std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
-            return mean, std_err
+            variance = jnp.var(expvals, axis=-1, ddof=1) / samples.shape[0]
+            return mean, variance
 
         cv = _control_variate_expval_execution(samples, obs_data, state_elems, state_amps)
         cv_ev = _control_variate_expected_value(obs_data, state_elems, state_amps)
@@ -372,9 +372,9 @@ def build_expval_func(
 
         expvals_cv = expvals + c[..., None] * (cv - cv_ev[..., None])
         mean_cv = jnp.mean(expvals_cv, axis=-1)
-        std_err_cv = jnp.std(expvals_cv, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+        variance_cv = jnp.var(expvals_cv, axis=-1, ddof=1) / samples.shape[0]
 
-        return mean_cv, std_err_cv
+        return mean_cv, variance_cv
 
     return expval_execution
 

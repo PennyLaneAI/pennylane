@@ -209,29 +209,27 @@ def _pp_term(mu_p_hat: jnp.ndarray, m: int) -> jnp.ndarray:
 
 def _qq_term(
     mu_q_hat: jnp.ndarray,
-    mean_y_sq: jnp.ndarray,
-    s: int,
+    cov: jnp.ndarray,
 ) -> jnp.ndarray:
     """Compute the unbiased model–model U-statistic contribution to the MMD.
 
-    Removes the diagonal self-pairs from :math:`|\\hat{\\mu}_q|^2`:
-    :math:`QQ(l) = (s |\\hat{\\mu}_q(l)|^2 - \\overline{|y|^2}(l)) / (s - 1)`.
-
-    Gradients are stopped through ``mean_y_sq`` (it is treated as a constant
-    for differentiation purposes).
+    Removes the estimator bias from :math:`|\\hat{\\mu}_q|^2`:
+    :math:`QQ(l) = |\\hat{\\mu}_q(l)|^2 - \\operatorname{tr}(\\Sigma(l))`,
+    where :math:`\\Sigma(l)` is the covariance matrix of the (real, imaginary)
+    parts of the complex mean estimator, so :math:`\\operatorname{tr}(\\Sigma)`
+    is the total variance of :math:`\\hat{\\mu}_q`. 
 
     Args:
         mu_q_hat: Complex array of shape ``(n_obs,)`` — circuit-side Monte
             Carlo moment estimates.
-        mean_y_sq: Real array of shape ``(n_obs,)`` — mean squared magnitude
-            of the per-sample integrand values.
-        s: Number of circuit samples.
+        cov: Real array of shape ``(n_obs, 2, 2)`` — per-observable covariance
+            matrix of the real/imaginary parts of the mean estimator.
 
     Returns:
         Real array of shape ``(n_obs,)``.
     """
-    mean_y_sq = jax.lax.stop_gradient(mean_y_sq)
-    return (s * jnp.abs(mu_q_hat) ** 2 - mean_y_sq) / (s - 1)
+    tr_cov = cov[..., 0, 0] + cov[..., 1, 1]
+    return jnp.abs(mu_q_hat) ** 2 - tr_cov
 
 
 def _pq_cross_term(
@@ -254,14 +252,13 @@ def _pq_cross_term(
     return 2.0 * jnp.real(jnp.conj(mu_p_hat) * mu_q_hat)
 
 
-@partial(jax.jit, static_argnames=["dims_visible", "n_samples", "sqrt_loss"])
+@partial(jax.jit, static_argnames=["dims_visible", "sqrt_loss"])
 def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     mu_q_hat: jnp.ndarray,
-    mean_y_sq: jnp.ndarray,
+    cov: jnp.ndarray,
     X_data: jnp.ndarray,
     L_visible: jnp.ndarray,
     dims_visible: tuple[int, ...],
-    n_samples: int,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
     """Combine PP, PQ, and QQ terms into the unbiased MMD² estimator."""
@@ -271,7 +268,7 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
 
     pp_term = _pp_term(mu_p_hat, m)
     pq_term = _pq_cross_term(mu_p_hat, mu_q_hat)
-    qq_term = _qq_term(mu_q_hat, mean_y_sq, n_samples)
+    qq_term = _qq_term(mu_q_hat, cov)
 
     mmd_sq = jnp.mean(qq_term - pq_term + pp_term)
     return jnp.sqrt(jnp.abs(mmd_sq)) if sqrt_loss else mmd_sq
@@ -313,20 +310,19 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     )
     m_obs = jnp.zeros_like(l_obs)
 
-    mu_q_hat, _, mean_y_sq = expval_func(
+    mu_q_hat, cov = expval_func(
         gates_params=params,
         observables=(l_obs, m_obs),
         key=eval_key,
         n_samples=n_samples,
         init_state_elems=init_state_elems,
         init_state_amps=init_state_amps,
-        return_mean_y_sq=True,
     )
 
     L_visible = l_obs[:, list(wire_tuple)]
     dims_visible = tuple(int(dims[w]) for w in wire_tuple)
     return _unbiased_mmd_squared(
-        mu_q_hat, mean_y_sq, target_data, L_visible, dims_visible, n_samples, sqrt_loss
+        mu_q_hat, cov, target_data, L_visible, dims_visible, sqrt_loss
     )
 
 

@@ -118,23 +118,25 @@ def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
 
 
 # pylint: disable=too-many-arguments
-@partial(jax.jit, static_argnames=["n_samples", "sqrt_loss"])
+@partial(jax.jit, static_argnames=["sqrt_loss"])
 def _compute_single_mmd(
     model_expvals: jnp.ndarray,
-    model_expvals_std_err: jnp.ndarray,
+    model_var: jnp.ndarray,
     target_data: jnp.ndarray,
     visible_ops: jnp.ndarray,
-    n_samples: int,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
-    """Core, heavily JIT-compiled math for MMD calculation."""
-    model_expvals_std_err = jax.lax.stop_gradient(model_expvals_std_err)
-    correction = (model_expvals**2 + (n_samples - 1) * model_expvals_std_err**2) / n_samples
+    """Core, heavily JIT-compiled math for MMD calculation.
 
+    The model-model term is the unbiased U-statistic estimator of
+    :math:`\\langle O \\rangle^2`, namely ``<O>^2 - Var(<O>_hat)``, where
+    ``model_var`` is the variance of the expectation-value estimator (the
+    squared standard error) returned by the estimator. 
+    """
     tr_train = jnp.mean(1 - 2 * ((target_data @ visible_ops.T) % 2), axis=0)
     m = target_data.shape[0]
 
-    result = (model_expvals * model_expvals - correction) * n_samples / (n_samples - 1)
+    result = model_expvals**2 - model_var
     result = result - 2 * model_expvals * tr_train + (tr_train * tr_train * m - 1) / (m - 1)
 
     reduced = jnp.mean(result)
@@ -182,7 +184,7 @@ def _compute_loss_for_bandwidth(
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
-    model_expvals, model_expvals_std_err = expval_func(
+    model_expvals, model_var = expval_func(
         gates_params=params,
         observables=pauli_obs,
         key=eval_key,
@@ -193,10 +195,9 @@ def _compute_loss_for_bandwidth(
 
     return _compute_single_mmd(
         model_expvals,
-        model_expvals_std_err,
+        model_var,
         target_data,
         visible_ops,
-        effective_samples,
         sqrt_loss,
     )
 

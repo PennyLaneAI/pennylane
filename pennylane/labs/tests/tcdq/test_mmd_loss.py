@@ -198,7 +198,7 @@ class TestComputeSingleMmd:
         gt = jnp.array(rng.binomial(1, 0.5, (m, n_q)), dtype=jnp.float64)
         tr_train = jnp.mean(1 - 2 * ((gt @ vis.T) % 2), axis=0)
 
-        result = _compute_single_mmd(tr_train, jnp.zeros(n_ops), gt, vis, 10_000, sqrt_loss=False)
+        result = _compute_single_mmd(tr_train, jnp.zeros(n_ops), gt, vis, sqrt_loss=False)
         assert abs(float(result)) < 0.05
 
     def test_sqrt_loss_flag(self):
@@ -208,32 +208,35 @@ class TestComputeSingleMmd:
         vis = jnp.array(rng.binomial(1, 0.5, (n_ops, n_q)), dtype=jnp.float64)
         gt = jnp.array(rng.binomial(1, 0.5, (40, n_q)), dtype=jnp.float64)
         tr_iqp = jnp.array(rng.normal(0, 0.3, n_ops))
-        se = jnp.zeros(n_ops)
+        var = jnp.zeros(n_ops)
 
-        val = _compute_single_mmd(tr_iqp, se, gt, vis, 10_000, False)
-        sqr = _compute_single_mmd(tr_iqp, se, gt, vis, 10_000, True)
+        val = _compute_single_mmd(tr_iqp, var, gt, vis, False)
+        sqr = _compute_single_mmd(tr_iqp, var, gt, vis, True)
 
         assert np.isclose(float(sqr), np.sqrt(abs(float(val))), atol=1e-7)
 
-    def test_correction_removes_bias(self):
-        """The U-statistic correction should make the PP term unbiased.
+    def test_zero_variance_matches_analytic(self):
+        """With zero estimator variance the model-model term reduces to ``<O>^2``.
 
-        When ``std_err = 0`` (exact circuit traces), the correction simplifies
-        to ``tr_iqp^2 / n_samples`` and the result should reduce to:
-        ``tr_iqp^2 - 2*tr_iqp*tr_train + (tr_train^2*m - 1)/(m-1)``
-        independently of ``n_samples``.
+        When ``model_var = 0`` (exact circuit traces), the unbiased model-model
+        term is exactly ``tr_iqp^2``, so the loss must equal the closed form
+        ``mean(tr_iqp^2 - 2*tr_iqp*tr_train + (tr_train^2*m - 1)/(m-1))``.
         """
         rng = np.random.default_rng(3)
         n_ops, n_q, m = 10, 2, 50
         vis = jnp.array(rng.binomial(1, 0.5, (n_ops, n_q)), dtype=jnp.float64)
         gt = jnp.array(rng.binomial(1, 0.5, (m, n_q)), dtype=jnp.float64)
         tr_iqp = jnp.array(rng.normal(0, 0.5, n_ops))
-        zero_se = jnp.zeros(n_ops)
+        zero_var = jnp.zeros(n_ops)
 
-        res_100 = _compute_single_mmd(tr_iqp, zero_se, gt, vis, 100, False)
-        res_10000 = _compute_single_mmd(tr_iqp, zero_se, gt, vis, 10_000, False)
+        result = _compute_single_mmd(tr_iqp, zero_var, gt, vis, False)
 
-        assert np.isclose(float(res_100), float(res_10000), atol=1e-10)
+        tr_train = jnp.mean(1 - 2 * ((gt @ vis.T) % 2), axis=0)
+        expected = jnp.mean(
+            tr_iqp**2 - 2 * tr_iqp * tr_train + (tr_train**2 * m - 1) / (m - 1)
+        )
+
+        assert np.isclose(float(result), float(expected), atol=1e-10)
 
 
 class TestExactMMDConsistency:

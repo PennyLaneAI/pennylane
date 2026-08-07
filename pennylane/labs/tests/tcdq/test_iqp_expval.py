@@ -605,9 +605,9 @@ class TestControlVariate:
         of the estimator across seeds.
 
         We measure the empirical standard deviation of the returned mean over many PRNG
-        keys rather than the reported ``std_err``: the two branches are compared on the
+        keys rather than the reported ``variance``: the two branches are compared on the
         same footing, independent of any per-observable normalization convention in the
-        returned standard error. Small rotation angles are used so that the theta=0
+        returned variance. Small rotation angles are used so that the theta=0
         control is strongly correlated with the estimator and the reduction is large and
         non-flaky.
         """

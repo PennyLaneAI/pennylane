@@ -299,7 +299,6 @@ class TestUnbiasedMmdSquared:
         n_ops = 30
         dims = (2, 3)
         m = 50
-        n_samples = 1000
         data = jnp.array(np.stack([rng.integers(0, d_i, m) for d_i in dims], axis=1))
         l_obs = jnp.array(np.stack([rng.integers(0, d_i, n_ops) for d_i in dims], axis=1))
 
@@ -309,11 +308,10 @@ class TestUnbiasedMmdSquared:
 
         result = _unbiased_mmd_squared(
             data_moments,
-            jnp.ones(n_ops),
+            jnp.zeros((n_ops, 2, 2)),
             data,
             l_obs,
             dims,
-            n_samples=n_samples,
             sqrt_loss=False,
         )
         assert abs(float(jnp.real(result))) < 0.05
@@ -323,14 +321,13 @@ class TestUnbiasedMmdSquared:
         rng = np.random.default_rng(1)
         n_ops = 20
         dims = (2, 3)
-        n_samples = 1000
         data = jnp.array(np.stack([rng.integers(0, d_i, 40) for d_i in dims], axis=1))
         l_obs = jnp.array(np.stack([rng.integers(0, d_i, n_ops) for d_i in dims], axis=1))
         fake_model = jnp.array(rng.normal(0, 0.3, n_ops) + 0.1j * rng.normal(0, 0.3, n_ops))
-        mean_y_sq = jnp.ones(n_ops)
+        cov = jnp.zeros((n_ops, 2, 2))
 
-        val = _unbiased_mmd_squared(fake_model, mean_y_sq, data, l_obs, dims, n_samples, False)
-        sqr = _unbiased_mmd_squared(fake_model, mean_y_sq, data, l_obs, dims, n_samples, True)
+        val = _unbiased_mmd_squared(fake_model, cov, data, l_obs, dims, False)
+        sqr = _unbiased_mmd_squared(fake_model, cov, data, l_obs, dims, True)
         assert np.isclose(float(sqr), np.sqrt(abs(float(val))), atol=1e-7)
 
     def test_deterministic(self):
@@ -338,14 +335,13 @@ class TestUnbiasedMmdSquared:
         rng = np.random.default_rng(3)
         n_ops = 15
         dims = (2, 3)
-        n_samples = 500
         data = jnp.array(np.stack([rng.integers(0, d_i, 30) for d_i in dims], axis=1))
         l_obs = jnp.array(np.stack([rng.integers(0, d_i, n_ops) for d_i in dims], axis=1))
         model = jnp.array(rng.normal(0, 0.4, n_ops) + 0.1j * rng.normal(0, 0.4, n_ops))
-        mean_y_sq = jnp.ones(n_ops)
+        cov = jnp.zeros((n_ops, 2, 2))
 
-        r1 = _unbiased_mmd_squared(model, mean_y_sq, data, l_obs, dims, n_samples, False)
-        r2 = _unbiased_mmd_squared(model, mean_y_sq, data, l_obs, dims, n_samples, False)
+        r1 = _unbiased_mmd_squared(model, cov, data, l_obs, dims, False)
+        r2 = _unbiased_mmd_squared(model, cov, data, l_obs, dims, False)
         assert np.isclose(float(r1), float(r2), atol=1e-10)
 
 
