@@ -3820,13 +3820,14 @@ class TestSimplify:
                 assert qp.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
 
         else:
+
             @qp.qnode(dev, interface="jax")
             def circuit(simplify, wires, *args, **kwargs):
                 if simplify:
                     qp.simplify(op(*args, wires=wires, **kwargs))
                 else:
                     op(*args, wires=wires, **kwargs)
-            
+
                 return qp.expval(qp.PauliZ(0))
 
             unsimplified_op = self.get_unsimplified_op(op)
@@ -3836,34 +3837,36 @@ class TestSimplify:
                 flat_dyn_args = [jnp.array(p[i]) for p in unsimplified_op.dynamic_args.values()]
 
                 unsimplified_res = circuit(
-                    False, 
-                    unsimplified_op.wires, 
-                    *flat_dyn_args, 
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
                     **unsimplified_op.static_args,
                     **unsimplified_op.compilable_args,
                     **unsimplified_op.hybrid_args,
                 )
                 simplified_res = circuit(
-                    True, 
-                    unsimplified_op.wires, 
-                    *flat_dyn_args, 
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
                     **unsimplified_op.static_args,
                     **unsimplified_op.compilable_args,
                     **unsimplified_op.hybrid_args,
                 )
 
-                unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(flat_dyn_args))))(
-                    False, 
-                    unsimplified_op.wires, 
-                    *flat_dyn_args, 
+                unsimplified_grad = jax.grad(
+                    circuit, argnums=list(range(2, 2 + len(flat_dyn_args)))
+                )(
+                    False,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
                     **unsimplified_op.static_args,
                     **unsimplified_op.compilable_args,
                     **unsimplified_op.hybrid_args,
                 )
                 simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(flat_dyn_args))))(
-                    True, 
-                    unsimplified_op.wires, 
-                    *flat_dyn_args, 
+                    True,
+                    unsimplified_op.wires,
+                    *flat_dyn_args,
                     **unsimplified_op.static_args,
                     **unsimplified_op.compilable_args,
                     **unsimplified_op.hybrid_args,
@@ -3922,7 +3925,11 @@ class TestSimplify:
             pytest.skip("U2 gate does not simplify to Identity")
 
         try:
-            wires = range(op.num_wires) if hasattr(op, "num_wires") and op.num_wires is not None else range(2)
+            wires = (
+                range(op.num_wires)
+                if hasattr(op, "num_wires") and op.num_wires is not None
+                else range(2)
+            )
         except TypeError:
             wires = range(2)
 

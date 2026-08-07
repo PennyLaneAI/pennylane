@@ -82,7 +82,7 @@ def generate_polynomial_coeffs(degree, parity=None):
 @pytest.mark.unit
 class TestQSVTBasics:
     """Basic validity checks for QSVT."""
-    
+
     @pytest.mark.pl2do(reason="Operators of operators not yet supported with Operator2")
     @pytest.mark.jax
     def test_standard_validity(self):

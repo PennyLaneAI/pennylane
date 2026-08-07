@@ -29,7 +29,6 @@ import numpy as np
 import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
-from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -38,7 +37,7 @@ from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -682,6 +681,7 @@ class PCPhase(Operator2):
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
+        """The basis of the operator."""
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
