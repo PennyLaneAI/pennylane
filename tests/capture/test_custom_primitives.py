@@ -22,6 +22,7 @@ jax = pytest.importorskip("jax")
 
 import pennylane as qp
 from pennylane.capture.custom_primitives import PrimitiveType, QpPrimitive
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = pytest.mark.jax
 
@@ -63,5 +64,5 @@ def test_compile_time_constant_eval():
     with jax._src.config.eager_constant_folding(True):
         jaxpr = jax.make_jaxpr(f)()
 
-    assert jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
     assert jaxpr.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive

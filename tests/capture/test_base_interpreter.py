@@ -155,7 +155,7 @@ def test_default_operator_handling():
 
     jaxpr = jax.make_jaxpr(f)(1.2)
 
-    assert jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
     assert_eqn_matches_op(jaxpr.eqns[2], qp.T)
     assert_eqn_matches_op(jaxpr.eqns[3], qp.X)
@@ -363,7 +363,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RX
-        assert inner_jaxpr.eqns[1].primitive == qp.RX._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RX)
         assert len(inner_jaxpr.eqns) == 2
 
     @pytest.mark.parametrize("lazy", (True, False))
@@ -445,7 +445,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
         assert len(branch2.eqns) == 2
-        assert branch2.eqns[1].primitive == qp.RX._primitive
+        assert_eqn_matches_op(branch2.eqns[1], qp.RX)
 
     def test_cond_no_false_branch(self):
         """Test transforming a cond HOP when no false branch exists."""
@@ -603,8 +603,8 @@ class TestHigherOrderPrimitiveRegistrations:
         assert len(inner_jaxpr.eqns) == 5
         assert inner_jaxpr.eqns[0].primitive == qp.I._primitive
         assert inner_jaxpr.eqns[2].primitive == qp.I._primitive
-        assert inner_jaxpr.eqns[1].primitive == qp.RX._primitive
-        assert inner_jaxpr.eqns[3].primitive == qp.RX._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RX)
+        assert_eqn_matches_op(inner_jaxpr.eqns[3], qp.RX)
 
         assert jaxpr.eqns[0].params["execution_config"].gradient_method == "backprop"
         assert jaxpr.eqns[0].params["execution_config"].grad_on_execution is False
@@ -646,7 +646,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
         assert jaxpr0.eqns[0].primitive.name == "mul"
-        assert jaxpr0.eqns[1].primitive == qp.RX._primitive  # pylint: disable=protected-access
+        assert_eqn_matches_op(jaxpr0.eqns[1], qp.RX)  # pylint: disable=protected-access
 
         assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
 
@@ -674,7 +674,7 @@ class TestHigherOrderPrimitiveRegistrations:
             assert jaxpr.eqns[0].params["scalar_out"] == (grad_f == qp.grad)
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RX)  # eqn 0 is mul
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
@@ -695,7 +695,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == qp.capture.primitives.vjp_prim
         vjp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = vjp_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RX)  # eqn 0 is mul
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
@@ -716,7 +716,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == qp.capture.primitives.jvp_prim
         jvp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = jvp_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RX)  # eqn 0 is mul
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
