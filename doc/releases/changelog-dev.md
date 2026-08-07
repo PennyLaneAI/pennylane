@@ -268,6 +268,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* A single-qubit-controlled :class:`~.U1` is now eagerly lowered to a :class:`~.ControlledPhaseShift`,
+  matching the existing behaviour for :class:`~.PhaseShift`. This is stacked on the `~.Operator2`
+  migrations of `~.U1`/`~.U2`/`~.U3` [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
+  and of `~.PhaseShift`/`~.ControlledPhaseShift` [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951).
+
 * Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
   [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)
 
@@ -875,6 +880,10 @@
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  - Single-qubit parametric operators are ported:
+    - `~.U1`, `~.U2`, `~.U3`
+  [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
+  [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.

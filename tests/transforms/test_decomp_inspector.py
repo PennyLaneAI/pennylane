@@ -117,9 +117,10 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 102, RX: 22, RY: 28, RZ: 136}
-            Weighted Cost: 346.0
+            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            Full Expansion Gates: {CNOT: 160, GlobalPhase: 94, RX: 18, RY: 24, RZ: 136}
+            Weighted Cost: 338.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -190,9 +191,10 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤  
             4: ─├●─├●────────├●─┤  
             5: ─╰●─╰●────────╰●─┤  
-            First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 72, GlobalPhase: 84, MidMeasure: 4, RX: 24, RY: 24, RZ: 80}
-            Weighted Cost: 204.0
+            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+            Full Expansion Gates: {CNOT: 72, GlobalPhase: 82, MidMeasure: 4, RX: 22, RY: 24, RZ: 80}
+            Weighted Cost: 202.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
