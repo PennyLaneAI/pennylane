@@ -471,8 +471,7 @@ class PauliX(Operation):
         **Example:**
 
         >>> print(qp.X.compute_decomposition(0))
-        [RX(3.141592653589793, wires=[0]),
-        GlobalPhase(-1.5707963267948966, wires=[0])]
+        [RX(3.141592653589793, wires=[0]), GlobalPhase(-1.5707963267948966, wires=[])]
 
         """
         return [qp.RX(np.pi, wires=wires), qp.GlobalPhase(-np.pi / 2)]
