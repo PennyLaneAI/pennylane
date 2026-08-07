@@ -377,26 +377,28 @@ class TestDecomposeInterpreter:
         branch = jaxpr.eqns[2].params["jaxpr_branches"][0]
         expected_primitives = [
             qp.RX._primitive,
-            qp.GlobalPhase._primitive,
+            operator_p,
             operator_p,
             qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
         ), f"Expected: {expected_primitives}, got: {[eqn.primitive for eqn in branch.eqns]}"
+        assert branch.eqns[1].params["op_cls"] is qp.GlobalPhase
         assert branch.eqns[2].params["op_cls"] is qp.Z
 
         # Elif branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][1]
         expected_primitives = [
             qp.RY._primitive,
-            qp.GlobalPhase._primitive,
+            operator_p,
             operator_p,
             qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
         )
+        assert branch.eqns[1].params["op_cls"] is qp.GlobalPhase
         assert branch.eqns[2].params["op_cls"] is qp.Y
 
         # Else branch
