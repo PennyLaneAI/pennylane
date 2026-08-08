@@ -475,7 +475,6 @@ def _controlled_g_phase_decomp(
         qp.PauliX(w)
 
 
-add_decomps(GlobalPhase, null_decomp)
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
 add_decomps("Pow(GlobalPhase)", pow_rotation2)
 add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
