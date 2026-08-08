@@ -417,7 +417,7 @@ class PauliRot(Operator2):
 
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
-            return qp.GlobalPhase.compute_matrix(0.5 * theta, n_wires=len(pauli_word))
+            return qp.GlobalPhase.compute_matrix(0.5 * theta, wires=range(len(pauli_word)))
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -489,7 +489,7 @@ class PauliRot(Operator2):
 
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
-            return qp.GlobalPhase.compute_eigvals(0.5 * theta, n_wires=len(pauli_word))
+            return qp.GlobalPhase.compute_eigvals(0.5 * theta, wires=range(len(pauli_word)))
 
         return MultiRZ.compute_eigvals(theta, list(range(len(pauli_word))))
 
@@ -1017,7 +1017,6 @@ def _decompose_pcphase_resource(num_wires, dim):
 
     n_zero_control_values = 0
     for i, c_i in enumerate(powers_of_two):
-
         if c_i != 0:
             subspace = int(c_i < 0)
             if flipped:
@@ -1069,7 +1068,6 @@ def _decompose_pcphase(phi, wires, dimension, **_):
 
     control_values = []
     for i, c_i in enumerate(powers_of_two):
-
         if c_i != 0:
             # Projector with rank 2**(n-1-i) needs to be added/subtracted
             subspace = int(c_i < 0)  # If c_i < 0, target |1> subspace, else target |0> subspace
@@ -1708,7 +1706,6 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self) -> "qp.Hamiltonian":
-
         return qp.Hamiltonian(
             [0.25, 0.25],
             [

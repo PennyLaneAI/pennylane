@@ -105,7 +105,6 @@ operations_list = {
     "Adjoint(SISWAP)": qp.adjoint(qp.SISWAP(wires=[0, 1])),
     "OrbitalRotation": qp.OrbitalRotation(1.234, wires=[0, 1, 2, 3]),
     "FermionicSWAP": qp.FermionicSWAP(1.234, wires=[0, 1]),
-    "GlobalPhase": qp.GlobalPhase(1.23423, wires=[0, 1]),
     "GlobalPhase()": qp.GlobalPhase(1.23423),
 }
 

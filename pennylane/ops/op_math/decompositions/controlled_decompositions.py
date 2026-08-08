@@ -32,7 +32,7 @@ from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
@@ -224,7 +224,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
-            _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires], Wire[1]): 1,
+            ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], work_wires=Wire[1]): 1,
         }
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
@@ -233,7 +233,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
         ops.Hadamard: 2,
-        _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires], Wire[1]): 1,
+        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], work_wires=Wire[1]): 1,
     }
 
 
@@ -271,7 +271,7 @@ def _single_ctrl_decomp_zyz_resources(**__):
         ops.RZ: 3,
         ops.RY: 2,
         ops.CNOT: 2,
-        _ctrl_abstract(ops.GlobalPhase, Wire[1]): 1,
+        ops.ctrl(ops.GlobalPhase(Float), Wire[1]): 1,
     }
 
 
@@ -301,7 +301,7 @@ def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wir
             Wire[num_work_wires],
             work_wire_type,
         ): 2,
-        _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires], Wire[1]): 1,
+        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], work_wires=Wire[1]): 1,
     }
 
 
@@ -720,7 +720,7 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
             resource_rep(ops.QubitUnitary, num_wires=1): 2,
             _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 4,
             adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
-            _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires]): 1,
+            ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
         }
     return {
         ops.Hadamard: 2,
@@ -728,7 +728,7 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
         _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 2,
         _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
-        _ctrl_abstract(ops.GlobalPhase, Wire[num_control_wires]): 1,
+        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
     }
 
 
