@@ -228,6 +228,11 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    def test_work_wire_type(self):
+        """Tests that work_wire_type must be correct."""
+        with pytest.raises(ValueError, match="work_wire_type must be either"):
+            Controlled(self.temp_op, control_wires="b", work_wires="c", work_wire_type="foo")
+
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "base",
@@ -1721,6 +1726,17 @@ class TestCtrl:
             control_values=[1, 0, 1],
         )
         assert op == expected
+
+    def test_nested_controls_work_wires(self):
+        """Tests work wire handling for nested controlled ops."""
+
+        op = qp.ctrl(
+            qp.ctrl(qp.H(0), control=[1, 2]),
+            control=[3, 4],
+            work_wires=[5],
+            work_wire_type="zeroed",
+        )
+        assert op.work_wire_type == "zeroed"
 
     @pytest.mark.parametrize("op, ctrl_wires, ctrl_op", custom_ctrl_ops)
     def test_nested_custom_controls(self, op, ctrl_wires, ctrl_op):
