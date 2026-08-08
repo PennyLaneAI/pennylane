@@ -4137,7 +4137,7 @@ def test_diagonalization_static_global_phase():
 def test_global_phase_compute_sparse_matrix(phi, n_wires):
     """Test compute_sparse_matrix"""
 
-    sparse_matrix = qp.GlobalPhase.compute_sparse_matrix(phi, n_wires=n_wires)
+    sparse_matrix = qp.GlobalPhase.compute_sparse_matrix(phi, wires=list(range(n_wires)))
     expected = np.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
 
     assert np.allclose(sparse_matrix.todense(), expected.todense())
