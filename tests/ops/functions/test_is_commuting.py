@@ -901,3 +901,14 @@ class TestCommutingFunction:
 
         res = qp.is_commuting(qp.PauliX(wires=0), qp.QFT(wires=[1, 0]))
         assert res is False
+
+
+def test_cz_commutes_with_swap():
+    """CZ and SWAP on the same wires commute (matrix algebra); heuristic must agree (#9623)."""
+    cz = qp.CZ(wires=[0, 1])
+    swap = qp.SWAP(wires=[0, 1])
+    assert qp.is_commuting(cz, swap) is True
+    assert qp.is_commuting(swap, cz) is True
+    A = qp.matrix(cz)
+    B = qp.matrix(swap)
+    assert np.allclose(A @ B, B @ A)
