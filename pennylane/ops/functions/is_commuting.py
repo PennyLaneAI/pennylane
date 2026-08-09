@@ -331,13 +331,31 @@ def is_commuting(operation1, operation2):
     target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
     target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
 
+    res = True
     if intersection(target_wires_1, target_wires_2) and not _commutes(ctrl_base_1, ctrl_base_2):
-        return False
+        res = False
 
-    if intersection(target_wires_1, op2_control_wires) and not _commutes("ctrl", ctrl_base_1):
-        return False
+    elif intersection(target_wires_1, op2_control_wires) and not _commutes("ctrl", ctrl_base_1):
+        res = False
 
-    if intersection(target_wires_2, op1_control_wires) and not _commutes("ctrl", ctrl_base_2):
+    elif intersection(target_wires_2, op1_control_wires) and not _commutes("ctrl", ctrl_base_2):
+        res = False
+
+    if res is False:
+        if operation1.name in SPECIAL_UTILITIES or operation2.name in SPECIAL_UTILITIES:
+            return False
+
+        if operation1.name in SWAP_GROUP or operation2.name in SWAP_GROUP:
+            combined_wires = operation1.wires + operation2.wires
+            if len(combined_wires) <= 4:
+                try:
+                    mat1 = qp.matrix(operation1, wire_order=combined_wires)
+                    mat2 = qp.matrix(operation2, wire_order=combined_wires)
+                    mat_12 = qp.math.matmul(mat1, mat2)
+                    mat_21 = qp.math.matmul(mat2, mat1)
+                    return qp.math.allclose(mat_12, mat_21)
+                except (qp.operation.MatrixUndefinedError, ValueError):
+                    pass
         return False
 
     return True
