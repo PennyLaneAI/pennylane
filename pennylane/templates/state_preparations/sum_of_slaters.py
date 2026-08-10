@@ -23,7 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operator2
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Float, Int, Wire
+from pennylane.typing import Int, Wire, Complex
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -885,7 +885,7 @@ class SumOfSlatersPrep(Operator2):
     dynamic_argnames = ("coefficients",)
     wire_names = ("wires",)
     compilable_argnames = ("indices",)
-    arg_specs = {"coefficients": Float[-1], "wires": Wire[-1]}
+    arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
 
     def __init__(self, coefficients, wires, indices):
         super().__init__(coefficients, wires, indices)
