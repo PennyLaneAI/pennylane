@@ -1045,11 +1045,11 @@ class TestDecomposition:
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
 
-        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
+        ctrl_op = qp.ctrl(qp.ctrl(qp.RZ(0.123, wires=0), control=1), control=2)
         expected = [
-            qp.CRZ(0.123 / 2, wires=[2, 0]),
+            qp.RZ(0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
-            qp.CRZ(-0.123 / 2, wires=[2, 0]),
+            qp.RZ(-0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected

@@ -31,9 +31,9 @@ def test_structure_repr_str():
     """Test the repr of the structure class."""
     op = qp.RX(0.1, wires=0)
     _, structure = qp.pytrees.flatten(op)
-    expected = "PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),))"
+    expected = "PyTreeStructure(RX, (), (PyTreeStructure(list, None, (PyTreeStructure(),)), PyTreeStructure(list, None, (PyTreeStructure(Wires, (), (PyTreeStructure(),)),)), PyTreeStructure(list, None, ())))"
     assert repr(structure) == expected
-    expected_str = "PyTree(RX, (Wires([0]), ()), (Leaf,))"
+    expected_str = "PyTree(RX, (), (PyTree(list, None, (Leaf,)), PyTree(list, None, (PyTree(Wires, (), (Leaf,)),)), PyTree(list, None, ())))"
     assert str(structure) == expected_str
 
 

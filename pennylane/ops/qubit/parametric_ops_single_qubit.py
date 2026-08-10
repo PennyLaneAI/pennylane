@@ -747,8 +747,9 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
         return {qp.CRZ: 1}
     return {
         qp.RZ: 2,
-        qp.MultiControlledX(
-            Wire[len(control_wires) + 1],
+        qp.ctrl(
+            qp.X(Wire[1]),
+            control=Wire[len(control_wires)],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 2,
@@ -757,15 +758,25 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 
 @register_resources(_controlled_rz_resource)
 def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+
     if len(control_wires) == 1:
-        qp.CRZ(base.phi, wires=wires)
+        qp.CRZ(base.phi, wires=control_wires + base.wires)
         return
 
-    qp.RZ(base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RZ(-base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qp.RZ(base.phi / 2, wires=base.wires)
+    qp.ctrl(
+        qp.X(base.wires),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qp.RZ(-base.phi / 2, wires=base.wires)
+    qp.ctrl(
+        qp.X(base.wires),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
 
 
 add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_decomp))
