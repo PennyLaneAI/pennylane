@@ -18,7 +18,7 @@ import sys
 import types
 from pathlib import Path
 
-from pennylane.backline import functions, triton_decoder
+from pennylane.backline import css_bp_decoder, functions, triton_decoder
 
 
 def _install_fake_triton_frontend(monkeypatch, **builders):
@@ -73,7 +73,7 @@ def test_triton_decoder_forwards_build_options(monkeypatch):
     }
 
 
-def test_css_decoder_forwards_build_options(monkeypatch):
+def test_css_bp_decoder_forwards_build_options(monkeypatch):
     """It should forward decoder build options and wrap the result."""
     calls = {}
 
@@ -85,7 +85,7 @@ def test_css_decoder_forwards_build_options(monkeypatch):
 
     _install_fake_triton_frontend(monkeypatch, build_css_bp_decoder=fake_build_css_bp_decoder)
 
-    decoder = functions.css_decoder(
+    decoder = functions.css_bp_decoder(
         [[1, 0], [0, 1]],
         [[1, 1], [0, 1]],
         postprocess="hard",
@@ -118,3 +118,8 @@ def test_css_decoder_forwards_build_options(monkeypatch):
 def test_triton_decoder_is_exported():
     """The package should export the generic Triton decoder helper."""
     assert triton_decoder is functions.triton_decoder
+
+
+def test_css_bp_decoder_is_exported():
+    """The package should export the CSS BP decoder helper."""
+    assert css_bp_decoder is functions.css_bp_decoder

@@ -207,7 +207,7 @@ from pennylane.backline import (
     CoprocessorFunction,
     Node,
     backline,
-    css_decoder,
+    css_bp_decoder,
 )
 
 from pennylane import spin

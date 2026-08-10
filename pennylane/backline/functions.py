@@ -32,7 +32,7 @@ class CoprocessorFunction:
 
     See the Attributes section to learn more about the available options.
 
-    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_decoder`, :func:`~.triton_decoder`
+    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
     """
 
     name: str
@@ -78,7 +78,7 @@ def triton_decoder(
         ValueError: If the decoder build options are invalid.
 
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`,
-        :func:`~.css_decoder`
+        :func:`~.css_bp_decoder`
 
     **Example**
 
@@ -102,7 +102,7 @@ def triton_decoder(
     return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))
 
 
-def css_decoder(
+def css_bp_decoder(
     Hx: ArrayLike,
     Hz: ArrayLike,
     *,
@@ -147,14 +147,14 @@ def css_decoder(
 
     >>> Hx = ((1, 0, 1), (0, 1, 1))
     >>> Hz = ((1, 1, 0), (1, 0, 1))
-    >>> decoder = qp.backline.css_decoder(Hx, Hz, postprocess="hard", num_iters=5)
+    >>> decoder = qp.backline.css_bp_decoder(Hx, Hz, postprocess="hard", num_iters=5)
     """
     try:
         build_css_bp_decoder = import_module(
             "pennylane.backline.decoders.triton.decoder_frontend"
         ).build_css_bp_decoder
     except ImportError as exc:
-        raise ImportError("css_decoder requires Triton support.") from exc
+        raise ImportError("css_bp_decoder requires Triton support.") from exc
 
     so_path, symbol_name = build_css_bp_decoder(
         Hx, Hz, postprocess=postprocess, num_iters=num_iters, prob=prob, **build_options
