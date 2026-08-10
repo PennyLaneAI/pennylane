@@ -180,12 +180,13 @@ class TestDeviceLevelSpecs:
             ),
         )
 
+    @pytest.mark.capture
     def test_paulirot_and_measure(self):
         """Test that PauliRot and PauliMeasure are tracked at the device level."""
 
         dev = qp.device("null.qubit", wires=2)
 
-        @qjit(capture=True)
+        @qjit
         @qp.qnode(dev)
         def circuit():
             qp.PauliRot(0.42, pauli_word="Y", wires=0)  # arbitrary angle
@@ -580,10 +581,11 @@ class TestPassByPassSpecs:
             "sample(all wires)": 1,
         }
 
+    @pytest.mark.capture
     def test_conditionals(self):
         """Test that conditionals are handled correctly."""
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.qnode(qp.device("null.qubit", wires=1))
         def circuit(x):
             if x > 0.5:
@@ -617,11 +619,12 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
+    @pytest.mark.capture
     def test_loops(self):
         """Test that static loops are handled correctly and that resources are counted
         according to the number of iterations (including nested loops)."""
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.qnode(qp.device("null.qubit", wires=1))
         def circuit():
             for _ in range(5):
@@ -646,7 +649,7 @@ class TestPassByPassSpecs:
         assert actual == expected
 
     def test_split_non_commuting_mlir(self):
-        """Test that split_non_commuting works as expected"""
+        """Test that split-non-commuting works as expected"""
 
         @qp.transforms.cancel_inverses
         @qp.transform(pass_name="split-non-commuting")  # Applies as MLIR pass
@@ -703,6 +706,7 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
+    @pytest.mark.capture
     def test_subroutine(self):
         """Test qp.specs when there is a Catalyst subroutine"""
         dev = qp.device("lightning.qubit", wires=3)
@@ -711,7 +715,7 @@ class TestPassByPassSpecs:
         def subroutine():
             qp.Hadamard(wires=0)
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.qnode(dev)
         def circuit():
             qp.PauliX(wires=1)
@@ -736,6 +740,7 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
+    @pytest.mark.capture
     def test_operator2(self):
         """Test that specs works with operator2 classes."""
 
@@ -750,7 +755,7 @@ class TestPassByPassSpecs:
             def __init__(self, phi, reg1, reg2, metadata):
                 super().__init__(phi, reg1, reg2, metadata)
 
-        @qp.qjit(capture=True, target="mlir")
+        @qp.qjit(target="mlir")
         @qp.transforms.merge_rotations
         @qp.qnode(qp.device("null.qubit", wires=10))
         def c():
@@ -763,10 +768,11 @@ class TestPassByPassSpecs:
 
             assert resources.quantum_operations == {"DummyOp": 2}
 
+    @pytest.mark.capture
     def test_symbolic_array(self):
         """Test using specs with symbolic_array."""
 
-        @qp.qjit(capture=True, target="mlir")
+        @qp.qjit(target="mlir")
         @qp.transforms.merge_rotations
         @qp.qnode(qp.device("null.qubit", wires=1))
         def c():
@@ -815,10 +821,11 @@ class TestSpecsWithPPR:
         actual = qp.specs(circ, level=1)()
         assert actual == expected
 
+    @pytest.mark.capture
     def test_arbitrary_ppr(self):
         """Test that PPRs are handled correctly."""
 
-        @qp.qjit(target="mlir", capture=True)
+        @qp.qjit(target="mlir")
         @qp.transforms.decompose_arbitrary_ppr
         @qp.transforms.to_ppr
         @qp.qnode(qp.device("null.qubit", wires=3))
@@ -853,10 +860,11 @@ class TestSpecsWithPPR:
 class TestSymbolicSpecs:
     """Tests for using qp.specs with dynamic loops whose bounds are not known at compile time"""
 
+    @pytest.mark.capture
     def test_dynamic_loop(self):
         """Test specs with a dynamic loop that can't be resolved at compile time"""
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(x):
             qp.Hadamard(0)
@@ -882,13 +890,14 @@ class TestSymbolicSpecs:
         )
         assert concrete_res == expected_res
 
+    @pytest.mark.capture
     def test_dynamic_loop_and_static_loop(self):
         """
         Test specs with a dynamic loop that can't be resolved at compile time and
         a static loop nested inside it
         """
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(x):
             qp.Hadamard(0)
@@ -920,13 +929,14 @@ class TestSymbolicSpecs:
         )
         assert concrete_res == expected_res
 
+    @pytest.mark.capture
     def test_dynamic_loop_and_static_loop2(self):
         """
         Test specs with a static loop and a dynamic loop that can't be resolved at compile time
         nested inside it
         """
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(x):
             qp.Hadamard(0)
@@ -956,10 +966,11 @@ class TestSymbolicSpecs:
         )
         assert concrete_res == expected_res
 
+    @pytest.mark.capture
     def test_nested_dynamic_loop(self):
         """Test specs with a nested dynamic loops that can't be resolved at compile time"""
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(x, y):
             qp.Hadamard(0)
@@ -986,10 +997,11 @@ class TestSymbolicSpecs:
             )
             assert concrete_res == expected_res
 
+    @pytest.mark.capture
     def test_dynamic_loops_multi_level(self):
         """Test smulti-level specs with dynamic loops"""
 
-        @qp.qjit(autograph=True, capture=True)
+        @qp.qjit(autograph=True)
         @qp.transforms.cancel_inverses
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(x, y):
@@ -1021,10 +1033,11 @@ class TestSymbolicSpecs:
                     num_allocs=1,
                 )
 
+    @pytest.mark.capture
     def test_symbolic_array_inside_loop(self):
         """Test dynamic loop with symbolic_array in a loop."""
 
-        @qp.qjit(capture=True)
+        @qp.qjit
         @qp.qnode(qp.device("null.qubit", wires=1))
         def c(n):
 
@@ -1041,10 +1054,11 @@ class TestSymbolicSpecs:
         r = qp.specs(c, level=0)(2).resources
         assert r.subs({var: 10 for var in r.vars}).quantum_operations["RX"] == 10
 
+    @pytest.mark.capture
     def test_symbolic_array_loop_arguemtn(self):
         """Test dynamic loop with a symbolic array as a loop argument."""
 
-        @qp.qjit(capture=True)
+        @qp.qjit
         @qp.qnode(qp.device("null.qubit", wires=1))
         def c(n):
 
@@ -1166,6 +1180,7 @@ class TestMarkerIntegration:
 
         assert actual == expected
 
+    @pytest.mark.capture
     def test_redundant_marker(self, simple_circuit):
         """Test that two markers on the same level generate the same specs."""
 
@@ -1174,7 +1189,7 @@ class TestMarkerIntegration:
         simple_circuit = partial(qp.marker, label="m1")(simple_circuit)
         simple_circuit = partial(qp.marker, label="m1-duplicate")(simple_circuit)
 
-        simple_circuit = qjit(simple_circuit, capture=True)
+        simple_circuit = qjit(simple_circuit)
 
         expected = CircuitSpecs(
             device_name="lightning.qubit",
@@ -1204,6 +1219,7 @@ class TestMarkerIntegration:
 
         assert actual == expected
 
+    @pytest.mark.capture
     def test_marker(self, simple_circuit):
         """Test that qp.marker can be used appropriately."""
 
@@ -1213,7 +1229,7 @@ class TestMarkerIntegration:
         simple_circuit = qp.transforms.merge_rotations(simple_circuit)
         simple_circuit = partial(qp.marker, label="m2")(simple_circuit)
 
-        simple_circuit = qjit(simple_circuit, capture=True)
+        simple_circuit = qjit(simple_circuit)
 
         expected = CircuitSpecs(
             device_name="lightning.qubit",
