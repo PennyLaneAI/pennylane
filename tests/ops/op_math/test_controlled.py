@@ -921,17 +921,17 @@ special_par_op_decomps = [
     (
         qp.GlobalPhase,
         [0.123],
-        [1],
+        [],
         [0],
-        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0])),
         [qp.PhaseShift(-0.123, wires=0)],
     ),
     (
         qp.GlobalPhase,
         [0.123],
-        [3],
+        [],
         [0, 1, 2],
-        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0, 1, 2])),
         [qp.ctrl(qp.PhaseShift(-0.123, wires=2), control=[0, 1])],
     ),
 ]
