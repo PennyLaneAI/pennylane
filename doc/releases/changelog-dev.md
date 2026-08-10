@@ -2,8 +2,40 @@
 
 <h3>New features since last release</h3>
 
-* (Experimental) Added a generic Triton decoder dispatcher to user provided `triton`
-decoders as well as CSS decoder based on Tannerg graph now built on top of it.
+* Added :func:`~.triton_decoder` and :func:`~.css_bp_decoder` for compiling Triton-based
+  coprocessor decoders. :func:`~.triton_decoder` wraps user-provided Triton decoder tuples, while
+  :func:`~.css_bp_decoder` builds a CSS belief-propagation decoder from X- and Z-type parity-check
+  matrices. In both cases, syndromes and corrections are packed into ``u64`` bitmasks.
+
+  ```python
+  import pennylane as qp
+  import triton
+  import triton.language as tl
+
+  @triton.jit
+  def steane_lookup(syndrome):
+      one = tl.cast(1, tl.uint64)
+      zero = tl.cast(0, tl.uint64)
+      return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+
+  custom_decoder = qp.triton_decoder(
+      (steane_lookup, steane_lookup),
+      platform="hip:gfx90a:64",
+  )
+
+  Hz = Hx = np.array([
+      [1, 0, 1, 0, 1, 0, 1],
+      [0, 1, 1, 0, 0, 1, 1],
+      [0, 0, 0, 1, 1, 1, 1],
+  ])
+  css_decoder = qp.css_bp_decoder(
+      Hx,
+      Hz,
+      postprocess="osd",
+      num_iters=10,
+      platform="hip:gfx90a:64",
+  )
+  ```
   [(#9975)](https://github.com/PennyLaneAI/pennylane/pull/9975)
 
 * (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
