@@ -296,8 +296,7 @@ def resources_from_analysis_pass(
 
     # pylint: disable=protected-access,too-many-arguments
 
-    new_qnode = copy.deepcopy(original_qnode)
-    iter_pipeline = new_qnode._compile_pipeline
+    iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = qp.CompilePipeline()
 
     max_level = max(level) if isinstance(level, (list, tuple)) else level
@@ -341,6 +340,7 @@ def resources_from_analysis_pass(
                     output_json=True, output_fname=fname
                 )
 
+        new_qnode = copy.copy(original_qnode)
         new_qnode._compile_pipeline = new_compile_pipeline
         compile_options = copy.deepcopy(qjit.compile_options)
         compile_options.target = "mlir"

@@ -179,14 +179,14 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
         fixed_decomps={qp.IsingXX: isingxx_decomp},
     )
-    @qp.qnode(qp.device("default.qubit"))
+    @qp.qnode(qp.device("lightning.qubit"))
     def circuit():
         qp.CNOT(wires=[0, 1])
         qp.IsingXX(0.5, wires=[0, 1])
         return qp.state()
 
->>> qp.specs(circuit)()["resources"].quantum_operations
-{'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
+>>> qp.specs(qp.qjit(circuit))()["resources"].quantum_operations
+{'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
 
 To register alternative decomposition rules under an operator to be used globally, use
 :func:`~pennylane.add_decomps`. See :ref:`Inspecting and Managing Decomposition Rules <decomps_management>`

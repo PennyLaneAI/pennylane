@@ -317,7 +317,7 @@ def quantum_monte_carlo(
             target_wire = m
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qp.device("default.qubit", wires=(n + m + 1))
+            dev = qp.device("lightning.qubit", wires=(n + m + 1))
 
             def fn():
                 qp.templates.MottonenStatePreparation(np.sqrt(probs), wires=a_wires)
@@ -338,26 +338,25 @@ def quantum_monte_carlo(
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        >>> specs = qp.specs(qmc, level="device")()
+        >>> specs = qp.specs(qp.qjit(qmc), level="device")()
         >>> from pprint import pprint
         >>> pprint(specs)
-        CircuitSpecs(device_name='default.qubit',
+        CircuitSpecs(device_name='lightning.qubit',
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),
                      level='device',
-                     resources=SpecsResources(counts={'Adjoint(CNOT)': 7812,
-                                                      'Adjoint(QFT)': 1,
-                                                      'Adjoint(RY)': 3150,
-                                                      'CNOT': 7874,
-                                                      'CZ': 126,
-                                                      'Hadamard': 258,
-                                                      'MultiControlledX': 126,
-                                                      'PauliX': 252,
-                                                      'RY': 3175},
-                                              measurement_processes={'probs(6 wires)': 1},
-                                              num_allocs=12,
-                                              circuit_depth=21502,
-                                              total_quantum_operations=22774))
+                    resources=SpecsResources(counts={'6C(PauliX)': 126,
+                                                     'CNOT': 15686,
+                                                     'CZ': 126,
+                                                     'ControlledPhaseShift': 15,
+                                                     'Hadamard': 264,
+                                                     'PauliX': 252,
+                                                     'RY': 6325,
+                                                     'SWAP': 3},
+                                             measurement_processes={'probs(6 wires)': 1},
+                                             num_allocs=12,
+                                             circuit_depth=21502,
+                                             total_quantum_operations=22797))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)

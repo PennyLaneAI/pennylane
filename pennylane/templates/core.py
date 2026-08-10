@@ -465,7 +465,7 @@ class Subroutine:
             qp.RX(x, wires[0])
             qp.RY(y, wires[0])
 
-        @qp.qnode(qp.device('default.qubit'))
+        @qp.qnode(qp.device('lightning.qubit'))
         def c():
             MyTemplate(0.1, 0.2, 0)
             return qp.state()
@@ -476,14 +476,6 @@ class Subroutine:
     0: ──MyTemplate(0.10,0.20)─┤  State
     >>> print(qp.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
-    >>> print(qp.specs(c)().resources)
-    Quantum operations:
-    - Total: 1
-      - MyTemplate: 1
-    Measurement processes:
-    - state(all wires): 1
-    Wire allocations: 1
-    Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:

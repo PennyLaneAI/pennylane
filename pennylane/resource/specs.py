@@ -59,7 +59,7 @@ def _specs_qjit_device_level_tracking(
         filepath = Path(f"{tmpdirname}/{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
 
         # When running at the device level, execute on null.qubit directly with resource tracking,
-        # which will give resource usage information for after all compiler passes have completed
+        # which will give resource usage information for after all transforms have completed
         # TODO: Find a way to inherit all devices args from input
         original_device = original_qnode.device
         spoofed_dev = NullQubit(
@@ -140,13 +140,12 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     if level is None:
         level = "device"
 
-    # Unwrap the original QNode if any passes have been applied
+    # Unwrap the original QNode if any transforms have been applied
     if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
         original_qnode = qjit.original_function
     else:
         raise ValueError(
-            "qp.specs can only be applied to a QNode or qjit'd QNode, instead got:",
-            qjit,
+            "qp.specs can only be applied to a QNode or qjit'd QNode, instead got: " f"{qjit}",
         )
 
     device = original_qnode.device
@@ -159,7 +158,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     elif isinstance(level, (int, tuple, list, range, str)):
         if compute_depth:
             warnings.warn(
-                "Cannot calculate circuit depth for before applying all passes."
+                "Cannot calculate circuit depth before applying all transforms."
                 " To compute the depth, please use level='device'.",
                 UserWarning,
             )
@@ -189,14 +188,14 @@ def specs(
     r"""Provides the specifications of a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
-    about the circuit after applying the specified passes.
+    about the circuit after applying the specified transforms.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
             ``functools.partial`` wrappers around supported callables are also accepted.
 
     Keyword Args:
-        level (str | int | iter[int | str] | None): An indication of which passes to apply before
+        level (str | int | iter[int | str] | None): An indication of which transforms to apply before
             computing the resource information. See the sections below for more information about
             acceptable values.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
@@ -218,18 +217,18 @@ def specs(
 
         The available options for ``levels`` are:
 
-        * ``"top"`` or ``0``: The original circuit before any passes have been applied.
-        * ``"user"``: The circuit after all user-specified passes have been applied.
-        * ``"device"``: The circuit after all user-specified passes and device
-          preprocessing passes have been applied.
-        * An ``int``: The circuit after the specified number of user-specified passes have been applied.
-        * A marker name (str): The circuit after the specified user-specified pass (and all before
+        * ``"top"`` or ``0``: The original circuit before any transforms have been applied.
+        * ``"user"``: The circuit after all user-specified transforms have been applied.
+        * ``"device"``: The circuit after all user-specified transforms and device
+          preprocessing transforms have been applied.
+        * An ``int``: The circuit after the specified number of user-specified transforms have been applied.
+        * A marker name (str): The circuit after the specified user-specified transform (and all before
           it) has been applied.
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names.
-          Should be sorted in ascending pass order with no duplicates. The output will provide
+          Should be sorted in ascending transform order with no duplicates. The output will provide
           resource information for each level.
         * The string ``"all"``: To provide information at each stage of compilation with respect to
-          user-specified passes.
+          user-specified transforms.
 
     **Example**
 
@@ -307,15 +306,15 @@ def specs(
         .. note::
 
             The resources shown when using ``level="device"`` may reflect changes to the circuit
-            beyond the user passes manually applied to the QNode. Theses changes are a result of
-            additional "device preprocessing" passes applied to ensure compatibility with lowering
-            to MLIR and/or execution on the chosen device.
+            beyond the transforms manually applied to the QNode. Theses changes are a result of
+            additional "device preprocessing" transforms applied to ensure compatibility with
+            lowering to MLIR and/or execution on the chosen device.
 
     .. details::
         :title: Pass-by-pass Specs with Catalyst
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
-        This can be helpful for determining how circuit resources change after a given pass.
+        This can be helpful for determining how circuit resources change after a given transform.
 
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
@@ -327,19 +326,19 @@ def specs(
 
         Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument:
 
-        * An ``int``: the desired pass level of a user-applied pass, see the note below
-        * A marker name (str): The name of an applied :func:`qp.marker <pennylane.marker>` pass
+        * An ``int``: the desired transform level of a user-applied transform, see the note below
+        * A marker name (str): The name of an applied :func:`qp.marker <pennylane.marker>` transform
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
-          ascending pass order with no duplicates
-        * The string ``"all"``: To provide information at each stage of compilation with respect to user-specified passes
-        * The string ``"all-mlir"``: To provide information at each stage of compilation with respect to user-specified passes exclusively at the MLIR level
-        * The string ``"user"``: To provide information after all user-specified passes have been applied
+          ascending transform order with no duplicates
+        * The string ``"all"``: To provide information at each stage of compilation with respect to user-specified transforms
+        * The string ``"all-mlir"``: To provide information at each stage of compilation with respect to user-specified transforms exclusively at the MLIR level
+        * The string ``"user"``: To provide information after all user-specified transforms have been applied
 
         .. note::
-            The ``level`` argument is based on user-applied passes.
+            The ``level`` argument is based on user-applied transforms.
             Level ``0`` always corresponds to the original circuit before any user-specified
-            passes have been applied,
-            and incremental levels correspond to the aggregate of user-specified passes
+            transforms have been applied,
+            and incremental levels correspond to the aggregate of user-specified transforms
             in the order in which they are applied.
 
         Consider the following circuit:
@@ -385,7 +384,7 @@ def specs(
 
         When invoked with an iterable of levels, or ``"all"`` as above, the resources at different levels can be
         accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
-        the name of a pass or marker. For example:
+        the name of a transform or marker. For example:
 
         >>> print(all_specs.resources['merge-rotations'])
         Quantum operations:
@@ -397,9 +396,9 @@ def specs(
         Wire allocations: 3
         Circuit Depth: Not computed
 
-        A shortcut to access the resources after all user-specified passes have been
+        A shortcut to access the resources after all user-specified transforms have been
         applied is to use the ``"user"`` level. For example, the following will also return the
-        resources after the ``merge-rotations`` pass:
+        resources after the ``merge-rotations`` transform:
 
         >>> print(qp.specs(circuit, level="user")(1.23).resources)
         Quantum operations:
@@ -449,7 +448,7 @@ def specs(
         - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0
         Wire allocations       |    3 |    3 |    3 |    3 |    3
 
-        Note that in the above example, the ``split-non-commuting`` pass results in two separate executions,
+        Note that in the above example, the ``split-non-commuting`` transform results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
         returned and displayed separately, though the level name for both is the same, since they come from the same transform.
 
