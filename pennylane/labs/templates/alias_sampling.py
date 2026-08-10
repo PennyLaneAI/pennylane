@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
 
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
-    logL = (L - 1).bit_length()
+    logL = qp.math.ceil_log2(L)
 
     expected = k + logL
     if len(target_wires) != expected:
@@ -58,7 +58,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     if L == 1:
         return
 
-    flr = (L).bit_length() - 1  # floor(log2(L))
+    flr = L.bit_length() - 1   # floor(log2 L)
     theta = np.arccos(1.0 - (2**flr) / L)
     w_used = work_wires[1 : 1 + max(logL - 1, 1)]
 
@@ -120,7 +120,11 @@ def _build_alias_tables(probs, mu):
     alt = list(range(L))
     keep = [n] * L  # default: self-aliased, full keep (covers leftover columns)
 
-    small_mask = scaled < 1.0
+    # Use this threshold instead of 1.0 to avoid floating-point issues when L is large and the
+    # scaled values are very close to 1.0. The threshold is set to 1.0 - 1.0/(2*n) to ensure that the scaled values are
+    # correct with respect to the \mu bits of precision.
+    threshold = 1.0 - 1.0/(2*n)
+    small_mask = scaled < threshold
     small = np.where(small_mask)[0].tolist()
     large = np.where(~small_mask)[0].tolist()
 
@@ -130,7 +134,7 @@ def _build_alias_tables(probs, mu):
         keep[s] = int(round(scaled[s] * n))
         alt[s] = g
         scaled[g] += scaled[s] - 1.0
-        if scaled[g] < 1.0:
+        if scaled[g] < threshold:
             small.append(g)
         else:
             large.append(g)
@@ -153,19 +157,31 @@ def alias_sampling_wires(n_states, mu):
         * ``temp_wires`` (``3*mu + ceil(log2 L)``): sigma + alt + keep + flag +
           comparator scratch (``mu - 1`` wires that the comparator leaves dirty);
           left entangled with ``|l>`` and uncomputed by :math:`prepare^{\dagger}`.
-        * ``work_wires`` (``max(ceil(log2 L), mu, 2) + 5``): genuinely clean
+        * ``work_wires`` (``1+max(log(L) - 1, 1)``): minimum clean
           scratch (UNIFORM_L flag + work, reused by QROM), returned to
-          :math:`|0\rangle` and safe to reuse.
+          :math:`|0\rangle`.
+
+    .. note::
+
+        The reported ``work_wires`` is the minimum required by :func:`alias_sampling`.
+        More work_wires can be added to be forwarded to the internal
+        ``qml.QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
+        the T-gate count at the cost of the additional qubits. At exactly the
+        minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
+        ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
     """
-    logL = max((n_states - 1).bit_length(), 1)
+
+    if isinstance(mu, bool) or not isinstance(mu, (int, np.integer)) or mu < 1:
+        raise ValueError(f"mu must be a positive integer, got {mu!r}.")
+    logL = max(qp.math.ceil_log2(n_states), 1)
     n_target = logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     n_temp = mu + logL + mu + 1 + max(mu - 1, 0)
-    n_work = 1 + (max(logL, mu, 2) + 4)  # uniform_flag + uniform_work
+    n_work = 1 + max(logL - 1, 1)
     return {"target_wires": n_target, "temp_wires": n_temp, "work_wires": n_work}
 
 
-def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=None):
+def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
     r"""Prepare a state with real and positive amplitudes via coherent alias sampling (Figure 11 of
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
 
@@ -193,49 +209,26 @@ def alias_sampling(probs, mu, target_wires=None, temp_wires=None, work_wires=Non
 
     Args:
         probs (Sequence[float]): non-negative weights :math:`w_\ell` (length ``L``).
-        mu (int): number of bits for ``keep`` and ``sigma``, representing the precision for the alias sampling.
+        mu (int): number of bits for ``keep`` and ``sigma``, representing the precision of the alias-sampling coefficients.
         target_wires (Sequence[int]): the output index register ``|l>``, size ``ceil(log2 L)``.
-            Optional; if ``None``, contiguous integer wires ``0 .. ceil(log2 L) - 1``
-            are used.
         temp_wires (Sequence[int]): the garbage register (sigma + alt + keep + flag +
             comparator scratch), left entangled; size ``3*mu + ceil(log2 L)``.
-            Optional; if ``None``, contiguous integer wires directly after ``wires``
-            are used.
         work_wires (Sequence[int]): clean scratch, returned to :math:`|0\rangle`.
-            Optional; if ``None``, contiguous integer wires directly after
-            ``temp_wires`` are used.
 
-    .. note::
-
-        The optional wires default to statically assigned contiguous integers
-        (not :func:`~pennylane.allocate` dynamic wires), because dynamically
-        allocated/deallocated wires cannot be inverted by ``qml.adjoint`` on the
-        state-vector devices — and ``qml.adjoint(alias_sampling)`` is exactly how
-        ``prepare``-dagger is applied in a prepare/select/prepare pattern.
     """
     probs = np.asarray(probs, dtype=float)
     L = len(probs)
-    logL = max((L - 1).bit_length(), 1)
+    logL = max(qp.math.ceil_log2(L), 1)
 
-    if mu < 1:
-        raise ValueError(f"mu must be a positive integer, got {mu}.")
+    if isinstance(mu, bool) or not isinstance(mu, (int, np.integer)) or mu < 1:
+        raise ValueError(f"mu must be a positive integer, got {mu!r}.")
 
     req = alias_sampling_wires(L, mu)
 
-    # Auto-assign contiguous integer wires for any register left as None. These
-    # are static
-    if target_wires is None:
-        target_wires = list(range(req["wires"]))
-    if temp_wires is None:
-        start = max(target_wires) + 1
-        temp_wires = list(range(start, start + req["temp_wires"]))
-    if work_wires is None:
-        start = max(list(target_wires) + list(temp_wires)) + 1
-        work_wires = list(range(start, start + req["work_wires"]))
 
     if len(target_wires) != req["target_wires"]:
         raise ValueError(
-            f"wires must have {req['target_wires']} entries for L={L}; got {len(target_wires)}."
+            f"target_wires must have {req['target_wires']} entries for L={L}; got {len(target_wires)}."
         )
     if len(temp_wires) != req["temp_wires"]:
         raise ValueError(

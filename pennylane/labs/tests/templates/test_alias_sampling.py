@@ -156,12 +156,12 @@ class TestBuildAliasTables:
 @pytest.mark.parametrize("L, mu", [(2, 4), (3, 5), (4, 6), (8, 5), (16, 7)])
 def test_alias_sampling_wires(L, mu):
     """Test that alias_sampling_wires returns the correct number of wires for a given L and mu."""
-    logL = max((L - 1).bit_length(), 1)
+    logL = max(qp.math.ceil_log2(L), 1)
     req = alias_sampling_wires(L, mu)
     assert req["target_wires"] == logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     assert req["temp_wires"] == mu + logL + mu + 1 + max(mu - 1, 0)
-    assert req["work_wires"] == 1 + (max(logL, mu, 2) + 4)
+    assert req["work_wires"] == 1 + max(logL - 1, 1)
 
 
 class TestAliasSampling:
@@ -190,6 +190,8 @@ class TestAliasSampling:
 
         probs = np.asarray(circuit())
 
+        target = w / w.sum()
+        assert np.allclose(probs[:L], target, atol=L / 2**mu)
         assert np.allclose(probs[:L], recon, atol=1e-9)
 
     @pytest.mark.parametrize("L", [2, 3, 4, 5, 6])
