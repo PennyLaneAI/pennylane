@@ -67,13 +67,13 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     [RZ(3.14159..., wires=[0]),
      RY(np.float64(1.57079...), wires=[0]),
      RZ(0.0, wires=[0]),
-     GlobalPhase(-1.57079..., wires=[])]
+     GlobalPhase(-1.57079...)]
     >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
     [RX(np.float64(1.57079...), wires=[0]),
      RZ(1.57079..., wires=[0]),
      RX(np.float64(1.57079...), wires=[0]),
-     GlobalPhase(-1.57079..., wires=[])]
+     GlobalPhase(-1.57079...)]
     """
 
     supported_rotations = {
@@ -187,7 +187,7 @@ def two_qubit_decomposition(U, wires):
            [-0.14569083+0.35810469j,  0.85429569+0.34743933j]]), wires=[0]),
      QubitUnitary(array([[-0.30052527-0.4826478j ,  0.74833925-0.34164898j],
            [-0.74833925-0.34164898j, -0.30052527+0.4826478j ]]), wires=[1]),
-     GlobalPhase(0.07394316416802127, wires=[])]
+     GlobalPhase(0.07394316416802127)]
 
     """
 

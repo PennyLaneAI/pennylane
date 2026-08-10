@@ -888,12 +888,12 @@ class TestControlledDecompositions:
         @qp.register_resources({qp.X: 1, qp.GlobalPhase: 1})
         def custom_decomp(wires):
             qp.X(wires[0])
-            qp.GlobalPhase(np.pi, wires=wires)
+            qp.GlobalPhase(np.pi)
 
         @qp.register_resources({qp.Z: 1, qp.GlobalPhase: 1})
         def second_decomp(wires):
             qp.Z(wires=wires[0])
-            qp.GlobalPhase(np.pi / 2, wires=wires)
+            qp.GlobalPhase(np.pi / 2)
 
         class CustomControlledOp(Operation):
             """A custom operation."""

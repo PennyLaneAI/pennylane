@@ -271,7 +271,7 @@ class QubitUnitary(Operation):
         [RZ(3.141..., wires=[0]),
         RY(np.float64(1.570...), wires=[0]),
         RZ(0.0, wires=[0]),
-        GlobalPhase(-1.570..., wires=[])]
+        GlobalPhase(-1.570...)]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),

@@ -11,11 +11,11 @@ from pennylane.transforms import combine_global_phases
 
 def original_qfunc(phi1, phi2, return_state=False):
     qp.Hadamard(wires=1)
-    qp.GlobalPhase(phi1, wires=[0, 1])
+    qp.GlobalPhase(phi1)
     qp.PauliY(wires=0)
     qp.PauliX(wires=2)
     qp.CNOT(wires=[1, 2])
-    qp.GlobalPhase(phi2, wires=1)
+    qp.GlobalPhase(phi2)
     qp.CNOT(wires=[2, 0])
     if return_state:
         return qp.state()
@@ -48,7 +48,7 @@ def test_single_global_phase_gate():
     """Test that when the input ``QuantumScript`` has a single ``qp.GlobalPhase`` gate, the returned output has an equivalent
     ``qp.GlobalPhase`` operation appended at the end"""
     phi = 1.23
-    qscript = qp.tape.QuantumScript([qp.Hadamard(0), qp.GlobalPhase(phi, 0), qp.RX(0, 0)])
+    qscript = qp.tape.QuantumScript([qp.Hadamard(0), qp.GlobalPhase(phi), qp.RX(0, 0)])
 
     expected_qscript = qp.tape.QuantumScript([qp.Hadamard(0), qp.RX(0, 0), qp.GlobalPhase(phi)])
     (transformed_qscript,), _ = combine_global_phases(qscript)
@@ -63,7 +63,7 @@ def test_multiple_global_phase_gates():
     phi1 = 1.23
     phi2 = 4.56
     qscript = qp.tape.QuantumScript(
-        [qp.GlobalPhase(phi1, 0), qp.Hadamard(0), qp.GlobalPhase(phi2, 0), qp.RX(0, 0)]
+        [qp.GlobalPhase(phi1), qp.Hadamard(0), qp.GlobalPhase(phi2), qp.RX(0, 0)]
     )
 
     expected_qscript = qp.tape.QuantumScript(
