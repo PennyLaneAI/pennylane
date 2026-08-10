@@ -335,17 +335,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
             work_wire_type,
         )
 
-    # Special case for when the base class is X
-    if base_class in (qp.X, qp.MultiControlledX):
-        return _controlled_x_rep(
-            base_class,
-            base_params,
-            num_control_wires,
-            num_zero_control_values,
-            num_work_wires,
-            work_wire_type,
-        )
-
     return CompressedResourceOp(
         qp.ops.Controlled,
         {
@@ -427,8 +416,6 @@ def custom_ctrl_op_to_base():
     """The set of custom controlled operations."""
 
     return {
-        qp.CNOT: qp.X,
-        qp.Toffoli: qp.X,
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
         qp.CRot: qp.Rot,
@@ -483,45 +470,6 @@ def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-ma
     return resource_rep(
         qp.ControlledQubitUnitary,
         num_target_wires=base_params["num_target_wires"],
-        num_control_wires=num_control_wires,
-        num_zero_control_values=num_zero_control_values,
-        num_work_wires=num_work_wires,
-        work_wire_type=work_wire_type,
-    )
-
-
-def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
-    base_class,
-    base_params,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type="borrowed",
-) -> CompressedResourceOp | None:
-    """Helper function that handles custom logic for controlled X gates."""
-
-    if base_class is qp.X:
-        if num_control_wires == 1 and num_zero_control_values == 0:
-            return abstractify(qp.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
-            return abstractify(qp.Toffoli)
-        return resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    # base_class is qp.MultiControlledX:
-    num_control_wires += base_params["num_control_wires"]
-    num_zero_control_values += base_params["num_zero_control_values"]
-    work_wire_type = resolve_work_wire_type(
-        base_params["num_work_wires"], base_params["work_wire_type"], num_work_wires, work_wire_type
-    )
-    num_work_wires += base_params["num_work_wires"]
-    return resource_rep(
-        qp.MultiControlledX,
         num_control_wires=num_control_wires,
         num_zero_control_values=num_zero_control_values,
         num_work_wires=num_work_wires,

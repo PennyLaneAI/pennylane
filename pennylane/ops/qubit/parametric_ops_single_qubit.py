@@ -252,11 +252,9 @@ def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_typ
     return {
         qp.H: 2,
         qp.RZ: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -480,11 +478,9 @@ def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_typ
         return {qp.CRY: 1}
     return {
         qp.RY: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -753,11 +749,9 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
         return {qp.CRZ: 1}
     return {
         qp.RZ: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=len(control_wires),
-            num_zero_control_values=len(control_values or []),
-            num_work_wires=len(work_wires),
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -1211,11 +1205,9 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_ty
     return {
         qp.RZ: 3,
         qp.RY: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }

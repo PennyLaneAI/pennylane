@@ -228,6 +228,11 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    def test_work_wire_type(self):
+        """Tests that work_wire_type must be correct."""
+        with pytest.raises(ValueError, match="work_wire_type must be either"):
+            Controlled(self.temp_op, control_wires="b", work_wires="c", work_wire_type="foo")
+
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "base",
@@ -932,80 +937,6 @@ special_par_op_decomps = [
 
 custom_ctrl_op_decomps = special_non_par_op_decomps + special_par_op_decomps
 
-pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, expected)
-    (qp.PauliX, [0], [1], None, [qp.CNOT([1, 0])]),
-    (
-        qp.PauliX,
-        [2],
-        [0, 1],
-        None,
-        qp.Toffoli.compute_decomposition(wires=[0, 1, 2]),
-    ),
-    (
-        qp.PauliX,
-        [2],
-        [0, 1],
-        ["aux"],
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2], work_wires=Wires("aux")),
-    ),
-    (
-        qp.CNOT,
-        [1, 2],
-        [0],
-        None,
-        qp.Toffoli.compute_decomposition(wires=[0, 1, 2]),
-    ),
-    (
-        qp.CNOT,
-        [1, 2],
-        [0],
-        ["aux"],
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2], work_wires=Wires("aux")),
-    ),
-    (
-        qp.PauliX,
-        [3],
-        [0, 1, 2],
-        None,
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
-    ),
-    (
-        qp.PauliX,
-        [3],
-        [0, 1, 2],
-        ["aux"],
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
-    ),
-    (
-        qp.CNOT,
-        [2, 3],
-        [0, 1],
-        None,
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
-    ),
-    (
-        qp.CNOT,
-        [2, 3],
-        [0, 1],
-        ["aux"],
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
-    ),
-    (
-        qp.Toffoli,
-        [1, 2, 3],
-        [0],
-        None,
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
-    ),
-    (
-        qp.Toffoli,
-        [1, 2, 3],
-        [0],
-        ["aux"],
-        qp.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
-    ),
-]
-
 
 class TestDecomposition:
     """Test decomposition of Controlled."""
@@ -1126,18 +1057,17 @@ class TestDecomposition:
             tol,
         )
 
-    @pytest.mark.parametrize(
-        "base_cls, base_wires, ctrl_wires, work_wires, expected",
-        pauli_x_based_op_decomps,
-    )
-    def test_decomposition_pauli_x(self, base_cls, base_wires, ctrl_wires, work_wires, expected):
-        """Tests decompositions where the base is PauliX"""
+    def test_decomposition_nested(self):
+        """Tests decompositions of nested controlled operations"""
 
-        base_op = base_cls(wires=base_wires)
-        ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=work_wires)
-
+        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
+        expected = [
+            qp.CRZ(0.123 / 2, wires=[2, 0]),
+            qp.Toffoli(wires=[2, 1, 0]),
+            qp.CRZ(-0.123 / 2, wires=[2, 0]),
+            qp.Toffoli(wires=[2, 1, 0]),
+        ]
         assert ctrl_op.decomposition() == expected
-        assert qp.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_undefined(self):
         """Tests error raised when decomposition is undefined"""
@@ -1154,18 +1084,16 @@ class TestDecomposition:
         base = TempOperator("a")
         op = Controlled(base, control_wires, control_values)
 
-        decomp1 = op.decomposition()
-        decomp2 = qp.tape.QuantumScript(op.decomposition()).circuit
+        decomp = op.decomposition()
 
-        for decomp in [decomp1, decomp2]:
-            qp.assert_equal(decomp[0], qp.PauliX(1))
-            qp.assert_equal(decomp[1], qp.PauliX(2))
+        qp.assert_equal(decomp[0], qp.PauliX(1))
+        qp.assert_equal(decomp[1], qp.PauliX(2))
 
-            assert isinstance(decomp[2], Controlled)
-            assert decomp[2].control_values == [True, True, True]
+        assert isinstance(decomp[2], Controlled)
+        assert decomp[2].control_values == [True, True, True]
 
-            qp.assert_equal(decomp[3], qp.PauliX(1))
-            qp.assert_equal(decomp[4], qp.PauliX(2))
+        qp.assert_equal(decomp[3], qp.PauliX(1))
+        qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, _, expected",
@@ -1792,6 +1720,17 @@ class TestCtrl:
             control_values=[1, 0, 1],
         )
         assert op == expected
+
+    def test_nested_controls_work_wires(self):
+        """Tests work wire handling for nested controlled ops."""
+
+        op = qp.ctrl(
+            qp.ctrl(qp.H(0), control=[1, 2]),
+            control=[3, 4],
+            work_wires=[5],
+            work_wire_type="zeroed",
+        )
+        assert op.work_wire_type == "zeroed"
 
     @pytest.mark.parametrize("op, ctrl_wires, ctrl_op", custom_ctrl_ops)
     def test_nested_custom_controls(self, op, ctrl_wires, ctrl_op):
