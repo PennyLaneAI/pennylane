@@ -26,6 +26,8 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
+from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
@@ -677,6 +679,264 @@ class TestQubitUnitary:
 
         out = base._controlled("a")
         qp.assert_equal(out, expected)
+
+
+class TestQubitUnitaryDecompositions:
+    """Tests for graph-based QubitUnitary decomposition rules."""
+
+    def test_conditions(self):
+        """Test the registered applicability conditions for each rule."""
+        rules = qp.list_decomps(qp.QubitUnitary)
+
+        for name in ("zyz", "zxz", "xzx", "xyx", "rot"):
+            rule = rules[name]
+            assert rule.is_applicable(num_wires=1)
+            assert not rule.is_applicable(num_wires=2)
+            assert not rule.is_applicable(num_wires=3)
+
+        two_qubit_rule = rules["two_qubit_decomp_rule"]
+        assert not two_qubit_rule.is_applicable(num_wires=1)
+        assert two_qubit_rule.is_applicable(num_wires=2)
+        assert not two_qubit_rule.is_applicable(num_wires=3)
+
+        multi_qubit_rule = rules["multi_qubit_decomp_rule"]
+        assert not multi_qubit_rule.is_applicable(num_wires=1)
+        assert not multi_qubit_rule.is_applicable(num_wires=2)
+        assert multi_qubit_rule.is_applicable(num_wires=3)
+        assert multi_qubit_rule.is_applicable(num_wires=5)
+
+    def test_resources(self):
+        """Test the registered resources for each rule."""
+        rules = qp.list_decomps(qp.QubitUnitary)
+
+        assert rules["zyz"].compute_resources(num_wires=1) == Resources(
+            {
+                abstractify(qp.RZ): 2,
+                qp.resource_rep(qp.RY): 1,
+                qp.resource_rep(qp.GlobalPhase): 1,
+            }
+        )
+        assert rules["zxz"].compute_resources(num_wires=1) == Resources(
+            {
+                abstractify(qp.RZ): 2,
+                qp.resource_rep(qp.RX): 1,
+                qp.resource_rep(qp.GlobalPhase): 1,
+            }
+        )
+        assert rules["xzx"].compute_resources(num_wires=1) == Resources(
+            {
+                qp.resource_rep(qp.RX): 2,
+                abstractify(qp.RZ): 1,
+                qp.resource_rep(qp.GlobalPhase): 1,
+            }
+        )
+        assert rules["xyx"].compute_resources(num_wires=1) == Resources(
+            {
+                qp.resource_rep(qp.RX): 2,
+                qp.resource_rep(qp.RY): 1,
+                qp.resource_rep(qp.GlobalPhase): 1,
+            }
+        )
+        assert rules["rot"].compute_resources(num_wires=1) == Resources(
+            {
+                qp.resource_rep(qp.Rot): 1,
+                abstractify(qp.RZ): 1,
+                qp.resource_rep(qp.GlobalPhase): 1,
+            }
+        )
+        assert rules["two_qubit_decomp_rule"].compute_resources(num_wires=2) == Resources(
+            {
+                qp.resource_rep(qp.QubitUnitary, num_wires=1): 4,
+                qp.resource_rep(qp.CNOT): 3,
+                abstractify(qp.RZ): 1,
+                qp.resource_rep(qp.RY): 2,
+                qp.resource_rep(qp.GlobalPhase): 1,
+            }
+        )
+        assert rules["multi_qubit_decomp_rule"].compute_resources(num_wires=3) == Resources(
+            {
+                qp.resource_rep(qp.QubitUnitary, num_wires=2): 4,
+                qp.resource_rep(qp.SelectPauliRot, num_wires=3, rot_axis="Z"): 2,
+                qp.resource_rep(qp.SelectPauliRot, num_wires=3, rot_axis="Y"): 1,
+            }
+        )
+        assert rules["multi_qubit_decomp_rule"].compute_resources(num_wires=4) == Resources(
+            {
+                qp.resource_rep(qp.QubitUnitary, num_wires=3): 4,
+                qp.resource_rep(qp.SelectPauliRot, num_wires=4, rot_axis="Z"): 2,
+                qp.resource_rep(qp.SelectPauliRot, num_wires=4, rot_axis="Y"): 1,
+            }
+        )
+
+    @pytest.mark.parametrize(
+        "rule_name, expected_types",
+        [
+            ("zyz", (qp.RZ, qp.RY, qp.RZ, qp.GlobalPhase)),
+            ("zxz", (qp.RZ, qp.RX, qp.RZ, qp.GlobalPhase)),
+            ("xzx", (qp.RX, qp.RZ, qp.RX, qp.GlobalPhase)),
+            ("xyx", (qp.RX, qp.RY, qp.RX, qp.GlobalPhase)),
+            ("rot", (qp.Rot, qp.GlobalPhase)),
+        ],
+    )
+    def test_single_qubit_decomposition_queue(self, rule_name, expected_types):
+        """Test single-qubit rules with AnnotatedQueue."""
+        U = unitary_group.rvs(2, random_state=0)
+        rule = qp.list_decomps(qp.QubitUnitary)[rule_name]
+        op = qp.QubitUnitary(U, wires=0)
+
+        assert rule.is_applicable(**op.resource_params)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
+        assert len(tape.operations) == len(expected_types)
+        for gate, expected_type in zip(tape.operations, expected_types, strict=True):
+            assert isinstance(gate, expected_type)
+            assert gate.wires == Wires([0]) or isinstance(gate, qp.GlobalPhase)
+
+        assert qp.math.allclose(qp.matrix(tape), U)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "rule_name, expected_types",
+        [
+            ("zyz", (qp.RZ, qp.RY, qp.RZ, qp.GlobalPhase)),
+            ("zxz", (qp.RZ, qp.RX, qp.RZ, qp.GlobalPhase)),
+            ("xzx", (qp.RX, qp.RZ, qp.RX, qp.GlobalPhase)),
+            ("xyx", (qp.RX, qp.RY, qp.RX, qp.GlobalPhase)),
+            ("rot", (qp.Rot, qp.GlobalPhase)),
+        ],
+    )
+    def test_single_qubit_decomposition_capture(self, rule_name, expected_types):
+        """Test single-qubit rules with capture via make_jaxpr and CollectOpsandMeas."""
+        import jax
+
+        from pennylane.capture.primitives import cond_prim
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        U = jax.numpy.array(unitary_group.rvs(2, random_state=0), dtype=jax.numpy.complex128)
+        rule = qp.list_decomps(qp.QubitUnitary)[rule_name]
+
+        jaxpr = jax.make_jaxpr(rule)(U, wires=[0])
+        assert any(eqn.primitive == cond_prim for eqn in jaxpr.eqns)
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, U, 0)
+        decomp_ops = collector.state["ops"]
+
+        assert len(decomp_ops) == len(expected_types)
+        for gate, expected_type in zip(decomp_ops, expected_types, strict=True):
+            assert isinstance(gate, expected_type)
+
+        assert qp.math.allclose(qp.matrix(qp.tape.QuantumScript(decomp_ops)), U, atol=1e-6)
+
+    def test_two_qubit_decomposition_queue(self):
+        """Test the two-qubit rule with AnnotatedQueue."""
+        U = unitary_group.rvs(4, random_state=1)
+        rule = qp.list_decomps(qp.QubitUnitary)["two_qubit_decomp_rule"]
+        op = qp.QubitUnitary(U, wires=[0, 1])
+
+        assert rule.is_applicable(**op.resource_params)
+        assert not qp.list_decomps(qp.QubitUnitary)["zyz"].is_applicable(**op.resource_params)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
+        assert any(isinstance(gate, qp.CNOT) for gate in tape.operations)
+        assert qp.math.allclose(qp.matrix(tape, wire_order=[0, 1]), U, atol=1e-7)
+
+    @pytest.mark.capture
+    def test_two_qubit_decomposition_capture(self):
+        """Test the two-qubit rule with capture via make_jaxpr and CollectOpsandMeas."""
+        import jax
+
+        from pennylane.capture.primitives import cond_prim
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        U = jax.numpy.array(unitary_group.rvs(4, random_state=1), dtype=jax.numpy.complex128)
+        rule = qp.list_decomps(qp.QubitUnitary)["two_qubit_decomp_rule"]
+
+        jaxpr = jax.make_jaxpr(rule)(U, wires=[0, 1])
+        assert sum(1 for eqn in jaxpr.eqns if eqn.primitive == cond_prim) >= 1
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, U, 0, 1)
+        decomp_ops = collector.state["ops"]
+
+        assert any(isinstance(gate, qp.CNOT) for gate in decomp_ops)
+        assert any(isinstance(gate, qp.QubitUnitary) for gate in decomp_ops)
+        assert qp.math.allclose(
+            qp.matrix(qp.tape.QuantumScript(decomp_ops), wire_order=[0, 1]), U, atol=1e-6
+        )
+
+    def test_multi_qubit_decomposition_queue(self):
+        """Test the multi-qubit rule with AnnotatedQueue."""
+        wires = [0, 1, 2]
+        U = qp.QFT.compute_matrix(wires)
+        rule = qp.list_decomps(qp.QubitUnitary)["multi_qubit_decomp_rule"]
+        op = qp.QubitUnitary(U, wires=wires)
+
+        assert rule.is_applicable(**op.resource_params)
+        assert not qp.list_decomps(qp.QubitUnitary)["two_qubit_decomp_rule"].is_applicable(
+            **op.resource_params
+        )
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
+        assert [type(gate) for gate in tape.operations] == [
+            qp.QubitUnitary,
+            qp.SelectPauliRot,
+            qp.QubitUnitary,
+            qp.SelectPauliRot,
+            qp.QubitUnitary,
+            qp.SelectPauliRot,
+            qp.QubitUnitary,
+        ]
+        assert tape.operations[0].wires == Wires([1, 2])
+        assert tape.operations[1].hyperparameters["rot_axis"] == "Z"
+        assert tape.operations[3].hyperparameters["rot_axis"] == "Y"
+        assert tape.operations[5].hyperparameters["rot_axis"] == "Z"
+        assert qp.math.allclose(qp.matrix(tape, wire_order=wires), U, atol=1e-7)
+
+    @pytest.mark.capture
+    def test_multi_qubit_decomposition_capture(self):
+        """Test the multi-qubit rule with capture via make_jaxpr and CollectOpsandMeas."""
+        import jax
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        wires = [0, 1, 2]
+        U = jax.numpy.array(qp.QFT.compute_matrix(wires), dtype=jax.numpy.complex128)
+        rule = qp.list_decomps(qp.QubitUnitary)["multi_qubit_decomp_rule"]
+
+        jaxpr = jax.make_jaxpr(rule)(U, wires=wires)
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, U, *wires)
+        decomp_ops = collector.state["ops"]
+
+        assert [type(gate) for gate in decomp_ops] == [
+            qp.QubitUnitary,
+            qp.SelectPauliRot,
+            qp.QubitUnitary,
+            qp.SelectPauliRot,
+            qp.QubitUnitary,
+            qp.SelectPauliRot,
+            qp.QubitUnitary,
+        ]
+        assert decomp_ops[1].hyperparameters["rot_axis"] == "Z"
+        assert decomp_ops[3].hyperparameters["rot_axis"] == "Y"
+        assert decomp_ops[5].hyperparameters["rot_axis"] == "Z"
+
+        qp.capture.disable()
+        assert qp.math.allclose(
+            qp.matrix(qp.tape.QuantumScript(decomp_ops), wire_order=wires), U, atol=1e-6
+        )
+        qp.capture.enable()
 
 
 class TestWalshHadamardTransform:
