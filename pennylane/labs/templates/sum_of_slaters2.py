@@ -13,13 +13,17 @@
 # limitations under the License.
 r"""Contains the SumOfSlatersPrep2 template, a variant of qp.SumOfSlatersPrep that handles work
 wires explicitly."""
+from pennylane import math
+from pennylane.typing import Complex, Wire, Int
+from collections import defaultdict
+from pennylane.decomposition.resources import resource_rep
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
 import numpy as np
 
 import pennylane as qp
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _preprocess,
-    _sos_state_prep_resources,
     _sos_state_prep_with_wires,
 )
 from pennylane.wires import Wires
@@ -380,6 +384,56 @@ class SumOfSlatersPrep2(qp.Operation):
             "qrom_work_wires": d - 1,
             "mcx_cache_wires": m - 1,
         }
+
+
+def _sos_state_prep_resources(num_entries, num_bits, num_wires):
+    """Compute the resources for _sos_state_prep. It is an upper bound due to
+    conditionally applied CNOT and X gates."""
+    if num_entries == 1:
+        return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
+    d = math.ceil_log2(num_entries)
+    m = min(num_bits, 2 * d - 1)
+
+    identity_encoding = num_bits == m
+
+    resources = defaultdict(int)
+
+    # Step 1 in paper (p.7)
+    resources[qp.MultiplexerStatePreparation(Complex[2**d], wires=Wire[d])] += 1
+
+    # Step 2 in paper (p.7)
+    resources[
+        qp.QROM(
+            data=Int[num_entries, num_wires],
+            control_wires=Wire[d],
+            target_wires=Wire[num_wires],
+            work_wires=Wire[d - 1],
+            clean=True,
+        )
+    ] += 1
+
+    if not identity_encoding:
+        ## Step 3 & 4 in paper (p.7). This is an upper bound
+        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
+
+    ## Step 5 in paper (p.7)
+    resources[qp.TemporaryAND] += (num_entries - 1) * (m - 1)
+    resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
+
+    # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
+    number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
+    resources[qp.CNOT] += number_of_bits_to_unset
+
+    # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
+    # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
+    # and after the last group. This amounts to `num_entries` layers of bit flips
+    resources[qp.X] += num_entries * m
+
+    if not identity_encoding:
+        ## Step 6 in paper (p.7). This is an upper bound
+        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
+
+    return resources
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)
