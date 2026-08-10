@@ -88,7 +88,7 @@ def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     return qp.math.reshape(qp.math.transpose(D), orig_shape)
 
 
-class QubitUnitary(Operation):
+class QubitUnitary(Operator2):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
@@ -126,16 +126,15 @@ class QubitUnitary(Operation):
     0.0
     """
 
+    dynamic_argnames = ("U",)
+    compilable_argnames = ("unitary_check",)
+    arg_specs = {"U": Complex[-1, -1], "wires": Wire[-1]}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = {"num_wires"}
-
-    grad_method = None
-    """Gradient computation method."""
 
     def __init__(
         self,
@@ -183,12 +182,8 @@ class QubitUnitary(Operation):
             atol=1e-6,
         )
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
     @staticmethod
-    def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_matrix(U: TensorLike, wires: WiresLike, unitary_check: bool = False):  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -216,7 +211,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(U: TensorLike, wires: WiresLike, unitary_check: bool = False, format="csr"):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -245,7 +240,7 @@ class QubitUnitary(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(U: TensorLike, wires: WiresLike):
+    def compute_decomposition(U: TensorLike, wires: WiresLike, unitary_check: bool = False):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -309,12 +304,6 @@ class QubitUnitary(Operation):
     def has_matrix(self) -> bool:
         return not self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_decomposition(self) -> bool:
-        # We are unable to decompose sparse matrices larger than 1 qubit.
-        return self.has_matrix or len(self.wires) == 1
-
     def adjoint(self) -> "QubitUnitary":
         if self.has_matrix:
             U = self.matrix()
@@ -338,9 +327,6 @@ class QubitUnitary(Operation):
         else:
             pow_mat = qp.math.convert_like(fractional_matrix_power(mat, z), mat)
         return [QubitUnitary(pow_mat, wires=self.wires)]
-
-    def _controlled(self, wire):
-        return qp.ControlledQubitUnitary(*self.parameters, wires=wire + self.wires)
 
     def label(
         self,

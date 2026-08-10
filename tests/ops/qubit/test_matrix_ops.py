@@ -468,7 +468,7 @@ class TestQubitUnitary:
 
         @qp.qnode(dev)
         def circuit(matrix):
-            qp.QubitUnitary.compute_decomposition(matrix, wires=[0, 1, 2])
+            qp.QubitUnitary(matrix, wires=[0, 1, 2]).decomposition()
             return qp.state()
 
         state_expected = circuit(matrix)
@@ -649,7 +649,7 @@ class TestQubitUnitary:
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
-        res_static = qp.QubitUnitary.compute_matrix(U)
+        res_static = qp.QubitUnitary.compute_matrix(U, wires=0)
         res_dynamic = qp.QubitUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
@@ -661,22 +661,11 @@ class TestQubitUnitary:
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
         U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
-        res_static = qp.QubitUnitary.compute_matrix(U)
+        res_static = qp.QubitUnitary.compute_matrix(U, wires=0)
         res_dynamic = qp.QubitUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
-
-    def test_controlled(self):
-        """Test QubitUnitary's controlled method."""
-        # pylint: disable=protected-access
-        U = qp.PauliX.compute_matrix()
-        base = qp.QubitUnitary(U, wires=0)
-
-        expected = qp.ControlledQubitUnitary(U, wires=["a", 0])
-
-        out = base._controlled("a")
-        qp.assert_equal(out, expected)
 
 
 class TestWalshHadamardTransform:
