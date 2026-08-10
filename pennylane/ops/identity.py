@@ -245,7 +245,6 @@ class GlobalPhase(Operator2):
 
     Args:
         phi (TensorLike): the global phase
-        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
 
     **Example**
 
@@ -284,12 +283,13 @@ class GlobalPhase(Operator2):
     num_wires = None
 
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[0]}
+    wire_argnames = ()
+    arg_specs = {"phi": Float}
 
     grad_method = "A"
 
-    def __init__(self, phi, wires: WiresLike = ()):  # pylint: disable=unused-argument
-        super().__init__(phi, ())
+    def __init__(self, phi):  # pylint: disable=unused-argument
+        super().__init__(phi)
 
     @staticmethod
     def compute_eigvals(phi, wires=()):  # pylint: disable=arguments-differ
@@ -394,25 +394,20 @@ class GlobalPhase(Operator2):
         """
         return []
 
-    def _matrix_wires(self, wire_order: WiresLike | None) -> WiresLike:
-        return self.wires if wire_order is None else wire_order
-
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
-        return self.compute_matrix(self.phi, wires=self._matrix_wires(wire_order))
+        return self.compute_matrix(self.phi, wires=wire_order or ())
 
     def sparse_matrix(self, wire_order: WiresLike | None = None, format: str = "csr"):
-        return self.compute_sparse_matrix(
-            self.phi, wires=self._matrix_wires(wire_order), format=format
-        )
+        return self.compute_sparse_matrix(self.phi, wires=wire_order or (), format=format)
 
-    def eigvals(self) -> TensorLike:
-        return self.compute_eigvals(self.phi, wires=self.wires)
+    def eigvals(self, wire_order: WiresLike | None = None) -> TensorLike:
+        return self.compute_eigvals(self.phi, wires=wire_order or ())
 
     def adjoint(self):
-        return GlobalPhase(-1 * self.phi, self.wires)
+        return GlobalPhase(-1 * self.phi)
 
     def pow(self, z):
-        return [GlobalPhase(z * self.phi, self.wires)]
+        return [GlobalPhase(z * self.phi)]
 
     def generator(self):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
