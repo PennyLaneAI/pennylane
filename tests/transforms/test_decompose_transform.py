@@ -107,8 +107,13 @@ class TestDecompose:
     iterables_test = [
         (
             [qp.Hadamard(0)],
-            {qp.RX, qp.RZ},
-            [qp.RZ(qnp.pi / 2, 0), qp.RX(qnp.pi / 2, 0), qp.RZ(qnp.pi / 2, 0)],
+            {qp.RX, qp.RZ, qp.GlobalPhase},
+            [
+                qp.RZ(qnp.pi / 2, 0),
+                qp.RX(qnp.pi / 2, 0),
+                qp.RZ(qnp.pi / 2, 0),
+                qp.GlobalPhase(-np.pi / 2),
+            ],
             None,
         ),
         (
@@ -120,8 +125,13 @@ class TestDecompose:
         ([qp.Toffoli([0, 1, 2])], {qp.Toffoli}, [qp.Toffoli([0, 1, 2])], None),
         (
             [qp.Hadamard(0)],
-            {qp.RX: 1, qp.RZ: 2},
-            [qp.RZ(qnp.pi / 2, 0), qp.RX(qnp.pi / 2, 0), qp.RZ(qnp.pi / 2, 0)],
+            {qp.RX: 1, qp.RZ: 2, qp.GlobalPhase: 1},
+            [
+                qp.RZ(qnp.pi / 2, 0),
+                qp.RX(qnp.pi / 2, 0),
+                qp.RZ(qnp.pi / 2, 0),
+                qp.GlobalPhase(-np.pi / 2),
+            ],
             None,
         ),
         (
