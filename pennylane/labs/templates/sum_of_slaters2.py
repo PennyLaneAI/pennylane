@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _preprocess,
     _sos_state_prep_with_wires,
+    select_sos_rows
 )
 from pennylane.wires import Wires
 
