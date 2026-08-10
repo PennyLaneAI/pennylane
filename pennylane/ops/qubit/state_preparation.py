@@ -93,7 +93,6 @@ class BasisState(StatePrepBase):
         return {"num_wires": len(self.wires)}
 
     def __init__(self, state, wires: WiresLike):
-
         wires = Wires(wires)
         if isinstance(state, list):
             state = qp.math.stack(state)
@@ -163,7 +162,7 @@ class BasisState(StatePrepBase):
 
         op_list = []
         for wire, basis in zip(wires, state, strict=True):
-            op_list.append(qp.GlobalPhase(-basis * np.pi / 2, wire))
+            op_list.append(qp.GlobalPhase(-basis * np.pi / 2))
             op_list.append(qp.RX(basis * np.pi, wire))
 
         return op_list
@@ -228,7 +227,6 @@ def _basis_state_decomp_resources(num_wires):
 @register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
-
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
@@ -465,7 +463,6 @@ class StatePrep(StatePrepBase):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order: WiresLike | None = None):
-
         if self.is_sparse:
             op_vector = _sparse_statevec_permute_and_embed(
                 self.parameters[0], self.wires, wire_order
