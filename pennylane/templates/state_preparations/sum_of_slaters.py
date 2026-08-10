@@ -23,7 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operator2
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Int, Wire, Complex
+from pennylane.typing import Complex, Int, Wire
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -961,6 +961,7 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
+# pylint: disable-next=unused-argument
 def _sos_state_prep_resources(coefficients, wires, indices):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
@@ -1020,6 +1021,7 @@ def _sos_state_prep_resources(coefficients, wires, indices):
     return resources
 
 
+# pylint: disable-next=unused-argument
 def _sos_state_prep_work_wires(coefficients, wires, indices):
     """See SumOfSlatersPrep.required_register_sizes for details."""
     # pylint: disable-next=protected-access
@@ -1031,6 +1033,7 @@ def _sos_state_prep_work_wires(coefficients, wires, indices):
     num_bits = len(selector_ids)
     num_wires = n
 
+    # pylint: disable-next=protected-access
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
     return {"zeroed": sum(sizes.values()) - num_wires}
 

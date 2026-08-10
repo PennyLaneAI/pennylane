@@ -462,8 +462,6 @@ class TestSumOfSlatersPrep:
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == max(m - 1, 0)
 
-        op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
-
         registered_work_wires = _sos_state_prep.get_work_wire_spec(
             coefficients, range(num_wires), indices
         )
@@ -490,8 +488,6 @@ class TestSumOfSlatersPrep:
         assert sizes["identification_wires"] == max((num_bits > m) * m, 0)
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == m - 1
-
-        op = SumOfSlatersPrep(coefficients, range(n), indices)
 
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total

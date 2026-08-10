@@ -287,6 +287,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
     @property
     def resource_params(self):
+        """Resource parameters for the sum-of-slaters state preparation template."""
         indices = self.hyperparameters["indices"]
         num_wires = len(self.wires)
         v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
