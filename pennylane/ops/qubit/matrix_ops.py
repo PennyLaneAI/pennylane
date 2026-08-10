@@ -41,7 +41,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import Complex, FlatPytree, TensorLike, Wire
+from pennylane.typing import Complex, FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -268,9 +268,9 @@ class QubitUnitary(Operation):
         >>> decomp = qp.QubitUnitary.compute_decomposition(U, 0)
         >>> from pprint import pprint
         >>> pprint(decomp)
-        [RZ(np.float64(3.141...), wires=[0]),
+        [RZ(3.141..., wires=[0]),
         RY(np.float64(1.570...), wires=[0]),
-        RZ(np.float64(0.0), wires=[0]),
+        RZ(0.0, wires=[0]),
         GlobalPhase(np.float64(-1.570...), wires=[])]
 
         """
@@ -563,7 +563,12 @@ def _diagonal_qu_resource(D, wires):
 
     return {
         DiagonalQubitUnitary(Complex[2 ** (num_wires - 1)], wires=Wire[num_wires - 1]): 1,
-        resource_rep(qp.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 1,
+        qp.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 1,
     }
 
 
@@ -583,7 +588,14 @@ def _diagonal_qu_decomp(D, wires):
 # pylint: disable=unused-argument
 def _diagonal_mux_on_aux_resources(D, wires):
     num_wires = len(wires)
-    return {resource_rep(qp.SelectPauliRot, num_wires=num_wires + 1, rot_axis="Z"): 1}
+    return {
+        qp.SelectPauliRot(
+            Float[2**num_wires],
+            control_wires=Wire[num_wires],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 1
+    }
 
 
 @register_resources(_diagonal_mux_on_aux_resources, work_wires={"zeroed": 1})
