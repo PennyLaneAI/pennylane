@@ -812,7 +812,7 @@ def assert_valid(
         assert isinstance(op.parameters, list), "op.parameters must be a list"
 
         for d, p in zip(op.data, op.parameters, strict=True):
-            assert isinstance(d, qp.typing.TensorLike), f"each data element must be tensorlike"
+            assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
             assert qp.math.allclose(d, p), "data and parameters must match."
 
         if not skip_bind_new_parameters:
