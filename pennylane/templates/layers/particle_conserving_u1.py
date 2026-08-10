@@ -320,7 +320,7 @@ class ParticleConservingU1(Operation):
         [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
         CZ(wires=['a', 'b']),
         CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
-        PhaseShift(-0.30000001192092896, wires=['b']),
+        PhaseShift(-0.300..., wires=['b']),
         CNOT(wires=['a', 'b']),
         PhaseShift(0.30000001192092896, wires=['b']),
         CNOT(wires=['a', 'b']),
