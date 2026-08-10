@@ -45,7 +45,7 @@ def build_triton_decoder(
     compiler: str = "",
     cflags: tuple[str, ...] = (),
 ) -> tuple[Path, str]:
-    """Build a shared library for a Triton decoder dispatcher.
+    """Build a shared library based on the triton functions provided.
 
     Args:
         decoder_fns (tuple[object, ...]): Tuple of Triton decoder functions.
@@ -122,7 +122,10 @@ def build_css_bp_decoder(
     compiler: str = "",
     cflags: tuple[str, ...] = (),
 ) -> tuple[Path, str]:
-    """Build a shared library for a configured Triton decoder.
+    """Build a shared library for a triton-based CSS belief-propagation decoder.
+
+    This helper specializes one Triton decoder for ``Hx`` and one for ``Hz``, then packages both
+    decoders behind a single dispatcher selected by ``decoder_id`` at runtime.
 
     Note:
         The generated decoder consumes one packed syndrome bitmask and returns one packed
