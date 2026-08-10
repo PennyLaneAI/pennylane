@@ -12,7 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Triton decoder support for backline."""
+"""Triton-backed decoder builders for :mod:`~pennylane.backline`.
+
+This package contains Triton kernels and build helpers for compiling syndrome
+decoders into shared libraries that can be loaded by backline devices.
+
+.. currentmodule:: pennylane.backline.decoders.triton
+.. autosummary::
+   :toctree: api
+
+   decoder_frontend
+   algorithms
+   bp_iters
+   persistent_kernel
+   triton_so_builder
+"""
 
 from .decoder_frontend import build_css_bp_decoder, build_triton_decoder
 

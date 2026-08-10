@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Persistent Triton kernel for backline decoder dispatch."""
+
 import triton
 import triton.language as tl
 
@@ -28,21 +30,27 @@ def _persistent_decoder_kernel(
     total,
     decoder_fns: tl.constexpr,
 ):
-    """Decode ring-buffer requests until completion or shutdown.
+    """Poll decoder requests from a ring buffer and write packed corrections.
 
-    ring_u64_ptr: PayloadSlot (64 bytes) = [Payload (8 bytes), Pad (48 bytes)]
-        Payload (8 bytes = 2 words)
-            word 0: syndrome
-            word 1: low32 = decoder_id (0 -> X, 1 -> Z), high32 = seq
-    handoff_u64_ptr: HandoffSlot (16 bytes) = 2 u64 words
-        word 0: correction packed into one u64, so it cannot exceed 64 bits/qubits
-        word 1: low32 = seq, high32 = pad
-    stop_u32_ptr: single u32 scalar
+    Args:
+        ring_u64_ptr (*u64): Pointer to the request ring buffer. Each slot stores
+            a packed syndrome in word ``0`` and packed metadata in word ``1``.
+            The metadata layout is little-endian, with ``decoder_id`` in the
+            low 32 bits and the sequence number in the high 32 bits.
+        handoff_u64_ptr (*u64): Pointer to the response buffer. Word ``0`` of
+            each slot stores the packed correction mask and word ``1`` stores
+            the completion sequence number.
+        stop_u32_ptr (*u32): Pointer to a stop flag polled while waiting for the
+            next request.
+        total (u64): Number of requests to process. A value of ``0`` means keep
+            running until ``stop_u32_ptr`` becomes nonzero.
+        decoder_fns (tuple[Callable]): Compile-time tuple of Triton decoder
+            functions selected by ``decoder_id``.
 
-    ``decoder_fns`` is a constexpr tuple of Triton decoder functions. ``decoder_id``
-    selects the corresponding tuple index.
-
-    Note: low32/high32 field layout assumes little-endian targets.
+    Note:
+        The packed syndrome and packed correction each occupy a single ``u64``.
+        This limits the current implementation to at most 64 checks and 64
+        variables.
     """
     # cursor/total are u64; slot indices and seq numbers are u32 by wire layout.
     cursor = tl.zeros((), dtype=tl.uint64)

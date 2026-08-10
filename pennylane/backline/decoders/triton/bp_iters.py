@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Belief-propagation helper kernels for Triton decoders."""
+
 import math
 
 import triton
@@ -26,7 +28,18 @@ def _sum_product_posteriors(
     prob: tl.constexpr = 0.1,
     NITER: tl.constexpr = 10,
 ):
-    """Compute posterior LLRs with sum-product belief propagation."""
+    """Compute posterior LLRs for one packed syndrome.
+
+    Args:
+        syndrome (u64): Packed syndrome bitmask. Bit ``i`` stores check ``i``.
+        H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
+            syndrome bit ``i``, and column ``j`` matches variable ``j``.
+        prob (float): Prior error probability assigned to each variable.
+        NITER (int): Number of belief-propagation iterations.
+
+    Returns:
+        tuple[float]: Posterior LLRs, one per variable.
+    """
     L0: tl.constexpr = _llr_from_p(prob)
     NCHECKS: tl.constexpr = len(H)
     NVARS: tl.constexpr = len(H[0])
@@ -82,7 +95,16 @@ def _sum_product_posteriors(
 
 @triton.jit
 def _get_syndrome_signs(syndrome, NCHECKS: tl.constexpr):
-    """Convert syndrome bits to bipolar signs."""
+    """Convert syndrome bits into bipolar check signs.
+
+    Args:
+        syndrome (u64): Packed syndrome bitmask.
+        NCHECKS (int): Number of checks to unpack from ``syndrome``.
+
+    Returns:
+        tuple[float]: Tuple containing ``+1.0`` for a zero bit and ``-1.0`` for
+            a one bit, in least-significant-bit order.
+    """
     s = ()
     for i in tl.static_range(NCHECKS):
         s += (tl.where(((syndrome >> i) & 1) != 0, -1.0, 1.0),)
@@ -91,14 +113,30 @@ def _get_syndrome_signs(syndrome, NCHECKS: tl.constexpr):
 
 @triton.jit
 def _bp_tanh_half(x):
-    """Compute tanh(x / 2) from exponentials."""
+    """Compute ``tanh(x / 2)`` for a Triton scalar.
+
+    Args:
+        x (float): Input value.
+
+    Returns:
+        float: The value of ``tanh(x / 2)``.
+    """
     e = tl.exp(x)
     return (e - 1.0) / (e + 1.0)
 
 
 @triton.jit
 def _bp_c2v_msg(ssign, prod, EPS: tl.constexpr = 1e-6):
-    """Compute a numerically bounded check-to-variable message."""
+    """Compute a bounded check-to-variable message.
+
+    Args:
+        ssign (float): Bipolar sign derived from the packed syndrome bit.
+        prod (float): Product of neighbouring variable-to-check messages.
+        EPS (float): Margin used to clamp ``prod`` away from ``±1``.
+
+    Returns:
+        float: Check-to-variable message in LLR form.
+    """
     hi = 1.0 - EPS
     p = tl.maximum(-hi, tl.minimum(prod, hi))
     return ssign * tl.log((1.0 + p) / (1.0 - p))
@@ -106,8 +144,12 @@ def _bp_c2v_msg(ssign, prod, EPS: tl.constexpr = 1e-6):
 
 @triton.constexpr_function
 def _llr_from_p(p):
+    """Convert a compile-time error probability into a prior LLR.
+
+    Args:
+        p (float): Error probability in the open interval ``(0, 1)``.
+
+    Returns:
+        float: Log-likelihood ratio ``log((1 - p) / p)``.
     """
-    Convert an error probability to a log-likelihood ratio. We use `math.log`
-    instead of `tl.log` since `p` is const and not dynamic runtime variable.
-    """
-    return math.log((1.0 - p) / p)
+    return math.log1p(-p) - math.log(p)

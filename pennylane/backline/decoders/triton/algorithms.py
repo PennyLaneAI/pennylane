@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Postprocessing kernels for Triton-based syndrome decoding."""
+
 import triton
 import triton.language as tl
 
@@ -26,7 +28,19 @@ def _decode_one(
     prob: tl.constexpr = 0.1,
     NITER: tl.constexpr = 10,
 ):
-    """Decode one syndrome into a correction."""
+    """Decode one packed syndrome into a packed correction mask.
+
+    Args:
+        syndrome (u64): Packed syndrome bitmask. Bit ``i`` stores check ``i``.
+        H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
+            syndrome bit ``i``, and column ``j`` matches correction bit ``j``.
+        postprocess (str): Postprocessing rule to apply to the posterior LLRs.
+        prob (float): Prior error probability assigned to each variable.
+        NITER (int): Number of belief-propagation iterations.
+
+    Returns:
+        u64: Packed correction mask. Bit ``j`` targets variable ``j``.
+    """
     syndrome = tl.cast(syndrome, tl.uint64)
 
     P = _sum_product_posteriors(syndrome, H, prob, NITER)
@@ -37,7 +51,14 @@ def _decode_one(
 
 @triton.jit
 def _hard_decision(P):
-    """Pack negative posterior values into a correction mask."""
+    """Pack negative posterior LLRs into a correction mask.
+
+    Args:
+        P (tuple[float]): Posterior LLRs, one per variable.
+
+    Returns:
+        u64: Packed correction mask with bit ``i`` set when ``P[i] < 0``.
+    """
     one = tl.cast(1, tl.uint64)
     zero = tl.cast(0, tl.uint64)
     mask = zero
@@ -48,7 +69,16 @@ def _hard_decision(P):
 
 @triton.jit
 def _osd(P, syndrome):
-    """Build an order-zero one-bit correction for a nonzero syndrome."""
+    """Build an order-zero one-bit correction for a nonzero syndrome.
+
+    Args:
+        P (tuple[float]): Posterior LLRs, one per variable.
+        syndrome (u64): Packed syndrome bitmask.
+
+    Returns:
+        u64: One-hot correction mask for the most likely variable, or ``0`` when
+            the syndrome is zero.
+    """
     one = tl.cast(1, tl.uint64)
     zero = tl.cast(0, tl.uint64)
     bi = zero

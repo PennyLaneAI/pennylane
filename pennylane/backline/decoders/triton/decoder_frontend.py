@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Frontend for building Triton decoder shared libraries."""
+"""Frontend helpers for building Triton decoder shared libraries.
+
+This module provides the public entry points for packaging Triton decoder
+kernels into shared libraries that can be loaded by backline devices.
+"""
 
 # pylint: disable=no-name-in-module,no-member,too-many-arguments
 
@@ -177,7 +181,18 @@ def build_css_bp_decoder(
 
 
 def _to_numpy(H: ArrayLike) -> np.ndarray:
-    """Validate and convert a parity-check matrix to a NumPy array."""
+    """Validate and convert a parity-check matrix to a NumPy array.
+
+    Args:
+        H (ArrayLike): Candidate parity-check matrix.
+
+    Returns:
+        np.ndarray: Binary parity-check matrix with two dimensions.
+
+    Raises:
+        ValueError: If ``H`` is empty, non-binary, not two-dimensional, or
+            exceeds the current 64-check or 64-variable packing limit.
+    """
     h = np.asarray(H)
     if h.ndim != 2:
         raise ValueError(f"H must be a 2D array, got shape {h.shape!r}")
@@ -196,7 +211,18 @@ def _to_numpy(H: ArrayLike) -> np.ndarray:
 def _validate_build_options(
     *, decoder_fns: tuple[object, ...], num_warps: int, num_stages: int, platform: str
 ) -> None:
-    """Validate generic Triton decoder build options."""
+    """Validate generic Triton decoder build options.
+
+    Args:
+        decoder_fns (tuple[object, ...]): Triton decoder functions to dispatch.
+        num_warps (int): Triton kernel launch warp count.
+        num_stages (int): Triton pipeline stage count.
+        platform (str): Triton target string of the form
+            ``"backend:arch:warp_size"``.
+
+    Raises:
+        ValueError: If any option falls outside the supported range or format.
+    """
     if not decoder_fns:
         raise ValueError("decoder_fns must be a non-empty tuple of Triton decoder functions")
     if num_warps <= 0:
@@ -211,7 +237,16 @@ def _validate_build_options(
 
 
 def _validate_css_options(*, postprocess: str, niter: int, prob: float) -> None:
-    """Validate CSS decoder options."""
+    """Validate CSS decoder options.
+
+    Args:
+        postprocess (str): Postprocessing rule applied after belief propagation.
+        niter (int): Number of belief-propagation iterations.
+        prob (float): Uniform prior error probability.
+
+    Raises:
+        ValueError: If any option falls outside the supported range.
+    """
     if postprocess not in {"hard", "osd"}:
         raise ValueError("postprocess must be 'hard' or 'osd'")
     if niter <= 0:
@@ -221,7 +256,18 @@ def _validate_css_options(*, postprocess: str, niter: int, prob: float) -> None:
 
 
 def _make_css_decoder(h: np.ndarray, *, postprocess: str, niter: int, prob: float) -> object:
-    """Build one specialized Triton CSS decoder function."""
+    """Specialize one Triton decoder kernel for a fixed parity-check matrix.
+
+    Args:
+        h (np.ndarray): Binary parity-check matrix.
+        postprocess (str): Postprocessing rule applied after belief propagation.
+        niter (int): Number of belief-propagation iterations.
+        prob (float): Uniform prior error probability.
+
+    Returns:
+        object: Triton JIT function that maps one packed syndrome to one packed
+            correction mask.
+    """
     h = tl.constexpr(tuple(tuple(int(v) for v in row) for row in h.tolist()))
     postprocess = tl.constexpr(postprocess)
     prob = tl.constexpr(prob)
