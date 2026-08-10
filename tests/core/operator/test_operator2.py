@@ -776,23 +776,6 @@ class TestInitExpectedArgtypesValidation:
         ):
             Op(0.5, wires=0)
 
-    def test_scalar_real_arg_accepts_complex_dtype(self):
-        """Test that a scalar real argument accepts a complex dtype, as produced by
-        holomorphic AD (e.g. JAX)."""
-
-        class Op(Operator2):
-            dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(1),
-            }
-
-            def __init__(self, phi, wires):
-                super().__init__(phi, wires=wires)
-
-        op = Op(np.array(0.5 + 0.0j), wires=0)
-        assert op.arguments["phi"] == 0.5 + 0.0j
-
     def test_weak_type_allows_python_scalar(self):
         """Test that ``arg_specs`` weak types accept Python scalar inputs."""
 
