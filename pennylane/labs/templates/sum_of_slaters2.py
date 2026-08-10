@@ -25,7 +25,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
 from pennylane.wires import Wires
 
 
-class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
+class SumOfSlatersPrep2(qp.Operation):
     r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
     In contrast to :class:`~.SumOfSlatersPrep`, this operation handles work wires explicitly.
 
@@ -310,6 +310,76 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         self.hyperparameters["identification_wires"] = Wires(identification_wires)
         self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
         self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
+    
+    @staticmethod
+    def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
+        """Compute the register sizes required for ``SumOfSlatersPrep``, for given
+        computational basis states, ``indices``, and number of target wires, ``num_wires``.
+
+        Args:
+            indices (tuple[int]): Indices of computational basis states of the sparse state to be
+                prepared with ``SumOfSlatersPrep2``.
+            num_wires (int): Number of target wires on which ``SumOfSlatersPrep2``
+                will prepare the state.
+
+        Returns:
+            dict[str, int]: Required register size per register name. Includes the target wires
+            of length ``num_wires`` with the label ``"wires"``, matching the call signature
+            of ``SumOfSlatersPrep2``.
+
+        """
+        _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
+        num_bits, num_entries = vtilde_bits.shape
+        return SumOfSlatersPrep2._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
+
+    @staticmethod
+    def _required_register_sizes_from_nums(num_entries: int, num_bits: int, num_wires: int):
+        """Compute the register sizes required for ``SumOfSlatersPrep2``, for given
+        number of bits strings, number of bits per bit string, and number of wires. It is
+        the core method for ``required_register_sizes``, separated out for convenient internal
+        reuse.
+
+        Args:
+            num_entries (int): Number of bit strings prepared by ``SumOfSlatersPrep2``.
+            num_bits (int): Number of bits per bit string used in ``SumOfSlatersPrep2`` to
+                represent the individual basis states in the sparse state. That is, number of
+                bits after using ``select_sos_rows``.
+            num_wires (int): Number of qubits on which ``SumOfSlatersPrep2`` prepares the state.
+
+        Returns:
+            dict[str, int]: Required register size per register name. Includes the target wires
+            of length ``num_wires`` with the label ``"wires"``, matching the call signature
+            of ``SumOfSlatersPrep2``.
+
+        """
+
+        if num_entries == 1:
+            # Simple computational basis state preparation, does not require auxiliary qubits
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_cache_wires": 0,
+            }
+
+        d = math.ceil_log2(num_entries)
+        m = min(num_bits, 2 * d - 1)
+        if num_bits <= m:
+            # Identity encoding. We do not need the identification register but can use the
+            # (subselection of) system wires directly
+            num_identification = 0
+        else:
+            # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
+            num_identification = m
+
+        return {
+            "wires": num_wires,
+            "enumeration_wires": d,
+            "identification_wires": num_identification,
+            "qrom_work_wires": d - 1,
+            "mcx_cache_wires": m - 1,
+        }
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)
