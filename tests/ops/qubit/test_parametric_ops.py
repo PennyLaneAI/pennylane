@@ -279,7 +279,18 @@ class TestParameterFrequencies:
 
 
 class TestDecompositions:
-    @pytest.mark.parametrize("phi", [0.3, np.array([0.4, 2.1, 0.2])])
+    @pytest.mark.parametrize(
+        "phi",
+        [
+            0.3,
+            pytest.param(
+                np.array([0.4, 2.1, 0.2]),
+                marks=pytest.mark.pl2do(
+                    reason="PL 2.0: Parameter broadcasting will be re-visited in the future."
+                ),
+            ),
+        ],
+    )
     def test_phase_decomposition(self, phi, tol):
         """Tests that the decomposition of the Phase gate is correct"""
         op = qp.PhaseShift(phi, wires=0)
