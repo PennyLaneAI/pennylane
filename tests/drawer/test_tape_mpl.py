@@ -689,6 +689,10 @@ class TestGeneralOperations:
 
         num_params = 1 if cls is qp.GlobalPhase else 0
         data = [0.3625][:num_params]
+
+        if cls is qp.GlobalPhase and input_wires:
+            pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
+
         tape = QuantumScript([cls(*data, wires=input_wires), qp.X(0)])
         fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
 
@@ -709,12 +713,9 @@ class TestGeneralOperations:
 
         plt.close()
 
-    @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
-    def test_multiple_global_ops(self, cls):
+    def test_multiple_global_ops(self):
         """Test that global ops correctly reserve layers for themselves."""
-        num_params = 1 if cls is qp.GlobalPhase else 0
-        data = [0.3625][:num_params]
-        tape = QuantumScript([cls(*data, wires=wires) for wires in [[], [0], [1, 2]]])
+        tape = QuantumScript([qp.Identity(wires=wires) for wires in [[], [0], [1, 2]]])
 
         fig, ax = tape_mpl(tape)
 
@@ -751,6 +752,10 @@ class TestGeneralOperations:
 
         num_params = 1 if cls is qp.GlobalPhase else 0
         data = [0.3625][:num_params]
+
+        if cls is qp.GlobalPhase and input_wires:
+            pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
+
         op = qp.ctrl(cls(*data, wires=input_wires), control=control_wires)
         tape = QuantumScript([op, qp.X(0), qp.X(1)])
         with warnings.catch_warnings():
