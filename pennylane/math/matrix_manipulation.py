@@ -108,8 +108,10 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
     if (wire_order is None) or (wire_order == wires):
         return mat
 
-    if not wires and math.shape(mat) == (1, 1):
-        return complex(mat[0, 0])
+    if not wires:
+        n_wires = len(wire_order) if wire_order else 0
+        eye_mat = math.eye(2**n_wires, like=mat)
+        return mat * eye_mat if math.ndim(mat) > 0 else mat[0, 0] * eye_mat
 
     wires = list(wires)
     wire_order = list(wire_order)
