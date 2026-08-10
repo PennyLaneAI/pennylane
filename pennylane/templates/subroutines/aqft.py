@@ -152,10 +152,6 @@ class AQFT(Operator2):
         order = self._validate_order(order, len(wires))
         super().__init__(order, wires)
 
-    def __abstract_init__(self, order, wires):  # pylint: disable=arguments-differ
-        order = self._validate_order(order, len(wires))
-        super().__abstract_init__(order, wires)
-
 
 def _AQFT_resources(order, wires):
     num_wires = len(wires)
