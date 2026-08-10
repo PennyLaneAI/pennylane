@@ -146,7 +146,7 @@ class AQFT(Operator2):
         if order == 0:
             warnings.warn("order=0, applying Hadamard transform")
 
-        super().__init__(int(order), wires)
+        super().__init__(order, wires)
 
 
 def _AQFT_resources(order, wires):
