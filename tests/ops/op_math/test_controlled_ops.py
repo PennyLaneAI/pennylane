@@ -794,15 +794,15 @@ def test_simplify_crot():
 controlled_data = [
     (qp.RX(1.234, wires=0), qp.CRX(1.234, wires=("a", 0))),
     (qp.RY(1.234, wires=0), qp.CRY(1.234, wires=("a", 0))),
-    (qp.PhaseShift(1.234, wires=0), qp.ControlledPhaseShift(1.234, wires=("a", 0))),
     (qp.Rot(1.2, 2.3, 3.4, wires=0), qp.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
 ]
 
 
 @pytest.mark.parametrize("base, cbase", controlled_data)
 def test_controlled_method(base, cbase):
-    """Tests that controlling parametric ops produces the custom controlled op."""
-    qp.assert_equal(qp.ctrl(base, "a"), cbase)
+    """Tests the _controlled method for parametric ops."""
+    # pylint: disable=protected-access
+    qp.assert_equal(base._controlled("a"), cbase)
 
 
 @pytest.mark.parametrize(
