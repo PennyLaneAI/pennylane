@@ -593,7 +593,7 @@ def specs(
           - RX                 |  2 |  2 |  1
         Measurement processes: |
         - probs(all wires)     |  1 |  1 |  1
-        Total wires       |  3 |  3 |  3
+        Total wires            |  3 |  3 |  3
 
         When invoked with an iterable of levels, or ``"all"`` as above, the resources at different levels can be
         accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
@@ -659,7 +659,7 @@ def specs(
         Measurement processes: |
         - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0 |    1 |    0
         - expval(PauliX)       |    1 |    0 |    1 |    0 |    1 |    0 |    1
-        Total wires       |    1 |    1 |    1 |    3 |    3 |    3 |    3
+        Total wires            |    1 |    1 |    1 |    3 |    3 |    3 |    3
 
         Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are

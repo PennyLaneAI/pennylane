@@ -20,8 +20,31 @@ import pytest
 
 from pennylane.resource.expression import (
     Expression,
+    _maybe_collapse,
     _term_to_str,
 )
+
+
+def test_maybe_collapse():
+    """Test that _maybe_collapse returns the expected type based on the input data."""
+    zero = _maybe_collapse({}, set(), skip_copy=True, skip_normalization=False)
+    assert zero is 0
+    assert isinstance(zero, int)
+
+    # Check for literal 0
+    assert _maybe_collapse({(): 0}, set(), skip_copy=True, skip_normalization=False) is 0
+
+    three = _maybe_collapse({(): 3}, set(), skip_copy=True, skip_normalization=False)
+    assert three is 3
+    assert isinstance(three, int)
+
+    nega = _maybe_collapse({(): -1}, set(), skip_copy=True, skip_normalization=False)
+    assert nega is -1
+    assert isinstance(nega, int)
+
+    exp = _maybe_collapse({("x",): 1}, set(), skip_copy=True, skip_normalization=False)
+    assert isinstance(exp, Expression)
+    assert exp == Expression({("x",): 1})
 
 
 @pytest.mark.parametrize(
@@ -269,6 +292,16 @@ class TestExpressionMath:
         new_expr = expr * 0
         assert isinstance(new_expr, int)
         assert expr * 0 == 0 * expr == Expression({})
+
+    def test_mul_casts_to_int(self):
+        expr = Expression({(): 2})
+        new_expr = expr * 3
+        assert isinstance(new_expr, int)
+        assert new_expr is 6
+
+        new_expr = expr * Expression({(): 3})
+        assert isinstance(new_expr, int)
+        assert new_expr is 6
 
     def test_mul_invalid(self, sample_expr):
         # pylint: disable=pointless-statement

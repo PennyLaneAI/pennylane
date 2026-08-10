@@ -322,8 +322,20 @@ class TestAnalysisPassConversion:
         example_loop_analysis_pass_result["for_loop_2"]["extended_fields"]["unknown_field"] = {
             "some_key": 42
         }
+        example_loop_analysis_pass_result["circuit"]["extended_fields"]["unknown_field"] = {
+            "foo": 15
+        }
 
         with pytest.warns(
             UserWarning, match="Specs detected unknown extended fields in the resource data:"
         ):
-            parse_resources_json(example_loop_analysis_pass_result)
+            res = parse_resources_json(example_loop_analysis_pass_result)
+
+        assert "unknown_field" in res[0].extra
+
+        # The sub-function call is not expected to propagate since how to do this is undefined
+        assert "some_key" not in res[0].extra["unknown_field"]
+
+        # The top-level unknown field should be preserved
+        assert "foo" in res[0].extra["unknown_field"]
+        assert res[0].extra["unknown_field"]["foo"] == 15
