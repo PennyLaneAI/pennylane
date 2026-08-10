@@ -852,13 +852,16 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Non-parametric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`, `~.X`, `~.CNOT`, `~.Toffoli`, `~.MultiControlledX`.
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
+  [(#9844)](https://github.com/PennyLaneAI/pennylane/pull/9844)
+  [(#9814)](https://github.com/PennyLaneAI/pennylane/pull/9814)
+  [(#9854)](https://github.com/PennyLaneAI/pennylane/pull/9854)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   - Parametric operators are ported:

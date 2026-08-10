@@ -25,6 +25,7 @@ from pennylane import numpy as pnp
 from pennylane import ops as qp_ops
 from pennylane.capture import run_autograph
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 
 @pytest.mark.jax
@@ -230,7 +231,7 @@ class TestDynamicDecomposition:
         assert rot_inner_eqn[-1].primitive == qp.Rot._primitive
 
         cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
-        assert cnot_inner_eqn[-1].primitive == qp.CNOT._primitive
+        assert_eqn_matches_op(cnot_inner_eqn[-1], qp.CNOT)
         # Validate Ops
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
@@ -238,10 +239,9 @@ class TestDynamicDecomposition:
         tape = qp.tape.QuantumScript(
             [qp.StronglyEntanglingLayers(jnp.array(weights), wires=wires, imprimitive=imprimitive)]
         )
-        [decomp_tape], _ = qp.transforms.decompose(
-            tape, max_expansion=max_expansion, gate_set=gate_set
-        )
-        assert ops_list == decomp_tape.operations
+        with qp.capture.pause():
+            [expected], _ = qp.decompose(tape, max_expansion=max_expansion, gate_set=gate_set)
+        assert ops_list == expected.operations
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(

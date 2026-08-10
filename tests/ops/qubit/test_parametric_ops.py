@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.operator import Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -157,6 +158,7 @@ SKIP_ASSERT_VALID = {
     qp.QubitUnitary: {"skip_differentiation": True},
     qp.DiagonalQubitUnitary: {"skip_differentiation": True},
     qp.ControlledQubitUnitary: {"skip_differentiation": True},
+    qp.MultiControlledX: {"skip_differentiation": True, "skip_bind_new_parameters": True},
 }
 
 
@@ -198,6 +200,12 @@ class TestOperations:
         leaves, tree_def = jax.tree_util.tree_flatten(op)
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         qp.assert_equal(op_unflattened, op)
+
+        if isinstance(op, Operator2):
+            # The test below assumes that `op.data` are numerical, which is not necessarily
+            # the case anymore for `Operator2` where `op.data` is anything that is dynamic
+            # and traceable, which could include things like `control_values`
+            return
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):

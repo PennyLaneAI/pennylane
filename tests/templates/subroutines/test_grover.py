@@ -55,11 +55,11 @@ def test_work_wires():
 
     op = qp.GroverOperator(wires=wires, work_wires=work_wire)
 
-    assert op.hyperparameters["work_wires"] == work_wire
+    assert op.work_wires == work_wire
 
     ops = op.decomposition()
 
-    assert ops[2].hyperparameters["work_wires"] == work_wire
+    assert ops[2].work_wires == work_wire
 
 
 def test_work_wires_None():

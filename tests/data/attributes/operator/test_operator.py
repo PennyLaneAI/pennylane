@@ -156,7 +156,7 @@ class TestDatasetOperator:
         [
             qp.RX(1.1, 0),
             qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", None]),
+            qp.Toffoli([1, "a", 2]),
             qp.Hamiltonian([], []),
         ],
     )
@@ -180,7 +180,7 @@ class TestDatasetOperator:
         [
             qp.RX(1.1, 0),
             qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", None]),
+            qp.Toffoli([1, "a", 2]),
             qp.Hamiltonian([], []),
         ],
     )
