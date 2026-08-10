@@ -1607,7 +1607,6 @@ class TestModifiedTemplates:
 
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(unitary, angles)
-        print(jaxpr)
         assert len(jaxpr.eqns) == 1
 
         gqsp_eqn = jaxpr.eqns[0]
