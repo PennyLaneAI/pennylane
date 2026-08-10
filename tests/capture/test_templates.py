@@ -183,9 +183,6 @@ unmodified_templates_cases = [
             reason="arrays should never have been in the metadata, [sc-104808]"
         ),
     ),
-    (qp.AQFT, (1, [0, 1, 2]), {}),
-    (qp.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
-    (qp.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
     (qp.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qp.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
     pytest.param(
@@ -357,6 +354,7 @@ tested_modified_templates = [
     qp.SelectPauliRot,
     qp.FlipSign,
     qp.QFT,
+    qp.AQFT,
     qp.TemporaryAND,
 ]
 
@@ -1823,6 +1821,41 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+    @pytest.mark.parametrize(
+        "order, wires, use_kwarg",
+        [
+            (1, [0, 1, 2], False),
+            (2, [0, 1, 2, 3], True),
+            (2, [0, 2, 3, 1], True),
+        ],
+    )
+    def test_aqft(self, order, wires, use_kwarg):
+        """Test the primitive bind call of AQFT."""
+
+        def qfunc(wires):
+            if use_kwarg:
+                qp.AQFT(order=order, wires=wires)
+            else:
+                qp.AQFT(order, wires)
+
+        # Validate inputs
+        qfunc(wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.AQFT)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        # ``order`` is a compilable parameter that must survive capture
+        order_values, _ = eqn.params["order"]
+        assert tuple(order_values) == (order,)
 
 
 def filter_fn(member: Any) -> bool:
