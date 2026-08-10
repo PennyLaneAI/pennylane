@@ -494,7 +494,7 @@ def _pow_x_to_sx(base, z):
 @register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
 def _pow_x_to_rx(base, z):
     z_mod2 = qp.math.array(z) % 2
-    qp.RX(np.pi * z_mod2, wires=wires)
+    qp.RX(np.pi * z_mod2, wires=base.wires)
     qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
