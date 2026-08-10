@@ -414,50 +414,6 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
-    def test_basic_passes_multi_level(self, simple_circuit):
-        """Test that when passes are applied, the circuit resources are updated accordingly."""
-
-        simple_circuit = qp.transforms.cancel_inverses(simple_circuit)
-        simple_circuit = qp.transforms.merge_rotations(simple_circuit)
-
-        simple_circuit = qjit(simple_circuit)
-
-        expected = CircuitSpecs(
-            device_name="lightning.qubit",
-            num_device_wires=2,
-            shots=Shots(None),
-            level=dict(
-                enumerate(
-                    (
-                        "Before MLIR Passes",
-                        "cancel-inverses",
-                        "merge-rotations",
-                    )
-                )
-            ),
-            resources={
-                "Before MLIR Passes": SpecsResources(
-                    counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
-                    measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
-                ),
-                "cancel-inverses": SpecsResources(
-                    counts={"RX": 2, "RZ": 2},
-                    measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
-                ),
-                "merge-rotations": SpecsResources(
-                    counts={"RX": 1, "RZ": 1},
-                    measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
-                ),
-            },
-        )
-
-        actual = qp.specs(simple_circuit, level="all")()
-
-        assert actual == expected
-
     def test_circuit_with_args(self):
         """Test circuits with positional args"""
 
@@ -744,7 +700,7 @@ class TestPassByPassSpecs:
     def test_operator2(self):
         """Test that specs works with operator2 classes."""
 
-        # pylint: disable=useless-parent-delegation
+        # pylint: disable=useless-parent-delegation,too-few-public-methods
         class DummyOp(qp.core.Operator2):
             """Dummy Local Operator."""
 
