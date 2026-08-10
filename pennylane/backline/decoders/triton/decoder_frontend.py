@@ -47,24 +47,6 @@ def build_triton_decoder(
 ) -> tuple[Path, str]:
     """Build a shared library for a Triton decoder dispatcher.
 
-    Example:
-
-        >>> import triton
-        >>> import triton.language as tl
-        >>> from pennylane.backline.decoders.triton.decoder_frontend import build_triton_decoder
-        >>> # For the standard Steane parity-check matrix ordering, nonzero syndromes
-        >>> # 1..7 already encode which qubit to flip, so the lookup is just a shift.
-        >>> @triton.jit
-        ... def steane_lookup(syndrome):
-        ...     one = tl.cast(1, tl.uint64)
-        ...     zero = tl.cast(0, tl.uint64)
-        ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
-        >>> # For the Steane CSS code, the same lookup rule can be used for both decoder ids.
-        >>> so_path, symbol_name = build_triton_decoder(
-        ...     (steane_lookup, steane_lookup),
-        ...     platform="hip:gfx90a:64",
-        ... )
-
     Args:
         decoder_fns (tuple[object, ...]): Tuple of Triton decoder functions.
             ``decoder_id`` selects the tuple index at runtime.
@@ -77,6 +59,24 @@ def build_triton_decoder(
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
             Triton-generated exported entrypoint name. The caller owns the returned file.
+
+    Raises:
+        ValueError: If the build options are invalid.
+
+    **Example**
+
+    >>> import triton
+    >>> import triton.language as tl
+    >>> from pennylane.backline.decoders.triton.decoder_frontend import build_triton_decoder
+    >>> @triton.jit
+    ... def steane_lookup(syndrome):
+    ...     one = tl.cast(1, tl.uint64)
+    ...     zero = tl.cast(0, tl.uint64)
+    ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+    >>> so_path, symbol_name = build_triton_decoder(
+    ...     (steane_lookup, steane_lookup),
+    ...     platform="hip:gfx90a:64",
+    ... )
     """
     _validate_build_options(
         decoder_fns=decoder_fns,
@@ -124,20 +124,6 @@ def build_css_bp_decoder(
 ) -> tuple[Path, str]:
     """Build a shared library for a configured Triton decoder.
 
-    Example:
-
-        >>> from catalyst.python_interface.transforms.qecp.qec_code_lib import QecCode
-        >>> steane_code = QecCode.get("Steane")
-        >>> Hx = steane_code.x_tanner
-        >>> Hz = steane_code.z_tanner
-        >>> so_path, symbol_name = build_css_bp_decoder(
-        ...     Hx,
-        ...     Hz,
-        ...     postprocess="osd",
-        ...     num_iters=10,
-        ...     platform="hip:gfx90a:64",
-        ... )
-
     Note:
         The generated decoder consumes one packed syndrome bitmask and returns one packed
         correction bitmask, each stored in a single ``u64``. Bit ``i`` corresponds
@@ -162,6 +148,21 @@ def build_css_bp_decoder(
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
             Triton-generated exported entrypoint name. The caller owns the returned file.
+
+    Raises:
+        ValueError: If the decoder options or parity-check matrices are invalid.
+
+    **Example**
+
+    >>> Hx = np.array([[1, 0], [0, 1]])
+    >>> Hz = np.array([[1, 1], [0, 1]])
+    >>> so_path, symbol_name = build_css_bp_decoder(
+    ...     Hx,
+    ...     Hz,
+    ...     postprocess="hard",
+    ...     num_iters=5,
+    ...     platform="hip:gfx90a:64",
+    ... )
     """
     _validate_css_options(postprocess=postprocess, num_iters=num_iters, prob=prob)
     hx = _to_numpy(Hx)

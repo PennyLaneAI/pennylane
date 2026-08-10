@@ -84,8 +84,15 @@ def css_decoder(
 
     Raises:
         ImportError: If Triton decoder support is unavailable.
+        ValueError: If the decoder options or parity-check matrices are invalid.
 
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
+
+    **Example**
+
+    >>> Hx = ((1, 0, 1), (0, 1, 1))
+    >>> Hz = ((1, 1, 0), (1, 0, 1))
+    >>> decoder = qp.backline.css_decoder(Hx, Hz, postprocess="hard", num_iters=5)
     """
     try:
         build_css_bp_decoder = import_module(
