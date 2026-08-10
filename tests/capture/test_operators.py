@@ -418,7 +418,7 @@ class TestOpmath:
         assert_eqn_matches_op(base_eqn, qp.Y)
         assert base_eqn.params["n_ctrls"] == 3
 
-    @pytest.mark.xfail(
+    @pytest.mark.pl2do(
         reason="JAX thinks the wires aren't unique because they are abstract", strict=True
     )
     def test_Controlled(self):
