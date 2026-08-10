@@ -2416,7 +2416,7 @@ class ControlledPhaseShift(Controlled2):
 
     @staticmethod
     # pylint: disable=arguments-differ,unused-argument
-    def compute_matrix(phi, wires):
+    def compute_matrix(phi, wires=None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2460,7 +2460,7 @@ class ControlledPhaseShift(Controlled2):
 
     @staticmethod
     # pylint: disable=arguments-differ,unused-argument
-    def compute_eigvals(phi, wires):
+    def compute_eigvals(phi, wires=None):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,

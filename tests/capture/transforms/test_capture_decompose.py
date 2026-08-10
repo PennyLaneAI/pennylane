@@ -29,6 +29,7 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
+    operator_p,
     qnode_prim,
     while_loop_prim,
 )
