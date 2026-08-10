@@ -31,7 +31,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import Prod, SingleExcitation, prod
+from pennylane.ops import PauliRot, Prod, SingleExcitation, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
@@ -1345,3 +1345,13 @@ def _handle_adjoint2(op: Adjoint2):
 @parameter_frequencies.register
 def _handle_single_excitation(op: SingleExcitation):
     return [(0.5, 1.0)]
+
+
+def _handle_pauli_rot(op: PauliRot):
+    """Calculates the parameter frequencies for a PauliRot.
+
+    This is needed because if the Pauli word is an identity, then the computed
+    parameter frequencies will be ``[()]``, which breaks parameter shift with
+    ``PauliRot``.
+    """
+    return [(1,)]

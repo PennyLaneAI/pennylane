@@ -52,6 +52,11 @@ class Adjoint2(SymbolicOp2):
 
     @property
     @override
+    def data(self):
+        return self.base.data
+
+    @property
+    @override
     def pauli_rep(self):
         if not self.base.pauli_rep:
             return None
