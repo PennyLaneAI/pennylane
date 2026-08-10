@@ -223,14 +223,14 @@ def _handle_extended_fields(
 
 
 def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
-    # Copy the extra fields to avoid mutating the original object
     kwargs = {
         "counts": res.counts,
         "measurement_processes": res.measurement_processes,
         "num_wires": res.num_wires,
         "circuit_depth": res.circuit_depth,
     }
-    extra = copy.copy(res.extra)
+    # Copy the extra fields to avoid mutating the original object
+    extra = copy.deepcopy(res.extra)
 
     if "pbc_depth" in extra:
         pbc_depth = extra.pop("pbc_depth")
