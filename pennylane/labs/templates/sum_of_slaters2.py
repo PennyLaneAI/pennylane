@@ -286,6 +286,8 @@ class SumOfSlatersPrep2(qp.core.operator.Operation):
 
     """
 
+    resource_keys = {"num_entries", "num_bits", "num_wires"}
+
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -311,11 +313,12 @@ class SumOfSlatersPrep2(qp.core.operator.Operation):
         mcx_cache_wires,
         indices,
     ):  # pylint: disable=too-many-arguments
-        super().__init__(coefficients, wires, indices)
+        super().__init__(coefficients, wires)
         self.hyperparameters["enumeration_wires"] = Wires(enumeration_wires)
         self.hyperparameters["identification_wires"] = Wires(identification_wires)
         self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
         self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
+        self.hyperparameters["indices"] = indices
 
     @staticmethod
     def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
