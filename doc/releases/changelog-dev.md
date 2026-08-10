@@ -868,6 +868,8 @@
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   - Multi-qubit, parametric operators are ported:
+    - :class:`~.PCPhase`
+  [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
   - Templates are ported:
     - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
