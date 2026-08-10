@@ -106,6 +106,7 @@ def _build_alias_tables(probs, mu):
         full ``keep``; these are self-aliased, so the ``keep`` value cancels in the
         constraint above and capping at :math:`2^\mu - 1` is exact.
     """
+
     probs = np.asarray(probs, dtype=float)
     if np.any(probs < 0):
         raise ValueError("probs must be non-negative")
@@ -173,7 +174,7 @@ def alias_sampling_wires(n_states, mu):
 
     if isinstance(mu, bool) or not isinstance(mu, (int, np.integer)) or mu < 1:
         raise ValueError(f"mu must be a positive integer, got {mu!r}.")
-    logL = max(qp.math.ceil_log2(n_states), 1)
+    logL = qp.math.ceil_log2(n_states)
     n_target = logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     n_temp = mu + logL + mu + 1 + max(mu - 1, 0)
@@ -218,7 +219,7 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
     """
     probs = np.asarray(probs, dtype=float)
     L = len(probs)
-    logL = max(qp.math.ceil_log2(L), 1)
+    logL = qp.math.ceil_log2(L)
 
     if isinstance(mu, bool) or not isinstance(mu, (int, np.integer)) or mu < 1:
         raise ValueError(f"mu must be a positive integer, got {mu!r}.")
@@ -255,9 +256,8 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
 
     data = [[0] * (logL + mu) for _ in range(2**logL)]
     for l in range(L):
-        data[l] = [int(b) for b in format(alt[l], f"0{logL}b")] + [
-            int(b) for b in format(keep[l], f"0{mu}b")
-        ]
+        alt_bits = [int(b) for b in format(alt[l], f"0{logL}b")] if logL else []
+        data[l] = alt_bits + [int(b) for b in format(keep[l], f"0{mu}b")]
 
     # 1. UNIFORM_L over |l>.
     uniform_prep_ops(L, target_wires, work_wires)

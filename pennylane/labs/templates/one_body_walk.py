@@ -57,7 +57,7 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     where :math:`o_{pq} = V \operatorname{diag}(\mu) V^T` and :math:`\lambda = \sum_p |\mu_p|`.
 
     Args:
-        op_matrix (tensor_like): The real symmetric one-body matrix, shape ``(N, N)``, where N is the number
+        op_matrix (array): The real symmetric one-body matrix, shape ``(N, N)``, where N is the number
             of spatial orbitals.
         alias_sampling_precision (int): alias-sampling coefficient precision
         prep_wires (Sequence[int]): the full PREP register, reflected by ``R``
@@ -68,22 +68,23 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
 
     if qp.math.shape(op_matrix) != (norbs, norbs):
         raise ValueError(f"op_matrix must be square; got {qp.math.shape(op_matrix)}.")
-    if np.iscomplexobj(op_matrix):
+    if qp.math.iscomplexobj(op_matrix):
         raise ValueError("op_matrix must be real.")
-    if not np.allclose(op_matrix, qp.math.transpose(op_matrix)):
+    if not qp.math.allclose(op_matrix, qp.math.transpose(op_matrix)):
         raise ValueError("op_matrix must be symmetric (o_pq = o_qp).")
 
     req = one_body_walk_wires(norbs, alias_sampling_precision)
-    for name, seq in (
-        ("prep_wires", prep_wires),
-        ("system_wires", system_wires),
-        ("work_wires", work_wires),
-    ):
+    for name, seq in (("prep_wires", prep_wires), ("system_wires", system_wires)):
         if len(seq) != req[name]:
             raise ValueError(
                 f"{name} must have {req[name]} wires for norbs={norbs}, "
                 f"alias_sampling_precision={alias_sampling_precision}; got {len(seq)}."
             )
+    if len(work_wires) < req["work_wires"]:
+        raise ValueError(
+            f"work_wires must have at least {req['work_wires']} wires for norbs={norbs}, "
+            f"alias_sampling_precision={alias_sampling_precision}; got {len(work_wires)}."
+        )
 
     prep_wires, system_wires, work_wires = list(prep_wires), list(system_wires), list(work_wires)
 
@@ -97,10 +98,10 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     if np.linalg.det(vmat) < 0:
         vmat[:, 0] *= -1
 
-    dmat = np.diag([(-1.0) ** i for i in range(norbs)])
+    dmat = qp.math.diag([(-1.0) ** i for i in range(norbs)])
     unitary_matrix = dmat @ vmat @ dmat
-    absmu = np.abs(mu)
-    signs = np.where(absmu > 0, np.sign(mu), 1.0)
+    absmu = qp.math.abs(mu)
+    signs = qp.math.where(absmu > 0, qp.math.sign(mu), 1.0)
 
     # PREP
     alias_sampling(
