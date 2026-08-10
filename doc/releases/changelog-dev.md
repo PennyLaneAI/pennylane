@@ -829,6 +829,12 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
+* :class:`~.MultiplexerStatePreparation` no longer validates the norm of the input
+  state vector automatically. Validation is now opt-in via the ``check`` keyword
+  argument, which defaults to ``False``. Pass ``check=True`` to raise a ``ValueError``
+  when the input state vector does not have norm 1.0.
+  [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
+
 <h3>Internal changes ⚙️</h3>
 
 * Removes `pennylane.transforms.decompose.DecomposeInterpreter`
@@ -849,13 +855,16 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Non-parametric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`, `~.X`, `~.CNOT`, `~.Toffoli`, `~.MultiControlledX`.
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
+  [(#9844)](https://github.com/PennyLaneAI/pennylane/pull/9844)
+  [(#9814)](https://github.com/PennyLaneAI/pennylane/pull/9814)
+  [(#9854)](https://github.com/PennyLaneAI/pennylane/pull/9854)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   - Parametric operators are ported:
@@ -866,11 +875,16 @@
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   - Multi-qubit, parametric operators are ported:
   - Templates are ported:
-    - `~.BasisRotation`, `~.QROM`, `~.QFT`
+    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`, `~.SelectPauliRot`, `~.GQSP`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
+  [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
+  [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
+  [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -952,6 +966,7 @@
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
     [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
     [(#9756)](https://github.com/PennyLaneAI/pennylane/pull/9756)
+    [(#9976)](https://github.com/PennyLaneAI/pennylane/pull/9976)
   - Compatibility with the `drawer` module.
     [(#9849)](https://github.com/PennyLaneAI/pennylane/pull/9849)
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
@@ -980,6 +995,7 @@
     [(#9856)](https://github.com/PennyLaneAI/pennylane/pull/9856)
     [(#9876)](https://github.com/PennyLaneAI/pennylane/pull/9876)
     [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
+    [(#9966)](https://github.com/PennyLaneAI/pennylane/pull/9966)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)

@@ -433,4 +433,4 @@ class PowOperation(Pow, Operation):
 
     @property
     def control_wires(self):
-        return self.base.control_wires
+        return self.base.control_wires  # pragma: no cover

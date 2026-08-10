@@ -545,13 +545,7 @@ def _custom_resource(num_wires):
         qp.X: 1,
         qp.CNOT: 1,
         qp.Toffoli: 1,
-        qp.resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=3,
-            num_zero_control_values=1,
-            num_work_wires=1,
-            work_wire_type="zeroed",
-        ): 1,
+        qp.MultiControlledX(Wire[4], work_wires=Wire[1], work_wire_type="zeroed"): 1,
         qp.RX: 1,
         qp.Rot: 1,
         qp.CRZ: 1,
@@ -633,27 +627,9 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 abstractify(qp.CNOT): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=2,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=4,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
-                    work_wire_type="borrowed",
-                ): 1,
+                qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[2]): 1,
                 abstractify(qp.CRX): 1,
                 abstractify(qp.CRot): 1,
                 _ctrl_abstract(qp.RZ, Wire[2], Wire[1]): 1,
@@ -778,34 +754,10 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 abstractify(qp.X): 2,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=2,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=4,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=5,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
-                    work_wire_type="borrowed",
-                ): 1,
+                qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[6], work_wires=Wire[2]): 1,
                 _ctrl_abstract(qp.RX, Wire[2], Wire[1]): 1,
                 _ctrl_abstract(qp.Rot, Wire[2], Wire[1]): 1,
                 _ctrl_abstract(qp.RZ, Wire[3], Wire[1]): 1,
@@ -889,34 +841,10 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 abstractify(qp.X): 4,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=4,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=5,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=6,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
-                    work_wire_type="borrowed",
-                ): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[6], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[7], work_wires=Wire[2]): 1,
                 _ctrl_abstract(qp.RX, Wire[3], Wire[1]): 1,
                 _ctrl_abstract(qp.Rot, Wire[3], Wire[1]): 1,
                 _ctrl_abstract(qp.RZ, Wire[4], Wire[1]): 1,
@@ -1118,6 +1046,30 @@ class TestControlledDecomposition:
             qp.CNOT([1, 2]),
             qp.X(3),
         ]
+
+    @pytest.mark.catalyst
+    def test_flip_zero_control_qjit(self):
+        """Tests flip_zero_control with qjit."""
+
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
+        def _custom_controlled_rule(base, control_wires, **_):
+            qp.CNOT(control_wires[:2])
+            qp.H(control_wires[2])
+            qp.CNOT([control_wires[-1], base.wires[0]])
+            qp.H(control_wires[2])
+            qp.CNOT(control_wires[:2])
+
+        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        op = NonParametricOp(wires=[0])
+
+        @qp.qjit
+        @qp.qnode(qp.device("null.qubit", wires=4))
+        def circuit(cvals):
+            custom_rule(base=op, control_wires=[1, 2, 3], control_values=cvals)
+            return qp.probs()
+
+        specs = qp.specs(circuit, level="device")([1, 1, 0])
+        assert specs.resources.quantum_operations == {"CNOT": 3, "Hadamard": 2, "PauliX": 2}
 
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
