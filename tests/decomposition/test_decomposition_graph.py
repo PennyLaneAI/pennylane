@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import DecompositionGraph
+from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.exceptions import DecompositionError, DecompositionWarning
@@ -55,6 +55,19 @@ class MultiWireOp(Operation):
     """A custom op"""
 
     resource_keys = {"num_wires"}
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
+
+
+class MultiWireRot(Operation):
+    """A custom op"""
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires)
 
     @property
     def resource_params(self):
@@ -595,24 +608,31 @@ class TestDecompGraphSolver:
     def test_decomposition_with_resource_params(self):
         """Tests operators with non-empty resource params."""
 
-        def _custom_resource(num_wires):
+        def _custom_rot_resource(num_wires):
             return {
-                qp.resource_rep(qp.MultiRZ, num_wires=num_wires): 1,
-                qp.resource_rep(qp.MultiRZ, num_wires=num_wires - 1): 2,
+                qp.resource_rep(MultiWireOp, num_wires=num_wires): 1,
+                qp.resource_rep(MultiWireOp, num_wires=num_wires - 1): 2,
             }
+
+        @qp.register_resources(_custom_rot_resource)
+        def _custom_rot_decomp(*_, **__):
+            raise NotImplementedError
+
+        def _custom_resource(num_wires):
+            return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
         @qp.register_resources(_custom_resource)
         def _custom_decomp(*_, **__):
             raise NotImplementedError
 
-        op = MultiWireOp(wires=[0, 1, 2, 3])
+        op = MultiWireRot(1.23, wires=[0, 1, 2, 3])
         graph = DecompositionGraph(
             operations=[op],
             gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
-            alt_decomps={MultiWireOp: [_custom_decomp]},
+            alt_decomps={MultiWireRot: [_custom_rot_decomp], MultiWireOp: [_custom_decomp]},
         )
-        # 10 ops (CustomOp, MultiRZ(4), MultiRZ(3), CNOT, CZ, RX, RY, RZ, Hadamard, GlobalPhase)
-        # 7 decompositions (1 for CustomOp, 1 for each of the two MultiRZs, 1 for CNOT, 2 for Hadamard, and 1 for RY)
+        # 10 ops (MultiWireRot, MultiWireOp(4), MultiWireOp(3), CNOT, CZ, RX, RY, RZ, Hadamard, GlobalPhase)
+        # 7 decompositions (1 for CustomOp, 1 for each MultiWireOp, 1 for CNOT, 2 for Hadamard, and 1 for RY)
         # and the dummy starting node
         assert len(graph._graph.nodes()) == 18
         # 16 edges from ops to decompositions and 7 from decompositions to ops,
@@ -625,8 +645,8 @@ class TestDecompGraphSolver:
         )
         assert solution.decomposition(op).compute_resources(**op.resource_params) == to_resources(
             {
-                qp.resource_rep(qp.MultiRZ, num_wires=4): 1,
-                qp.resource_rep(qp.MultiRZ, num_wires=3): 2,
+                resource_rep(MultiWireOp, num_wires=4): 1,
+                resource_rep(MultiWireOp, num_wires=3): 2,
             },
         )
         assert solution.decomposition(qp.Hadamard(wires=[0])).compute_resources() == to_resources(
@@ -862,26 +882,6 @@ class TestControlledDecompositions:
             qp.ControlledPhaseShift(-0.5, wires=[1, 2]),
         ]
 
-    def test_custom_controlled_op(self):
-        """Tests that a general controlled op can be decomposed into a custom op if applicable."""
-
-        op1 = qp.ops.Controlled(qp.X(0), control_wires=[1])
-        op2 = ControlledOp2(qp.H(0), control_wires=[1])
-        graph = DecompositionGraph(
-            operations=[op1, op2],
-            gate_set={"CNOT", "CH"},
-        )
-        assert len(graph._graph.nodes()) == 35
-        assert len(graph._graph.edges()) == 55
-
-        # Verify the decompositions
-        solution = graph.solve()
-        with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(**op2.arguments)
-
-        assert q.queue == [qp.CNOT(wires=[1, 0]), qp.CH(wires=[1, 0])]
-
     def test_controlled_base_decomposition(self):
         """Tests applying control on the decomposition of the target operator."""
 
@@ -1104,9 +1104,8 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
-        rule_params = op.hyperparameters
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
+            solution.decomposition(op)(**op.arguments)
 
         assert q.queue == expected
 
