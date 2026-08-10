@@ -12,22 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Build a loadable shared library from a Triton kernel.
+# Portions of this file are derived from Triton:
+# - _compile_kernel: python/triton/tools/compile.py
+#
+# Triton is licensed under the MIT License:
+#
+# Copyright 2018-2020 Philippe Tillet
+# Copyright 2020-2022 OpenAI
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Origin of the code in this module:
-- `_compile_kernel` largely follows Triton's AOT compile flow in
-  `python/triton/tools/compile.py`.
-- the generated launcher C source comes from Triton's
-  `third_party/nvidia/tools/cuda/compile.c` or
-  `third_party/amd/tools/hip/compile.c` templates.
-- `_backend_c_type_for_signature` uses Triton's backend-specific type mapping from
-  `third_party/nvidia/backend/driver.py` or `third_party/amd/backend/driver.py`.
-
-Local code in this module:
-- `build_so` links the final `.so` from Triton's generated C launcher.
-- `_copy_generated_source` adds `#include <stdlib.h>` because Triton's generated
-  `compile.c` templates call `exit(...)` but do not include that header themselves.
-"""
+"""Build a loadable shared library from a Triton kernel."""
 
 from __future__ import annotations
 
@@ -43,9 +55,6 @@ from triton.backends.compiler import GPUTarget
 from triton.tools import compile as triton_compile_tool
 
 
-# Local wrapper around Triton's AOT artifacts: compile the kernel, materialize
-# Triton's generated C launcher source, link the final shared library, then
-# delete temporary sources.
 def build_so(
     kernel,
     *,
@@ -106,7 +115,12 @@ def build_so(
         scratch_path = Path(temp_dir)
         device_c = scratch_path / "device_kernel_aot.c"
 
-        _copy_generated_source(generated_c, device_c)
+        # Triton's generated ``compile.c`` calls ``exit(...)`` but doesn't
+        # include ``<stdlib.h>``, so patch it here.
+        source_text = generated_c.read_text()
+        if "#include <stdlib.h>" not in source_text:
+            source_text = "#include <stdlib.h>\n" + source_text
+        device_c.write_text(source_text)
 
         if backend == "cuda":
             compiler = compiler or os.environ.get("NVCC", "nvcc")
@@ -117,28 +131,23 @@ def build_so(
 
         cmd = [
             compiler,
+            "-fPIC",
             "-shared",
-            "-O2",
+            "-O3",
             "-o",
             str(out_path),
             str(device_c),
         ]
+        if Path(compiler).name == "nvcc":
+            cmd.insert(1, "-Xcompiler")
         if backend == "cuda":
-            cmd[1:1] = ["-Xcompiler", "-fPIC"]
             cmd.append("-lcuda")
-        elif backend == "hip":
-            cmd[1:1] = ["-fPIC"]
-        else:
-            raise ValueError(f"unsupported backend for shared-library compilation: {backend}")
         cmd.extend(cflags)
         subprocess.run(cmd, check=True)
 
     return out_path, generated_symbol
 
 
-# Mostly adapted from Triton's `triton.tools.compile` flow. This function stops
-# after rendering Triton's generated launcher source and returns that artifact
-# to the local shared-library wrapper above.
 def _compile_kernel(
     kernel,
     *,
@@ -179,17 +188,15 @@ def _compile_kernel(
     }
     constants = dict(constexpr)
 
-    # Adapted from Triton's triton.tools.compile: binder setup + ASTSource construction.
+    # Adapted from Triton's python/triton/tools/compile.py:compile_kernel
     kernel.create_binder()
     ast_source = kernel.ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
 
-    # Adapted from Triton's triton.tools.compile: target/backend/options setup and compile call.
-    target_obj = _make_target(target)
+    target_obj = GPUTarget(*target.split(":"))
     backend_impl = triton.compiler.make_backend(target_obj)
     options = backend_impl.parse_options({"num_warps": num_warps, "num_stages": num_stages})
     compile_result = triton.compile(ast_source, target=target_obj, options=options.__dict__)
 
-    # Copied verbatim from Triton's triton.tools.compile: this MVP only supports zero-scratch kernels.
     if getattr(compile_result.metadata, "global_scratch_size", 0) > 0:
         raise RuntimeError(
             "AOT compiling kernels with global scratch requirements is not yet implemented"
@@ -202,12 +209,17 @@ def _compile_kernel(
     func_name = kernel.__name__
     kernel_binary = compile_result.asm[backend_impl.binary_ext]
     binary_hex = str(binascii.hexlify(kernel_binary))[2:-1]
+    if backend == "cuda":
+        from triton.backends.nvidia.driver import ty_to_cpp
+    elif backend == "hip":
+        from triton.backends.amd.driver import ty_to_cpp
+    else:
+        raise ValueError(f"unsupported backend for type mapping: {backend}")
     runtime_signature = ", ".join(
-        f"{_backend_c_type_for_signature(backend, signature[name])} {name}"
+        f"{ty_to_cpp(signature[name].split(':', 1)[0].strip())} {name}"
         for name in runtime_arg_names
     )
 
-    # Adapted from Triton's triton.tools.compile: params fed into Triton's compile.* templates.
     params = {
         "kernel_name": func_name,
         "triton_kernel_name": kernel.__name__,
@@ -234,7 +246,6 @@ def _compile_kernel(
         "backend_name": target_obj.backend,
     }
 
-    # Adapted from Triton's triton.tools.compile: render triton/tools/extra/<backend>/compile.*.
     with tempfile.TemporaryDirectory(prefix="triton_shared_aot_") as temp_dir:
         tmpdir = Path(temp_dir)
         out_base = tmpdir / kernel.__name__
@@ -259,58 +270,3 @@ def _compile_kernel(
         shutil.copyfile(generated_c, kept_c)
 
     return backend, func_name, kept_c
-
-
-def _make_target(target: str) -> GPUTarget:
-    """Parse a Triton target string into a :class:`~triton.backends.compiler.GPUTarget`.
-
-    Args:
-        target (str): Triton target string of the form ``"backend:arch:warp"``.
-
-    Returns:
-        GPUTarget: Parsed Triton GPU target.
-    """
-    backend, arch, warp_size = target.split(":", 2)
-    arch_value: int | str = int(arch) if backend == "cuda" and arch.isdigit() else arch
-    return GPUTarget(backend=backend, arch=arch_value, warp_size=int(warp_size))
-
-
-def _copy_generated_source(source_path: Path, dest_path: Path) -> None:
-    """Copy Triton's generated C source and patch in ``stdlib.h`` if needed.
-
-    Triton's generated ``compile.c`` launcher templates call ``exit(...)`` in
-    their error helpers, but the templates do not include ``<stdlib.h>``.
-    Modern C compilers reject that missing declaration, so we patch the
-    generated source before compiling it.
-
-    Args:
-        source_path (Path): Path to Triton's generated C source.
-        dest_path (Path): Destination path for the patched source.
-    """
-    source_text = source_path.read_text()
-    if "#include <stdlib.h>" not in source_text:
-        source_text = "#include <stdlib.h>\n" + source_text
-    dest_path.write_text(source_text)
-
-
-def _backend_c_type_for_signature(backend: str, signature: str) -> str:
-    """Map a Triton signature type using Triton's backend driver helpers.
-
-    Args:
-        backend (str): Backend name, such as ``"cuda"`` or ``"hip"``.
-        signature (str): Triton type signature.
-
-    Returns:
-        str: C declaration type used by Triton's generated launcher source.
-
-    Raises:
-        ValueError: If ``backend`` is unsupported.
-    """
-    signature = signature.split(":", 1)[0].strip()
-    if backend == "cuda":
-        from triton.backends.nvidia.driver import ty_to_cpp as ty_to_c_decl
-    elif backend == "hip":
-        from triton.backends.amd.driver import ty_to_cpp as ty_to_c_decl
-    else:
-        raise ValueError(f"unsupported backend for type mapping: {backend}")
-    return ty_to_c_decl(signature)

@@ -95,9 +95,68 @@ class TestBuildSo:
         assert symbol_name == "decoder_symbol"
         assert calls["check"] is True
         assert calls["cmd"][0] == "hipcc-custom"
-        assert calls["cmd"][1:6] == ["-fPIC", "-shared", "-O2", "-o", str(out.resolve())]
+        assert calls["cmd"][1:6] == ["-fPIC", "-shared", "-O3", "-o", str(out.resolve())]
         assert calls["cmd"][-1] == "-Wall"
         assert calls["source"].startswith("#include <stdlib.h>\n#include <stdio.h>\n")
+
+    def test_build_so_patches_source_at_most_once(self, monkeypatch, tmp_path):
+        """It should not duplicate stdlib.h if the generated source already has it."""
+        generated_c = tmp_path / "generated.c"
+        generated_c.write_text("#include <stdlib.h>\n#include <stdio.h>\n")
+
+        seen = {}
+        monkeypatch.setattr(
+            builder,
+            "_compile_kernel",
+            lambda *args, **kwargs: ("hip", "decoder_symbol", generated_c),
+        )
+
+        def fake_run(cmd, check):
+            assert check is True
+            seen["source"] = Path(cmd[6]).read_text(encoding="utf-8")
+
+        monkeypatch.setattr(builder.subprocess, "run", fake_run)
+
+        builder.build_so(
+            object(),
+            signature={},
+            constexpr={},
+            target="hip:gfx90a:64",
+            out=str(tmp_path / "decoder.so"),
+            compiler="hipcc-custom",
+        )
+
+        assert seen["source"] == "#include <stdlib.h>\n#include <stdio.h>\n"
+
+    def test_build_so_adds_nvcc_wrapper_and_cuda_link_flag(self, monkeypatch, tmp_path):
+        """It should wrap fPIC for nvcc and link against libcuda for CUDA launchers."""
+        generated_c = tmp_path / "generated.c"
+        generated_c.write_text("#include <stdio.h>\nint kernel(void) { return 0; }\n")
+
+        seen = {}
+        monkeypatch.setattr(
+            builder,
+            "_compile_kernel",
+            lambda *args, **kwargs: ("cuda", "decoder_symbol", generated_c),
+        )
+
+        def fake_run(cmd, check):
+            assert check is True
+            seen["cmd"] = cmd
+
+        monkeypatch.setattr(builder.subprocess, "run", fake_run)
+
+        builder.build_so(
+            object(),
+            signature={},
+            constexpr={},
+            target="cuda:80:32",
+            out=str(tmp_path / "decoder.so"),
+            compiler="/usr/local/cuda/bin/nvcc",
+        )
+
+        assert seen["cmd"][:4] == ["/usr/local/cuda/bin/nvcc", "-Xcompiler", "-fPIC", "-shared"]
+        assert "-lcuda" in seen["cmd"]
 
     def test_build_so_uses_backend_default_compiler(self, monkeypatch, tmp_path):
         """It should fall back to HIPCC when no compiler override is provided."""
@@ -128,45 +187,3 @@ class TestBuildSo:
         )
 
         assert seen["cmd"][0] == "hipcc-from-env"
-
-
-class TestHelpers:
-    """Tests for helper functions in triton_so_builder."""
-
-    def test_make_target_parses_cuda_numeric_arch(self):
-        """CUDA targets should parse the architecture as an integer."""
-        target = builder._make_target("cuda:80:32")
-
-        assert target.backend == "cuda"
-        assert target.arch == 80
-        assert target.warp_size == 32
-
-    def test_make_target_parses_hip_string_arch(self):
-        """HIP targets should keep the architecture string as-is."""
-        target = builder._make_target("hip:gfx90a:64")
-
-        assert target.backend == "hip"
-        assert target.arch == "gfx90a"
-        assert target.warp_size == 64
-
-    def test_copy_generated_source_is_idempotent(self, tmp_path):
-        """It should prepend stdlib.h once and leave it alone after that."""
-        source = tmp_path / "source.c"
-        dest = tmp_path / "dest.c"
-        source.write_text("#include <stdio.h>\n")
-
-        builder._copy_generated_source(source, dest)
-        first = dest.read_text()
-        assert first == "#include <stdlib.h>\n#include <stdio.h>\n"
-
-        builder._copy_generated_source(dest, dest)
-        assert dest.read_text() == first
-
-    def test_backend_c_type_for_signature_rejects_unknown_backend(self):
-        """Only CUDA and HIP backends are supported."""
-        with pytest.raises(ValueError, match="unsupported backend"):
-            builder._backend_c_type_for_signature("cpu", "u64")
-
-    def test_backend_c_type_for_signature_strips_layout_suffix(self):
-        """Signature layout suffixes should be ignored before backend mapping."""
-        assert builder._backend_c_type_for_signature("cuda", "u64:16") == "uint64_t"
