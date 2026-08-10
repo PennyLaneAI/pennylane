@@ -116,7 +116,12 @@ class TestCollectResourceOps:
         assert ops == {
             _ctrl_abstract(qp.X, Wire[1]),
             _ctrl_abstract(qp.RX, Wire[1]),
-            qp.ctrl(qp.MultiRZ(Float, Wire[3]), Wire[1]),
+            qp.ctrl(
+                qp.MultiRZ(Float, Wire[3]),
+                Wire[1],
+                control_values=qp.typing.Bool[1],
+                work_wires=Wire[0],
+            ),
         }
 
     @pytest.mark.unit

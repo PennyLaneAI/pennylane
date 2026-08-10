@@ -23,6 +23,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from inspect import signature
+from types import NoneType
 from typing import Any, Literal, overload
 
 import numpy as np
@@ -43,6 +44,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -159,7 +161,8 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     """
 
     if (active_jit := compiler.active_compiler()) and not (
-        isinstance(op, Operator2) and op.is_abstract
+        isinstance(op, Operator2)
+        and all(isinstance(a, (AbstractArray, AbstractWires, NoneType)) for a in flatten(op)[0])
     ):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()

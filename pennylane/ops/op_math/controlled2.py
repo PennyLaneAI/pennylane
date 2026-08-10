@@ -51,6 +51,25 @@ from .symbolicop2 import SymbolicOp2
 # pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
 
+def _setup_control_values(control_values, num_control_wires):
+    if control_values is None:
+        control_values = [True] * num_control_wires
+
+    if isinstance(control_values, (int, bool)):
+        control_values = [bool(control_values)]
+
+    if len(control_values) != num_control_wires:
+        raise ValueError("control_values should be the same length as control_wires")
+
+    if isinstance(control_values, (list, tuple)):
+        control_values = qp.math.asarray(control_values, like=control_values[0])
+
+    if not isinstance(control_values, AbstractArray):
+        control_values = qp.math.cast(control_values, dtype=bool)
+
+    return control_values
+
+
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
     """The base class for controlled operators.
 
@@ -155,19 +174,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if work_wire_type not in accepted:
             raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
 
-        if control_values is None:
-            control_values = [True] * len(control_wires)
-
-        if isinstance(control_values, (int, bool)):
-            control_values = [bool(control_values)]
-
-        if len(control_values) != len(control_wires):
-            raise ValueError("control_values should be the same length as control_wires")
-
-        if isinstance(control_values, (list, tuple)):
-            control_values = qp.math.asarray(control_values, like=control_values[0])
-
-        control_values = qp.math.cast(control_values, dtype=bool)
+        control_values = _setup_control_values(control_values, len(control_wires))
 
         self._base = base
         self._control_wires = control_wires
@@ -789,14 +796,6 @@ def _ctrl_abstract(
             num_control_wires=len(control_wires),
             num_zero_control_values=num_zero_control_values,
             num_work_wires=len(work_wires),
-            work_wire_type=work_wire_type,
-        )
-
-    if not num_zero_control_values:
-        return qp.ctrl(
-            op,
-            control=control_wires,
-            work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
 

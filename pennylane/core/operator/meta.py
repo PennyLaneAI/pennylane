@@ -19,11 +19,8 @@ See ``explanations.md`` for technical explanations of how this works.
 
 from abc import ABCMeta
 from inspect import Signature, signature
-from numbers import Number
 
 from pennylane.capture import enabled
-from pennylane.pytrees import flatten
-from pennylane.typing import AbstractArray, AbstractWires
 
 
 def _stop_autograph(f):

@@ -24,6 +24,7 @@ from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
+from types import NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
@@ -217,8 +218,6 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
-        self._is_abstract = False
-
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
@@ -235,11 +234,6 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
     # ------------------------------------------------------------------------
-
-    @property
-    def is_abstract(self) -> bool:
-        """Whether the operator has abstract args."""
-        return self._is_abstract
 
     @property
     def arguments(self) -> dict[str, Any]:
@@ -1049,7 +1043,10 @@ class Operator2(metaclass=OperatorMeta):
         return f"{self.name}({inputs})"
 
     def __str__(self) -> str:
-        if self.is_abstract and self.has_fixed_sig:
+        if self.has_fixed_sig and all(
+            isinstance(a, (AbstractArray, AbstractWires, NoneType)) for a in flatten(self)[0]
+        ):
+            # all leaves abstract
             return self.name
         return repr(self)
 
@@ -1312,7 +1309,12 @@ class Operator2(metaclass=OperatorMeta):
         if not enabled():
             return
 
-        _abstract_args_to_symbolic_arrays(self._bound_args)
+        # if AbstractArray *not* promoted to a tracer but left as is by symbolic_array
+        # we are not tracing, but just have capture enabled.
+        # no need to bind tracer, we can leave early
+        abstract_array_remained = _abstract_args_to_symbolic_arrays(self._bound_args)
+        if abstract_array_remained:
+            return
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
         wire_lens = []
@@ -1754,6 +1756,15 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
 
 
 def _abstract_args_to_symbolic_arrays(bound_args):
+    """This function in-place mutates the bound args, substituting any AbstractArray or AbstractWires
+    found to be tracers without associated values.  This allows us to capture them for
+    resource estimation in catalyst.
+
+    If we are not tracing, symbolic_array just returns another AbstractArray. These are not compatible
+    with jax, and *cannot*  be passed to operator_p.bind .  So instead, we exit early and do not
+    call operator_p.bind if any concrete  AbstractArray's are left.
+
+    """
     for name, value in bound_args.arguments.items():
         partial_leaves, _ = flatten(value, is_leaf=_is_op)
         _ = pop_op_eqns(filter(_is_op, partial_leaves))
@@ -1761,10 +1772,17 @@ def _abstract_args_to_symbolic_arrays(bound_args):
         leaves = list(leaves)
         for i, l in enumerate(leaves):
             if isinstance(l, AbstractWires):
-                leaves[i] = [symbolic_array((), int) for _ in range(l.num_wires)]
+                new_wires = [symbolic_array((), int) for _ in range(l.num_wires)]
+                if new_wires and isinstance(new_wires[0], AbstractArray):
+                    return True
+                leaves[i] = new_wires
             elif isinstance(l, AbstractArray):
-                leaves[i] = symbolic_array(l.shape, l.dtype)
+                new_arg = symbolic_array(l.shape, l.dtype)
+                if isinstance(new_arg, AbstractArray):
+                    return True
+                leaves[i] = new_arg
         bound_args.arguments[name] = unflatten(leaves, struct)
+    return False
 
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
@@ -1941,8 +1959,6 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 @abstractify.register(Operator2)
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    if op.is_abstract:
-        return op
 
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
@@ -1950,7 +1966,6 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
-    print(new_args)
     return op_cls(**new_args)
 
 

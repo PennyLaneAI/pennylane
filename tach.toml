@@ -143,7 +143,7 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.wires"
-depends_on = ["pennylane.math", "pennylane.pytrees"]
+depends_on = ["pennylane.math", "pennylane.pytrees", "pennylane.typing"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 

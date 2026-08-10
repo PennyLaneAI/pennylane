@@ -37,6 +37,12 @@ else:
 class TestWires:
     """Tests for the ``Wires`` class."""
 
+    def test_AbstractWires_handled(self):
+        """Test that AbstractWires are left untouched."""
+
+        aw = qp.typing.AbstractWires(3)
+        assert Wires(aw) == aw
+
     def test_error_if_wires_none(self):
         """Tests that a TypeError is raised if None is given as wires."""
         with pytest.raises(TypeError, match="Must specify a set of wires."):
