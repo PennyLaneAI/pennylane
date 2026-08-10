@@ -730,11 +730,8 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     resources[qp.SWAP] += num_wires
 
     num_toffolis = int(num_wires / 10) + 1
-    toffoli_params = {"num_control_wires": 2, "num_work_wires": 1, "work_wire_type": "zeroed"}
-    mcx_rep_0 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=0, **toffoli_params)
-    resources[mcx_rep_0] += max(num_toffolis // 2, 1)
-    mcx_rep_1 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=1, **toffoli_params)
-    resources[mcx_rep_1] += max(num_toffolis - num_toffolis // 2, 1)
+    mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
+    resources[mcx_rep] += num_toffolis
 
     return resources
 
