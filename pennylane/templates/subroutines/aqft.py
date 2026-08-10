@@ -126,9 +126,10 @@ class AQFT(Operator2):
     arg_specs = {"wires": Wire[-1]}
     wire_sizes = (None,)
 
-    @staticmethod
-    def _validate_order(order: int, n_wires: int) -> int:
-        """Validate the order against the number of wires and return the resolved order."""
+    def __init__(self, order: int, wires: WiresLike) -> None:
+        wires = Wires(wires)
+        n_wires = len(wires)
+
         if not isinstance(order, (int, np.integer)):
             warnings.warn(f"The order must be an integer. Using order = {round(order)}.")
             order = round(order)
@@ -145,12 +146,7 @@ class AQFT(Operator2):
         if order == 0:
             warnings.warn("order=0, applying Hadamard transform")
 
-        return int(order)
-
-    def __init__(self, order: int, wires: WiresLike) -> None:
-        wires = Wires(wires)
-        order = self._validate_order(order, len(wires))
-        super().__init__(order, wires)
+        super().__init__(int(order), wires)
 
 
 def _AQFT_resources(order, wires):
