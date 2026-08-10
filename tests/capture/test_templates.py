@@ -1830,7 +1830,7 @@ def filter_fn(member: Any) -> bool:
 
     # exception: BasisEmbedding is an alias of BasisState, so it would be filtered away
     # by the logic below
-    if member is getattr(qp.templates, "BasisEmbedding", None):
+    if member is qp.BasisEmbedding:
         return True
 
     return member.__module__.startswith("pennylane.templates") and issubclass(
