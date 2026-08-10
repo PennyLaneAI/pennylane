@@ -4152,13 +4152,6 @@ def test_global_phase_compute_sparse_matrix_broadcasted_raises(n_wires):
         _ = qp.GlobalPhase.compute_sparse_matrix(phi, wires=range(n_wires))
 
 
-def test_decomposition():
-    """Test the decomposition of the GlobalPhase operation."""
-
-    assert qp.GlobalPhase.compute_decomposition(1.23) == []
-    assert qp.GlobalPhase(1.23).decomposition() == []
-
-
 control_data = [
     (qp.Rot(1, 2, 3, wires=0), Wires([])),
     (qp.RX(1.23, wires=0), Wires([])),

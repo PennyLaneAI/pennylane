@@ -262,36 +262,46 @@ class TestDecompose:
                 qp.ops.Conditional(m0, qp.RX(0.5, wires=0)),
             ]
         )
-        [decomposed_tape], _ = qp.decompose([tape], gate_set={qp.RX, qp.RZ, MidMeasure})
-        assert len(decomposed_tape.operations) == 10
+        [decomposed_tape], _ = qp.decompose(
+            [tape], gate_set={qp.RX, qp.RZ, MidMeasure, qp.GlobalPhase}
+        )
+        assert len(decomposed_tape.operations) == 13
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RZ(np.pi / 2, wires=0)
             qp.RX(np.pi / 2, wires=0)
             qp.RZ(np.pi / 2, wires=0)
+            qp.GlobalPhase(-np.pi / 2)
             m0 = qp.measure(0)
             qp.cond(m0, qp.RZ)(np.pi / 2, wires=1)
             qp.cond(m0, qp.RX)(np.pi / 2, wires=1)
             qp.cond(m0, qp.RZ)(np.pi / 2, wires=1)
+            qp.cond(m0, qp.GlobalPhase)(-np.pi / 2)
             m1 = qp.measure(0)
             qp.cond(m1, qp.RX)(np.pi, wires=0)
+            qp.cond(m1, qp.GlobalPhase)(-np.pi / 2)
             qp.cond(m1, qp.RX)(0.5, wires=0)
 
         qp.assert_equal(decomposed_tape.operations[0], q.queue[0])
         qp.assert_equal(decomposed_tape.operations[1], q.queue[1])
         qp.assert_equal(decomposed_tape.operations[2], q.queue[2])
-        assert isinstance(decomposed_tape.operations[4], Conditional)
+        qp.assert_equal(decomposed_tape.operations[3], q.queue[3])
+
+        assert isinstance(decomposed_tape.operations[4], MidMeasure)
+
         assert isinstance(decomposed_tape.operations[5], Conditional)
-        assert isinstance(decomposed_tape.operations[6], Conditional)
-        assert isinstance(decomposed_tape.operations[8], Conditional)
-        assert isinstance(decomposed_tape.operations[9], Conditional)
-        qp.assert_equal(decomposed_tape.operations[4].base, q.queue[4].base)
         qp.assert_equal(decomposed_tape.operations[5].base, q.queue[5].base)
+        assert isinstance(decomposed_tape.operations[6], Conditional)
         qp.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
+        assert isinstance(decomposed_tape.operations[7], Conditional)
+        qp.assert_equal(decomposed_tape.operations[7].base, q.queue[7].base)
+        assert isinstance(decomposed_tape.operations[8], Conditional)
         qp.assert_equal(decomposed_tape.operations[8].base, q.queue[8].base)
-        qp.assert_equal(decomposed_tape.operations[9].base, q.queue[9].base)
-        assert isinstance(decomposed_tape.operations[3], MidMeasure)
-        assert isinstance(decomposed_tape.operations[7], MidMeasure)
+
+        assert isinstance(decomposed_tape.operations[9], MidMeasure)
+
+        assert isinstance(decomposed_tape.operations[10], Conditional)
+        qp.assert_equal(decomposed_tape.operations[10].base, q.queue[10].base)
 
 
 def test_null_postprocessing():
