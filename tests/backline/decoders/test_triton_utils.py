@@ -33,9 +33,7 @@ def _has_cuda_target() -> bool:
 
 pytestmark = [
     pytest.mark.gpu,
-    pytest.mark.skipif(
-        not _has_cuda_target(), reason="Triton decoder tests require a CUDA device"
-    ),
+    pytest.mark.skipif(not _has_cuda_target(), reason="Triton decoder tests require a CUDA device"),
 ]
 
 from pennylane.backline.decoders.triton.bp_iters import (
