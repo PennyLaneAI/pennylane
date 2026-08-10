@@ -869,12 +869,15 @@
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   - Multi-qubit, parametric operators are ported:
   - Templates are ported:
-    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`
+    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`, `~.SelectPauliRot`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
+  [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
+  [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   - Single-qubit parametric operators are ported:
     - `~.U1`, `~.U2`, `~.U3`
   [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
@@ -959,6 +962,7 @@
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
     [(#9820)](https://github.com/PennyLaneAI/pennylane/pull/9820)
     [(#9756)](https://github.com/PennyLaneAI/pennylane/pull/9756)
+    [(#9976)](https://github.com/PennyLaneAI/pennylane/pull/9976)
   - Compatibility with the `drawer` module.
     [(#9849)](https://github.com/PennyLaneAI/pennylane/pull/9849)
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
