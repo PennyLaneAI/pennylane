@@ -20,8 +20,8 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, for_loop, math
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.core.operator import Operator2
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import Complex, Int, Wire
 
