@@ -130,7 +130,7 @@ class AQFT(Operator2):
         wires = Wires(wires)
         n_wires = len(wires)
 
-        if not isinstance(order, (int, np.integer)):
+        if not isinstance(order, int):
             warnings.warn(f"The order must be an integer. Using order = {round(order)}.")
             order = round(order)
 
