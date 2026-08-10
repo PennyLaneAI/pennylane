@@ -65,6 +65,9 @@ def _process(wires):
     if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
+    if math.get_interface(wires) == "numpy" and hasattr(wires, "tolist") and wires.ndim == 0:
+        wires = wires.tolist()
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
@@ -75,9 +78,15 @@ def _process(wires):
         # if not iterable, interpret as single wire label
         try:
             hash(wires)
-        except TypeError as e:
+        except TypeError as e:  # pragma: no cover
             # if object is not hashable, cannot identify unique wires
             # Check for unhashable type error - format changed in Python 3.14
+            # since this branch corresponds to a non-iterable and non-hashable object,
+            # and the only thing in Python that fits that description is an numpy array
+            # of a scalar, which we do have special handling for. This branch cannot be
+            # reasonably tested without making a convoluted example, which is probably
+            # not worth it, adding a pragma: no cover here
+            # pragma: no cover
             if "unhashable" in str(e):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
