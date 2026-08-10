@@ -604,7 +604,7 @@ class TestPlxprToTape:
             qp.RX(x, 0)
 
         def elif_fn(x):
-            qp.IsingXX(x, 0)
+            qp.IsingXX(x, [0, 1])
 
         def f(x, value):
             m0 = qp.measure(0)
