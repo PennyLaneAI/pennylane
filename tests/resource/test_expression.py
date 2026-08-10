@@ -28,18 +28,18 @@ from pennylane.resource.expression import (
 def test_maybe_collapse():
     """Test that _maybe_collapse returns the expected type based on the input data."""
     zero = _maybe_collapse({}, set(), skip_copy=True, skip_normalization=False)
-    assert zero is 0
+    assert zero == 0
     assert isinstance(zero, int)
 
     # Check for literal 0
-    assert _maybe_collapse({(): 0}, set(), skip_copy=True, skip_normalization=False) is 0
+    assert _maybe_collapse({(): 0}, set(), skip_copy=True, skip_normalization=False) == 0
 
     three = _maybe_collapse({(): 3}, set(), skip_copy=True, skip_normalization=False)
-    assert three is 3
+    assert three == 3
     assert isinstance(three, int)
 
     nega = _maybe_collapse({(): -1}, set(), skip_copy=True, skip_normalization=False)
-    assert nega is -1
+    assert nega == -1
     assert isinstance(nega, int)
 
     exp = _maybe_collapse({("x",): 1}, set(), skip_copy=True, skip_normalization=False)
@@ -97,7 +97,7 @@ class TestExpression:
             Expression("foo")
 
     def test_init_skip_normalization(self):
-        """Test that the __init__ method can skip normalization when _skip_normalization is True."""
+        """Test that the __init__ method can skip normalization when _skip_normalization == True."""
         data = {("x", "y"): 2, ("y", "x"): 3, ("z",): 1, ("foo",): 0, (): 4}
         expr = Expression(data, _skip_normalization=True)
         assert expr._data == data
@@ -297,11 +297,11 @@ class TestExpressionMath:
         expr = Expression({(): 2})
         new_expr = expr * 3
         assert isinstance(new_expr, int)
-        assert new_expr is 6
+        assert new_expr == 6
 
         new_expr = expr * Expression({(): 3})
         assert isinstance(new_expr, int)
-        assert new_expr is 6
+        assert new_expr == 6
 
     def test_mul_invalid(self, sample_expr):
         # pylint: disable=pointless-statement

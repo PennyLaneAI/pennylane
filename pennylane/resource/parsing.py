@@ -122,7 +122,7 @@ def _mlir_resources_to_specs_resources(
             quantum_operations[gate_name] += count
 
     # Extract extended fields
-    extended_fields = copy.copy(resources["extended_fields"])
+    extended_fields = copy.deepcopy(resources["extended_fields"])
 
     # Process function calls (both static and dynamic)
     # Recurses through all function calls and combines resources with the appropriate multiplicative factors
