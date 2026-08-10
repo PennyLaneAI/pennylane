@@ -109,9 +109,11 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
         return mat
 
     if not wires:
+        scalar = mat[0, 0] if math.ndim(mat) > 0 else mat
         n_wires = len(wire_order) if wire_order else 0
-        eye_mat = math.eye(2**n_wires, like=mat)
-        return mat * eye_mat if math.ndim(mat) > 0 else mat[0, 0] * eye_mat
+        if math.get_interface(mat) == "scipy":
+            return (scalar * eye(2**n_wires, format="coo")).asformat(sparse_format)
+        return scalar * math.eye(2**n_wires, like=mat)
 
     wires = list(wires)
     wire_order = list(wire_order)
