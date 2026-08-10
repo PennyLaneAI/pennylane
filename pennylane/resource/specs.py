@@ -137,10 +137,10 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     try:
         from catalyst import QJIT
-    except ImportError:
+    except ImportError as exc:
         raise ValueError(
-            f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}",
-        )
+            f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}"
+        ) from exc
 
     if level is None:
         level = "device"
@@ -149,9 +149,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
         original_qnode = qjit.original_function
     else:
-        raise ValueError(
-            f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}",
-        )
+        raise ValueError(f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}")
 
     device = original_qnode.device
 
@@ -187,7 +185,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
 def specs(
     qnode,
-    level: str | int | slice[int] | Iterable[int | str] | None = None,
+    level: str | int | Iterable[int | str] | None = None,
     compute_depth: bool | None = None,
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides the specifications of a quantum circuit.

@@ -32,15 +32,16 @@ Extracting properties of a circuit
 
 The :func:`~pennylane.specs` transform takes a
 QNode and creates a function that returns
-details about the QNode, including depth, number of gates, and number of
-gradient executions required.
+details about the QNode, including circuit depth,
+number of gates and measurements, and device info.
 
 For example:
 
 .. code-block:: python
 
-    dev = qp.device('default.qubit', wires=4)
+    dev = qp.device('lightning.qubit', wires=4)
 
+    @qp.qjit
     @qp.qnode(dev, diff_method='parameter-shift')
     def circuit(x, y):
         qp.RX(x[0], wires=0)
@@ -57,21 +58,21 @@ details and resource information:
 >>> y = qp.numpy.array(0.4, requires_grad=False)
 >>> specs_func = qp.specs(circuit)
 >>> specs_func(x, y)
-Device: default.qubit
+Device: lightning.qubit
 Device wires: 4
 Shots: Shots(total=None)
-Level: gradient
+Level: device
 <BLANKLINE>
 Quantum operations:
 - Total: 4
-  - RX: 1
-  - Toffoli: 1
   - CRY: 1
+  - Toffoli: 1
   - Rot: 1
+  - RX: 1
 Measurement processes:
-- expval(PauliZ): 1
 - expval(PauliX): 1
-Wire allocations: 3
+- expval(PauliZ): 1
+Wire allocations: 4
 Circuit Depth: 4
 
 

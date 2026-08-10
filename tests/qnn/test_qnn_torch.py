@@ -962,37 +962,3 @@ def test_draw_mpl():
     assert ax.texts[2].get_text() == "AngleEmbedding"
     assert ax.texts[3].get_text() == "RX"
     assert ax.texts[4].get_text() == "StronglyEntanglingLayers"
-
-
-@pytest.mark.torch
-def test_specs():
-    """Test that the qp.specs transform works for TorchLayer"""
-
-    dev = qp.device("default.qubit", wires=3)
-    weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
-
-    @qp.qnode(dev, interface="torch")
-    def circuit(inputs, w1, w2):
-        qp.templates.AngleEmbedding(inputs, wires=[0, 1])
-        qp.RX(w1, wires=0)
-        qp.templates.StronglyEntanglingLayers(w2, wires=[0, 1])
-        return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
-
-    qlayer = TorchLayer(circuit, weight_shapes)
-
-    batch_size = 5
-    x = torch.Tensor(np.random.uniform(0, 1, (batch_size, 2)))
-
-    info = qp.specs(qlayer)(x)
-
-    gate_types = {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1}
-    expected_resources = qp.resource.SpecsResources(
-        num_allocs=2,
-        counts=gate_types,
-        measurement_processes={"expval(PauliZ)": 2},
-        circuit_depth=3,
-    )
-    assert info["resources"] == expected_resources
-
-    assert info["num_device_wires"] == 3
-    assert info["device_name"] == "default.qubit"

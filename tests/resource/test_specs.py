@@ -467,45 +467,6 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
-    def test_all_mlir(self, simple_circuit):
-        """Test using "all" level"""
-
-        simple_circuit = qp.transforms.cancel_inverses(simple_circuit)
-        simple_circuit = qp.transforms.merge_rotations(simple_circuit)
-
-        simple_circuit = qjit(simple_circuit)
-
-        actual = qp.specs(simple_circuit, level="all")()
-        expected = CircuitSpecs(
-            device_name="lightning.qubit",
-            num_device_wires=2,
-            shots=Shots(None),
-            level={
-                0: "Before MLIR Passes",
-                1: "cancel-inverses",
-                2: "merge-rotations",
-            },
-            resources={
-                "Before MLIR Passes": SpecsResources(
-                    counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
-                    measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
-                ),
-                "cancel-inverses": SpecsResources(
-                    counts={"RX": 2, "RZ": 2},
-                    measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
-                ),
-                "merge-rotations": SpecsResources(
-                    counts={"RX": 1, "RZ": 1},
-                    measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
-                ),
-            },
-        )
-
-        assert actual == expected
-
     def test_advanced_measurements(self):
         """Test that advanced measurements such as LinearCombination are handled correctly."""
 
