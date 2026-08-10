@@ -32,8 +32,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops import CNOT, CZ, BasisState, PauliMeasure, X, cond, ctrl, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.embeddings import BasisEmbedding
