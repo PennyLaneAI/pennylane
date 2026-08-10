@@ -17,9 +17,9 @@
 from functools import partial
 
 import pytest
-from jax import numpy as jnp
 
 import pennylane as qp
+from pennylane import numpy as pnp
 from pennylane import qjit
 from pennylane.core.shots import Shots
 from pennylane.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
@@ -137,7 +137,7 @@ class TestDeviceLevelSpecs:
         """Test a complex case of qp.specs() against PennyLane"""
 
         dev = qp.device("lightning.qubit", wires=4)
-        U = 1 / jnp.sqrt(2) * jnp.array([[1, 1], [1, -1]], dtype=jnp.complex128)
+        U = 1 / pnp.sqrt(2) * pnp.array([[1, 1], [1, -1]], dtype=pnp.complex128)
 
         @qp.qnode(dev)
         def circuit():
@@ -190,8 +190,8 @@ class TestDeviceLevelSpecs:
         @qp.qnode(dev)
         def circuit():
             qp.PauliRot(0.42, pauli_word="Y", wires=0)  # arbitrary angle
-            qp.PauliRot(jnp.pi / 2, pauli_word="YZ", wires=[0, 1])  # pi/2 angle
-            qp.PauliRot(2 * jnp.pi, pauli_word="X", wires=0)  # identity
+            qp.PauliRot(pnp.pi / 2, pauli_word="YZ", wires=[0, 1])  # pi/2 angle
+            qp.PauliRot(2 * pnp.pi, pauli_word="X", wires=0)  # identity
             qp.pauli_measure("X", wires=0)
             return qp.probs()
 
@@ -354,7 +354,7 @@ class TestPassByPassSpecs:
         # Test resources at each level match individual specs calls
         for i, res in enumerate(actual["resources"].values()):
             single_level_specs = qp.specs(simple_circuit, level=i)()
-            assert res == single_level_specs.res
+            assert res == single_level_specs.resources
 
     def test_user_level(self, simple_circuit):
         """Test that 'user' level is handled correctly."""
