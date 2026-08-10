@@ -13,20 +13,21 @@
 # limitations under the License.
 r"""Contains the SumOfSlatersPrep2 template, a variant of qp.SumOfSlatersPrep that handles work
 wires explicitly."""
-from pennylane import math
-from pennylane.typing import Complex, Wire, Int
+
 from collections import defaultdict
-from pennylane.decomposition.resources import resource_rep
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
 import numpy as np
 
 import pennylane as qp
+from pennylane import math
+from pennylane.decomposition.resources import resource_rep
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _preprocess,
     _sos_state_prep_with_wires,
-    select_sos_rows
+    select_sos_rows,
 )
+from pennylane.typing import Complex, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -315,7 +316,7 @@ class SumOfSlatersPrep2(qp.core.operator.Operation):
         self.hyperparameters["identification_wires"] = Wires(identification_wires)
         self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
         self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
-    
+
     @staticmethod
     def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
         """Compute the register sizes required for ``SumOfSlatersPrep``, for given
@@ -335,7 +336,9 @@ class SumOfSlatersPrep2(qp.core.operator.Operation):
         """
         _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
         num_bits, num_entries = vtilde_bits.shape
-        return SumOfSlatersPrep2._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
+        return SumOfSlatersPrep2._required_register_sizes_from_nums(
+            num_entries, num_bits, num_wires
+        )
 
     @staticmethod
     def _required_register_sizes_from_nums(num_entries: int, num_bits: int, num_wires: int):
