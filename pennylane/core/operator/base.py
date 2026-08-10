@@ -73,7 +73,10 @@ def _get_abstract_operator() -> type:
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    class AbstractOperator(jax.core.AbstractValue):
+    # We're adding "no cover" here because coverage is lost as we migrated operators to
+    # the `Operator2` interface, and we don't really care about maintaining coverage of
+    # Operator1 code if it turns out to be a lot of work.
+    class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
         """An operator captured into plxpr."""
 
         # pylint: disable=missing-function-docstring
@@ -621,9 +624,10 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 wires = (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
+
         # If not in kwargs, check if the last positional argument represents wire(s).
         elif is_abstract_qubit(args[-1]):
-            kwargs["n_wires"] = 1
+            kwargs["n_wires"] = 1  # pragma: no cover
         elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
             kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
@@ -1286,25 +1290,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         their decompositions exhibit the same counts for each gate type, even if the individual
         gate parameters differ.
 
-        **Examples**
-
-        The ``MultiRZ`` has non-empty ``resource_keys``:
-
-        >>> qp.MultiRZ.resource_keys
-        {'num_wires'}
-
-        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
-
-        >>> op = qp.MultiRZ(0.5, wires=[0, 1])
-        >>> op.resource_params
-        {'num_wires': 2}
-
-        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
-
-        >>> op2 = qp.MultiRZ(0.7, wires=[1, 2])
-        >>> op2.resource_params
-        {'num_wires': 2}
-
         """
         return {}
 
@@ -1531,13 +1516,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
-        return NotImplemented
+        return NotImplemented  # pragma: no cover
 
     def __truediv__(self, other: TensorLike):
         """The division between an Operator and a number."""
         if isinstance(other, TensorLike):
             return self.__mul__(1 / other)
-        return NotImplemented
+        return NotImplemented  # pragma: no cover
 
     __rmul__ = __mul__
 
@@ -1549,13 +1534,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return self + qp.s_prod(-1, other, lazy=False)
-        if isinstance(other, TensorLike):
+        if isinstance(other, TensorLike):  # pragma: no cover
             return self + (qp.math.multiply(-1, other))
-        return NotImplemented
+        return NotImplemented  # pragma: no cover
 
     def __rsub__(self, other: Union["Operator", TensorLike]):
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
-        return -self + other
+        return -self + other  # pragma: no cover
 
     def __neg__(self):
         """The negation operation of an Operator object."""

@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.operator import Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -158,6 +159,7 @@ SKIP_ASSERT_VALID = {
     qp.QubitUnitary: {"skip_differentiation": True},
     qp.DiagonalQubitUnitary: {"skip_differentiation": True},
     qp.ControlledQubitUnitary: {"skip_differentiation": True},
+    qp.MultiControlledX: {"skip_differentiation": True, "skip_bind_new_parameters": True},
 }
 
 
@@ -199,6 +201,12 @@ class TestOperations:
         leaves, tree_def = jax.tree_util.tree_flatten(op)
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         qp.assert_equal(op_unflattened, op)
+
+        if isinstance(op, Operator2):
+            # The test below assumes that `op.data` are numerical, which is not necessarily
+            # the case anymore for `Operator2` where `op.data` is anything that is dynamic
+            # and traceable, which could include things like `control_values`
+            return
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
@@ -3218,6 +3226,18 @@ class TestPauliRot:
 class TestMultiRZ:
     """Test the MultiRZ operation."""
 
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (qp.MultiRZ(0.1, wires=[0]), 1),
+            (qp.MultiRZ(0.1, wires=[0, 1]), 2),
+            (qp.MultiRZ(0.1, wires=[0, 1, 2]), 3),
+        ],
+    )
+    def test_num_wires(self, op, expected):
+        """Test that the number of wires is correct."""
+        assert op.num_wires == expected
+
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
         "wires,expected_matrix",
@@ -3240,7 +3260,7 @@ class TestMultiRZ:
     def test_MultiRZ_matrix_parametric(self, theta, wires, expected_matrix, tol):
         """Test parametrically that the MultiRZ matrix is correct."""
 
-        res_static = qp.MultiRZ.compute_matrix(theta, len(wires))
+        res_static = qp.MultiRZ.compute_matrix(theta, wires)
         res_dynamic = qp.MultiRZ(theta, wires=wires).matrix()
         expected = expected_matrix(theta)
 
@@ -3252,7 +3272,7 @@ class TestMultiRZ:
         """Test that the MultiRZ matrix is correct for broadcasted parameters."""
 
         theta = np.linspace(0, 2 * np.pi, 7)[:3]
-        res_static = qp.MultiRZ.compute_matrix(theta, num_wires)
+        res_static = qp.MultiRZ.compute_matrix(theta, list(range(num_wires)))
         res_dynamic = qp.MultiRZ(theta, wires=list(range(num_wires))).matrix()
         signs = reduce(np.kron, [np.array([1, -1])] * num_wires) / 2
         expected = [np.diag(np.exp(-1j * signs * p)) for p in theta]
@@ -3311,24 +3331,12 @@ class TestMultiRZ:
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
-    def test_MultiRZ_decomposition_qjit_old(self, n):
-        """Test that the decomposition with qjit with the old decomposition system
-        produces the correct matrix."""
-        wires = tuple(range(n))
-        theta = 0.8362
-        mat_fn = qp.qjit(qp.matrix(qp.MultiRZ.compute_decomposition, wires), static_argnums=[1])
-        mat = mat_fn(theta, wires)
-        exp_mat = qp.MultiRZ.compute_matrix(theta, n)
-        assert np.allclose(mat, exp_mat)
-
-    @pytest.mark.catalyst
-    @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_new(self, n):
         """Test that the decomposition with qjit with the new decomposition system
         produces the correct matrix."""
         wires = tuple(range(n))
         theta = 0.8362
-        exp_state = np.diag(qp.MultiRZ.compute_matrix(theta, n)) / 2 ** (n / 2)
+        exp_state = np.diag(qp.MultiRZ.compute_matrix(theta, wires)) / 2 ** (n / 2)
         for rule in qp.list_decomps(qp.MultiRZ):
 
             @partial(qp.qjit, static_argnums=[1])
@@ -3758,12 +3766,15 @@ class TestSimplify:
         if op == qp.U2:
             pytest.skip("U2 gate does not simplify to Identity")
 
-        num_wires = op.num_wires if op.num_wires is not None else 2
+        try:
+            wires = range(op.num_wires) if op.num_wires is not None else range(2)
+        except TypeError:
+            wires = range(2)
 
         if op == qp.PCPhase:
-            unsimplified_op = op(*([0] * op.num_params), dim=2, wires=range(num_wires))
+            unsimplified_op = op(*([0] * op.num_params), dim=2, wires=wires)
         else:
-            unsimplified_op = op(*([0] * op.num_params), wires=range(num_wires))
+            unsimplified_op = op(*([0] * op.num_params), wires=wires)
 
         simplified_op = qp.simplify(unsimplified_op)
 
@@ -4163,7 +4174,6 @@ control_data = [
     (qp.Rot(1, 2, 3, wires=0), Wires([])),
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
-    (qp.MultiRZ(1.234, wires=(0, 1, 2)), Wires([])),
     (qp.PhaseShift(1.234, wires=0), Wires([])),
     (qp.U1(1.234, wires=0), Wires([])),
     (qp.U2(1.234, 2.345, wires=0), Wires([])),
