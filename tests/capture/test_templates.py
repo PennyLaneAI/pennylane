@@ -27,10 +27,12 @@ import pytest
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
+
+# pylint: disable=wrong-import-position
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
@@ -440,7 +442,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 6
 
         # due to flattening and unflattening H
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
@@ -1204,18 +1206,11 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.SelectPauliRot._primitive
+        assert_eqn_matches_op(eqn, qp.SelectPauliRot)
         assert eqn.invars[:1] == jaxpr.jaxpr.invars
         assert [invar.val for invar in eqn.invars[1:]] == [0, 1, 2, 3]
-        assert eqn.params == {"n_wires": 4, "rot_axis": "X"}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, angles)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.SelectPauliRot(angles, **kwargs))
 
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""

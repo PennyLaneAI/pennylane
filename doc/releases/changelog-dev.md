@@ -852,13 +852,16 @@
 
 * The following legacy operators are now ported to the new `~.Operator2` base class.
   - Non-parametric operators are ported:
-    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`
+    - `~.S`, `~.T`, `~.SX`, `~.Y`, `~.CY`, `~.SISWAP`, `~.ISWAP`, `~.ECR`, `~.SWAP`, `~.CSWAP`, `~.H`, `~.CH`, `~.Z`, `~.CZ`, `~.CCZ`, `~.X`, `~.CNOT`, `~.Toffoli`, `~.MultiControlledX`.
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
   [(#9871)](https://github.com/PennyLaneAI/pennylane/pull/9871)
   [(#9850)](https://github.com/PennyLaneAI/pennylane/pull/9850)
   [(#9784)](https://github.com/PennyLaneAI/pennylane/pull/9784)
+  [(#9844)](https://github.com/PennyLaneAI/pennylane/pull/9844)
+  [(#9814)](https://github.com/PennyLaneAI/pennylane/pull/9814)
+  [(#9854)](https://github.com/PennyLaneAI/pennylane/pull/9854)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   - Parametric operators are ported:
@@ -869,13 +872,14 @@
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   - Multi-qubit, parametric operators are ported:
   - Templates are ported:
-    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`
+    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`, `~.SelectPauliRot`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
