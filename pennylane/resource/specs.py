@@ -159,7 +159,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     elif isinstance(level, (int, tuple, list, range, str)):
         if compute_depth:
             warnings.warn(
-                "Cannot calculate circuit depth for intermediate transformations or compilation passes."
+                "Cannot calculate circuit depth for before applying all passes."
                 " To compute the depth, please use level='device'.",
                 UserWarning,
             )
@@ -189,7 +189,7 @@ def specs(
     r"""Provides the specifications of a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
-    about the circuit after applying the specified transforms, expansions, and/or compilation passes.
+    about the circuit after applying the specified passes.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
@@ -219,8 +219,8 @@ def specs(
         The available options for ``levels`` are:
 
         * ``"top"`` or ``0``: The original circuit before any passes have been applied.
-        * ``"user"``: The circuit after all user-specified tape transforms have been applied.
-        * ``"device"``: The circuit after all user-specified tape transforms and device
+        * ``"user"``: The circuit after all user-specified passes have been applied.
+        * ``"device"``: The circuit after all user-specified passes and device
           preprocessing passes have been applied.
         * An ``int``: The circuit after the specified number of user-specified passes have been applied.
         * A marker name (str): The circuit after the specified user-specified pass (and all before
@@ -229,7 +229,7 @@ def specs(
           Should be sorted in ascending pass order with no duplicates. The output will provide
           resource information for each level.
         * The string ``"all"``: To provide information at each stage of compilation with respect to
-          user-specified transforms.
+          user-specified passes.
 
     **Example**
 
@@ -245,25 +245,25 @@ def specs(
             return qp.probs(wires=(0,1))
 
     >>> print(qp.specs(circuit, level="top")(1.23))
-    Device: default.qubit
+    Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: top
+    Level: Before MLIR Passes
     <BLANKLINE>
     Quantum operations:
     - Total: 2
-      - RX: 1
       - CNOT: 1
+      - RX: 1
     Measurement processes:
-    - probs(all wires): 1
+    - probs(2 wires): 1
     Wire allocations: 2
-    Circuit Depth: 2
+    Circuit Depth: Not computed
 
     The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
     access to the data fields. For example:
 
     >>> qp.specs(circuit)(1.23).resources.quantum_operations
-    {'RX': 1, 'CNOT': 1}
+    {'CNOT': 1, 'RX': 1}
 
     .. details::
         :title: Runtime Specs with Catalyst
@@ -306,15 +306,16 @@ def specs(
 
         .. note::
 
-            The resources shown when using ``level="device"`` may reflect changes to the circuit beyond those applied
-            by the user transforms added to the QNode. Theses changes are a result of additional passes applied to ensure
-            compatibility with lowering to MLIR and/or execution on the chosen device.
+            The resources shown when using ``level="device"`` may reflect changes to the circuit
+            beyond the user passes manually applied to the QNode. Theses changes are a result of
+            additional "device preprocessing" passes applied to ensure compatibility with lowering
+            to MLIR and/or execution on the chosen device.
 
     .. details::
         :title: Pass-by-pass Specs with Catalyst
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
-        This can be helpful for determining how circuit resources change after a given transform or compilation pass.
+        This can be helpful for determining how circuit resources change after a given pass.
 
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
@@ -335,9 +336,9 @@ def specs(
         * The string ``"user"``: To provide information after all user-specified passes have been applied
 
         .. note::
-            The ``level`` argument is based on user-applied transforms and compilation passes.
+            The ``level`` argument is based on user-applied passes.
             Level ``0`` always corresponds to the original circuit before any user-specified
-            tape transforms or compilation passes have been applied,
+            passes have been applied,
             and incremental levels correspond to the aggregate of user-specified passes
             in the order in which they are applied.
 
@@ -396,7 +397,7 @@ def specs(
         Wire allocations: 3
         Circuit Depth: Not computed
 
-        A shortcut to access the resources after all user-specified transforms and passes have been
+        A shortcut to access the resources after all user-specified passes have been
         applied is to use the ``"user"`` level. For example, the following will also return the
         resources after the ``merge-rotations`` pass:
 
@@ -411,9 +412,10 @@ def specs(
         Circuit Depth: Not computed
 
         .. warning::
-            Certain transforms, like the ``split_non_commuting`` transform, can result in splitting a single execution
-            into multiple executions. In this case, the resources for that level will be returned as a list of
-            :class:`~.resource.SpecsResources` objects. When printed, these split tapes will be shown as individual columns.
+            Certain transforms, like the ``split-non-commuting`` transform, can result in splitting
+            a single execution into multiple executions. In this case, the resources for that level
+            will be returned as a list of :class:`~.resource.SpecsResources` objects. When printed,
+            these split executions will be shown as individual columns.
 
         .. code-block:: python
 
@@ -421,7 +423,7 @@ def specs(
 
             @qp.qjit
             @qp.transforms.cancel_inverses
-            @qp.transforms.split_non_commuting
+            @qp.transform(pass_name="split-non-commuting")
             @qp.qnode(dev)
             def circuit():
                 qp.X(0)
@@ -433,22 +435,21 @@ def specs(
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - 0: Before Tape Transforms
-        - 1: split_non_commuting
-        - 2: Before MLIR Passes
-        - 3: cancel-inverses
+        - 0: Before MLIR Passes
+        - 1: split-non-commuting
+        - 2: cancel-inverses
         <BLANKLINE>
-        ↓Metric         Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  3-a |  3-b
-        -----------------------------------------------------------------------
+        ↓Metric         Level→ |    0 |  1-a |  1-b |  2-a |  2-b
+        ---------------------------------------------------------
         Quantum operations:    |
-        - Total                |    2 |    2 |    2 |    2 |    2 |    0 |    0
-          - PauliX             |    2 |    2 |    2 |    2 |    2 |    0 |    0
+        - Total                |    2 |    2 |    2 |    0 |    0
+        - PauliX             |    2 |    2 |    2 |    0 |    0
         Measurement processes: |
-        - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0 |    1 |    0
-        - expval(PauliX)       |    1 |    0 |    1 |    0 |    1 |    0 |    1
-        Wire allocations       |    1 |    1 |    1 |    3 |    3 |    3 |    3
+        - expval(PauliX)       |    1 |    0 |    1 |    0 |    1
+        - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0
+        Wire allocations       |    3 |    3 |    3 |    3 |    3
 
-        Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
+        Note that in the above example, the ``split-non-commuting`` pass results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
         returned and displayed separately, though the level name for both is the same, since they come from the same transform.
 

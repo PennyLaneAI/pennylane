@@ -1181,6 +1181,10 @@ class CircuitSpecs:
         return "\n".join(lines)
 
 
+# TODO: Everything below this line can be removed once the `QuantumScript.specs` property is deprecated and removed.
+# The `resources_from_tape` function will be removed when tape-based functionality is removed.
+
+
 # The reason why this function is not a method of the QuantumScript class is
 # because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
 # The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
