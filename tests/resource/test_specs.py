@@ -76,9 +76,7 @@ class TestSpecsTransform:
         def f():
             return 0
 
-        with pytest.raises(
-            ValueError, match="qp.specs can only be applied to a QNode or qjit'd QNode"
-        ):
+        with pytest.raises(ValueError, match="qp.specs can only be applied to a qjit'd QNode"):
             qp.specs(f)()
 
 

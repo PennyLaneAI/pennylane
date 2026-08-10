@@ -135,7 +135,12 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    from catalyst import QJIT
+    try:
+        from catalyst import QJIT
+    except ImportError:
+        raise ValueError(
+            f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}",
+        )
 
     if level is None:
         level = "device"
@@ -145,7 +150,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
         original_qnode = qjit.original_function
     else:
         raise ValueError(
-            "qp.specs can only be applied to a QNode or qjit'd QNode, instead got: " f"{qjit}",
+            f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}",
         )
 
     device = original_qnode.device
@@ -191,7 +196,7 @@ def specs(
     about the circuit after applying the specified transforms.
 
     Args:
-        qnode (:class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
+        qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode to calculate the specifications for.
             ``functools.partial`` wrappers around supported callables are also accepted.
 
     Keyword Args:
@@ -331,7 +336,6 @@ def specs(
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names. Should be sorted in
           ascending transform order with no duplicates
         * The string ``"all"``: To provide information at each stage of compilation with respect to user-specified transforms
-        * The string ``"all-mlir"``: To provide information at each stage of compilation with respect to user-specified transforms exclusively at the MLIR level
         * The string ``"user"``: To provide information after all user-specified transforms have been applied
 
         .. note::
