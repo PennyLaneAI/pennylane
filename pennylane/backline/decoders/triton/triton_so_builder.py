@@ -278,6 +278,11 @@ def _make_target(target: str) -> GPUTarget:
 def _copy_generated_source(source_path: Path, dest_path: Path) -> None:
     """Copy Triton's generated C source and patch in ``stdlib.h`` if needed.
 
+    Triton's generated ``compile.c`` launcher templates call ``exit(...)`` in
+    their error helpers, but the templates do not include ``<stdlib.h>``.
+    Modern C compilers reject that missing declaration, so we patch the
+    generated source before compiling it.
+
     Args:
         source_path (Path): Path to Triton's generated C source.
         dest_path (Path): Destination path for the patched source.
