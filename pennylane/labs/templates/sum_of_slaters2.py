@@ -29,7 +29,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
 from pennylane.wires import Wires
 
 
-class SumOfSlatersPrep2(qp.Operation):
+class SumOfSlatersPrep2(qp.core.operator.Operation):
     r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
     In contrast to :class:`~.SumOfSlatersPrep`, this operation handles work wires explicitly.
 
