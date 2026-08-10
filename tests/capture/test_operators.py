@@ -527,8 +527,8 @@ class TestOpmath:
         assert eqn.invars[2].val == 1
         assert eqn.invars[3].val == 3  # control wires
         assert eqn.invars[4].val == 4
-        assert eqn.invars[5].val is False  # control values
-        assert eqn.invars[6].val is True
+        assert eqn.invars[5].val == np.False_  # control values
+        assert eqn.invars[6].val == np.True_
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
