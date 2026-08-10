@@ -130,7 +130,7 @@ def seed(request):
 
 
 @pytest.fixture(scope="function")
-def enable_disable_plxpr():
+def enable_capture():
     """enable and disable capture around each test."""
     qp.capture.enable()
     try:
@@ -306,12 +306,12 @@ def pytest_collection_modifyitems(items, config):
 
         # Auto add jax marker if the item is marked under capture
         has_capture_fixture = (
-            "enable_and_disable_capture" in item.fixturenames
-            or "enable_disable_plxpr" in item.fixturenames
+            "enable_capture" in item.fixturenames
+            or "enable_and_disable_capture" in item.fixturenames
         )
         if "capture" in item_markers:
             if not has_capture_fixture:
-                item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
+                item.fixturenames = [*item.fixturenames, "enable_capture"]
             if "jax" not in item_markers:
                 item.add_marker(pytest.mark.jax)
 
