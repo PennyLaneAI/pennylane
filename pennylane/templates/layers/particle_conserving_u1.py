@@ -235,7 +235,7 @@ class ParticleConservingU1(Operation):
             shape = qp.ParticleConservingU1.shape(layers, qubits)
             rng = np.random.default_rng(seed=1234)
             params = rng.random(shape)
-        
+
         >>> print(cost_fn(params))
         -0.9686...
 
@@ -322,18 +322,18 @@ class ParticleConservingU1(Operation):
         CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
         PhaseShift(-0.300..., wires=['b']),
         CNOT(wires=['a', 'b']),
-        PhaseShift(0.30000001192092896, wires=['b']),
+        PhaseShift(0.300..., wires=['b']),
         CNOT(wires=['a', 'b']),
-        PhaseShift(-0.30000001192092896, wires=['a']),
+        PhaseShift(-0.300..., wires=['a']),
         CZ(wires=['b', 'a']),
         CRot(0, tensor(2.), 0, wires=['b', 'a']),
         CZ(wires=['a', 'b']),
         CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=['a', 'b']),
-        PhaseShift(0.30000001192092896, wires=['b']),
+        PhaseShift(0.300..., wires=['b']),
         CNOT(wires=['a', 'b']),
-        PhaseShift(-0.30000001192092896, wires=['b']),
+        PhaseShift(-0.300..., wires=['b']),
         CNOT(wires=['a', 'b']),
-        PhaseShift(0.30000001192092896, wires=['a'])]
+        PhaseShift(0.300..., wires=['a'])]
 
         """
 
