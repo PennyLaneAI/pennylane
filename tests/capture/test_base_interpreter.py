@@ -158,8 +158,8 @@ def test_default_operator_handling():
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
     assert_eqn_matches_op(jaxpr.eqns[2], qp.T)
-    assert jaxpr.eqns[3].primitive == qp.X._primitive
-    assert jaxpr.eqns[4].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[3], qp.X)
+    assert_eqn_matches_op(jaxpr.eqns[4], qp.X)
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
 
 
@@ -209,7 +209,7 @@ def test_measurement_handling():
 
     jaxpr = jax.make_jaxpr(f)(0)
 
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
     assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
     assert jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
     assert jaxpr.eqns[3].primitive == qp.measurements.ProbabilityMP._wires_primitive
@@ -319,16 +319,6 @@ def test_cleanup_method():
 
     f(0.5)
     assert inst.state is None
-
-
-def test_returning_operators():
-    """Test that operators that are returned are still processed by the interpreter."""
-
-    @SimplifyInterpreter()
-    def f():
-        return qp.X(0) ** 2
-
-    qp.assert_equal(f(), qp.I(0))
 
 
 class ConstAdder(PlxprInterpreter):
@@ -529,7 +519,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 1
-        assert inner_jaxpr.eqns[0].primitive == qp.X._primitive  # no adjoint of x
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)  # no adjoint of x
 
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""

@@ -22,11 +22,12 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition import controlled_resource_rep
+from pennylane.decomposition import resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
@@ -595,20 +596,20 @@ class TestMeasurementQROM:
 
     def test_resources_small_cases(self):
         """Test resource estimates for the L <= 1 and L == 2 edge cases."""
+
+        basis_state_rep = resource_rep(qp.BasisState, num_wires=3)
+
         res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
-        assert res_one[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+        assert res_one[basis_state_rep] == 1
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
-        assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
-        assert (
-            res_two[controlled_resource_rep(qp.BasisState, {"num_wires": 3}, num_control_wires=1)]
-            == 1
-        )
+        assert res_two[basis_state_rep] == 1
+        assert res_two[_ctrl_abstract(basis_state_rep, Wire[1])] == 1
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
         res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
-        assert res[qp.resource_rep(PauliMeasure)] > 0
+        assert res[PauliMeasure] > 0
         assert res[qp.CZ] > 0
 
     def test_resources_from_base_params(self):

@@ -28,10 +28,12 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core import Operator1
 from pennylane.core.operator import Operator2
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
+
+# pylint: disable=wrong-import-position
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
@@ -447,7 +449,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 6
 
         # due to flattening and unflattening H
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
@@ -1600,37 +1602,32 @@ class TestModifiedTemplates:
         qp.assert_equal(q.queue[0], qp.OutPoly(**kwargs))
 
     def test_gqsp(self):
-        """Test the primitive bind call of GQSP."""
+        """Test GQSP with program capture."""
 
         def qfunc(unitary, angles):
-            qp.GQSP(unitary, angles, control=0)
+            return qp.GQSP(unitary, angles, control=0).tracer
 
         angles = np.ones([3, 3])
-        unitary = qp.RX(1, wires=1)
+        unitary = qp.S(wires=1)
         # Validate inputs
         qfunc(unitary, angles)
 
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(unitary, angles)
+        assert len(jaxpr.eqns) == 1
 
-        assert len(jaxpr.eqns) == 2
+        gqsp_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(gqsp_eqn, qp.GQSP)
+        # Dynamic args first, then wires, then hybrid args, so first arg will be the angles,
+        # then the control wire, then the wire of the S gate
+        assert gqsp_eqn.invars[0] == jaxpr.jaxpr.invars[1]  # Angles
+        assert gqsp_eqn.invars[1].val == 0  # Control wire
+        assert gqsp_eqn.invars[2] == jaxpr.jaxpr.invars[0]  # S wire
 
-        rx_eqn = jaxpr.eqns[0]
-        assert rx_eqn.primitive == qp.RX._primitive
-        gqps_eqn = jaxpr.eqns[1]
-        assert gqps_eqn.primitive == qp.GQSP._primitive
-        assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
-        assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
-        assert gqps_eqn.invars[2].val == 0  # Control wire
-        assert gqps_eqn.params["n_wires"] == 1
-        assert len(gqps_eqn.outvars) == 1
-        assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
+        flattened_unitary, _ = qp.pytrees.flatten(unitary)
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *flattened_unitary, angles)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, unitary.data, angles)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.GQSP(unitary, angles, control=0))
+        qp.assert_equal(op, qp.GQSP(unitary, angles, control=0))
 
     @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_reflection(self):
