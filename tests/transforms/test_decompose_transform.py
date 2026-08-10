@@ -307,7 +307,7 @@ class TestDecompose:
 def test_null_postprocessing():
     """Tests the null postprocessing function in the decompose transform"""
     tape = qp.tape.QuantumScript([qp.Hadamard(0), qp.RX(0, 0)])
-    (_,), fn = qp.decompose(tape, gate_set={qp.RX, qp.RZ})
+    (_,), fn = qp.decompose(tape, gate_set={qp.RX, qp.RZ, qp.GlobalPhase})
     assert fn((1,)) == 1
 
 
