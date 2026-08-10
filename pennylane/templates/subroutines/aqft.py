@@ -25,7 +25,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Int, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -126,11 +126,10 @@ class AQFT(Operator2):
     arg_specs = {"wires": Wire[-1]}
     wire_sizes = (None,)
 
-    def __init__(self, order: int, wires: WiresLike) -> None:
-        wires = Wires(wires)
-        n_wires = len(wires)
-
-        if not isinstance(order, int):
+    @staticmethod
+    def _validate_order(order: int, n_wires: int) -> int:
+        """Validate the order against the number of wires and return the resolved order."""
+        if not isinstance(order, (int, np.integer)):
             warnings.warn(f"The order must be an integer. Using order = {round(order)}.")
             order = round(order)
 
@@ -146,13 +145,16 @@ class AQFT(Operator2):
         if order == 0:
             warnings.warn("order=0, applying Hadamard transform")
 
-        self.hyperparameters["order"] = order
-        super().__init__(wires=wires)
+        return int(order)
 
+    def __init__(self, order: int, wires: WiresLike) -> None:
+        wires = Wires(wires)
+        order = self._validate_order(order, len(wires))
+        super().__init__(order, wires)
 
-    @property
-    def num_params(self):
-        return 0
+    def __abstract_init__(self, order, wires):  # pylint: disable=arguments-differ
+        order = self._validate_order(order, len(wires))
+        super().__abstract_init__(order, wires)
 
 
 def _AQFT_resources(order, wires):
