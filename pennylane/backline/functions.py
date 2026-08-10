@@ -32,7 +32,7 @@ class CoprocessorFunction:
 
     See the Attributes section to learn more about the available options.
 
-    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_decoder`
+    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_decoder`, :func:`~.triton_decoder`
     """
 
     name: str
@@ -46,6 +46,60 @@ class CoprocessorFunction:
     def symbol_name(self) -> str:
         """The symbol the runtime resolves and invokes for this function."""
         return self.name
+
+
+def triton_decoder(
+    decoder_fns: tuple[object, ...],
+    **build_options,
+) -> CoprocessorFunction:
+    """Compile Triton decoder functions into a coprocessor decode function.
+
+    Accepts a tuple of Triton decoder functions and compiles them into a shared library that can be
+    used as a :class:`~.CoprocessorFunction`.
+
+    Args:
+        decoder_fns (tuple[object, ...]): Triton decoder functions. ``decoder_id`` selects the
+            tuple index at runtime.
+
+    Keyword Args:
+        platform (str): Triton target string of the form ``"backend:arch:warp_size"``.
+            Defaults to ``"hip:gfx90a:64"``.
+        num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
+        num_stages (int): Triton pipeline stage count. Defaults to ``1``.
+        compiler (str): Optional compiler executable override. Defaults to ``""``.
+        cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
+
+    Returns:
+        CoprocessorFunction: The compiled decode function, ready to pass as a
+            :class:`~.Coprocessor`'s ``coprocessor_fn``.
+
+    Raises:
+        ImportError: If Triton decoder support is unavailable.
+        ValueError: If the decoder build options are invalid.
+
+    .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`,
+        :func:`~.css_decoder`
+
+    **Example**
+
+    >>> import triton
+    >>> import triton.language as tl
+    >>> @triton.jit
+    ... def steane_lookup(syndrome):
+    ...     one = tl.cast(1, tl.uint64)
+    ...     zero = tl.cast(0, tl.uint64)
+    ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+    >>> decoder = qp.backline.triton_decoder((steane_lookup, steane_lookup))
+    """
+    try:
+        build_triton_decoder = import_module(
+            "pennylane.backline.decoders.triton.decoder_frontend"
+        ).build_triton_decoder
+    except ImportError as exc:
+        raise ImportError("triton_decoder requires Triton support.") from exc
+
+    so_path, symbol_name = build_triton_decoder(decoder_fns, **build_options)
+    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))
 
 
 def css_decoder(
@@ -86,7 +140,8 @@ def css_decoder(
         ImportError: If Triton decoder support is unavailable.
         ValueError: If the decoder options or parity-check matrices are invalid.
 
-    .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
+    .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`,
+        :func:`~.triton_decoder`
 
     **Example**
 

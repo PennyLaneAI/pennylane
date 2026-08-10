@@ -81,14 +81,15 @@ Coprocessor functions
 
 A :class:`~.Coprocessor` applies a precompiled function to each message it receives (e.g., decoding a
 syndrome). Coprocessor functions can be defined directly in C++ as a runtime function, or in Python
-through helper functions such as :func:`~.css_decoder`. Either way they are referenced by a
+through helper functions such as :func:`~.css_bp_decoder` and :func:`~.triton_decoder`. Either way they are referenced by a
 :class:`~.CoprocessorFunction`.
 
 .. autosummary::
     :toctree: api
 
     ~CoprocessorFunction
-    ~css_decoder
+    ~css_bp_decoder
+    ~triton_decoder
 
 Placement
 ~~~~~~~~~
@@ -134,7 +135,7 @@ lives in the compiled runtime.
 
 from .decode import decode
 from .device import HeterogeneousDevice, backline
-from .functions import CoprocessorFunction, css_decoder
+from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
 from .placement import Controller, Coprocessor, ExecutorSpec, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
@@ -150,7 +151,8 @@ __all__ = [
     "decode",
     "HeterogeneousDevice",
     "CoprocessorFunction",
-    "css_decoder",
+    "css_bp_decoder",
+    "triton_decoder",
     "Transport",
     "get_transport",
     "register_transport",

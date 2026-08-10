@@ -18,7 +18,59 @@ import sys
 import types
 from pathlib import Path
 
-from pennylane.backline import functions
+from pennylane.backline import functions, triton_decoder
+
+
+def _install_fake_triton_frontend(monkeypatch, **builders):
+    """Install a fake Triton frontend module into ``sys.modules``."""
+    frontend_module = types.ModuleType("pennylane.backline.decoders.triton.decoder_frontend")
+    for name, builder in builders.items():
+        setattr(frontend_module, name, builder)
+
+    triton_package = types.ModuleType("pennylane.backline.decoders.triton")
+    triton_package.__path__ = []
+    triton_package.decoder_frontend = frontend_module
+
+    monkeypatch.setitem(sys.modules, "pennylane.backline.decoders.triton", triton_package)
+    monkeypatch.setitem(
+        sys.modules,
+        "pennylane.backline.decoders.triton.decoder_frontend",
+        frontend_module,
+    )
+
+
+def test_triton_decoder_forwards_build_options(monkeypatch):
+    """It should forward build options and wrap the compiled Triton decoder."""
+    calls = {}
+
+    def fake_build_triton_decoder(decoder_fns, **kwargs):
+        calls["decoder_fns"] = decoder_fns
+        calls.update(kwargs)
+        return Path("/tmp/triton_decoder.so"), "decode_symbol"
+
+    _install_fake_triton_frontend(monkeypatch, build_triton_decoder=fake_build_triton_decoder)
+
+    decoder_fns = (object(), object())
+    decoder = functions.triton_decoder(
+        decoder_fns,
+        platform="cuda:80:32",
+        num_warps=4,
+        num_stages=2,
+        compiler="cc",
+        cflags=("-g",),
+    )
+
+    assert decoder == functions.CoprocessorFunction(
+        name="decode_symbol", lib_path="/tmp/triton_decoder.so"
+    )
+    assert calls == {
+        "decoder_fns": decoder_fns,
+        "platform": "cuda:80:32",
+        "num_warps": 4,
+        "num_stages": 2,
+        "compiler": "cc",
+        "cflags": ("-g",),
+    }
 
 
 def test_css_decoder_forwards_build_options(monkeypatch):
@@ -31,19 +83,7 @@ def test_css_decoder_forwards_build_options(monkeypatch):
         calls.update(kwargs)
         return Path("/tmp/decoder.so"), "decode_symbol"
 
-    frontend_module = types.ModuleType("pennylane.backline.decoders.triton.decoder_frontend")
-    frontend_module.build_css_bp_decoder = fake_build_css_bp_decoder
-
-    triton_package = types.ModuleType("pennylane.backline.decoders.triton")
-    triton_package.__path__ = []
-    triton_package.decoder_frontend = frontend_module
-
-    monkeypatch.setitem(sys.modules, "pennylane.backline.decoders.triton", triton_package)
-    monkeypatch.setitem(
-        sys.modules,
-        "pennylane.backline.decoders.triton.decoder_frontend",
-        frontend_module,
-    )
+    _install_fake_triton_frontend(monkeypatch, build_css_bp_decoder=fake_build_css_bp_decoder)
 
     decoder = functions.css_decoder(
         [[1, 0], [0, 1]],
@@ -73,3 +113,8 @@ def test_css_decoder_forwards_build_options(monkeypatch):
         "compiler": "cc",
         "cflags": ("-g",),
     }
+
+
+def test_triton_decoder_is_exported():
+    """The package should export the generic Triton decoder helper."""
+    assert triton_decoder is functions.triton_decoder
