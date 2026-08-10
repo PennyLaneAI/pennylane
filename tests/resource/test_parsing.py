@@ -323,5 +323,7 @@ class TestAnalysisPassConversion:
             "some_key": 42
         }
 
-        with pytest.warns(UserWarning, match="Specs detected unknown extended fields in the resource data:"):
+        with pytest.warns(
+            UserWarning, match="Specs detected unknown extended fields in the resource data:"
+        ):
             parse_resources_json(example_loop_analysis_pass_result)
