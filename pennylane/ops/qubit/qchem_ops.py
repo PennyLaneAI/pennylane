@@ -30,6 +30,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -176,9 +177,6 @@ class SingleExcitation(Operator2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-    """Gradient computation method."""
-
     def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
         return qp.Hamiltonian([0.25, -0.25], [qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2)])
@@ -264,14 +262,9 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-@register_resources({SingleExcitation: 1})
-def _pow_single_excitation(base, z):
-    return SingleExcitation(base.phi * z, base.wires)
-
-
 add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
-add_decomps("Pow(SingleExcitation)", _pow_single_excitation)
+add_decomps("Pow(SingleExcitation)", pow_rotation2)
 
 
 class SingleExcitationMinus(Operation):
