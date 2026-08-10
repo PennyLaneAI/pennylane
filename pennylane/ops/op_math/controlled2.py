@@ -104,7 +104,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     """Arguments that the operator is initialized with."""
 
     def __new__(cls, *args, **kwargs):
-
         obj = super().__new__(cls)
 
         # NOTE: If called without arguments (during a __copy__)
@@ -132,7 +131,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-
         _remove_from_program(base)
 
         control_wires = Wires(control_wires)
@@ -188,7 +186,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | AbstractWires | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-
         # abstractify the wires
         if work_wires is None:
             work_wires = Wire[0]
@@ -370,7 +367,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_eigvals(base, control_wires, control_values=None, **_):
-
         base_eigvals = math.asarray(base.eigvals())
         num_target_wires = len(base.wires)
         num_control_wires = len(control_wires)
@@ -676,7 +672,6 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 
 
 def _make_controlled_decomp(base_rule: DecompositionRule):
-
     def _condition_fn(base, **_):
         return base_rule.is_applicable(**base.arguments)
 
@@ -699,7 +694,6 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         name=f"controlled({base_rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
-
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
             qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
@@ -800,7 +794,6 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
     def _impl(**arguments):
-
         control_values = arguments.pop("control_values")
         arguments["control_values"] = None
 
@@ -846,6 +839,7 @@ def _ctrl_single_work_wire_resource(
 
 
 # pylint: disable=protected-access,unused-argument
+@register_condition(lambda base, **_: len(base.wires) > 0)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
