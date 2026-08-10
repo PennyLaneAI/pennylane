@@ -51,7 +51,7 @@ from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, TensorLike, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, TensorLike, Wire, Complex
 from pennylane.wires import Wires, WiresLike
 
 from .adjoint2 import _adjoint_abstract
@@ -82,7 +82,7 @@ INV_SQRT2 = 1 / qp.math.sqrt(2)
 stack_last = partial(qp.math.stack, axis=-1)
 
 
-class ControlledQubitUnitary(ControlledOp):
+class ControlledQubitUnitary(Controlled2):
     r"""ControlledQubitUnitary(U, wires)
     Apply an arbitrary fixed unitary matrix ``U`` to ``wires``. If ``n = len(wires) `` and ``U`` has ``k`` wires, then the first ``n - k`` from ``wires`` serve as control, and ``U`` lives on the last ``k`` wires.
 
@@ -144,63 +144,18 @@ class ControlledQubitUnitary(ControlledOp):
            [-0.3159...,  0.948...]]), wires=[3]), control_wires=[0, 1, 2], control_values=[False, True, True])
     """
 
+    dynamic_argnames = ("base", "control_values")
+    wire_argnames = ("wires", "work_wires")
+    compilable_argnames = ("unitary_check", "work_wire_type")
+    arg_specs = {"base": Complex[-1, -1], "wires": Wire[-1], "control_values": Bool[-1], "work_wires": Wire[-1]}
+
     num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (2,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = {
-        "num_target_wires",
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
-    }
-
-    grad_method = None
-    """Gradient computation method."""
-
-    def _flatten(self):
-        return (self.base.data[0],), (
-            self.wires,
-            tuple(self.control_values),
-            self.work_wires,
-            self.work_wire_type,
-        )
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(
-            data[0],
-            wires=metadata[0],
-            control_values=metadata[1],
-            work_wires=metadata[2],
-            work_wire_type=metadata[3],
-        )
-
-    @classmethod
-    def _primitive_bind_call(  # pylint: disable=too-many-arguments
-        cls,
-        base,
-        wires: WiresLike,
-        control_values=None,
-        unitary_check=False,
-        work_wires: WiresLike = (),
-        work_wire_type="borrowed",
-    ):
-        work_wires = Wires(() if work_wires is None else work_wires)
-        return cls._primitive.bind(
-            base,
-            wires=wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        base,
+        base: TensorLike,
         wires: WiresLike,
         control_values=None,
         unitary_check=False,
@@ -233,30 +188,15 @@ class ControlledQubitUnitary(ControlledOp):
 
         self._name = "ControlledQubitUnitary"
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_target_wires": len(self.base.wires),
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
-
-    def _controlled(self, wire):
-        ctrl_wires = wire + self.control_wires
-        values = None if self.control_values is None else [True] + self.control_values
-        base = self.base
-        if isinstance(self.base, qp.QubitUnitary):
-            base = self.base.matrix()
-
-        return ControlledQubitUnitary(
-            base,
-            wires=ctrl_wires + self.wires,
-            control_values=values,
-            work_wires=self.work_wires,
-            work_wire_type=self.work_wire_type,
-        )
+    # @property
+    # def resource_params(self) -> dict:
+    #     return {
+    #         "num_target_wires": len(self.base.wires),
+    #         "num_control_wires": len(self.control_wires),
+    #         "num_zero_control_values": len([val for val in self.control_values if not val]),
+    #         "num_work_wires": len(self.work_wires),
+    #         "work_wire_type": self.work_wire_type,
+    #     }
 
 
 def _to_general_c_qu_resource(num_target_wires, **kwargs):
