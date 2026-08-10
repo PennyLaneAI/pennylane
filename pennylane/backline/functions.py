@@ -84,7 +84,7 @@ def css_decoder(
         Hx,
         Hz,
         postprocess=postprocess,
-        niter=niter,
+        num_iters=niter,
         prob=prob,
         platform=platform,
         num_warps=num_warps,

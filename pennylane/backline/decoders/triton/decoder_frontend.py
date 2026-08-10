@@ -114,7 +114,7 @@ def build_css_bp_decoder(
     Hz: ArrayLike,
     *,
     postprocess: str = "osd",
-    niter: int = 10,
+    num_iters: int = 10,
     prob: float = 0.1,
     platform: str = "hip:gfx90a:64",
     num_warps: int = 1,
@@ -134,21 +134,21 @@ def build_css_bp_decoder(
         ...     Hx,
         ...     Hz,
         ...     postprocess="osd",
-        ...     niter=10,
+        ...     num_iters=10,
         ...     platform="hip:gfx90a:64",
         ... )
 
     Note:
-        Takes one syndrome as a ``u64`` and returns one correction mask as a ``u64``.
-        In the returned mask, bit ``i`` targets qubit ``i`` and ``0`` means no correction.
-        TODO: This is a constraint of the current Payload and Handoff sizes.
+        The generated decoder consumes one packed syndrome bitmask and returns one packed
+        correction bitmask, each stored in a single ``u64``. Bit ``i`` corresponds
+        to check and qubit ``i`` in the syndrome and correction, respectively.
 
     Args:
         Hx (ArrayLike): X parity-check matrix.
         Hz (ArrayLike): Z parity-check matrix.
         postprocess (str): Postprocessing step applied after belief propagation. Use
             ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
-        niter (int): Number of decoder iterations.
+        num_iters (int): Number of decoder iterations.
         prob (float): Uniform prior error probability across qubits.
         platform (str): Triton target string of the form ``"backend:arch:warp_size"``.
             For instance ``"hip:gfx90a:64"`` targets AMD MI200-class GPUs via the
@@ -163,12 +163,12 @@ def build_css_bp_decoder(
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
             Triton-generated exported entrypoint name. The caller owns the returned file.
     """
-    _validate_css_options(postprocess=postprocess, niter=niter, prob=prob)
+    _validate_css_options(postprocess=postprocess, num_iters=num_iters, prob=prob)
     hx = _to_numpy(Hx)
     hz = _to_numpy(Hz)
     decoder_fns = (
-        _make_css_decoder(hx, postprocess=postprocess, niter=niter, prob=prob),
-        _make_css_decoder(hz, postprocess=postprocess, niter=niter, prob=prob),
+        _make_css_decoder(hx, postprocess=postprocess, num_iters=num_iters, prob=prob),
+        _make_css_decoder(hz, postprocess=postprocess, num_iters=num_iters, prob=prob),
     )
     return build_triton_decoder(
         decoder_fns,
@@ -193,19 +193,21 @@ def _to_numpy(H: ArrayLike) -> np.ndarray:
         ValueError: If ``H`` is empty, non-binary, not two-dimensional, or
             exceeds the current 64-check or 64-variable packing limit.
     """
-    h = np.asarray(H)
-    if h.ndim != 2:
-        raise ValueError(f"H must be a 2D array, got shape {h.shape!r}")
-    if h.shape[0] == 0 or h.shape[1] == 0:
-        raise ValueError(f"H must be non-empty, got shape {h.shape!r}")
+    matrix = np.asarray(H)
+    if matrix.ndim != 2:
+        raise ValueError(f"H must be a 2D array, got shape {matrix.shape!r}")
+    if matrix.shape[0] == 0 or matrix.shape[1] == 0:
+        raise ValueError(f"H must be non-empty, got shape {matrix.shape!r}")
 
-    if not np.all((h == 0) | (h == 1)):
+    if not np.all((matrix == 0) | (matrix == 1)):
         raise ValueError("H must contain only binary entries 0/1")
-    if h.shape[0] > 64:
-        raise ValueError(f"H has {h.shape[0]} checks, but Triton decoder supports at most 64")
-    if h.shape[1] > 64:
-        raise ValueError(f"H has {h.shape[1]} variables, but Triton decoder supports at most 64")
-    return h
+    if matrix.shape[0] > 64:
+        raise ValueError(f"H has {matrix.shape[0]} checks, but Triton decoder supports at most 64")
+    if matrix.shape[1] > 64:
+        raise ValueError(
+            f"H has {matrix.shape[1]} variables, but Triton decoder supports at most 64"
+        )
+    return matrix
 
 
 def _validate_build_options(
@@ -236,12 +238,12 @@ def _validate_build_options(
         )
 
 
-def _validate_css_options(*, postprocess: str, niter: int, prob: float) -> None:
+def _validate_css_options(*, postprocess: str, num_iters: int, prob: float) -> None:
     """Validate CSS decoder options.
 
     Args:
         postprocess (str): Postprocessing rule applied after belief propagation.
-        niter (int): Number of belief-propagation iterations.
+        num_iters (int): Number of belief-propagation iterations.
         prob (float): Uniform prior error probability.
 
     Raises:
@@ -249,32 +251,40 @@ def _validate_css_options(*, postprocess: str, niter: int, prob: float) -> None:
     """
     if postprocess not in {"hard", "osd"}:
         raise ValueError("postprocess must be 'hard' or 'osd'")
-    if niter <= 0:
-        raise ValueError("niter must be > 0")
+    if num_iters <= 0:
+        raise ValueError("num_iters must be > 0")
     if not 0.0 < prob < 1.0:
         raise ValueError("prob must be in (0, 1)")
 
 
-def _make_css_decoder(h: np.ndarray, *, postprocess: str, niter: int, prob: float) -> object:
+def _make_css_decoder(
+    matrix: np.ndarray, *, postprocess: str, num_iters: int, prob: float
+) -> object:
     """Specialize one Triton decoder kernel for a fixed parity-check matrix.
 
     Args:
-        h (np.ndarray): Binary parity-check matrix.
+        matrix (np.ndarray): Binary parity-check matrix.
         postprocess (str): Postprocessing rule applied after belief propagation.
-        niter (int): Number of belief-propagation iterations.
+        num_iters (int): Number of belief-propagation iterations.
         prob (float): Uniform prior error probability.
 
     Returns:
         object: Triton JIT function that maps one packed syndrome to one packed
             correction mask.
     """
-    h = tl.constexpr(tuple(tuple(int(v) for v in row) for row in h.tolist()))
+    matrix = tl.constexpr(tuple(tuple(int(value) for value in row) for row in matrix.tolist()))
     postprocess = tl.constexpr(postprocess)
     prob = tl.constexpr(prob)
-    niter = tl.constexpr(niter)
+    num_iters = tl.constexpr(num_iters)
 
     @triton.jit
     def decode(syndrome):
-        return _decode_one(syndrome, h, postprocess=postprocess, prob=prob, NITER=niter)
+        return _decode_one(
+            syndrome,
+            matrix,
+            postprocess=postprocess,
+            prob=prob,
+            num_iters=num_iters,
+        )
 
     return decode

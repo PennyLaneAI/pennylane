@@ -33,15 +33,22 @@ def _has_cuda_target() -> bool:
 
 pytestmark = [
     pytest.mark.gpu,
-    pytest.mark.skipif(not _has_cuda_target(), reason="Triton decoder tests require a CUDA device"),
+    pytest.mark.skipif(
+        not _has_cuda_target(), reason="Triton decoder tests require a CUDA device"
+    ),
 ]
 
-from pennylane.backline.decoders.triton import utils
+from pennylane.backline.decoders.triton.bp_iters import (
+    _bp_c2v_msg,
+    _bp_tanh_half,
+    _get_syndrome_signs,
+    _llr_from_p,
+)
 
 
 @triton.jit
 def _get_syndrome_signs_kernel(out_ptr, syndrome, NCHECKS: tl.constexpr):
-    signs = utils._get_syndrome_signs(syndrome, NCHECKS)
+    signs = _get_syndrome_signs(syndrome, NCHECKS)
     for i in tl.static_range(NCHECKS):
         tl.store(out_ptr + i, signs[i])
 
@@ -49,14 +56,14 @@ def _get_syndrome_signs_kernel(out_ptr, syndrome, NCHECKS: tl.constexpr):
 @triton.jit
 def _bp_tanh_half_kernel(x_ptr, out_ptr):
     x = tl.load(x_ptr)
-    tl.store(out_ptr, utils._bp_tanh_half(x))
+    tl.store(out_ptr, _bp_tanh_half(x))
 
 
 @triton.jit
 def _bp_c2v_msg_kernel(ssign_ptr, prod_ptr, out_ptr):
     ssign = tl.load(ssign_ptr)
     prod = tl.load(prod_ptr)
-    tl.store(out_ptr, utils._bp_c2v_msg(ssign, prod))
+    tl.store(out_ptr, _bp_c2v_msg(ssign, prod))
 
 
 def _torch():
@@ -118,4 +125,4 @@ class TestTritonUtils:
 
     def test_llr_from_p_matches_log_odds(self):
         """The LLR helper should return the standard log-odds transform."""
-        assert utils._llr_from_p(0.2) == pytest.approx(math.log(4.0))
+        assert _llr_from_p(0.2) == pytest.approx(math.log(4.0))

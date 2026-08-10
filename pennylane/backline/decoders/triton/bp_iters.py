@@ -26,7 +26,7 @@ def _sum_product_posteriors(
     syndrome,
     H: tl.constexpr,
     prob: tl.constexpr = 0.1,
-    NITER: tl.constexpr = 10,
+    num_iters: tl.constexpr = 10,
 ):
     """Compute posterior LLRs for one packed syndrome.
 
@@ -35,121 +35,121 @@ def _sum_product_posteriors(
         H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
             syndrome bit ``i``, and column ``j`` matches variable ``j``.
         prob (float): Prior error probability assigned to each variable.
-        NITER (int): Number of belief-propagation iterations.
+        num_iters (int): Number of belief-propagation iterations.
 
     Returns:
         tuple[float]: Posterior LLRs, one per variable.
     """
-    L0: tl.constexpr = _llr_from_p(prob)
-    NCHECKS: tl.constexpr = len(H)
-    NVARS: tl.constexpr = len(H[0])
+    prior_llr: tl.constexpr = _llr_from_p(prob)
+    num_checks: tl.constexpr = len(H)
+    num_variables: tl.constexpr = len(H[0])
 
-    s = _get_syndrome_signs(syndrome, NCHECKS)
+    syndrome_signs = _get_syndrome_signs(syndrome, num_checks)
 
-    E = ()
-    for _ in tl.static_range(NCHECKS):
+    check_to_var_msgs = ()
+    for _ in tl.static_range(num_checks):
         row = ()
-        for _ in tl.static_range(NVARS):
+        for _ in tl.static_range(num_variables):
             row += (0.0,)
-        E += (row,)
+        check_to_var_msgs += (row,)
 
-    for _ in range(NITER):
-        T = ()
-        for c in tl.static_range(NCHECKS):
+    for _ in range(num_iters):
+        var_to_check_msgs = ()
+        for c in tl.static_range(num_checks):
             row = ()
-            for v in tl.static_range(NVARS):
+            for v in tl.static_range(num_variables):
                 if H[c][v]:
-                    msg = L0
-                    for c2 in tl.static_range(NCHECKS):
+                    message = prior_llr
+                    for c2 in tl.static_range(num_checks):
                         if c2 != c and H[c2][v]:
-                            msg += E[c2][v]
-                    row += (_bp_tanh_half(msg),)
+                            message += check_to_var_msgs[c2][v]
+                    row += (_bp_tanh_half(message),)
                 else:
                     row += (0.0,)
-            T += (row,)
+            var_to_check_msgs += (row,)
 
-        newE = ()
-        for c in tl.static_range(NCHECKS):
+        next_check_to_var_msgs = ()
+        for c in tl.static_range(num_checks):
             row = ()
-            for v in tl.static_range(NVARS):
+            for v in tl.static_range(num_variables):
                 if H[c][v]:
-                    prod = 1.0
-                    for v2 in tl.static_range(NVARS):
+                    message_product = 1.0
+                    for v2 in tl.static_range(num_variables):
                         if v2 != v and H[c][v2]:
-                            prod *= T[c][v2]
-                    row += (_bp_c2v_msg(s[c], prod),)
+                            message_product *= var_to_check_msgs[c][v2]
+                    row += (_bp_c2v_msg(syndrome_signs[c], message_product),)
                 else:
                     row += (0.0,)
-            newE += (row,)
-        E = newE
+            next_check_to_var_msgs += (row,)
+        check_to_var_msgs = next_check_to_var_msgs
 
-    P = ()
-    for v in tl.static_range(NVARS):
-        post = L0
-        for c in tl.static_range(NCHECKS):
+    posterior_llrs = ()
+    for v in tl.static_range(num_variables):
+        posterior = prior_llr
+        for c in tl.static_range(num_checks):
             if H[c][v]:
-                post += E[c][v]
-        P += (post,)
-    return P
+                posterior += check_to_var_msgs[c][v]
+        posterior_llrs += (posterior,)
+    return posterior_llrs
 
 
 @triton.jit
-def _get_syndrome_signs(syndrome, NCHECKS: tl.constexpr):
+def _get_syndrome_signs(syndrome, num_checks: tl.constexpr):
     """Convert syndrome bits into bipolar check signs.
 
     Args:
         syndrome (u64): Packed syndrome bitmask.
-        NCHECKS (int): Number of checks to unpack from ``syndrome``.
+        num_checks (int): Number of checks to unpack from ``syndrome``.
 
     Returns:
         tuple[float]: Tuple containing ``+1.0`` for a zero bit and ``-1.0`` for
             a one bit, in least-significant-bit order.
     """
-    s = ()
-    for i in tl.static_range(NCHECKS):
-        s += (tl.where(((syndrome >> i) & 1) != 0, -1.0, 1.0),)
-    return s
+    signs = ()
+    for i in tl.static_range(num_checks):
+        signs += (tl.where(((syndrome >> i) & 1) != 0, -1.0, 1.0),)
+    return signs
 
 
 @triton.jit
-def _bp_tanh_half(x):
-    """Compute ``tanh(x / 2)`` for a Triton scalar.
+def _bp_tanh_half(value):
+    """Compute ``tanh(value / 2)`` for a Triton scalar.
 
     Args:
-        x (float): Input value.
+        value (float): Input value.
 
     Returns:
-        float: The value of ``tanh(x / 2)``.
+        float: The value of ``tanh(value / 2)``.
     """
-    e = tl.exp(x)
-    return (e - 1.0) / (e + 1.0)
+    exp_value = tl.exp(value)
+    return (exp_value - 1.0) / (exp_value + 1.0)
 
 
 @triton.jit
-def _bp_c2v_msg(ssign, prod, EPS: tl.constexpr = 1e-6):
+def _bp_c2v_msg(syndrome_sign, message_product, eps: tl.constexpr = 1e-6):
     """Compute a bounded check-to-variable message.
 
     Args:
-        ssign (float): Bipolar sign derived from the packed syndrome bit.
-        prod (float): Product of neighbouring variable-to-check messages.
-        EPS (float): Margin used to clamp ``prod`` away from ``±1``.
+        syndrome_sign (float): Bipolar sign derived from the packed syndrome bit.
+        message_product (float): Product of neighbouring variable-to-check messages.
+        eps (float): Margin used to clamp ``message_product`` away from ``±1``.
 
     Returns:
         float: Check-to-variable message in LLR form.
     """
-    hi = 1.0 - EPS
-    p = tl.maximum(-hi, tl.minimum(prod, hi))
-    return ssign * tl.log((1.0 + p) / (1.0 - p))
+    clamp_limit = 1.0 - eps
+    clamped_product = tl.maximum(-clamp_limit, tl.minimum(message_product, clamp_limit))
+    return syndrome_sign * tl.log((1.0 + clamped_product) / (1.0 - clamped_product))
 
 
 @triton.constexpr_function
-def _llr_from_p(p):
+def _llr_from_p(error_probability):
     """Convert a compile-time error probability into a prior LLR.
 
     Args:
-        p (float): Error probability in the open interval ``(0, 1)``.
+        error_probability (float): Error probability in the open interval ``(0, 1)``.
 
     Returns:
-        float: Log-likelihood ratio ``log((1 - p) / p)``.
+        float: Log-likelihood ratio ``log((1 - error_probability) / error_probability)``.
     """
-    return math.log1p(-p) - math.log(p)
+    return math.log1p(-error_probability) - math.log(error_probability)

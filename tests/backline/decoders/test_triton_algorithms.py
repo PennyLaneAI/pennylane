@@ -62,7 +62,7 @@ def _postprocess_kernel(
 def _decode_one_kernel(out_ptr, syndrome, POSTPROCESS: tl.constexpr):
     tl.store(
         out_ptr,
-        algorithms._decode_one(syndrome, ((1,),), postprocess=POSTPROCESS, prob=0.1, NITER=2),
+        algorithms._decode_one(syndrome, ((1,),), postprocess=POSTPROCESS, prob=0.1, num_iters=2),
     )
 
 

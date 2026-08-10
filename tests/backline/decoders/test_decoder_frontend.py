@@ -125,8 +125,8 @@ class TestBuildCssBpDecoder:
         built_decoders = [object(), object()]
         forwarded = {}
 
-        def fake_make_css_decoder(h, *, postprocess, niter, prob):
-            decoder_calls.append((h.copy(), postprocess, niter, prob))
+        def fake_make_css_decoder(hx, *, postprocess, num_iters, prob):
+            decoder_calls.append((hx.copy(), postprocess, num_iters, prob))
             return built_decoders[len(decoder_calls) - 1]
 
         def fake_build_triton_decoder(decoder_fns, **kwargs):
@@ -144,7 +144,7 @@ class TestBuildCssBpDecoder:
             hx,
             hz,
             postprocess="hard",
-            niter=7,
+            num_iters=7,
             prob=0.2,
             platform="cuda:80:32",
             num_warps=4,
@@ -173,7 +173,7 @@ class TestBuildCssBpDecoder:
         ("kwargs", "message"),
         [
             ({"postprocess": "bad"}, "postprocess must be 'hard' or 'osd'"),
-            ({"niter": 0}, "niter must be > 0"),
+            ({"num_iters": 0}, "num_iters must be > 0"),
             ({"prob": 0.0}, r"prob must be in \(0, 1\)"),
             ({"prob": 1.0}, r"prob must be in \(0, 1\)"),
         ],

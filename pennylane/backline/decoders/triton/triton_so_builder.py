@@ -102,8 +102,8 @@ def build_so(
         num_stages=num_stages,
     )
 
-    with tempfile.TemporaryDirectory(dir=build_path, prefix=".triton_shared_") as td:
-        scratch_path = Path(td)
+    with tempfile.TemporaryDirectory(dir=build_path, prefix=".triton_shared_") as temp_dir:
+        scratch_path = Path(temp_dir)
         device_c = scratch_path / "device_kernel_aot.c"
 
         _copy_generated_source(generated_c, device_c)
@@ -181,27 +181,27 @@ def _compile_kernel(
 
     # Adapted from Triton's triton.tools.compile: binder setup + ASTSource construction.
     kernel.create_binder()
-    src = kernel.ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
+    ast_source = kernel.ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
 
     # Adapted from Triton's triton.tools.compile: target/backend/options setup and compile call.
     target_obj = _make_target(target)
     backend_impl = triton.compiler.make_backend(target_obj)
     options = backend_impl.parse_options({"num_warps": num_warps, "num_stages": num_stages})
-    ccinfo = triton.compile(src, target=target_obj, options=options.__dict__)
+    compile_result = triton.compile(ast_source, target=target_obj, options=options.__dict__)
 
     # Copied verbatim from Triton's triton.tools.compile: this MVP only supports zero-scratch kernels.
-    if getattr(ccinfo.metadata, "global_scratch_size", 0) > 0:
+    if getattr(compile_result.metadata, "global_scratch_size", 0) > 0:
         raise RuntimeError(
             "AOT compiling kernels with global scratch requirements is not yet implemented"
         )
-    if ccinfo.metadata.profile_scratch_size > 0:
+    if compile_result.metadata.profile_scratch_size > 0:
         raise RuntimeError(
             "AOT compiling kernels with profile scratch requirements is not yet implemented"
         )
 
     func_name = kernel.__name__
-    asm = ccinfo.asm[backend_impl.binary_ext]
-    hex_ = str(binascii.hexlify(asm))[2:-1]
+    kernel_binary = compile_result.asm[backend_impl.binary_ext]
+    binary_hex = str(binascii.hexlify(kernel_binary))[2:-1]
     runtime_signature = ", ".join(
         f"{_backend_c_type_for_signature(backend, signature[name])} {name}"
         for name in runtime_arg_names
@@ -211,8 +211,11 @@ def _compile_kernel(
     params = {
         "kernel_name": func_name,
         "triton_kernel_name": kernel.__name__,
-        "bin_size": len(asm),
-        "bin_data": ", ".join(f"0x{x}{y}" for x, y in zip(hex_[::2], hex_[1::2])),
+        "bin_size": len(kernel_binary),
+        "bin_data": ", ".join(
+            f"0x{high_nibble}{low_nibble}"
+            for high_nibble, low_nibble in zip(binary_hex[::2], binary_hex[1::2])
+        ),
         "signature": runtime_signature,
         "full_signature": runtime_signature,
         "arg_pointers": ", ".join(
@@ -220,7 +223,7 @@ def _compile_kernel(
         ),
         "num_args": len(runtime_arg_names) + 2,
         "kernel_docstring": "",
-        "shared": ccinfo.metadata.shared,
+        "shared": compile_result.metadata.shared,
         "num_warps": num_warps,
         "algo_info": func_name,
         "gridX": str(grid[0]),
@@ -232,8 +235,8 @@ def _compile_kernel(
     }
 
     # Adapted from Triton's triton.tools.compile: render triton/tools/extra/<backend>/compile.*.
-    with tempfile.TemporaryDirectory(prefix="triton_shared_aot_") as td:
-        tmpdir = Path(td)
+    with tempfile.TemporaryDirectory(prefix="triton_shared_aot_") as temp_dir:
+        tmpdir = Path(temp_dir)
         out_base = tmpdir / kernel.__name__
         generated_c = None
         template_dir = Path(triton_compile_tool.__file__).parent / "extra" / target_obj.backend
@@ -248,9 +251,11 @@ def _compile_kernel(
                 f"expected Triton compile templates to generate .c in {template_dir}"
             )
 
-        c_fd, c_path = tempfile.mkstemp(prefix="triton_shared_", suffix=".c")
-        os.close(c_fd)
-        kept_c = Path(c_path)
+        temp_file_descriptor, temp_source_path = tempfile.mkstemp(
+            prefix="triton_shared_", suffix=".c"
+        )
+        os.close(temp_file_descriptor)
+        kept_c = Path(temp_source_path)
         shutil.copyfile(generated_c, kept_c)
 
     return backend, func_name, kept_c

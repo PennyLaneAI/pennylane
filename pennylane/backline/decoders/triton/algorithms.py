@@ -26,7 +26,7 @@ def _decode_one(
     H: tl.constexpr,
     postprocess: tl.constexpr = "hard",
     prob: tl.constexpr = 0.1,
-    NITER: tl.constexpr = 10,
+    num_iters: tl.constexpr = 10,
 ):
     """Decode one packed syndrome into a packed correction mask.
 
@@ -36,43 +36,43 @@ def _decode_one(
             syndrome bit ``i``, and column ``j`` matches correction bit ``j``.
         postprocess (str): Postprocessing rule to apply to the posterior LLRs.
         prob (float): Prior error probability assigned to each variable.
-        NITER (int): Number of belief-propagation iterations.
+        num_iters (int): Number of belief-propagation iterations.
 
     Returns:
         u64: Packed correction mask. Bit ``j`` targets variable ``j``.
     """
     syndrome = tl.cast(syndrome, tl.uint64)
 
-    P = _sum_product_posteriors(syndrome, H, prob, NITER)
+    posterior_llrs = _sum_product_posteriors(syndrome, H, prob, num_iters)
     if postprocess == "osd":
-        return _osd(P, syndrome)
-    return _hard_decision(P)
+        return _osd(posterior_llrs, syndrome)
+    return _hard_decision(posterior_llrs)
 
 
 @triton.jit
-def _hard_decision(P):
+def _hard_decision(posterior_llrs):
     """Pack negative posterior LLRs into a correction mask.
 
     Args:
-        P (tuple[float]): Posterior LLRs, one per variable.
+        posterior_llrs (tuple[float]): Posterior LLRs, one per variable.
 
     Returns:
-        u64: Packed correction mask with bit ``i`` set when ``P[i] < 0``.
+        u64: Packed correction mask with bit ``i`` set when ``posterior_llrs[i] < 0``.
     """
     one = tl.cast(1, tl.uint64)
     zero = tl.cast(0, tl.uint64)
     mask = zero
-    for i in tl.static_range(len(P)):
-        mask = mask | (tl.where(P[i] < 0.0, one, zero) << i)
+    for i in tl.static_range(len(posterior_llrs)):
+        mask = mask | (tl.where(posterior_llrs[i] < 0.0, one, zero) << i)
     return mask
 
 
 @triton.jit
-def _osd(P, syndrome):
+def _osd(posterior_llrs, syndrome):
     """Build an order-zero one-bit correction for a nonzero syndrome.
 
     Args:
-        P (tuple[float]): Posterior LLRs, one per variable.
+        posterior_llrs (tuple[float]): Posterior LLRs, one per variable.
         syndrome (u64): Packed syndrome bitmask.
 
     Returns:
@@ -81,10 +81,10 @@ def _osd(P, syndrome):
     """
     one = tl.cast(1, tl.uint64)
     zero = tl.cast(0, tl.uint64)
-    bi = zero
-    best = P[0]
-    for i in tl.static_range(1, len(P)):
-        c = P[i] < best
-        bi = tl.where(c, tl.cast(i, tl.uint64), bi)
-        best = tl.where(c, P[i], best)
-    return tl.where(syndrome != 0, one << bi, zero)
+    best_index = zero
+    best_llr = posterior_llrs[0]
+    for i in tl.static_range(1, len(posterior_llrs)):
+        is_better = posterior_llrs[i] < best_llr
+        best_index = tl.where(is_better, tl.cast(i, tl.uint64), best_index)
+        best_llr = tl.where(is_better, posterior_llrs[i], best_llr)
+    return tl.where(syndrome != 0, one << best_index, zero)
