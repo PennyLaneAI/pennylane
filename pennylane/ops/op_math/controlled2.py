@@ -851,7 +851,7 @@ def _ctrl_abstract(
     return qp.ctrl(
         op,
         control=control_wires,
-        control_values=Bool[len(control_wires)],
+        control_values=Bool[len(control_wires)] if num_zero_control_values else None,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )

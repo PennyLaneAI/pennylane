@@ -36,7 +36,7 @@ from pennylane.ops import CNOT, CZ, BasisState, PauliMeasure, X, cond, ctrl, pau
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
@@ -216,7 +216,7 @@ class QROM(Operator2):
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
 
-        if isinstance(data[0], str):
+        if not isinstance(data, AbstractArray) and isinstance(data[0], str):
             data = np.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
         if isinstance(data, (list, tuple)):

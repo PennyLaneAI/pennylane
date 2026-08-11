@@ -1401,7 +1401,7 @@ def _setup_inputs_mcx(
     work_wires = Wires([] if work_wires is None else work_wires)
     if (
         not isinstance(work_wires, AbstractWires)
-        and not isinstance(wires, AbstractArray)
+        and not isinstance(wires, AbstractWires)
         and Wires.shared_wires([work_wires, wires])
     ):
         raise ValueError("work_wires must not overlap with the operator wires.")
