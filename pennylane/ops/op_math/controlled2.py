@@ -703,9 +703,15 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
 
+        _cvals = control_values
+        _cwires = control_wires
+        if qp.capture.enabled() or qp.compiler.active():
+            _cvals = qp.math.array(control_values, like="jax")
+            _cwires = qp.math.array(control_wires, like="jax")
+
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
+            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
         qp.ctrl(
