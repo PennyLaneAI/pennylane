@@ -1031,7 +1031,8 @@ class TestDecomposition:
         """Tests decompositions of custom operations"""
 
         active_wires = ctrl_wires + base_wires
-        base_op = base_cls(*params, wires=base_wires)
+        kwargs = {} if base_cls is qp.GlobalPhase else {"wires": base_wires}
+        base_op = base_cls(*params, **kwargs)
         ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 

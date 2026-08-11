@@ -513,7 +513,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         """Test that adding a global op works as expected."""
         num_params = 1 if cls is qp.GlobalPhase else 0
         data = [0.5124][:num_params]
-        op = cls(*data, wires=wires)
+        op = cls(*data, wires=wires) if cls is qp.Identity else cls(*data)
         # Expected output does not depend on the wires of GlobalPhase but just
         # on the number of drawn wires as dictated by the config!
         n_wires = len(wire_map)
@@ -546,7 +546,8 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         expected = copy(expected)
         num_params = 1 if cls is qp.GlobalPhase else 0
         data = [0.5124][:num_params]
-        op = qp.ctrl(cls(*data, wires=wires), control=control_wires)
+        base_op = cls(*data, wires=wires) if cls is qp.Identity else cls(*data)
+        op = qp.ctrl(base_op, control=control_wires)
         n_wires = len(wire_map)
         if n_wires > 4:
             expected[-1] = "├" + expected[-1][1:]
@@ -897,9 +898,7 @@ class TestShowMatrices:
         """Test matrices numbered but not included by default."""
 
         expected = (
-            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
-            "M0 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         \nM0 = \n[[1. 0.]\n [0. 1.]]"
         )
 
         assert tape_text(tape_matrices) == expected
