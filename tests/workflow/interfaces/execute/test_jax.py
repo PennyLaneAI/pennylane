@@ -516,9 +516,9 @@ class TestJaxExecuteIntegration:
         with qp.decomposition.local_decomps():
 
             @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+            def _decomp(theta, phi, delta, wires):
+                qp.Rot(delta, theta, -delta, wires)
+                qp.PhaseShift(phi + delta, wires)
 
             qp.add_decomps(MyU3, _decomp)
 
