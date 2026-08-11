@@ -127,10 +127,11 @@ def build_css_bp_decoder(
     This helper specializes one Triton decoder for ``Hx`` and one for ``Hz``, then packages both
     decoders behind a single dispatcher selected by ``decoder_id`` at runtime.
 
-    Note:
+    .. note::
         The generated decoder consumes one packed syndrome bitmask and returns one packed
         correction bitmask, each stored in a single ``u64``. Bit ``i`` corresponds
-        to check and qubit ``i`` in the syndrome and correction, respectively.
+        to check and qubit ``i`` in the syndrome and correction, respectively. This limits
+        the current implementation to at most 64 parity checks and qubits.
 
     Args:
         Hx (ArrayLike): X parity-check matrix.

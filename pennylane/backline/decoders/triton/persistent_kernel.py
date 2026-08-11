@@ -46,11 +46,6 @@ def _persistent_decoder_kernel(
             running until ``stop_u32_ptr`` becomes nonzero.
         decoder_fns (tuple[Callable]): Compile-time tuple of Triton decoder
             functions selected by ``decoder_id``.
-
-    Note:
-        The packed syndrome and packed correction each occupy a single ``u64``.
-        This limits the current implementation to at most 64 checks and 64
-        variables.
     """
     # cursor/total are u64; slot indices and seq numbers are u32 by wire layout.
     cursor = tl.zeros((), dtype=tl.uint64)
