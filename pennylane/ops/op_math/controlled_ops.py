@@ -1399,7 +1399,11 @@ def _setup_inputs_mcx(
     if len(wires) < 2:
         raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
     work_wires = Wires([] if work_wires is None else work_wires)
-    if Wires.shared_wires([work_wires, wires]):
+    if (
+        not isinstance(work_wires, AbstractWires)
+        and not isinstance(wires, AbstractArray)
+        and Wires.shared_wires([work_wires, wires])
+    ):
         raise ValueError("work_wires must not overlap with the operator wires.")
 
     # Validate and canonicalize control values
@@ -1411,7 +1415,8 @@ def _setup_inputs_mcx(
         raise ValueError("control_values should be the same length as control_wires")
     if isinstance(control_values, (list, tuple)):
         control_values = qp.math.asarray(control_values, like=control_values[0])
-    control_values = qp.math.cast(control_values, dtype=bool)
+    if not isinstance(control_values, AbstractArray):
+        control_values = qp.math.cast(control_values, dtype=bool)
 
     # Validate work_wire_type
     accepted = ("zeroed", "borrowed")

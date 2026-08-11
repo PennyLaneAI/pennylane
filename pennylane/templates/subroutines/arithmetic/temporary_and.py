@@ -136,15 +136,9 @@ class TemporaryAND(Operator2):
         if control_values is None:
             control_values = math.ones(2, dtype=bool)
         interface = math.get_deep_interface(control_values)
-        control_values = math.cast(math.asarray(control_values, like=interface), bool)
+        if not isinstance(control_values, AbstractArray):
+            control_values = math.cast(math.asarray(control_values, like=interface), bool)
         super().__init__(wires=wires, control_values=control_values)
-
-    @override
-    # pylint: disable-next=arguments-differ
-    def __abstract_init__(self, wires: AbstractWires, control_values=None):
-        if control_values is None:
-            control_values = Bool[2]
-        super().__abstract_init__(wires=wires, control_values=control_values)
 
     def __repr__(self):
         params = [f"wires={self.wires}"]
@@ -156,7 +150,7 @@ class TemporaryAND(Operator2):
         return f"TemporaryAND({", ".join(params)})"
 
     def __str__(self):
-        if self.is_abstract:
+        if isinstance(self.wires, AbstractWires) and isinstance(self.control_values, AbstractArray):
             return "TemporaryAND"
         return repr(self)
 
