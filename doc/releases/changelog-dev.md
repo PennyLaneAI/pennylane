@@ -661,6 +661,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.BasisEmbedding` is now a direct alias of :class:`~.BasisState`.
+  [(#9980)](https://github.com/PennyLaneAI/pennylane/pull/9980)
+
 * Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
   [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
 
@@ -889,6 +892,7 @@
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
+  [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -956,6 +960,7 @@
   [(#9927)](https://github.com/PennyLaneAI/pennylane/pull/9927)
   [(#9920)](https://github.com/PennyLaneAI/pennylane/pull/9920)
   [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
+  [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
