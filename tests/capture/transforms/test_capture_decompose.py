@@ -28,7 +28,6 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
-    operator_p,
     qnode_prim,
     while_loop_prim,
 )
@@ -107,11 +106,10 @@ class TestDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert jaxpr.eqns[0].primitive.name == "neg"
-        assert_eqn_matches_op(jaxpr.eqns[1], qp.RZ)
-        assert jaxpr.eqns[2].primitive == qp.RY._primitive
-        assert_eqn_matches_op(jaxpr.eqns[3], qp.RZ)
-        assert jaxpr.eqns[4].primitive == qp.PhaseShift._primitive
-        assert jaxpr.eqns[5].primitive == qp.PhaseShift._primitive
+
+        expected_ops = [qp.RZ, qp.RY, qp.RZ, qp.PhaseShift, qp.PhaseShift]
+        for eqn, op in zip(jaxpr.eqns[1:6], expected_ops, strict=True):
+            assert_eqn_matches_op(eqn, op)
 
     def test_max_expansion(self):
         """Test that giving a max_expansion to the interpreter results in early stoppage in
@@ -125,9 +123,10 @@ class TestDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert jaxpr.eqns[0].primitive.name == "neg"
-        assert_eqn_matches_op(jaxpr.eqns[1], qp.Rot)
-        assert jaxpr.eqns[2].primitive == qp.PhaseShift._primitive
-        assert jaxpr.eqns[3].primitive == qp.PhaseShift._primitive
+
+        expected_ops = [qp.Rot, qp.PhaseShift, qp.PhaseShift]
+        for eqn, op in zip(jaxpr.eqns[1:4], expected_ops, strict=True):
+            assert_eqn_matches_op(eqn, op)
 
     def test_subroutine(self):
         """Test that decompose works when there is a subroutine in the circuit."""
@@ -353,35 +352,27 @@ class TestDecomposeInterpreter:
 
         # True branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][0]
-        expected_primitives = [
-            operator_p,
-            qp.GlobalPhase._primitive,
-            operator_p,
-            qp.measurements.ExpectationMP._obs_primitive,
-        ]
-        assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        ), f"Expected: {expected_primitives}, got: {[eqn.primitive for eqn in branch.eqns]}"
-        assert branch.eqns[2].params["op_cls"] is qp.Z
+        expected_ops = [qp.RX, qp.GlobalPhase, qp.Z]
+
+        assert branch.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive
+        for eqn, op in zip(branch.eqns[:-1], expected_ops, strict=True):
+            assert_eqn_matches_op(eqn, op)
 
         # Elif branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][1]
-        expected_primitives = [
-            qp.RY._primitive,
-            qp.GlobalPhase._primitive,
-            operator_p,
-            qp.measurements.ExpectationMP._obs_primitive,
-        ]
-        assert all(
-            eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        )
-        assert branch.eqns[2].params["op_cls"] is qp.Y
+        expected_ops = [qp.RY, qp.GlobalPhase, qp.Y]
+
+        assert branch.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive
+        for eqn, op in zip(branch.eqns[:-1], expected_ops, strict=True):
+            assert_eqn_matches_op(eqn, op)
 
         # Else branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
-        assert branch.eqns[0].primitive == qp.PhaseShift._primitive
-        assert_eqn_matches_op(branch.eqns[1], qp.X)
-        assert branch.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
+        expected_ops = [qp.PhaseShift, qp.X]
+
+        assert branch.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive
+        for eqn, op in zip(branch.eqns[:-1], expected_ops, strict=True):
+            assert_eqn_matches_op(eqn, op)
 
     def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""
