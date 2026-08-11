@@ -296,7 +296,7 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     name = name or su2_rule.name
 
     # Resources are not exact because the global phase or rotations might be skipped
-    @register_condition(lambda num_wires: num_wires == 1)
+    @register_condition(lambda U, wires, **_: len(wires) == 1)
     @register_resources(_resource_fn, exact=False, name=name)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
