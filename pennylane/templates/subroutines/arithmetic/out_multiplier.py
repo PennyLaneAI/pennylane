@@ -735,12 +735,15 @@ def _out_multiplier_with_cache_resources(
     num_y_wires = len(y_wires)
     num_output_wires = len(output_wires)
     new_num_work_wires = len(work_wires) - num_output_wires
+    _, resolved_num_work_wires = _resolve_mod_and_num_work_wires(
+        num_output_wires, mod, new_num_work_wires
+    )
     mult_op = OutMultiplier(
         Wire[num_x_wires],
         Wire[num_y_wires],
         Wire[num_output_wires],
         mod=mod,
-        work_wires=Wire[new_num_work_wires],
+        work_wires=Wire[resolved_num_work_wires],
         output_wires_zeroed=True,
     )
     adder_params = {
