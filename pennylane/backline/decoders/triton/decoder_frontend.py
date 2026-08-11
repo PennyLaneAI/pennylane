@@ -174,13 +174,16 @@ def _build_css_bp_decoder(
     **Example**
 
     >>> import numpy as np
-    >>> Hx = np.array([[1, 0], [0, 1]])
-    >>> Hz = np.array([[1, 1], [0, 1]])
+    >>> Hz = Hx = np.array([
+    ...     [1, 0, 1, 0, 1, 0, 1],
+    ...     [0, 1, 1, 0, 0, 1, 1],
+    ...     [0, 0, 0, 1, 1, 1, 1],
+    ... ])
     >>> so_path, symbol_name = _build_css_bp_decoder(
     ...     Hx,
     ...     Hz,
-    ...     postprocess="hard",
-    ...     num_iters=5,
+    ...     postprocess="osd",
+    ...     num_iters=10,
     ...     platform="hip:gfx942:64",
     ... )
     """

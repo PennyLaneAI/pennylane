@@ -155,9 +155,13 @@ def css_bp_decoder(
 
     **Example**
 
+    >>> import numpy as np
     >>> import pennylane as qp
-    >>> Hx = ((1, 0, 1), (0, 1, 1))
-    >>> Hz = ((1, 1, 0), (1, 0, 1))
+    >>> Hz = Hx = np.array([
+    ...     [1, 0, 1, 0, 1, 0, 1],
+    ...     [0, 1, 1, 0, 0, 1, 1],
+    ...     [0, 0, 0, 1, 1, 1, 1],
+    ... ])
     >>> decoder = qp.backline.css_bp_decoder(
     ...     Hx,
     ...     Hz,
