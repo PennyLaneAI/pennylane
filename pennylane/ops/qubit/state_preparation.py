@@ -34,7 +34,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.typing import Int, TensorLike, Wire
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -94,7 +94,7 @@ class BasisState(StatePrepBase2):
     _primitive = "This is a mocked attribute, not a valid primitive"
 
     dynamic_argnames = ("state",)
-    arg_specs = {"state": Int[-1], "wires": Wire[-1]}
+    arg_specs = {"state": Bool[-1], "wires": Wire[-1]}
 
     def __init__(self, state: TensorLike | Sequence[int | bool], wires: WiresLike) -> None:
         wires = Wires(wires)
@@ -102,11 +102,11 @@ class BasisState(StatePrepBase2):
         super().__init__(canonicalized_state, wires=wires)
 
     def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
-        super().__abstract_init__(Int[len(wires)], wires)
+        super().__abstract_init__(Bool[len(wires)], wires)
 
     def _canonicalize_state(
         self, state: TensorLike | Sequence[int | bool], num_wires: int
-    ) -> Sequence[int]:
+    ) -> Sequence[bool]:
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
 
@@ -132,7 +132,7 @@ class BasisState(StatePrepBase2):
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
 
-        return qp.math.cast(state, int)
+        return qp.math.cast(state, bool)
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""

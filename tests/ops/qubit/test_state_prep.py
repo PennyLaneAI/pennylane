@@ -158,7 +158,7 @@ class TestStandardValidityBasisState:
             state_traced, wires_traced, closure_state, closure_wires
         )
 
-        tapes = qp.qjit(abstract_check)(state, wires)
+        tapes = qp.qjit(abstract_check, capture=True)(state, wires)
         for tape in tapes:
             assert len(tape) == 1
             assert isinstance(tape[0], qp.X)
