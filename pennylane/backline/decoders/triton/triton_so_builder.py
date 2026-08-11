@@ -41,6 +41,8 @@
 
 """Build a loadable shared library from a Triton kernel."""
 
+# pylint: disable=no-name-in-module,no-member,too-many-arguments,import-outside-toplevel
+
 from __future__ import annotations
 
 import binascii
@@ -53,6 +55,34 @@ from pathlib import Path
 import triton
 from triton.backends.compiler import GPUTarget
 from triton.tools import compile as triton_compile_tool
+
+
+class _HashableConstexprTuple(tuple):
+    """Tuple wrapper with a recursive Triton cache key.
+
+    This is needed because Triton's ``ASTSource.hash()`` only consults ``cache_key``
+    on the top-level constexpr object, so nested ``JITFunction`` values inside a
+    plain tuple fall back to ``str(...)`` and can collide.
+    """
+
+    @property
+    def cache_key(self) -> str:
+        """Return a recursive cache key for nested constexpr tuples."""
+        return str(tuple(_constexpr_cache_key_part(value) for value in self))
+
+
+def _constexpr_cache_key_part(value: object) -> object:
+    """Build a stable cache-key fragment for nested constexpr values."""
+    if isinstance(value, tuple):
+        return tuple(_constexpr_cache_key_part(item) for item in value)
+    return value.cache_key if hasattr(value, "cache_key") else value
+
+
+def _wrap_constexpr(value: object) -> object:
+    """Wrap tuple constexprs so Triton hashes nested JIT functions by cache key."""
+    if isinstance(value, tuple) and not hasattr(value, "cache_key"):
+        return _HashableConstexprTuple(_wrap_constexpr(item) for item in value)
+    return value
 
 
 def build_so(
@@ -117,10 +147,10 @@ def build_so(
 
         # Triton's generated ``compile.c`` calls ``exit(...)`` but doesn't
         # include ``<stdlib.h>``, so patch it here.
-        source_text = generated_c.read_text()
+        source_text = generated_c.read_text(encoding="utf-8")
         if "#include <stdlib.h>" not in source_text:
             source_text = "#include <stdlib.h>\n" + source_text
-        device_c.write_text(source_text)
+        device_c.write_text(source_text, encoding="utf-8")
 
         if backend == "cuda":
             compiler = compiler or os.environ.get("NVCC", "nvcc")
@@ -186,7 +216,9 @@ def _compile_kernel(
         )
         for arg_name in kernel.arg_names
     }
-    constants = dict(constexpr)
+    # Triton's ASTSource.hash() only checks cache_key on top-level constexpr objects.
+    # Wrap tuples so nested JIT functions contribute their own cache keys.
+    constants = {name: _wrap_constexpr(value) for name, value in constexpr.items()}
 
     # Adapted from Triton's python/triton/tools/compile.py:compile_kernel
     kernel.create_binder()
@@ -253,7 +285,10 @@ def _compile_kernel(
         template_dir = Path(triton_compile_tool.__file__).parent / "extra" / target_obj.backend
         for template_path in template_dir.glob("compile.*"):
             output_file = out_base.with_suffix(template_path.suffix)
-            output_file.write_text(template_path.read_text().format(**params))
+            output_file.write_text(
+                template_path.read_text(encoding="utf-8").format(**params),
+                encoding="utf-8",
+            )
             if template_path.suffix == ".c":
                 generated_c = output_file
 
