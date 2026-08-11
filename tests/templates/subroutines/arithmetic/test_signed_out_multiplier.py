@@ -28,7 +28,11 @@ from pennylane.measurements import sample, state
 from pennylane.ops import CNOT
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
+from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import (
+    _not_zeroed_signed_out_multiplier_resources,
+    _twos_complement_helper,
+    _zeroed_signed_out_multiplier_resources,
+)
 from pennylane.typing import Wire
 
 
@@ -87,6 +91,60 @@ def test_abstract_init(
         x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=output_wires_zeroed
     )
     assert abstractify(concrete_op) == abstract_op
+
+
+@pytest.mark.parametrize(
+    "abstract_register",
+    ["x_wires", "y_wires", "output_wires", "work_wires"],
+)
+def test_abstract_init_wires_like(abstract_register):
+    """Test that abstract init converts concrete wire registers to abstract wires."""
+    x_wires = (0, 1, 2)
+    y_wires = (3, 4, 5)
+    output_wires = (10, 11, 12, 13, 14, 15)
+    work_wires = (6, 7, 8, 9)
+
+    def _as_arg(name, value):
+        return Wire[len(value)] if name == abstract_register else value
+
+    abstract_op = SignedOutMultiplier(
+        _as_arg("x_wires", x_wires),
+        _as_arg("y_wires", y_wires),
+        _as_arg("output_wires", output_wires),
+        _as_arg("work_wires", work_wires),
+    )
+    assert len(abstract_op.x_wires) == 3
+
+    concrete_op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
+    assert abstractify(concrete_op) == abstract_op
+
+
+def test_wires_property():
+    """Test that wires includes all registers."""
+    op = SignedOutMultiplier([0], [1], [2, 3], [4, 5])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5])
+
+
+def test_not_zeroed_decomposition_without_capture():
+    """Test not-zeroed decomposition outside of program capture."""
+    op = SignedOutMultiplier([0, 1], [2, 3], [9, 10], [4, 5, 6, 7, 8])
+    rule = list_decomps(SignedOutMultiplier)["_signed_out_multiplier_decomposition_not_zeroed"]
+
+    assert not qp.capture.enabled()
+    _test_decomposition_rule(op, rule)
+
+
+def test_signed_out_multiplier_resources():
+    """Test resource functions use abstract operator instances as keys."""
+    x_wires = [0, 1]
+    y_wires = [2, 3]
+    output_wires = [4, 5, 6]
+    work_wires = [7, 8, 9, 10]
+
+    assert _zeroed_signed_out_multiplier_resources(
+        x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=True
+    )
+    assert _not_zeroed_signed_out_multiplier_resources(x_wires, y_wires, output_wires, work_wires)
 
 
 def test_map_wires_preserves_output_wires_zeroed():

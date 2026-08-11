@@ -24,6 +24,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
+    _out_multiplier_with_cache_resources,
     _out_multiplier_with_qft,
 )
 from pennylane.typing import Wire
@@ -149,6 +150,48 @@ def test_abstract_init(
 
     concrete_op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
     assert abstractify(concrete_op) == abstract_op
+
+
+@pytest.mark.parametrize(
+    "abstract_register",
+    ["x_wires", "y_wires", "output_wires", "work_wires"],
+)
+def test_abstract_init_wires_like(abstract_register):
+    """Test that abstract init converts concrete wire registers to abstract wires."""
+    x_wires = [0, 1]
+    y_wires = [2, 3]
+    output_wires = [4, 5]
+    work_wires = [6, 7]
+
+    def _as_arg(name, value):
+        return Wire[len(value)] if name == abstract_register else value
+
+    abstract_op = OutMultiplier(
+        _as_arg("x_wires", x_wires),
+        _as_arg("y_wires", y_wires),
+        _as_arg("output_wires", output_wires),
+        mod=3,
+        work_wires=_as_arg("work_wires", work_wires),
+    )
+    assert abstract_op.arguments["mod"] == 3
+    assert len(abstract_op.work_wires) == 2
+
+    concrete_op = OutMultiplier(x_wires, y_wires, output_wires, 3, work_wires)
+    assert abstractify(concrete_op) == abstract_op
+
+
+def test_out_multiplier_cache_resources_resolves_mod():
+    """Test cache decomposition resources resolve mod and work wires."""
+    resources = _out_multiplier_with_cache_resources(
+        [0, 1],
+        [2, 3],
+        [4, 5, 6],
+        mod=4,
+        work_wires=[7, 8, 9, 10, 11, 12],
+    )
+    mult_op = next(key for key in resources if isinstance(key, OutMultiplier))
+    assert mult_op.arguments["mod"] == 4
+    assert len(mult_op.work_wires) == 2
 
 
 @pytest.mark.jax
