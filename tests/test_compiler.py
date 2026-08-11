@@ -342,6 +342,37 @@ class TestCatalyst:
         assert op.control_wires == qp.wires.Wires(control_wire)
         assert op.work_wires == qp.wires.Wires(work_wires_ctrl)
 
+    def test_semi_adder_in_qjit(self):
+        """Test that a plain (uncontrolled) SemiAdder can be constructed and executed
+        inside a qjit-compiled function."""
+        x_wires = [0, 1, 2]
+        y_wires = [3, 4, 5]
+        work_wires = [6, 7]
+
+        @qp.qjit
+        def func():
+            return qp.SemiAdder(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires)
+
+        op = func()
+        assert op.x_wires == qp.wires.Wires(x_wires)
+        assert op.y_wires == qp.wires.Wires(y_wires)
+        assert op.work_wires == qp.wires.Wires(work_wires)
+
+        dev = qp.device("lightning.qubit", wires=8)
+
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit():
+            qp.BasisEmbedding(3, wires=x_wires)
+            qp.BasisEmbedding(4, wires=y_wires)
+            qp.SemiAdder(x_wires, y_wires, work_wires=work_wires)
+            return qp.probs(wires=y_wires)
+
+        probs = circuit()
+        # 3 + 4 = 7 -> binary 111
+        expected_index = 7
+        assert jnp.isclose(probs[expected_index], 1.0)
+
 
 class TestCatalystControlFlow:
     """Test ``qp.qjit`` with Catalyst's control-flow operations"""
