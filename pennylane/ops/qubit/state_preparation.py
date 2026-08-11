@@ -92,9 +92,13 @@ class BasisState(StatePrepBase2):
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
 
-        num_wires = len(wires)
         abstract_state = qp.math.is_abstract(state)
 
+        if not math.shape(state) and abstract_state:
+            bin = 2 ** math.arange(len(wires))[::-1]
+            state = qp.math.where((state & bin) > 0, 1, 0)
+
+        num_wires = len(wires)
         shape = math.shape(state)
         if len(shape) != 1:
             raise ValueError(f"State must be one-dimensional; got shape {shape}.")

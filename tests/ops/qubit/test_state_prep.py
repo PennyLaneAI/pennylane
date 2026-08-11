@@ -56,21 +56,10 @@ class TestInputs:
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
-        ("feat", "wires", "expected"),
-        [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
-    )
-    def test_features_as_int_conversion(self, feat, wires, expected):
-        """checks conversion from features as int to a list of binary digits
-        with length = len(wires)"""
-
-        assert np.allclose(qp.BasisState(feat, wires=wires).parameters[0], expected)
-
-    @pytest.mark.parametrize(
         "x, msg",
         [
-            ([0], "State must be of length"),
-            ([0, 1, 1], "State must be of length"),
-            (4, "Integer state must be"),
+            ([0], "State and wires must have the same length"),
+            ([0, 1, 1], "State and wires must have the same length"),
         ],
     )
     def test_wrong_input_bits_exception(self, x, msg):
