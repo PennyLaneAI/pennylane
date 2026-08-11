@@ -72,6 +72,10 @@ def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedRes
     For example, ``PauliRot`` takes an arbitrary number of wires, so this fails:
 
     >>> qp.core.abstractify(qp.PauliRot)
+    Traceback (most recent call last):
+        ...
+    TypeError: 'PauliRot' must set 'arg_specs' and cover all dynamic and wire arguments with fixed abstract types to be abstractified.
+
     TypeError: 'PauliRot' must set 'arg_specs' and cover all dynamic and wire arguments with fixed abstract types to be abstractified.
 
     """
