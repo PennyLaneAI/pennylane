@@ -42,6 +42,15 @@ class TestGQSP:
         op = qp.GQSP(unitary(1), angles, control=(0,))
         qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
+    def test_wires(self):
+        """Test that wires are in the correct order."""
+        u_wires = [4]
+        c_wires = [0, 1]
+        op = qp.GQSP(qp.X(u_wires), angles=np.array([3, 5]), control=c_wires)
+        # Control wires from wire_argnames should be first followed by the wires of
+        # the unitary hybrid argument
+        assert op.wires == qp.wires.Wires(c_wires + u_wires)
+
     @pytest.mark.parametrize(
         ("unitary", "poly"),
         [
