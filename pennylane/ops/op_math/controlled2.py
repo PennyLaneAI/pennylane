@@ -564,8 +564,11 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         return f"C({self.base.name})"
 
     @property
-    @override
-    def data(self):
+    def data(self) -> tuple:
+        """The trainable parameters of a generic controlled operator are those of its base. The
+        wrapper's own arguments (``control_values``/``control_wires``) are not trainable, so the
+        legacy ``data`` view must expose the base parameters.
+        """
         return self.base.data
 
     def __repr__(self):
