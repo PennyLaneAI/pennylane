@@ -19,8 +19,14 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier, _add_plus_one
+from pennylane.templates.subroutines.arithmetic.out_multiplier import (
+    OutMultiplier,
+    _add_plus_one,
+    _out_multiplier_with_qft,
+)
+from pennylane.typing import Wire
 
 
 class TestBuildingBlocks:
@@ -109,6 +115,40 @@ class TestBuildingBlocks:
         probs = node(x_state, y_state, transformed_state)
         assert np.isclose(probs[0], 1.0)
         assert np.allclose(probs[1:], 0.0)
+
+
+@pytest.mark.parametrize(
+    (
+        "x_wires",
+        "y_wires",
+        "output_wires",
+        "mod",
+        "work_wires",
+        "expected_mod",
+        "expected_num_work_wires",
+    ),
+    [
+        ([0, 1], [2, 3], [4, 5, 6], None, [], 8, 0),
+        ([0, 1], [2, 3], [4, 5], 3, [6, 7, 8], 3, 2),
+        ([0, 1, 2], [3, 4, 5], [6, 7, 8], 8, [9], 8, 1),
+    ],
+)
+def test_abstract_init(
+    x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
+):  # pylint: disable=too-many-arguments
+    """Test that abstract init mirrors concrete init for mod defaulting and work wire truncation."""
+    abstract_op = OutMultiplier(
+        Wire[len(x_wires)],
+        Wire[len(y_wires)],
+        Wire[len(output_wires)],
+        mod=mod,
+        work_wires=Wire[len(work_wires)],
+    )
+    assert abstract_op.arguments["mod"] == expected_mod
+    assert len(abstract_op.work_wires) == expected_num_work_wires
+
+    concrete_op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+    assert abstractify(concrete_op) == abstract_op
 
 
 @pytest.mark.jax
@@ -200,7 +240,7 @@ class TestOutMultiplier:
         """Test the correctness of the OutMultiplier template output."""
         # pylint: disable=too-many-arguments
         all_wires = (x_wires, y_wires, output_wires, work_wires)
-        _test_mult_correctness(all_wires, mod, OutMultiplier.compute_decomposition, seed)
+        _test_mult_correctness(all_wires, mod, _out_multiplier_with_qft, seed)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -293,8 +333,9 @@ class TestOutMultiplier:
                 work_wires=work_wires,
             )
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that the QFT decomposition rule produces the expected structure."""
         x_wires, y_wires, output_wires, mod, work_wires = (
             [0, 1, 2],
             [3, 5],
@@ -304,9 +345,7 @@ class TestOutMultiplier:
         )
         multiplier_decomposition = (
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(
-                x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-            )[0]
+            .decomposition()[0]
             .decomposition()
         )
 
