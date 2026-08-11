@@ -658,10 +658,23 @@ class SumOfSlatersPrep(Operator2):
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
-        wires (qp.wires.WiresLike): Wires on which to prepare the state. All work wires will be
-            allocated dynamically with :func:`~.allocate`.
+        wires (~.WiresLike): Wires on which to prepare the state.
+        enumeration_wires (~.WiresLike): Work wires used for the enumeration register. For
+            :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil` qubits are required.
+        identification_wires (~.WiresLike): Work wires used for the identification register.
+            The required number of qubits depends on the particular ``indices`` of the sparse state,
+            but it is at most :math:`2d-1` for :math:`d` entries in the state.
+        qrom_work_wires (~.WiresLike): Work wires used by the :class:`~.QROM` subroutine. For
+            :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil - 1` qubits are required.
+        mcx_cache_wires (~.WiresLike): Work wires used for caching AND values when uncomputing
+            the enumeration register with multicontrolled bit flips.
+            The required number of qubits depends on the particular ``indices`` of the sparse state,
+            but it is at most :math:`2d-2` for :math:`d` entries in the state.
         indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
             that in ``coefficients``.
+
+    The sizes for the numerous optional work wire registers can be computed with
+    ``SumOfSlatersPrep.required_register_sizes``.
 
     .. warning::
 
@@ -848,8 +861,8 @@ class SumOfSlatersPrep(Operator2):
         **Dynamic work wires**
 
         Note that in the example above, wires with labels ``5`` to ``15`` were dynamically
-        allocated. We can see an
-        initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as
+        allocated. These registers can optionally be provided explicitly. If they are not, they will be dynamically allocated. 
+        We can see an initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as
         ``|Ψ⟩`` on the first four dynamic wires in the above diagram), a :class:`~.QROM` and
         a sequence of elbow ladders that set a caching qubit (qubit index ``15``), which
         then controls :class:`~.CNOT` gates that perform the actual uncomputation.
