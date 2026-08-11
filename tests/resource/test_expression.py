@@ -32,7 +32,9 @@ def test_maybe_collapse():
     assert isinstance(zero, int)
 
     # Check for literal 0
-    assert _maybe_collapse({(): 0}, set(), skip_copy=True, skip_normalization=False) == 0
+    lit_zero = _maybe_collapse({(): 0}, set(), skip_copy=True, skip_normalization=False)
+    assert lit_zero == 0
+    assert isinstance(lit_zero, int)
 
     three = _maybe_collapse({(): 3}, set(), skip_copy=True, skip_normalization=False)
     assert three == 3
@@ -97,7 +99,7 @@ class TestExpression:
             Expression("foo")
 
     def test_init_skip_normalization(self):
-        """Test that the __init__ method can skip normalization when _skip_normalization == True."""
+        """Test that the __init__ method can skip normalization when _skip_normalization is True."""
         data = {("x", "y"): 2, ("y", "x"): 3, ("z",): 1, ("foo",): 0, (): 4}
         expr = Expression(data, _skip_normalization=True)
         assert expr._data == data
@@ -260,6 +262,16 @@ class TestExpressionMath:
         assert expr1 + expr3 == 0
         assert isinstance(expr1 + expr3, int)
 
+    def test_add_casts_to_int(self):
+        expr = Expression({(): 2})
+        new_expr = expr + 3
+        assert isinstance(new_expr, int)
+        assert new_expr == 5
+
+        new_expr = expr + Expression({(): 3})
+        assert isinstance(new_expr, int)
+        assert new_expr == 5
+
     def test_add_invalid(self, sample_expr):
         # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
@@ -291,7 +303,7 @@ class TestExpressionMath:
         expr = Expression({("x",): 1, (): 2})
         new_expr = expr * 0
         assert isinstance(new_expr, int)
-        assert expr * 0 == 0 * expr == Expression({})
+        assert expr * 0 == 0 * expr == 0
 
     def test_mul_casts_to_int(self):
         expr = Expression({(): 2})

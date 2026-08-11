@@ -162,17 +162,15 @@ def _mlir_resources_to_specs_resources(
     # NOTE: Sorting these dicts by key ensures that the resulting SpecsResources objects have a
     # deterministic order, which is helpful for testing and readability
 
-    kwargs = {
-        "counts": {k: quantum_operations[k] for k in sorted(quantum_operations.keys())},
-        "measurement_processes": {
+    fn_resources[focus] = SpecsResources(
+        counts={k: quantum_operations[k] for k in sorted(quantum_operations.keys())},
+        measurement_processes={
             k: measurement_processes[k] for k in sorted(measurement_processes.keys())
         },
-        "num_wires": num_wires,
-        "circuit_depth": None,  # Can't get depth from MLIR pass results
-        "extra": extended_fields,
-    }
-
-    fn_resources[focus] = SpecsResources(**kwargs)
+        num_wires=num_wires,
+        circuit_depth=None,  # Can't get depth from MLIR pass results
+        extra=extended_fields,
+    )
 
 
 def _handle_extended_fields(
