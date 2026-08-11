@@ -34,7 +34,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.typing import Bool, TensorLike, Wire
+from pennylane.typing import Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -77,6 +77,15 @@ class BasisState(StatePrepBase2):
     >>> circuit([1, 0])
     array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j])
 
+    If you would like to set a state represented by a base-10 decimal, you can do:
+
+    >>> dec_state = 3 # |11> state
+    >>> bin_state = qp.math.int_to_binary(dec_state, 2)
+    >>> print(bin_state)
+    [1 1]
+    >>> circuit(bin_state)
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
+
     """
 
     # This is a mock attribute to satisfy an assumption made by Catalyst
@@ -85,7 +94,7 @@ class BasisState(StatePrepBase2):
     _primitive = "This is a mocked attribute, not a valid primitive"
 
     dynamic_argnames = ("state",)
-    arg_specs = {"state": Bool[-1], "wires": Wire[-1]}
+    arg_specs = {"state": Int[-1], "wires": Wire[-1]}
 
     def __init__(self, state: TensorLike | Sequence[int | bool], wires: WiresLike) -> None:
         wires = Wires(wires)
@@ -119,7 +128,7 @@ class BasisState(StatePrepBase2):
         super().__init__(state, wires=wires)
 
     def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
-        super().__abstract_init__(Bool[len(wires)], wires)
+        super().__abstract_init__(Int[len(wires)], wires)
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
