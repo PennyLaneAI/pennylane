@@ -1,4 +1,4 @@
-# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ diagonal-splitting circuit transformations.
 
 import numpy as np
 from scipy.linalg import cossin
-from scipy.stats import unitary_group
+
+import pennylane as qp
 
 # ============================================================================
 # Array and control-bit utilities
@@ -35,26 +36,9 @@ def get_nwires(d):
     return nwires
 
 
-def create_unitary(d):
-    """Return a random ``d x d`` unitary and the wires used to embed it."""
-    nwires = get_nwires(d)
-    wires = list(range(nwires))
-    U_d = unitary_group.rvs(d)
-    return U_d, wires
-
-
-def create_unitary_diagonal(d):
-    """Return a length-``d`` diagonal of random complex phases."""
-    random_phases = np.random.uniform(0, 2 * np.pi, d)
-    full_diag = np.exp(1j * random_phases)
-    return full_diag
-
-
 def ints_to_control_bits(control_states, num_control_bits):
-    r"""
-    Converts a list of integer control states into a list of lists
-    containing individual bit values (MSB first).
-    """
+    r"""Convert each integer control state into a ``num_control_bits``-long
+    list of bits (MSB first, zero-padded)."""
     return [[int(bit) for bit in format(c, f"0{num_control_bits}b")] for c in control_states]
 
 
@@ -64,26 +48,6 @@ def control_bits_to_ints(control_bits):
     for b in control_bits:
         value = (value << 1) | b
     return value
-
-
-def count_nontrivial_diagonal(diagonal, atol=1e-8):
-    """
-    Count the number of entries in a diagonal that are not equal to 1.
-
-    Useful for measuring how much of a diagonal remainder is non-trivial
-    (entries equal to 1 act as identity and carry no phase).
-    """
-    diagonal = np.asarray(diagonal)
-    return int(np.count_nonzero(~np.isclose(diagonal, 1.0, atol=atol)))
-
-
-def extract_active_submatrix(matrix, active_indices):
-    """
-    Extracts the active submatrix from a larger embedded matrix by removing
-    inactive basis states (states that only apply the identity operation).
-    """
-    matrix = np.asarray(matrix)
-    return matrix[np.ix_(active_indices, active_indices)]
 
 
 # ============================================================================
@@ -100,13 +64,17 @@ def split_d(d):
     return p, q
 
 
-def get_master_sequence(N):
-    r"""
-    Return the fractal master sequence for a ``\log_2(N)``-qubit register by
-    recursively halving the register and interleaving the two child orderings at each level.
-
-    The sequence is a permutation of ``range(N)``. Active ``d`` states are the
-    length-``d`` suffix ``master_sequence[N - d:]``.
+def get_fractal_sequence(N):
+    r"""Return the fractal ordering of a ``\log_2(N)``-qubit register.
+    The register is recursively halved and the two child orderings are interleaved
+    at each level, yielding a permutation of ``range(N)``. The active ``d`` states are
+    the length-``d`` suffix ``fractal_sequence[N - d:]``.
+    Args:
+        N (int): size of the register; must be a power of 2.
+    Returns:
+        list[int]: a permutation of ``range(N)`` in fractal order.
+    Raises:
+        ValueError: if ``N`` is not a positive power of 2.
     """
     if N < 1 or (N & (N - 1)) != 0:
         raise ValueError("N must be a power of 2.")
@@ -128,72 +96,52 @@ def get_master_sequence(N):
 
 
 def get_fractal_embedding_states(d, N):
-    r"""
-    Active and inactive basis indices for fractal embedding.
-
+    r"""Return the active and inactive basis indices for a fractal embedding.
+    The fractal ordering of the ``N`` basis states is split so that the last ``d``
+    states are active and the remaining ``N - d`` are inactive.
     Args:
-        d: Number of active states.
-        N: Hilbert-space dimension (power of 2).
+        d (int): number of active states.
+        N (int): Hilbert-space dimension; must be a power of 2.
+    Returns:
+        tuple[list[int], list[int]]: the sorted active and inactive basis indices.
     """
-    master_sequence = get_master_sequence(N)
+    master_sequence = get_fractal_sequence(N)
     inactive_states = master_sequence[: N - d]
     active_states = master_sequence[N - d :]
     return sorted(active_states), sorted(inactive_states)
 
 
-def embed_unitary(U: np.ndarray, N: int, active_indices: list):
-    """Embed the active submatrix ``U`` into an ``N x N`` identity."""
-    embedded = np.eye(N, dtype=complex)
-    ix = np.ix_(active_indices, active_indices)
-    embedded[ix] = U
-    return embedded
-
-
-def print_embedding_matrix(d, N):
+def embed_unitary(U, N: int, active_indices: list):
+    r"""Embed the submatrix ``U`` into an ``N x N`` identity on the active subspace.
+    ``U`` acts on the basis states given by ``active_indices``; all remaining
+    (inactive) basis states are left unchanged (identity).
+    Args:
+        U (tensor_like): the ``len(active_indices) x len(active_indices)`` matrix to embed.
+        N (int): dimension of the full register.
+        active_indices (list[int]): basis indices that ``U`` acts on.
+    Returns:
+        tensor_like: the ``N x N`` matrix acting as ``U`` on the active subspace
+        and as the identity elsewhere.
     """
-    Prints an NxN diagonal-like matrix where inactive states are '1'
-    and active states form dense blocks of '*' (2x2 or 3x3) along the diagonal.
-    """
-    active_states, inactive_states = get_fractal_embedding_states(d, N)
-
-    # Group the active states into contiguous blocks
-    active_states.sort()
-    active_blocks = []
-
-    if active_states:
-        current_block = [active_states[0]]
-        for i in range(1, len(active_states)):
-            if active_states[i] == current_block[-1] + 1:
-                current_block.append(active_states[i])
-            else:
-                active_blocks.append(current_block)
-                current_block = [active_states[i]]
-        active_blocks.append(current_block)
-
-    # Initialize the N x N grid with '.' for empty zeroes
-    grid = [["." for _ in range(N)] for _ in range(N)]
-
-    # Populate the inactive states
-    for i in inactive_states:
-        grid[i][i] = "1"
-
-    # Populate the active states
-    for block in active_blocks:
-        for r in block:
-            for c in block:
-                grid[r][c] = "*"
-
-    # Print the matrix
-    print(f"Fractal embedding matrix (N={N}, d={d})")
-    print("-" * (N * 2 - 1))
-    for row in grid:
-        print(" ".join(row))
+    U = qp.math.asarray(U)
+    active_indices = list(active_indices)
+    # 0/1 selection matrix (structural) mapping the active subspace into the register.
+    selection = np.eye(N, dtype=complex)[:, active_indices]
+    inactive_identity = np.eye(N, dtype=complex) - selection @ selection.T
+    return selection @ U @ selection.T + inactive_identity
 
 
 def find_mismatched_block_start(block_dims):
-    """
-    Takes a list of block dimensions and returns the first active state index
-    of the mismatched block in the second half.
+    r"""Find the starting state index of the first mismatched block in the second half.
+    The blocks are split into two equal halves and compared pairwise (block ``i`` in
+    the first half against block ``i + num_blocks // 2`` in the second). The returned
+    index is the cumulative state offset, within the second half, of the first pair
+    whose dimensions differ.
+    Args:
+        block_dims (Sequence[int]): dimension (number of states) of each block.
+    Returns:
+        int or None: the second-half state index where the first size mismatch occurs,
+        or ``None`` if the two halves are perfectly symmetric.
     """
     num_blocks = len(block_dims)
     half_blocks = num_blocks // 2
@@ -210,16 +158,24 @@ def find_mismatched_block_start(block_dims):
         if size_first_half != size_second_half:
             return current_state_idx_second
 
-        # Add the size of the current block in the SECOND half to shift the index forward
+        # Add the size of the current block in the second half to shift the index forward
         current_state_idx_second += size_second_half
 
     return None  # Returns None if all blocks are perfectly symmetric
 
 
 def get_active_block_sizes(d, N):
-    """
-    Recursively calculates the dimensions of the active blocks
-    using a floor_first partition (p=floor, q=ceil).
+    r"""Compute the sizes of the active blocks in a fractal embedding.
+    The ``N``-dimensional register is recursively halved, splitting the ``d`` active
+    states with a floor-first partition (``p = floor``, ``q = ceil``) until each chunk
+    has dimension ``<= 4``. Fully inactive chunks (``curr_d == 0``) are omitted.
+    Args:
+        d (int): number of active states; must satisfy ``0 <= d <= N``.
+        N (int): dimension of the register; must be a power of 2.
+    Returns:
+        list[int]: the active-state count of each non-empty block, left to right.
+    Raises:
+        ValueError: if ``N`` is not a power of 2, or ``d`` is outside ``[0, N]``.
     """
     if N < 1 or (N & (N - 1)) != 0:
         raise ValueError("N must be a power of 2.")
@@ -229,7 +185,7 @@ def get_active_block_sizes(d, N):
     def _get_sizes(curr_d, curr_N):
         # Base case: We've reached the embedding block
         if curr_N <= 4:
-            # curr_d is the exact number of active states in this chunk!
+            # curr_d is the exact number of active states in this chunk.
             # If curr_d is 0, it's an entirely inactive block, so we omit it
             return [curr_d] if curr_d > 0 else []
 
@@ -252,9 +208,21 @@ def get_active_block_sizes(d, N):
 
 
 def shift_csd_one(U, CS, V_H, target_index):
-    """
-    Shifts the uncoupled '1' in a Cosine-Sine Decomposition to a target index.
-    Assumes a total dimension d = 2p + 1.
+    r"""Shift the uncoupled ``1`` of a Cosine-Sine Decomposition to a target index.
+    Given a CSD ``U @ CS @ V_H`` with total dimension ``d = 2p + 1`` (so the lone
+    uncoupled ``1`` sits at position ``p`` in the ``CS`` matrix), this permutes the
+    columns/rows within the second block ``[p, d)`` so the ``1`` lands at
+    ``target_index``, returning the updated factors.
+    Args:
+        U (tensor_like): left factor of the CSD.
+        CS (tensor_like): the ``d x d`` cosine-sine (diagonal-block) factor.
+        V_H (tensor_like): right factor of the CSD.
+        target_index (int): destination index for the uncoupled ``1``; must lie in
+            ``[p, d)``.
+    Returns:
+        tuple[tensor_like, tensor_like, tensor_like]: the permuted ``(U, CS, V_H)``.
+    Raises:
+        ValueError: if ``target_index`` is outside its block partition ``[p, d - 1]``.
     """
     d = CS.shape[0]
     p = d // 2  # Integer division to find p
@@ -292,40 +260,31 @@ def shift_csd_one(U, CS, V_H, target_index):
     return U_custom, CS_custom, V_H_custom
 
 
-def csd(V, shift=False, return_all=False):
-    r"""
-    Perform the Cosine-Sine Decomposition (CSD) of a unitary matrix :math:`V`.
-
-    Decomposes a :math:`d \times d` unitary into two :math:`p \times p` and two :math:`q \times q`
-    (with :math:`p + q = d` and :math:`q-p\in\{0,1\}`) unitary blocks and a partially multiplexed
-    :math:`R_Y` rotation as used in the Quantum Shannon Decomposition.
-    Uses the standard implementation in SciPy.
-
+def synthesis_csd(V, shift=False, return_all=False):
+    r"""Cosine-Sine Decomposition of a unitary, specialized for fractal-embedded synthesis.
+    Splits a :math:`d \times d` unitary (via :func:`scipy.linalg.cossin`) into blocks
+    ``K00, K01`` / ``K10, K11`` and a multiplexed :math:`R_Y` angle array ``theta``.
+    When ``shift=True`` and ``d`` is odd, the uncoupled ``1`` of the cosine-sine block is
+    relocated to match the fractal-embedding block structure.
     Args:
-        V (np.ndarray): A :math:`d \times d` complex unitary matrix.
-        shift (bool): Whether to shift the uncoupled '1' in the CSD.
-        return_all (bool): Whether to return U, CS, V_H.
+        V (np.ndarray): a :math:`d \times d` unitary matrix.
+        shift (bool): align the odd-``d`` uncoupled ``1`` with the embedding blocks.
+        return_all (bool): also return the raw CSD factors ``U, CS, V_H``.
     Returns:
-        tuple[np.ndarray]: (K00, K01, theta, K10, K11, U, CS, V_H) where:
-            - K00, K01 (np.ndarray): :math:`p \times p` and :math:`q \times q` blocks of the left factor.
-            - theta (np.ndarray): Array of :math:`p` angles for a partially multiplexed :math:`R_Y`.
-            - K10, K11 (np.ndarray): :math:`p \times p` and :math:`q \times q` blocks of the right factor.
-            - U (np.ndarray): The unitary matrix :math:`U` of the CSD.
-            - CS (np.ndarray): The cosine-sine matrix :math:`CS` of the CSD.
-            - V_H (np.ndarray): The hermitian conjugate of the unitary matrix :math:`V_H` of the CSD.
+        tuple: ``(K00, K01, theta, K10, K11, U, CS, V_H)``; the last three are ``None``
+        unless ``return_all=True``.
     """
     d = V.shape[0]
     p, q = split_d(d)
     N = 2 ** get_nwires(d)  # Hilbert-space dimension (power of 2)
-
     U, CS, V_H = None, None, None
 
-    if p == q:
-        (K00, K01), theta, (K10, K11) = cossin(V, p=p, q=p, separate=True)
-    elif shift:
+    shift_idx = None
+    if p != q and shift:
+        shift_idx = find_mismatched_block_start(get_active_block_sizes(d, N))
+    if shift_idx is not None:
         U_init, CS_init, V_H_init = cossin(V, p=p, q=p, separate=False)
         _, theta, _ = cossin(V, p, p, separate=True)
-        shift_idx = find_mismatched_block_start(get_active_block_sizes(d, N))
         U, CS, V_H = shift_csd_one(U_init, CS_init, V_H_init, shift_idx)
         K00 = U[:p, :p]
         K01 = U[p:, p:]
@@ -333,15 +292,12 @@ def csd(V, shift=False, return_all=False):
         K11 = V_H[p:, p:]
     else:
         (K00, K01), theta, (K10, K11) = cossin(V, p=p, q=p, separate=True)
-
     if not return_all:
         U, CS, V_H = None, None, None
-    if return_all and not shift:
+    elif shift_idx is None:
         U, CS, V_H = cossin(V, p=p, q=p, separate=False)
-
     # RY(alpha) is defined with half-angles while SciPy returns full angles
     theta *= 2.0
-
     return K00, K01, theta, K10, K11, U, CS, V_H
 
 
@@ -351,22 +307,24 @@ def csd(V, shift=False, return_all=False):
 
 
 def split_diagonal_into_partially_multiplexed_rz(full_diagonal, wires, control_states):
-    """
-    Split a diagonal into partially multiplexed Rz angles and a remainder.
-
-    ``full_diagonal`` is indexed in MSB-first order on
-    ``sorted(wires)``. ``wires[-1]`` is the Rz target; ``wires[:-1]`` are
-    controls (any order). ``control_states`` are basis indices in that ordering.
-
-    ``full_diagonal = rz_diagonal * remaining_diagonal`` (element-wise).
+    r"""Factor a diagonal into a partially multiplexed :math:`R_z` and a remainder.
+    ``full_diagonal`` is MSB-first on ``sorted(wires)``; ``wires[-1]`` is the :math:`R_z`
+    target and ``wires[:-1]`` the controls, restricted to ``control_states``. Satisfies
+    ``full_diagonal = rz * remaining`` element-wise.
+    Args:
+        full_diagonal (tensor_like): the diagonal to factor.
+        wires (Sequence): control wires followed by the :math:`R_z` target wire.
+        control_states (Sequence[int]): control basis indices to act on.
+    Returns:
+        tuple: ``(angles, remaining, rz)`` — the :math:`R_z` angles, the residual
+        diagonal, and the extracted :math:`R_z` diagonal.
     """
     wires = list(wires)
     target = wires[-1]
 
-    full_diagonal = np.asarray(full_diagonal, dtype=complex)
+    full_diagonal = qp.math.asarray(full_diagonal, dtype=complex)
     wire_order = sorted(wires)
     n = len(wire_order)
-    expected = 2**n
 
     # Find pair of full-register diagonal indices that the target qubit's Rz acts on.
     bit_pos = n - 1 - wire_order.index(target)
@@ -377,93 +335,83 @@ def split_diagonal_into_partially_multiplexed_rz(full_diagonal, wires, control_s
     # Rz angle = phase difference between the |0>/|1> pair;
     # residual = shared phase left behind.
     val_0, val_1 = full_diagonal[idx_0], full_diagonal[idx_1]
-    angles = np.angle(val_1 / val_0)
-    residual = val_0 * np.exp(1j * angles / 2)
+    angles = qp.math.angle(val_1 / val_0)
+    half = qp.math.exp(1j * angles / 2)
+    residual = val_0 * half
 
     # Strip the Rz phase from both paired entries, leaving the shared residual.
-    remaining = full_diagonal.copy()
-    remaining[idx_0] = remaining[idx_1] = residual
+    # Functional scatter: "set to residual" == add the delta from the current value.
+    remaining = qp.math.scatter_element_add(full_diagonal, [idx_0], residual - val_0)
+    remaining = qp.math.scatter_element_add(remaining, [idx_1], residual - val_1)
 
     # Reconstruct the extracted Rz as its own diagonal: e^{-i angle/2} on |0>
     # and e^{+i angle/2} on |1>, identity everywhere else.
-    half = np.exp(1j * angles / 2)
-    rz = np.ones(expected, dtype=complex)
-    rz[idx_0] = np.conj(half)
-    rz[idx_1] = half
+    rz = qp.math.ones_like(full_diagonal)
+    rz = qp.math.scatter_element_add(rz, [idx_0], qp.math.conj(half) - 1)
+    rz = qp.math.scatter_element_add(rz, [idx_1], half - 1)
 
-    return angles.tolist(), remaining, rz
+    return angles, remaining, rz
 
 
 def split_diagonal_into_control_branches(diag, wires):
-    """
-    Splits a diagonal into |0>- and |1>-controlled diagonals.
-    Returns the |0>-controlled diagonal, the |1>-controlled diagonal,
-    and the corresponding target-only diagonals.
-
-    ``wires[0]`` is the control qubit; remaining entries are target wires.
-
+    r"""Split a diagonal into its :math:`\vert 0\rangle`- and :math:`\vert 1\rangle`-controlled branches.
+    ``wires[0]`` is the control qubit (indexed MSB-first on ``sorted(wires)``); the rest
+    are targets.
     Args:
-        diag (np.ndarray): A 1D array of length 2^n representing the diagonal.
-        wires (list or array-like): The wires the operation acts on.
-
+        diag (tensor_like): a length-``2^n`` diagonal.
+        wires (Sequence): control wire followed by target wires.
     Returns:
-        tuple:
-            - d0 / d1 (np.ndarray): Full-sized diagonal operation controlled by |0> / |1>.
-            - target_d0 / target_d1 (np.ndarray): Target diagonal when control is |0> / |1>.
+        tuple: ``(d0, d1, target_d0, target_d1)`` — the full diagonals controlled on
+        :math:`\vert 0\rangle` / :math:`\vert 1\rangle` (identity off-branch) and the
+        corresponding target-only diagonals.
     """
-    diag = np.asarray(diag)
+    diag = qp.math.asarray(diag)
     wires = list(wires)
-    n_states = len(diag)
-    n_qubits = int(np.round(np.log2(n_states)))
+    n_states = qp.math.shape(diag)[0]
+    n_qubits = int(round(float(np.log2(n_states))))
 
     all_wires = sorted(wires)
     control_wire = wires[0]
     ctrl_bit_pos = n_qubits - 1 - all_wires.index(control_wire)
 
-    # Divide basis states into |0>- and |1>-controlled groups.
+    # Divide basis states into |0>- and |1>-controlled groups (structural index masks).
     indices = np.arange(n_states)
-    ctrl_bit = (indices >> ctrl_bit_pos) & 1
-    idx0 = indices[ctrl_bit == 0]
-    idx1 = indices[ctrl_bit == 1]
+    is_zero = ((indices >> ctrl_bit_pos) & 1) == 0
 
-    # Get the |0>- and |1>-controlled diagonals.
-    d0 = np.ones(n_states, dtype=diag.dtype)
-    d1 = np.ones(n_states, dtype=diag.dtype)
-    d0[idx0] = diag[idx0]
-    d1[idx1] = diag[idx1]
+    # Build the |0>- and |1>-controlled diagonals functionally (identity off-branch).
+    ones = qp.math.ones_like(diag)
+    d0 = qp.math.where(is_zero, diag, ones)
+    d1 = qp.math.where(~is_zero, diag, ones)
 
-    return d0, d1, diag[idx0], diag[idx1]
+    return d0, d1, diag[indices[is_zero]], diag[indices[~is_zero]]
 
 
 def get_controlled_unitary_msq(U, wires, control_value, active_indices=None):
-    """
-    Turns a target operator ``U`` into a full-register operator controlled on
-    ``wires[0]`` by the control value ``control_value``.
-
-    All indexing is MSB-first on
-    ``sorted(wires)``. A 2D ``U`` that is purely diagonal is treated as diagonal.
-
+    r"""Lift a target operator ``U`` to a full-register operator controlled on ``wires[0]``.
+    Indexing is MSB-first on ``sorted(wires)``. If ``U`` is smaller than the target
+    dimension, ``active_indices`` says which target states it acts on (identity elsewhere).
+    A purely diagonal 2D ``U`` is handled via the cheaper diagonal path.
     Args:
-        U (array-like): Target operator on ``wires[1:]``. A 1D diagonal of length
-            ``2**(len(wires)-1)`` (or its active subset), or a 2D unitary.
-        wires (list): ``wires[0]`` is the control; ``wires[1:]`` are targets.
-        control_value (int): Control bit (0 or 1) the operation triggers on.
-        active_indices (array-like, optional): Target-subspace indices ``U`` acts
-            on when ``U`` is smaller than the full target dimension; the rest is
-            padded with identity.
-
+        U (tensor_like): target operator on ``wires[1:]`` — a length-``2**(len(wires)-1)``
+            diagonal (or active subset) or a 2D unitary.
+        wires (Sequence): ``wires[0]`` is the control; ``wires[1:]`` the targets.
+        control_value (int): control bit (0 or 1) that triggers ``U``.
+        active_indices (Sequence[int], optional): target indices ``U`` acts on when it is
+            smaller than the full target dimension.
     Returns:
-        np.ndarray: Length ``2**len(wires)`` diagonal vector if ``U`` is diagonal,
-        otherwise a ``2**len(wires)`` square matrix.
+        tensor_like: a length-``2**len(wires)`` diagonal if ``U`` is diagonal, else a
+        ``2**len(wires)`` square matrix.
+    Raises:
+        ValueError: if ``U`` is smaller than the target dimension and ``active_indices`` is ``None``.
     """
     wires = list(wires)
-    U = np.asarray(U)
-    # Treat a 2D U with no off-diagonal entries as a diagonal (cheaper path).
-    is_diagonal = U.ndim == 1
-    if U.ndim == 2:
-        off_diag = U - np.diag(np.diag(U))
-        if np.allclose(off_diag, 0):
-            U = np.diag(U)
+    U = qp.math.asarray(U)
+    # Treat a 2D U with no off-diagonal entries as a diagonal (cheaper).
+    is_diagonal = len(qp.math.shape(U)) == 1
+    if len(qp.math.shape(U)) == 2:
+        off_diag = U - qp.math.diag(qp.math.diag(U))
+        if qp.math.allclose(off_diag, 0):
+            U = qp.math.diag(U)
             is_diagonal = True
 
     control_wire = wires[0]
@@ -473,19 +421,24 @@ def get_controlled_unitary_msq(U, wires, control_value, active_indices=None):
     sorted_target = [w for w in wire_order if w != control_wire]
     n_target = len(sorted_target)
     target_dim = 2**n_target
-    op_size = U.size if is_diagonal else U.shape[0]
+    op_size = qp.math.shape(U)[0]
 
     # Expand U to the full target subspace: use it as-is if already full size,
     # otherwise pad with identity on the inactive target indices.
     if op_size == target_dim:
-        U_target = np.asarray(U, dtype=complex)
-    elif active_indices is not None:
+        U_target = qp.math.cast(U, complex)
+    elif active_indices is None:
+        raise ValueError(
+            "active_indices must be provided when U is smaller than the target dimension"
+        )
+    elif is_diagonal:
         active_indices = np.asarray(active_indices)
-        if is_diagonal:
-            U_target = np.ones(target_dim, dtype=complex)
-            U_target[active_indices] = U
-        else:
-            U_target = embed_unitary(U, target_dim, active_indices)
+        # Identity diagonal with U scattered onto the active indices.
+        base = qp.math.convert_like(np.ones(target_dim, dtype=complex), U)
+        U_target = qp.math.scatter_element_add(base, [active_indices], U - 1)
+    else:
+        active_indices = np.asarray(active_indices)
+        U_target = embed_unitary(U, target_dim, active_indices)
 
     # Select the full-register rows where the control qubit equals control_value.
     idx = np.arange(full_dim)
@@ -499,41 +452,38 @@ def get_controlled_unitary_msq(U, wires, control_value, active_indices=None):
         bit = n_qubits - 1 - wire_order.index(w)
         target_sub |= ((idx >> bit) & 1) << (n_target - 1 - j)
 
-    # Diagonal case: scatter U's diagonal onto the controlled rows, 1 elsewhere.
+    # Diagonal case: gather U's diagonal onto the controlled rows, 1 elsewhere.
     if is_diagonal:
-        controlled = np.ones(full_dim, dtype=complex)
-        controlled[mask] = U_target[target_sub[mask]]
-        return controlled
+        gathered = qp.math.gather(U_target, target_sub)
+        return qp.math.where(mask, gathered, qp.math.ones_like(gathered))
 
-    # Dense case: place U into the controlled block, identity on the rest.
-    controlled = np.eye(full_dim, dtype=complex)
+    # Dense case: place U into the controlled block, identity on the rest, using a 0/1
+    # selection matrix ``S`` so ``S @ U_target @ S.T`` scatters the block without mutation.
     slice_idx = np.where(mask)[0]
     sub = target_sub[slice_idx]
-    controlled[np.ix_(slice_idx, slice_idx)] = U_target[np.ix_(sub, sub)]
-    return controlled
+    selection = np.zeros((full_dim, target_dim), dtype=complex)
+    selection[slice_idx, sub] = 1.0
+    identity_rest = np.eye(full_dim, dtype=complex) - selection @ selection.T
+    return selection @ U_target @ selection.T + identity_rest
 
 
 def propagate_diagonal_through_unitary(full_diag, U, wires, control_val, active_indices):
-    """
-    Propagates a diagonal through a ``d x d`` unitary ``U``.
+    r"""Absorb a diagonal into a unitary ``U`` on the controlled subspace.
 
-    On the subspace where the leading control wire equals ``control_val``, the
-    target diagonal carried by ``full_diag`` is merged into ``U`` (multiplied
-    onto its columns at ``active_indices``) and stripped from the diagonal.
+    On the rows where ``wires[0]`` equals ``control_val``, the target diagonal carried by
+    ``full_diag`` is multiplied onto ``U``'s active columns and stripped from the diagonal.
+    All indexing is MSB-first on ``sorted(wires)``.
 
     Args:
-        full_diag (array-like): Length-``2**len(wires)`` diagonal, MSB-first on
-            ``sorted(wires)``.
-        U (np.ndarray): ``d x d`` unitary on the active target subspace.
-        wires (list): All wires; the first wire is the control.
-        control_val (int): Control value that ``U`` acts on.
-        active_indices (array-like): Target-subspace indices ``U`` occupies.
+        full_diag (tensor_like): length-``2**len(wires)`` diagonal.
+        U (tensor_like): unitary on the active target subspace.
+        wires (Sequence): all wires; ``wires[0]`` is the control.
+        control_val (int): control value ``U`` acts on.
+        active_indices (Sequence[int]): target indices ``U`` occupies.
 
     Returns:
-        tuple:
-            - new_U (np.ndarray): ``U`` with the target diagonal folded in.
-            - new_full_diag (np.ndarray): Full diagonal with the absorbed part removed.
-            - controlled_new_U (np.ndarray): ``new_U`` lifted to the full register.
+        tuple: ``(new_U, new_full_diag, controlled_new_U)`` — ``U`` with the diagonal folded
+        in, the diagonal with the absorbed part removed, and ``new_U`` lifted to the full register.
     """
     active_indices = np.asarray(active_indices)
     wires = list(wires)
@@ -543,11 +493,10 @@ def propagate_diagonal_through_unitary(full_diag, U, wires, control_val, active_
     full_dim = 2**n_qubits
     target_dim = 2**n_target
 
-    full_diag = np.asarray(full_diag, dtype=complex)
+    U = qp.math.asarray(U)
+    full_diag = qp.math.asarray(full_diag, dtype=complex)
 
-    # Build the control mask (rows matching control_val) and a map from each
-    # full-register index to its target-subspace index. Controls are the leading
-    # wires, targets the trailing ones (both MSB-first).
+    # Control mask + full-register -> target-subspace index map (MSB-first).
     idx = np.arange(full_dim)
     mask = np.ones(full_dim, dtype=bool)
     target_sub = np.zeros(full_dim, dtype=int)
@@ -558,25 +507,27 @@ def propagate_diagonal_through_unitary(full_diag, U, wires, control_val, active_
         bit = n_qubits - 1 - (n_control + j)
         target_sub |= ((idx >> bit) & 1) << (n_target - 1 - j)
 
-    # Collapse the controlled rows of full_diag down to a target-only diagonal.
-    target_diag = np.zeros(target_dim, dtype=complex)
-    target_diag[target_sub[mask]] = full_diag[mask]
+    # Collapse the controlled rows into a target-only diagonal (bijective, so just gather).
+    controlled_rows = np.where(mask)[0]
+    order = controlled_rows[np.argsort(target_sub[controlled_rows])]
+    target_diag = qp.math.gather(full_diag, order)
 
-    # Merge the active part of that diagonal into U; the inactive entries become
-    # the remaining diagonal (set to 1 where absorbed).
-    new_U = U * target_diag[active_indices]
-    remaining_target = target_diag.copy()
-    remaining_target[active_indices] = 1.0
+    # Fold the active diagonal into U; inactive entries stay as the remaining diagonal.
+    new_U = U * qp.math.gather(target_diag, active_indices)
+    active_mask = np.zeros(target_dim, dtype=bool)
+    active_mask[active_indices] = True
+    remaining_target = qp.math.where(active_mask, qp.math.ones_like(target_diag), target_diag)
 
-    # Write the leftover diagonal back onto the controlled rows only.
-    new_full_diag = full_diag.copy()
-    new_full_diag[mask] = remaining_target[target_sub[mask]]
+    # Scatter the leftover diagonal back onto the controlled rows.
+    gathered = qp.math.gather(remaining_target, target_sub)
+    new_full_diag = qp.math.where(mask, gathered, full_diag)
 
-    # Lift new_U back to the full register: U on the controlled block, identity elsewhere.
+    # Lift new_U to the full register (U on the controlled block, identity elsewhere).
     U_target = embed_unitary(new_U, target_dim, active_indices)
-    slice_idx = np.where(mask)[0]
-    sub = target_sub[slice_idx]
-    controlled_new_U = np.eye(full_dim, dtype=complex)
-    controlled_new_U[np.ix_(slice_idx, slice_idx)] = U_target[np.ix_(sub, sub)]
+    sub = target_sub[controlled_rows]
+    selection = np.zeros((full_dim, target_dim), dtype=complex)
+    selection[controlled_rows, sub] = 1.0
+    identity_rest = np.eye(full_dim, dtype=complex) - selection @ selection.T
+    controlled_new_U = selection @ U_target @ selection.T + identity_rest
 
     return new_U, new_full_diag, controlled_new_U

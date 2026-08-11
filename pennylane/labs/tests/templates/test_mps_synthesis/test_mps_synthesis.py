@@ -26,7 +26,19 @@ from pennylane.labs.templates.mps_synthesis.mps_synthesis import (
 )
 
 # (chi, L, seed) test cases spanning power-of-two and non-power-of-two bond dims.
-CASES = [(2, 1, 0), (3, 1, 1), (4, 2, 2), (3, 2, 3), (5, 1, 4), (6, 2, 5), (4, 3, 6)]
+# L=0 cases have no bulk tensors (left boundary abuts the right boundary directly).
+CASES = [
+    (2, 1, 0),
+    (3, 1, 1),
+    (4, 2, 2),
+    (3, 2, 3),
+    (5, 1, 4),
+    (6, 2, 5),
+    (4, 3, 6),
+    (2, 0, 7),
+    (4, 0, 8),
+    (3, 0, 9),
+]
 
 
 def random_mps(chi, L, d=2, seed=None):
@@ -104,6 +116,23 @@ def test_prepared_state_matches_mps(chi, L, seed):
     assert np.isclose(fidelity, 1.0, atol=1e-8)
 
 
+def test_non_unimodal_profile_raises():
+    """A right-canonical but non-unimodal bond profile is rejected, not silently reordered."""
+    rng = np.random.default_rng(0)
+
+    def rc_tensor(cl, cr, d=2):
+        G = rng.standard_normal((d * cr, cl)) + 1j * rng.standard_normal((d * cr, cl))
+        Q, _ = np.linalg.qr(G)
+        return Q.conj().T.reshape(cl, d, cr)
+
+    # Bond profile 1 -> 2 -> 1 -> 2 -> 1 (each tensor right-canonical).
+    mps = [rc_tensor(1, 2), rc_tensor(2, 1), rc_tensor(1, 2), rc_tensor(2, 1)]
+    phys, aux = [0], [1]
+
+    with pytest.raises(ValueError, match="single left/bulk/right bond profile"):
+        mps_synthesis(mps, aux, phys)
+
+
 @pytest.mark.parametrize("chi, L, seed", CASES)
 def test_synthesis_matches_template(chi, L, seed):
     """The queued template reproduces the state built by mps_synthesis directly."""
@@ -127,10 +156,40 @@ def test_synthesis_matches_template(chi, L, seed):
     assert np.isclose(np.abs(np.vdot(manual_state, template_state)) ** 2, 1.0, atol=1e-8)
 
 
-def test_non_right_canonical_raises():
-    """A non-right-canonical MPS is rejected."""
-    mps = random_mps(4, 2, seed=0)
-    mps[0] = mps[0] * 2.0  # break the canonical condition
-    phys_left, phys_bulk, aux = mps_wires(4, 2)
-    with pytest.raises(AssertionError, match="right-canonical"):
-        mps_synthesis(mps, aux, phys_left + phys_bulk)
+# Non-monotonic wire relabelings: these change the ascending order of the wires,
+# so a template that (incorrectly) baked in ``sorted(wires)`` internally would give
+# different, wrong results under them.
+RELABELINGS = [
+    pytest.param(lambda used: {w: 1000 - w for w in used}, id="reversed"),
+    pytest.param(
+        lambda used: dict(zip(used, np.random.default_rng(123).permutation(used).tolist())),
+        id="permuted",
+    ),
+]
+
+
+@pytest.mark.parametrize("chi, L, seed", CASES)
+@pytest.mark.parametrize("make_relabel", RELABELINGS)
+def test_prepared_state_is_wire_relabeling_invariant(chi, L, seed, make_relabel):
+    """Relabeling the wires only relabels the prepared state (any wire order works)."""
+    mps = random_mps(chi, L, seed=seed)
+    phys_left, phys_bulk, aux_b = mps_wires(chi, L)
+    phys_b = phys_left + phys_bulk
+
+    used = sorted(set(phys_b) | set(aux_b))
+    g = {int(k): int(v) for k, v in make_relabel(used).items()}
+    assert len(set(g.values())) == len(used), "relabeling must be a bijection"
+
+    state_b = _prepared_state(mps, aux_b, phys_b)
+    dev_b = sorted(set(phys_b) | set(aux_b))
+    aux_r, phys_r = [g[w] for w in aux_b], [g[w] for w in phys_b]
+    state_r = _prepared_state(mps, aux_r, phys_r)
+    dev_r = sorted(set(phys_r) | set(aux_r))
+
+    # Reorder the relabeled state back into the baseline wire layout, then compare.
+    m = len(dev_b)
+    axes = [dev_r.index(g[w]) for w in dev_b]
+    aligned = np.transpose(np.asarray(state_r).reshape([2] * m), axes).reshape(-1)
+
+    fidelity = np.abs(np.vdot(state_b, aligned)) ** 2
+    assert np.isclose(fidelity, 1.0, atol=1e-8)

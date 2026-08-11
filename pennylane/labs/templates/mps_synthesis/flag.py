@@ -1,4 +1,4 @@
-# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,9 +26,6 @@ from pennylane.math.decomposition import zyz_rotation_angles
 
 from .linalg import (
     control_bits_to_ints,
-    count_nontrivial_diagonal,
-    csd,
-    extract_active_submatrix,
     get_controlled_unitary_msq,
     get_fractal_embedding_states,
     ints_to_control_bits,
@@ -36,6 +33,7 @@ from .linalg import (
     split_d,
     split_diagonal_into_control_branches,
     split_diagonal_into_partially_multiplexed_rz,
+    synthesis_csd,
 )
 
 # ============================================================================
@@ -44,21 +42,18 @@ from .linalg import (
 
 
 class PartiallyMultiplexedFlag(qp.operation.Operation):
-    """
-    A partially multiplexed sequence of single qubit flags.
-    Each entry applies ``R_z(phi) R_y(theta)`` to the target wire, multi-controlled
-    by specific computational basis states.
-
-    The control wires are ``wires[:-1]`` and carry explicit ``control_values``;
-    the target wire is ``wires[-1]``. Angles are stored as a flat array with one
-    ``(rz, ry)`` pair per control pattern (so its length equals
-    ``len(control_values)``). Uncontrolled gates (one wire) use ``control_values=[]``.
+    r"""A partially multiplexed sequence of single-qubit flags.
+    Applies ``R_z(phi) R_y(theta)`` to the target wire (``wires[-1]``), multi-controlled by
+    the control wires (``wires[:-1]``) on the given ``control_values``. Angles are flat arrays
+    with one ``(rz, ry)`` pair per control pattern (length ``len(control_values)``); an
+    uncontrolled flag uses ``control_values=[]``.
     """
 
     num_params = 2
 
     @staticmethod
     def _angle_arrays(rz_angles, ry_angles):
+        r"""Flatten the ``R_z``/``R_y`` angles to 1D arrays, requiring equal length."""
         phi = qp.math.flatten(qp.math.atleast_1d(rz_angles))
         theta = qp.math.flatten(qp.math.atleast_1d(ry_angles))
         if len(phi) != len(theta):
@@ -105,17 +100,12 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
         )
 
     def add_control(self, control_wire, control_value):
-        """
-        Creates a new PartiallyMultiplexedFlag with an additional control qubit
-        prepended.
-
+        """Return a copy of this flag with ``control_wire`` prepended as a new control.
         Args:
-            control_wire (int or str): The new wire to act as a control.
-            control_value (int): The binary state (0 or 1) the new wire controls on.
-
+            control_wire (int or str): the new control wire.
+            control_value (int): the bit value (0 or 1) it controls on.
         Returns:
-            PartiallyMultiplexedFlag: A new operation instance with updated wires
-            and control values.
+            PartiallyMultiplexedFlag: the flag with the added control.
         """
         # Target wire stays at the very end (wires[-1]); new control goes first.
         new_wires = qp.wires.Wires(control_wire) + self.wires
@@ -139,6 +129,7 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
     def compute_decomposition(
         rz_angles, ry_angles, wires, control_values=None, **_
     ):  # pylint: disable=arguments-differ
+        """Decompose into per-pattern multi-controlled ``R_z(phi)`` and ``R_y(theta)`` gates."""
         wires = qp.wires.Wires(wires)
         target_wire = wires[-1]
         control_wires = list(wires[:-1])
@@ -157,16 +148,15 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
 
 
 def merge_partially_multiplexed_flags(flags):
-    """
-    Merge several ``PartiallyMultiplexedFlag`` operations that share the same
-    wires into a single ``PartiallyMultiplexedFlag``.
-
+    """Merge same-wire ``PartiallyMultiplexedFlag`` operations into one, sorted by control value.
     Args:
-        flags (Sequence[PartiallyMultiplexedFlag]): Flags to merge. They must
-            all act on the same wires (in the same order).
-
+        flags (Sequence[PartiallyMultiplexedFlag]): flags acting on identical wires and
+            covering disjoint control patterns.
     Returns:
-        PartiallyMultiplexedFlag: The merged operation.
+        PartiallyMultiplexedFlag: the merged flag.
+    Raises:
+        TypeError: if any element is not a ``PartiallyMultiplexedFlag``.
+        ValueError: if the flags' wires differ or their control patterns overlap.
     """
     flags = list(flags)
     for flag in flags:
@@ -191,8 +181,19 @@ def merge_partially_multiplexed_flags(flags):
     for flag in flags:
         control_values.extend(flag.hyperparameters["control_values"])
 
-    # Sort the control values by their integer representation
     if control_values:
+        # Check for unallowed duplicate control values
+        seen = set()
+        for cv in control_values:
+            key = tuple(int(b) for b in cv)
+            if key in seen:
+                raise ValueError(
+                    f"duplicate control value {key} when merging flags; "
+                    "flags to be merged must cover disjoint control patterns"
+                )
+            seen.add(key)
+
+        # Sort the control values by their integer representation
         order = sorted(
             range(len(control_values)),
             key=lambda i: control_bits_to_ints([int(bit) for bit in control_values[i]]),
@@ -210,14 +211,9 @@ def merge_partially_multiplexed_flags(flags):
 
 
 def _is_diagonal_op(op):
-    """
-    Conservative check whether ``op`` is diagonal in the computational basis.
-
-    Returns ``True`` only for cases we can guarantee:
-      * a ``PartiallyMultiplexedFlag`` whose ``RY`` angles are all zero (only
-        ``RZ`` phases remain),
-      * ``CZ`` / ``CCZ`` and controlled-``CZ`` ops.
-    Anything else returns ``False`` (treated as possibly non-diagonal).
+    """Conservatively check whether ``op`` is diagonal in the computational basis.
+    Returns ``True`` only for guaranteed cases — a ``PartiallyMultiplexedFlag`` with
+    all-zero ``R_y`` angles, or ``CZ``/``CCZ`` (and controlled variants); ``False`` otherwise.
     """
     if isinstance(op, PartiallyMultiplexedFlag):
         ry = qp.math.atleast_1d(op.parameters[1])
@@ -231,11 +227,9 @@ def _is_diagonal_op(op):
 
 
 def _ops_commute(a, b):
-    """
-    Commutation test used to decide whether a flag may be
-    slid past an intervening operator. Only returns ``True`` for disjoint wires
-    or if both operators are diagonal in the computational basis. May return
-    ``False`` for ops that actually commute (never the reverse).
+    """Conservatively test whether ``a`` and ``b`` commute.
+    Returns ``True`` only for disjoint wires or two diagonal ops; may return ``False``
+    for ops that actually commute, but never the reverse.
     """
     if set(a.wires).isdisjoint(set(b.wires)):
         return True
@@ -243,17 +237,11 @@ def _ops_commute(a, b):
 
 
 def merge_partially_multiplexed_flags_in_circuit(ops):
-    """
-    Merge all ``PartiallyMultiplexedFlag`` operations in ``ops`` that can be
-    combined, including flags separated by other operators when it is provably
-    safe to bring them together.
-
+    """Merge same-wire ``PartiallyMultiplexedFlag`` ops in ``ops``, sliding past provably commuting ops.
     Args:
-        ops (Sequence): A list of operators (e.g. a flag decomposition). Non-flag
-            operators are passed through unchanged.
-
+        ops (Sequence): operators to scan; non-flag ops pass through unchanged.
     Returns:
-        list: A new list of operators with mergeable flags combined.
+        list: the operators with mergeable flags combined.
     """
     result = []
     for op in ops:
@@ -274,18 +262,15 @@ def merge_partially_multiplexed_flags_in_circuit(ops):
 
 
 def add_control(op, control_wire, control_value):
-    """
-    Add one control qubit to a decomposition op.
-
+    """Add one control qubit to a decomposition op.
     Args:
-        op: A ``PartiallyMultiplexedFlag``, a ``qp.CZ``, or an already-controlled
-            op (e.g. a ``ControlledOp`` produced by a previous ``add_control``
-            during a deeper level of the recursion).
-        control_wire: Wire index/label for the new control.
-        control_value: 0 or 1 — state on which the op is active.
-
+        op: a ``PartiallyMultiplexedFlag``, ``CZ``/``CCZ``, or an already-controlled op.
+        control_wire: wire for the new control.
+        control_value (int): state (0 or 1) the op is active on.
     Returns:
-        A new operator with the control applied.
+        the controlled operator.
+    Raises:
+        TypeError: if ``op`` is not a supported type.
     """
     if isinstance(op, PartiallyMultiplexedFlag):
         return op.add_control(control_wire, control_value)
@@ -309,7 +294,7 @@ def _zyz_flag(matrix: np.ndarray) -> tuple:
     """ZYZ Euler decomposition of a ``2x2`` matrix into ``(phi, theta)`` flag
     angles and the trailing two-element diagonal ``delta``."""
     phi, theta, omega, alpha = zyz_rotation_angles(matrix)
-    delta = np.exp(1j * np.array([-omega / 2 + alpha, omega / 2 + alpha]))
+    delta = qp.math.exp(1j * qp.math.stack([-omega / 2 + alpha, omega / 2 + alpha]))
     return phi, theta, delta
 
 
@@ -353,13 +338,13 @@ def d3_generalized_flag_decomp(matrix: np.ndarray, wires: list) -> tuple[list, n
     wires = list(wires)
     ops = []
 
-    K00, K01, theta_Y, K10, K11, _, _, _ = csd(matrix, shift=False)
+    K00, K01, theta_Y, K10, K11, _, _, _ = synthesis_csd(matrix, shift=False)
     theta_Y = theta_Y.item()
 
     F0, diag0 = d2_generalized_flag_decomp(K11, wires)
     ops += F0
 
-    diag1 = get_controlled_unitary_msq(np.array([1.0, K10.item()]), wires, control_value=0)
+    diag1 = get_controlled_unitary_msq(qp.math.stack([1.0, K10[0, 0]]), wires, control_value=0)
     diag2 = diag1 * diag0
 
     diag2_0, _, _, diag2_1_target = split_diagonal_into_control_branches(diag2, wires[::-1])
@@ -376,15 +361,13 @@ def d3_generalized_flag_decomp(matrix: np.ndarray, wires: list) -> tuple[list, n
     F2, diag5 = d2_generalized_flag_decomp(W, wires)
     ops += F2
 
-    diag6 = get_controlled_unitary_msq(np.array([1.0, K00.item()]), wires, control_value=0)
+    diag6 = get_controlled_unitary_msq(qp.math.stack([1.0, K00[0, 0]]), wires, control_value=0)
     diag = diag4_0 * diag5 * diag6
     return ops, diag
 
 
 def flatten_ops(structure):
-    """Flatten a (possibly nested) list of flags/ops into a flat list of operators
-    in circuit order. Handles arbitrary nesting (flat list, single op, or nested
-    lists); a flat list is returned unchanged."""
+    """Flatten a (possibly nested) list of ops into a flat list in circuit order."""
     if isinstance(structure, list):
         flat = []
         for s in structure:
@@ -394,59 +377,57 @@ def flatten_ops(structure):
 
 
 def _map_nested_ops(structure, fn):
-    """Apply ``fn`` to every operator in a (possibly nested) op structure,
-    preserving the nesting. Works on a flat list, a single op, or a nested list."""
+    """Apply ``fn`` to every op in a (possibly nested) op structure, preserving nesting."""
     if isinstance(structure, list):
         return [_map_nested_ops(s, fn) for s in structure]
     return fn(structure)
 
 
-def _interleave_branches(B_p, B_q):
-    """Interleave the ``wires[0]=0`` branch (``B_p``) and the ``wires[0]=1`` branch
-    (``B_q``) by walking both branch trees in parallel.
-
-    Both branches are produced by the same recursive procedure on the same wires,
-    so their nested ``[FL, FCS, FR]`` structure is congruent except at the base
-    cases (a ``d=2`` leaf is a single flag, a ``d=3`` leaf is three). Recursing
-    position by position merges every corresponding pair of flags into one fully
-    multiplexed flag via the Multiplexer Extension Property (this reproduces
-    flagsynth's fully multiplexed single-qubit flags for the qubit case), while a
-    shape mismatch only leaves a short, unpaired tail at the leaf where it occurs.
+def _interleave_branches(branch0, branch1):
+    """Interleave the ``wires[0]=0`` and ``wires[0]=1`` branch trees, merging paired flags.
+    The two branches share a congruent ``[left_flags, cs_flag, right_flags]`` structure, so
+    recursing position by position merges each corresponding flag pair into one fully
+    multiplexed flag (Multiplexer Extension Property); shape mismatches at leaves leave a
+    short unpaired tail.
     """
     # Base case: two leaf flags on the same wires -> Multiplexer Extension Property.
-    if isinstance(B_p, PartiallyMultiplexedFlag) and isinstance(B_q, PartiallyMultiplexedFlag):
-        if B_p.wires == B_q.wires:
-            return merge_partially_multiplexed_flags([B_p, B_q])
-        return [B_p, B_q]
+    if isinstance(branch0, PartiallyMultiplexedFlag) and isinstance(
+        branch1, PartiallyMultiplexedFlag
+    ):
+        if branch0.wires == branch1.wires:
+            return merge_partially_multiplexed_flags([branch0, branch1])
+        return [branch0, branch1]
     # Otherwise recurse positionally, treating a lone flag as a singleton branch.
-    P = B_p if isinstance(B_p, list) else [B_p]
-    Q = B_q if isinstance(B_q, list) else [B_q]
-    paired = [_interleave_branches(a, b) for a, b in zip(P, Q)]
-    return paired + P[len(paired) :] + Q[len(paired) :]
+    list0 = branch0 if isinstance(branch0, list) else [branch0]
+    list1 = branch1 if isinstance(branch1, list) else [branch1]
+    paired = [_interleave_branches(a, b) for a, b in zip(list0, list1)]
+    return paired + list0[len(paired) :] + list1[len(paired) :]
 
 
-def _decompose_branch(diag_in, R, wires, control_val, size):
-    """Propagate ``diag_in`` through branch unitary ``R`` (selected by
-    ``control_val`` on ``wires[0]``), recursively flag-decompose the result, and
-    re-apply the control. Returns ``(flags, propagated_diagonal, controlled_diagonal)``."""
+def _decompose_branch(diag_in, right_block, wires, control_val, size):
+    """Propagate ``diag_in`` through a branch unitary, flag-decompose it, and re-apply the control.
+    The branch ``right_block`` is selected by ``control_val`` on ``wires[0]``. Returns
+    ``(branch_flags, residual_diag, controlled_diag)``.
+    """
     N = 2 ** len(wires)
     active_states, _ = get_fractal_embedding_states(size, N // 2)
-    R_dash, D_dash, _ = propagate_diagonal_through_unitary(
-        diag_in, R, wires, control_val=control_val, active_indices=active_states
+    right_block_prop, residual_diag, _ = propagate_diagonal_through_unitary(
+        diag_in, right_block, wires, control_val=control_val, active_indices=active_states
     )
-    FR, DR = recursive_generalized_flag_decomposition(R_dash, wires[1:], _top=False)
-    FR = _map_nested_ops(FR, lambda op: add_control(op, wires[0], control_val))
-    DR = get_controlled_unitary_msq(DR, wires, control_value=control_val)
-    return FR, D_dash, DR
+    branch_flags, controlled_diag = recursive_generalized_flag_decomposition(
+        right_block_prop, wires[1:], _top=False
+    )
+    branch_flags = _map_nested_ops(branch_flags, lambda op: add_control(op, wires[0], control_val))
+    controlled_diag = get_controlled_unitary_msq(controlled_diag, wires, control_value=control_val)
+    return branch_flags, residual_diag, controlled_diag
 
 
 def recursive_generalized_flag_decomposition(U_d, wires, _top=True):
-    """Recursively flag-decompose a unitary on ``wires``.
-
-    Returns ``(ops, diagonal)`` where ``ops`` is a nested list of
-    :class:`~.PartiallyMultiplexedFlag` operations and ``diagonal`` is the
-    trailing diagonal factor. When ``_top`` is ``True``, the input may be a
-    non-power-of-two active submatrix that is fractally embedded first.
+    r"""Recursively flag-decompose a unitary on ``wires`` via the asymmetric CSD.
+    Returns ``(ops, diagonal)``, where ``ops`` is a nested list of
+    :class:`~.PartiallyMultiplexedFlag` operations and ``diagonal`` is the trailing
+    diagonal factor. When ``_top=True``, a non-power-of-two active submatrix is fractally
+    embedded first and the flags are merged into a flat circuit.
     """
     d = U_d.shape[0]
     wires = list(wires)
@@ -464,77 +445,50 @@ def recursive_generalized_flag_decomposition(U_d, wires, _top=True):
     N = 2**nwires
 
     p, q = split_d(d)
-    R_p, R_q, theta, L_p, L_q, _, _, _ = csd(U_d, shift=True)
+    right_block0, right_block1, cs_angles, left_block0, left_block1, _, _, _ = synthesis_csd(
+        U_d, shift=True
+    )
 
-    # Flag decomposition of L_p and L_q
-    FL_p, DL_p = recursive_generalized_flag_decomposition(L_p, wires[1:], _top=False)
-    FL_q, DL_q = recursive_generalized_flag_decomposition(L_q, wires[1:], _top=False)
+    # Flag decomposition of the left CSD blocks
+    left_flags0, left_diag0 = recursive_generalized_flag_decomposition(
+        left_block0, wires[1:], _top=False
+    )
+    left_flags1, left_diag1 = recursive_generalized_flag_decomposition(
+        left_block1, wires[1:], _top=False
+    )
 
     # Add control to every flag, keeping whatever nesting the sub-result has
-    FL_p = _map_nested_ops(FL_p, lambda op: add_control(op, wires[0], 0))
-    FL_q = _map_nested_ops(FL_q, lambda op: add_control(op, wires[0], 1))
-    DL = np.concatenate((DL_p, DL_q))
+    left_flags0 = _map_nested_ops(left_flags0, lambda op: add_control(op, wires[0], 0))
+    left_flags1 = _map_nested_ops(left_flags1, lambda op: add_control(op, wires[0], 1))
+    left_diag = qp.math.concatenate((left_diag0, left_diag1))
 
     # Split diagonal into partially multiplexed Rz and remaining diagonal
     control_states, _ = get_fractal_embedding_states(min(p, q), N // 2)
-    phi, new_full_diagonal, _ = split_diagonal_into_partially_multiplexed_rz(
-        DL, wires[1:] + wires[:1], control_states
+    rz_angles, new_full_diagonal, _ = split_diagonal_into_partially_multiplexed_rz(
+        left_diag, wires[1:] + wires[:1], control_states
     )
 
     control_values = ints_to_control_bits(control_states, nwires - 1)
-    FCS = PartiallyMultiplexedFlag(phi, theta, wires[1:] + wires[:1], control_values)
+    cs_flag = PartiallyMultiplexedFlag(rz_angles, cs_angles, wires[1:] + wires[:1], control_values)
 
-    # Propagate, flag-decompose and re-control each branch (R_p then R_q).
-    FR_p, DR_p_dash, DR_p = _decompose_branch(new_full_diagonal, R_p, wires, 0, p)
-    DR_total = DR_p_dash * DR_p
-    FR_q, DR_q_dash, DR_q = _decompose_branch(DR_total, R_q, wires, 1, q)
-    diag = DR_q * DR_q_dash
+    # Propagate, flag-decompose and re-control each branch (block 0 then block 1).
+    right_flags0, right_diag0_prop, right_diag0 = _decompose_branch(
+        new_full_diagonal, right_block0, wires, 0, p
+    )
+    right_diag0_total = right_diag0_prop * right_diag0
+    right_flags1, right_diag1_prop, right_diag1 = _decompose_branch(
+        right_diag0_total, right_block1, wires, 1, q
+    )
+    trailing_diag = right_diag1 * right_diag1_prop
 
     # Interleave the branches recursively over the nested structure
-    FL = _interleave_branches(FL_p, FL_q)
-    FR = _interleave_branches(FR_p, FR_q)
+    left_flags = _interleave_branches(left_flags0, left_flags1)
+    right_flags = _interleave_branches(right_flags0, right_flags1)
 
-    ops = [FL, FCS, FR]
+    ops = [left_flags, cs_flag, right_flags]
     if _top:
         ops = merge_partially_multiplexed_flags_in_circuit(flatten_ops(ops))
-    return ops, diag
-
-
-def reconstruct_unitary(ops, diagonal, wires, d=None):
-    """Reconstruct the active ``d x d`` block from a flag decomposition.
-    If d=None, no extraction of the active submatrix is performed.
-    Accepts either a flat or a nested op structure."""
-    ops = flatten_ops(ops)
-    N = 2 ** len(wires)
-    U_d_reconstructed = np.diag(diagonal) @ qp.matrix(ops, wire_order=wires)
-    if d is not None:
-        active_states, _ = get_fractal_embedding_states(d, N)
-        U_d_reconstructed = extract_active_submatrix(
-            U_d_reconstructed, active_indices=active_states
-        )
-    return U_d_reconstructed
-
-
-def check_reconstruction(U_d, ops, diag, wires, d):
-    """Print whether ``ops`` and ``diag`` reconstruct the active submatrix of ``U_d``."""
-    U_d_reconstructed_active = reconstruct_unitary(ops, diag, wires, d)
-    print(f"Reconstruction correct (d={d}): ", np.allclose(U_d, U_d_reconstructed_active))
-
-
-def get_parameter_count(ops, diag):
-    """Return ``(num_angles, num_diag_params)`` for a flag decomposition."""
-    ops = flatten_ops(ops)
-    tape = qp.tape.QuantumScript(ops)
-    params = tape.get_parameters()  # list of the stored phi/theta arrays
-    num_angles = sum(qp.math.size(p) for p in params)
-    num_diag_params = count_nontrivial_diagonal(diag)
-    return num_angles, num_diag_params
-
-
-def check_parameter_count(ops, diag, d):
-    """Print whether the flag decomposition uses exactly ``d**2`` parameters."""
-    num_angles, num_diag_params = get_parameter_count(ops, diag)
-    print(f"Parameter count correct (d^2={d**2}): ", num_angles + num_diag_params == d**2)
+    return ops, trailing_diag
 
 
 def _state_value(bitstring, order):
@@ -549,18 +503,16 @@ def _count_blocks(bitstrings, order):
 
 
 def optimize_unary_sequence(bitstrings, wires):
-    """
-    Choose the wire ordering that minimizes the number of contiguous blocks the
-    control states split into.
-
-    wires: list of wire positions, MSB -> LSB (including wires[-1] target)
-
+    """Pick the wire ordering that splits the control states into the fewest contiguous blocks.
+    Args:
+        bitstrings (list): control states, MSB-first; ``wires`` is one longer (target last).
+        wires (list): wire positions MSB -> LSB, including the target ``wires[-1]``.
     Returns:
-        tuple: (wire_ordering, subsequences_rewired, index_blocks)
-            wire_ordering: bit positions, MSB -> LSB.
-            subsequences_rewired: list of blocks of rewired bitstrings.
-            index_blocks: same shape, holding the original index of each state
-                          so associated angles can be reordered to match.
+        tuple: ``(reordered_wires, subsequences, index_blocks)`` — the chosen wire order, the
+        rewired bitstrings grouped into blocks, and each state's original index (to reorder
+        the matching angles).
+    Raises:
+        ValueError: if ``wires`` is not exactly one longer than the bitstrings.
     """
     if not bitstrings:
         return [], [], []
@@ -612,16 +564,13 @@ def optimize_unary_sequence(bitstrings, wires):
 
 
 def get_rewired_control_sequences(ops, wires, separate_target=False):
-    """Rewrite control wire orderings for each flag to minimize unary blocks.
-
+    """Rewire each flag's control wire ordering to minimize unary blocks.
     Args:
-        ops (list): Flag operations whose control values will be rewired.
-        wires (list): Default wire ordering used for single-control flags.
-        separate_target (bool): If ``True``, return ``(control_wires, target_wires)``
-            instead of the combined rewired wire lists.
-
+        ops (list): flag operations to rewire.
+        wires (list): default ordering for single-control flags.
+        separate_target (bool): if ``True``, return ``(control_wires, target_wires)``.
     Returns:
-        list or tuple: Rewired wire sequences, or separated control/target lists.
+        list or tuple: the rewired wire sequences, or separated control/target lists.
     """
     routed_wires = []
     for F in ops:
