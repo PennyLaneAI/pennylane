@@ -115,6 +115,18 @@ class TestBuildTritonDecoder:
                 "num_stages must be > 0",
             ),
             ({"decoder_fns": (object(),), "platform": "cuda:80"}, "raw Triton platform"),
+            (
+                {"decoder_fns": (object(),), "platform": "cpu:80:32"},
+                "backend must be 'cuda' or 'hip'",
+            ),
+            (
+                {"decoder_fns": (object(),), "platform": "cuda:80:64"},
+                "warp size must be 32 for cuda",
+            ),
+            (
+                {"decoder_fns": (object(),), "platform": "hip:gfx942:32"},
+                "warp size must be 64 for hip",
+            ),
         ],
     )
     def test_build_triton_decoder_validates_options(self, kwargs, message):

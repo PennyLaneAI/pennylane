@@ -35,7 +35,7 @@ try:
 
     from .algorithms import _decode_one
     from .persistent_kernel import _persistent_decoder_kernel
-    from .triton_so_builder import _build_so
+    from .triton_so_builder import _build_so, _validate_platform
 except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
@@ -256,6 +256,7 @@ def _validate_build_options(
             "platform must be a raw Triton platform string like "
             f"'hip:gfx942:64' or 'cuda:80:32', got {platform!r}"
         )
+    _validate_platform(platform.strip())
 
 
 def _validate_css_options(*, postprocess: str, num_iters: int, prob: float) -> None:

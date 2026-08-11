@@ -46,6 +46,9 @@ class TestBuildSo:
         [
             ((1, 1), "hip:gfx942:64", "exactly 3 dimensions"),
             ((1, 1, 1), "hip:gfx942", "backend:arch:warp"),
+            ((1, 1, 1), "cpu:80:32", "backend must be 'cuda' or 'hip'"),
+            ((1, 1, 1), "cuda:80:64", "warp size must be 32 for cuda"),
+            ((1, 1, 1), "hip:gfx942:32", "warp size must be 64 for hip"),
         ],
     )
     def test_build_so_validates_shape_inputs(self, tmp_path, grid, platform, message):

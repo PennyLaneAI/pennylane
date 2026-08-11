@@ -88,6 +88,31 @@ def _wrap_constexpr(value: object) -> object:
     return value
 
 
+def _validate_platform(platform: str) -> tuple[str, str, int]:
+    """Validate a Triton platform string and return its parsed components."""
+    if platform.count(":") != 2:
+        raise ValueError(f"platform must look like 'backend:arch:warp', got {platform!r}")
+
+    backend, arch, warp_size_text = platform.split(":", 2)
+    if backend not in {"cuda", "hip"}:
+        raise ValueError(f"platform backend must be 'cuda' or 'hip', got {backend!r}")
+    if not arch:
+        raise ValueError("platform arch must be non-empty")
+
+    try:
+        warp_size = int(warp_size_text)
+    except ValueError as exc:
+        raise ValueError(f"platform warp size must be an integer, got {warp_size_text!r}") from exc
+
+    expected_warp_size = 32 if backend == "cuda" else 64
+    if warp_size != expected_warp_size:
+        raise ValueError(
+            f"platform warp size must be {expected_warp_size} for {backend}, got {warp_size}"
+        )
+
+    return backend, arch, warp_size
+
+
 def _build_so(
     kernel,
     *,
@@ -129,8 +154,7 @@ def _build_so(
     """
     if len(grid) != 3:
         raise ValueError(f"grid must have exactly 3 dimensions, got {grid!r}")
-    if platform.count(":") != 2:
-        raise ValueError(f"platform must look like 'backend:arch:warp', got {platform!r}")
+    backend, _, _ = _validate_platform(platform)
 
     out_path = Path(out).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -161,8 +185,6 @@ def _build_so(
             compiler = compiler or os.environ.get("NVCC", "nvcc")
         elif backend == "hip":
             compiler = compiler or os.environ.get("HIPCC", "hipcc")
-        else:
-            raise ValueError(f"unsupported backend for shared-library compilation: {backend}")
 
         cmd = [
             compiler,
@@ -215,7 +237,7 @@ def _compile_kernel(
         RuntimeError: If Triton reports unsupported scratch-space requirements
             or does not emit the expected launcher source.
     """
-    backend, _, _ = platform.split(":", 2)
+    backend, arch, warp_size = _validate_platform(platform)
     runtime_arg_names = [name for name in kernel.arg_names if name not in constexpr]
     signature = {
         arg_name: (
@@ -231,7 +253,8 @@ def _compile_kernel(
     kernel.create_binder()
     ast_source = kernel.ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
 
-    target_obj = GPUTarget(*platform.split(":"))
+    target_arch = int(arch) if backend == "cuda" and arch.isdigit() else arch
+    target_obj = GPUTarget(backend, target_arch, warp_size)
     backend_impl = triton.compiler.make_backend(target_obj)
     options = backend_impl.parse_options({"num_warps": num_warps, "num_stages": num_stages})
     compile_result = triton.compile(ast_source, target=target_obj, options=options.__dict__)
