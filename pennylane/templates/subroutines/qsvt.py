@@ -511,7 +511,7 @@ class QSVT(Operation):
                 return op.tracer if op.tracer is not None else op
             return op
 
-        return cls._primitive.bind(_get_tracer(UA), *projectors, **kwargs)
+        return cls._primitive.bind(_get_tracer(UA), *list(map(lambda p: _get_tracer(p), projectors)), **kwargs)
 
     @classmethod
     def _unflatten(cls, data, _) -> "QSVT":

@@ -789,7 +789,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], template(**kwargs))
 
-    @pytest.mark.pl2do(reason="Operators of operators not yet supported with Operator2")
     def test_qsvt(self):
         """Test the primitive bind call of QSVT."""
 
