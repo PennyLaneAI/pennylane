@@ -401,6 +401,73 @@ class TestComputeSosEncoding:
 class TestSumOfSlatersPrep:
     """Test the quantum template ``SumOfSlatersPrep``."""
 
+    @pytest.mark.parametrize(
+        "enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, match",
+        [
+            # Valid: every work register supplied with its exact required size.
+            ([7, 8, 9], [10, 11, 12, 13, 14], [15, 16], [17, 18, 19, 20], None),
+            # Valid: the optional work registers may be left empty (the default).
+            ((), (), (), (), None),
+            # Each of the following provides a single work register with the wrong
+            # (non-zero) size, triggering one of the register-size validations.
+            ([7, 8], (), (), (), "does not match the required number of enumeration wires"),
+            ((), [10, 11], (), (), "does not match the required number of identification wires"),
+            ((), (), [15], (), "does not match the required number of qrom work wires"),
+            ((), (), (), [17, 18], "does not match the required number of mcx cache wires"),
+        ],
+    )
+    def test_init(
+        self, enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, match
+    ):
+        """Test the initialization of ``SumOfSlatersPrep``, including the register-size
+        validations performed in ``__init__``.
+
+        A non-identity-encoding case is used (``indices=(32, 16, 8, 4, 2, 1, 0)`` on 7 target
+        wires) so that every work register has a non-zero required size:
+        ``{enumeration: 3, identification: 5, qrom_work: 2, mcx_cache: 4}``. This lets each
+        validation be triggered with a wrong, non-zero register size.
+        """
+        coefficients = np.arange(1, 8) / np.linalg.norm(np.arange(1, 8))
+        wires = list(range(7))
+        indices = (32, 16, 8, 4, 2, 1, 0)
+
+        if match is not None:
+            with pytest.raises(ValueError, match=match):
+                SumOfSlatersPrep(
+                    coefficients,
+                    wires,
+                    indices=indices,
+                    enumeration_wires=enumeration_wires,
+                    identification_wires=identification_wires,
+                    qrom_work_wires=qrom_work_wires,
+                    mcx_cache_wires=mcx_cache_wires,
+                )
+            return
+
+        op = SumOfSlatersPrep(
+            coefficients,
+            wires,
+            indices=indices,
+            enumeration_wires=enumeration_wires,
+            identification_wires=identification_wires,
+            qrom_work_wires=qrom_work_wires,
+            mcx_cache_wires=mcx_cache_wires,
+        )
+        assert np.allclose(op.coefficients, coefficients)
+        assert op.indices == indices
+        assert op.enumeration_wires == Wires(enumeration_wires)
+        assert op.identification_wires == Wires(identification_wires)
+        assert op.qrom_work_wires == Wires(qrom_work_wires)
+        assert op.mcx_cache_wires == Wires(mcx_cache_wires)
+        # ``op.wires`` is the union of the target wires and all provided work registers.
+        assert op.wires == Wires(
+            wires
+            + list(enumeration_wires)
+            + list(identification_wires)
+            + list(qrom_work_wires)
+            + list(mcx_cache_wires)
+        )
+
     def make_random_data(self, num_wires, num_entries, seed):
         """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""
         rng = np.random.default_rng(seed)

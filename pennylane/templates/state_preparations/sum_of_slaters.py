@@ -914,10 +914,6 @@ class SumOfSlatersPrep(Operator2):
             # pylint: disable-next=protected-access
             sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
 
-            if len(wires) != sizes["wires"]:
-                raise ValueError(
-                    f"Number of wires {len(wires)} does not match the required number of wires {sizes['wires']}"
-                )
             if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
                 raise ValueError(
                     f"Number of enumeration wires {len(enumeration_wires)} does not match the required number of enumeration wires {sizes['enumeration_wires']}"
