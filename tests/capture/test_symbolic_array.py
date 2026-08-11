@@ -36,13 +36,10 @@ def test_error_without_capture():
         qp.capture.symbolic_array((), float)
 
 
-def test_error_if_execute():
+def test_AbstractArray_if_execute():
     """Test that a ``NotImplementedError`` is raised if we try and execute symbolic_array."""
 
-    with pytest.raises(
-        NotImplementedError, match="symbolic_arrays can only be produced for abstract evaluation"
-    ):
-        qp.capture.symbolic_array((), float)
+    assert qp.capture.symbolic_array((4, 1), float) == qp.typing.AbstractArray((4, 1), float)
 
 
 @pytest.mark.parametrize("bad_dimension", (..., -1, 0, 3.0))
