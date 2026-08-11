@@ -166,6 +166,11 @@ class Placement:
     """How bytes move between nodes, by registry name (e.g. ``"rdma"``) or a :class:`~.Transport`. A
     name is resolved to a :class:`~.Transport` on construction with :func:`~.get_transport`."""
 
+    qec_code: str | None = None
+    """The quantum error-correcting code the circuit is encoded for, e.g. ``"steane"``. Naming it 
+    here lets the compiler encode the circuit, and no separate lowering step is needed. Defaults to ``None``,
+    which leaves the circuit unencoded."""
+
     def __post_init__(self):
         if not isinstance(self.coprocessors, tuple):
             object.__setattr__(self, "coprocessors", tuple(self.coprocessors))

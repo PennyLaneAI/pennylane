@@ -113,6 +113,7 @@ def backline(
     controller: Controller,
     coprocessors: Sequence[Coprocessor] = (),
     transport,
+    qec_code: str | None = None,
 ) -> HeterogeneousDevice:
     """Build a heterogeneous execution device from a backline placement.
 
@@ -130,6 +131,9 @@ def backline(
             Defaults to ``()``.
         transport (str | Transport): The transfer protocol between nodes, by registry name (e.g.
             ``"rdma"``) or a :class:`~.Transport`.
+        qec_code (str | None): The quantum error-correcting code to implicitly encode the circuit. 
+            Currently the only supported option is ``"steane"``. Defaults to ``None``, leaving the
+            circuit unencoded.
 
     Returns:
         HeterogeneousDevice: A :class:`~.HeterogeneousDevice` carrying the
@@ -166,5 +170,10 @@ def backline(
         def circuit():
             ...
     """
-    placement = Placement(controller=controller, coprocessors=coprocessors, transport=transport)
+    placement = Placement(
+        controller=controller,
+        coprocessors=coprocessors,
+        transport=transport,
+        qec_code=qec_code,
+    )
     return HeterogeneousDevice(placement=placement)
