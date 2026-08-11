@@ -22,12 +22,14 @@ import pytest
 
 import pennylane as qp
 from pennylane import SignedOutMultiplier, device, qnode
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import sample, state
 from pennylane.ops import CNOT
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
+from pennylane.typing import Wire
 
 
 def bin_to_int(bits):
@@ -51,6 +53,48 @@ def twos_complement_value(bits):
         sum += (2**i) * bit
     sum -= (2 ** (len(bits) - 1)) * bits[0]
     return sum
+
+
+@pytest.mark.parametrize(
+    (
+        "x_wires",
+        "y_wires",
+        "output_wires",
+        "work_wires",
+        "output_wires_zeroed",
+        "expected_num_work_wires",
+    ),
+    [
+        ((0, 1, 2), (3, 4, 5), (10, 11, 12, 13, 14, 15), (6, 7, 8, 9), True, 4),
+        ((0, 1), (2, 3), (9, 10), (4, 5, 6, 7, 8), False, 5),
+    ],
+)
+def test_abstract_init(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, expected_num_work_wires
+):  # pylint: disable=too-many-arguments
+    """Test that abstract init mirrors concrete init."""
+    abstract_op = SignedOutMultiplier(
+        Wire[len(x_wires)],
+        Wire[len(y_wires)],
+        Wire[len(output_wires)],
+        Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    assert abstract_op.arguments["output_wires_zeroed"] is output_wires_zeroed
+    assert len(abstract_op.work_wires) == expected_num_work_wires
+
+    concrete_op = SignedOutMultiplier(
+        x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=output_wires_zeroed
+    )
+    assert abstractify(concrete_op) == abstract_op
+
+
+def test_map_wires_preserves_output_wires_zeroed():
+    """Test that wire mapping preserves the output register state metadata."""
+    op = SignedOutMultiplier([0], [1], [2, 3], [4, 5], output_wires_zeroed=True)
+    mapped_op = op.map_wires({0: 6, 1: 7, 2: 8, 3: 9, 4: 10, 5: 11})
+
+    assert mapped_op.arguments["output_wires_zeroed"] is True
 
 
 @pytest.mark.jax
@@ -116,17 +160,7 @@ def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
 @pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
-        pytest.param(
-            (0, 1, 2),
-            (3, 4, 5),
-            (6, 7, 8, 9),
-            (10, 11, 12, 13, 14, 15),
-            True,
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="capture validation does not trace legacy Operator register hyperparameters",
-            ),
-        ),
+        ((0, 1, 2), (3, 4, 5), (6, 7, 8, 9), (10, 11, 12, 13, 14, 15), True),
         ((0, 1), (2, 3), (4, 5, 6, 7, 8), (9, 10), False),
     ],
 )
@@ -154,13 +188,7 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
     ],
 )
 def test_decomposition_with_abstract_wires(rule_name, registers, expected_primitives):
-    """Test the decomposition rules with every register passed as an abstract wire argument.
-
-    This separate test is needed while ``SignedOutMultiplier`` is a legacy operator because
-    ``_test_decomposition_rule`` closes over its register hyperparameters and traces only its
-    aggregate wires. Once ``SignedOutMultiplier`` is an Operator2, that helper will trace each
-    wire argument directly and this test will be redundant.
-    """
+    """Test the decomposition rules with every register passed as an abstract wire argument."""
     jnp = pytest.importorskip("jax.numpy")
     rule = list_decomps(SignedOutMultiplier)[rule_name]
 
@@ -176,6 +204,9 @@ def test_decomposition_with_abstract_wires(rule_name, registers, expected_primit
         *(jnp.array(register) for register in registers)
     )
     primitive_names = [eqn.primitive.name for eqn in plxpr.jaxpr.eqns]
+    for eqn in plxpr.jaxpr.eqns:
+        if eqn.primitive.name == "operator":
+            primitive_names.append(eqn.params["op_cls"].__name__)
 
     for primitive, expected_count in expected_primitives.items():
         assert primitive_names.count(primitive) == expected_count

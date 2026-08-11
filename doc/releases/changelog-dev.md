@@ -872,7 +872,7 @@
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   - Multi-qubit, parametric operators are ported:
   - Templates are ported:
-    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`, `~.SelectPauliRot`, `~.GQSP`, `~.OutMultiplier`
+    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`, `~.SelectPauliRot`, `~.GQSP`, `~.OutMultiplier`, `~.SignedOutMultiplier`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
