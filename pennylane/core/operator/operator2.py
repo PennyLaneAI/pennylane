@@ -294,8 +294,8 @@ class Operator2(metaclass=OperatorMeta):
     def wires(self) -> Wires:
         """Wires that the operator acts on.
 
-        The returned :class:`~.Wires` are collected from the operator's arguments in
-        the following order:
+        By default, he returned :class:`~.Wires` are collected from the operator's arguments
+        in the following order:
 
         1. For each name in ``wire_argnames`` (in declaration order):
 
@@ -314,8 +314,13 @@ class Operator2(metaclass=OperatorMeta):
 
         .. note::
 
-            Work wires are **not included** in ``op.wires``. In particular, wire arguments
-            named ``work_wires`` or ``work_wire`` are excluded.
+            By default, work wires are **not included** in ``op.wires``. In particular, wire
+            arguments named ``work_wires`` or ``work_wire`` are excluded.
+
+        .. note::
+
+            This property may be overridden by developers if the default behaviour is not
+            desired, for reasons such as including work wires or changing the order of the wires.
 
         Returns:
             Wires: wires
