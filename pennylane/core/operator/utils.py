@@ -31,7 +31,44 @@ if TYPE_CHECKING:
 
 @singledispatch
 def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedResourceOp:
-    """Convert the provided value into an abstract type."""
+    """Convert the provided value into an abstract object.
+
+    Args:
+        val: The value to convert to an abstract object.
+
+    Returns:
+        The abstract object that corresponds to the provided value.
+
+    **Example**
+
+    An abstract object in the context of this function is an object that stores only
+    the shape and type of any data whose concrete value would only be known at runtime.
+    For example, the corresponding abstract object of an float array of length 3 is an
+    `AbstractArray` with shape `(3,)` and type `float64`:
+
+    >>> qp.core.abstractify(np.array([0.1, 0.2, 0.3]))
+    AbstractArray((3,), float64)
+
+    Similarly, concrete operators has concrete data and wire labels:
+
+    >>> op = qp.CRZ(0.5, wires=[0, 1])
+    >>> op
+    CRZ(0.5, wires=[0, 1])
+
+    The corresponding abstract object is an instance of the same operator with its dynamic
+    data and wires replaced with `AbstractArray` and `AbstractWire` instances:
+
+    >>> qp.core.abstractify(op)
+    CRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2))
+
+    For operators with fixed signatures (i.e., the shape and type of every argument is
+    statically known and specified in its `arg_specs`), `abstractify` can be called on
+    the operator type and still returns the correct abstract object:
+
+    >>> qp.core.abstractify(qp.CRZ)
+    CRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2))
+
+    """
 
     # pylint: disable-next=import-outside-toplevel
     from .operator2 import Operator2
