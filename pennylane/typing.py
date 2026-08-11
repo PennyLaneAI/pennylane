@@ -523,13 +523,18 @@ class AbstractWires:
             return True
         return len(instance) == self.num_wires
 
+    def __iter__(self):
+        raise IndexError("Cannot interate over an AbstractWires.")
+
     def __getitem__(self, item):
+        if self.num_wires < 0:
+            raise IndexError("Cannot index into an AbstractWires with unknown number of wires.")
         if isinstance(item, int):
             return AbstractWires(1)
         if isinstance(item, slice):
             new_start_stop_step = item.indices(self.num_wires)
             return AbstractWires(len(range(*new_start_stop_step)))
-        raise IndexError(f"Cannot index into an AbstractArray with {item}.")
+        raise IndexError(f"Cannot index into an AbstractWires with {item}.")
 
 
 class _AbstractWireTypeFactory(AbstractWires):

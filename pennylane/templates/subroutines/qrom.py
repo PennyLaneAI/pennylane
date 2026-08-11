@@ -36,7 +36,7 @@ from pennylane.ops import CNOT, CZ, BasisState, PauliMeasure, X, cond, ctrl, pau
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
@@ -224,13 +224,16 @@ class QROM(Operator2):
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        _wires_are_traced = any(
+        # Skip overlap checks for AbstractWires (no concrete labels) and for JAX
+        # tracers (concrete values unavailable during tracing).
+        _wires_are_abstract = any(
+            isinstance(ws, AbstractWires) for ws in (control_wires, target_wires, work_wires)
+        )
+        _wires_are_traced = (not _wires_are_abstract) and any(
             math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
         )
 
-        # Wire overlap validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
+        if not _wires_are_traced and not _wires_are_abstract:
             if len(work_wires) != 0:
                 if any(wire in work_wires for wire in control_wires):
                     raise ValueError("Control wires should be different from work wires.")
@@ -247,8 +250,7 @@ class QROM(Operator2):
                 + f"data ({data.shape[0]}). At least {ceil_log2(data.shape[0])} control "
                 + "wires are required."
             )
-
-        if data[0].shape[0] != len(target_wires):
+        if data.shape[1] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         super().__init__(data, control_wires, target_wires, work_wires, clean)
