@@ -31,6 +31,7 @@ from pennylane import math
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
@@ -176,9 +177,11 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     for rule in qp.list_decomps(f"C({op.name})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
-            control_wires = [i + len(op.wires) for i in range(n_ctrl_wires)]
+            int_wires = [w for w in op.wires if isinstance(w, int)]
+            max_wire = max(int_wires) if int_wires else -1
+            control_wires = [i + max_wire + 1 for i in range(n_ctrl_wires)]
             control_values = [c_value] * n_ctrl_wires
-            work_wires = [i + len(op.wires) + n_ctrl_wires for i in range(n_workers)]
+            work_wires = [i + max(control_wires) + 1 for i in range(n_workers)]
             ctrl_op = ctrl(op, control_wires, control_values, work_wires)
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
@@ -226,7 +229,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
-    gate_counts = resources.gate_counts
+    estimated_gate_counts = resources.gate_counts
 
     if qp.capture.enabled():
         import jax  # pylint: disable=import-outside-toplevel
@@ -265,19 +268,25 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
+    if qp.capture.enabled():
+        # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are typically
+        # not aware of that, and still produce resource reps of ChangeOpBasis. Therefore, we unroll
+        # the ChangeOpBasis in the resources manually so that it will match the reality.
+        estimated_gate_counts = _unroll_change_op_basis(estimated_gate_counts)
+
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        non_zero_gate_counts = {k: v for k, v in estimated_gate_counts.items() if v > 0}
         _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in gate_counts for op in actual_gate_counts), (
+        assert all(op in estimated_gate_counts for op in actual_gate_counts), (
             "\nGate counts expected from resource function to contain actual gates:\n"
-            f"{list(gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
+            f"{list(estimated_gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
             "Missing in gate counts from resource function:\n"
-            f"{[op for op in actual_gate_counts if op not in gate_counts]}"
+            f"{[op for op in actual_gate_counts if op not in estimated_gate_counts]}"
         )
 
     # Tests that the decomposition produces the same matrix
@@ -294,6 +303,26 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll any resource reps of ChangeOpBasis."""
+    new_gate_counts = defaultdict(int)
+    for k, count in gate_counts.items():
+        if not isinstance(k, CompressedResourceOp):
+            new_gate_counts[k] += count
+            continue
+        if k.op_type is not qp.ops.ChangeOpBasis:
+            new_gate_counts[k] += count
+            continue
+        for p in ("compute_op", "target_op", "uncompute_op"):
+            op_rep = k.params[p]
+            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
+                for inner_op, inner_count in op_rep.params["resources"].items():
+                    new_gate_counts[inner_op] += count * inner_count
+            else:
+                new_gate_counts[op_rep] += count
+    return new_gate_counts
 
 
 def _check_matrix(op):
@@ -392,7 +421,8 @@ def _check_eigendecomposition(op):
     if has_eigvals:
         assert qp.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
-    if has_eigvals and op.has_diagonalizing_gates:
+    if (eg is not None or compute_eg is not None) and op.has_diagonalizing_gates:
+        eg = eg if eg is not None else compute_eg
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
@@ -633,6 +663,7 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -646,6 +677,7 @@ def _assert_valid_operator2(
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
+        skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` test will be skipped.
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -691,9 +723,11 @@ def _assert_valid_operator2(
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
                     skip_capture=skip_capture,
+                    skip_bind_new_parameters=skip_bind_new_parameters,
                 )
 
-    _check_bind_new_parameters_op2(op)
+    if not skip_bind_new_parameters:
+        _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
@@ -707,6 +741,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -726,6 +761,7 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_capture: If ``True``, the program capture tests will be skipped.
+        skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` tests will be skipped.
 
     **Examples:**
 
@@ -772,6 +808,7 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_capture,
+            skip_bind_new_parameters,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -781,7 +818,8 @@ def assert_valid(
             assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
             assert qp.math.allclose(d, p), "data and parameters must match."
 
-        _check_bind_new_parameters(op)
+        if not skip_bind_new_parameters:
+            _check_bind_new_parameters(op)
 
     _check_pytree(op)
     if len(op.wires) <= 26:
