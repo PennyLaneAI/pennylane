@@ -32,6 +32,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
@@ -747,7 +748,7 @@ class TestQubitUnitaryDecompositions:
         assert rules["two_qubit_decomp_rule"].compute_resources(num_wires=2) == Resources(
             {
                 qp.resource_rep(qp.QubitUnitary, num_wires=1): 4,
-                qp.resource_rep(qp.CNOT): 3,
+                abstractify(qp.CNOT): 3,
                 abstractify(qp.RZ): 1,
                 qp.resource_rep(qp.RY): 2,
                 qp.resource_rep(qp.GlobalPhase): 1,
@@ -756,15 +757,23 @@ class TestQubitUnitaryDecompositions:
         assert rules["multi_qubit_decomp_rule"].compute_resources(num_wires=3) == Resources(
             {
                 qp.resource_rep(qp.QubitUnitary, num_wires=2): 4,
-                qp.resource_rep(qp.SelectPauliRot, num_wires=3, rot_axis="Z"): 2,
-                qp.resource_rep(qp.SelectPauliRot, num_wires=3, rot_axis="Y"): 1,
+                qp.SelectPauliRot(
+                    Float[4], control_wires=Wire[2], target_wire=Wire[1], rot_axis="Z"
+                ): 2,
+                qp.SelectPauliRot(
+                    Float[4], control_wires=Wire[2], target_wire=Wire[1], rot_axis="Y"
+                ): 1,
             }
         )
         assert rules["multi_qubit_decomp_rule"].compute_resources(num_wires=4) == Resources(
             {
                 qp.resource_rep(qp.QubitUnitary, num_wires=3): 4,
-                qp.resource_rep(qp.SelectPauliRot, num_wires=4, rot_axis="Z"): 2,
-                qp.resource_rep(qp.SelectPauliRot, num_wires=4, rot_axis="Y"): 1,
+                qp.SelectPauliRot(
+                    Float[8], control_wires=Wire[3], target_wire=Wire[1], rot_axis="Z"
+                ): 2,
+                qp.SelectPauliRot(
+                    Float[8], control_wires=Wire[3], target_wire=Wire[1], rot_axis="Y"
+                ): 1,
             }
         )
 
