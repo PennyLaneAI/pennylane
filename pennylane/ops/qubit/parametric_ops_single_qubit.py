@@ -773,7 +773,7 @@ def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_
 add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_decomp))
 
 
-class PhaseShift(Operation):
+class PhaseShift(Operator2):
     r"""
     Arbitrary single qubit local phase shift
 
@@ -802,10 +802,16 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
+        """The basis of an operation."""
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -813,18 +819,8 @@ class PhaseShift(Operation):
         )
         return "Z"
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
-
-    def __init__(self, phi: TensorLike, wires: WiresLike):
-        super().__init__(phi, wires=wires)
 
     def label(
         self,
@@ -835,7 +831,8 @@ class PhaseShift(Operation):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -875,7 +872,8 @@ class PhaseShift(Operation):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -914,41 +912,14 @@ class PhaseShift(Operation):
             product = qp.math.outer(phi, prefactors)
         return qp.math.exp(product)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qp.operation.Operator":
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.PhaseShift.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Any, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.PhaseShift.compute_decomposition(1.234, wires=0)
-        [RZ(1.234, wires=[0]), GlobalPhase(-0.617, wires=[])]
-
-        """
-        return [RZ(phi, wires=wires), qp.GlobalPhase(-phi / 2)]
-
     def adjoint(self) -> "PhaseShift":
-        return PhaseShift(-self.data[0], wires=self.wires)
+        return PhaseShift(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [PhaseShift(self.data[0] * z, wires=self.wires)]
-
-    def _controlled(self, wire: WiresLike) -> "qp.ControlledPhaseShift":
-        return qp.ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+        return [PhaseShift(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "PhaseShift":
-        phi = self.data[0] % (2 * np.pi)
+        phi = self.phi % (2 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
@@ -959,11 +930,11 @@ class PhaseShift(Operation):
 @custom_ctrl_dispatch.register
 def _ctrl_ps(base: PhaseShift, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.ControlledPhaseShift(base.data[0], wires=control + base.wires)
+        return qp.ControlledPhaseShift(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
-def _phaseshift_to_rz_gp_resources():
+def _phaseshift_to_rz_gp_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RZ: 1, qp.GlobalPhase: 1}
 
 
@@ -973,7 +944,13 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     qp.GlobalPhase(-phi / 2)
 
 
-def _cphase_to_ppr_resource(num_control_wires, **_):
+def _controlled_phase_shift_resource(base, control_wires, **_):  # pylint: disable=unused-argument
+    # A single control wire specializes to ``ControlledPhaseShift``, matching the legacy
+    # behaviour (and its cheaper ``RZ``/``CNOT`` decomposition) rather than the general
+    # phase-polynomial (``PauliRot``) expansion, which is only used for multiple control wires.
+    if len(control_wires) == 1:
+        return {qp.ControlledPhaseShift: 1}
+    num_control_wires = len(control_wires)
     resources = {
         qp.PauliRot(Float, pauli_word="Z" * i, wires=Wire[len("Z" * i)]): builtin_math.comb(
             num_control_wires + 1, i
@@ -984,20 +961,25 @@ def _cphase_to_ppr_resource(num_control_wires, **_):
     return resources
 
 
-@register_resources(_cphase_to_ppr_resource)
-def _cphase_to_ppr(theta, wires, **_):
+@register_resources(_controlled_phase_shift_resource)
+def _controlled_phase_shift_decomp(base, control_wires, **_):
+    wires = control_wires + base.wires
+    if len(control_wires) == 1:
+        qp.ControlledPhaseShift(base.phi, wires=wires)
+        return
+
     n = len(wires)
     for l in range(1, n + 1):
         for sub_wires in combinations(wires, l):
-            phi = -theta / 2 ** (n - 1) * (-1) ** l
+            phi = -base.phi / 2 ** (n - 1) * (-1) ** l
             qp.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
-    qp.GlobalPhase(-theta / 2**n)
+    qp.GlobalPhase(-base.phi / 2**n)
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
-add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
-add_decomps("Pow(PhaseShift)", pow_rotation)
-add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
+add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
+add_decomps("Pow(PhaseShift)", pow_rotation2)
+add_decomps("C(PhaseShift)", flip_zero_control2(_controlled_phase_shift_decomp))
 
 
 class Rot(Operation):
