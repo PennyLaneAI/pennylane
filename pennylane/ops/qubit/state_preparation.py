@@ -112,7 +112,11 @@ class BasisState(StatePrepBase2):
 
         abstract_state = qp.math.is_abstract(state)
 
-        if not math.shape(state) and abstract_state:
+        if not math.shape(state):
+            if not abstract_state:
+                raise ValueError(
+                    f"Integer state are not allowed. Please convert your state to a binary array with 'qp.math.int_to_binary({state}, {num_wires})'."
+                )
             bin = 2 ** math.arange(num_wires)[::-1]
             state = qp.math.where((state & bin) > 0, 1, 0)
 
