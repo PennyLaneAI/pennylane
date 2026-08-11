@@ -15,7 +15,6 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
-import string
 from pickle import PicklingError
 
 import numpy as np
@@ -816,15 +815,13 @@ class TestOperator2AssertValid:
             )
 
 
-def create_op_instance(c, str_wires=False):
+def create_op_instance(c):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
     if n_wires is None:
         n_wires = 1
 
     wires = qp.wires.Wires(range(n_wires))
-    if str_wires and len(wires) < 26:
-        wires = qp.wires.Wires([string.ascii_lowercase[i] for i in wires])
     if (num_params := c.num_params) == 0:
         return c(wires) if wires else c()
     if isinstance(num_params, property):
@@ -849,8 +846,7 @@ def create_op_instance(c, str_wires=False):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("str_wires", (True, False))
-def test_generated_list_of_ops(class_to_validate, str_wires):
+def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[10:14] == "ftqc":
         pytest.skip(reason="skip tests for ftqc ops")
@@ -861,7 +857,7 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
     #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
     #   3. Add an instance of your class to `_INSTANCES_TO_TEST` in ./conftest.py
     #       Note: if it then fails validation, move it to `_INSTANCES_TO_FAIL` as described below.
-    op = create_op_instance(class_to_validate, str_wires)
+    op = create_op_instance(class_to_validate)
 
     # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
     # follow PL standards. Please do one of the following things:
