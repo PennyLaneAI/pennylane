@@ -34,7 +34,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -44,14 +44,10 @@ _STATE_NORM_TOLERANCE = 1e-10
 
 
 class BasisState(StatePrepBase2):
-    r"""BasisState(state, wires)
-    Prepares a single computational basis state.
+    r"""Prepares a single computational basis state.
 
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 1
-    * Gradient recipe: None
+    The state is specified as a 1D binary sequence or array of booleans/integers of length ``len(wires)``,
+    where each element represents the computational state (:math:`0` or :math:`1`) of the corresponding qubit.
 
     .. note::
 
@@ -59,36 +55,27 @@ class BasisState(StatePrepBase2):
         target device, PennyLane will attempt to decompose the operation
         into :class:`~.PauliX` operations.
 
-    .. note::
-
-        When called in the middle of a circuit, the action of the operation is defined
-        as :math:`U|0\rangle = |\psi\rangle`.
-
     Args:
-        state (int or Sequence[int] or tensor_like): Computational basis state to be prepared.
-            May be given as a single integer to describe the index of the state, or as a
-            binary sequence of length ``len(wires)`` or binary array with shape ``(len(wires),)``
-            to describe the state qubit-wise.
-        wires (WiresLike): the wires to prepare the state on
+        state (TensorLike | Sequence[int | bool]): Computational basis state to prepare as a binary
+            sequence of shape ``(len(wires),)``.
+        wires (WiresLike): Wires on which the state is prepared.
 
     **Example**
-    In the following example, we prepare the state :math:`|11\rangle` on two qubits, by explicitly
-    providing the bit string representation:
+
+    Preparing the state :math:`|11\rangle` on two qubits using a binary sequence:
 
     >>> dev = qp.device('default.qubit', wires=2)
     >>> @qp.qnode(dev)
-    ... def example_circuit(state):
-    ...     qp.BasisState(state, wires=range(2))
+    ... def circuit(state):
+    ...     qp.BasisState(state, wires=[0, 1])
     ...     return qp.state()
-    >>> print(example_circuit(np.array([1, 1])))
-    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+    >>> circuit(np.array([1, 1]))
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
 
-    Alternatively, we may provide the corresponding integer-valued index :math:`(3)_{10}=(11)_2`:
+    Lists or tuples of bit values are automatically converted to arrays:
 
-    >>> print(example_circuit(3))
-    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
-    >>> print(np.where(example_circuit(3)))
-    (array([3]),)
+    >>> circuit([1, 0])
+    array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j])
 
     """
 
@@ -100,11 +87,7 @@ class BasisState(StatePrepBase2):
     dynamic_argnames = ("state",)
     arg_specs = {"state": Bool[-1], "wires": Wire[-1]}
 
-    def __abstract_init__(self, state, wires):
-        # pylint: disable=unused-argument
-        super().__abstract_init__(Bool[len(wires)], wires)
-
-    def __init__(self, state: TensorLike | Sequence[int], wires: WiresLike):
+    def __init__(self, state: TensorLike | Sequence[int | bool], wires: WiresLike) -> None:
         wires = Wires(wires)
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
@@ -130,6 +113,9 @@ class BasisState(StatePrepBase2):
 
         state = qp.math.cast(state, bool)
         super().__init__(state, wires=wires)
+
+    def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
+        super().__abstract_init__(Bool[len(wires)], wires)
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
@@ -158,15 +144,13 @@ class BasisState(StatePrepBase2):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(
-    state: AbstractArray, wires: AbstractWires
-):  # pylint: disable=unused-argument
+def _basis_state_decomp_resources(state, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
 
 @register_resources(_basis_state_decomp_resources, exact=False)
-def _basis_state_decomp(state: AbstractArray, wires: AbstractWires):
+def _basis_state_decomp(state, wires):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
