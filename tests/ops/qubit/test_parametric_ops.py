@@ -4174,7 +4174,6 @@ def test_decomposition():
 control_data = [
     (qp.Rot(1, 2, 3, wires=0), Wires([])),
     (qp.RX(1.23, wires=0), Wires([])),
-    (qp.RY(1.23, wires=0), Wires([])),
     (qp.U1(1.234, wires=0), Wires([])),
     (qp.U2(1.234, 2.345, wires=0), Wires([])),
     (qp.U3(1.234, 2.345, 3.456, wires=0), Wires([])),

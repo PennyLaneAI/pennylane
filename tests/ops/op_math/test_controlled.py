@@ -1186,7 +1186,7 @@ class TestDifferentiation:
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
+            qp.ctrl(qp.RY(b, wires=1), control=0)
             return qp.expval(qp.PauliX(0))
 
         b = pnp.array(0.123, requires_grad=True)
@@ -1237,7 +1237,7 @@ class TestDifferentiation:
         def circuit(b):
             init_state = np.array([1.0, -1.0]) / pnp.sqrt(2)
             qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
+            qp.ctrl(qp.RY(b, wires=1), control=0)
             return qp.expval(qp.PauliX(0))
 
         b = jnp.array(0.123)
