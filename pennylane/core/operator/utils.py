@@ -68,6 +68,12 @@ def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedRes
     >>> qp.core.abstractify(qp.CRZ)
     CRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2))
 
+    Note that this currently does not work if the operator's signature is not fully fixed.
+    For example, ``PauliRot`` takes an arbitrary number of wires, so this fails:
+
+    >>> qp.core.abstractify(qp.PauliRot)
+    TypeError: 'PauliRot' must set 'arg_specs' and cover all dynamic and wire arguments with fixed abstract types to be abstractified.
+
     """
 
     # pylint: disable-next=import-outside-toplevel
