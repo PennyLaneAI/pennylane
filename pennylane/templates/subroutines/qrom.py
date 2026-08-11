@@ -27,17 +27,16 @@ from pennylane.core.operator import Operator2
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops import CNOT, CZ, BasisState, PauliMeasure, X, cond, ctrl, pauli_measure
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import AbstractArray, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
@@ -612,15 +611,14 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings)
 
+    basis_state_rep = resource_rep(BasisState, num_wires=num_target_wires)
     if L <= 1 and n_extra == 0:
-        return {resource_rep(BasisState, num_wires=num_target_wires): 1}
+        return {basis_state_rep: 1}
 
     if L == 2 and n_extra == 0:
         return {
-            resource_rep(BasisState, num_wires=num_target_wires): 1,
-            controlled_resource_rep(
-                BasisState, {"num_wires": num_target_wires}, num_control_wires=1
-            ): 1,
+            basis_state_rep: 1,
+            _ctrl_abstract(basis_state_rep, Wire[1]): 1,
         }
 
     # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
@@ -633,13 +631,13 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     # CNOTs, PauliX gates and BasisState ops are an approximation
     flag = _flag_resources(n_extra, num_target_wires)
     resources = {
-        resource_rep(TemporaryAND): num_ands + flag.get(resource_rep(TemporaryAND), 0),
-        resource_rep(PauliMeasure): num_measurements,
-        resource_rep(CZ): num_cz,
-        resource_rep(CNOT): L - 1,
+        TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
+        PauliMeasure: num_measurements,
+        CZ: num_cz,
+        CNOT: L - 1,
         resource_rep(BasisState, num_wires=num_target_wires): L,
-        resource_rep(X): L + flag.get(resource_rep(X), 0),
-        controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+        X: L + flag.get(X, 0),
+        qp_ops.ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
     }
     # Merge the remaining flag-only resource types (controlled-X load, adjoint ANDs).
     for rep, count in flag.items():
@@ -657,12 +655,12 @@ def _flag_resources(n_extra, num_target_wires):
     """
     if n_extra < 1:
         return {}
-    resources = {controlled_resource_rep(X, {}, num_control_wires=1): num_target_wires}
+    resources = {qp_ops.ctrl(X(Wire[1]), control=Wire[1]): num_target_wires}
     if n_extra == 1:
-        resources[resource_rep(X)] = 2
+        resources[X] = 2
         return resources
-    resources[resource_rep(TemporaryAND)] = n_extra - 1
-    resources[adjoint_resource_rep(TemporaryAND)] = n_extra - 1
+    resources[TemporaryAND] = n_extra - 1
+    resources[_adjoint_abstract(TemporaryAND)] = n_extra - 1
     return resources
 
 
