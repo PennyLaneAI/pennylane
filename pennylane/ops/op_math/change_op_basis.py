@@ -20,25 +20,20 @@ import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
+from typing import override
 
 from pennylane import capture, math
 from pennylane.core import queuing
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.exceptions import (
-    DiagGatesUndefinedError,
-    EigvalsUndefinedError,
-    MatrixUndefinedError,
-    SparseMatrixUndefinedError,
-)
+from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.pytrees import flatten, unflatten
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.typing import Wire
+from pennylane.wires import Wires
 
-from .composite import CompositeOp, handle_recursion_error
+from .composite import handle_recursion_error
 
 
 def _validate_callable(func: Callable) -> None:
@@ -230,7 +225,7 @@ def change_op_basis(
         )
 
 
-class ChangeOpBasis(CompositeOp):
+class ChangeOpBasis(Operator2):
     """
     Composite operator representing a compute-uncompute pattern of operators, which constitutes changing the basis in
     which an operator is applied.
@@ -251,86 +246,125 @@ class ChangeOpBasis(CompositeOp):
     .. seealso:: :func:`~.change_op_basis`
     """
 
+    wire_argnames = ()
+    hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
+    arg_specs = {}
+    # Compatibility for compressed representations returned by change_op_basis_resource_rep.
+    resource_keys = frozenset(hybrid_argnames)
+
     def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
         if uncompute_op is None:
-            uncompute_op = adjoint(compute_op)
-        super().__init__(uncompute_op, target_op, compute_op)
+            uncompute_op = (
+                _adjoint_abstract(compute_op)
+                if isinstance(compute_op, CompressedResourceOp)
+                else adjoint(compute_op)
+            )
 
-    def _flatten(self):
-        return tuple(reversed(self.operands)), tuple()
+        # pylint: disable=import-outside-toplevel
+        from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
-        if uncompute_op is None:
-            uncompute_op = adjoint(compute_op)
+        if any(
+            isinstance(op, (MidMeasure, PauliMeasure))
+            for op in (compute_op, target_op, uncompute_op)
+        ):
+            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
 
-        leaves, structure = flatten(
-            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, Operator)
+        valid_operands = (Operator, CompressedResourceOp)
+        if not all(
+            isinstance(op, valid_operands) or _is_abstract_operator(op)
+            for op in (compute_op, target_op, uncompute_op)
+        ):
+            raise TypeError("ChangeOpBasis operands must be operators.")
+
+        super().__init__(compute_op, target_op, uncompute_op)
+
+        # Operator2 automatically collects wires from Operator2-valued hybrid arguments. Retain
+        # support for legacy Operator operands until their own migrations are complete.
+        if all(isinstance(op, Operator) for op in self.operands):
+            self._wires = Wires.all_wires([op.wires for op in self.operands])
+            self._pauli_rep = self._build_pauli_rep()
+        else:
+            self._wires = Wire[0]
+            self._is_abstract = True
+
+    @override
+    def __abstract_init__(self, *args, **kwargs):
+        bound_args = self._sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        if bound_args.arguments["uncompute_op"] is None:
+            bound_args.arguments["uncompute_op"] = _adjoint_abstract(
+                bound_args.arguments["compute_op"]
+            )
+        super().__abstract_init__(*bound_args.args, **bound_args.kwargs)
+        if isinstance(self._wires, Wires):
+            self._wires = Wire[0]
+
+    @property
+    def operands(self):
+        """The factors in matrix-product order."""
+        return self.uncompute_op, self.target_op, self.compute_op
+
+    def __iter__(self):
+        return iter(self.operands)
+
+    def __getitem__(self, idx):
+        return self.operands[idx]
+
+    def __len__(self):
+        return len(self.operands)
+
+    @property
+    def num_wires(self):
+        """Number of wires the operator acts on."""
+        return len(self.wires)
+
+    def __repr__(self):
+        return " @ ".join(
+            f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self.operands
         )
 
-        new_leaves = []
-        for leaf in leaves:
-            if isinstance(leaf, Operator2):
-                if leaf.tracer is None:
-                    # pylint: disable-next=protected-access
-                    leaf._bind_primitive()
-                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
-            else:
-                new_leaves.append(leaf)
+    @handle_recursion_error
+    def __hash__(self):
+        return hash((self.name, tuple(hash(op) for op in self.operands)))
 
-        compute_op, target_op, uncompute_op = unflatten(new_leaves, structure)
+    @handle_recursion_error
+    def label(self, decimals=None, base_label=None, cache=None):
+        def _label(op, operand_label):
+            sub_label = op.label(decimals, operand_label, cache)
+            return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
 
-        return cls._primitive.bind(compute_op, target_op, uncompute_op)
+        if base_label is not None:
+            if isinstance(base_label, str) or len(base_label) != len(self):
+                raise ValueError(
+                    "Composite operator labels require ``base_label`` keyword to be same length "
+                    "as operands."
+                )
+            return "@".join(
+                _label(op, operand_label)
+                for op, operand_label in zip(self, base_label, strict=True)
+            )
 
-    resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
-
-    has_matrix = False
-    has_sparse_matrix = False
-
-    _op_symbol = "@"
-    _math_op = staticmethod(math.prod)
-
-    def matrix(self, wire_order=None):
-        raise MatrixUndefinedError
-
-    def sparse_matrix(self, wire_order=None, format="csr"):
-        raise SparseMatrixUndefinedError
-
-    def diagonalizing_gates(self):
-        raise DiagGatesUndefinedError
-
-    def eigvals(self):
-        raise EigvalsUndefinedError
+        return "@".join(_label(op, None) for op in self)
 
     @property
     @handle_recursion_error
-    def resource_params(self):
-        return {
-            "compute_op": abstractify(self[2]),
-            "target_op": abstractify(self[1]),
-            "uncompute_op": abstractify(self[0]),
-        }
+    def data(self):
+        return tuple(data for op in self for data in op.data)
+
+    @property
+    @handle_recursion_error
+    def num_params(self):
+        return sum(op.num_params for op in self)
 
     grad_method = None
 
-    @classmethod
-    def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
-        """
-        We do not sort the ops. The order is guaranteed to matter since if the compute operator
-        and the base operator commute, the pattern would simplify to just being the base operator.
-
-        Args:
-            op_list (List[.Operator]): list of operators to be sorted
-            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-                Defaults to None.
-
-        Returns:
-            List[.Operator]: sorted list of operators
-        """
-        return op_list
+    @property
+    @override
+    def arithmetic_depth(self):
+        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
 
     @property
+    @override
     def is_verified_hermitian(self):
         """Check if the product operator is hermitian.
 
@@ -340,24 +374,27 @@ class ChangeOpBasis(CompositeOp):
         """
         return self[1].is_verified_hermitian
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_decomposition(self):
-        return True
-
-    def decomposition(self):
-        r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
-        if queuing.QueuingManager.recording():
-            _ = [queuing.apply(op) for op in reversed(self)]
-        return list(self[::-1])
-
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_adjoint(self):
-        return True
-
+    @override
     def adjoint(self):
         return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+
+    @override
+    def queue(self, context=queuing.QueuingManager):
+        if self.is_abstract:
+            return self
+        if context.recording():
+            for op in self:
+                context.remove(op)
+            context.append(self)
+        return self
+
+    @override
+    def map_wires(self, wire_map):
+        return type(self)(
+            self.compute_op.map_wires(wire_map),
+            self.target_op.map_wires(wire_map),
+            self.uncompute_op.map_wires(wire_map),
+        )
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
@@ -376,78 +413,52 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-def _adjoint_change_op_basis_resources(base_params, **_):
-    resources = defaultdict(int)
-    resources[base_params["compute_op"]] += 1
-    resources[base_params["uncompute_op"]] += 1
-    target_op = base_params["target_op"]
-    resources[_adjoint_abstract(target_op)] += 1
-    return resources
-
-
-# pylint: disable=protected-access
-@register_resources(_adjoint_change_op_basis_resources)
-def _adjoint_change_op_basis_decomp(*_, base, **__):
-    queuing.apply(base.operands[2])
-    adjoint(queuing.apply(base.operands[1]))
-    queuing.apply(base.operands[0])
-
-
-add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
-
-
 def _controlled_change_op_basis_resources(
-    *_,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
+    base,
+    control_wires,
+    control_values,
+    work_wires,
     work_wire_type,
-    base_class,
-    base_params,
-    **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):  # pylint: disable=unused-argument
     resources = defaultdict(int)
-    resources[base_params["compute_op"]] += 1
+    resources[base.compute_op] += 1
     resources[
         _ctrl_abstract(
-            base_params["target_op"],
-            Wire[num_control_wires],
-            Wire[num_work_wires],
+            base.target_op,
+            Wire[len(control_wires)],
+            Wire[len(work_wires)],
             work_wire_type,
-            num_zero_control_values,
         )
     ] += 1
-    resources[base_params["uncompute_op"]] += 1
+    resources[base.uncompute_op] += 1
     return resources
 
 
 @register_resources(_controlled_change_op_basis_resources)
 def _controlled_change_op_basis_decomposition(
-    *_,
+    base,
     control_wires,
     control_values,
     work_wires,
     work_wire_type,
-    base,
-    **__,
 ):
-    queuing.apply(base.operands[2])
+    queuing.apply(base.compute_op)
     ctrl(
-        queuing.apply(base.operands[1]),
+        queuing.apply(base.target_op),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    queuing.apply(base.operands[0])
+    queuing.apply(base.uncompute_op)
 
 
-# pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):
-    for op in operands[::-1]:
-        queuing.apply(op)
+def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
+    queuing.apply(compute_op)
+    queuing.apply(target_op)
+    queuing.apply(uncompute_op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)
-add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_decomposition)
+add_decomps("C(ChangeOpBasis)", flip_zero_control(_controlled_change_op_basis_decomposition))
