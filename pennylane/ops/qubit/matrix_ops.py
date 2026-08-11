@@ -41,7 +41,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import Complex, FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import Bool, Complex, FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -395,9 +395,15 @@ add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
 
 # pylint: disable=unused-argument
 def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
+    num_target_wires = base_params["num_wires"]
+    num_control_wires = kwargs["num_control_wires"]
     return {
-        resource_rep(
-            qp.ControlledQubitUnitary, num_target_wires=base_params["num_wires"], **kwargs
+        qp.ControlledQubitUnitary(
+            Complex[2**num_target_wires, 2**num_target_wires],
+            wires=Wire[num_control_wires + num_target_wires],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[kwargs["num_work_wires"]],
+            work_wire_type=kwargs["work_wire_type"],
         ): 1,
     }
 

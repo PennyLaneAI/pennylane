@@ -43,7 +43,7 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
@@ -211,7 +211,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         self._work_wires = work_wires
         self._work_wire_type = work_wire_type
 
-        if "base" in self._init_args:
+        # Only overwrite ``base`` with the (wrapped) base operator when it is a hybrid
+        # operator argument. Special controlled ops like ``ControlledQubitUnitary`` expose
+        # ``base`` as a dynamic array argument (the raw matrix), which must be preserved for
+        # ``arg_specs`` validation, serialization, and pytree flattening.
+        if "base" in self._init_args and "base" in self.hybrid_argnames:
             self._init_args["base"] = base
 
         if "control_wires" in self._init_args:
@@ -746,15 +750,13 @@ def flip_control_adjoint(base, control_wires, control_values, work_wires, work_w
 
 
 def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    num_control_wires = len(control_wires)
     return {
-        resource_rep(
-            qp.ControlledQubitUnitary,
-            num_target_wires=1,
-            num_control_wires=len(control_wires),
-            # TODO: again assuming that half the control values are 0s, fix
-            #       when we have a better solution here.
-            num_zero_control_values=len(control_wires) // 2,
-            num_work_wires=len(work_wires),
+        qp.ControlledQubitUnitary(
+            Complex[2, 2],
+            wires=Wire[num_control_wires + 1],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 1
     }
