@@ -26,6 +26,8 @@ from pennylane.decomposition import adjoint_resource_rep, resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
@@ -594,6 +596,9 @@ class TestMeasurementQROM:
 
     def test_resources_small_cases(self):
         """Test resource estimates for the L <= 1 and L == 2 edge cases."""
+
+        basis_state_rep = resource_rep(qp.BasisState, num_wires=3)
+
         res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
         assert res_one[qp.BasisState(Int[3], Wire[3])] == 1
 
@@ -604,7 +609,7 @@ class TestMeasurementQROM:
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
         res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
-        assert res[qp.resource_rep(PauliMeasure)] > 0
+        assert res[PauliMeasure] > 0
         assert res[qp.CZ] > 0
 
     def test_resources_from_base_params(self):
@@ -632,10 +637,8 @@ class TestMeasurementQROM:
             num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
         )
         # The ladder is symmetric: as many forward ANDs as adjoints.
-        assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
-        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
-            n_extra - 1
-        )
+        assert res_extra[_adjoint_abstract(TemporaryAND)] == n_extra - 1
+        assert res_extra[TemporaryAND] == res_one[TemporaryAND] + (n_extra - 1)
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""

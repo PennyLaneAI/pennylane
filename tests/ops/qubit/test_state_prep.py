@@ -53,6 +53,67 @@ def test_basis_state_input_cast_to_bool():
     assert op.state.dtype == bool
 
 
+class TestInputs:
+    """Test inputs and pre-processing."""
+
+    @pytest.mark.parametrize(
+        ("feat", "wires", "expected"),
+        [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
+    )
+    def test_features_as_int_conversion(self, feat, wires, expected):
+        """checks conversion from features as int to a list of binary digits
+        with length = len(wires)"""
+
+        assert np.allclose(qp.BasisState(feat, wires=wires).parameters[0], expected)
+
+    @pytest.mark.parametrize(
+        "x, msg",
+        [
+            ([0], "State must be of length"),
+            ([0, 1, 1], "State must be of length"),
+            (4, "Integer state must be"),
+        ],
+    )
+    def test_wrong_input_bits_exception(self, x, msg):
+        """Checks exception if number of features is not same as number of qubits."""
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.BasisState(x, wires=range(2))
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg):
+            circuit()
+
+    def test_input_not_binary_exception(self):
+        """Checks exception if the features contain values other than zero and one."""
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(x=None):
+            qp.BasisState(x, wires=range(2))
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Basis state must only consist of"):
+            circuit(x=[2, 3])
+
+    def test_exception_wrong_dim(self):
+        """Checks exception if the number of dimensions of features is incorrect."""
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(x=None):
+            qp.BasisState(x, wires=2)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match="State must be one-dimensional"):
+            circuit(x=[[1], [0]])
+
+
 class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
@@ -113,6 +174,25 @@ class TestStandardValidityBasisState:
         for tape in tapes:
             assert len(tape) == 1
             assert isinstance(tape[0], qp.X)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+def test_ml_interface(interface):
+    """Tests all the ml interfaces."""
+
+    state = qp.math.array([0, 1], like=interface)
+
+    dev = qp.device("default.qubit", wires=2)
+
+    @qp.qnode(dev)
+    def circuit(state):
+        qp.BasisState(state, wires=range(2))
+        return qp.state()
+
+    res = circuit(state)
+    exp = qp.math.array([0, 1, 0, 0])  # |01>
+    assert qp.math.allclose(res, exp)
 
 
 @pytest.mark.parametrize(

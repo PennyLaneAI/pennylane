@@ -130,9 +130,30 @@ def seed(request):
 
 
 @pytest.fixture(scope="function")
-def enable_disable_plxpr():
+def enable_capture():
     """enable and disable capture around each test."""
     qp.capture.enable()
+    try:
+        yield
+    finally:
+        qp.capture.disable()
+
+
+@pytest.fixture(
+    params=[False, pytest.param(True, marks=[pytest.mark.jax, pytest.mark.capture])],
+    ids=["capture_disabled", "capture_enabled"],
+)
+def enable_and_disable_capture(request):
+    """
+    A fixture that parametrizes a test to run twice: once with program capture
+    disabled and once with it enabled (the enabled variant requires JAX).
+
+    It handles enabling capture before the test runs and always disabling it
+    afterwards.
+
+    """
+    if request.param:
+        qp.capture.enable()
     try:
         yield
     finally:
@@ -307,8 +328,13 @@ def pytest_collection_modifyitems(items, config):
             item.add_marker(pytest.mark.core)
 
         # Auto add jax marker if the item is marked under capture
+        has_capture_fixture = (
+            "enable_capture" in item.fixturenames
+            or "enable_and_disable_capture" in item.fixturenames
+        )
         if "capture" in item_markers:
-            item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
+            if not has_capture_fixture:
+                item.fixturenames = [*item.fixturenames, "enable_capture"]
             if "jax" not in item_markers:
                 item.add_marker(pytest.mark.jax)
 
