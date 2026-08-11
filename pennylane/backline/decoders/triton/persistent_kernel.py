@@ -51,7 +51,7 @@ def _persistent_decoder_kernel(
         decoder_fns (tuple[Callable]): Compile-time tuple of Triton decoder
             functions selected by ``decoder_id``.
     """
-    stop_poll_iters = tl.constexpr(1024)
+    stop_poll_iters = tl.full((), 1024, tl.uint32)
 
     # cursor/total are u64; slot indices and seq numbers are u32 by wire layout.
     cursor = tl.zeros((), dtype=tl.uint64)
