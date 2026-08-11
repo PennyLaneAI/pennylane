@@ -63,7 +63,7 @@ def _sum_product_posteriors(
                     for c2 in tl.static_range(num_checks):
                         if c2 != c and H[c2][v]:
                             message += check_to_var_msgs[c2][v]
-                    row += (_bp_tanh_half(message),)
+                    row += (_tanh_half(message),)
                 else:
                     row += (0.0,)
             var_to_check_msgs += (row,)
@@ -112,7 +112,7 @@ def _get_syndrome_signs(syndrome, num_checks: tl.constexpr):
 
 
 @triton.jit
-def _bp_tanh_half(value):
+def _tanh_half(value):
     """Compute ``tanh(value / 2)`` for a Triton scalar.
 
     Args:
@@ -121,8 +121,20 @@ def _bp_tanh_half(value):
     Returns:
         float: The value of ``tanh(value / 2)``.
     """
-    exp_value = tl.exp(value)
-    return (exp_value - 1.0) / (exp_value + 1.0)
+    half_value = 0.5 * value
+
+    if tl.target_info.is_cuda():
+        return tl.extra.cuda.libdevice.tanh(half_value)
+    if tl.target_info.is_hip():
+        return tl.extra.hip.libdevice.tanh(half_value)
+
+    # overflow robust tanh formula
+    exp_abs = tl.exp(-tl.abs(value))
+    return tl.where(
+        value >= 0,
+        (1.0 - exp_abs) / (1.0 + exp_abs),
+        (exp_abs - 1.0) / (exp_abs + 1.0),
+    )
 
 
 @triton.jit

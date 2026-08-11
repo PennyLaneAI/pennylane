@@ -38,9 +38,9 @@ pytestmark = [
 
 from pennylane.backline.decoders.triton.bp_iters import (
     _bp_c2v_msg,
-    _bp_tanh_half,
     _get_syndrome_signs,
     _llr_from_p,
+    _tanh_half,
 )
 
 
@@ -52,9 +52,9 @@ def _get_syndrome_signs_kernel(out_ptr, syndrome, NCHECKS: tl.constexpr):
 
 
 @triton.jit
-def _bp_tanh_half_kernel(x_ptr, out_ptr):
+def _tanh_half_kernel(x_ptr, out_ptr):
     x = tl.load(x_ptr)
-    tl.store(out_ptr, _bp_tanh_half(x))
+    tl.store(out_ptr, _tanh_half(x))
 
 
 @triton.jit
@@ -84,14 +84,14 @@ class TestTritonUtils:
         expected = torch.tensor([1.0, -1.0, 1.0, -1.0], dtype=torch.float32)
         torch.testing.assert_close(out.cpu(), expected)
 
-    @pytest.mark.parametrize("x", [-2.0, 0.0, 2.0])
+    @pytest.mark.parametrize("x", [-20.0, -2.0, 0.0, 2.0, 20.0])
     def test_bp_tanh_half_matches_math_tanh(self, x):
         """The Triton helper should compute tanh(x / 2)."""
         torch = _torch()
 
         x_tensor = torch.tensor([x], device="cuda", dtype=torch.float64)
         out = torch.empty(1, device="cuda", dtype=torch.float64)
-        _bp_tanh_half_kernel[(1,)](x_tensor, out)
+        _tanh_half_kernel[(1,)](x_tensor, out)
 
         assert out.cpu().item() == pytest.approx(math.tanh(x / 2.0))
 
