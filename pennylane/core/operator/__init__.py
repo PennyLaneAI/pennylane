@@ -95,6 +95,8 @@ Utility Functions
 ~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.core.operator
+
+.. autosummary::
     :toctree: api
 
     ~abstractify
