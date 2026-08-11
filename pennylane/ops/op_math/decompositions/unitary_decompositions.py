@@ -24,7 +24,6 @@ from scipy.linalg import cossin
 from pennylane import capture, compiler, math, ops, templates
 from pennylane.core import queuing
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
-from pennylane.decomposition.resources import resource_rep
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
@@ -32,7 +31,7 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
-from pennylane.typing import Float, Wire
+from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
@@ -390,7 +389,7 @@ zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz
 def _two_qubit_resource(**_):
     """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
     return {
-        resource_rep(ops.QubitUnitary, num_wires=1): 4,
+        ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
         ops.CNOT: 3,
         ops.RZ: 1,
         ops.RY: 2,
@@ -426,7 +425,9 @@ def two_qubit_decomp_rule(U, wires, **__):
 
 def _multi_qubit_decomp_resource(num_wires):
     return {
-        resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
+        ops.QubitUnitary(
+            Complex[2 ** (num_wires - 1), 2 ** (num_wires - 1)], wires=Wire[num_wires - 1]
+        ): 4,
         templates.SelectPauliRot(
             Float[2 ** (num_wires - 1)],
             control_wires=Wire[num_wires - 1],
