@@ -4167,8 +4167,6 @@ control_data = [
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
     (qp.PhaseShift(1.234, wires=0), Wires([])),
-    # ``U1``/``U2``/``U3`` are ported to ``Operator2``, which does not expose the legacy
-    # ``control_wires`` attribute for (non-controlled) operators, so they are not exercised here.
     (qp.IsingXX(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingYY(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingXY(1.234, wires=(0, 1)), Wires([])),

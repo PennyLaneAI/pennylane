@@ -1462,10 +1462,8 @@ class U2(Operator2):
         return qp.math.stack([stack_last(row) for row in mat], axis=-2) / np.sqrt(2)
 
     def adjoint(self) -> "U2":
-        phi = self.phi
-        delta = self.delta
-        new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
-        new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
+        new_delta = qp.math.mod((np.pi - self.phi), (2 * np.pi))
+        new_phi = qp.math.mod((np.pi - self.delta), (2 * np.pi))
         return U2(new_phi, new_delta, wires=self.wires)
 
     def simplify(self) -> "U2":
@@ -1503,10 +1501,8 @@ add_decomps(U2, _u2_phaseshift_rot)
 
 @register_resources(lambda base: {abstractify(U2): 1})
 def _adjoint_u2(base):
-    phi = base.phi
-    delta = base.delta
-    new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
-    new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
+    new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
+    new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
     U2(new_phi, new_delta, wires=base.wires)
 
 
@@ -1627,12 +1623,9 @@ class U3(Operator2):
         return qp.math.stack([stack_last(row) for row in mat], axis=-2)
 
     def adjoint(self) -> "U3":
-        theta = self.theta
-        phi = self.phi
-        delta = self.delta
-        new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
-        new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
-        return U3(theta, new_phi, new_delta, wires=self.wires)
+        new_delta = qp.math.mod((np.pi - self.phi), (2 * np.pi))
+        new_phi = qp.math.mod((np.pi - self.delta), (2 * np.pi))
+        return U3(self.theta, new_phi, new_delta, wires=self.wires)
 
     def simplify(self) -> "U3":
         """Simplifies into :class:`~.RX`, :class:`~.RY`, or :class:`~.PhaseShift` gates
@@ -1643,24 +1636,24 @@ class U3(Operator2):
 
         """
         wires = self.wires
-        p0 = self.theta % (4 * np.pi)
-        p1 = self.phi % (2 * np.pi)
-        p2 = self.delta % (2 * np.pi)
+        theta = self.theta % (4 * np.pi)
+        phi = self.phi % (2 * np.pi)
+        delta = self.delta % (2 * np.pi)
 
-        if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
+        if _can_replace(theta, 0) and _can_replace(phi, 0) and _can_replace(delta, 0):
             return qp.Identity(wires=wires)
-        if _can_replace(p0, 0) and not _can_replace(p1, 0) and _can_replace(p2, 0):
-            return PhaseShift(p1, wires=wires)
+        if _can_replace(theta, 0) and not _can_replace(phi, 0) and _can_replace(delta, 0):
+            return PhaseShift(phi, wires=wires)
         if (
-            _can_replace(p2, np.pi / 2)
-            and _can_replace(p1, 3 * np.pi / 2)
-            and not _can_replace(p0, 0)
+            _can_replace(delta, np.pi / 2)
+            and _can_replace(phi, 3 * np.pi / 2)
+            and not _can_replace(theta, 0)
         ):
-            return RX(p0, wires=wires)
-        if not _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
-            return RY(p0, wires=wires)
+            return RX(theta, wires=wires)
+        if not _can_replace(theta, 0) and _can_replace(phi, 0) and _can_replace(delta, 0):
+            return RY(theta, wires=wires)
 
-        return U3(p0, p1, p2, wires=wires)
+        return U3(theta, phi, delta, wires=wires)
 
 
 # pylint: disable=unused-argument
@@ -1680,12 +1673,9 @@ add_decomps(U3, _u3_phaseshift_rot)
 
 @register_resources(lambda base: {abstractify(U3): 1})
 def _adjoint_u3(base):
-    theta = base.theta
-    phi = base.phi
-    delta = base.delta
-    new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
-    new_phi = qp.math.mod((np.pi - delta), (2 * np.pi))
-    U3(theta, new_phi, new_delta, wires=base.wires)
+    new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
+    new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
+    U3(base.theta, new_phi, new_delta, wires=base.wires)
 
 
 add_decomps("Adjoint(U3)", _adjoint_u3)
