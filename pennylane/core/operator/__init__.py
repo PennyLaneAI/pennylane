@@ -80,6 +80,7 @@ Operator Types
     :toctree: api
 
     ~Operator
+    ~Operator2
     ~Operation
     ~Channel
     ~StatePrepBase
