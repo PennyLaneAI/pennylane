@@ -294,7 +294,7 @@ class Operator2(metaclass=OperatorMeta):
     def wires(self) -> Wires:
         """Wires that the operator acts on.
 
-        By default, he returned :class:`~.Wires` are collected from the operator's arguments
+        By default, the returned :class:`~.Wires` are collected from the operator's arguments
         in the following order:
 
         1. For each name in ``wire_argnames`` (in declaration order):
