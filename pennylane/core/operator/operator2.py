@@ -199,7 +199,8 @@ class Operator2(metaclass=OperatorMeta):
             @qp.register_resources(_my_op_resources)
             def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
                 wire_map = {wires[i]: i for i in range(len(wires))}
-                qp.pauli.string_to_pauli_word(pauli_string, wire_map=wire_map)
+                for wire, pauli in zip(wires, pauli_string):
+                    getattr(qp, pauli)(wire)
                 qp.Rot(*angle_array, wires=rot_wire)
 
             qp.add_decomps(MyOp, _my_op_decomp)
