@@ -587,19 +587,19 @@ class TestSumOfSlatersPrep:
 
         all_wires = {}
 
-        def _allocate_conditionally(size, name, start):
+        def _assign_conditionally(size, name, start):
             if size == 0:
                 all_wires[name] = []
             else:
                 all_wires[name] = list(range(start, (start := start + size)))
             return start
 
-        start = _allocate_conditionally(sizes["enumeration_wires"], "enumeration_wires", num_wires)
-        start = _allocate_conditionally(
+        start = _assign_conditionally(sizes["enumeration_wires"], "enumeration_wires", num_wires)
+        start = _assign_conditionally(
             sizes["identification_wires"], "identification_wires", start
         )
-        start = _allocate_conditionally(sizes["qrom_work_wires"], "qrom_work_wires", start)
-        start = _allocate_conditionally(sizes["mcx_cache_wires"], "mcx_cache_wires", start)
+        start = _assign_conditionally(sizes["qrom_work_wires"], "qrom_work_wires", start)
+        start = _assign_conditionally(sizes["mcx_cache_wires"], "mcx_cache_wires", start)
 
         for rule in list_decomps(SumOfSlatersPrep):
 
