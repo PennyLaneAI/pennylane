@@ -268,7 +268,7 @@ class TestFromBloq:
 
         to_pl = _get_to_pl_op()
 
-        assert to_pl(GlobalPhase(exponent=1)) == qp.GlobalPhase(
+        assert to_pl(GlobalPhase(exponent=1), ()) == qp.GlobalPhase(
             GlobalPhase(exponent=1).exponent * np.pi
         )
         assert to_pl(Identity(), 0) == qp.Identity(0)
