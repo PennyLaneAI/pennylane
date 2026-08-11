@@ -337,7 +337,9 @@ def test_capture_decomposition():
         eqn
         for eqn in jaxpr_eqns
         # pylint: disable-next=protected-access
-        if eqn.primitive in (qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
-        or (eqn.primitive == operator_p and eqn.params["op_cls"] is qp.PauliZ)
+        if eqn.primitive in (qp.GlobalPhase._primitive,)
+        or (
+            eqn.primitive == operator_p and eqn.params["op_cls"] in {qp.PauliZ, qp.MultiControlledX}
+        )
     ]
     assert len(remaining_ops) == 4

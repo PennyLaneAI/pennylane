@@ -433,4 +433,4 @@ def test_capture_decomposition():
     assert rot_inner_eqn[-1].primitive == qp.Rot._primitive  # pylint: disable=protected-access
 
     cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
-    assert cnot_inner_eqn[-1].primitive == qp.CNOT._primitive  # pylint: disable=protected-access
+    assert cnot_inner_eqn[-1].params["op_cls"] == qp.CNOT
