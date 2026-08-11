@@ -23,7 +23,6 @@ from pennylane.labs.templates.mps_synthesis.linalg import (
     get_controlled_unitary_msq,
     propagate_diagonal_through_unitary,
     shift_csd_one,
-    split_d,
     split_diagonal_into_control_branches,
     split_diagonal_into_partially_multiplexed_rz,
     synthesis_csd,
