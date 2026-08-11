@@ -32,9 +32,9 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, BasisState, X, adjoint, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.typing import AbstractArray, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
@@ -331,7 +331,7 @@ def _qrom_decomposition_resources(
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
-        return {BasisState(Int[num_target_wires], Wire[num_target_wires]): num_bitstrings}
+        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires_swap
 
@@ -340,7 +340,9 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    ops = [BasisState(Int[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)]
+    ops = [
+        BasisState(Bool[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)
+    ]
     ops_identity = ops + [qp_ops.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
@@ -607,14 +609,13 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings)
 
-    basis_state_rep = resource_rep(BasisState, num_wires=num_target_wires)
     if L <= 1 and n_extra == 0:
-        return {BasisState(Int[num_target_wires], Wire[num_target_wires]): 1}
+        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1}
 
     if L == 2 and n_extra == 0:
         return {
-            BasisState(Int[num_target_wires], Wire[num_target_wires]): 1,
-            ctrl(BasisState(Int[num_target_wires], Wire[num_target_wires]), Wire[1]): 1,
+            BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1,
+            ctrl(BasisState(Bool[num_target_wires], Wire[num_target_wires]), Wire[1]): 1,
         }
 
     # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
@@ -631,9 +632,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         PauliMeasure: num_measurements,
         CZ: num_cz,
         resource_rep(CNOT): L - 1,
-        BasisState(Int[num_target_wires], Wire[num_target_wires]): L,
-        resource_rep(X): L + flag.get(resource_rep(X), 0),
-        controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+        BasisState(Bool[num_target_wires], Wire[num_target_wires]): L,
+        X: L + flag.get(X, 0),
+        qp_ops.ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
     }
     # Merge the remaining flag-only resource types (controlled-X load, adjoint ANDs).
     for rep, count in flag.items():
@@ -656,7 +657,7 @@ def _flag_resources(n_extra, num_target_wires):
         resources[X] = 2
         return resources
     resources[TemporaryAND] = n_extra - 1
-    resources[_adjoint_abstract(TemporaryAND)] = n_extra - 1
+    resources[adjoint(TemporaryAND)] = n_extra - 1
     return resources
 
 
