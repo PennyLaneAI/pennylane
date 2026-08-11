@@ -21,6 +21,7 @@ from pennylane.labs.tcdq.expval_functions import (
     CircuitConfig,
     _control_variate_expected_value,
     _control_variate_expval_execution,
+    _core_expval_execution,
     _parse_generator_dict,
     _prep_observables,
     build_expval_func,
@@ -378,97 +379,115 @@ def test_parse_generator_dict_index_error():
         _parse_generator_dict(circuit_def, n_qubits)
 
 
+def _all_bitstrings(n_qubits):
+    """Every bitstring of length ``n_qubits``, so a sample mean becomes an exact average."""
+    return jnp.array([[int(b) for b in format(k, f"0{n_qubits}b")] for k in range(2**n_qubits)])
+
+
+def _taylor_control_on_samples(
+    params, samples, obs_data, generators, param_map, elems=None, amps=None
+):
+    """Evaluate the order-2 Taylor control variate on ``samples``.
+
+    The control consumes ``(phases, E, H)`` produced by the core integrand, so it is
+    built here exactly the way ``build_expval_func`` builds it internally.
+    """
+    _, phases, E, H = _core_expval_execution(
+        params, None, samples, obs_data, elems, amps, generators, param_map, None
+    )
+    return _control_variate_expval_execution(phases, E, H)
+
+
+def _taylor_coefficients(params, obs_data, generators, param_map):
+    """The per-observable coefficients ``a_g = 2[(b.g) mod 2] * theta_g``."""
+    bitflips = np.array(obs_data[0])
+    gen = np.array(generators)
+    expanded = np.array(params)[np.array(param_map)]
+    return (2 * ((bitflips @ gen.T) % 2)) * expanded[np.newaxis, :]
+
+
 class TestControlVariate:
-    """Tests for the theta=0 control-variate helpers and the CV branch of build_expval_func."""
+    """Tests for the order-2 Taylor control variate and the CV branch of build_expval_func."""
 
     @staticmethod
     def _obs_data(obs_batch):
         """Preprocess an integer-coded observable batch into (bitflips, mask_XY, y_phase)."""
         return _prep_observables(jnp.array(obs_batch))
 
-    # ------------------------------------------------------------------
-    # 1. The key requested test: the analytic control expectation must equal
-    #    the *core* estimator evaluated at params = 0, on the SAME samples.
-    #    At theta=0 the core integrand collapses to the control integrand, so the
-    #    match is exact (up to float tolerance), not merely statistical.
-    # ------------------------------------------------------------------
     @pytest.mark.parametrize(
-        "n_qubits, gates, obs_strings, init_state_spec",
+        "n_qubits, gates, params, obs_batch, init_state_spec",
         [
-            (3, {0: [[0], [1]], 1: [[0, 1], [1, 2]]}, ["X", "Z", "Y"], None),
-            (2, {0: [[0, 1]]}, ["Z", "Z"], None),
-            (2, {0: [[0, 1]]}, ["I", "I"], None),
-            (2, {0: [[0, 1]]}, [["Z", "Z"], ["X", "X"]], None),
-            (3, {0: [[0, 1]], 1: [[1, 2]]}, ["X", "Z", "Y"], [1, 0, 1]),
-            (3, {0: [[0], [1], [2]]}, ["Z", "Z", "Z"], [1, 1, 1]),
+            # Default |0...0> state.
+            (3, {0: [[0], [1]], 1: [[0, 1], [1, 2]]}, [0.35, 0.22], [[1, 3, 2]], None),
+            (2, {0: [[0, 1]]}, [0.4], [[3, 3]], None),
+            (2, {0: [[0, 1]]}, [0.4], [[0, 0]], None),
+            (3, {0: [[0], [1]], 1: [[0, 1], [1, 2]]}, [0.3, -0.45], [[3, 3, 0], [1, 0, 2]], None),
+            # Mixed batch spanning every Pauli type.
+            (
+                3,
+                {0: [[0], [1], [2]], 1: [[0, 1], [1, 2]]},
+                [0.25, 0.17],
+                [[3, 3, 0], [1, 0, 2], [2, 2, 0], [0, 0, 0], [1, 2, 3]],
+                None,
+            ),
+            # Single non-zero basis element (a bitstring initial state).
+            (3, {0: [[0, 1]], 1: [[1, 2]]}, [0.3, 0.2], [[1, 3, 2]], [1, 0, 1]),
+            # Superposition initial state. Real amplitudes: see the note on
+            # test_control_variate_branch_is_unbiased_vs_pennylane.
             (
                 2,
                 {0: [[0, 1]]},
-                [["Z", "Z"], ["X", "X"], ["Y", "Y"]],
+                [0.31],
+                [[3, 3], [1, 1], [2, 2]],
                 ([[0, 0], [1, 1]], [1 / np.sqrt(2), 1 / np.sqrt(2)]),
             ),
         ],
     )
-    def test_control_variate_expected_value_matches_core_at_zero_params(
-        self, n_qubits, gates, obs_strings, init_state_spec
+    def test_analytic_mean_equals_exact_average_of_control(
+        self, n_qubits, gates, params, obs_batch, init_state_spec
     ):
-        """_control_variate_expected_value equals the core estimator at params=0."""
-        obs_batch, _ = _prepare_obs_batch(obs_strings)
-        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
-
-        n_params = len(gates)
-        zero_params = jnp.zeros(n_params)
-        key = jax.random.PRNGKey(7)
-        # Large sample count: the core mean at params=0 is itself a Monte Carlo
-        # estimate of tau, so compare within Monte Carlo tolerance.
-        n_samples = 200000
-
-        config = CircuitConfig(
-            gates=gates,
-            observables=obs_batch,
-            n_samples=n_samples,
-            key=key,
-            n_qubits=n_qubits,
-            init_state_elems=jax_state_elems,
-            init_state_amps=jax_state_amps,
-        )
-        core_func = build_expval_func(config)
-        core_mean_at_zero, _ = core_func(zero_params)
-
+        """The analytic expectation value equals the exact uniform average of the Taylor control."""
+        # pylint: disable=too-many-arguments
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
+        elems, amps = _prepare_jax_state(init_state_spec)
         obs_data = self._obs_data(obs_batch)
-        tau = _control_variate_expected_value(obs_data, jax_state_elems, jax_state_amps)
+        params_jax = jnp.array(params)
 
-        atol = 3.5 / np.sqrt(n_samples)
-        assert np.allclose(np.array(core_mean_at_zero), np.array(tau), atol=atol)
+        control = _taylor_control_on_samples(
+            params_jax, _all_bitstrings(n_qubits), obs_data, generators, param_map, elems, amps
+        )
+        exact_average = np.array(jnp.mean(control, axis=1))
+        tau = np.array(
+            _control_variate_expected_value(
+                params_jax, obs_data, generators, param_map, elems, amps
+            )
+        )
 
-    def test_control_variate_expected_value_equals_persample_mean_exactly(self):
-        """Analytic tau equals the exact mean of the per-sample control over all bitstrings."""
+        assert np.allclose(exact_average, tau, atol=1e-6)
+
+    def test_analytic_mean_exact_for_complex_amplitudes(self):
+        """Test the closed form is correct for a complex-amplitude initial state."""
         n_qubits = 3
+        gates = {0: [[0], [1]], 1: [[0, 1], [1, 2]]}
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
         obs_batch = [[3, 3, 0], [1, 0, 2], [2, 2, 0], [0, 0, 0]]
-        # Custom complex initial state.
+        params = jnp.array([0.3, 0.2])
+
         rng = np.random.default_rng(0)
-        elems = np.array([[0, 0, 0], [1, 0, 1], [0, 1, 1], [1, 1, 0]])
+        elems = jnp.array(np.array([[0, 0, 0], [1, 0, 1], [0, 1, 1], [1, 1, 0]], dtype=float))
         amps = rng.normal(size=4) + 1j * rng.normal(size=4)
-        amps = amps / np.linalg.norm(amps)
-        elems_j = jnp.array(elems.astype(float))
-        amps_j = jnp.array(amps)
+        amps = jnp.array(amps / np.linalg.norm(amps))
 
-        # Enumerate ALL 2**n bitstrings -> the per-sample mean is the exact expectation.
-        all_bits = jnp.array(
-            [[int(b) for b in format(k, f"0{n_qubits}b")] for k in range(2**n_qubits)]
-        )
         obs_data = self._obs_data(obs_batch)
+        control = _taylor_control_on_samples(
+            params, _all_bitstrings(n_qubits), obs_data, generators, param_map, elems, amps
+        )
+        tau = _control_variate_expected_value(
+            params, obs_data, generators, param_map, elems, amps
+        )
 
-        cv_samples = _control_variate_expval_execution(all_bits, obs_data, elems_j, amps_j)
-        tau_from_samples = np.array(jnp.mean(cv_samples, axis=1))
-        tau_analytic = np.array(_control_variate_expected_value(obs_data, elems_j, amps_j))
+        assert np.allclose(np.array(jnp.mean(control, axis=1)), np.array(tau), atol=1e-6)
 
-        assert np.allclose(tau_from_samples, tau_analytic, atol=1e-6)
-
-    # ------------------------------------------------------------------
-    # 2. Pure I/Z observables from |0...0>: tau must be exactly 1, and the
-    #    per-sample control must be the constant 1 (the degenerate/no-op case).
-    # ------------------------------------------------------------------
     @pytest.mark.parametrize(
         "obs_batch, expected_tau",
         [
@@ -481,54 +500,123 @@ class TestControlVariate:
             ([[3, 0, 0], [1, 0, 0], [0, 2, 0]], [1.0, 0.0, 0.0]),  # mixed batch
         ],
     )
-    def test_default_state_tau_is_one_for_pure_iz(self, obs_batch, expected_tau):
-        """For |0...0>, tau = 1 for pure I/Z observables and 0 when any X/Y is present."""
-        obs_data = self._obs_data(obs_batch)
-        tau = _control_variate_expected_value(obs_data, None, None)
-        assert np.allclose(np.array(tau), np.array(expected_tau), atol=1e-12)
+    def test_zero_params_matches_identity_control(self, obs_batch, expected_tau):
+        """At theta=0 the Taylor control collapses to the identity control.
 
-    def test_default_state_pure_z_control_is_constant_one(self):
-        """The per-sample control for a pure Z observable from |0...0> is identically 1."""
+        With every angle zero we have E = 0, so the truncation ``1 + iE - E^2/2``
+        reduces to 1 and tau must equal the theta=0 values: 1 for pure I/Z
+        observables on ``|0...0>`` and 0 as soon as any X or Y is present.
+        """
         n_qubits = 3
-        obs_batch = [[3, 3, 3]]
-        samples = jnp.array(
-            [[int(b) for b in format(k, f"0{n_qubits}b")] for k in range(2**n_qubits)]
-        )
+        gates = {0: [[0], [1]], 1: [[0, 1], [1, 2]]}
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
         obs_data = self._obs_data(obs_batch)
-        cv = np.array(_control_variate_expval_execution(samples, obs_data, None, None))
-        assert np.allclose(cv, 1.0, atol=1e-12)
-        # Zero variance => degenerate control (the c = -cov/var guard must handle it).
-        assert np.isclose(np.var(cv), 0.0, atol=1e-12)
 
-    def test_control_variate_branch_no_op_for_pure_z_default_state(self):
-        """The CV branch must not produce NaNs when the control is degenerate (var=0)."""
+        tau = _control_variate_expected_value(
+            jnp.zeros(len(gates)), obs_data, generators, param_map, None, None
+        )
+
+        assert np.allclose(np.array(tau), np.array(expected_tau), atol=1e-6)
+
+    @pytest.mark.parametrize("obs_batch", [[[3, 3, 0]], [[3, 3, 3]], [[0, 0, 0]], [[3, 0, 3]]])
+    @pytest.mark.parametrize("scale", [0.15, 0.5])
+    def test_tau_closed_form_for_pure_iz_default_state(self, obs_batch, scale):
+        """For pure I/Z observables on |0...0>, tau = 1 - (1/2) sum_g a_g^2."""
+        n_qubits = 3
+        gates = {0: [[0], [1]], 1: [[0, 1], [1, 2]]}
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
+        rng = np.random.default_rng(4)
+        params = jnp.array(rng.normal(size=len(gates)) * scale)
+        obs_data = self._obs_data(obs_batch)
+
+        tau = np.array(
+            _control_variate_expected_value(params, obs_data, generators, param_map, None, None)
+        )
+        a = _taylor_coefficients(params, obs_data, generators, param_map)
+        expected = 1.0 - 0.5 * np.sum(a**2, axis=1)
+
+        assert np.allclose(tau, expected, atol=1e-6)
+
+    def test_taylor_control_fluctuates_for_pure_z_default_state(self):
+        """For pure Z on |0...0> the Taylor control varies over bitstrings."""
+        n_qubits = 3
+        gates = {0: [[0], [1]], 1: [[0, 1], [1, 2]]}
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
+        obs_data = self._obs_data([[3, 3, 3]])
+        samples = _all_bitstrings(n_qubits)
+
+        control = np.array(
+            _taylor_control_on_samples(
+                jnp.array([0.4, 0.3]), samples, obs_data, generators, param_map
+            )
+        )
+        # Non-degenerate: this is what the identity control fails to provide here.
+        assert np.var(control) > 1e-6
+
+        # At theta=0 it does collapse back to the constant identity control.
+        control_at_zero = np.array(
+            _taylor_control_on_samples(
+                jnp.zeros(len(gates)), samples, obs_data, generators, param_map
+            )
+        )
+        assert np.allclose(control_at_zero, 1.0, atol=1e-6)
+
+    def test_taylor_control_equals_integrand_when_phase_vanishes(self):
+        """For observables with no Z or Y the control reproduces the integrand exactly."""
+        n_qubits = 3
+        gates = {0: [[0], [1]], 1: [[0, 1], [1, 2]]}
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
+        obs_data = self._obs_data([[1, 1, 1]])
+        params = jnp.array([0.4, 0.3])
+        samples = _all_bitstrings(n_qubits)
+
+        integrand, phases, E, H = _core_expval_execution(
+            params, None, samples, obs_data, None, None, generators, param_map, None
+        )
+        control = _control_variate_expval_execution(phases, E, H)
+
+        assert np.allclose(np.array(E), 0.0, atol=1e-12)
+        assert np.allclose(np.array(control), np.array(integrand), atol=1e-12)
+
+    def test_control_variate_eliminates_all_error_when_control_is_exact(self):
+        """When the control equals the integrand the CV branch becomes exact."""
         n_qubits = 2
         gates = {0: [[0, 1]]}
-        obs_batch = [[3, 3]]  # pure Z from |0...0> -> control is constant
+        obs_batch = [[1, 1]]
         params = jnp.array([0.4])
-        key = jax.random.PRNGKey(3)
-        n_samples = 5000
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
+        obs_data = self._obs_data(obs_batch)
 
-        base_kwargs = dict(
-            gates=gates,
-            observables=obs_batch,
-            n_samples=n_samples,
-            key=key,
-            n_qubits=n_qubits,
+        base_kwargs = {
+           "gates": gates,
+           "observables": obs_batch,
+           "n_samples": 5000,
+           "key": jax.random.PRNGKey(3),
+           "n_qubits": n_qubits,
+        }
+
+        plain_mean, plain_err = build_expval_func(CircuitConfig(**base_kwargs))(params)
+        cv_mean, cv_err = build_expval_func(CircuitConfig(control_variate=True, **base_kwargs))(
+            params
         )
-        plain_mean, _ = build_expval_func(CircuitConfig(**base_kwargs))(params)
-        cv_mean, _ = build_expval_func(CircuitConfig(control_variate=True, **base_kwargs))(params)
+        tau = _control_variate_expected_value(
+            params, obs_data, generators, param_map, None, None
+        )
 
         assert np.all(np.isfinite(np.array(cv_mean)))
-        # With a degenerate control the CV estimator falls back to the plain mean.
-        assert np.allclose(np.array(plain_mean), np.array(cv_mean), atol=1e-6)
+        assert np.all(np.isfinite(np.array(cv_err)))
+        # The control removes the sampling error outright.
+        assert np.allclose(np.array(cv_mean), np.array(tau), atol=1e-6)
+        assert np.allclose(np.array(cv_err), 0.0, atol=1e-6)
+        # The plain estimator does not have that benefit on the same samples.
+        assert np.array(plain_err)[0] > np.array(cv_err)[0]
+        assert not np.allclose(np.array(plain_mean), np.array(tau), atol=1e-6)
 
-    # ------------------------------------------------------------------
-    # 3. Shapes and unbiasedness of the CV branch.
-    # ------------------------------------------------------------------
     def test_control_variate_helper_shapes(self):
         """The two helpers return the documented shapes."""
         n_qubits = 3
+        gates = {0: [[0], [1]], 1: [[0, 1], [1, 2]]}
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
         obs_batch = [[3, 3, 0], [1, 0, 2]]
         n_samples = 128
         samples = (
@@ -538,19 +626,46 @@ class TestControlVariate:
             % 2
         )
         obs_data = self._obs_data(obs_batch)
+        params = jnp.array([0.3, 0.2])
 
         elems = jnp.array([[0.0, 0.0, 0.0], [1.0, 1.0, 0.0]])
         amps = jnp.array([1 / np.sqrt(2), 1 / np.sqrt(2)])
 
-        cv = _control_variate_expval_execution(samples, obs_data, elems, amps)
-        tau = _control_variate_expected_value(obs_data, elems, amps)
+        cv = _taylor_control_on_samples(
+            params, samples, obs_data, generators, param_map, elems, amps
+        )
+        tau = _control_variate_expected_value(
+            params, obs_data, generators, param_map, elems, amps
+        )
 
         assert cv.shape == (len(obs_batch), n_samples)
         assert tau.shape == (len(obs_batch),)
 
+    def test_control_variate_rejects_phase_layer(self):
+        """Phase layers are not compatible with the control variate."""
+
+        def phase_fn(params, z):
+            return jnp.sum(params * z)
+
+        config = CircuitConfig(
+            gates={0: [[0, 1]]},
+            observables=[[3, 3]],
+            n_samples=100,
+            key=jax.random.PRNGKey(0),
+            n_qubits=2,
+            phase_fn=phase_fn,
+            control_variate=True,
+        )
+        with pytest.raises(ValueError, match="Phase layers are not compatible"):
+            build_expval_func(config)
+
     @pytest.mark.parametrize(
         "n_qubits, gates, obs_strings, init_state_spec",
         [
+            (3, {0: [[0], [1]], 1: [[0, 1], [1, 2]]}, ["X", "Z", "Y"], None),
+            (3, {0: [[0], [1], [2]]}, ["Z", "Z", "Z"], None),
+            (2, {0: [[0, 1]]}, [["Z", "Z"], ["X", "X"], ["Y", "Y"]], None),
+            (3, {0: [[0, 1]], 1: [[1, 2]]}, ["X", "Z", "Y"], [1, 0, 1]),
             (
                 3,
                 {0: [[0], [1]], 1: [[0, 1], [1, 2]]},
@@ -573,8 +688,7 @@ class TestControlVariate:
         generators_pl = [list(np.where(row)[0]) for row in generators_binary]
 
         rng = np.random.default_rng(1)
-        n_params = len(gates)
-        params = rng.uniform(-0.6, 0.6, size=n_params)
+        params = rng.uniform(-0.6, 0.6, size=len(gates))
         params_pl = np.array(params)[param_map]
 
         obs_batch, _ = _prepare_obs_batch(obs_strings)
@@ -600,20 +714,57 @@ class TestControlVariate:
 
         assert np.allclose(exact_vals, cv_mean, atol=atol)
 
-    def test_control_variate_reduces_variance_for_custom_state(self):
-        """With a non-trivial initial state the CV branch lowers the *actual* dispersion
-        of the estimator across seeds.
+    def test_control_variate_is_differentiable(self):
+        """The CV branch supports jax.grad, since it is meant for optimization."""
+        n_qubits = 3
+        gates = {0: [[0], [1]], 1: [[0, 1], [1, 2]]}
+        config = CircuitConfig(
+            gates=gates,
+            observables=[[3, 3, 0], [1, 0, 2]],
+            n_samples=2000,
+            key=jax.random.PRNGKey(5),
+            n_qubits=n_qubits,
+            control_variate=True,
+        )
+        expval_func = build_expval_func(config)
 
-        We measure the empirical standard deviation of the returned mean over many PRNG
-        keys rather than the reported ``std_err``: the two branches are compared on the
-        same footing, independent of any per-observable normalization convention in the
-        returned standard error. Small rotation angles are used so that the theta=0
-        control is strongly correlated with the estimator and the reduction is large and
-        non-flaky.
-        """
+        def cost(params):
+            return jnp.sum(expval_func(params)[0])
+
+        grad = jax.grad(cost)(jnp.array([0.2, 0.1]))
+
+        assert grad.shape == (len(gates),)
+        assert np.all(np.isfinite(np.array(grad)))
+
+    def test_control_variate_reduces_variance_for_pure_z_default_state(self):
+        """The Taylor control reduces dispersion where the identity control cannot."""
         n_qubits = 3
         gates = {0: [[0], [1], [2]], 1: [[0, 1], [1, 2]]}
-        obs_batch = [[3, 3, 0]]  # ZZ: control is constant for |0>, but not for a custom state
+        obs_batch = [[3, 3, 3]]
+        params = jnp.array([0.08, 0.05])
+
+        def empirical_std_of_mean(control_variate):
+            means = []
+            for seed in range(30):
+                config = CircuitConfig(
+                    gates=gates,
+                    observables=obs_batch,
+                    n_samples=4000,
+                    key=jax.random.PRNGKey(seed),
+                    n_qubits=n_qubits,
+                    control_variate=control_variate,
+                )
+                mean, _ = build_expval_func(config)(params)
+                means.append(float(np.array(mean)[0]))
+            return np.std(means, ddof=1)
+
+        assert empirical_std_of_mean(True) < empirical_std_of_mean(False)
+
+    def test_control_variate_reduces_variance_for_custom_state(self):
+        """With a non-trivial initial state the CV branch lowers the variance."""
+        n_qubits = 3
+        gates = {0: [[0], [1], [2]], 1: [[0, 1], [1, 2]]}
+        obs_batch = [[3, 3, 0]]
         params = jnp.array([0.05, 0.03])  # small angles -> high correlation -> large reduction
 
         rng = np.random.default_rng(2)
