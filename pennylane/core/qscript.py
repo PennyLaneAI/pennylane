@@ -1050,8 +1050,7 @@ class QuantumScript:
         >>> circuit = qp.tape.QuantumScript([mcx], [qp.probs(wires=[2, 3, 6])])
         >>> mapped_circuit = circuit.map_to_standard_wires()
         >>> mapped_circuit.circuit
-        [MultiControlledX(wires=[0, 1, 2, 3], control_values=[True, True, True]),
-         probs(wires=[3, 4, 5])]
+        [MultiControlledX(wires=[0, 1, 2, 3]), probs(wires=[3, 4, 5])]
         >>> mapped_circuit[0].work_wires
         Wires([6, 5])
         """

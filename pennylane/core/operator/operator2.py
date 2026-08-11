@@ -586,6 +586,10 @@ class Operator2(metaclass=OperatorMeta):
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
+        for h in self.hybrid_args.values():
+            leaves, _ = flatten(h, is_leaf=_is_op)
+            _ = [context.remove(l) for l in leaves if isinstance(l, Operator)]
+
         context.append(self)
         # return self so pre-constructed Observables can be queued and returned in
         # a single statement
@@ -654,7 +658,7 @@ class Operator2(metaclass=OperatorMeta):
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
             leaves = [
-                leaf.map_wires(wire_map) if isinstance(leaf, Operator2) else leaf for leaf in leaves
+                leaf.map_wires(wire_map) if isinstance(leaf, Operator) else leaf for leaf in leaves
             ]
             new_args[n] = unflatten(leaves, tree)
 
@@ -1081,7 +1085,7 @@ class Operator2(metaclass=OperatorMeta):
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             ser_leaves = tuple(
-                l if isinstance(l, (AbstractWires, Operator2, Wires)) else _canonicalize_dynamic(l)
+                l if isinstance(l, (AbstractWires, Operator, Wires)) else _canonicalize_dynamic(l)
                 for l in leaves
             )
             serialized_hybrid.append((ser_leaves, tree))
@@ -1214,15 +1218,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2], [Wires([0, 1])], []), ('XY',))
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -1252,12 +1252,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         args = {}
 
@@ -1773,7 +1772,9 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
     """Process a hybrid argument for binding an operator primitive."""
-    partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
+    # We don't use is_leaf=_is_op because we're deliberately not supporting program
+    # capture with legacy operators mixed with new operators
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator2))
     _ = pop_op_eqns(filter(_is_op, partial_leaves))
 
     leaves, tree = flatten(hybrid_val)
@@ -1827,8 +1828,8 @@ def _is_wires(val: Any) -> bool:
 
 
 def _is_op(val: Any) -> bool:
-    """Check whether a value is an Operator2 object."""
-    return isinstance(val, Operator2)
+    """Check whether a value is an Operator (legacy or new)."""
+    return isinstance(val, Operator)
 
 
 def _canonicalize_dynamic(d, op_name=None) -> Hashable:
@@ -1953,6 +1954,7 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
+
     return op_cls(**new_args)
 
 

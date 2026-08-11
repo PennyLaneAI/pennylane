@@ -233,7 +233,7 @@ def _rx_to_rz_cliff(phi, wires: WiresLike, **__):
 
 
 def _rx_to_ppr_resources():
-    return {resource_rep(qp.PauliRot, pauli_word="X"): 1}
+    return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
 
 
 @register_resources(_rx_to_ppr_resources)
@@ -252,11 +252,9 @@ def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_typ
     return {
         qp.H: 2,
         qp.RZ: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -462,7 +460,7 @@ def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
 
 
 def _ry_to_ppr_resources():
-    return {resource_rep(qp.PauliRot, pauli_word="Y"): 1}
+    return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
 
 
 @register_resources(_ry_to_ppr_resources)
@@ -480,11 +478,9 @@ def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_typ
         return {qp.CRY: 1}
     return {
         qp.RY: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -734,9 +730,8 @@ def _rz_to_ry_cliff(phi, wires: WiresLike):
     )
 
 
-# pylint: disable=unused-argument
 def _rz_to_ppr_resources(phi, wires):
-    return {resource_rep(qp.PauliRot, pauli_word="Z"): 1}
+    return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 
 @register_resources(_rz_to_ppr_resources)
@@ -754,11 +749,9 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
         return {qp.CRZ: 1}
     return {
         qp.RZ: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=len(control_wires),
-            num_zero_control_values=len(control_values or []),
-            num_work_wires=len(work_wires),
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 2,
     }
@@ -982,7 +975,9 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
 
 def _cphase_to_ppr_resource(num_control_wires, **_):
     resources = {
-        resource_rep(qp.PauliRot, pauli_word="Z" * i): builtin_math.comb(num_control_wires + 1, i)
+        qp.PauliRot(Float, pauli_word="Z" * i, wires=Wire[len("Z" * i)]): builtin_math.comb(
+            num_control_wires + 1, i
+        )
         for i in range(1, num_control_wires + 2)
     }
     resources[qp.GlobalPhase] = 1
@@ -1228,11 +1223,9 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_ty
     return {
         qp.RZ: 3,
         qp.RY: 2,
-        resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+        qp.MultiControlledX(
+            Wire[num_control_wires + 1],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
     }
