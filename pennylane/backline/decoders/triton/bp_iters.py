@@ -43,14 +43,14 @@ def _sum_product_posteriors(
     """
     prior_llr: tl.constexpr = _llr_from_p(prob)
     num_checks: tl.constexpr = len(H)
-    num_variables: tl.constexpr = len(H[0])
+    num_qubits: tl.constexpr = len(H[0])
 
     syndrome_signs = _get_syndrome_signs(syndrome, num_checks)
 
     check_to_var_msgs = ()
     for _ in tl.static_range(num_checks):
         row = ()
-        for _ in tl.static_range(num_variables):
+        for _ in tl.static_range(num_qubits):
             row += (0.0,)
         check_to_var_msgs += (row,)
 
@@ -58,7 +58,7 @@ def _sum_product_posteriors(
         var_to_check_msgs = ()
         for c in tl.static_range(num_checks):
             row = ()
-            for v in tl.static_range(num_variables):
+            for v in tl.static_range(num_qubits):
                 if H[c][v]:
                     message = prior_llr
                     for c2 in tl.static_range(num_checks):
@@ -72,10 +72,10 @@ def _sum_product_posteriors(
         next_check_to_var_msgs = ()
         for c in tl.static_range(num_checks):
             row = ()
-            for v in tl.static_range(num_variables):
+            for v in tl.static_range(num_qubits):
                 if H[c][v]:
                     message_product = 1.0
-                    for v2 in tl.static_range(num_variables):
+                    for v2 in tl.static_range(num_qubits):
                         if v2 != v and H[c][v2]:
                             message_product *= var_to_check_msgs[c][v2]
                     row += (_bp_c2v_msg(syndrome_signs[c], message_product),)
@@ -85,7 +85,7 @@ def _sum_product_posteriors(
         check_to_var_msgs = next_check_to_var_msgs
 
     posterior_llrs = ()
-    for v in tl.static_range(num_variables):
+    for v in tl.static_range(num_qubits):
         posterior = prior_llr
         for c in tl.static_range(num_checks):
             if H[c][v]:

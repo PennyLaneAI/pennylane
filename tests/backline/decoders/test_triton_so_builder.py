@@ -42,21 +42,21 @@ class TestBuildSo:
     """Tests for build_so."""
 
     @pytest.mark.parametrize(
-        ("grid", "target", "message"),
+        ("grid", "platform", "message"),
         [
-            ((1, 1), "hip:gfx90a:64", "exactly 3 dimensions"),
-            ((1, 1, 1), "hip:gfx90a", "backend:arch:warp"),
+            ((1, 1), "hip:gfx942:64", "exactly 3 dimensions"),
+            ((1, 1, 1), "hip:gfx942", "backend:arch:warp"),
         ],
     )
-    def test_build_so_validates_shape_inputs(self, tmp_path, grid, target, message):
-        """It should reject malformed grid and target values."""
+    def test_build_so_validates_shape_inputs(self, tmp_path, grid, platform, message):
+        """It should reject malformed grid and platform values."""
         with pytest.raises(ValueError, match=message):
             builder.build_so(
                 object(),
                 signature={},
                 constexpr={},
                 grid=grid,
-                target=target,
+                platform=platform,
                 num_warps=1,
                 num_stages=1,
                 out=str(tmp_path / "decoder.so"),
@@ -90,7 +90,7 @@ class TestBuildSo:
             signature={},
             constexpr={},
             grid=(1, 1, 1),
-            target="hip:gfx90a:64",
+            platform="hip:gfx942:64",
             num_warps=1,
             num_stages=1,
             out=str(out),
@@ -129,7 +129,7 @@ class TestBuildSo:
             signature={},
             constexpr={},
             grid=(1, 1, 1),
-            target="hip:gfx90a:64",
+            platform="hip:gfx942:64",
             num_warps=1,
             num_stages=1,
             out=str(tmp_path / "decoder.so"),
@@ -162,7 +162,7 @@ class TestBuildSo:
             signature={},
             constexpr={},
             grid=(1, 1, 1),
-            target="cuda:80:32",
+            platform="cuda:80:32",
             num_warps=1,
             num_stages=1,
             out=str(tmp_path / "decoder.so"),
@@ -198,7 +198,7 @@ class TestBuildSo:
             signature={},
             constexpr={},
             grid=(1, 1, 1),
-            target="hip:gfx90a:64",
+            platform="hip:gfx942:64",
             num_warps=1,
             num_stages=1,
             out=str(tmp_path / "decoder.so"),

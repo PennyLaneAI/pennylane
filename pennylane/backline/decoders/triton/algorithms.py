@@ -34,7 +34,7 @@ def _decode_one(
         syndrome (u64): Packed syndrome bitmask. Bit ``i`` stores check ``i``.
         H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
             syndrome bit ``i``, and column ``j`` matches correction bit ``j``.
-        postprocess (str): Postprocessing rule to apply to the posterior LLRs
+        postprocess (str): Postprocessing rule to apply to the posterior LLRs.
         prob (float): Prior error probability assigned to each qubit.
         num_iters (int): Number of belief-propagation iterations.
 
@@ -51,7 +51,7 @@ def _decode_one(
 
 @triton.jit
 def _hard_decision(posterior_llrs):
-    """Pack negative posterior log likelihood ratios (LLR) into a correction mask.
+    """Pack negative posterior log-likelihood ratios (LLRs) into a correction mask.
 
     Args:
         posterior_llrs (tuple[float]): Posterior LLRs, one per qubit.

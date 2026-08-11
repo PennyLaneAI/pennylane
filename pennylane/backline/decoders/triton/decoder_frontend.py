@@ -51,7 +51,11 @@ def build_triton_decoder(
     Args:
         decoder_fns (tuple[object, ...]): Tuple of Triton decoder functions.
             ``decoder_id`` selects the tuple index at runtime.
-        platform (str): Triton target string of the form ``"backend:arch:warp_size"``.
+
+    Keyword Args:
+        platform (str): Required Triton platform string of the form
+            ``"backend:arch:warp_size"``. For example, ``"hip:gfx942:64"`` or
+            ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
             Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
@@ -100,7 +104,7 @@ def build_triton_decoder(
             },
             constexpr={"decoder_fns": tuple(decoder_fns)},
             grid=grid,
-            target=platform.strip(),
+            platform=platform.strip(),
             out=str(out.resolve()),
             num_warps=num_warps,
             num_stages=num_stages,
@@ -140,12 +144,15 @@ def build_css_bp_decoder(
     Args:
         Hx (ArrayLike): X parity-check matrix.
         Hz (ArrayLike): Z parity-check matrix.
+
+    Keyword Args:
         postprocess (str): Postprocessing step applied after belief propagation. Use
             ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
-        num_iters (int): Number of decoder iterations.
+        num_iters (int): Number of belief-propagation iterations.
         prob (float): Uniform prior error probability across qubits.
-        platform (str): Required Triton target string of the form ``"backend:arch:warp_size"``.
-            For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
+        platform (str): Required Triton platform string of the form
+            ``"backend:arch:warp_size"``. For example, ``"hip:gfx942:64"`` or
+            ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
             Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
@@ -162,6 +169,7 @@ def build_css_bp_decoder(
 
     **Example**
 
+    >>> import numpy as np
     >>> Hx = np.array([[1, 0], [0, 1]])
     >>> Hz = np.array([[1, 1], [0, 1]])
     >>> so_path, symbol_name = build_css_bp_decoder(
@@ -214,9 +222,7 @@ def _to_numpy(H: ArrayLike) -> np.ndarray:
     if matrix.shape[0] > 64:
         raise ValueError(f"H has {matrix.shape[0]} checks, but Triton decoder supports at most 64")
     if matrix.shape[1] > 64:
-        raise ValueError(
-            f"H has {matrix.shape[1]} partiy checks, but Triton decoder supports at most 64"
-        )
+        raise ValueError(f"H has {matrix.shape[1]} qubits, but Triton decoder supports at most 64")
     return matrix
 
 
@@ -229,7 +235,7 @@ def _validate_build_options(
         decoder_fns (tuple[object, ...]): Triton decoder functions to dispatch.
         num_warps (int): Triton kernel launch warp count.
         num_stages (int): Triton pipeline stage count.
-        platform (str): Triton target string of the form
+        platform (str): Triton platform string of the form
             ``"backend:arch:warp_size"``.
 
     Raises:
@@ -243,7 +249,7 @@ def _validate_build_options(
         raise ValueError("num_stages must be > 0")
     if platform.strip().count(":") != 2:
         raise ValueError(
-            "platform must be a raw Triton target string like "
+            "platform must be a raw Triton platform string like "
             f"'hip:gfx942:64' or 'cuda:80:32', got {platform!r}"
         )
 

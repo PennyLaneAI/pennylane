@@ -62,7 +62,7 @@ def triton_decoder(
             tuple index at runtime.
 
     Keyword Args:
-        platform (str): Required Triton target string of the form ``"backend:arch:warp_size"``.
+        platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
             For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
             Defaults to ``(1, 1, 1)``.
@@ -84,6 +84,7 @@ def triton_decoder(
 
     **Example**
 
+    >>> import pennylane as qp
     >>> import triton
     >>> import triton.language as tl
     >>> @triton.jit
@@ -124,13 +125,14 @@ def css_bp_decoder(
     Args:
         Hx (ArrayLike): X parity-check matrix.
         Hz (ArrayLike): Z parity-check matrix.
-        postprocess (str): Postprocessing step applied after belief propagation. Use
-            ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
-        num_iters (int): Number of belief-propagation iterations.
-        prob (float): Uniform prior error probability across qubits.
 
     Keyword Args:
-        platform (str): Required Triton target string of the form ``"backend:arch:warp_size"``.
+        postprocess (str): Postprocessing step applied after belief propagation. Use
+            ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
+            Defaults to ``"osd"``.
+        num_iters (int): Number of belief-propagation iterations. Defaults to ``10``.
+        prob (float): Uniform prior error probability across qubits. Defaults to ``0.1``.
+        platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
             For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
             Defaults to ``(1, 1, 1)``.
@@ -152,6 +154,7 @@ def css_bp_decoder(
 
     **Example**
 
+    >>> import pennylane as qp
     >>> Hx = ((1, 0, 1), (0, 1, 1))
     >>> Hz = ((1, 1, 0), (1, 0, 1))
     >>> decoder = qp.backline.css_bp_decoder(

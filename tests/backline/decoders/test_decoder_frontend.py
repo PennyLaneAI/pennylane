@@ -14,7 +14,7 @@
 
 """Tests for the Triton decoder frontend."""
 
-# pylint: disable=protected-access,wrong-import-position,broad-exception-caught
+# pylint: disable=protected-access,wrong-import-position,broad-exception-caught,import-outside-toplevel
 
 from pathlib import Path
 
@@ -77,7 +77,7 @@ class TestBuildTritonDecoder:
             },
             "constexpr": {"decoder_fns": decoder_fns},
             "grid": (2, 3, 4),
-            "target": "cuda:80:32",
+            "platform": "cuda:80:32",
             "out": str((tmp_path / "librdma_triton_decoder.so").resolve()),
             "num_warps": 2,
             "num_stages": 3,
@@ -114,7 +114,7 @@ class TestBuildTritonDecoder:
                 {"decoder_fns": (object(),), "platform": "cuda:80:32", "num_stages": 0},
                 "num_stages must be > 0",
             ),
-            ({"decoder_fns": (object(),), "platform": "cuda:80"}, "raw Triton target"),
+            ({"decoder_fns": (object(),), "platform": "cuda:80"}, "raw Triton platform"),
         ],
     )
     def test_build_triton_decoder_validates_options(self, kwargs, message):
