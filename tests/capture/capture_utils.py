@@ -23,6 +23,7 @@ jax = pytest.importorskip("jax")
 from jax._src.core import ClosedJaxpr, Jaxpr
 
 from pennylane.capture.primitives import operator_p
+from pennylane.core import Operator2
 
 
 def extract_ops_and_meas_prims(jaxpr):
@@ -60,6 +61,9 @@ def extract_all_primitives(jaxpr):
 
 
 def assert_eqn_matches_op(eqn, expected_op):
-    """Checks that a jaxpr equation matches an expected Operator2 operator."""
-    assert eqn.primitive == operator_p
-    assert eqn.params["op_cls"] == expected_op
+    """Checks that a jaxpr equation matches an expected operator."""
+    if issubclass(expected_op, Operator2):
+        assert eqn.primitive == operator_p
+        assert eqn.params["op_cls"] == expected_op
+    else:
+        assert eqn.primitive == expected_op._primitive  # pylint: disable=protected-access

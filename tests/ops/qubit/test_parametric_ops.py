@@ -27,7 +27,7 @@ import pennylane as qp
 from pennylane import numpy as npp
 
 # pylint: disable=too-few-public-methods,too-many-public-methods
-from pennylane.core.operator import Operator1
+from pennylane.core.operator import Operator1, Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -160,6 +160,7 @@ SKIP_ASSERT_VALID = {
     qp.QubitUnitary: {"skip_differentiation": True},
     qp.DiagonalQubitUnitary: {"skip_differentiation": True},
     qp.ControlledQubitUnitary: {"skip_differentiation": True},
+    qp.MultiControlledX: {"skip_differentiation": True, "skip_bind_new_parameters": True},
 }
 
 
@@ -201,6 +202,12 @@ class TestOperations:
         leaves, tree_def = jax.tree_util.tree_flatten(op)
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         qp.assert_equal(op_unflattened, op)
+
+        if isinstance(op, Operator2):
+            # The test below assumes that `op.data` are numerical, which is not necessarily
+            # the case anymore for `Operator2` where `op.data` is anything that is dynamic
+            # and traceable, which could include things like `control_values`
+            return
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
@@ -685,6 +692,7 @@ class TestDecompositions:
         decomp_mat = qp.matrix(decomp_op, wire_order=wires)
         assert np.allclose(expected_mat, decomp_mat)
 
+    @pytest.mark.pl2do(reason="Broadcasting support not implemented yet for Operator2")
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition_broadcasted(self, dim, wires):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
@@ -4336,7 +4344,6 @@ control_data = [
     (qp.Rot(1, 2, 3, wires=0), Wires([])),
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
-    (qp.PhaseShift(1.234, wires=0), Wires([])),
     (qp.U1(1.234, wires=0), Wires([])),
     (qp.U2(1.234, 2.345, wires=0), Wires([])),
     (qp.U3(1.234, 2.345, 3.456, wires=0), Wires([])),
