@@ -24,7 +24,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
-    _out_multiplier_with_cache_resources,
     _out_multiplier_with_qft,
 )
 from pennylane.typing import Wire
@@ -180,18 +179,26 @@ def test_abstract_init_wires_like(abstract_register):
     assert abstractify(concrete_op) == abstract_op
 
 
-def test_out_multiplier_cache_resources_resolves_mod():
-    """Test cache decomposition resources resolve mod and work wires."""
-    resources = _out_multiplier_with_cache_resources(
-        [0, 1],
-        [2, 3],
-        [4, 5, 6],
-        mod=4,
-        work_wires=[7, 8, 9, 10, 11, 12],
-    )
-    mult_op = next(key for key in resources if isinstance(key, OutMultiplier))
-    assert mult_op.arguments["mod"] == 4
-    assert len(mult_op.work_wires) == 2
+@pytest.mark.parametrize(
+    ("mod", "work_wires", "msg_match"),
+    [
+        (3, [6], "at least two work wires"),
+        (99, [6, 7], "enough wires to represent mod"),
+    ],
+)
+def test_abstract_init_validation(mod, work_wires, msg_match):
+    """Test that abstract init mirrors concrete validation for mod and work wires."""
+    with pytest.raises(ValueError, match=msg_match):
+        OutMultiplier(
+            Wire[2],
+            Wire[2],
+            Wire[2],
+            mod=mod,
+            work_wires=Wire[len(work_wires)],
+        )
+
+    with pytest.raises(ValueError, match=msg_match):
+        OutMultiplier([0, 1], [2, 3], [4, 5], mod, work_wires)
 
 
 @pytest.mark.jax
