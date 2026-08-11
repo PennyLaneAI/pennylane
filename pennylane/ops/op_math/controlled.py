@@ -239,7 +239,7 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
 
 def _concat_wires(wire1, wire2):
 
-    if isinstance(wire2, AbstractWires):
+    if isinstance(wire2, AbstractWires) or isinstance(wire1, AbstractWires):
         return Wire[len(wire1) + len(wire2)]
 
     return wire1 + wire2
