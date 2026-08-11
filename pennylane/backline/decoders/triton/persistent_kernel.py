@@ -48,6 +48,8 @@ def _persistent_decoder_kernel(
         decoder_fns (tuple[Callable]): Compile-time tuple of Triton decoder
             functions selected by ``decoder_id``.
     """
+    stop_poll_iters = tl.constexpr(1024)
+
     # cursor/total are u64; slot indices and seq numbers are u32 by wire layout.
     cursor = tl.zeros((), dtype=tl.uint64)
     halt = tl.zeros((), dtype=tl.int1)
@@ -65,8 +67,8 @@ def _persistent_decoder_kernel(
         nspins = tl.zeros((), dtype=tl.uint32)
         # loop until expected seq or stop
         while (seq != expect) and (halt == 0):
-            if (nspins & 1023) == 0:
-                # check the stop flag only every 1024 iters
+            if (nspins % stop_poll_iters) == 0:
+                # check the stop flag only every stop_poll_iters iters
                 halt = tl.load(stop_u32_ptr, volatile=True) != 0
             nspins += 1
             metadata = tl.load(req + 1, volatile=True)
