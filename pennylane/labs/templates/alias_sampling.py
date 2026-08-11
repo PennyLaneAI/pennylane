@@ -26,7 +26,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
 
     .. math::
 
-        \frac{1}{\sqrt{L}} \sum_{i=0}^{L-1} |i\rangle
+        \frac{1}{\sqrt{n_\text{states}}} \sum_{i=0}^{n_\text{states}-1} |i\rangle
 
     Uses ``Hadamard`` gates when ``n_states`` is a power of two, otherwise the
     amplitude-amplification circuit of `arXiv:1805.03662
@@ -44,10 +44,10 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     L = n_states >> k
     logL = qp.math.ceil_log2(L)
 
-    expected = k + logL
-    if len(target_wires) != expected:
+    expected_target = k + logL
+    if len(target_wires) != expected_target:
         raise ValueError(
-            f"target_wires must have {expected} wires for n_states={n_states} "
+            f"target_wires must have {expected_target} wires for n_states={n_states} "
             f"(k={k}, logL={logL}); got {len(target_wires)}."
         )
 
@@ -58,9 +58,15 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     if L == 1:
         return
 
+    expected_work = 1 + max(logL - 1, 1)
+    if len(work_wires) < expected_work:
+        raise ValueError(
+            f"work_wires must have at least {expected_work} wires for n_states={n_states} "
+            f"(k={k}, logL={logL}); got {len(work_wires)}."
+        )
     flr = L.bit_length() - 1  # floor(log2 L)
     theta = np.arccos(1.0 - (2**flr) / L)
-    w_used = work_wires[1 : 1 + max(logL - 1, 1)]
+    w_used = work_wires[1:expected_work]
 
     LeftClassicalComparator(
         x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
@@ -120,7 +126,11 @@ def _build_alias_tables(probs, mu):
     alt = list(range(L))
     keep = [n] * L  # default: self-aliased, full keep (covers leftover columns)
 
-    small_mask = scaled < 1.0
+    # Use this threshold instead of 1.0 to avoid floating-point issues when L is large and the
+    # scaled values are very close to 1.0. The threshold is set to 1.0 - 1.0/(2*n) to ensure that the scaled values are
+    # correct with respect to the \mu bits of precision.
+    threshold = 1.0 - 1.0 / (2 * n)
+    small_mask = scaled < threshold
     small = np.where(small_mask)[0].tolist()
     large = np.where(~small_mask)[0].tolist()
 
@@ -130,7 +140,7 @@ def _build_alias_tables(probs, mu):
         keep[s] = int(round(scaled[s] * n))
         alt[s] = g
         scaled[g] += scaled[s] - 1.0
-        if scaled[g] < 1.0:
+        if scaled[g] < threshold:
             small.append(g)
         else:
             large.append(g)
@@ -166,7 +176,12 @@ def alias_sampling_wires(n_states, mu):
         minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
         ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
     """
-    logL = max(qp.math.ceil_log2(n_states), 1)
+    if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
+        raise ValueError(f"mu must be a positive integer, got {mu!r}.")
+    if n_states < 1:
+        raise ValueError("n_states must be at least 1.")
+
+    logL = qp.math.ceil_log2(n_states)
     n_target = logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     n_temp = mu + logL + mu + 1 + max(mu - 1, 0)
@@ -211,10 +226,13 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
     """
     probs = np.asarray(probs, dtype=float)
     L = len(probs)
-    logL = max(qp.math.ceil_log2(L), 1)
+    if L < 1:
+        raise ValueError("probs must have at least one entry.")
 
-    if mu < 1:
-        raise ValueError(f"mu must be a positive integer, got {mu}.")
+    logL = qp.math.ceil_log2(L)
+
+    if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
+        raise ValueError(f"mu must be a positive integer, got {mu!r}.")
 
     req = alias_sampling_wires(L, mu)
 
@@ -247,9 +265,8 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
 
     data = [[0] * (logL + mu) for _ in range(2**logL)]
     for l in range(L):
-        data[l] = [int(b) for b in format(alt[l], f"0{logL}b")] + [
-            int(b) for b in format(keep[l], f"0{mu}b")
-        ]
+        alt_bits = [int(b) for b in format(alt[l], f"0{logL}b")] if logL else []
+        data[l] = alt_bits + [int(b) for b in format(keep[l], f"0{mu}b")]
 
     # 1. UNIFORM_L over |l>.
     uniform_prep_ops(L, target_wires, work_wires)
