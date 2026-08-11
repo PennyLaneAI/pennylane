@@ -208,8 +208,6 @@ class OutMultiplier(Operator2):
     }
     wire_sizes = (None, None, None, None)
 
-    grad_method = None
-
     def __init__(
         self,
         x_wires: WiresLike,
