@@ -109,6 +109,11 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
+    def basis(self):  # pylint: disable=missing-function-docstring
+        return self.base.basis
+
+    @property
+    @override
     def name(self) -> str:
         return f"Pow({self.base.name})"
 
@@ -116,6 +121,11 @@ class Pow2(SymbolicOp2):
     @override
     def ndim_params(self):
         return self.base.ndim_params
+
+    @property
+    @override
+    def data(self):
+        return self.base.data
 
     @property
     @override

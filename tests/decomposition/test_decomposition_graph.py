@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation, Operator1, abstractify
 from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
@@ -985,6 +985,10 @@ class TestControlledDecompositions:
         assert all("_custom_rule" not in rule.name for rule in rules)
 
 
+class RX(Operator1):
+    pass
+
+
 @patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
 class TestSymbolicDecompositions:
     """Tests decompositions of symbolic ops."""
@@ -992,7 +996,7 @@ class TestSymbolicDecompositions:
     def test_cancel_adjoint(self):
         """Tests that a nested adjoint operator is flattened properly."""
 
-        op = qp.adjoint(qp.adjoint(qp.RX(0.5, wires=[0])))
+        op = qp.adjoint(qp.adjoint(RX(0.5, wires=[0])))
 
         graph = DecompositionGraph(operations=[op], gate_set={"RX"})
         # 2 operator nodes (Adjoint(Adjoint(RX)) and RX), and 1 decomposition node.
@@ -1005,13 +1009,13 @@ class TestSymbolicDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [qp.RX(0.5, wires=[0])]
-        assert solution.resource_estimate(op) == to_resources({qp.RX: 1})
+        assert q.queue == [RX(0.5, wires=[0])]
+        assert solution.resource_estimate(op) == to_resources({RX: 1})
 
     def test_adjoint_custom(self):
         """Tests adjoint of an operator that defines its own adjoint."""
 
-        op = qp.adjoint(qp.RX(0.5, wires=[0]))
+        op = qp.adjoint(RX(0.5, wires=[0]))
 
         graph = DecompositionGraph(operations=[op], gate_set={"RX"})
         # 2 operator nodes (Adjoint(RX) and RX), and 1 decomposition node, and 1 dummy starting node
@@ -1023,17 +1027,17 @@ class TestSymbolicDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [qp.RX(-0.5, wires=[0])]
-        assert solution.resource_estimate(op) == to_resources({qp.RX: 1})
+        assert q.queue == [RX(-0.5, wires=[0])]
+        assert solution.resource_estimate(op) == to_resources({RX: 1})
 
     def test_adjoint_general(self):
         """Tests decomposition of a generalized adjoint operation."""
 
-        @qp.register_resources({qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.T: 1})
+        @qp.register_resources({qp.H: 1, qp.CNOT: 2, RX: 1, qp.T: 1})
         def custom_decomp(phi, wires):
             qp.H(wires[0])
             qp.CNOT(wires=wires[:2])
-            qp.RX(phi, wires=wires[1])
+            RX(phi, wires=wires[1])
             qp.CNOT(wires=wires[1:3])
             qp.T(wires[2])
 
@@ -1059,12 +1063,12 @@ class TestSymbolicDecompositions:
         assert q.queue == [
             qp.adjoint(qp.T(2)),
             qp.adjoint(qp.CNOT(wires=[1, 2])),
-            qp.adjoint(qp.RX(0.5, wires=1)),
+            qp.adjoint(RX(0.5, wires=1)),
             qp.adjoint(qp.CNOT(wires=[0, 1])),
             qp.adjoint(qp.H(wires=0)),
         ]
         assert solution.resource_estimate(op) == to_resources(
-            {qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.PhaseShift: 1},
+            {qp.H: 1, qp.CNOT: 2, RX: 1, qp.PhaseShift: 1},
         )
 
     def test_nested_powers(self):
