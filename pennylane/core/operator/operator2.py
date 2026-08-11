@@ -412,8 +412,7 @@ class Operator2(metaclass=OperatorMeta):
     # -------------- Legacy Operator compatibility views ----------------------
     # ------------------------------------------------------------------------
     # The following properties provide backwards-compatible read-only views
-    # matching the legacy ``Operator`` API (data, parameters, hyperparameters,
-    # control_wires).
+    # matching the legacy ``Operator`` API (data, parameters, hyperparameters).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
