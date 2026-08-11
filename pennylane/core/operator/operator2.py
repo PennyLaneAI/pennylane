@@ -233,8 +233,9 @@ class Operator2(metaclass=OperatorMeta):
         Weighted Cost: 4.0
         >>> qp.decomposition.disable_graph()
 
+
     .. details::
-        :title: Downstream effects of static_argnames, compilable_argnames
+        :title: Downstream effects of ``static_argnames``, ``compilable_argnames``
 
         Static and *compilable static* arguments are similar, but have key differences to note that
         dictate how certain arguments are treated when compiled down to MLIR.
