@@ -31,7 +31,7 @@ from pennylane.core.operator import Operator2
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-# pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position,no-name-in-module
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
@@ -1382,53 +1382,49 @@ class TestModifiedTemplates:
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""
 
-        kwargs = {
-            "x_wires": [0, 1],
-            "y_wires": [2, 3],
-            "output_wires": [4, 5],
-            "work_wires": [],
-        }
+        x_wires = [0, 1]
+        y_wires = [2, 3]
+        output_wires = [4, 5]
+        work_wires = []
 
-        def qfunc():
-            qp.SignedOutMultiplier(**kwargs)
+        def qfunc(x_wires, y_wires, output_wires, work_wires):
+            qp.SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires=work_wires)
 
         # Validate inputs
-        qfunc()
+        qfunc(x_wires, y_wires, output_wires, work_wires)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(x_wires, y_wires, output_wires, work_wires)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.SignedOutMultiplier)
+        assert eqn.invars == jaxpr.jaxpr.invars
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
     def test_out_multiplier(self):
         """Test the primitive bind call of OutMultiplier."""
 
-        kwargs = {
-            "x_wires": [0, 1],
-            "y_wires": [2, 3],
-            "output_wires": [4, 5],
-            "mod": None,
-            "work_wires": None,
-        }
+        x_wires = [0, 1]
+        y_wires = [2, 3]
+        output_wires = [4, 5]
 
-        def qfunc():
-            qp.OutMultiplier(**kwargs)
+        def qfunc(x_wires, y_wires, output_wires):
+            qp.OutMultiplier(x_wires, y_wires, output_wires, mod=None, work_wires=None)
 
         # Validate inputs
-        qfunc()
+        qfunc(x_wires, y_wires, output_wires)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(x_wires, y_wires, output_wires)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.OutMultiplier)
+        assert eqn.invars == jaxpr.jaxpr.invars
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
