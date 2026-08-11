@@ -20,7 +20,7 @@
 
   custom_decoder = qp.triton_decoder(
       (steane_lookup, steane_lookup),
-      platform="hip:gfx90a:64",
+      platform="hip:gfx942:64",
   )
 
   Hz = Hx = np.array([
@@ -33,7 +33,7 @@
       Hz,
       postprocess="osd",
       num_iters=10,
-      platform="hip:gfx90a:64",
+      platform="hip:gfx942:64",
   )
   ```
   [(#9975)](https://github.com/PennyLaneAI/pennylane/pull/9975)

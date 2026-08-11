@@ -24,8 +24,8 @@ import triton.language as tl
 def _sum_product_posteriors(
     syndrome,
     H: tl.constexpr,
-    prob: tl.constexpr = 0.1,
-    num_iters: tl.constexpr = 10,
+    prob: tl.constexpr,
+    num_iters: tl.constexpr,
 ):
     """Compute posterior LLRs for one packed syndrome.
 
@@ -139,17 +139,17 @@ def _tanh_half(value):
 
 
 @triton.jit
-def _bp_c2v_msg(syndrome_sign, message_product, eps: tl.constexpr = 1e-6):
+def _bp_c2v_msg(syndrome_sign, message_product):
     """Compute a bounded check-to-variable message.
 
     Args:
         syndrome_sign (float): Bipolar sign derived from the packed syndrome bit.
         message_product (float): Product of neighbouring variable-to-check messages.
-        eps (float): Margin used to clamp ``message_product`` away from ``±1``.
 
     Returns:
         float: Check-to-variable message in LLR form.
     """
+    eps = 1e-6
     clamp_limit = 1.0 - eps
     clamped_product = tl.maximum(-clamp_limit, tl.minimum(message_product, clamp_limit))
     return syndrome_sign * tl.log((1.0 + clamped_product) / (1.0 - clamped_product))
@@ -157,7 +157,7 @@ def _bp_c2v_msg(syndrome_sign, message_product, eps: tl.constexpr = 1e-6):
 
 @triton.constexpr_function
 def _llr_from_p(error_probability):
-    """Convert a compile-time error probability into a prior LLR.
+    """Convert a compile-time error probability into a prior log-likelihood ratio (LLR).
 
     Args:
         error_probability (float): Error probability in the open interval ``(0, 1)``.

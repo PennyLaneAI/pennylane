@@ -90,13 +90,13 @@ def build_so(
     *,
     signature: dict[str, str],
     constexpr: dict[str, object],
-    grid: tuple[int, int, int] = (1, 1, 1),
-    target: str = "hip:gfx90a:64",
-    num_warps: int = 1,
-    num_stages: int = 1,
+    grid: tuple[int, int, int],
+    target: str,
+    num_warps: int,
+    num_stages: int,
     out: str,
-    compiler: str = "",
-    cflags: tuple[str, ...] = (),
+    compiler: str,
+    cflags: tuple[str, ...],
 ) -> tuple[Path, str]:
     """Compile a Triton kernel and package it into a shared library.
 

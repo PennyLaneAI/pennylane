@@ -57,7 +57,11 @@ class TestBuildSo:
                 constexpr={},
                 grid=grid,
                 target=target,
+                num_warps=1,
+                num_stages=1,
                 out=str(tmp_path / "decoder.so"),
+                compiler="",
+                cflags=(),
             )
 
     def test_build_so_builds_hip_command_and_patches_source(self, monkeypatch, tmp_path):
@@ -85,7 +89,10 @@ class TestBuildSo:
             object(),
             signature={},
             constexpr={},
+            grid=(1, 1, 1),
             target="hip:gfx90a:64",
+            num_warps=1,
+            num_stages=1,
             out=str(out),
             compiler="hipcc-custom",
             cflags=("-Wall",),
@@ -121,9 +128,13 @@ class TestBuildSo:
             object(),
             signature={},
             constexpr={},
+            grid=(1, 1, 1),
             target="hip:gfx90a:64",
+            num_warps=1,
+            num_stages=1,
             out=str(tmp_path / "decoder.so"),
             compiler="hipcc-custom",
+            cflags=(),
         )
 
         assert seen["source"] == "#include <stdlib.h>\n#include <stdio.h>\n"
@@ -150,9 +161,13 @@ class TestBuildSo:
             object(),
             signature={},
             constexpr={},
+            grid=(1, 1, 1),
             target="cuda:80:32",
+            num_warps=1,
+            num_stages=1,
             out=str(tmp_path / "decoder.so"),
             compiler="/usr/local/cuda/bin/nvcc",
+            cflags=(),
         )
 
         assert seen["cmd"][:4] == ["/usr/local/cuda/bin/nvcc", "-Xcompiler", "-fPIC", "-shared"]
@@ -182,8 +197,13 @@ class TestBuildSo:
             object(),
             signature={},
             constexpr={},
+            grid=(1, 1, 1),
             target="hip:gfx90a:64",
+            num_warps=1,
+            num_stages=1,
             out=str(tmp_path / "decoder.so"),
+            compiler="",
+            cflags=(),
         )
 
         assert seen["cmd"][0] == "hipcc-from-env"

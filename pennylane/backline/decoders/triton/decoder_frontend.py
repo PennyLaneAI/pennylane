@@ -39,7 +39,8 @@ from .triton_so_builder import build_so
 def build_triton_decoder(
     decoder_fns: tuple[object, ...],
     *,
-    platform: str = "hip:gfx90a:64",
+    platform: str,
+    grid: tuple[int, int, int] = (1, 1, 1),
     num_warps: int = 1,
     num_stages: int = 1,
     compiler: str = "",
@@ -51,10 +52,12 @@ def build_triton_decoder(
         decoder_fns (tuple[object, ...]): Tuple of Triton decoder functions.
             ``decoder_id`` selects the tuple index at runtime.
         platform (str): Triton target string of the form ``"backend:arch:warp_size"``.
-        num_warps (int): Triton kernel launch warp count.
-        num_stages (int): Triton pipeline stage count.
-        compiler (str): Optional compiler executable override.
-        cflags (tuple[str, ...]): Extra compiler flags.
+        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+            Defaults to ``(1, 1, 1)``.
+        num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
+        num_stages (int): Triton pipeline stage count. Defaults to ``1``.
+        compiler (str): Optional compiler executable override. Defaults to ``""``.
+        cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
@@ -75,7 +78,7 @@ def build_triton_decoder(
     ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
     >>> so_path, symbol_name = build_triton_decoder(
     ...     (steane_lookup, steane_lookup),
-    ...     platform="hip:gfx90a:64",
+    ...     platform="hip:gfx942:64",
     ... )
     """
     _validate_build_options(
@@ -96,7 +99,7 @@ def build_triton_decoder(
                 "total": "u64",
             },
             constexpr={"decoder_fns": tuple(decoder_fns)},
-            grid=(1, 1, 1),
+            grid=grid,
             target=platform.strip(),
             out=str(out.resolve()),
             num_warps=num_warps,
@@ -113,10 +116,11 @@ def build_css_bp_decoder(
     Hx: ArrayLike,
     Hz: ArrayLike,
     *,
-    postprocess: str = "osd",
-    num_iters: int = 10,
-    prob: float = 0.1,
-    platform: str = "hip:gfx90a:64",
+    postprocess: str,
+    num_iters: int,
+    prob: float,
+    platform: str,
+    grid: tuple[int, int, int] = (1, 1, 1),
     num_warps: int = 1,
     num_stages: int = 1,
     compiler: str = "",
@@ -140,14 +144,14 @@ def build_css_bp_decoder(
             ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
         num_iters (int): Number of decoder iterations.
         prob (float): Uniform prior error probability across qubits.
-        platform (str): Triton target string of the form ``"backend:arch:warp_size"``.
-            For instance ``"hip:gfx90a:64"`` targets AMD MI200-class GPUs via the
-            HIP backend, gfx90a architecture, and warp size 64, while
-            ``"cuda:80:32"`` means CUDA backend, SM80 architecture, warp size 32.
-        num_warps (int): Triton kernel launch warp count.
-        num_stages (int): Triton pipeline stage count.
-        compiler (str): Optional compiler executable override.
-        cflags (tuple[str, ...]): Extra compiler flags.
+        platform (str): Required Triton target string of the form ``"backend:arch:warp_size"``.
+            For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
+        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+            Defaults to ``(1, 1, 1)``.
+        num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
+        num_stages (int): Triton pipeline stage count. Defaults to ``1``.
+        compiler (str): Optional compiler executable override. Defaults to ``""``.
+        cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
@@ -165,7 +169,7 @@ def build_css_bp_decoder(
     ...     Hz,
     ...     postprocess="hard",
     ...     num_iters=5,
-    ...     platform="hip:gfx90a:64",
+    ...     platform="hip:gfx942:64",
     ... )
     """
     _validate_css_options(postprocess=postprocess, num_iters=num_iters, prob=prob)
@@ -178,6 +182,7 @@ def build_css_bp_decoder(
     return build_triton_decoder(
         decoder_fns,
         platform=platform,
+        grid=grid,
         num_warps=num_warps,
         num_stages=num_stages,
         compiler=compiler,
@@ -239,7 +244,7 @@ def _validate_build_options(
     if platform.strip().count(":") != 2:
         raise ValueError(
             "platform must be a raw Triton target string like "
-            f"'hip:gfx90a:64' or 'cuda:80:32', got {platform!r}"
+            f"'hip:gfx942:64' or 'cuda:80:32', got {platform!r}"
         )
 
 

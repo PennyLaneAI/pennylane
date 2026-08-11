@@ -54,6 +54,7 @@ def test_triton_decoder_forwards_build_options(monkeypatch):
     decoder = functions.triton_decoder(
         decoder_fns,
         platform="cuda:80:32",
+        grid=(2, 3, 4),
         num_warps=4,
         num_stages=2,
         compiler="cc",
@@ -66,6 +67,7 @@ def test_triton_decoder_forwards_build_options(monkeypatch):
     assert calls == {
         "decoder_fns": decoder_fns,
         "platform": "cuda:80:32",
+        "grid": (2, 3, 4),
         "num_warps": 4,
         "num_stages": 2,
         "compiler": "cc",
@@ -92,6 +94,7 @@ def test_css_bp_decoder_forwards_build_options(monkeypatch):
         num_iters=7,
         prob=0.2,
         platform="cuda:80:32",
+        grid=(5, 1, 1),
         num_warps=4,
         num_stages=2,
         compiler="cc",
@@ -108,6 +111,7 @@ def test_css_bp_decoder_forwards_build_options(monkeypatch):
         "num_iters": 7,
         "prob": 0.2,
         "platform": "cuda:80:32",
+        "grid": (5, 1, 1),
         "num_warps": 4,
         "num_stages": 2,
         "compiler": "cc",

@@ -24,9 +24,9 @@ from .bp_iters import _sum_product_posteriors
 def _decode_one(
     syndrome,
     H: tl.constexpr,
-    postprocess: tl.constexpr = "hard",
-    prob: tl.constexpr = 0.1,
-    num_iters: tl.constexpr = 10,
+    postprocess: tl.constexpr,
+    prob: tl.constexpr,
+    num_iters: tl.constexpr,
 ):
     """Decode one packed syndrome into a packed correction mask.
 

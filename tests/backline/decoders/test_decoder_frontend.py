@@ -58,6 +58,7 @@ class TestBuildTritonDecoder:
         so_path, symbol_name = frontend.build_triton_decoder(
             decoder_fns,
             platform=" cuda:80:32 ",
+            grid=(2, 3, 4),
             num_warps=2,
             num_stages=3,
             compiler="cc",
@@ -75,7 +76,7 @@ class TestBuildTritonDecoder:
                 "total": "u64",
             },
             "constexpr": {"decoder_fns": decoder_fns},
-            "grid": (1, 1, 1),
+            "grid": (2, 3, 4),
             "target": "cuda:80:32",
             "out": str((tmp_path / "librdma_triton_decoder.so").resolve()),
             "num_warps": 2,
@@ -97,16 +98,22 @@ class TestBuildTritonDecoder:
         )
 
         with pytest.raises(RuntimeError, match="boom"):
-            frontend.build_triton_decoder((object(),))
+            frontend.build_triton_decoder((object(),), platform="cuda:80:32")
 
         assert not scratch.exists()
 
     @pytest.mark.parametrize(
         ("kwargs", "message"),
         [
-            ({"decoder_fns": ()}, "non-empty tuple"),
-            ({"decoder_fns": (object(),), "num_warps": 0}, "num_warps must be > 0"),
-            ({"decoder_fns": (object(),), "num_stages": 0}, "num_stages must be > 0"),
+            ({"decoder_fns": (), "platform": "cuda:80:32"}, "non-empty tuple"),
+            (
+                {"decoder_fns": (object(),), "platform": "cuda:80:32", "num_warps": 0},
+                "num_warps must be > 0",
+            ),
+            (
+                {"decoder_fns": (object(),), "platform": "cuda:80:32", "num_stages": 0},
+                "num_stages must be > 0",
+            ),
             ({"decoder_fns": (object(),), "platform": "cuda:80"}, "raw Triton target"),
         ],
     )
@@ -147,6 +154,7 @@ class TestBuildCssBpDecoder:
             num_iters=7,
             prob=0.2,
             platform="cuda:80:32",
+            grid=(5, 1, 1),
             num_warps=4,
             num_stages=2,
             compiler="cc",
@@ -163,6 +171,7 @@ class TestBuildCssBpDecoder:
         assert forwarded == {
             "decoder_fns": tuple(built_decoders),
             "platform": "cuda:80:32",
+            "grid": (5, 1, 1),
             "num_warps": 4,
             "num_stages": 2,
             "compiler": "cc",
@@ -182,8 +191,14 @@ class TestBuildCssBpDecoder:
         """It should reject invalid BP decoder options."""
         H = np.eye(2, dtype=int)
 
+        decoder_kwargs = {
+            "postprocess": "osd",
+            "num_iters": 10,
+            "prob": 0.1,
+            "platform": "cuda:80:32",
+        } | kwargs
         with pytest.raises(ValueError, match=message):
-            frontend.build_css_bp_decoder(H, H, **kwargs)
+            frontend.build_css_bp_decoder(H, H, **decoder_kwargs)
 
     @pytest.mark.parametrize(
         ("H", "message"),

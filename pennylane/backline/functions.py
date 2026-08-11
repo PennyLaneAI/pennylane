@@ -62,8 +62,10 @@ def triton_decoder(
             tuple index at runtime.
 
     Keyword Args:
-        platform (str): Triton target string of the form ``"backend:arch:warp_size"``.
-            Defaults to ``"hip:gfx90a:64"``.
+        platform (str): Required Triton target string of the form ``"backend:arch:warp_size"``.
+            For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
+        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+            Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
         num_stages (int): Triton pipeline stage count. Defaults to ``1``.
         compiler (str): Optional compiler executable override. Defaults to ``""``.
@@ -89,7 +91,10 @@ def triton_decoder(
     ...     one = tl.cast(1, tl.uint64)
     ...     zero = tl.cast(0, tl.uint64)
     ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
-    >>> decoder = qp.backline.triton_decoder((steane_lookup, steane_lookup))
+    >>> decoder = qp.backline.triton_decoder(
+    ...     (steane_lookup, steane_lookup),
+    ...     platform="hip:gfx942:64",
+    ... )
     """
     try:
         build_triton_decoder = import_module(
@@ -125,8 +130,10 @@ def css_bp_decoder(
         prob (float): Uniform prior error probability across qubits.
 
     Keyword Args:
-        platform (str): Triton target string of the form ``"backend:arch:warp_size"``.
-            Defaults to ``"hip:gfx90a:64"``.
+        platform (str): Required Triton target string of the form ``"backend:arch:warp_size"``.
+            For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
+        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+            Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
         num_stages (int): Triton pipeline stage count. Defaults to ``1``.
         compiler (str): Optional compiler executable override. Defaults to ``""``.
@@ -147,7 +154,13 @@ def css_bp_decoder(
 
     >>> Hx = ((1, 0, 1), (0, 1, 1))
     >>> Hz = ((1, 1, 0), (1, 0, 1))
-    >>> decoder = qp.backline.css_bp_decoder(Hx, Hz, postprocess="hard", num_iters=5)
+    >>> decoder = qp.backline.css_bp_decoder(
+    ...     Hx,
+    ...     Hz,
+    ...     postprocess="hard",
+    ...     num_iters=5,
+    ...     platform="hip:gfx942:64",
+    ... )
     """
     try:
         build_css_bp_decoder = import_module(
