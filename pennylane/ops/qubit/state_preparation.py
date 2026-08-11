@@ -115,7 +115,7 @@ class BasisState(StatePrepBase2):
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
 
-        state = qp.math.cast(state, bool)
+        state = qp.math.cast(state, int)
         super().__init__(state, wires=wires)
 
     def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
