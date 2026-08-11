@@ -107,9 +107,9 @@ def _resolve_nodes(controller, coprocessor, decoder_id):
     placement = active_placement()
     if placement is None:
         raise ValueError(
-            "decode: no backline device has been built, so the controller cannot be resolved. "
-            "Build one with qp.backline(controller=..., coprocessors=[...]), or pass the nodes "
-            "explicitly: decode(syndrome, controller=ctrl, coprocessor=coproc)."
+            "decode: the nodes are resolved from the placement of the device being traced, and "
+            "this trace has none. Build a placement, or pass the nodes explicitly: "
+            "decode(syndrome, controller=ctrl, coprocessor=coproc)."
         )
 
     if controller is None:

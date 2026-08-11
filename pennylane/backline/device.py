@@ -20,6 +20,7 @@ heterogeneous compilation and execution. This device requires the Catalyst compi
 
 from collections.abc import Sequence
 
+from pennylane.capture import get_tracing_device
 from pennylane.devices import Device
 
 from .placement import Controller, Coprocessor, Placement
@@ -172,32 +173,15 @@ def backline(
             ...
     """
     placement = Placement(controller=controller, coprocessors=coprocessors, transport=transport)
-    _register_placement(placement)
     return HeterogeneousDevice(placement=placement)
 
 
-_PLACEMENTS: "list[Placement]" = []
-
-
-def _register_placement(placement: Placement) -> None:
-    """Record a placement as :func:`backline` builds it."""
-    if placement not in _PLACEMENTS:
-        _PLACEMENTS.append(placement)
-
-
 def active_placement() -> "Placement | None":
-    """The placement an in-circuit call belongs to, when there is exactly one.
+    """The placement an in-circuit call belongs to: the one on the device being traced.
 
-    ``None`` if no :func:`backline` device has been built; raises if more than one has.
+    ``None`` when there is no trace in progress, or when the device being traced did not come from
+    :func:`backline`.
 
     .. seealso:: :func:`~pennylane.backline.decode`
     """
-    if not _PLACEMENTS:
-        return None
-    if len(_PLACEMENTS) > 1:
-        raise RuntimeError(
-            f"{len(_PLACEMENTS)} backline placements have been built, so which one an in-circuit "
-            "call belongs to is ambiguous. Pass the nodes explicitly, e.g. "
-            "decode(syndrome, controller=ctrl, coprocessor=coproc)."
-        )
-    return _PLACEMENTS[0]
+    return getattr(get_tracing_device(), "placement", None)

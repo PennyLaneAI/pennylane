@@ -91,7 +91,7 @@ except (ImportError, NameError) as e:  # pragma: no cover
 
 import pennylane as qp
 from pennylane import math
-from pennylane.capture import FlatFn, QpPrimitive
+from pennylane.capture import FlatFn, QpPrimitive, tracing_device
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
 from pennylane.typing import Result, TensorLike
@@ -464,7 +464,9 @@ def _bind_qnode(qnode, *args, **kwargs):
         struct = jax.tree_util.tree_structure(args)
         abstracted_axes = jax.tree_util.tree_unflatten(struct, abstracted_axes)
 
-    qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
+    # Publish the device for the duration of the trace
+    with tracing_device(qnode.device):
+        qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
 
