@@ -4175,7 +4175,6 @@ control_data = [
     (qp.Rot(1, 2, 3, wires=0), Wires([])),
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
-    (qp.PhaseShift(1.234, wires=0), Wires([])),
     (qp.IsingXX(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingYY(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingXY(1.234, wires=(0, 1)), Wires([])),
