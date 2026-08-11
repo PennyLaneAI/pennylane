@@ -43,6 +43,7 @@ from .linalg import (
 
 class PartiallyMultiplexedFlag(qp.operation.Operation):
     r"""A partially multiplexed sequence of single-qubit flags.
+
     Applies ``R_z(phi) R_y(theta)`` to the target wire (``wires[-1]``), multi-controlled by
     the control wires (``wires[:-1]``) on the given ``control_values``. Angles are flat arrays
     with one ``(rz, ry)`` pair per control pattern (length ``len(control_values)``); an
@@ -149,6 +150,7 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
 
 def merge_partially_multiplexed_flags(flags):
     """Merge same-wire ``PartiallyMultiplexedFlag`` operations into one, sorted by control value.
+
     Args:
         flags (Sequence[PartiallyMultiplexedFlag]): flags acting on identical wires and
             covering disjoint control patterns.
@@ -212,6 +214,7 @@ def merge_partially_multiplexed_flags(flags):
 
 def _is_diagonal_op(op):
     """Conservatively check whether ``op`` is diagonal in the computational basis.
+
     Returns ``True`` only for guaranteed cases — a ``PartiallyMultiplexedFlag`` with
     all-zero ``R_y`` angles, or ``CZ``/``CCZ`` (and controlled variants); ``False`` otherwise.
     """
@@ -228,6 +231,7 @@ def _is_diagonal_op(op):
 
 def _ops_commute(a, b):
     """Conservatively test whether ``a`` and ``b`` commute.
+
     Returns ``True`` only for disjoint wires or two diagonal ops; may return ``False``
     for ops that actually commute, but never the reverse.
     """
@@ -238,6 +242,7 @@ def _ops_commute(a, b):
 
 def merge_partially_multiplexed_flags_in_circuit(ops):
     """Merge same-wire ``PartiallyMultiplexedFlag`` ops in ``ops``, sliding past provably commuting ops.
+
     Args:
         ops (Sequence): operators to scan; non-flag ops pass through unchanged.
     Returns:
@@ -263,6 +268,7 @@ def merge_partially_multiplexed_flags_in_circuit(ops):
 
 def add_control(op, control_wire, control_value):
     """Add one control qubit to a decomposition op.
+
     Args:
         op: a ``PartiallyMultiplexedFlag``, ``CZ``/``CCZ``, or an already-controlled op.
         control_wire: wire for the new control.
@@ -385,6 +391,7 @@ def _map_nested_ops(structure, fn):
 
 def _interleave_branches(branch0, branch1):
     """Interleave the ``wires[0]=0`` and ``wires[0]=1`` branch trees, merging paired flags.
+
     The two branches share a congruent ``[left_flags, cs_flag, right_flags]`` structure, so
     recursing position by position merges each corresponding flag pair into one fully
     multiplexed flag (Multiplexer Extension Property); shape mismatches at leaves leave a
@@ -406,6 +413,7 @@ def _interleave_branches(branch0, branch1):
 
 def _decompose_branch(diag_in, right_block, wires, control_val, size):
     """Propagate ``diag_in`` through a branch unitary, flag-decompose it, and re-apply the control.
+
     The branch ``right_block`` is selected by ``control_val`` on ``wires[0]``. Returns
     ``(branch_flags, residual_diag, controlled_diag)``.
     """
@@ -424,6 +432,7 @@ def _decompose_branch(diag_in, right_block, wires, control_val, size):
 
 def recursive_generalized_flag_decomposition(U_d, wires, _top=True):
     r"""Recursively flag-decompose a unitary on ``wires`` via the asymmetric CSD.
+
     Returns ``(ops, diagonal)``, where ``ops`` is a nested list of
     :class:`~.PartiallyMultiplexedFlag` operations and ``diagonal`` is the trailing
     diagonal factor. When ``_top=True``, a non-power-of-two active submatrix is fractally
@@ -504,6 +513,7 @@ def _count_blocks(bitstrings, order):
 
 def optimize_unary_sequence(bitstrings, wires):
     """Pick the wire ordering that splits the control states into the fewest contiguous blocks.
+
     Args:
         bitstrings (list): control states, MSB-first; ``wires`` is one longer (target last).
         wires (list): wire positions MSB -> LSB, including the target ``wires[-1]``.
@@ -565,6 +575,7 @@ def optimize_unary_sequence(bitstrings, wires):
 
 def get_rewired_control_sequences(ops, wires, separate_target=False):
     """Rewire each flag's control wire ordering to minimize unary blocks.
+
     Args:
         ops (list): flag operations to rewire.
         wires (list): default ordering for single-control flags.

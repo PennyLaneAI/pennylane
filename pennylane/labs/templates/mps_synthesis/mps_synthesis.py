@@ -61,6 +61,7 @@ def is_right_canonical(tensors, atol=1e-10):
 def split_mps(mps):
     """
     Split an MPS into contiguous ``(left, bulk, right)`` segments, preserving site order.
+
     Segments are identified by their bond profile:
         left  : chi_L < chi_R   (1 -> 2 -> ... -> chi)
         bulk  : chi_L == chi_R  (chi -> chi, maximal bond)
@@ -94,6 +95,7 @@ def split_mps(mps):
 
 def unitary_completion_tensor(A):
     r"""Unitary completion of a local MPS tensor of shape ``(chi_L, d, chi_R)``.
+
     Three cases by bond parity:
       - right interface (only ``chi_L`` non-``2^k``): embed input columns on the
         fractal-active set, returning an ``(N, N)`` matrix with ``N = d * chi_R``;
@@ -142,6 +144,7 @@ def unitary_completion_mps(tensors):
 
 def asymmetric_csd(Gk, chi):
     r"""Asymmetric Cosine-Sine Decomposition of a boundary isometry (Eq. (E.8)).
+
     ``Gk`` is a ``4*chi x 4*chi`` unitary completion of the boundary isometry.
     Returns:
         tuple: ``(K00, K01, theta, K10)`` — ``K00, K01`` in ``U(2*chi)``, the ``chi``
@@ -200,11 +203,14 @@ def merge_staircase_unitaries(unitaries):
 
 def parallel_synthesis_steps(left_boundary, bulk, right_boundary):
     r"""Decompose each MPS segment's unitary completion independently (parallelizable).
+
     Follows the MPS-preparation scheme of
     `Kottmann et al. <https://arxiv.org/abs/2603.20376>`__. Left-boundary isometries are
     decomposed via the asymmetric CSD (Eqs. (E.8)-(E.11)) into :math:`K_{10}`, a multiplexed
     :math:`R_y`, and :math:`K_{0j}`:
+
     .. code-block::
+
                ┌─────┐                          ┌────┐
         q0|0⟩ ─┤     ├─      q0|0⟩ ─────────────┤ Ry ├──────■──────
                │     │                          └─┬──┘   ┌──┴──┐
@@ -212,17 +218,23 @@ def parallel_synthesis_steps(left_boundary, bulk, right_boundary):
                │     │               ┌──────┐     │      │ K_0j│
         k-1 ─/─┤     ├─      k-1 ─/──┤ K_10 ├─────■──────┤     ├───
                └─────┘               └──────┘            └─────┘
+
     Bulk unitaries use the standard CSD (Eq. (E.1)) into :math:`V`, a multiplexed :math:`R_y`,
     and :math:`K_{0j}`:
+
     .. code-block::
+
                ┌─────┐                        ┌────┐
         q0|0⟩ ─┤     ├─     q0|0⟩ ────────────┤ Ry ├──────■──────
                │ G_k │  =           ┌───┐     └─┬──┘   ┌──┴───┐
         n ──/──┤     ├─     n ──/───┤ V ├───────■──────┤ K_0j ├───
                └─────┘              └───┘              └──────┘
+
     The right-boundary tensors are merged into one trailing unitary and absorbed right-to-left,
     removing the uncontrolled :math:`V` factors. The resulting left-boundary cell is:
+
     .. code-block::
+
                ┌────┐             │
         q0|0⟩ ─┤ Ry ├─────■───────┘        (physical bond)
                └─┬──┘  ┌──┴───┐
@@ -230,22 +242,28 @@ def parallel_synthesis_steps(left_boundary, bulk, right_boundary):
                  │     │ K_0j │
         k-1 ─/───■─────┤      ├──────      (previous bond register)
                        └──────┘
+
     and the resulting bulk cell is:
+
     .. code-block::
+
                ┌────┐             │
         q0|0⟩ ─┤ Ry ├─────■───────┘        (physical bond)
                └─┬──┘  ┌──┴───┐
                  │     │ K_0j │
         k-1 ─/───■─────┤      ├──────      (full bond register)
                        └──────┘
+
     Args:
         left_boundary (Sequence[np.ndarray]): left-boundary unitary completions
             (``4*chi x 4*chi``).
         bulk (Sequence[np.ndarray]): bulk unitary completions (``2*chi x 2*chi``).
         right_boundary (Sequence[np.ndarray]): right-boundary completions, merged right-to-left.
+
     Returns:
         tuple[list[dict], list[dict]]: the boundary and bulk cells, each a dict with keys
         ``"K00"``, ``"K01"``, ``"theta"``, and ``"V"`` (``None`` once absorbed).
+
     .. seealso:: :func:`~.asymmetric_csd`, :func:`~.boundary_sequential_step`,
         :func:`~.bulk_sequential_step`
     """
@@ -299,19 +317,25 @@ def parallel_synthesis_steps(left_boundary, bulk, right_boundary):
 
 def flag_decompose_multiplexor(K, bond_additional, bond_previous):
     r"""Flag-decompose the multiplexed unitary :math:`K` of Eq. (E.12).
+
     :math:`K` (from `Kottmann et al. <https://arxiv.org/abs/2603.20376>`__) acts on the
     ``bond_additional`` (second) wire and the ``bond_previous`` register, with
     ``bond_additional`` as the most-significant qubit, controlled by the physical-bond wire:
+
     .. code-block::
+
             ───────■───────  (physical bond)
                  ┌─┴─┐
         |0⟩ ─────┤   ├─────  (additional virtual bond)
                  │ K │
         k-1 ──/──┤   ├─────  (previous bond register)
                  └───┘
+
     It factorizes into a flag ⚑ on the register, a multiplexed :math:`R_y` on the second wire,
     a second flag ⚑, and a trailing diagonal :math:`D`:
+
     .. code-block::
+
                                                 ┌───┐
             ──────■─────────■───────────■───────┤   ├──  (physical bond)
                   │       ┌─┴──┐        │       │   │
@@ -319,10 +343,12 @@ def flag_decompose_multiplexor(K, bond_additional, bond_previous):
                 ┌─┴─┐     └─┬──┘      ┌─┴─┐     │   │
         k-1 ─/──┤ ⚑ ├───────■─────────┤ ⚑ ├─────┤   ├──  (previous bond register)
                 └───┘                 └───┘     └───┘
+
     Args:
         K (np.ndarray): the multiplexed unitary (``bond_additional`` as MSB).
         bond_additional (int): the additional virtual-bond (second) wire.
         bond_previous (Sequence[int]): the previous bond register (``k-1`` wires).
+
     Returns:
         tuple: ``(FL, FR0, FR1, DR, theta_csd)`` — the leading flag, the flags controlled on
         ``bond_additional`` = 0/1, the trailing diagonal, and the multiplexed :math:`R_y` angles.
@@ -355,6 +381,7 @@ def flag_decompose_multiplexor(K, bond_additional, bond_previous):
 
 def boundary_sequential_step(cells, aux_wires, phys_wires):
     r"""Sequentially synthesize the growing boundary tensors (Eqs. (E.13)-(E.15)).
+
     Boundary bond dimensions are powers of two (except the last), so the flags are fully
     multiplexed. Returns the merged circuit and the residual diagonal ``delta`` to carry
     into the bulk.
@@ -458,6 +485,7 @@ def cascade_diagonal_into_rz_msq(full_diagonal, wires):
 
 def bulk_sequential_step(cells, delta, aux_wires, phys_wires):
     r"""Sequentially synthesize the bulk tensors, carrying the residual diagonal ``delta``.
+
     Bulk bond dimensions may be non-power-of-two, so the unitaries are fractally embedded at
     the interfaces. Returns the circuit ops and the residual diagonal for the right boundary.
     """
@@ -527,17 +555,21 @@ def bulk_sequential_step(cells, delta, aux_wires, phys_wires):
 @qp.QueuingManager.stop_recording()
 def mps_synthesis(mps_tensors, aux_wires, phys_wires):
     r"""Synthesize a right-canonical matrix product state into a list of operations.
+
     The builder underlying :func:`mps_preparation`: it returns the flag circuit and the
     residual global phase without queuing anything.
+
     Args:
         mps_tensors (Sequence[np.ndarray]): right-canonical MPS tensors, each of shape
             ``(chi_L, d, chi_R)`` (input bond, physical, output bond).
         aux_wires (Sequence): auxiliary (bond) wires; ``ceil(log2(chi))`` of them, for
             maximal bond dimension ``chi``.
         phys_wires (Sequence): physical wires, one per tensor, in circuit order.
+
     Returns:
         tuple[list, complex]: ``(circuit, global_phase)`` — the operations (mostly
         :class:`PartiallyMultiplexedFlag`) and the residual scalar phase.
+
     Raises:
         ValueError: if ``mps_tensors`` is not right-canonical, or has an unsupported
             (non-unimodal) bond profile.

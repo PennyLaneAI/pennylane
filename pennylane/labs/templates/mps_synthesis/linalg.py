@@ -66,6 +66,7 @@ def split_d(d):
 
 def get_fractal_sequence(N):
     r"""Return the fractal ordering of a ``\log_2(N)``-qubit register.
+
     The register is recursively halved and the two child orderings are interleaved
     at each level, yielding a permutation of ``range(N)``. The active ``d`` states are
     the length-``d`` suffix ``fractal_sequence[N - d:]``.
@@ -97,6 +98,7 @@ def get_fractal_sequence(N):
 
 def get_fractal_embedding_states(d, N):
     r"""Return the active and inactive basis indices for a fractal embedding.
+
     The fractal ordering of the ``N`` basis states is split so that the last ``d``
     states are active and the remaining ``N - d`` are inactive.
     Args:
@@ -113,6 +115,7 @@ def get_fractal_embedding_states(d, N):
 
 def embed_unitary(U, N: int, active_indices: list):
     r"""Embed the submatrix ``U`` into an ``N x N`` identity on the active subspace.
+
     ``U`` acts on the basis states given by ``active_indices``; all remaining
     (inactive) basis states are left unchanged (identity).
     Args:
@@ -133,6 +136,7 @@ def embed_unitary(U, N: int, active_indices: list):
 
 def find_mismatched_block_start(block_dims):
     r"""Find the starting state index of the first mismatched block in the second half.
+
     The blocks are split into two equal halves and compared pairwise (block ``i`` in
     the first half against block ``i + num_blocks // 2`` in the second). The returned
     index is the cumulative state offset, within the second half, of the first pair
@@ -166,6 +170,7 @@ def find_mismatched_block_start(block_dims):
 
 def get_active_block_sizes(d, N):
     r"""Compute the sizes of the active blocks in a fractal embedding.
+
     The ``N``-dimensional register is recursively halved, splitting the ``d`` active
     states with a floor-first partition (``p = floor``, ``q = ceil``) until each chunk
     has dimension ``<= 4``. Fully inactive chunks (``curr_d == 0``) are omitted.
@@ -209,6 +214,7 @@ def get_active_block_sizes(d, N):
 
 def shift_csd_one(U, CS, V_H, target_index):
     r"""Shift the uncoupled ``1`` of a Cosine-Sine Decomposition to a target index.
+
     Given a CSD ``U @ CS @ V_H`` with total dimension ``d = 2p + 1`` (so the lone
     uncoupled ``1`` sits at position ``p`` in the ``CS`` matrix), this permutes the
     columns/rows within the second block ``[p, d)`` so the ``1`` lands at
@@ -262,6 +268,7 @@ def shift_csd_one(U, CS, V_H, target_index):
 
 def synthesis_csd(V, shift=False, return_all=False):
     r"""Cosine-Sine Decomposition of a unitary, specialized for fractal-embedded synthesis.
+
     Splits a :math:`d \times d` unitary (via :func:`scipy.linalg.cossin`) into blocks
     ``K00, K01`` / ``K10, K11`` and a multiplexed :math:`R_Y` angle array ``theta``.
     When ``shift=True`` and ``d`` is odd, the uncoupled ``1`` of the cosine-sine block is
@@ -308,6 +315,7 @@ def synthesis_csd(V, shift=False, return_all=False):
 
 def split_diagonal_into_partially_multiplexed_rz(full_diagonal, wires, control_states):
     r"""Factor a diagonal into a partially multiplexed :math:`R_z` and a remainder.
+
     ``full_diagonal`` is MSB-first on ``sorted(wires)``; ``wires[-1]`` is the :math:`R_z`
     target and ``wires[:-1]`` the controls, restricted to ``control_states``. Satisfies
     ``full_diagonal = rz * remaining`` element-wise.
@@ -355,6 +363,7 @@ def split_diagonal_into_partially_multiplexed_rz(full_diagonal, wires, control_s
 
 def split_diagonal_into_control_branches(diag, wires):
     r"""Split a diagonal into its :math:`\vert 0\rangle`- and :math:`\vert 1\rangle`-controlled branches.
+
     ``wires[0]`` is the control qubit (indexed MSB-first on ``sorted(wires)``); the rest
     are targets.
     Args:
@@ -388,6 +397,7 @@ def split_diagonal_into_control_branches(diag, wires):
 
 def get_controlled_unitary_msq(U, wires, control_value, active_indices=None):
     r"""Lift a target operator ``U`` to a full-register operator controlled on ``wires[0]``.
+
     Indexing is MSB-first on ``sorted(wires)``. If ``U`` is smaller than the target
     dimension, ``active_indices`` says which target states it acts on (identity elsewhere).
     A purely diagonal 2D ``U`` is handled via the cheaper diagonal path.
