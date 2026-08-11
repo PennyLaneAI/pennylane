@@ -849,7 +849,7 @@ class DecompGraphSolution:
         >>> with qp.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [PauliRot(0.1, Y, wires=[2]), PauliRot(-0.1, ZY, wires=[0, 2])]
+        [PauliRot(theta=0.1, pauli_word=Y, wires=[2]), PauliRot(theta=-0.1, pauli_word=ZY, wires=[0, 2])]
 
         """
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)

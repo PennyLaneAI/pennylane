@@ -23,6 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import Complex, Int, Wire
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -979,17 +980,18 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    resources[resource_rep(qp.MultiplexerStatePreparation, num_wires=d)] += 1
+    resources[qp.MultiplexerStatePreparation(Complex[2**d], wires=Wire[d])] += 1
 
     # Step 2 in paper (p.7)
-    qrom_params = {
-        "num_bitstrings": num_entries,
-        "num_control_wires": d,
-        "num_target_wires": num_wires,
-        "num_work_wires": d - 1,
-        "clean": True,
-    }
-    resources[resource_rep(qp.QROM, **qrom_params)] += 1
+    resources[
+        qp.QROM(
+            data=Int[num_entries, num_wires],
+            control_wires=Wire[d],
+            target_wires=Wire[num_wires],
+            work_wires=Wire[d - 1],
+            clean=True,
+        )
+    ] += 1
 
     if not identity_encoding:
         ## Step 3 & 4 in paper (p.7). This is an upper bound
