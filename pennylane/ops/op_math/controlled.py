@@ -158,7 +158,9 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
 
-    if active_jit := compiler.active_compiler():
+    if (active_jit := compiler.active_compiler()) and not (
+        isinstance(op, Operator2) and op.is_abstract
+    ):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(
@@ -254,7 +256,8 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
-    return math.concatenate([control_values, base_ctrl_values])
+    control_values = math.array(control_values)
+    return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
 def _is_empty_or_all_true(control_values):
@@ -299,7 +302,8 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
 def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
-    control = Wires(control)
+    if not isinstance(control, AbstractWires):
+        control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
     elif isinstance(control_values, tuple):
@@ -1230,10 +1234,6 @@ def base_to_custom_ctrl_op():
     """
 
     ops_with_custom_ctrl_ops = {
-        (qp.PauliZ, 1): qp.CZ,
-        (qp.PauliZ, 2): qp.CCZ,
-        (qp.PauliY, 1): qp.CY,
-        (qp.CZ, 1): qp.CCZ,
         (qp.SWAP, 1): qp.CSWAP,
         (qp.Hadamard, 1): qp.CH,
         (qp.RX, 1): qp.CRX,

@@ -1958,9 +1958,18 @@ class TestLinearCombinationDifferentiation:
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
 
+    from pennylane.capture.primitives import operator_p
+
     def f(a, b):
         op1 = qp.X._primitive.impl(0, n_wires=1)
-        op2 = qp.Y._primitive.impl(0, n_wires=1)
+        op2 = operator_p.impl(
+            0,
+            op_cls=qp.Y,
+            wire_lens=(1,),
+            hybrid_lens=(),
+            hybrid_trees=(),
+            forward_mask=(),
+        )
         op = qp.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qp.ops.LinearCombination)
 

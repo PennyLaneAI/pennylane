@@ -20,14 +20,18 @@ import copy
 import itertools
 import pickle
 from collections import defaultdict
+from functools import partial
 from string import ascii_lowercase
 
 import numpy as np
 import scipy.sparse
 
 import pennylane as qp
+from pennylane import math
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
@@ -223,12 +227,32 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
-    gate_counts = resources.gate_counts
+    estimated_gate_counts = resources.gate_counts
 
-    with qp.queuing.AnnotatedQueue() as q:
-        rule(*args, **kwargs)
+    if qp.capture.enabled():
+        import jax  # pylint: disable=import-outside-toplevel
 
-    tape = qp.tape.QuantumScript.from_queue(q)
+        # Match each operator model's capture boundary: legacy hyperparameters remain
+        # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
+        if isinstance(op, Operator1):
+            decomposition = partial(rule, **op.hyperparameters)
+            capture_args = op.data
+            capture_kwargs = {"wires": op.wires}
+        else:
+            decomposition = partial(rule, **op.static_args, **op.compilable_args)
+            capture_args = ()
+            capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
+
+        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
+            *capture_args, **capture_kwargs
+        )
+        flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+    else:
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*args, **kwargs)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
@@ -242,23 +266,29 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
+    if qp.capture.enabled():
+        # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are typically
+        # not aware of that, and still produce resource reps of ChangeOpBasis. Therefore, we unroll
+        # the ChangeOpBasis in the resources manually so that it will match the reality.
+        estimated_gate_counts = _unroll_change_op_basis(estimated_gate_counts)
+
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        non_zero_gate_counts = {k: v for k, v in estimated_gate_counts.items() if v > 0}
         _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in gate_counts for op in actual_gate_counts), (
+        assert all(op in estimated_gate_counts for op in actual_gate_counts), (
             "\nGate counts expected from resource function to contain actual gates:\n"
-            f"{list(gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
+            f"{list(estimated_gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
             "Missing in gate counts from resource function:\n"
-            f"{[op for op in actual_gate_counts if op not in gate_counts]}"
+            f"{[op for op in actual_gate_counts if op not in estimated_gate_counts]}"
         )
 
     # Tests that the decomposition produces the same matrix
-    if op.has_matrix and not skip_decomp_matrix_check:
+    if op.has_matrix and not skip_decomp_matrix_check and not _decomp_contains_mcm(rule, params):
         # Add projector to the additional wires (work wires) on the tape
         work_wires = tape.wires - op.wires
         all_wires = op.wires + work_wires
@@ -271,6 +301,26 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll any resource reps of ChangeOpBasis."""
+    new_gate_counts = defaultdict(int)
+    for k, count in gate_counts.items():
+        if not isinstance(k, CompressedResourceOp):
+            new_gate_counts[k] += count
+            continue
+        if k.op_type is not qp.ops.ChangeOpBasis:
+            new_gate_counts[k] += count
+            continue
+        for p in ("compute_op", "target_op", "uncompute_op"):
+            op_rep = k.params[p]
+            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
+                for inner_op, inner_count in op_rep.params["resources"].items():
+                    new_gate_counts[inner_op] += count * inner_count
+            else:
+                new_gate_counts[op_rep] += count
+    return new_gate_counts
 
 
 def _check_matrix(op):
@@ -373,8 +423,10 @@ def _check_eigendecomposition(op):
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
-        decomp_mat = qp.matrix(decomp)
-        original_mat = qp.matrix(op)
+        # The decomposition's wires may be ordered differently than the operator's wires,
+        # so both matrices must be computed in the same wire order.
+        decomp_mat = qp.matrix(decomp, wire_order=op.wires)
+        original_mat = qp.matrix(op, wire_order=op.wires)
         failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
         assert qp.math.allclose(decomp_mat, original_mat), failure_comment
 
@@ -448,12 +500,32 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    # Protect against cases where you have an Operator1 consuming Operator2
-    if isinstance(op, Operator1) and not any(isinstance(sub, Operator2) for sub in data):
-        for d1, d2 in zip(op.data, leaves, strict=True):
-            assert qp.math.allclose(
-                d1, d2
-            ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
+    if isinstance(op, Operator1):
+        # Nested operators can contribute parameters or structural leaves (such as Operator2
+        # wires) that are intentionally absent from the outer legacy ``data`` view. Stop at
+        # nested PennyLane objects and expand only their numerical data. The outer ``data`` may
+        # intentionally omit some nested parameters (for example, ``Evolution`` excludes its
+        # generator's parameters), but every exposed parameter must still occur in pytree order.
+        def nested_pl_object(obj):
+            return obj is not op and isinstance(obj, (Operator, qp.measurements.MeasurementProcess))
+
+        legacy_leaves, _ = flatten(op, is_leaf=nested_pl_object)
+        ordered_data = []
+        for leaf in legacy_leaves:
+            if isinstance(leaf, Operator1):
+                ordered_data.extend(leaf.data)
+            elif isinstance(leaf, Operator2):
+                ordered_data.extend(leaf.dynamic_args.values())
+            elif not isinstance(leaf, qp.measurements.MeasurementProcess):
+                ordered_data.append(leaf)
+
+        ordered_data = iter(ordered_data)
+        for data_item in op.data:
+            if not any(qp.math.allclose(data_item, leaf) for leaf in ordered_data):
+                raise AssertionError(
+                    "data must be the terminal leaves of the pytree in the same order. "
+                    f"Could not find {data_item} in the remaining leaves."
+                )
 
 
 def _check_capture(op):
@@ -519,7 +591,9 @@ def _check_bind_new_parameters(op):
 
 def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
-    new_dyn_args = {k: v * 0.0 for k, v in op.arguments.items() if k in op.dynamic_argnames}
+    new_dyn_args = {
+        k: math.cast_like(v * 0.0, v) for k, v in op.arguments.items() if k in op.dynamic_argnames
+    }
     new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
