@@ -1347,6 +1347,7 @@ def _handle_single_excitation(op: SingleExcitation):
     return [(0.5, 1.0)]
 
 
+@parameter_frequencies.register
 def _handle_pauli_rot(op: PauliRot):
     """Calculates the parameter frequencies for a PauliRot.
 

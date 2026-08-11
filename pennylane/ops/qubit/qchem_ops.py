@@ -251,8 +251,7 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
 # pylint: disable=unused-argument
 def _single_excitation_ppr_resource(phi, wires):
     return {
-        qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 2,
     }
 
 
