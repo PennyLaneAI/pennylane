@@ -364,8 +364,7 @@ def _out_multiplier_with_qft_resources(
         ControlledSequence,
         base_class=ControlledSequence,
         base_params={
-            "base_class": PhaseAdder,
-            "base_params": {"num_x_wires": num_qft_wires, "mod": mod},
+            "base_rep": resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
             "num_control_wires": num_x_wires,
         },
         num_control_wires=num_y_wires,

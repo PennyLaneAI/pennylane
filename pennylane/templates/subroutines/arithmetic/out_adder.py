@@ -291,16 +291,14 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     target_resources[
         resource_rep(
             ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": num_qft_wires, "mod": mod},
+            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
             num_control_wires=num_x_wires,
         )
     ] += 1
     target_resources[
         resource_rep(
             ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": num_qft_wires, "mod": mod},
+            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
             num_control_wires=num_y_wires,
         )
     ] += 1
