@@ -70,28 +70,6 @@ class Node:
     """Backend-specific initialization arguments; empty by default (never ``None``). TODO: add what is recognized here
     """
 
-    # Aliases for Catalyst (``name``/``addr``/``port``/``triple``).
-
-    @property
-    def name(self) -> "str | None":
-        """Alias of :attr:`label`."""
-        return self.label
-
-    @property
-    def addr(self) -> "str | None":
-        """Alias of :attr:`~.Coprocessor.comm_host`, or ``None``."""
-        return getattr(self, "comm_host", None)
-
-    @property
-    def port(self) -> "int | None":
-        """Alias of :attr:`~.Coprocessor.oob_port`, or ``None``."""
-        return getattr(self, "oob_port", None)
-
-    @property
-    def triple(self) -> "str | None":
-        """Cross-compilation triple from :attr:`executor`, or ``None``."""
-        return getattr(getattr(self, "executor", None), "triple", None)
-
     def _fill_backend_lib(self, role: str) -> None:
         """Set ``init_args['backend_lib']`` from :attr:`backend` if not already set."""
         if not self.backend:
