@@ -112,7 +112,6 @@ def _build_alias_tables(probs, mu):
         full ``keep``; these are self-aliased, so the ``keep`` value cancels in the
         constraint above and capping at :math:`2^\mu - 1` is exact.
     """
-
     probs = np.asarray(probs, dtype=float)
     if np.any(probs < 0):
         raise ValueError("probs must be non-negative")
