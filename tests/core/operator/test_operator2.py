@@ -21,7 +21,7 @@ from typing import override
 
 import numpy as np
 import pytest
-from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp, NonParametricOp
+from operator2_utils import CompilableOp, DynOp, FullOp, HybridOp, HybridWireOp, NonParametricOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
@@ -687,6 +687,19 @@ class TestOperatorInit:
         with AnnotatedQueue() as q:
             op = DynOp(0.5, wires=0)
 
+        assert len(q) == 1
+        assert list(q.keys())[0].obj is op
+
+    def test_hybrid_operator_arguments_dequeued_on_init(self):
+        """Test that operator arguments to a hybrid op are removed from the queue,
+        for both ``Operator2`` and legacy ``Operator`` leaves."""
+
+        with AnnotatedQueue() as q:
+            op2_leaf = DynOp(0.5, wires=0)
+            op1_leaf = qp.PauliZ(1)
+            op = HybridOp([op2_leaf, op1_leaf], wires=[0, 1])
+
+        # Both operator leaves are dequeued, leaving only the hybrid op behind.
         assert len(q) == 1
         assert list(q.keys())[0].obj is op
 

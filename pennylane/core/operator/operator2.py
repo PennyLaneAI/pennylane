@@ -387,8 +387,7 @@ class Operator2(metaclass=OperatorMeta):
     # -------------- Legacy Operator compatibility views ----------------------
     # ------------------------------------------------------------------------
     # The following properties provide backwards-compatible read-only views
-    # matching the legacy ``Operator`` API (data, parameters, hyperparameters,
-    # control_wires).
+    # matching the legacy ``Operator`` API (data, parameters, hyperparameters).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
@@ -566,6 +565,10 @@ class Operator2(metaclass=OperatorMeta):
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
+        for h in self.hybrid_args.values():
+            leaves, _ = flatten(h, is_leaf=_is_op)
+            _ = [context.remove(l) for l in leaves if isinstance(l, Operator)]
+
         context.append(self)
         # return self so pre-constructed Observables can be queued and returned in
         # a single statement
@@ -634,7 +637,7 @@ class Operator2(metaclass=OperatorMeta):
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
             leaves = [
-                leaf.map_wires(wire_map) if isinstance(leaf, Operator2) else leaf for leaf in leaves
+                leaf.map_wires(wire_map) if isinstance(leaf, Operator) else leaf for leaf in leaves
             ]
             new_args[n] = unflatten(leaves, tree)
 
@@ -1064,7 +1067,7 @@ class Operator2(metaclass=OperatorMeta):
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             ser_leaves = tuple(
-                l if isinstance(l, (AbstractWires, Operator2, Wires)) else _canonicalize_dynamic(l)
+                l if isinstance(l, (AbstractWires, Operator, Wires)) else _canonicalize_dynamic(l)
                 for l in leaves
             )
             serialized_hybrid.append((ser_leaves, tree))
@@ -1787,7 +1790,9 @@ def _abstract_args_to_symbolic_arrays(bound_args):
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
     """Process a hybrid argument for binding an operator primitive."""
-    partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
+    # We don't use is_leaf=_is_op because we're deliberately not supporting program
+    # capture with legacy operators mixed with new operators
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator2))
     _ = pop_op_eqns(filter(_is_op, partial_leaves))
 
     leaves, tree = flatten(hybrid_val)
@@ -1842,8 +1847,8 @@ def _is_wires(val: Any) -> bool:
 
 
 def _is_op(val: Any) -> bool:
-    """Check whether a value is an Operator2 object."""
-    return isinstance(val, Operator2)
+    """Check whether a value is an Operator (legacy or new)."""
+    return isinstance(val, Operator)
 
 
 def _canonicalize_dynamic(d, op_name=None) -> Hashable:
