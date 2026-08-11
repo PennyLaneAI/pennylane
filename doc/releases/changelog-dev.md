@@ -873,7 +873,7 @@
   [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   [(#9984)](https://github.com/PennyLaneAI/pennylane/pull/9984)
   - Templates are ported:
-    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`, `~.SelectPauliRot`
+    - `~.BasisRotation`, `~.MultiplexerStatePreparation`, `~.QROM`, `~.QFT`, `~.FlipSign`, `~.TemporaryAND`, `~.SelectPauliRot`, `~.GQSP`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -882,6 +882,7 @@
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
+  [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.

@@ -319,7 +319,7 @@ class ParticleConservingU1(Operation):
         >>> pprint(ops)
         [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
          CZ(wires=['a', 'b']),
-         CRot(-0.30000001192092896, 3.141592653589793, 0.30000001192092896, wires=['a', 'b']),
+         CRot(-0.300..., 3.141..., 0.300..., wires=['a', 'b']),
          PhaseShift(tensor(-0.3000), wires=['b']),
          CNOT(wires=['a', 'b']),
          PhaseShift(tensor(0.3000), wires=['b']),
@@ -328,7 +328,7 @@ class ParticleConservingU1(Operation):
          CZ(wires=['b', 'a']),
          CRot(0, 2.0, 0, wires=['b', 'a']),
          CZ(wires=['a', 'b']),
-         CRot(0.30000001192092896, 3.141592653589793, -0.30000001192092896, wires=['a', 'b']),
+         CRot(0.300..., 3.141..., -0.300..., wires=['a', 'b']),
          PhaseShift(tensor(0.3000), wires=['b']),
          CNOT(wires=['a', 'b']),
          PhaseShift(tensor(-0.3000), wires=['b']),
