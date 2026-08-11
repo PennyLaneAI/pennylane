@@ -27,13 +27,17 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-import triton
-import triton.language as tl
 from numpy.typing import ArrayLike
 
-from .algorithms import _decode_one
-from .persistent_kernel import _persistent_decoder_kernel
-from .triton_so_builder import _build_so
+try:
+    import triton
+    import triton.language as tl
+
+    from .algorithms import _decode_one
+    from .persistent_kernel import _persistent_decoder_kernel
+    from .triton_so_builder import _build_so
+except ImportError as exc:
+    raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
 
 def _build_triton_decoder(

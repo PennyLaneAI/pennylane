@@ -16,8 +16,11 @@
 
 import math
 
-import triton
-import triton.language as tl
+try:
+    import triton
+    import triton.language as tl
+except ImportError as exc:
+    raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
 
 @triton.jit

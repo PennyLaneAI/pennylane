@@ -14,8 +14,11 @@
 
 """Persistent Triton kernel for backline decoder dispatch."""
 
-import triton
-import triton.language as tl
+try:
+    import triton
+    import triton.language as tl
+except ImportError as exc:
+    raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
 K_RING_SLOTS = tl.constexpr(256)  # can store 256 elements
 PAYLOAD_SLOT_WORDS = tl.constexpr(8)  # sizeof(PayloadSlot) / sizeof(u64)

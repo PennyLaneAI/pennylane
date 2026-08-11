@@ -52,9 +52,12 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-import triton
-from triton.backends.compiler import GPUTarget
-from triton.tools import compile as triton_compile_tool
+try:
+    import triton
+    from triton.backends.compiler import GPUTarget
+    from triton.tools import compile as triton_compile_tool
+except ImportError as exc:
+    raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
 
 class _HashableConstexprTuple(tuple):

@@ -14,10 +14,13 @@
 
 """Postprocessing kernels for Triton-based syndrome decoding."""
 
-import triton
-import triton.language as tl
+try:
+    import triton
+    import triton.language as tl
 
-from .bp_iters import _sum_product_posteriors
+    from .bp_iters import _sum_product_posteriors
+except ImportError as exc:
+    raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
 
 @triton.jit
