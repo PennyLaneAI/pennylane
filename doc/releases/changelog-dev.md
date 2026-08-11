@@ -661,6 +661,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.BasisEmbedding` is now a direct alias of :class:`~.BasisState`.
+  [(#9980)](https://github.com/PennyLaneAI/pennylane/pull/9980)
+
 * Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
   [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
 

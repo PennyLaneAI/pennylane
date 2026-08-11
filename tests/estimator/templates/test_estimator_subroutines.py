@@ -515,7 +515,7 @@ class TestSelectOnlyQRAM:
                         ),
                         2,
                     ),
-                    GateCount(resource_rep(qre.BasisEmbedding, {"num_wires": 2}), 1),
+                    GateCount(resource_rep(qre.BasisState, {"num_wires": 2}), 1),
                 ],
             ),
         ),
