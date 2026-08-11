@@ -98,16 +98,24 @@ class BasisState(StatePrepBase2):
 
     def __init__(self, state: TensorLike | Sequence[int | bool], wires: WiresLike) -> None:
         wires = Wires(wires)
+        canonicalized_state = self._canonicalize_state(state, len(wires))
+        super().__init__(canonicalized_state, wires=wires)
+
+    def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
+        super().__abstract_init__(Int[len(wires)], wires)
+
+    def _canonicalize_state(
+        self, state: TensorLike | Sequence[int | bool], num_wires: int
+    ) -> Sequence[int]:
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
 
         abstract_state = qp.math.is_abstract(state)
 
         if not math.shape(state) and abstract_state:
-            bin = 2 ** math.arange(len(wires))[::-1]
+            bin = 2 ** math.arange(num_wires)[::-1]
             state = qp.math.where((state & bin) > 0, 1, 0)
 
-        num_wires = len(wires)
         shape = math.shape(state)
         if len(shape) != 1:
             raise ValueError(f"State must be one-dimensional; got shape {shape}.")
@@ -124,11 +132,7 @@ class BasisState(StatePrepBase2):
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
 
-        state = qp.math.cast(state, int)
-        super().__init__(state, wires=wires)
-
-    def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
-        super().__abstract_init__(Int[len(wires)], wires)
+        return qp.math.cast(state, int)
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
