@@ -268,7 +268,7 @@ def _compile_kernel(
             "AOT compiling kernels with profile scratch requirements is not yet implemented"
         )
 
-    func_name = kernel.__name__
+    func_name = f"{kernel.__name__}_{ast_source.hash()[:12]}"
     kernel_binary = compile_result.asm[backend_impl.binary_ext]
     binary_hex = str(binascii.hexlify(kernel_binary))[2:-1]
     if backend == "cuda":
@@ -310,7 +310,7 @@ def _compile_kernel(
 
     with tempfile.TemporaryDirectory(prefix="triton_shared_aot_") as temp_dir:
         tmpdir = Path(temp_dir)
-        out_base = tmpdir / kernel.__name__
+        out_base = tmpdir / func_name
         generated_c = None
         template_dir = Path(triton_compile_tool.__file__).parent / "extra" / target_obj.backend
         for template_path in template_dir.glob("compile.*"):

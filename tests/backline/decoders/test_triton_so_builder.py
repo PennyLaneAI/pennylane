@@ -17,6 +17,7 @@
 # pylint: disable=protected-access,wrong-import-position,broad-exception-caught
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -210,3 +211,64 @@ class TestBuildSo:
         )
 
         assert seen["cmd"][0] == "hipcc-from-env"
+
+    def test_compile_kernel_suffixes_generated_symbol_with_ast_hash(self, monkeypatch):
+        """It should derive the launcher symbol from the Triton AST hash."""
+
+        def _ast_source_init(self, fn, constexprs, signature, attrs):
+            self.fn = fn
+            self.constants = constexprs
+            self.signature = signature
+            self.attrs = attrs
+
+        def _ast_hash(_self):
+            return "abcdef1234567890"
+
+        def _create_binder(_self):
+            return None
+
+        def _parse_options(_self, _):
+            return SimpleNamespace()
+
+        fake_ast_source = type(
+            "FakeASTSource",
+            (),
+            {"__init__": _ast_source_init, "hash": _ast_hash},
+        )
+        fake_kernel = type(
+            "FakeKernel",
+            (),
+            {
+                "__name__": "decoder_kernel",
+                "arg_names": ["ring_u64_ptr"],
+                "ASTSource": fake_ast_source,
+                "create_binder": _create_binder,
+            },
+        )()
+        fake_backend = type(
+            "FakeBackend",
+            (),
+            {"binary_ext": "cubin", "parse_options": _parse_options},
+        )()
+        compile_result = SimpleNamespace(
+            metadata=SimpleNamespace(shared=0, profile_scratch_size=0, global_scratch_size=0),
+            asm={"cubin": b"\x00\x01"},
+        )
+
+        monkeypatch.setattr(builder.triton.compiler, "make_backend", lambda _: fake_backend)
+        monkeypatch.setattr(builder.triton, "compile", lambda *args, **kwargs: compile_result)
+
+        backend, func_name, generated_c = builder._compile_kernel(
+            fake_kernel,
+            signature={"ring_u64_ptr": "*u64"},
+            constexpr={},
+            grid=(1, 1, 1),
+            platform="cuda:80:32",
+            num_warps=1,
+            num_stages=1,
+        )
+
+        assert backend == "cuda"
+        assert func_name == "decoder_kernel_abcdef123456"
+        assert func_name in generated_c.read_text(encoding="utf-8")
+        generated_c.unlink(missing_ok=True)

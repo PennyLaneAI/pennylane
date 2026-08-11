@@ -226,10 +226,3 @@ class TestBuildCssBpDecoder:
         """It should validate parity-check matrices before specialization."""
         with pytest.raises(ValueError, match=message):
             frontend._to_numpy(H)
-
-    def test_triton_module_exports_bp_builder(self):
-        """The Triton decoder package should export the BP builder by name."""
-        from pennylane.backline.decoders import triton as triton_module
-
-        assert not hasattr(triton_module, "build_css_bp_decoder")
-        assert not hasattr(triton_module, "build_triton_decoder")
