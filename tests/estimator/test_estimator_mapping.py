@@ -102,7 +102,7 @@ class TestMapToResourceOp:
             ),
             (
                 qp.BasisEmbedding([0, 1, 0], wires=[0, 1, 2]),
-                re_temps.BasisEmbedding(num_wires=3, wires=[0, 1, 2]),
+                re_ops.BasisState(num_wires=3, wires=[0, 1, 2]),
             ),
             # Single-Qubit Gates
             (qp.Hadamard(0), re_ops.Hadamard()),
