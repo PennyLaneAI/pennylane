@@ -93,7 +93,7 @@ class TestDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert_eqn_matches_op(jaxpr.eqns[0], qp.RZ)
-        assert jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.RY)
         assert_eqn_matches_op(jaxpr.eqns[2], qp.RZ)
 
     def test_returned_op_not_decomposed(self):
@@ -343,7 +343,7 @@ class TestDecomposeInterpreter:
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         assert len(inner_jaxpr.eqns) == 3
         assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RZ)
-        assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RY)
         assert_eqn_matches_op(inner_jaxpr.eqns[2], qp.RZ)
 
     def test_cond_higher_order_primitive(self):
@@ -418,7 +418,7 @@ class TestDecomposeInterpreter:
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 3
         assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RZ)
-        assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RY)
         assert_eqn_matches_op(inner_jaxpr.eqns[2], qp.RZ)
 
     def test_while_loop_higher_order_primitive(self):
@@ -441,7 +441,7 @@ class TestDecomposeInterpreter:
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 4
         assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RZ)
-        assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RY)
         assert_eqn_matches_op(inner_jaxpr.eqns[2], qp.RZ)
 
     def test_qnode_higher_order_primitive(self):
@@ -460,7 +460,7 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert_eqn_matches_op(qfunc_jaxpr.eqns[0], qp.RZ)
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RY)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RZ)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[3], qp.PauliZ)
         assert qfunc_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
@@ -486,7 +486,7 @@ class TestDecomposeInterpreter:
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert_eqn_matches_op(qfunc_jaxpr.eqns[0], qp.RZ)
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RY)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RZ)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[3], qp.PauliZ)
         assert qfunc_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
@@ -634,7 +634,7 @@ def test_decompose_plxpr_to_plxpr():
     assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
     assert_eqn_matches_op(transformed_jaxpr.eqns[0], qp.RZ)
-    assert transformed_jaxpr.eqns[1].primitive == qp.RY._primitive
+    assert_eqn_matches_op(transformed_jaxpr.eqns[1], qp.RY)
     assert_eqn_matches_op(transformed_jaxpr.eqns[2], qp.RZ)
     assert_eqn_matches_op(transformed_jaxpr.eqns[3], qp.PauliZ)
     assert transformed_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive

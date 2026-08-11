@@ -404,7 +404,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RY
-        assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RY)
         assert len(inner_jaxpr.eqns) == 2
 
     def test_ctrl_consts(self):
@@ -444,7 +444,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         branch1 = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(branch1.eqns) == 2
-        assert branch1.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(branch1.eqns[1], qp.RY)
 
         branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
         assert len(branch2.eqns) == 2
