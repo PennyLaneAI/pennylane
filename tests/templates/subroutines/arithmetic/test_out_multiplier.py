@@ -128,7 +128,7 @@ def test_map_wires_preserves_output_wires_zeroed():
     op = OutMultiplier([0], [1], [2, 3], output_wires_zeroed=True)
     mapped_op = op.map_wires({0: 4, 1: 5, 2: 6, 3: 7})
 
-    assert mapped_op.hyperparameters["output_wires_zeroed"] is True
+    assert mapped_op.arguments["output_wires_zeroed"] is True
 
 
 def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False):
@@ -367,7 +367,7 @@ class TestOutMultiplier:
             x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=True
         )
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:
@@ -411,7 +411,7 @@ class TestOutMultiplier:
         with output_wires_zeroed=False (default)."""
         op = qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:

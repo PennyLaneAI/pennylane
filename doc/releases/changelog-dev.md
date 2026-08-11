@@ -858,7 +858,7 @@
     - `~.DiagonalQubitUnitary`
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   - Templates are ported:
-    - `~.BasisRotation`, `~.QROM`, `~.QFT`
+    - `~.BasisRotation`, `~.QROM`, `~.QFT`, `~.OutMultiplier`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)

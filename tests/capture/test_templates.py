@@ -1431,17 +1431,9 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.OutMultiplier._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+        assert_eqn_matches_op(eqn, qp.OutMultiplier)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.OutMultiplier(**kwargs))
 
     def test_out_adder(self):
         """Test the primitive bind call of OutAdder."""
