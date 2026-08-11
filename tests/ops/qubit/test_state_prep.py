@@ -222,6 +222,25 @@ class TestStandardValidityBasisState:
             assert all(isinstance(op, qp.X) for op in tape)
 
 
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+def test_ml_interface(interface):
+    """Tests all the ml interfaces."""
+
+    state = qp.math.array([0, 1], like=interface)
+
+    dev = qp.device("default.qubit", wires=2)
+
+    @qp.qnode(dev)
+    def circuit(state):
+        qp.BasisState(state, wires=range(2))
+        return qp.state()
+
+    res = circuit(state)
+    exp = qp.math.array([0, 1, 0, 0])  # |01>
+    assert qp.math.allclose(res, exp)
+
+
 @pytest.mark.parametrize(
     "op",
     [
