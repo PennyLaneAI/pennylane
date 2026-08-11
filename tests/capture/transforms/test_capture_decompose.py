@@ -18,7 +18,6 @@
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
 
 jax = pytest.importorskip("jax")
 
@@ -260,28 +259,18 @@ class TestDecomposeInterpreter:
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
-            qp.ctrl(qp.RX(x, 0), 1)
+            qp.ctrl(qp.RX(x, 0), [1, 2])
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RX)
-        assert jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
+        assert jaxpr.eqns[0].params["n_ctrls"] == 2
 
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
-            op_eqns = [
-                eqn
-                for eqn in transformed_jaxpr.eqns
-                if eqn.outvars[0].aval == qp.capture.AbstractOperator()
-                or eqn.primitive == operator_p
-            ]
-            expected_ops = [type(op) for op in qp.ctrl(qp.RX(*args, 0), 1).decomposition()]
-            for eqn, expected_op_type in zip(op_eqns, expected_ops, strict=True):
-                if issubclass(expected_op_type, Operator2):
-                    assert_eqn_matches_op(eqn, expected_op_type)
-                else:
-                    assert eqn.primitive == expected_op_type._primitive
+            tape = qp.tape.plxpr_to_tape(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *args)
+            assert all(type(op) in gate_set for op in tape.operations)
         else:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
@@ -299,8 +288,8 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RX)
-        assert jaxpr.eqns[-1].primitive == qp.ops.Adjoint._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
+        assert jaxpr.eqns[0].params["adjoint"] is True
 
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
