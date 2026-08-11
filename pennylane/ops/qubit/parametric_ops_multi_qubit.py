@@ -931,7 +931,7 @@ def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
 
 @register_resources(_decompose_pcphase_resource)
 def _decompose_pcphase(phi: TensorLike, dim: int, wires: WiresLike):
-    """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates.
+    r"""Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates.
     
     In short, this decomposition relies on decomposing the generator (see :meth:`~.generator`)
     of the ``PCPhase`` gate into generators of multicontrolled :class:`~.PhaseShift` gates,
