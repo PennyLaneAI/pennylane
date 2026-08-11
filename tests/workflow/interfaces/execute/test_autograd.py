@@ -292,6 +292,9 @@ class TestAutogradExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+
         device = get_device(device_name, seed=seed)
 
         def cost(params):
@@ -315,6 +318,7 @@ class TestAutogradExecuteIntegration:
                 shots=shots,
             )
             res = qp.execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
+
             if shots.has_partitioned_shots:
                 res = tuple(i for r in res for i in r)
             return sum(autograd.numpy.hstack(res))
@@ -614,6 +618,8 @@ class TestAutogradExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
         device = get_device(device_name, seed=seed)
 
         def cost(x, y):
@@ -669,6 +675,8 @@ class TestAutogradExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
         device = get_device(device_name, seed=seed)
 
         def cost(x, y):

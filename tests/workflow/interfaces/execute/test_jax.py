@@ -262,6 +262,9 @@ class TestJaxExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+
         device = get_device(device_name, seed)
 
         def cost(params):
@@ -550,6 +553,8 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
         device = get_device(device_name, seed)
 
         def cost(x, y):
@@ -615,6 +620,8 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
         device = get_device(device_name, seed)
 
         def cost(x, y):

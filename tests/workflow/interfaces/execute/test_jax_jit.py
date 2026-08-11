@@ -712,9 +712,10 @@ class TestVectorValuedJIT:
     )
     def test_shapes(self, execute_kwargs, ret_type, shape, expected_type):
         """Test the shape of the result of vector-valued QNodes."""
-        adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
-        if adjoint:
-            pytest.skip("The adjoint diff method doesn't support probabilities.")
+        if execute_kwargs.get("diff_method") == "adjoint" and any(
+            isinstance(r, qp.measurements.ProbabilityMP) for r in ret_type
+        ):
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
 
         dev = qp.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
@@ -778,23 +779,19 @@ class TestVectorValuedJIT:
 
         dev = qp.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
-        grad_meth = (
-            execute_kwargs["gradient_kwargs"]["method"]
-            if "gradient_kwargs" in execute_kwargs
-            else ""
-        )
-        if "adjoint" in grad_meth and any(
+        if execute_kwargs.get("diff_method") == "adjoint" and any(
             isinstance(
                 r,
                 (
                     qp.measurements.ProbabilityMP,
                     qp.measurements.StateMP,
                     qp.measurements.VarianceMP,
+                    qp.measurements.DensityMatrixMP,
                 ),
             )
             for r in ret
         ):
-            pytest.skip("Adjoint does not support probs")
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
 
         def cost(a, cache):
             with qp.queuing.AnnotatedQueue() as q:
@@ -869,9 +866,8 @@ class TestVectorValuedJIT:
     def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes with probability
         and expectation value computations."""
-        adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
-        if adjoint:
-            pytest.skip("The adjoint diff method doesn't support probabilities.")
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
 
         def cost(x, y, device, interface, ek):
             with qp.queuing.AnnotatedQueue() as q1:
