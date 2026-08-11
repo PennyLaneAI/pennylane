@@ -34,12 +34,12 @@ def _decode_one(
         syndrome (u64): Packed syndrome bitmask. Bit ``i`` stores check ``i``.
         H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
             syndrome bit ``i``, and column ``j`` matches correction bit ``j``.
-        postprocess (str): Postprocessing rule to apply to the posterior LLRs.
-        prob (float): Prior error probability assigned to each variable.
+        postprocess (str): Postprocessing rule to apply to the posterior LLRs
+        prob (float): Prior error probability assigned to each qubit.
         num_iters (int): Number of belief-propagation iterations.
 
     Returns:
-        u64: Packed correction mask. Bit ``j`` targets variable ``j``.
+        u64: Packed correction mask. Bit ``j`` corresponds to qubit ``j``.
     """
     syndrome = tl.cast(syndrome, tl.uint64)
 
@@ -51,10 +51,10 @@ def _decode_one(
 
 @triton.jit
 def _hard_decision(posterior_llrs):
-    """Pack negative posterior LLRs into a correction mask.
+    """Pack negative posterior log likelihood ratios (LLR) into a correction mask.
 
     Args:
-        posterior_llrs (tuple[float]): Posterior LLRs, one per variable.
+        posterior_llrs (tuple[float]): Posterior LLRs, one per qubit.
 
     Returns:
         u64: Packed correction mask with bit ``i`` set when ``posterior_llrs[i] < 0``.
@@ -72,11 +72,11 @@ def _osd(posterior_llrs, syndrome):
     """Build an order-zero one-bit correction for a nonzero syndrome.
 
     Args:
-        posterior_llrs (tuple[float]): Posterior LLRs, one per variable.
+        posterior_llrs (tuple[float]): Posterior LLRs, one per qubit.
         syndrome (u64): Packed syndrome bitmask.
 
     Returns:
-        u64: One-hot correction mask for the most likely variable, or ``0`` when
+        u64: One-hot correction mask for the most likely qubit, or ``0`` when
             the syndrome is zero.
     """
     one = tl.cast(1, tl.uint64)

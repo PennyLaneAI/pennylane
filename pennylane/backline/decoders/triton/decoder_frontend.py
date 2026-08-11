@@ -196,7 +196,7 @@ def _to_numpy(H: ArrayLike) -> np.ndarray:
 
     Raises:
         ValueError: If ``H`` is empty, non-binary, not two-dimensional, or
-            exceeds the current 64-check or 64-variable packing limit.
+            exceeds the current 64-parity-checks or 64-qubits packing limit.
     """
     matrix = np.asarray(H)
     if matrix.ndim != 2:
@@ -210,7 +210,7 @@ def _to_numpy(H: ArrayLike) -> np.ndarray:
         raise ValueError(f"H has {matrix.shape[0]} checks, but Triton decoder supports at most 64")
     if matrix.shape[1] > 64:
         raise ValueError(
-            f"H has {matrix.shape[1]} variables, but Triton decoder supports at most 64"
+            f"H has {matrix.shape[1]} partiy checks, but Triton decoder supports at most 64"
         )
     return matrix
 

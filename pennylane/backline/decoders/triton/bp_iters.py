@@ -20,7 +20,6 @@ import triton
 import triton.language as tl
 
 
-# Adapted from Pennylane Blog: https://pennylane.ai/demos/tutorial_bp_catalyst
 @triton.jit
 def _sum_product_posteriors(
     syndrome,
@@ -30,15 +29,17 @@ def _sum_product_posteriors(
 ):
     """Compute posterior LLRs for one packed syndrome.
 
+    Adapted from Pennylane Blog: https://pennylane.ai/demos/tutorial_bp_catalyst
+
     Args:
         syndrome (u64): Packed syndrome bitmask. Bit ``i`` stores check ``i``.
         H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
-            syndrome bit ``i``, and column ``j`` matches variable ``j``.
-        prob (float): Prior error probability assigned to each variable.
+            syndrome bit ``i``, and column ``j`` corresponds to qubit ``j``.
+        prob (float): Prior error probability assigned to each qubit.
         num_iters (int): Number of belief-propagation iterations.
 
     Returns:
-        tuple[float]: Posterior LLRs, one per variable.
+        tuple[float]: Posterior LLRs, one per qubit.
     """
     prior_llr: tl.constexpr = _llr_from_p(prob)
     num_checks: tl.constexpr = len(H)
