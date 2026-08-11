@@ -267,13 +267,11 @@ class Expression:
             return NotImplemented
 
         vars = self._vars
+        new_data = self._data.copy()
 
         if isinstance(other, int):
-            new_data = self._data.copy()
             new_data[()] = new_data.get((), 0) + other
-
         else:
-            new_data = self._data.copy()
             for other_vars, coeff in other._data.items():
                 new_val = new_data.get(other_vars, 0) + coeff
                 if new_val == 0:
