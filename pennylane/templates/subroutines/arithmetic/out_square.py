@@ -26,7 +26,6 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
@@ -320,13 +319,8 @@ def _out_square_with_adder_resources(
     for i in range(output_wires_zeroed, min(n, m)):
         num_out = min(m - i, n + 1) if output_wires_zeroed else m - i
         resources[CNOT] += 2
-        add_params = {"num_x_wires": n, "num_y_wires": num_out, "num_work_wires": num_out - 1}
-        ctrl_params = {
-            "num_control_wires": 1,
-            "num_work_wires": num_work_wires - num_out,
-            "work_wire_type": "zeroed",
-        }
-        c_add_rep = controlled_resource_rep(SemiAdder, base_params=add_params, **ctrl_params)
+        add_base = SemiAdder(Wire[n], Wire[num_out], Wire[num_out - 1])
+        c_add_rep = _ctrl_abstract(add_base, Wire[1], Wire[num_work_wires - num_out], "zeroed")
         resources[c_add_rep] += 1
     return dict(resources)
 
@@ -430,7 +424,7 @@ def _out_square_with_caddsub_resources(
     # SemiAdder of x_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
         size = min(m - i, n + 1) if output_wires_zeroed else m - i
-        adder_resources = _semi_adder_resources(num_x_wires=n, num_y_wires=size)
+        adder_resources = _semi_adder_resources(Wire[n], Wire[size])
         for key, value in adder_resources.items():
             resources[key] += value
 
@@ -446,15 +440,13 @@ def _out_square_with_caddsub_resources(
     # Add (2^n-1-x) + 1
 
     resources[X] += 6 + 2 * n
-    adder_resources = _semi_adder_resources(num_x_wires=n, num_y_wires=m)
+    adder_resources = _semi_adder_resources(Wire[n], Wire[m])
     for key, value in adder_resources.items():
         resources[key] += value
 
     # Add 2^(n+1) x if 2^m > 2^(n+1) (otherwise it just vanishes in the modulus)
     if m > n + 1:
-        resources[
-            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=m - n - 1, num_work_wires=m - n - 2)
-        ] += 1
+        resources[SemiAdder(Wire[n], Wire[m - n - 1], Wire[m - n - 2])] += 1
 
     return dict(resources)
 
