@@ -23,7 +23,8 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Complex, Int, Wire
+from pennylane.typing import Complex, Int, TensorLike, Wire
+from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -883,12 +884,69 @@ class SumOfSlatersPrep(Operator2):
     """
 
     dynamic_argnames = ("coefficients",)
-    wire_names = ("wires",)
+    wire_argnames = (
+        "wires",
+        "enumeration_wires",
+        "identification_wires",
+        "qrom_work_wires",
+        "mcx_cache_wires",
+    )
     compilable_argnames = ("indices",)
     arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
 
-    def __init__(self, coefficients, wires, indices):
-        super().__init__(coefficients, wires, indices)
+    def __init__(
+        self,
+        coefficients: TensorLike,
+        wires: WiresLike,
+        indices: tuple,
+        enumeration_wires: WiresLike = (),
+        identification_wires: WiresLike = (),
+        qrom_work_wires: WiresLike = (),
+        mcx_cache_wires: WiresLike = (),
+    ):
+        n = 1 if isinstance(wires, int) else len(wires)
+        num_entries = len(indices)
+        v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+
+        if num_entries != 1:
+            _, data = _preprocess(v_bits, wires)
+
+            # pylint: disable-next=protected-access
+            sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
+
+            if len(wires) != sizes["wires"]:
+                raise ValueError(
+                    f"Number of wires {len(wires)} does not match the required number of wires {sizes['wires']}"
+                )
+            if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
+                raise ValueError(
+                    f"Number of enumeration wires {len(enumeration_wires)} does not match the required number of enumeration wires {sizes['enumeration_wires']}"
+                )
+            if (
+                len(identification_wires) > 0
+                and len(identification_wires) != sizes["identification_wires"]
+            ):
+                raise ValueError(
+                    f"Number of identification wires {len(identification_wires)} does not match the required number of identification wires {sizes['identification_wires']}"
+                )
+            if len(qrom_work_wires) > 0 and len(qrom_work_wires) != sizes["qrom_work_wires"]:
+                raise ValueError(
+                    f"Number of qrom work wires {len(qrom_work_wires)} does not match the required number of qrom work wires {sizes['qrom_work_wires']}"
+                )
+            if len(mcx_cache_wires) > 0 and len(mcx_cache_wires) != sizes["mcx_cache_wires"]:
+                raise ValueError(
+                    f"Number of mcx cache wires {len(mcx_cache_wires)} does not match the required number of mcx cache wires {sizes['mcx_cache_wires']}"
+                )
+
+        super().__init__(
+            coefficients,
+            wires,
+            indices,
+            enumeration_wires,
+            identification_wires,
+            qrom_work_wires,
+            mcx_cache_wires,
+        )
 
     @staticmethod
     def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
@@ -962,7 +1020,7 @@ class SumOfSlatersPrep(Operator2):
 
 
 # pylint: disable-next=unused-argument
-def _sos_state_prep_resources(coefficients, wires, indices):
+def _sos_state_prep_resources(coefficients, wires, indices, **_):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
 
@@ -1022,7 +1080,7 @@ def _sos_state_prep_resources(coefficients, wires, indices):
 
 
 # pylint: disable-next=unused-argument
-def _sos_state_prep_work_wires(coefficients, wires, indices):
+def _sos_state_prep_work_wires(coefficients, wires, indices, **_):
     """See SumOfSlatersPrep.required_register_sizes for details."""
     # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
@@ -1171,9 +1229,23 @@ def _sos_state_prep_with_wires(
 
 
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-def _sos_state_prep(coefficients, wires, indices, **__):
+def _sos_state_prep(
+    coefficients,
+    wires,
+    indices,
+    enumeration_wires=(),
+    identification_wires=(),
+    qrom_work_wires=(),
+    mcx_cache_wires=(),
+):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     n = 1 if isinstance(wires, int) else len(wires)
+    num_enum, num_id, num_qrom, num_mcx = (
+        len(enumeration_wires),
+        len(identification_wires),
+        len(qrom_work_wires),
+        len(mcx_cache_wires),
+    )
     num_entries = len(indices)
     v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
     if num_entries == 1:
@@ -1185,14 +1257,47 @@ def _sos_state_prep(coefficients, wires, indices, **__):
     selected_wires, data = _preprocess(v_bits, wires)
     # pylint: disable-next=protected-access
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data.r, n)
-    all_allocate_wires = sum(sizes.values()) - n
-    with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
-        start = 0
-        # There is no implementation of QROM with allocate yet, so we allocate its work wires here
-        names = ["enumeration_wires", "identification_wires", "qrom_work_wires", "mcx_cache_wires"]
-        all_wires = {name: allocated[start : (start := start + sizes[name])] for name in names}
-        all_wires["wires"] = wires
-        all_wires["selected_wires"] = selected_wires
+    all_allocate_wires = sum(sizes.values()) - n - num_enum - num_id - num_qrom - num_mcx
+
+    if all_allocate_wires > 0:
+        with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
+            start = 0
+            # There is no implementation of QROM with allocate yet, so we allocate its work wires here
+            names = [
+                "enumeration_wires",
+                "identification_wires",
+                "qrom_work_wires",
+                "mcx_cache_wires",
+            ]
+            all_wires = {}
+
+            def _allocate_conditionally(wires_arg, name, start):
+                if sizes[name] == 0:
+                    all_wires[name] = []
+                if len(wires_arg) > 0:
+                    all_wires[name] = wires_arg
+                else:
+                    all_wires[name] = allocated[start : (start := start + sizes[name])]
+                return start
+
+            start = _allocate_conditionally(enumeration_wires, "enumeration_wires", start)
+            start = _allocate_conditionally(identification_wires, "identification_wires", start)
+            start = _allocate_conditionally(qrom_work_wires, "qrom_work_wires", start)
+            start = _allocate_conditionally(mcx_cache_wires, "mcx_cache_wires", start)
+
+            all_wires["wires"] = wires
+            all_wires["selected_wires"] = selected_wires
+            data = (coefficients, v_bits, data)
+            _sos_state_prep_with_wires(data, **all_wires)
+    else:
+        all_wires = {
+            "enumeration_wires": enumeration_wires,
+            "identification_wires": identification_wires,
+            "qrom_work_wires": qrom_work_wires,
+            "mcx_cache_wires": mcx_cache_wires,
+            "wires": wires,
+            "selected_wires": selected_wires,
+        }
         data = (coefficients, v_bits, data)
         _sos_state_prep_with_wires(data, **all_wires)
 

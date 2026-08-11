@@ -15,12 +15,14 @@
 Unit tests for the SumOfSlatersPrep template.
 """
 
+import copy
 from itertools import combinations, product
 
 import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane import math
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
@@ -35,6 +37,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
+from pennylane.wires import Wires
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -502,31 +505,66 @@ class TestSumOfSlatersPrep:
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
 
+        v_bits = math.int_to_binary(np.array(indices), num_wires).T
+        if num_entries != 1:
+            _, data = _preprocess(v_bits, range(num_wires))
+            num_bits = data.r
+        else:
+            selector_ids, _ = select_sos_rows(v_bits)
+            num_bits = len(selector_ids)
+
+        # pylint: disable-next=protected-access
+        sizes = SumOfSlatersPrep._required_register_sizes_from_nums(
+            num_entries, num_bits, num_wires
+        )
+
+        all_wires = {}
+
+        def _allocate_conditionally(size, name, start):
+            if size == 0:
+                all_wires[name] = []
+            else:
+                all_wires[name] = list(range(start, (start := start + size)))
+            return start
+
+        start = _allocate_conditionally(sizes["enumeration_wires"], "enumeration_wires", num_wires)
+        start = _allocate_conditionally(
+            sizes["identification_wires"], "identification_wires", start
+        )
+        start = _allocate_conditionally(sizes["qrom_work_wires"], "qrom_work_wires", start)
+        start = _allocate_conditionally(sizes["mcx_cache_wires"], "mcx_cache_wires", start)
+
         for rule in list_decomps(SumOfSlatersPrep):
 
-            @qp.qnode(qp.device("lightning.qubit"))
-            def func():
-                # pylint: disable=cell-var-from-loop
-                # Make sure that the output state length is at least 2**num_wires
-                qp.Identity(range(num_wires))
-                rule(coefficients, wires=range(num_wires), indices=indices)
-                return qp.state()
+            for aux_reg in list(all_wires.keys()):
 
-            out_state = func()
+                # we want to see that we can remove any auxilliary register and it will be automatically allocated
+                temp_wires = copy.deepcopy(all_wires)
+                del temp_wires[aux_reg]
 
-            # We infer the total and aux wire counts from the state shape, because small-scale
-            # edge cases often have fewer work wires than the general case.
-            num_all_wires = ceil_log2(out_state.shape[0])
-            num_aux_wires = num_all_wires - num_wires
-            for _ in range(num_aux_wires):
-                assert np.allclose(out_state[1::2], 0.0), "\n".join(
-                    [
-                        f"{a} : {b}"
-                        for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
-                    ]
-                )
-                out_state = out_state[::2]
-            assert np.allclose([out_state[key] for key in indices], coefficients)
+                @qp.qnode(qp.device("lightning.qubit"))
+                def func():
+                    # pylint: disable=cell-var-from-loop
+                    # Make sure that the output state length is at least 2**num_wires
+                    qp.Identity(range(num_wires))
+                    rule(coefficients, wires=range(num_wires), indices=indices, **temp_wires)
+                    return qp.state()
+
+                out_state = func()
+
+                # We infer the total and aux wire counts from the state shape, because small-scale
+                # edge cases often have fewer work wires than the general case.
+                num_all_wires = ceil_log2(out_state.shape[0])
+                num_aux_wires = num_all_wires - num_wires
+                for _ in range(num_aux_wires):
+                    assert np.allclose(out_state[1::2], 0.0), "\n".join(
+                        [
+                            f"{a} : {b}"
+                            for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
+                        ]
+                    )
+                    out_state = out_state[::2]
+                assert np.allclose([out_state[key] for key in indices], coefficients)
 
     @staticmethod
     def force_powers_of_two(indices: tuple, num_wires: int) -> tuple:
