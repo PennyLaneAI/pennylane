@@ -2326,7 +2326,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different interface"):
+        with pytest.raises(AssertionError, match="different interface"):
             assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_exp_base_op_comparison_with_trainability(self):
@@ -3095,7 +3095,7 @@ def test_ops_with_abstract_parameters_not_equal():
     import jax
 
     assert not jax.jit(qp.equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
-    with pytest.raises(AssertionError, match="Data contains a tracer"):
+    with pytest.raises(AssertionError, match="has one or more tracer values"):
         jax.jit(assert_equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
 
     assert not jax.jit(qp.equal)(qp.exp(qp.X(0), 0.5), qp.exp(qp.X(0), 0.5))

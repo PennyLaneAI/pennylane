@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.measurements import ExpectationMP
-from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 from pennylane.pytrees.pytrees import get_typename, get_typename_type
 from pennylane.wires import Wires
@@ -120,16 +119,25 @@ def test_nested_pl_object():
     )
 
     data, structure = flatten(tape)
-    assert data == [0.1, 2, 0, None]
+    assert data == [0.1, 0, 2, 0, None]
 
     list_struct = PyTreeStructure(list, None, ())
-    wire_struct = (PyTreeStructure(Wires, (), (leaf,)),)
+    leaf_struct = PyTreeStructure(list, None, (leaf,))
+    wire_struct = PyTreeStructure(Wires, (), (leaf,))
+    wire_args_struct = PyTreeStructure(list, None, (wire_struct,))
 
-    rx_struct = PyTreeStructure(qp.RX, (Wires(0), ()), (leaf,))
-    adjoint_rx_struct = PyTreeStructure(AdjointOperation, (), (rx_struct,))
+    rx_struct = PyTreeStructure(qp.RX, (), (leaf_struct, wire_args_struct, list_struct))
+    adjoint_rx_struct = PyTreeStructure(
+        qp.ops.Adjoint2,
+        (),
+        (
+            list_struct,
+            list_struct,
+            PyTreeStructure(list, None, (rx_struct,)),
+        ),
+    )
     operations_struct = PyTreeStructure(list, None, (adjoint_rx_struct,))
 
-    wire_args_struct = PyTreeStructure(list, None, wire_struct)
     paulix_struct = PyTreeStructure(qp.PauliX, (), (list_struct, wire_args_struct, list_struct))
     sprod_struct = PyTreeStructure(qp.ops.SProd, (), (leaf, paulix_struct))
     expval_struct = PyTreeStructure(ExpectationMP, (("wires", None),), (sprod_struct, leaf))
@@ -142,9 +150,9 @@ def test_nested_pl_object():
     )
     assert structure == tape_struct
 
-    new_tape = unflatten([3, 4, 1, None], structure)
+    new_tape = unflatten([3, 2, 4, 1, None], structure)
     expected_new_tape = qp.tape.QuantumScript(
-        [qp.adjoint(qp.RX(3, wires=0))],
+        [qp.adjoint(qp.RX(3, wires=2))],
         [qp.expval(4 * qp.X(1))],
         shots=50,
         trainable_params=(0, 1),
