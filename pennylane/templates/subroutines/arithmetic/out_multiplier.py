@@ -216,7 +216,6 @@ class OutMultiplier(Operator2):
         "output_wires": Wire[-1],
         "work_wires": Wire[-1],
     }
-    wire_sizes = (None, None, None, None)
 
     def __init__(
         self,
@@ -305,11 +304,6 @@ class OutMultiplier(Operator2):
             work_wires=work_wires,
             output_wires_zeroed=output_wires_zeroed,
         )
-
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
 def _out_multiplier_with_qft_resources(

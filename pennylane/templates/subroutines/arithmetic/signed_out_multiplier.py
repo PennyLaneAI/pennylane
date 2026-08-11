@@ -314,7 +314,6 @@ class SignedOutMultiplier(Operator2):
         "output_wires": Wire[-1],
         "work_wires": Wire[-1],
     }
-    wire_sizes = (None, None, None, None)
 
     def __init__(
         self,
@@ -372,11 +371,6 @@ class SignedOutMultiplier(Operator2):
             work_wires,
             output_wires_zeroed=output_wires_zeroed,
         )
-
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
 def _zeroed_signed_out_multiplier_resources(

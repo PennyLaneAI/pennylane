@@ -120,9 +120,9 @@ def test_abstract_init_wires_like(abstract_register):
 
 
 def test_wires_property():
-    """Test that wires includes all registers."""
+    """Test that wires includes algorithmic registers but not work wires."""
     op = SignedOutMultiplier([0], [1], [2, 3], [4, 5])
-    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3])
 
 
 def test_not_zeroed_decomposition_without_capture():
