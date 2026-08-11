@@ -1118,9 +1118,9 @@ class TestDecomposition:
     ):
         """Tests that custom ops are not converted when wires are control-on-zero."""
 
-        base_op = base_cls(*params, wires=base_wires)
+        kwargs = {} if base_cls is qp.GlobalPhase else {"wires": base_wires}
+        base_op = base_cls(*params, **kwargs)
         op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
-
         if base_cls is qp.GlobalPhase and len(op.control_wires) == 1:
             pytest.skip(
                 "GlobalPhase has custom logic that avoids adding additional PauliX to flip the control."
