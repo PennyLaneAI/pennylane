@@ -365,7 +365,7 @@ class TestDecomposeInterpreter:
         # True branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][0]
         expected_primitives = [
-            qp.RX._primitive,
+            operator_p,
             qp.GlobalPhase._primitive,
             operator_p,
             qp.measurements.ExpectationMP._obs_primitive,
