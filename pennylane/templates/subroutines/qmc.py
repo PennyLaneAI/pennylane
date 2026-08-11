@@ -370,8 +370,9 @@ class QuantumMonteCarlo(Operation):
         return {
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q_resource_rep": resource_rep(
-                QubitUnitary, num_wires=len(self.hyperparameters["target_wires"])
+            "q_resource_rep": QubitUnitary(
+                Complex[2 ** (len(self.hyperparameters["target_wires"]) - 1), 2 ** (len(self.hyperparameters["target_wires"]) - 1)],
+                wires=Wire[len(self.hyperparameters["target_wires"]) - 1]
             ),
         }
 

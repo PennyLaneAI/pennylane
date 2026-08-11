@@ -149,10 +149,6 @@ class ControlledQubitUnitary(Controlled2):
     compilable_argnames = ("unitary_check", "work_wire_type")
     arg_specs = {"base": Complex[-1, -1], "wires": Wire[-1], "control_values": Bool[-1], "work_wires": Wire[-1]}
 
-    num_params = 1
-
-    ndim_params = (2,)
-
     def __init__(  # pylint: disable=too-many-arguments
         self,
         base: TensorLike,
