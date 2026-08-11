@@ -34,12 +34,13 @@ def _persistent_decoder_kernel(
 
     Args:
         ring_u64_ptr (*u64): Pointer to the request ring buffer. Each slot stores
-            a packed syndrome in word ``0`` and packed metadata in word ``1``.
-            The metadata layout is little-endian, with ``decoder_id`` in the
-            low 32 bits and the sequence number in the high 32 bits.
-        handoff_u64_ptr (*u64): Pointer to the response buffer. Word ``0`` of
-            each slot stores the packed correction mask and word ``1`` stores
-            the completion sequence number.
+            a packed syndrome in bytes ``0-7`` and packed metadata in bytes
+            ``8-15``. The metadata layout is little-endian, with
+            ``decoder_id`` in the low 32 bits and the sequence number in the
+            high 32 bits.
+        handoff_u64_ptr (*u64): Pointer to the response buffer. Bytes ``0-7``
+            of each slot store the packed correction mask and bytes ``8-15``
+            store the completion sequence number.
         stop_u32_ptr (*u32): Pointer to a stop flag polled while waiting for the
             next request.
         total (u64): Number of requests to process. A value of ``0`` means keep
