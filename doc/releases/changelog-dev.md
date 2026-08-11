@@ -882,7 +882,7 @@
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
