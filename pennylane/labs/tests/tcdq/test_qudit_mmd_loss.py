@@ -353,14 +353,13 @@ class TestExactQuditMMDConsistency:
     """Validate kernel-matrix and operator-decomposition exact MMD^2 agree."""
 
     @pytest.mark.parametrize(
-        "gates, params, n_qudits, d, biases, graph_type",
+        "gates, params, n_qudits, d, graph_type",
         [
             (
                 {0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
                 [0.3, 0.5, 0.2],
                 2,
                 3,
-                [0.5, 0.5],
                 "cycle",
             ),
             (
@@ -368,7 +367,6 @@ class TestExactQuditMMDConsistency:
                 [0.4, 0.7],
                 2,
                 3,
-                [0.3, 0.7],
                 "complete",
             ),
             (
@@ -376,7 +374,6 @@ class TestExactQuditMMDConsistency:
                 [0.1, 0.6, 0.9],
                 2,
                 4,
-                [0.4, 0.6],
                 "cycle",
             ),
             # Non-uniform: qubit x qutrit, cycle
@@ -385,7 +382,6 @@ class TestExactQuditMMDConsistency:
                 [0.3, 0.5, 0.2],
                 2,
                 [2, 3],
-                [0.5, 0.5],
                 "cycle",
             ),
             # Non-uniform: qutrit x ququart, complete
@@ -394,12 +390,11 @@ class TestExactQuditMMDConsistency:
                 [0.4, 0.7],
                 2,
                 [3, 4],
-                [0.3, 0.7],
                 "complete",
             ),
         ],
     )
-    def test_kernel_vs_operator(self, gates, params, n_qudits, d, biases, graph_type):
+    def test_kernel_vs_operator(self, gates, params, n_qudits, d, graph_type):
         """Kernel-matrix MMD^2 should equal operator-decomposition MMD^2."""
         rng = np.random.default_rng(42)
         dims = _dims_to_numpy(d, n_qudits)
