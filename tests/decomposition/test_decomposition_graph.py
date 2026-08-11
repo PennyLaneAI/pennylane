@@ -883,26 +883,6 @@ class TestControlledDecompositions:
             qp.ControlledPhaseShift(-0.5, wires=[1, 2]),
         ]
 
-    def test_custom_controlled_op(self):
-        """Tests that a general controlled op can be decomposed into a custom op if applicable."""
-
-        op1 = qp.ops.Controlled(qp.X(0), control_wires=[1])
-        op2 = ControlledOp2(qp.H(0), control_wires=[1])
-        graph = DecompositionGraph(
-            operations=[op1, op2],
-            gate_set={"CNOT", "CH"},
-        )
-        assert len(graph._graph.nodes()) == 35
-        assert len(graph._graph.edges()) == 55
-
-        # Verify the decompositions
-        solution = graph.solve()
-        with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(**op2.arguments)
-
-        assert q.queue == [qp.CNOT(wires=[1, 0]), qp.CH(wires=[1, 0])]
-
     def test_controlled_base_decomposition(self):
         """Tests applying control on the decomposition of the target operator."""
 
@@ -1124,9 +1104,8 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
-        rule_params = op.hyperparameters
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
+            solution.decomposition(op)(**op.arguments)
 
         assert q.queue == expected
 

@@ -1961,7 +1961,14 @@ def test_create_instance_while_tracing():
     from pennylane.capture.primitives import operator_p
 
     def f(a, b):
-        op1 = qp.X._primitive.impl(0, n_wires=1)
+        op1 = operator_p.impl(
+            0,
+            op_cls=qp.X,
+            wire_lens=(1,),
+            hybrid_lens=(),
+            hybrid_trees=(),
+            forward_mask=(),
+        )
         op2 = operator_p.impl(
             0,
             op_cls=qp.Y,

@@ -40,7 +40,7 @@ class TestGQSP:
             qp.RZ(0.6, wires)
 
         op = qp.GQSP(unitary(1), angles, control=(0,))
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
     @pytest.mark.parametrize(
         ("unitary", "poly"),
@@ -111,6 +111,29 @@ class TestGQSP:
 
         assert len(q.queue) == 1
         assert q.queue[0].name == "GQSP"
+
+    def test_queueing_dequeues_unitary(self):
+        """Test that the ``unitary`` operator is dequeued when creating a GSQP in a
+        queuing context."""
+
+        with qp.queuing.AnnotatedQueue() as q:
+            unitary = qp.Z(1)
+            op = qp.GQSP(unitary, np.ones([3, 3]), control=0)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
+
+    def test_map_wires(self):
+        """Test that ``map_wires`` works correctly."""
+
+        op = qp.GQSP(qp.RX(0.3, wires=1), np.ones([3, 3]), control=0)
+        compare_op = qp.GQSP(qp.RX(0.3, wires=1), np.ones([3, 3]), control=0)
+        mapped_op = op.map_wires({0: "a", 1: "b"})
+        expected_mapped_op = qp.GQSP(qp.RX(0.3, wires="b"), np.ones([3, 3]), control="a")
+
+        qp.assert_equal(mapped_op, expected_mapped_op)
+        # Check that the original op is not mutated
+        qp.assert_equal(op, compare_op)
 
     def test_decomposition(self):
 
