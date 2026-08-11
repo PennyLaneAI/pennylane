@@ -70,16 +70,6 @@ class Node:
     """Backend-specific initialization arguments; empty by default (never ``None``). TODO: add what is recognized here
     """
 
-    def _fill_backend_lib(self, role: str) -> None:
-        """Set ``init_args['backend_lib']`` from :attr:`backend` if not already set."""
-        if not self.backend:
-            return
-        init = self.init_args or {}
-        if "backend_lib" in init:
-            return
-        lib = f"libcatalyst_transport_{self.backend}_{role}.so"
-        object.__setattr__(self, "init_args", {**init, "backend_lib": lib})
-
     def _ensure_executor_spec(self) -> None:
         """Wrap :attr:`executor_options` into an :class:`ExecutorSpec` for remote nodes."""
         if self.remote and self.executor_options is not None and self.executor is None:
@@ -117,7 +107,6 @@ class Controller(Node):
     def __post_init__(self):
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit"))
-        self._fill_backend_lib("controller")
         self._ensure_executor_spec()
 
 
@@ -162,7 +151,6 @@ class Coprocessor(Node):
                 )
             if not 1 <= self.oob_port <= 65535:
                 raise ValueError(f"oob_port must be in 1..65535, got {self.oob_port}")
-        self._fill_backend_lib("coprocessor")
         self._ensure_executor_spec()
 
 
