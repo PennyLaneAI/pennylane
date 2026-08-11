@@ -48,7 +48,7 @@ def test_triton_decoder_forwards_build_options(monkeypatch):
         calls.update(kwargs)
         return Path("/tmp/triton_decoder.so"), "decode_symbol"
 
-    _install_fake_triton_frontend(monkeypatch, build_triton_decoder=fake_build_triton_decoder)
+    _install_fake_triton_frontend(monkeypatch, _build_triton_decoder=fake_build_triton_decoder)
 
     decoder_fns = (object(), object())
     decoder = functions.triton_decoder(
@@ -85,7 +85,7 @@ def test_css_bp_decoder_forwards_build_options(monkeypatch):
         calls.update(kwargs)
         return Path("/tmp/decoder.so"), "decode_symbol"
 
-    _install_fake_triton_frontend(monkeypatch, build_css_bp_decoder=fake_build_css_bp_decoder)
+    _install_fake_triton_frontend(monkeypatch, _build_css_bp_decoder=fake_build_css_bp_decoder)
 
     decoder = functions.css_bp_decoder(
         [[1, 0], [0, 1]],

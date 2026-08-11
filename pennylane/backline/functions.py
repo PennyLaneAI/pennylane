@@ -98,9 +98,10 @@ def triton_decoder(
     ... )
     """
     try:
-        build_triton_decoder = import_module(
-            "pennylane.backline.decoders.triton.decoder_frontend"
-        ).build_triton_decoder
+        build_triton_decoder = getattr(
+            import_module("pennylane.backline.decoders.triton.decoder_frontend"),
+            "_build_triton_decoder",
+        )
     except ImportError as exc:
         raise ImportError("triton_decoder requires Triton support.") from exc
 
@@ -166,9 +167,10 @@ def css_bp_decoder(
     ... )
     """
     try:
-        build_css_bp_decoder = import_module(
-            "pennylane.backline.decoders.triton.decoder_frontend"
-        ).build_css_bp_decoder
+        build_css_bp_decoder = getattr(
+            import_module("pennylane.backline.decoders.triton.decoder_frontend"),
+            "_build_css_bp_decoder",
+        )
     except ImportError as exc:
         raise ImportError("css_bp_decoder requires Triton support.") from exc
 

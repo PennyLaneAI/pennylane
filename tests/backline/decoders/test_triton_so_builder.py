@@ -39,7 +39,7 @@ from pennylane.backline.decoders.triton import triton_so_builder as builder
 
 
 class TestBuildSo:
-    """Tests for build_so."""
+    """Tests for _build_so."""
 
     @pytest.mark.parametrize(
         ("grid", "platform", "message"),
@@ -51,7 +51,7 @@ class TestBuildSo:
     def test_build_so_validates_shape_inputs(self, tmp_path, grid, platform, message):
         """It should reject malformed grid and platform values."""
         with pytest.raises(ValueError, match=message):
-            builder.build_so(
+            builder._build_so(
                 object(),
                 signature={},
                 constexpr={},
@@ -85,7 +85,7 @@ class TestBuildSo:
         monkeypatch.setattr(builder.subprocess, "run", fake_run)
 
         out = tmp_path / "decoder.so"
-        so_path, symbol_name = builder.build_so(
+        so_path, symbol_name = builder._build_so(
             object(),
             signature={},
             constexpr={},
@@ -124,7 +124,7 @@ class TestBuildSo:
 
         monkeypatch.setattr(builder.subprocess, "run", fake_run)
 
-        builder.build_so(
+        builder._build_so(
             object(),
             signature={},
             constexpr={},
@@ -157,7 +157,7 @@ class TestBuildSo:
 
         monkeypatch.setattr(builder.subprocess, "run", fake_run)
 
-        builder.build_so(
+        builder._build_so(
             object(),
             signature={},
             constexpr={},
@@ -193,7 +193,7 @@ class TestBuildSo:
 
         monkeypatch.setattr(builder.subprocess, "run", fake_run)
 
-        builder.build_so(
+        builder._build_so(
             object(),
             signature={},
             constexpr={},

@@ -40,10 +40,10 @@ from pennylane.backline.decoders.triton import decoder_frontend as frontend
 
 
 class TestBuildTritonDecoder:
-    """Tests for build_triton_decoder."""
+    """Tests for _build_triton_decoder."""
 
     def test_build_triton_decoder_passes_options_to_builder(self, monkeypatch, tmp_path):
-        """It should forward the normalized build options to build_so."""
+        """It should forward the normalized build options to _build_so."""
         calls = {}
 
         def fake_build_so(kernel, **kwargs):
@@ -52,10 +52,10 @@ class TestBuildTritonDecoder:
             return Path(kwargs["out"]), "decoder_symbol"
 
         monkeypatch.setattr(frontend.tempfile, "mkdtemp", lambda prefix: str(tmp_path))
-        monkeypatch.setattr(frontend, "build_so", fake_build_so)
+        monkeypatch.setattr(frontend, "_build_so", fake_build_so)
 
         decoder_fns = (object(), object())
-        so_path, symbol_name = frontend.build_triton_decoder(
+        so_path, symbol_name = frontend._build_triton_decoder(
             decoder_fns,
             platform=" cuda:80:32 ",
             grid=(2, 3, 4),
@@ -93,12 +93,12 @@ class TestBuildTritonDecoder:
         monkeypatch.setattr(frontend.tempfile, "mkdtemp", lambda prefix: str(scratch))
         monkeypatch.setattr(
             frontend,
-            "build_so",
+            "_build_so",
             lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
         )
 
         with pytest.raises(RuntimeError, match="boom"):
-            frontend.build_triton_decoder((object(),), platform="cuda:80:32")
+            frontend._build_triton_decoder((object(),), platform="cuda:80:32")
 
         assert not scratch.exists()
 
@@ -120,11 +120,11 @@ class TestBuildTritonDecoder:
     def test_build_triton_decoder_validates_options(self, kwargs, message):
         """It should reject invalid build options before starting a build."""
         with pytest.raises(ValueError, match=message):
-            frontend.build_triton_decoder(**kwargs)
+            frontend._build_triton_decoder(**kwargs)
 
 
 class TestBuildCssBpDecoder:
-    """Tests for build_css_bp_decoder."""
+    """Tests for _build_css_bp_decoder."""
 
     def test_build_css_bp_decoder_builds_two_specialized_decoders(self, monkeypatch):
         """It should specialize one decoder per parity-check matrix and forward them."""
@@ -142,12 +142,12 @@ class TestBuildCssBpDecoder:
             return Path("/tmp/decoder.so"), "decode_symbol"
 
         monkeypatch.setattr(frontend, "_make_css_decoder", fake_make_css_decoder)
-        monkeypatch.setattr(frontend, "build_triton_decoder", fake_build_triton_decoder)
+        monkeypatch.setattr(frontend, "_build_triton_decoder", fake_build_triton_decoder)
 
         hx = [[1, 0], [0, 1]]
         hz = [[1, 1], [0, 1]]
 
-        so_path, symbol_name = frontend.build_css_bp_decoder(
+        so_path, symbol_name = frontend._build_css_bp_decoder(
             hx,
             hz,
             postprocess="hard",
@@ -198,7 +198,7 @@ class TestBuildCssBpDecoder:
             "platform": "cuda:80:32",
         } | kwargs
         with pytest.raises(ValueError, match=message):
-            frontend.build_css_bp_decoder(H, H, **decoder_kwargs)
+            frontend._build_css_bp_decoder(H, H, **decoder_kwargs)
 
     @pytest.mark.parametrize(
         ("H", "message"),
@@ -219,4 +219,5 @@ class TestBuildCssBpDecoder:
         """The Triton decoder package should export the BP builder by name."""
         from pennylane.backline.decoders import triton as triton_module
 
-        assert triton_module.build_css_bp_decoder is frontend.build_css_bp_decoder
+        assert not hasattr(triton_module, "build_css_bp_decoder")
+        assert not hasattr(triton_module, "build_triton_decoder")

@@ -33,10 +33,10 @@ from numpy.typing import ArrayLike
 
 from .algorithms import _decode_one
 from .persistent_kernel import _persistent_decoder_kernel
-from .triton_so_builder import build_so
+from .triton_so_builder import _build_so
 
 
-def build_triton_decoder(
+def _build_triton_decoder(
     decoder_fns: tuple[object, ...],
     *,
     platform: str,
@@ -74,13 +74,13 @@ def build_triton_decoder(
 
     >>> import triton
     >>> import triton.language as tl
-    >>> from pennylane.backline.decoders.triton.decoder_frontend import build_triton_decoder
+    >>> from pennylane.backline.decoders.triton.decoder_frontend import _build_triton_decoder
     >>> @triton.jit
     ... def steane_lookup(syndrome):
     ...     one = tl.cast(1, tl.uint64)
     ...     zero = tl.cast(0, tl.uint64)
     ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
-    >>> so_path, symbol_name = build_triton_decoder(
+    >>> so_path, symbol_name = _build_triton_decoder(
     ...     (steane_lookup, steane_lookup),
     ...     platform="hip:gfx942:64",
     ... )
@@ -94,7 +94,7 @@ def build_triton_decoder(
     tmpdir = Path(tempfile.mkdtemp(prefix="pl_triton_decoder_"))
     out = tmpdir / "librdma_triton_decoder.so"
     try:
-        return build_so(
+        return _build_so(
             _persistent_decoder_kernel,
             signature={
                 "ring_u64_ptr": "*u64",
@@ -116,7 +116,7 @@ def build_triton_decoder(
         raise
 
 
-def build_css_bp_decoder(
+def _build_css_bp_decoder(
     Hx: ArrayLike,
     Hz: ArrayLike,
     *,
@@ -172,7 +172,7 @@ def build_css_bp_decoder(
     >>> import numpy as np
     >>> Hx = np.array([[1, 0], [0, 1]])
     >>> Hz = np.array([[1, 1], [0, 1]])
-    >>> so_path, symbol_name = build_css_bp_decoder(
+    >>> so_path, symbol_name = _build_css_bp_decoder(
     ...     Hx,
     ...     Hz,
     ...     postprocess="hard",
@@ -187,7 +187,7 @@ def build_css_bp_decoder(
         _make_css_decoder(hx, postprocess=postprocess, num_iters=num_iters, prob=prob),
         _make_css_decoder(hz, postprocess=postprocess, num_iters=num_iters, prob=prob),
     )
-    return build_triton_decoder(
+    return _build_triton_decoder(
         decoder_fns,
         platform=platform,
         grid=grid,

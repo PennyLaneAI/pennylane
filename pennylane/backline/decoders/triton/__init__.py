@@ -28,6 +28,4 @@ decoders into shared libraries that can be loaded by backline devices.
    triton_so_builder
 """
 
-from .decoder_frontend import build_css_bp_decoder, build_triton_decoder
-
-__all__ = ["build_css_bp_decoder", "build_triton_decoder"]
+__all__: list[str] = []

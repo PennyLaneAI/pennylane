@@ -85,7 +85,7 @@ def _wrap_constexpr(value: object) -> object:
     return value
 
 
-def build_so(
+def _build_so(
     kernel,
     *,
     signature: dict[str, str],
