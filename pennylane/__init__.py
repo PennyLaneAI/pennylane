@@ -208,6 +208,7 @@ from pennylane.backline import (
     Node,
     backline,
     css_bp_decoder,
+    triton_decoder,
 )
 
 from pennylane import spin
