@@ -82,7 +82,7 @@ class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
 
-    Child classes of `Operator2` are defined by their name and argument types, of which there are
+    Child classes of ``Operator2`` are defined by their name and argument types, of which there are
     five categories that are designated as class variables. These arguments dictate how ``Operator2``
     child classes are handled when compiling with :func:`~.qjit`.
 
@@ -90,13 +90,18 @@ class Operator2(metaclass=OperatorMeta):
       wires. Values for these arguments are automatically wrapped in
       :class:`~.Wires` objects by the ``Operator2`` constructor.
 
+    .. note::
+
+        ``Operator2.wire_argnames`` defaults to ``("wires",)``. Thus, if an operator one
+        has one wire argument and it is called ``wires``, ``wire_argnames`` does not need
+        to be overridden.
+
     * :attr:`dynamic_argnames <Operator2.dynamic_argnames>` : The names of arguments that are
       treated as dynamic. Inputs for these arguments must be scalars,
       arrays, or castable to arrays.
 
     * :attr:`static_argnames <Operator2.static_argnames>` : The names of arguments that are
-      treated as static. This should be defined if
-      :attr:`compilable_argnames <Operator2.compilable_argnames>` is undefined.
+      treated as static but are **not compilable** (see below).
 
     * :attr:`compilable_argnames <Operator2.compilable_argnames>` : The names of arguments that are
       treated as **compilable** static arguments. Compilable static arguments include numeric values,
@@ -123,26 +128,19 @@ class Operator2(metaclass=OperatorMeta):
     .. details::
         :title: Defining Custom Operators
 
-        Custom ``Operator2`` instances **require** specifying the following:
-
-        * :attr:`wire_argnames <Operator2.wire_argnames>`,
-        * one of :attr:`static_argnames <Operator2.static_argnames>` or
-          :attr:`compilable_argnames <Operator2.compilable_argnames>`, and
-        * :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, if any.
+        Custom ``Operator2`` instances **must** designate all their arguments to
+        one of the aforementioned categories. This means that the union of all the
+        designated arguments must cover the full set of arguments.
 
         As an example, consider the following custom operator:
-        ``MyOp(pauli_string, angle_array, wires, rot_wire)``. The ``wires`` and ``rot_wire``
-        arguments will be a part of :attr:`wire_argnames <Operator2.wire_argnames>`, and
-        ``pauli_string`` and ``angle_array`` will belong to
-        :attr:`compilable_argnames <Operator2.compilable_argnames>` and
-        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
 
         .. code-block:: python
 
             import pennylane as qp
+            from pennylane.core import Operator2
             import jax.numpy as jnp
 
-            class MyOp(qp.operation2.Operator2):
+            class MyOp(Operator2):
                 wire_argnames = ("wires", "rot_wire")
                 compilable_argnames = ("pauli_string")
                 dynamic_argnames = ("angle_array")
@@ -157,15 +155,19 @@ class Operator2(metaclass=OperatorMeta):
                     rot_op = qp.Rot(*angle_array, wires=rot_wire)
                     return qp.matrix(qp.prod(pauli_op, rot_op))
 
+        The ``wires`` and ``rot_wire`` arguments will be a part of
+        :attr:`wire_argnames <Operator2.wire_argnames>`, and ``pauli_string`` and ``angle_array``
+        will belong to :attr:`compilable_argnames <Operator2.compilable_argnames>` and
+        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
+
         >>> from jax import numpy as jnp
         >>> angle_array = jnp.array([0.1, 0.2, 0.3])
         >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
         >>> op
         MyOp(pauli_string=XYZ, angle_array=[0.1 0.2 0.3], wires=[0, 1, 2], rot_wire=[3])
 
-        In practice, for ``MyOp`` to be a usable quantum operator it should define a decomposition
-        using :func:`~.add_decomps`, though a ``compute_matrix`` method could be sufficient for most
-        state-vector simulations.
+        For optimal functionality, ``MyOp`` should define a decomposition using :func:`~pennylane.add_decomps`,
+        which is covered in the following section.
 
         **Decomposing Operators**
 
@@ -181,7 +183,7 @@ class Operator2(metaclass=OperatorMeta):
         Both the resource function and the decomposition rule **must** have the same call signature
         as the operator.
 
-        Consider this example using the custom operator `MyOp`.
+        Consider this example using the custom operator ``MyOp``.
 
         .. code-block:: python
 
@@ -206,9 +208,9 @@ class Operator2(metaclass=OperatorMeta):
             qp.add_decomps(MyOp, _my_op_decomp)
 
         Resource functions are "registered" to the decomposition rule by decorating with
-        :func:`~.register_resources`. Adding the decomposition rule to the operator officially is
-        done via :func:`~.add_decomps`. To verify, we can inspect that the decomposition rule
-        created as been added to `MyOp` as follows.
+        :func:`~pennylane.register_resources`. Adding the decomposition rule to the operator officially is
+        done via :func:`~pennylane.add_decomps`. To verify, we can inspect that the decomposition rule
+        created as been added to ``MyOp`` as follows.
 
         .. code-block:: python
 
@@ -218,6 +220,7 @@ class Operator2(metaclass=OperatorMeta):
                 MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
                 return qp.expval(qp.Z(0))
 
+        >>> qp.decomposition.enable_graph()
         >>> inspector = qp.decomp_inspector(f)()
         >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
         CHOSEN: Decomposition 0 (name: _my_op_decomp)
@@ -226,57 +229,60 @@ class Operator2(metaclass=OperatorMeta):
         2: ──Y───────────────────┤
         3: ──Rot(0.10,0.20,0.30)─┤
         First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
-        Full Expansion Gates: {Rot: 1, PauliY: 2, PauliX: 1}
+        Full Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Weighted Cost: 4.0
+        >>> qp.decomposition.disable_graph()
 
-        **Downstream effects of static_argnames, compilable_argnames**
+        :title: Downstream effects of static_argnames, compilable_argnames
 
         Static and *compilable static* arguments are similar, but have key differences to note that
         dictate how certain arguments are treated when compiled down to MLIR.
 
-        Both `static_argnames` and `compilable_argnames` denote data that cannot be dynamic. In
+        Both ``static_argnames`` and ``compilable_argnames`` denote data that cannot be dynamic. In
         other words, they both represent concrete data whose values are known when tracing the
         program. The distinction in their behaviour comes at compile-time.
 
-        Arguments in `compilable_argnames` denote data that *can* be concretely accessed and
+        Arguments in ``compilable_argnames`` denote data that *can* be concretely accessed and
         inspected at compile-time (it can be compiled and represented concretely in MLIR), including
         numeric values, strings, lists, tuples, and dictionaries.
 
-        In the example above with `MyOp`, the `pauli_string` argument is part of
-        `compilable_argnames`. Its concrete (static) value will be accessible at compile time,
+        In the example above with ``MyOp``, the ``pauli_string`` argument is part of
+        ``compilable_argnames``. Its concrete (static) value will be accessible at compile time,
         being represented at the MLIR level as follows, where the concrete value of
-        `pauli_string` is captured in the `static_data` attribute in MLIR:
+        ``pauli_string`` is captured in the ``static_data`` attribute in MLIR:
 
         >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,)) # doctest: +SKIP
 
-        .. code-block:: mlir
+        .. code-block::
 
             %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%q0, %q1, %q2, %q3)
               static_data = {pauli_string = "XYZ"}
               param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
 
-        Arguments in `static_argnames` denote data that *cannot* be concretely accessed and
+        Arguments in ``static_argnames`` denote data that *cannot* be concretely accessed and
         inspected at compile-time (it cannot be compiled and represented concretely in MLIR),
         including arbitrary Python objects, Python functions, and custom classes. Static data will
         be reduced to a Unique Identifier (UID) at the MLIR level.
 
-        In the example above with `MyOp`, if the `pauli_string` argument was part of
-        `static_argnames`, `MyOp` would be represented in MLIR as follows, where the concrete
-        value of `pauli_string` is reduced to a UID in MLIR:
+        In the example above with ``MyOp``, if the ``pauli_string`` argument was part of
+        ``static_argnames``, ``MyOp`` would be represented in MLIR as follows, where the concrete
+        value of ``pauli_string`` is reduced to a UID in MLIR:
 
-        .. code-block:: mlir
+        .. code-block::
 
             %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
-            UID(278653)
-            quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+              UID(278653)
+              quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+
             %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%arg4, %arg5, %arg6, %arg7)
               UID(234567)
               param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
 
         .. note::
 
-            If `hyrbid_argnames` cannot be lowered to MLIR, the above behaviour also occurs
-            downstream; the hybrid data is reduced to a UID in MLIR.
+            If ``hybrid_argnames`` is not empty, the above behaviour also occurs
+            downstream; the dynamic data stored within the Pytree is lowered correctly,
+            and the static structure of the Pytree is reduced to a UID in MLIR.
     """
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
