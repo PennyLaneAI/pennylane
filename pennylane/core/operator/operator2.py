@@ -69,6 +69,15 @@ class GradMethod(StrEnum):
     FINITE_DIFF = "F"
 
 
+ARGNAME_CATEGORIES = (
+    "wire_argnames",
+    "dynamic_argnames",
+    "static_argnames",
+    "compilable_argnames",
+    "hybrid_argnames",
+)
+
+
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
@@ -398,8 +407,7 @@ class Operator2(metaclass=OperatorMeta):
     # -------------- Legacy Operator compatibility views ----------------------
     # ------------------------------------------------------------------------
     # The following properties provide backwards-compatible read-only views
-    # matching the legacy ``Operator`` API (data, parameters, hyperparameters,
-    # control_wires).
+    # matching the legacy ``Operator`` API (data, parameters, hyperparameters).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
@@ -577,6 +585,10 @@ class Operator2(metaclass=OperatorMeta):
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
+        for h in self.hybrid_args.values():
+            leaves, _ = flatten(h, is_leaf=_is_op)
+            _ = [context.remove(l) for l in leaves if isinstance(l, Operator)]
+
         context.append(self)
         # return self so pre-constructed Observables can be queued and returned in
         # a single statement
@@ -645,7 +657,7 @@ class Operator2(metaclass=OperatorMeta):
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
             leaves = [
-                leaf.map_wires(wire_map) if isinstance(leaf, Operator2) else leaf for leaf in leaves
+                leaf.map_wires(wire_map) if isinstance(leaf, Operator) else leaf for leaf in leaves
             ]
             new_args[n] = unflatten(leaves, tree)
 
@@ -780,8 +792,8 @@ class Operator2(metaclass=OperatorMeta):
         canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
-    @staticmethod
-    def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
+    @classmethod
+    def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -800,7 +812,18 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        raise DecompositionUndefinedError
+        with pause(), QueuingManager.stop_recording():
+            # creating dummy op means this works for adjoint and ctrl too.
+            op = cls(*args, **kwargs)
+        for decomp in qp.list_decomps(op):
+            if decomp.is_applicable(**op.arguments):
+                with AnnotatedQueue() as q:
+                    decomp(**op.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError(f"No applicable decomposition rule for {cls}.")
 
     @classproperty
     @classmethod
@@ -812,8 +835,29 @@ class Operator2(metaclass=OperatorMeta):
         rules are registered for the operator type. Per-instance rule applicability is resolved
         in :meth:`~.Operator2.decomposition`, not here.
         """
+
+        # cant do cls.compute_decompsition != Operator2.compute_decomposition
+        # because default is now a classmethod
+        # classmethod is always different, even if not overwritten
+        # cant do getattr(cls.compute_decomposition "__func__", cls.compute_decomposition)
+        # because of an astroid/ pylint bug
+        # see https://github.com/pylint-dev/pylint/issues/11198
+
+        # Instead, walk the MRO to detect an override in a subclass.
+        # MRO = method resolution order determines who defines what methods
+
+        def defines_compute_decomposition(op_type):
+            for klass in op_type.__mro__:
+                if klass is Operator2:
+                    return False
+                if "compute_decomposition" in vars(klass):
+                    return True
+            # should always find Operator2 in the mro
+            msg = "This line should be impossible to hit. Something is wrong."  # pragma: no cover
+            raise TypeError(msg)  # pragma: no cover
+
         return (
-            cls.compute_decomposition != Operator2.compute_decomposition
+            defines_compute_decomposition(cls)
             or cls.decomposition != Operator2.decomposition
             or qp.decomposition.has_decomp(cls)
         )
@@ -830,19 +874,7 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        if type(self).compute_decomposition != Operator2.compute_decomposition:
-            return self.compute_decomposition(**self.arguments)
-
-        for decomp in qp.list_decomps(self):
-            if decomp.is_applicable(**self.arguments):
-                with AnnotatedQueue() as q:
-                    decomp(**self.arguments)
-                if QueuingManager.recording():
-                    # no need for copies if we just use queue method
-                    _ = [op.queue() for op in q.queue]
-                return q.queue
-
-        raise DecompositionUndefinedError
+        return self.compute_decomposition(**self.arguments)
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
@@ -1052,7 +1084,8 @@ class Operator2(metaclass=OperatorMeta):
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             ser_leaves = tuple(
-                l if isinstance(l, (Operator2, Wires)) else _canonicalize_dynamic(l) for l in leaves
+                l if isinstance(l, (AbstractWires, Operator, Wires)) else _canonicalize_dynamic(l)
+                for l in leaves
             )
             serialized_hybrid.append((ser_leaves, tree))
 
@@ -1184,15 +1217,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2], [Wires([0, 1])], []), ('XY',))
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -1222,12 +1251,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         args = {}
 
@@ -1349,13 +1377,7 @@ class Operator2(metaclass=OperatorMeta):
             return
 
         # Argnames setup
-        for attr in (
-            "dynamic_argnames",
-            "wire_argnames",
-            "static_argnames",
-            "hybrid_argnames",
-            "compilable_argnames",
-        ):
+        for attr in ARGNAME_CATEGORIES:
             if isinstance(v := getattr(cls, attr), str):
                 setattr(cls, attr, (v,))
 
@@ -1364,6 +1386,11 @@ class Operator2(metaclass=OperatorMeta):
         _init_subclass_wire_sizes_setup(cls)
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
+
+        for attr in ARGNAME_CATEGORIES:
+            # enforce sorting by signature
+            sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
+            setattr(cls, attr, sorted_names)
 
 
 # ---------------------------------------------------------------------------------
@@ -1744,7 +1771,9 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
     """Process a hybrid argument for binding an operator primitive."""
-    partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
+    # We don't use is_leaf=_is_op because we're deliberately not supporting program
+    # capture with legacy operators mixed with new operators
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator2))
     _ = pop_op_eqns(filter(_is_op, partial_leaves))
 
     leaves, tree = flatten(hybrid_val)
@@ -1798,8 +1827,8 @@ def _is_wires(val: Any) -> bool:
 
 
 def _is_op(val: Any) -> bool:
-    """Check whether a value is an Operator2 object."""
-    return isinstance(val, Operator2)
+    """Check whether a value is an Operator (legacy or new)."""
+    return isinstance(val, Operator)
 
 
 def _canonicalize_dynamic(d, op_name=None) -> Hashable:
@@ -1924,6 +1953,7 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
+
     return op_cls(**new_args)
 
 

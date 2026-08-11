@@ -23,7 +23,9 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
+from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -792,8 +794,6 @@ def test_simplify_crot():
 controlled_data = [
     (qp.RX(1.234, wires=0), qp.CRX(1.234, wires=("a", 0))),
     (qp.RY(1.234, wires=0), qp.CRY(1.234, wires=("a", 0))),
-    (qp.RZ(1.234, wires=0), qp.CRZ(1.234, wires=("a", 0))),
-    (qp.PhaseShift(1.234, wires=0), qp.ControlledPhaseShift(1.234, wires=("a", 0))),
     (qp.Rot(1.2, 2.3, 3.4, wires=0), qp.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
 ]
 
@@ -831,16 +831,56 @@ def test_tuple_control_wires_parametric_ops(op_type):
     assert op_type(0.123, [(0, 1), 2]).wires == qp.wires.Wires([(0, 1), 2])
 
 
-def test_CNOT_decomposition():
-    """Test that CNOT raises a DecompositionUndefinedError instead of using the
-    controlled_op decomposition functions"""
-    assert not qp.CNOT((0, 1)).has_decomposition
+@pytest.mark.parametrize("op_type, wires", [(qp.CNOT, Wire[2]), (qp.Toffoli, Wire[3])])
+def test_abstract_controlled_ops(op_type, wires):
+    """Tests creating abstract controlled ops as one might for resource keys."""
+    key = op_type(wires)
 
-    with pytest.raises(qp.operation.DecompositionUndefinedError):
-        qp.CNOT.compute_decomposition()
+    assert isinstance(key, op_type)
+    assert isinstance(key.wires, AbstractWires)
+    assert len(key.wires) == len(wires)
 
-    with pytest.raises(qp.operation.DecompositionUndefinedError):
-        qp.CNOT([0, 1]).decomposition()
+
+@pytest.mark.parametrize(
+    "base, control_wires, control_values, expected",
+    [
+        (qp.X(Wire[1]), Wire[1], [1], qp.CNOT(Wire[2])),
+        (qp.CNOT(Wire[2]), Wire[1], [1], qp.Toffoli(Wire[3])),
+        (qp.Y(Wire[1]), Wire[1], [1], qp.CY(Wire[2])),
+    ],
+)
+def test_custom_controlled_ops_dispatch(base, control_wires, control_values, expected):
+    """Tests that we can use the custom dispatch logic with abstract controlled ops."""
+    mapped_op = custom_ctrl_dispatch(base, control_wires, control_values, None, "borrowed")
+    assert mapped_op == expected
+
+
+@pytest.mark.catalyst
+@pytest.mark.parametrize(
+    ("op_type", "rule_name"),
+    [
+        (qp.CNOT, "_cnot_lattice_surgery_ppm"),
+        (qp.CY, "_cy_lattice_surgery_ppm"),
+        (qp.CZ, "_cz_lattice_surgery_ppm"),
+    ],
+)
+def test_ppm_decomposition(op_type, rule_name, seed):
+    """Tests that the PPM decomposition of Hadamard is correct."""
+    rule = qp.list_decomps(op_type)[rule_name]
+    rng = np.random.default_rng(seed)
+    init_state = rng.random(4) + 1j * rng.random(4)
+    init_state /= np.linalg.norm(init_state)
+
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=[0, 1, 2]))
+    def circuit():
+        qp.StatePrep(init_state, [0, 1])
+        rule([0, 1])
+        op_type([0, 1])
+        return qp.state()
+
+    init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
+    assert np.allclose(init_state_full, circuit())
 
 
 def test_CY_decomposition():

@@ -247,72 +247,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     Returns:
         pennylane.decomposition.resources.CompressedResourceOp: a lightweight representation of the operator.
 
-    **Example**
-
-    The resource parameters of an operator are a minimal set of information required to determine
-    the resource estimate of its decompositions. To check the required set of keyword arguments
-    for an operator type, refer to the ``resource_keys`` attribute of the operator class:
-
-    >>> qp.MultiRZ.resource_keys
-    {'num_wires'}
-
-    When calling ``resource_rep`` for ``MultiRZ``, ``num_wires`` must be provided as a keyword argument.
-
-    >>> rep = resource_rep(qp.MultiRZ, num_wires=3)
-    >>> rep
-    MultiRZ(num_wires=3)
-    >>> type(rep)
-    <class 'pennylane.decomposition.resources.CompressedResourceOp'>
-
-    .. seealso:: See how this function is used in the context of defining a decomposition rule using :func:`~pennylane.register_resources`
-
-    .. details::
-        :title: Usage Details
-
-        The same approach applies also to symbolic operators. For example, if the decomposition
-        of an operator contains a controlled operation:
-
-        .. code-block:: python
-
-            def my_decomp(wires):
-                qp.ctrl(
-                    qp.MultiRZ(wires=wires[:3]),
-                    control=wires[3:5],
-                    control_values=[0, 1],
-                    work_wires=wires[5]
-                )
-
-        To declare this controlled operator in the resource function, we find the resource keys
-        of ``qp.ops.Controlled``:
-
-        >>> print(sorted(qp.ops.Controlled.resource_keys))
-        ['base_class', 'base_params', 'num_control_wires', 'num_work_wires', 'num_zero_control_values', 'work_wire_type']
-
-        Then the resource representation can be created as follows:
-
-        >>> qp.resource_rep(
-        ...     qp.ops.Controlled,
-        ...     base_class=qp.ops.MultiRZ,
-        ...     base_params={'num_wires': 3},
-        ...     num_control_wires=2,
-        ...     num_zero_control_values=1,
-        ...     num_work_wires=1,
-        ...     work_wire_type='borrowed'
-        ... )
-        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
-
-        Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
-
-        >>> qp.decomposition.controlled_resource_rep(
-        ...     base_class=qp.ops.MultiRZ,
-        ...     base_params={'num_wires': 3},
-        ...     num_control_wires=2,
-        ...     num_zero_control_values=1,
-        ...     num_work_wires=1
-        ... )
-        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
-
-        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
+    .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
     _validate_resource_rep(op_type, params)
@@ -392,17 +327,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     # Special case for controlled qubit unitaries
     if base_class in (qp.QubitUnitary, qp.ControlledQubitUnitary):
         return _controlled_qubit_unitary_rep(
-            base_class,
-            base_params,
-            num_control_wires,
-            num_zero_control_values,
-            num_work_wires,
-            work_wire_type,
-        )
-
-    # Special case for when the base class is X
-    if base_class in (qp.X, qp.MultiControlledX):
-        return _controlled_x_rep(
             base_class,
             base_params,
             num_control_wires,
@@ -492,15 +416,9 @@ def custom_ctrl_op_to_base():
     """The set of custom controlled operations."""
 
     return {
-        qp.CNOT: qp.X,
-        qp.Toffoli: qp.X,
-        qp.CZ: qp.Z,
-        qp.CCZ: qp.Z,
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
-        qp.CRZ: qp.RZ,
         qp.CRot: qp.Rot,
-        qp.ControlledPhaseShift: qp.PhaseShift,
     }
 
 
@@ -552,45 +470,6 @@ def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-ma
     return resource_rep(
         qp.ControlledQubitUnitary,
         num_target_wires=base_params["num_target_wires"],
-        num_control_wires=num_control_wires,
-        num_zero_control_values=num_zero_control_values,
-        num_work_wires=num_work_wires,
-        work_wire_type=work_wire_type,
-    )
-
-
-def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
-    base_class,
-    base_params,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type="borrowed",
-) -> CompressedResourceOp | None:
-    """Helper function that handles custom logic for controlled X gates."""
-
-    if base_class is qp.X:
-        if num_control_wires == 1 and num_zero_control_values == 0:
-            return abstractify(qp.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
-            return abstractify(qp.Toffoli)
-        return resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    # base_class is qp.MultiControlledX:
-    num_control_wires += base_params["num_control_wires"]
-    num_zero_control_values += base_params["num_zero_control_values"]
-    work_wire_type = resolve_work_wire_type(
-        base_params["num_work_wires"], base_params["work_wire_type"], num_work_wires, work_wire_type
-    )
-    num_work_wires += base_params["num_work_wires"]
-    return resource_rep(
-        qp.MultiControlledX,
         num_control_wires=num_control_wires,
         num_zero_control_values=num_zero_control_values,
         num_work_wires=num_work_wires,
