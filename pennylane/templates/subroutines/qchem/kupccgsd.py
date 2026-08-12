@@ -28,7 +28,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.qubit import BasisState
-from pennylane.typing import Int, TensorLike, Wire
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
@@ -367,7 +367,7 @@ class kUpCCGSD(Operation):
 
 def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
-    resources[BasisState(Int[num_wires], Wire[num_wires])] = 1
+    resources[BasisState(Bool[num_wires], Wire[num_wires])] = 1
 
     for _ in range(k):
         for w1, w2 in d_wires:

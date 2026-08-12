@@ -24,7 +24,7 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.qubit import BasisState
-from pennylane.typing import Int, TensorLike, Wire
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -952,7 +952,7 @@ def _select_only_qram_resources(
     n_total = num_control_wires + num_select_wires
 
     if select_value is not None and num_select_wires > 0:
-        resources[BasisState(Int[num_select_wires], Wire[num_select_wires])] += 1
+        resources[BasisState(Bool[num_select_wires], Wire[num_select_wires])] += 1
 
     for addr in range(2 ** (num_select_wires + num_control_wires)):
         if (

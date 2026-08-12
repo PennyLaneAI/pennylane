@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, CZ, BasisState, CRot, PhaseShift
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -371,7 +371,7 @@ class ParticleConservingU1(Operation):
 def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
     num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
-        BasisState(Int[num_wires], Wire[num_wires]): 1,
+        BasisState(Bool[num_wires], Wire[num_wires]): 1,
         CZ: 3 * num_nm_wires * n_layers,
         CRot: 3 * num_nm_wires * n_layers,
         PhaseShift: 6 * num_nm_wires * n_layers,

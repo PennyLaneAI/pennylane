@@ -23,7 +23,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation, cond
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 has_jax = True
@@ -328,7 +328,7 @@ class GateFabric(Operation):
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
     return {
-        BasisState(Int[num_wires], Wire[num_wires]): 1,
+        BasisState(Bool[num_wires], Wire[num_wires]): 1,
         DoubleExcitation: n_layers * len_wire_pattern,
         OrbitalRotation: rotation_count,
     }

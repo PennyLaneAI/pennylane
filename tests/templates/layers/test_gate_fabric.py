@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 
 
 @pytest.mark.jax
@@ -52,7 +52,7 @@ def test_resources(include_pi):
     len_wire_pattern = 4
 
     expected = {
-        qp.BasisState(Int[n_wires], Wire[n_wires]): 1,
+        qp.BasisState(Bool[n_wires], Wire[n_wires]): 1,
         qp.resource_rep(qp.DoubleExcitation): n_layers * len_wire_pattern,
         qp.resource_rep(qp.OrbitalRotation): (include_pi + 1) * n_layers * len_wire_pattern,
     }

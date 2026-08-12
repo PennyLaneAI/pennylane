@@ -23,7 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 
 
 @pytest.mark.jax
@@ -46,7 +46,7 @@ def test_resources():
     num_wires = 4
 
     expected = {
-        qp.BasisState(Int[num_wires], Wire[num_wires]): 1,
+        qp.BasisState(Bool[num_wires], Wire[num_wires]): 1,
         abstractify(qp.CZ): 3 * (num_wires - 1) * n_layers,
         abstractify(qp.CRot): 3 * (num_wires - 1) * n_layers,
         abstractify(qp.PhaseShift): 6 * (num_wires - 1) * n_layers,

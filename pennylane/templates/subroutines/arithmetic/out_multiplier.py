@@ -32,7 +32,7 @@ from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..controlled_sequence import ControlledSequence
@@ -603,7 +603,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     """Resources for _c_add_sub."""
     resources = defaultdict(int)
     if num_x_wires > 1:
-        ctrl_basis_rep = ctrl(BasisState(Int[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
+        ctrl_basis_rep = ctrl(BasisState(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
     cnot_on_0_rep = _ctrl_abstract(X, Wire[1], num_zero_control_values=1)
