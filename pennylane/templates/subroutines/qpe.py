@@ -16,6 +16,9 @@ Contains the QuantumPhaseEstimation template.
 """
 
 # pylint: disable=arguments-differ
+from pennylane.ops.qubit.matrix_ops import QubitUnitary
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import _pow_abstract
 import copy
 
 from pennylane import ops
@@ -154,7 +157,7 @@ class QuantumPhaseEstimation(Operation):
 
     grad_method = None
 
-    resource_keys = {"base_resource_rep", "num_estimation_wires"}
+    resource_keys = {"base", "num_estimation_wires"}
 
     def _flatten(self):
         data = (self.hyperparameters["unitary"],)
@@ -172,7 +175,7 @@ class QuantumPhaseEstimation(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "base_resource_rep": abstractify(self.hyperparameters["unitary"]),
+            "base": QubitUnitary(self.hyperparameters["unitary"]),
             "num_estimation_wires": len(self.estimation_wires),
         }
 
@@ -271,21 +274,20 @@ class QuantumPhaseEstimation(Operation):
         return op_list
 
 
-def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
+def _qpe_decomp_resource(base, num_estimation_wires):
     gate_count = {
         ops.Hadamard: num_estimation_wires,
         _adjoint_abstract(QFT(Wire[num_estimation_wires])): 1,
     }
     for i in range(num_estimation_wires):
+        pow_rep = _pow_abstract(
+            base,
+            2**i,
+        )
         gate_count[
-            controlled_resource_rep(
-                ops.Pow,
-                {
-                    "base_class": base_resource_rep.op_type,
-                    "base_params": base_resource_rep.params,
-                    "z": 2**i,
-                },
-                num_control_wires=1,
+            _ctrl_abstract(
+                pow_rep,
+                control_wires=Wire[1]
             )
         ] = 1
     return gate_count

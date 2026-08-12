@@ -341,7 +341,7 @@ class QuantumMonteCarlo(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
+    resource_keys = {"num_target_wires", "num_estimation_wires", "q"}
 
     @classmethod
     def _primitive_bind_call(
@@ -370,10 +370,7 @@ class QuantumMonteCarlo(Operation):
         return {
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q_resource_rep": QubitUnitary(
-                Complex[2 ** (len(self.hyperparameters["target_wires"]) - 1), 2 ** (len(self.hyperparameters["target_wires"]) - 1)],
-                wires=Wire[len(self.hyperparameters["target_wires"]) - 1]
-            ),
+            "q": self.hyperparameters["Q"],
         }
 
     def __init__(self, probs, func, target_wires, estimation_wires):
@@ -399,11 +396,12 @@ class QuantumMonteCarlo(Operation):
                 f" {num_target_wires} target wires"
             )
 
-        self._hyperparameters = {"estimation_wires": estimation_wires, "target_wires": target_wires}
-
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
+
+        self._hyperparameters = {"estimation_wires": estimation_wires, "target_wires": target_wires, "Q": Q}
+
         super().__init__(A, R, Q, wires=wires)
 
     def map_wires(self, wire_map: dict):
@@ -463,7 +461,7 @@ if QuantumMonteCarlo._primitive is not None:
         return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):
+def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q):
     return {
         QubitUnitary(
             Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
@@ -474,7 +472,7 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_res
         ): 1,
         resource_rep(
             QuantumPhaseEstimation,
-            base_resource_rep=q_resource_rep,
+            base=QubitUnitary(q, wires=Wire[num_target_wires]),
             num_estimation_wires=num_estimation_wires,
         ): 1,
     }

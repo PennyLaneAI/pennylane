@@ -170,6 +170,11 @@ class QubitUnitary(Operator2):
 
         super().__init__(U, wires=wires)
 
+    def __abstract_init__(self, U, wires, unitary_check=False):  # pylint: disable=arguments-differ
+        # Abstract instances are never backed by a concrete (sparse) matrix.
+        self._issparse = False
+        super().__abstract_init__(U, wires=wires, unitary_check=unitary_check)
+
     @staticmethod
     def _unitary_check(U, dim):
         if isinstance(U, csr_matrix):
@@ -340,7 +345,7 @@ class QubitUnitary(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_qu(base: QubitUnitary, control, control_values, work_wires, work_wire_type):
     return qp.ControlledQubitUnitary(
-        *base.data,
+        base=base.U,
         wires=control + base.wires,
         control_values=control_values,
         work_wires=work_wires,

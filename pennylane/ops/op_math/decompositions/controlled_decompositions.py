@@ -203,13 +203,18 @@ def ctrl_decomp_zyz(
 #######################
 
 
-def _ctrl_decomp_bisect_condition(num_target_wires, num_control_wires, **__):
+def _ctrl_decomp_bisect_condition(wires, control_values, **__):
+    num_control_wires = len(control_values)
+    num_target_wires = len(wires) - num_control_wires
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
     # Also, it is not helpful when there's only a single control wire.
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
+def _ctrl_decomp_bisect_resources(wires, control_values, **__):
+
+    num_control_wires = len(control_values)
+    num_target_wires = len(wires) - num_control_wires
 
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
@@ -272,7 +277,9 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
-def _single_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
+def _single_ctrl_decomp_zyz_condition(wires, control_values, **__):
+    num_control_wires = len(control_values)
+    num_target_wires = len(wires) - num_control_wires
     return num_target_wires == 1 and num_control_wires == 1
 
 
@@ -297,7 +304,9 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
 
-def _multi_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
+def _multi_ctrl_decomp_zyz_condition(wires, control_values, **__):
+    num_control_wires = len(control_values)
+    num_target_wires = len(wires) - num_control_wires
     return num_target_wires == 1 and num_control_wires > 1
 
 

@@ -211,11 +211,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         self._work_wires = work_wires
         self._work_wire_type = work_wire_type
 
-        # Only overwrite ``base`` with the (wrapped) base operator when it is a hybrid
-        # operator argument. Special controlled ops like ``ControlledQubitUnitary`` expose
-        # ``base`` as a dynamic array argument (the raw matrix), which must be preserved for
-        # ``arg_specs`` validation, serialization, and pytree flattening.
-        if "base" in self._init_args and "base" in self.hybrid_argnames:
+        if "base" in self._init_args:
             self._init_args["base"] = base
 
         if "control_wires" in self._init_args:
@@ -570,14 +566,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     @override
     def name(self):
         return f"C({self.base.name})"
-
-    @property
-    def data(self) -> tuple:
-        """The trainable parameters of a generic controlled operator are those of its base. The
-        wrapper's own arguments (``control_values``/``control_wires``) are not trainable, so the
-        legacy ``data`` view must expose the base parameters.
-        """
-        return self.base.data
 
     def __repr__(self):
         params = [f"control_wires={self.control_wires}"]

@@ -131,6 +131,11 @@ class Pow2(SymbolicOp2):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
+    @property
+    @override
+    def has_matrix(self) -> bool:
+        return self.base.has_matrix
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
