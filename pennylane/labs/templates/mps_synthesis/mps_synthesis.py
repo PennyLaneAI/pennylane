@@ -678,9 +678,10 @@ def mps_preparation(mps_tensors, wires):
         and the bulk, while it is prepared on the auxiliary wires for the right boundary.
 
         .. code-block::
-                    │          │          │          │          │  │ │ │  } physical
+        
+                     │          │          │          │          │  │ │ │  } physical
                 ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│  │ │ │  } state
-            |0> ─┤   ├┘     │   ││     │   ││     │   ││     │   ││  │ │ │
+           |0> ─┤   ├┘     │   ││     │   ││     │   ││     │   ││  │ │ │
                 │   │ |0> ─┤   ├┘     │   ││     │   ││     │   ││  │ │ │
                 │   │      │   | |0> ─┤   ├┘     │   ││     │   ││  │ │ │
                 │   │      │   │      │   | |0> ─┤   ├┘     │   ││  │ │ │
@@ -688,11 +689,10 @@ def mps_preparation(mps_tensors, wires):
                 │   │      │   │      │   │      │   │      │   │   │ │ │
                 │   │      │   │ |0> ─┤   ├──────┤   ├──────┤   ├───┘ │ │ } increasing
                 │   │ |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├─────┘ │ } bond
-            |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├──────┤   ├───────┘ } register
+           |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├──────┤   ├───────┘ } register
                 └───┘      └───┘      └───┘      └───┘      └───┘
                 \_________________________/      \______________/   \____/
-                    left boundary                    bulk         right
-                                                                    boundary
+                    left boundary                    bulk         right boundary
 
     """
     # Build the circuit with queuing suspended: mps_synthesis instantiates many
