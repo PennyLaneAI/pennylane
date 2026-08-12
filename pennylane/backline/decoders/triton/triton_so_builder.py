@@ -41,8 +41,6 @@
 
 """Build a loadable shared library from a Triton kernel."""
 
-# pylint: disable=no-name-in-module,no-member,too-many-arguments,import-outside-toplevel
-
 from __future__ import annotations
 
 import binascii
@@ -113,7 +111,7 @@ def _validate_platform(platform: str) -> tuple[str, str, int]:
     return backend, arch, warp_size
 
 
-def _build_so(
+def _build_so(  # pylint: disable=too-many-arguments
     kernel,
     *,
     signature: dict[str, str],
@@ -205,7 +203,7 @@ def _build_so(
     return out_path, generated_symbol
 
 
-def _compile_kernel(
+def _compile_kernel(  # pylint: disable=too-many-arguments
     kernel,
     *,
     signature: dict[str, str],
@@ -272,9 +270,13 @@ def _compile_kernel(
     kernel_binary = compile_result.asm[backend_impl.binary_ext]
     binary_hex = str(binascii.hexlify(kernel_binary))[2:-1]
     if backend == "cuda":
-        from triton.backends.nvidia.driver import ty_to_cpp
+        from triton.backends.nvidia.driver import (  # pylint: disable=import-outside-toplevel,no-name-in-module
+            ty_to_cpp,
+        )
     elif backend == "hip":
-        from triton.backends.amd.driver import ty_to_cpp
+        from triton.backends.amd.driver import (  # pylint: disable=import-outside-toplevel,no-name-in-module
+            ty_to_cpp,
+        )
     else:
         raise ValueError(f"unsupported backend for type mapping: {backend}")
     runtime_signature = ", ".join(

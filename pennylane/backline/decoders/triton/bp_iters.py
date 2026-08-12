@@ -24,7 +24,7 @@ except ImportError as exc:
 
 
 @triton.jit
-def _sum_product_posteriors(
+def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-nested-blocks
     syndrome,
     H: tl.constexpr,
     prob: tl.constexpr,

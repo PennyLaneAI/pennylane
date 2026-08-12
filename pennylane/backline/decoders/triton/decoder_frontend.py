@@ -18,8 +18,6 @@ This module provides the public entry points for packaging Triton decoder
 kernels into shared libraries that can be loaded by backline devices.
 """
 
-# pylint: disable=no-name-in-module,no-member,too-many-arguments
-
 from __future__ import annotations
 
 import shutil
@@ -40,7 +38,7 @@ except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
 
-def _build_triton_decoder(
+def _build_triton_decoder(  # pylint: disable=too-many-arguments
     decoder_fns: tuple[object, ...],
     *,
     platform: str,
@@ -120,7 +118,7 @@ def _build_triton_decoder(
         raise
 
 
-def _build_css_bp_decoder(
+def _build_css_bp_decoder(  # pylint: disable=too-many-arguments
     Hx: ArrayLike,
     Hz: ArrayLike,
     *,
