@@ -677,21 +677,22 @@ def mps_preparation(mps_tensors, wires):
         tensors. The physical state is prepared on the physical wires for the left boundary
         and the bulk, while it is prepared on the auxiliary wires for the right boundary.
 
-                  │          │          │          │          │  │ │ │  } physical
-             ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│  │ │ │  } state
-        |0> ─┤   ├┘     │   ││     │   ││     │   ││     │   ││  │ │ │
-             │   │ |0> ─┤   ├┘     │   ││     │   ││     │   ││  │ │ │
-             │   │      │   | |0> ─┤   ├┘     │   ││     │   ││  │ │ │
-             │   │      │   │      │   | |0> ─┤   ├┘     │   ││  │ │ │
-             │   │      │   │      │   │      │   | |0> ─┤   ├┘  │ │ │
-             │   │      │   │      │   │      │   │      │   │   │ │ │
-             │   │      │   │ |0> ─┤   ├──────┤   ├──────┤   ├───┘ │ │ } increasing
-             │   │ |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├─────┘ │ } bond
-        |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├──────┤   ├───────┘ } register
-             └───┘      └───┘      └───┘      └───┘      └───┘
-             \_________________________/      \______________/   \____/
-                   left boundary                    bulk         right
-                                                                boundary
+        .. code-block::
+                    │          │          │          │          │  │ │ │  } physical
+                ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│  │ │ │  } state
+            |0> ─┤   ├┘     │   ││     │   ││     │   ││     │   ││  │ │ │
+                │   │ |0> ─┤   ├┘     │   ││     │   ││     │   ││  │ │ │
+                │   │      │   | |0> ─┤   ├┘     │   ││     │   ││  │ │ │
+                │   │      │   │      │   | |0> ─┤   ├┘     │   ││  │ │ │
+                │   │      │   │      │   │      │   | |0> ─┤   ├┘  │ │ │
+                │   │      │   │      │   │      │   │      │   │   │ │ │
+                │   │      │   │ |0> ─┤   ├──────┤   ├──────┤   ├───┘ │ │ } increasing
+                │   │ |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├─────┘ │ } bond
+            |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├──────┤   ├───────┘ } register
+                └───┘      └───┘      └───┘      └───┘      └───┘
+                \_________________________/      \______________/   \____/
+                    left boundary                    bulk         right
+                                                                    boundary
 
     """
     # Build the circuit with queuing suspended: mps_synthesis instantiates many
