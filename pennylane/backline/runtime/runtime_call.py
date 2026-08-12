@@ -24,7 +24,8 @@ from .signature import CSignature, CType, declare, signature_of
 
 def _tracing() -> bool:
     """Whether a JAX trace is open, which is where a recorded call belongs."""
-    try:  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    try:
         from jax._src.core import trace_state_clean
 
         return not trace_state_clean()

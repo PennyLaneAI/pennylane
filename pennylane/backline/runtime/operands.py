@@ -66,7 +66,8 @@ def check_width(ctype: CType, symbol: str, what: str) -> None:
 
 def _is_tracer(value) -> bool:
     """Whether a value only exists while the program is being traced."""
-    try:  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    try:
         import jax
     except ImportError:  # pragma: no cover
         return False
