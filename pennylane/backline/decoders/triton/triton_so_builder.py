@@ -229,6 +229,8 @@ def _build_so(  # pylint: disable=too-many-arguments
         source_text += _make_catalyst_wrapper_source(backend, generated_symbol)
         device_c.write_text(source_text, encoding="utf-8")
 
+        # TODO: in principle we only need a host compiler, however we need to includes and libs
+        # use nvcc and hipcc for now
         hip_include_dir = None
         if backend == "cuda":
             compiler = compiler or os.environ.get("NVCC", "nvcc")
