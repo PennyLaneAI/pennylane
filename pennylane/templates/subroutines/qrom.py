@@ -763,7 +763,7 @@ def _qrom_measurement_decomposition(
     """
     # When called for Adjoint(QROM), extract params from the base operator
     if base is not None:
-        data = base.arguments["data"][0]
+        data = base.arguments["data"]
         control_wires = base.control_wires
         target_wires = base.target_wires
         work_wires = base.work_wires

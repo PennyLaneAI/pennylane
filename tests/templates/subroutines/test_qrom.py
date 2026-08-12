@@ -700,7 +700,7 @@ class TestMeasurementQROM:
         assert len(ops) == 1
         assert isinstance(ops[0], qp.BasisState)
         assert ops[0].wires == qp.wires.Wires([1, 2, 3])
-        assert np.array_equal(ops[0].data[0], np.array([1, 0, 1]))
+        assert np.array_equal(ops.arguments["data"], np.array([1, 0, 1]))
 
     def test_decomposition_two_bitstrings(self):
         """Test the L == 2 branch of the measurement decomposition."""
@@ -730,7 +730,7 @@ class TestMeasurementQROM:
             _qrom_measurement_decomposition(base=op)
         with qp.queuing.AnnotatedQueue() as q_direct:
             _qrom_measurement_decomposition(
-                data=op.data[0],
+                data=op.arguments["data"],
                 control_wires=op.control_wires,
                 target_wires=op.target_wires,
                 work_wires=op.work_wires,
