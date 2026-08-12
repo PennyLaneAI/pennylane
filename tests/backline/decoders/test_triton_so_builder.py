@@ -68,8 +68,8 @@ class TestBuildSo:
                 cflags=(),
             )
 
-    def test_build_so_builds_hip_command_and_patches_source(self, monkeypatch, tmp_path):
-        """It should add stdlib.h and pass the expected HIP compile command."""
+    def test_build_so_builds_hip_command_and_appends_catalyst_wrapper(self, monkeypatch, tmp_path):
+        """It should add stdlib.h and a Catalyst ABI wrapper to the HIP source."""
         generated_c = tmp_path / "generated.c"
         generated_c.write_text("#include <stdio.h>\nint kernel(void) { return 0; }\n")
 
@@ -103,12 +103,20 @@ class TestBuildSo:
         )
 
         assert so_path == out.resolve()
-        assert symbol_name == "decoder_symbol"
+        assert symbol_name == "decoder_symbol_catalyst"
         assert calls["check"] is True
         assert calls["cmd"][0] == "hipcc-custom"
         assert calls["cmd"][1:6] == ["-fPIC", "-shared", "-O3", "-o", str(out.resolve())]
         assert calls["cmd"][-1] == "-Wall"
         assert calls["source"].startswith("#include <stdlib.h>\n#include <stdio.h>\n")
+        assert "typedef struct {" in calls["source"]
+        assert (
+            "int decoder_symbol_catalyst(const CoprocLaunchDescCompat *desc, void *ctx)"
+            in calls["source"]
+        )
+        assert "desc->ring_slots" in calls["source"]
+        assert "(hipStream_t)desc->stream" in calls["source"]
+        assert "int rc = decoder_symbol(" in calls["source"]
 
     def test_build_so_patches_source_at_most_once(self, monkeypatch, tmp_path):
         """It should not duplicate stdlib.h if the generated source already has it."""
@@ -141,10 +149,11 @@ class TestBuildSo:
             cflags=(),
         )
 
-        assert seen["source"] == "#include <stdlib.h>\n#include <stdio.h>\n"
+        assert seen["source"].count("#include <stdlib.h>") == 1
+        assert seen["source"].startswith("#include <stdlib.h>\n#include <stdio.h>\n")
 
     def test_build_so_adds_nvcc_wrapper_and_cuda_link_flag(self, monkeypatch, tmp_path):
-        """It should wrap fPIC for nvcc and link against libcuda for CUDA launchers."""
+        """It should wrap fPIC, add libcuda, and append a CUDA Catalyst wrapper."""
         generated_c = tmp_path / "generated.c"
         generated_c.write_text("#include <stdio.h>\nint kernel(void) { return 0; }\n")
 
@@ -158,6 +167,7 @@ class TestBuildSo:
         def fake_run(cmd, check):
             assert check is True
             seen["cmd"] = cmd
+            seen["source"] = Path(cmd[7]).read_text(encoding="utf-8")
 
         monkeypatch.setattr(builder.subprocess, "run", fake_run)
 
@@ -176,6 +186,11 @@ class TestBuildSo:
 
         assert seen["cmd"][:4] == ["/usr/local/cuda/bin/nvcc", "-Xcompiler", "-fPIC", "-shared"]
         assert "-lcuda" in seen["cmd"]
+        assert (
+            "int decoder_symbol_catalyst(const CoprocLaunchDescCompat *desc, void *ctx)"
+            in seen["source"]
+        )
+        assert "int rc = decoder_symbol(" in seen["source"]
 
     def test_build_so_uses_backend_default_compiler(self, monkeypatch, tmp_path):
         """It should fall back to HIPCC when no compiler override is provided."""

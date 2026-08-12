@@ -67,7 +67,7 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
-            Triton-generated exported entrypoint name. The caller owns the returned file.
+            Catalyst-compatible exported launcher symbol. The caller owns the returned file.
 
     Raises:
         ValueError: If the build options are invalid.
@@ -165,7 +165,7 @@ def _build_css_bp_decoder(  # pylint: disable=too-many-arguments
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
-            Triton-generated exported entrypoint name. The caller owns the returned file.
+            Catalyst-compatible exported launcher symbol. The caller owns the returned file.
 
     Raises:
         ValueError: If the decoder options or parity-check matrices are invalid.
