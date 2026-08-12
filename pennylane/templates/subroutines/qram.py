@@ -165,7 +165,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         @qp.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qp.BasisState(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.BBQRAM(
                 data,

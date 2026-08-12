@@ -137,7 +137,7 @@ class QROM(Operator2):
         def circuit():
 
             # the third index is encoded in the control wires [0, 1]
-            qp.BasisState(2, wires = [0,1])
+            qp.BasisState([1, 0], wires = [0,1])
 
             qp.QROM(data = data,
                     control_wires = [0,1],

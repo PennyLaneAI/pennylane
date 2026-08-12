@@ -87,6 +87,7 @@ class QFT(Operator2):
 
             @qp.qnode(dev, shots=1)
             def qft_add(m, k, num_wires):
+                m_bin = qp.math.int_to_binary(m, num_wires)
                 qp.BasisEmbedding(m, wires=range(num_wires))
                 qp.adjoint(qp.QFT)(wires=range(num_wires))
                 for j in range(num_wires):
