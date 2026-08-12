@@ -1640,11 +1640,17 @@ def _init_wires(op: Operator2):
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
-    if any(isinstance(w, AbstractWires) for w in all_algorithmic_wires):
-        total_wires = sum(len(w) for w in all_algorithmic_wires)
-        op._wires = AbstractWires(total_wires)
-    else:
-        op._wires = Wires.all_wires(all_algorithmic_wires)
+    op._wires = _combine_wire_list(all_algorithmic_wires)
+
+
+def _combine_wire_list(wires):
+    if any(isinstance(w, AbstractWires) for w in wires):
+        if any(getattr(w, "num_wires", 1) == -1 for w in wires):
+            total_wires = -1
+        else:
+            total_wires = sum(len(w) for w in wires)
+        return AbstractWires(total_wires)
+    return Wires.all_wires(wires)
 
 
 def _init_arg_types(op: Operator2) -> None:
