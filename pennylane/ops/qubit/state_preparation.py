@@ -79,8 +79,9 @@ class BasisState(StatePrepBase2):
 
     If you would like to set a state represented by a base-10 decimal, you can do:
 
-    >>> dec_state = 3 # |11> state
-    >>> bin_state = qp.math.int_to_binary(dec_state, 2)
+    >>> num_wires = 2
+    >>> dec_state = 3 # |11> state on two wires
+    >>> bin_state = qp.math.int_to_binary(dec_state, num_wires)
     >>> print(bin_state)
     [1 1]
     >>> circuit(bin_state)
@@ -135,6 +136,9 @@ class BasisState(StatePrepBase2):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
 
         return qp.math.cast(state, bool)
+
+    def __repr__(self) -> str:
+        return f"BasisState({qp.math.cast(self.state, int)}, wires={self.wires})"
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
