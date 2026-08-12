@@ -48,6 +48,7 @@ from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import Controlled2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
@@ -263,9 +264,9 @@ def _to_general_c_qu(base, wires, control_values, work_wires, work_wire_type, **
 
 add_decomps(
     ControlledQubitUnitary,
-    flip_zero_control(ctrl_decomp_bisect_rule),
-    flip_zero_control(single_ctrl_decomp_zyz_rule),
-    flip_zero_control(multi_control_decomp_zyz_rule),
+    flip_zero_control2(ctrl_decomp_bisect_rule),
+    flip_zero_control2(single_ctrl_decomp_zyz_rule),
+    flip_zero_control2(multi_control_decomp_zyz_rule),
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
