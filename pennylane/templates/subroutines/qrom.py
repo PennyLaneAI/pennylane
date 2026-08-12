@@ -32,8 +32,9 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, BasisState, X, adjoint, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -631,7 +632,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
         PauliMeasure: num_measurements,
         CZ: num_cz,
-        resource_rep(CNOT): L - 1,
+        CNOT: L - 1,
         BasisState(Bool[num_target_wires], Wire[num_target_wires]): L,
         X: L + flag.get(X, 0),
         qp_ops.ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
@@ -657,7 +658,7 @@ def _flag_resources(n_extra, num_target_wires):
         resources[X] = 2
         return resources
     resources[TemporaryAND] = n_extra - 1
-    resources[adjoint(TemporaryAND)] = n_extra - 1
+    resources[_adjoint_abstract(TemporaryAND)] = n_extra - 1
     return resources
 
 

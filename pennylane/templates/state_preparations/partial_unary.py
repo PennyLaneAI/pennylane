@@ -740,7 +740,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     wire management."""
     num_entries = len(indices)
     if num_entries == 1:
-        qp.BasisState(indices[0], wires)
+        qp.BasisState(math.int_to_binary(indices[0], len(wires)), wires)
         return
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
@@ -773,7 +773,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     for _type, *data in reversed(circuit):
         if _type == "PUI":
             k_start, k = data
-            qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(math.int_to_binary(k_start, len(subspace_wires)), subspace_wires)
             b = k - k_start
             qp.QROM(
                 data=np.eye(b, dtype=np.int64),
@@ -781,7 +781,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
                 target_wires=nonsubspace_wires[:b],
                 work_wires=work_wires[: n_subspace - 1],
             )
-            qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(math.int_to_binary(k_start, len(subspace_wires)), subspace_wires)
             continue
         if _type == "Fanout":
             control, bits = data

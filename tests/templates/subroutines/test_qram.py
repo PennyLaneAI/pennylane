@@ -22,6 +22,7 @@ import pytest
 
 from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.decomposition import list_decomps
+from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
@@ -40,7 +41,7 @@ dev = device("default.qubit")
 
 @qnode(dev)
 def bb_quantum(data, control_wires, target_wires, work_wires, address):
-    BasisEmbedding(address, wires=control_wires)
+    BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     BBQRAM(
         data,
         control_wires=control_wires,
@@ -273,7 +274,7 @@ def test_bbqram_decomposition_new(
 def hybrid_quantum(
     data, control_wires, target_wires, work_wires, k, address
 ):  # pylint: disable=too-many-arguments
-    BasisEmbedding(address, wires=control_wires)
+    BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     HybridQRAM(
         data,
         control_wires=control_wires,
@@ -698,7 +699,7 @@ def test_hybrid_raises(params, error, match):
 def select_only_quantum(
     data, control_wires, target_wires, select_wires, select_value, address
 ):  # pylint: disable=too-many-arguments
-    BasisEmbedding(address, wires=control_wires)
+    BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     SelectOnlyQRAM(
         data,
         control_wires=control_wires,

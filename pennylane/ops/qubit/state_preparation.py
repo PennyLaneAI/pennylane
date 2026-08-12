@@ -112,15 +112,13 @@ class BasisState(StatePrepBase2):
 
         abstract_state = qp.math.is_abstract(state)
 
-        if not math.shape(state):
-            if not abstract_state:
-                raise ValueError(
-                    f"Integer state are not allowed. Please convert your state to a binary array with 'qp.math.int_to_binary({state}, {num_wires})'."
-                )
-            bin = 2 ** math.arange(num_wires)[::-1]
-            state = qp.math.where((state & bin) > 0, 1, 0)
-
         shape = math.shape(state)
+        if not shape:
+            raise ValueError(
+                "Integer states are not supported. Please convert your state to a binary "
+                f"array, e.g. with 'qp.math.int_to_binary(state, {num_wires})'."
+            )
+
         if len(shape) != 1:
             raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 

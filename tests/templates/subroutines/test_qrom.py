@@ -221,7 +221,7 @@ class TestQROM:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(j):
-            qp.BasisEmbedding(j, wires=control_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(j, len(control_wires)), wires=control_wires)
             qp.QROM(data, control_wires, target_wires, work_wires, clean)
             return qp.sample(wires=target_wires)
 
@@ -305,8 +305,8 @@ class TestQROM:
             qp.CSWAP(wires=[1, 2, 3]),
             qp.Select(
                 ops=(
-                    qp.BasisEmbedding(1, wires=[2]) @ qp.BasisEmbedding(0, wires=[3]),
-                    qp.BasisEmbedding(0, wires=[2]) @ qp.BasisEmbedding(1, wires=[3]),
+                    qp.BasisEmbedding([1], wires=[2]) @ qp.BasisEmbedding([0], wires=[3]),
+                    qp.BasisEmbedding([0], wires=[2]) @ qp.BasisEmbedding([1], wires=[3]),
                 ),
                 control=[0],
             ),
@@ -315,8 +315,8 @@ class TestQROM:
             qp.CSWAP(wires=[1, 2, 3]),
             qp.Select(
                 ops=(
-                    qp.BasisEmbedding(1, wires=[2]) @ qp.BasisEmbedding(0, wires=[3]),
-                    qp.BasisEmbedding(0, wires=[2]) @ qp.BasisEmbedding(1, wires=[3]),
+                    qp.BasisEmbedding([1], wires=[2]) @ qp.BasisEmbedding([0], wires=[3]),
+                    qp.BasisEmbedding([0], wires=[2]) @ qp.BasisEmbedding([1], wires=[3]),
                 ),
                 control=0,
             ),
@@ -743,7 +743,9 @@ class TestMeasurementQROM:
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
-            qp.BasisState(j, wires=wires["control_wires"])
+            qp.BasisState(
+                qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
+            )
             _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
@@ -846,7 +848,9 @@ class TestMeasurementQROM:
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
-            qp.BasisState(j, wires=wires["control_wires"])
+            qp.BasisState(
+                qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
+            )
             _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
@@ -892,7 +896,9 @@ class TestMeasurementQROM:
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
-            qp.BasisState(j, wires=wires["control_wires"])
+            qp.BasisState(
+                qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
+            )
             _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 

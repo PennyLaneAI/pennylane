@@ -983,7 +983,7 @@ def _select_only_qram_decomposition(
     n_total = num_select + len(control_wires)
 
     if select_value is not None and num_select > 0:
-        BasisState(select_value, wires=select_wires)
+        BasisState(math.int_to_binary(select_value, num_select), wires=select_wires)
 
     # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
     for addr, bits in enumerate(data):
