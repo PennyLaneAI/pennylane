@@ -189,7 +189,7 @@ def _process_data(op):
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
     else:
         mod_val = None
@@ -1745,16 +1745,7 @@ class Operation(Operator):
         [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
         For operators that define a generator, the parameter frequencies are directly
-        related to the eigenvalues of the generator:
-
-        >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
-        >>> op.parameter_frequencies
-        [(1,)]
-        >>> gen = qp.generator(op, format="observable")
-        >>> gen_eigvals = qp.eigvals(gen)
-        >>> qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
-        (np.float64(1.0),)
-
+        related to the eigenvalues of the generator and can be computed numerically.
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
         if self.num_params == 1:
