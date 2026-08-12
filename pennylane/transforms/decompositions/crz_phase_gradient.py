@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane.decomposition import change_op_basis_resource_rep
 from pennylane.ops import Prod
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import validate_phase_gradient_wires
 
@@ -118,7 +118,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
             num_y_wires=precision,
             num_work_wires=len(work_wires),
         )
-        fanout = qp.ctrl(qp.BasisState(Int[precision], Wire[precision]), control=Wire[1])
+        fanout = qp.ctrl(qp.BasisState(Bool[precision], Wire[precision]), control=Wire[1])
         compute_op = uncompute_op = qp.resource_rep(Prod, resources={fanout: 2})
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
         return {change_basis_rep: 1}
