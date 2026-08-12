@@ -52,8 +52,8 @@ class HeterogeneousDevice(Device):
         )
 
     The device stores the :class:`~.Placement` consisting of a :class:`transport <.Transport>`,
-    :class:`controller <.Controller>`, and :class:`coprocessors <.Coprocessor>`. This device requires
-    the Catalyst compiler.
+    :class:`controller <.Controller>`, and :class:`coprocessors <.Coprocessor>`. This device
+    requires the Catalyst compiler.
 
     Args:
         placement (Placement): The :class:`~.Placement` to execute over.
