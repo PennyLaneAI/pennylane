@@ -674,9 +674,24 @@ def mps_preparation(mps_tensors, wires):
         :math:`\lceil \log_2 \chi \rceil` entries are the bond (auxiliary) wires and whose
         remaining entries are the physical wires, where :math:`\chi` is the maximal bond
         dimension (inferred from ``mps_tensors``). Its total length equals the number of MPS
-        tensors. The synthesis is invariant to the choice of wire labels and their order:
-        operators are built on canonical labels internally and remapped onto ``wires`` only at
-        the end, so any labelling prepares the same state up to the corresponding relabelling.
+        tensors. The physical state is prepared on the physical wires for the left boundary
+        and the bulk, while it is prepared on the auxiliary wires for the right boundary.
+
+                  │          │          │          │          │  │ │ │  } physical
+             ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│  │ │ │  } state
+        |0> ─┤   ├┘     │   ││     │   ││     │   ││     │   ││  │ │ │
+             │   │ |0> ─┤   ├┘     │   ││     │   ││     │   ││  │ │ │
+             │   │      │   | |0> ─┤   ├┘     │   ││     │   ││  │ │ │
+             │   │      │   │      │   | |0> ─┤   ├┘     │   ││  │ │ │
+             │   │      │   │      │   │      │   | |0> ─┤   ├┘  │ │ │
+             │   │      │   │      │   │      │   │      │   │   │ │ │
+             │   │      │   │ |0> ─┤   ├──────┤   ├──────┤   ├───┘ │ │ } increasing
+             │   │ |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├─────┘ │ } bond
+        |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├──────┤   ├───────┘ } register
+             └───┘      └───┘      └───┘      └───┘      └───┘
+             \_________________________/      \______________/   \____/
+                   left boundary                    bulk         right
+                                                                boundary
 
     """
     # Build the circuit with queuing suspended: mps_synthesis instantiates many
