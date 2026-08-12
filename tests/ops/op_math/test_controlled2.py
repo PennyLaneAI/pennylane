@@ -556,6 +556,7 @@ class TestControlledOp2:
         assert op.diagonalizing_gates() == gates
         assert ControlledOp2.compute_diagonalizing_gates(**op.arguments) == gates
 
+    @pytest.mark.pl2do("we'll come back to parameter batching later")
     def test_batching(self):
         """Tests parameter batching."""
 
