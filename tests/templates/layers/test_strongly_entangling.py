@@ -430,7 +430,7 @@ def test_capture_decomposition():
     rot_loop_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == for_loop_prim]
     assert rot_loop_eqn[0].primitive == for_loop_prim
     rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
-    assert rot_inner_eqn[-1].primitive == qp.Rot._primitive  # pylint: disable=protected-access
+    assert rot_inner_eqn[-1].params["op_cls"] == qp.Rot
 
     cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
     assert cnot_inner_eqn[-1].params["op_cls"] == qp.CNOT
