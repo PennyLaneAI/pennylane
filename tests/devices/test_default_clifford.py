@@ -21,6 +21,7 @@ import scipy as sp
 from dummy_debugger import Debugger
 
 import pennylane as qp
+from pennylane.core.operator import Operator1
 from pennylane.devices.default_clifford import _pl_op_to_stim
 from pennylane.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
 
@@ -649,6 +650,10 @@ def test_meas_error():
         circuit_herm()
 
 
+class RX(Operator1):  # pylint: disable=too-few-public-methods
+    has_decomposition = False
+
+
 @pytest.mark.parametrize("check", [True, False])
 def test_clifford_error(check):
     """Test if an QuantumFunctionError is raised when one of the operations is not Clifford."""
@@ -659,7 +664,7 @@ def test_clifford_error(check):
     def circuit():
         qp.Hadamard(wires=[0])
         qp.PauliX(wires=[0])
-        qp.RX(1.0, wires=[0])
+        RX(1.0, wires=[0])
         return qp.state()
 
     with pytest.raises(

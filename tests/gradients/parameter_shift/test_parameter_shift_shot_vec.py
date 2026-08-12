@@ -464,9 +464,13 @@ class TestParamShift:
         """Test that an error is raised if no grad_recipe, no parameter_frequencies
         and no generator are found."""
 
-        class RX(qp.RX):
+        class RX(qp.operation.Operation):
             """This copy of RX overwrites parameter_frequencies to report
             missing information, disabling its differentiation."""
+
+            num_params = 1
+            grad_method = "A"
+            num_wires = 1
 
             @property
             def parameter_frequencies(self):
