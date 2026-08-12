@@ -224,7 +224,6 @@ def test_parametrized_op():
 
 
 class TestSpecialOps:
-
     def test_diagonal_qubit_unitary(self):
         """Test Operator2 capture and list canonicalization for DiagonalQubitUnitary."""
 
@@ -302,7 +301,6 @@ class TestSpecialOps:
 
 
 class TestTemplates:
-
     def test_variable_wire_non_parametrized_template(self):
         """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 
@@ -372,12 +370,12 @@ class TestTemplates:
         state = input_type([1, 0])
         jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
         assert jaxpr.eqns[4].params["op_cls"] == qp.BasisState
-        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), int)
+        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), bool)
 
         state = input_type([1.0, 0.0])
         jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
         assert jaxpr.eqns[4].params["op_cls"] == qp.BasisState
-        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), int)
+        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), bool)
 
 
 class TestOpmath:

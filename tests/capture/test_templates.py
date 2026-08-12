@@ -369,8 +369,9 @@ class TestModifiedTemplates:
         """Test that basis embedding is just BasisState."""
 
         jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
-        assert jaxpr.eqns[0].params["op_cls"] == qp.BasisState
-        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
+        # eqns[0] is for converting to bool
+        assert jaxpr.eqns[1].params["op_cls"] == qp.BasisState
+        assert jaxpr.eqns[1].invars[0].aval == jax.core.ShapedArray((3,), bool)
 
     @pytest.mark.parametrize(
         "container", [tuple, list, jnp.array], ids=["tuple", "list", "jnp.array"]
