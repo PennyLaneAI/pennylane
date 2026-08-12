@@ -861,7 +861,7 @@ class SumOfSlatersPrep(Operator2):
         **Dynamic work wires**
 
         Note that in the example above, wires with labels ``5`` to ``15`` were dynamically
-        allocated. These registers can optionally be provided explicitly. If they are not, they will be dynamically allocated. 
+        allocated. These registers can optionally be provided explicitly. If they are not, they will be dynamically allocated.
         We can see an initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as
         ``|Ψ⟩`` on the first four dynamic wires in the above diagram), a :class:`~.QROM` and
         a sequence of elbow ladders that set a caching qubit (qubit index ``15``), which
@@ -907,6 +907,7 @@ class SumOfSlatersPrep(Operator2):
     compilable_argnames = ("indices",)
     arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         coefficients: TensorLike,
@@ -1238,6 +1239,7 @@ def _sos_state_prep_with_wires(
 
 
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
+# pylint: disable-next=too-many-arguments
 def _sos_state_prep(
     coefficients,
     wires,
@@ -1272,12 +1274,6 @@ def _sos_state_prep(
         with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
             start = 0
             # There is no implementation of QROM with allocate yet, so we allocate its work wires here
-            names = [
-                "enumeration_wires",
-                "identification_wires",
-                "qrom_work_wires",
-                "mcx_cache_wires",
-            ]
             all_wires = {}
 
             def _allocate_conditionally(wires_arg, name, start):
@@ -1297,7 +1293,7 @@ def _sos_state_prep(
             all_wires["wires"] = wires
             all_wires["selected_wires"] = selected_wires
             data = (coefficients, v_bits, data)
-            _sos_state_prep_with_wires(data, **all_wires)
+            _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
     else:
         all_wires = {
             "enumeration_wires": enumeration_wires,

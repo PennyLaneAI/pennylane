@@ -300,9 +300,9 @@ class TestHelperFunctions:
     )
     def test_find_single_w(self, bits):
         """Test _find_single_w."""
-        copy = bits.copy()
+        bits_copy = bits.copy()
         W = _find_single_w(bits)
-        assert np.allclose(bits, copy)  # Input not altered
+        assert np.allclose(bits, bits_copy)  # Input not altered
         assert isinstance(W, np.ndarray) and W.shape == (len(bits), 1)
         assert _is_binary(W)
         # Assert that the newly found vector indeed differs from the inputs
@@ -595,9 +595,7 @@ class TestSumOfSlatersPrep:
             return start
 
         start = _assign_conditionally(sizes["enumeration_wires"], "enumeration_wires", num_wires)
-        start = _assign_conditionally(
-            sizes["identification_wires"], "identification_wires", start
-        )
+        start = _assign_conditionally(sizes["identification_wires"], "identification_wires", start)
         start = _assign_conditionally(sizes["qrom_work_wires"], "qrom_work_wires", start)
         start = _assign_conditionally(sizes["mcx_cache_wires"], "mcx_cache_wires", start)
 
