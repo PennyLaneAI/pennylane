@@ -341,7 +341,7 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
-def bind_new_parameters_adjoint(op: Pow2, params: Sequence[TensorLike]):
+def bind_new_parameters_pow2(op: Pow2, params: Sequence[TensorLike]):
     return Pow2(bind_new_parameters(op.base, params), z=op.z)
 
 
