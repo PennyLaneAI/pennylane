@@ -713,7 +713,9 @@ class TestMeasurementQROM:
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 
-    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
+    @pytest.mark.xfail(
+        reason="this will not work with Catalyst until the Operator2 work is complete."
+    )
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
