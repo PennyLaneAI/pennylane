@@ -229,6 +229,10 @@ class Wires(Sequence):
         >>> wires1 + wires2
         Wires([4, 0, 1, 2])
         """
+        if isinstance(other, AbstractWires):
+            if other.num_wires == -1:
+                return other
+            return AbstractWires(len(self) + other.num_wires)
         other = Wires(other)
         return Wires.all_wires([self, other])
 
@@ -241,6 +245,10 @@ class Wires(Sequence):
         Returns:
             Wires: all wires appearing in either object
         """
+        if isinstance(other, AbstractWires):
+            if other.num_wires == -1:
+                return other
+            return AbstractWires(len(self) + other.num_wires)
         other = Wires(other)
         return Wires.all_wires([other, self])
 
