@@ -242,9 +242,9 @@ class TestOutPoly:
         @qp.qnode(dev)
         def circuit():
             # loading values for x, y and z
-            qp.BasisEmbedding(1, wires=wires["x"])
-            qp.BasisEmbedding(2, wires=wires["y"])
-            qp.BasisEmbedding(3, wires=wires["z"])
+            qp.BasisEmbedding([0, 0, 1], wires=wires["x"])
+            qp.BasisEmbedding([0, 1, 0], wires=wires["y"])
+            qp.BasisEmbedding([0, 1, 1], wires=wires["z"])
 
             # applying the polynomial
             qp.OutPoly(
