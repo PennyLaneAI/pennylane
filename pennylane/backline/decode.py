@@ -181,7 +181,7 @@ def decode(  # pylint: disable=too-many-arguments
         import pennylane as qp
 
         con = qp.Controller(
-            device=qp.device("lightning.qubit", wires=2),
+            device=qp.device("null.qubit", wires=2),
             remote=True,
             executor_options={"host": "192.168.3.15"},
             init_args={"out_bytes": 8},

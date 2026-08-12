@@ -275,10 +275,10 @@
   ```python
   import pennylane as qp
 
-  qp.runtime_declare("example_run_rounds", "(ptr, u32) -> u64", library="/path/librounds.so")
+  qp.runtime_declare("example_local_rounds", "(ptr, u32) -> u64", library="/path/librounds.so")
 
   def program(session):
-      return qp.runtime_call("example_run_rounds", session, 100000)
+      return qp.runtime_call("example_local_rounds", session, 100000)
   ```
 
   Passing `address="host:port"` dispatches the call to executor on remote side, which invokes the
@@ -303,8 +303,11 @@
   ```python
   import pennylane as qp
 
+  address_controller = "192.168.3.15"  # the host the controller runs on
+  address_coproc = "192.168.1.3"  # the host the coprocessor listens on
+
   con = qp.Controller(
-      device=qp.device("lightning.qubit", wires=2),
+      device=qp.device("null.qubit", wires=2),
       remote=True,
       executor_options={"host": address_controller},
       init_args={"out_bytes": 8},
