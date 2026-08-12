@@ -282,7 +282,7 @@
   ```
 
   Passing `address="host:port"` dispatches the call to executor on remote side, which invokes the
-  symbol on the machine the runtime lives on; without it the call is local. And `qp.backline.runtime.CType` lists what can cross the boundary
+  symbol on the machine the runtime lives on; without it the call is local. Meanwhile, `qp.backline.runtime.CType` lists what can cross the boundary.
 
   A symbol that fills a buffer declares it as an `out` parameter: the caller asks for `out_bytes=`
   and gets the filled buffer back alongside the result.
