@@ -15,24 +15,25 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
+# pylint:disable=protected-access, unused-argument
+
 import re
 from functools import partial
 
 import numpy as np
-
-# pylint:disable=protected-access, unused-argument
 import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
+from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
@@ -123,7 +124,8 @@ def test_change_op_basis_callables_capture_with_none():
 
     assert jaxpr.eqns[-1].primitive.name == "adjoint_transform"
     assert jaxpr.eqns[-1].params["jaxpr"].eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-2].primitive.name == "PauliX"
+
+    assert_eqn_matches_op(jaxpr.eqns[-2], qp.X)
     assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
 
 
@@ -196,7 +198,7 @@ def test_change_op_basis_callables_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert_eqn_matches_op(jaxpr.eqns[-3], qp.X)
     assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
 
 
@@ -410,11 +412,11 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {abstractify(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 2, qp.MultiRZ(Float, Wire[2]): 1}
 
         resource_obj = default_decomp.compute_resources(
             compute_op=abstractify(qp.X),
-            target_op=resource_rep(qp.MultiRZ, num_wires=2),
+            target_op=qp.MultiRZ(Float, Wire[2]),
             uncompute_op=abstractify(qp.X),
         )
 

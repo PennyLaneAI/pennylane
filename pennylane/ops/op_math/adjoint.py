@@ -353,7 +353,6 @@ class Adjoint(SymbolicOp):
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
 
         """
-
         if isinstance(base, Operation):
             # not an observable
             return object.__new__(AdjointOperation)
@@ -416,7 +415,7 @@ class Adjoint(SymbolicOp):
         if self.base.has_adjoint:
             return [self.base.adjoint()]
         base_decomp = self.base.decomposition()
-        return [Adjoint(op) for op in reversed(base_decomp)]
+        return [qp.adjoint(op) for op in reversed(base_decomp)]
 
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
