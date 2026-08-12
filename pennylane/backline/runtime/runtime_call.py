@@ -51,7 +51,7 @@ def _get_runtime_call_prim():
 
 
 def runtime_call(target, *args, signature=None, out_bytes=0, address=None, library=None):
-    r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
+    r"""Call a declared runtime symbol, in-process or on the executor it is addressed to, from within a backline-controlled QJIT function.
 
     A symbol is declared once with :func:`~.runtime_declare`, then called by name from inside a
     ``qjit`` program.
