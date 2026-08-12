@@ -827,7 +827,7 @@ class TestUnaryIterator:
 
         wires = qp.registers({"target": num_ops, "control": control, "work": work})
         ops = [
-            qp.BasisEmbedding(qp.math.int_to_binary(i), wires=wires["target"])
+            qp.BasisEmbedding(qp.math.int_to_binary(i, len(wires["target"])), wires=wires["target"])
             for i in range(num_ops)
         ]
 
