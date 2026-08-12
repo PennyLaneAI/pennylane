@@ -650,7 +650,7 @@ def test_meas_error():
         circuit_herm()
 
 
-class RX(Operator1):  # pylint: disable=too-few-public-methods
+class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
     has_decomposition = False
 
 
@@ -664,12 +664,12 @@ def test_clifford_error(check):
     def circuit():
         qp.Hadamard(wires=[0])
         qp.PauliX(wires=[0])
-        RX(1.0, wires=[0])
+        LegacyRX(1.0, wires=[0])
         return qp.state()
 
     with pytest.raises(
         DeviceError,
-        match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
+        match=r"Operator LegacyRX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         if qp.decomposition.enabled_graph() and check:
             with pytest.warns(DecompositionWarning):

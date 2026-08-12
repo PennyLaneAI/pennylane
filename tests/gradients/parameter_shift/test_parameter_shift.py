@@ -1036,7 +1036,7 @@ class TestParamShift:
         and no generator are found."""
 
         # pylint: disable=too-few-public-methods
-        class RX(qp.operation.Operation):
+        class LegacyRX(qp.operation.Operation):
             """This copy of RX overwrites parameter_frequencies to report
             missing information, disabling its differentiation."""
 
@@ -1059,7 +1059,7 @@ class TestParamShift:
             num_wires = 1
 
         x = np.array(0.654, requires_grad=True)
-        for op in [RX, NewOp]:
+        for op in [LegacyRX, NewOp]:
             with qp.queuing.AnnotatedQueue() as q:
                 op(x, wires=0)
                 qp.expval(qp.PauliZ(0))

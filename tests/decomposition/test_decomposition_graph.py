@@ -985,7 +985,7 @@ class TestControlledDecompositions:
         assert all("_custom_rule" not in rule.name for rule in rules)
 
 
-class RX(Operator1):
+class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
     pass
 
 
@@ -996,9 +996,9 @@ class TestSymbolicDecompositions:
     def test_cancel_adjoint(self):
         """Tests that a nested adjoint operator is flattened properly."""
 
-        op = qp.adjoint(qp.adjoint(RX(0.5, wires=[0])))
+        op = qp.adjoint(qp.adjoint(LegacyRX(0.5, wires=[0])))
 
-        graph = DecompositionGraph(operations=[op], gate_set={"RX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"LegacyRX"})
         # 2 operator nodes (Adjoint(Adjoint(RX)) and RX), and 1 decomposition node.
         # and the dummy starting node
         assert len(graph._graph.nodes()) == 4
@@ -1009,13 +1009,14 @@ class TestSymbolicDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [RX(0.5, wires=[0])]
-        assert solution.resource_estimate(op) == to_resources({RX: 1})
+        assert q.queue == [LegacyRX(0.5, wires=[0])]
+        assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_custom(self):
+    def test_adjoint_custom(self, mocker):
         """Tests adjoint of an operator that defines its own adjoint."""
 
-        op = qp.adjoint(RX(0.5, wires=[0]))
+        mocker.patch.object(LegacyRX, "__name__", "RX")
+        op = qp.adjoint(LegacyRX(0.5, wires=[0]))
 
         graph = DecompositionGraph(operations=[op], gate_set={"RX"})
         # 2 operator nodes (Adjoint(RX) and RX), and 1 decomposition node, and 1 dummy starting node
@@ -1027,17 +1028,19 @@ class TestSymbolicDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [RX(-0.5, wires=[0])]
-        assert solution.resource_estimate(op) == to_resources({RX: 1})
+        assert q.queue == [LegacyRX(-0.5, wires=[0])]
+        assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_general(self):
+    def test_adjoint_general(self, mocker):
         """Tests decomposition of a generalized adjoint operation."""
 
-        @qp.register_resources({qp.H: 1, qp.CNOT: 2, RX: 1, qp.T: 1})
+        mocker.patch.object(LegacyRX, "__name__", "RX")
+
+        @qp.register_resources({qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.T: 1})
         def custom_decomp(phi, wires):
             qp.H(wires[0])
             qp.CNOT(wires=wires[:2])
-            RX(phi, wires=wires[1])
+            LegacyRX(phi, wires=wires[1])
             qp.CNOT(wires=wires[1:3])
             qp.T(wires[2])
 
@@ -1064,12 +1067,12 @@ class TestSymbolicDecompositions:
         assert q.queue == [
             qp.adjoint(qp.T(2)),
             qp.adjoint(qp.CNOT(wires=[1, 2])),
-            qp.adjoint(RX(0.5, wires=1)),
+            qp.adjoint(LegacyRX(0.5, wires=1)),
             qp.adjoint(qp.CNOT(wires=[0, 1])),
             qp.adjoint(qp.H(wires=0)),
         ]
         assert solution.resource_estimate(op) == to_resources(
-            {qp.H: 1, qp.CNOT: 2, RX: 1, qp.PhaseShift: 1},
+            {qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.PhaseShift: 1},
         )
 
     def test_nested_powers(self):
