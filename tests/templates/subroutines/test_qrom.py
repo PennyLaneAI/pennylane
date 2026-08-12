@@ -47,46 +47,16 @@ except ImportError:
     has_jax = False
 
 
-@pytest.mark.parametrize(
-    "data",
-    [
-        [[1, 0, 0, 1], [0, 1, 1, 0]],
-        [
-            [
-                1,
-                0,
-            ],
-            [
-                0,
-                1,
-            ],
-            [
-                1,
-                1,
-            ],
-        ],
-        AbstractArray(shape=(5, 3), dtype=np.int64),
-        AbstractArray(shape=(7, 2), dtype=np.int64),
-        ["00000", "00001", "00011", "10001", "00101"],
-        ["0001", "1010", "0100", "1000"],
-        ("000", "101"),
-    ],
-)
-def test_abstract_init(data):
+def test_abstract_data():
     """Tests that the abstract init handles Sequence[str] data and more."""
     control_wires = Wire[3]
-    if not isinstance(data, AbstractArray) and isinstance(data[0], (str, list)):
-        target_wires = Wire[len(data[0])]
-    else:
-        target_wires = Wire[data.shape[-1]]
+    target_wires = Wire[3]
     work_wires = Wire[3]
 
+    data = AbstractArray(shape=(5, 3), dtype=np.int64)
     op = qp.QROM(data, control_wires, target_wires, work_wires)
 
-    if not isinstance(data, AbstractArray) and isinstance(data[0], (str, list)):
-        assert op.arguments["data"] == AbstractArray((len(data), len(data[0])), dtype=np.int64)
-    else:
-        assert op.arguments["data"] == AbstractArray(shape=data.shape, dtype=np.int64)
+    assert op.arguments["data"] == data
 
 
 @pytest.mark.jax

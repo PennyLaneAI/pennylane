@@ -43,6 +43,7 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.queuing import QueuingManager
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -188,7 +189,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if "work_wires" in self._init_args:
             self._init_args["work_wires"] = work_wires
 
-        print(self._init_args)
         super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
@@ -282,6 +282,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @property
     @override
     def wires(self):
+        if any(isinstance(w, AbstractWires) for w in (self.control_wires, self.target_wires)):
+            return AbstractWires(len(self.control_wires) + len(self.target_wires))
         return self.control_wires + self.target_wires
 
     @staticmethod
@@ -607,6 +609,7 @@ def _remove_from_program(op):
 
 
 @list_decomps.register
+@QueuingManager.stop_recording()
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     """Get all the decomposition rules applicable to this operator."""
 

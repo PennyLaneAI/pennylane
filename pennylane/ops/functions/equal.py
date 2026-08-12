@@ -719,6 +719,9 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     if isinstance(wire_comparison, str):
         return wire_comparison
 
+    if op1.work_wire_type != op2.work_wire_type:
+        return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
+
     if isinstance(op1, Controlled2):
         if isinstance(op1.control_wires, AbstractWires):
             if not isinstance(op2.control_wires, AbstractWires):

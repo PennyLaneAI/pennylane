@@ -45,7 +45,7 @@ from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.transforms import decompose
-from pennylane.typing import Bool, Float, Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
 
@@ -990,12 +990,14 @@ class TestDecomposition:
         theta = 1.2
         op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1, 2, 3, 4))
         decomp = op.decomposition()
+        print(decomp)
 
         qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), [0]))
         qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
         qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), wires=[0]))
         qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
 
+        print("and pre decompsotiion")
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
 
@@ -1920,16 +1922,16 @@ class TestCtrl:
         assert isinstance(op, ControlledOp2)
         assert op.base == DynOp(Float, Wire[2])
         assert op.wires == Wire[3]
-        assert op.control_wires == Wire[1]
-        assert op.control_values == Bool[1]
+        assert op.control_wires == qp.wires.Wires([0])
+        assert op.control_values == [1]
 
         new_op = qp.ctrl(op, control=[3, 4], work_wires=[5])
         assert isinstance(new_op, ControlledOp2)
         assert new_op.base == DynOp(Float, Wire[2])
         assert new_op.wires == Wire[5]
-        assert new_op.control_wires == Wire[3]
-        assert new_op.control_values == Bool[3]
-        assert new_op.work_wires == Wire[1]
+        assert new_op.control_wires == qp.wires.Wires([3, 4, 0])
+        assert qp.math.allclose(new_op.control_values, [1, 1, 1])
+        assert new_op.work_wires == qp.wires.Wires([5])
 
     # pylint: disable=too-few-public-methods,unused-argument
     def test_custom_ctrl_dispatch(self):
