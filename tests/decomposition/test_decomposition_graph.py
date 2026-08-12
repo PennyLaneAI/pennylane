@@ -989,6 +989,11 @@ class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
     pass
 
 
+decompositions.get()["LegacyRX"] = decompositions.get()["RX"]
+decompositions.get()["Adjoint(LegacyRX)"] = decompositions.get()["Adjoint(RX)"]
+decompositions.get()["C(LegacyRX)"] = decompositions.get()["C(RX)"]
+
+
 @patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
 class TestSymbolicDecompositions:
     """Tests decompositions of symbolic ops."""
@@ -1015,10 +1020,9 @@ class TestSymbolicDecompositions:
     def test_adjoint_custom(self, mocker):
         """Tests adjoint of an operator that defines its own adjoint."""
 
-        mocker.patch.object(LegacyRX, "__name__", "RX")
         op = qp.adjoint(LegacyRX(0.5, wires=[0]))
 
-        graph = DecompositionGraph(operations=[op], gate_set={"RX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"LegacyRX"})
         # 2 operator nodes (Adjoint(RX) and RX), and 1 decomposition node, and 1 dummy starting node
         assert len(graph._graph.nodes()) == 4
         assert len(graph._graph.edges()) == 3
@@ -1034,8 +1038,6 @@ class TestSymbolicDecompositions:
     def test_adjoint_general(self, mocker):
         """Tests decomposition of a generalized adjoint operation."""
 
-        mocker.patch.object(LegacyRX, "__name__", "RX")
-
         @qp.register_resources({qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.T: 1})
         def custom_decomp(phi, wires):
             qp.H(wires[0])
@@ -1047,7 +1049,7 @@ class TestSymbolicDecompositions:
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
         graph = DecompositionGraph(
             operations=[op],
-            gate_set={"H", "CNOT", "RX", "PhaseShift"},
+            gate_set={"H", "CNOT", "LegacyRX", "PhaseShift"},
             alt_decomps={CustomOp: [custom_decomp]},
         )
         # 12 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX,
