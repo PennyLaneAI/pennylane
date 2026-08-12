@@ -33,8 +33,8 @@ def _tracing() -> bool:
 
 
 @functools.lru_cache(maxsize=1)
-def _get_runtime_call_prim():
-    """Get the ``runtime_call`` primitive."""
+def get_runtime_call_prim():
+    """Get the ``runtime_call`` primitive, creating it on the first call."""
 
     # pylint: disable=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
@@ -126,7 +126,7 @@ def _record(signature: CSignature, args, sizes, address, library):
         raise TypeError(
             f"{signature.symbol}{signature} returns nothing, a dispatched call to it has no result."
         )
-    results = _get_runtime_call_prim().bind(
+    results = get_runtime_call_prim().bind(
         *operands.operands_for(signature, args, local=address is None),
         signature=signature,
         symbol=signature.symbol,

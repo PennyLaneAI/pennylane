@@ -22,7 +22,6 @@ from pennylane._grad.grad import _get_jacobian_prim
 from pennylane._grad.jvp import _get_jvp_prim
 from pennylane._grad.value_and_grad import _get_value_and_grad_prim
 from pennylane._grad.vjp import _get_vjp_prim
-from pennylane.backline.runtime.runtime_call import _get_runtime_call_prim
 from pennylane.control_flow.for_loop import _get_for_loop_qfunc_prim
 from pennylane.control_flow.while_loop import _get_while_loop_qfunc_prim
 from pennylane.core._capture_measurements import _get_abstract_measurement  # tach-ignore
@@ -54,7 +53,6 @@ measure_prim = _create_mid_measure_primitive()
 pauli_measure_prim = _create_pauli_measure_primitive()
 transform_prim = _create_transform_primitive()
 symbolic_array_prim = _symbolic_array_primitive()
-runtime_call_prim = _get_runtime_call_prim()
 
 __all__ = [
     "AbstractOperator",
@@ -73,7 +71,6 @@ __all__ = [
     "measure_prim",
     "operator_p",
     "quantum_subroutine_prim",
-    "runtime_call_prim",
     "pauli_measure_prim",
     "transform_prim",
 ]

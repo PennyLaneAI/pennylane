@@ -23,7 +23,7 @@ executor, which invokes the symbol on the machine the runtime lives on.
 :class:`CSignature` holds a symbol's C signature, over the types in :class:`CType`.
 """
 
-from .runtime_call import runtime_call
+from .runtime_call import get_runtime_call_prim, runtime_call
 from .signature import CSignature, CType, declare, declared_symbols, signature_of
 
 __all__ = (
@@ -31,6 +31,7 @@ __all__ = (
     "CType",
     "declare",
     "declared_symbols",
+    "get_runtime_call_prim",
     "runtime_call",
     "signature_of",
 )
