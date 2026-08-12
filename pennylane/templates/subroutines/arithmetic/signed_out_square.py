@@ -89,9 +89,9 @@ class SignedOutSquare(Operation):
             # - Flip 4's bit if sign bit=0 (=> superposition of -8 and 4)
             qp.ctrl(qp.X(x_wires[1]), x_wires[0], control_values=[0])
             # - Add 3 (x_wires[2:] are zeroed, can just do bit flips) => superposition of -5 and 7
-            qp.BasisEmbedding(3, wires=x_wires[2:])
+            qp.BasisEmbedding(qp.math.int_to_binary(3, len(x_wires[2:])), wires=x_wires[2:])
             # Prepare initial state on output wires
-            qp.BasisEmbedding(5, wires=output_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
             # Signed square
             qp.SignedOutSquare(x_wires, output_wires, work_wires)
             return qp.counts(wires=output_wires)
