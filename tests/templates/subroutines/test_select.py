@@ -801,7 +801,10 @@ class TestUnaryIterator:
         work = list(range(num_controls, 2 * num_controls - 1))
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qp.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [
+            qp.BasisEmbedding(qp.math.int_to_binary(i, len(target)), wires=target)
+            for i in range(num_ops)
+        ]
 
         @qp.qnode(dev)
         def circuit():
@@ -912,7 +915,10 @@ class TestSelectWithWorkWire:
         work = ["a"]
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qp.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [
+            qp.BasisEmbedding(qp.math.int_to_binary(i, len(target)), wires=target)
+            for i in range(num_ops)
+        ]
 
         @qp.qnode(dev)
         def circuit():
