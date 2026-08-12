@@ -441,7 +441,8 @@ class HybridQRAM(Operation):
         @qp.qnode(dev)
         def hybrid_qram():
             # prepare an address, e.g., |010> (index 2)
-            qp.BasisState(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.HybridQRAM(
                 data,
@@ -847,7 +848,8 @@ class SelectOnlyQRAM(Operation):
         @qp.qnode(dev)
         def select_only_qram():
             # prepare an address, e.g., |010> (index 2)
-            qp.BasisState(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.SelectOnlyQRAM(
                 data,
