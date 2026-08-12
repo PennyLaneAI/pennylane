@@ -102,6 +102,7 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
                 "ring_u64_ptr": "*u64",
                 "handoff_u64_ptr": "*u64",
                 "stop_u32_ptr": "*u32",
+                "ring_slots": "u32",
                 "total": "u64",
             },
             constexpr={"decoder_fns": tuple(decoder_fns)},

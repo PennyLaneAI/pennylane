@@ -20,16 +20,16 @@ try:
 except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
-K_RING_SLOTS = tl.constexpr(256)  # can store 256 elements
 PAYLOAD_SLOT_WORDS = tl.constexpr(8)  # sizeof(PayloadSlot) / sizeof(u64)
 HANDOFF_SLOT_WORDS = tl.constexpr(2)  # sizeof(HandoffSlot) / sizeof(u64)
 
 
 @triton.jit
-def _persistent_decoder_kernel(
+def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments
     ring_u64_ptr,
     handoff_u64_ptr,
     stop_u32_ptr,
+    ring_slots,
     total,
     decoder_fns: tl.constexpr,
 ):
@@ -46,6 +46,8 @@ def _persistent_decoder_kernel(
             store the completion sequence number.
         stop_u32_ptr (*u32): Pointer to a stop flag polled while waiting for the
             next request.
+        ring_slots (u32): Number of request and handoff slots. Must be a power
+            of two so the kernel can mask ``cursor`` into a slot index.
         total (u64): Number of requests to process. A value of ``0`` means keep
             running until ``stop_u32_ptr`` becomes nonzero.
         decoder_fns (tuple[Callable]): Compile-time tuple of Triton decoder
@@ -56,9 +58,10 @@ def _persistent_decoder_kernel(
     # cursor/total are u64; slot indices and seq numbers are u32 by wire layout.
     cursor = tl.zeros((), dtype=tl.uint64)
     halt = tl.zeros((), dtype=tl.int1)
+    ring_slot_mask = tl.cast(ring_slots - 1, tl.uint64)
     while ((total == 0) or (cursor < total)) and (halt == 0):
-        # cursor % K_RING_SLOTS
-        idx = tl.cast(cursor & (K_RING_SLOTS - 1), tl.uint32)
+        # ring_slots is a power of two, so modulo is a mask.
+        idx = tl.cast(cursor & ring_slot_mask, tl.uint32)
         expect = tl.cast(cursor + 1, tl.uint32)
 
         # PayloadSlot = 8 * uint64
