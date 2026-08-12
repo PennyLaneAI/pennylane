@@ -251,7 +251,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if control_values is None:
         control_values = [True] * num_control
 
-    if isinstance(base_ctrl_values, AbstractArray):
+    if isinstance(control_values, AbstractArray) or isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
     control_values = math.array(control_values)
