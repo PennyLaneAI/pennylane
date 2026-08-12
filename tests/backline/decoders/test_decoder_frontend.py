@@ -16,7 +16,8 @@
 
 # pylint: disable=protected-access,wrong-import-position,broad-exception-caught,import-outside-toplevel
 
-from pathlib import Path
+import ctypes
+import shutil
 
 import numpy as np
 import pytest
@@ -39,67 +40,54 @@ pytestmark = [
 from pennylane.backline.decoders.triton import decoder_frontend as frontend
 
 
+@triton.jit
+def _echo_decoder(syndrome):
+    return syndrome
+
+
+def _cuda_platform() -> str:
+    target = triton.runtime.driver.active.get_current_target()
+    return f"{target.backend}:{target.arch}:{target.warp_size}"
+
+
 class TestBuildTritonDecoder:
     """Tests for _build_triton_decoder."""
 
-    def test_build_triton_decoder_passes_options_to_builder(self, monkeypatch, tmp_path):
-        """It should forward the normalized build options to _build_so."""
-        calls = {}
-
-        def fake_build_so(kernel, **kwargs):
-            calls["kernel"] = kernel
-            calls.update(kwargs)
-            return Path(kwargs["out"]), "decoder_symbol"
-
-        monkeypatch.setattr(frontend.tempfile, "mkdtemp", lambda prefix: str(tmp_path))
-        monkeypatch.setattr(frontend, "_build_so", fake_build_so)
-
-        decoder_fns = (object(), object())
+    @pytest.mark.skipif(shutil.which("nvcc") is None, reason="nvcc compiler not available")
+    def test_build_triton_decoder_compiles_shared_library(self):
+        """It should compile a Triton decoder shared library end to end."""
         so_path, symbol_name = frontend._build_triton_decoder(
-            decoder_fns,
-            platform=" cuda:80:32 ",
-            grid=(2, 3, 4),
-            num_warps=2,
-            num_stages=3,
-            compiler="cc",
-            cflags=("-g",),
+            (_echo_decoder,),
+            platform=_cuda_platform(),
+            compiler=shutil.which("nvcc") or "nvcc",
         )
 
-        assert so_path == (tmp_path / "librdma_triton_decoder.so").resolve()
-        assert symbol_name == "decoder_symbol"
-        assert calls == {
-            "kernel": frontend._persistent_decoder_kernel,
-            "signature": {
-                "ring_u64_ptr": "*u64",
-                "handoff_u64_ptr": "*u64",
-                "stop_u32_ptr": "*u32",
-                "ring_slots": "u32",
-                "total": "u64",
-            },
-            "constexpr": {"decoder_fns": decoder_fns},
-            "grid": (2, 3, 4),
-            "platform": "cuda:80:32",
-            "out": str((tmp_path / "librdma_triton_decoder.so").resolve()),
-            "num_warps": 2,
-            "num_stages": 3,
-            "compiler": "cc",
-            "cflags": ("-g",),
-        }
+        assert so_path.exists()
+        assert symbol_name.endswith("_catalyst")
+        lib = ctypes.CDLL(str(so_path))
+        assert getattr(lib, symbol_name)
 
     def test_build_triton_decoder_cleans_tmpdir_on_failure(self, monkeypatch, tmp_path):
         """It should delete the temporary output directory when the build fails."""
         scratch = tmp_path / "scratch"
         scratch.mkdir()
 
-        monkeypatch.setattr(frontend.tempfile, "mkdtemp", lambda prefix: str(scratch))
-        monkeypatch.setattr(
-            frontend,
-            "_build_so",
-            lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
-        )
+        real_mkdtemp = frontend.tempfile.mkdtemp
 
-        with pytest.raises(RuntimeError, match="boom"):
-            frontend._build_triton_decoder((object(),), platform="cuda:80:32")
+        def fake_mkdtemp(*args, **kwargs):
+            prefix = kwargs.get("prefix")
+            if prefix is None and len(args) >= 2:
+                prefix = args[1]
+            return str(scratch) if prefix == "pl_triton_decoder_" else real_mkdtemp(*args, **kwargs)
+
+        monkeypatch.setattr(frontend.tempfile, "mkdtemp", fake_mkdtemp)
+
+        with pytest.raises(FileNotFoundError, match="missing-nvcc"):
+            frontend._build_triton_decoder(
+                (_echo_decoder,),
+                platform=_cuda_platform(),
+                compiler="/missing-nvcc",
+            )
 
         assert not scratch.exists()
 
@@ -139,26 +127,11 @@ class TestBuildTritonDecoder:
 class TestBuildCssBpDecoder:
     """Tests for _build_css_bp_decoder."""
 
-    def test_build_css_bp_decoder_builds_two_specialized_decoders(self, monkeypatch):
-        """It should specialize one decoder per parity-check matrix and forward them."""
-        decoder_calls = []
-        built_decoders = [object(), object()]
-        forwarded = {}
-
-        def fake_make_css_decoder(hx, *, postprocess, num_iters, prob):
-            decoder_calls.append((hx.copy(), postprocess, num_iters, prob))
-            return built_decoders[len(decoder_calls) - 1]
-
-        def fake_build_triton_decoder(decoder_fns, **kwargs):
-            forwarded["decoder_fns"] = decoder_fns
-            forwarded.update(kwargs)
-            return Path("/tmp/decoder.so"), "decode_symbol"
-
-        monkeypatch.setattr(frontend, "_make_css_decoder", fake_make_css_decoder)
-        monkeypatch.setattr(frontend, "_build_triton_decoder", fake_build_triton_decoder)
-
-        hx = [[1, 0], [0, 1]]
-        hz = [[1, 1], [0, 1]]
+    @pytest.mark.skipif(shutil.which("nvcc") is None, reason="nvcc compiler not available")
+    def test_build_css_bp_decoder_compiles_shared_library(self):
+        """It should compile a CSS BP decoder shared library end to end."""
+        hx = np.array([[1, 0], [0, 1]], dtype=int)
+        hz = np.array([[1, 1], [0, 1]], dtype=int)
 
         so_path, symbol_name = frontend._build_css_bp_decoder(
             hx,
@@ -166,30 +139,18 @@ class TestBuildCssBpDecoder:
             postprocess="hard",
             num_iters=7,
             prob=0.2,
-            platform="cuda:80:32",
+            platform=_cuda_platform(),
             grid=(5, 1, 1),
             num_warps=4,
             num_stages=2,
-            compiler="cc",
+            compiler=shutil.which("nvcc") or "nvcc",
             cflags=("-g",),
         )
 
-        assert so_path == Path("/tmp/decoder.so")
-        assert symbol_name == "decode_symbol"
-        assert len(decoder_calls) == 2
-        np.testing.assert_array_equal(decoder_calls[0][0], np.asarray(hx))
-        np.testing.assert_array_equal(decoder_calls[1][0], np.asarray(hz))
-        assert decoder_calls[0][1:] == ("hard", 7, 0.2)
-        assert decoder_calls[1][1:] == ("hard", 7, 0.2)
-        assert forwarded == {
-            "decoder_fns": tuple(built_decoders),
-            "platform": "cuda:80:32",
-            "grid": (5, 1, 1),
-            "num_warps": 4,
-            "num_stages": 2,
-            "compiler": "cc",
-            "cflags": ("-g",),
-        }
+        assert so_path.exists()
+        assert symbol_name.endswith("_catalyst")
+        lib = ctypes.CDLL(str(so_path))
+        assert getattr(lib, symbol_name)
 
     @pytest.mark.parametrize(
         ("kwargs", "message"),

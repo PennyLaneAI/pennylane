@@ -229,10 +229,14 @@ def _build_so(  # pylint: disable=too-many-arguments
         source_text += _make_catalyst_wrapper_source(backend, generated_symbol)
         device_c.write_text(source_text, encoding="utf-8")
 
+        hip_include_dir = None
         if backend == "cuda":
             compiler = compiler or os.environ.get("NVCC", "nvcc")
         elif backend == "hip":
             compiler = compiler or os.environ.get("HIPCC", "hipcc")
+            candidate = Path(triton.__file__).resolve().parent / "backends" / "amd" / "include"
+            if (candidate / "hip" / "hip_runtime.h").exists():
+                hip_include_dir = candidate
 
         cmd = [
             compiler,
@@ -247,6 +251,8 @@ def _build_so(  # pylint: disable=too-many-arguments
             cmd.insert(1, "-Xcompiler")
         if backend == "cuda":
             cmd.append("-lcuda")
+        elif hip_include_dir is not None:
+            cmd.append(f"-I{hip_include_dir}")
         cmd.extend(cflags)
         subprocess.run(cmd, check=True)
 

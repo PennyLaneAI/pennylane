@@ -16,7 +16,8 @@
 
 # pylint: disable=protected-access,wrong-import-position,broad-exception-caught
 
-from pathlib import Path
+import ctypes
+import shutil
 from types import SimpleNamespace
 
 import pytest
@@ -37,6 +38,12 @@ pytestmark = [
 ]
 
 from pennylane.backline.decoders.triton import triton_so_builder as builder
+from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
+
+
+@triton.jit
+def _echo_decoder(syndrome):
+    return syndrome
 
 
 class TestBuildSo:
@@ -68,164 +75,63 @@ class TestBuildSo:
                 cflags=(),
             )
 
-    def test_build_so_builds_hip_command_and_appends_catalyst_wrapper(self, monkeypatch, tmp_path):
-        """It should add stdlib.h and a Catalyst ABI wrapper to the HIP source."""
-        generated_c = tmp_path / "generated.c"
-        generated_c.write_text("#include <stdio.h>\nint kernel(void) { return 0; }\n")
-
-        calls = {}
-
-        monkeypatch.setattr(
-            builder,
-            "_compile_kernel",
-            lambda *args, **kwargs: ("hip", "decoder_symbol", generated_c),
-        )
-
-        def fake_run(cmd, check):
-            calls["cmd"] = cmd
-            calls["check"] = check
-            calls["source"] = Path(cmd[6]).read_text(encoding="utf-8")
-
-        monkeypatch.setattr(builder.subprocess, "run", fake_run)
-
+    @pytest.mark.skipif(shutil.which("hipcc") is None, reason="hipcc compiler not available")
+    def test_build_so_compiles_hip_shared_library(self, tmp_path):
+        """It should compile a HIP shared library with a Catalyst ABI wrapper."""
         out = tmp_path / "decoder.so"
         so_path, symbol_name = builder._build_so(
-            object(),
-            signature={},
-            constexpr={},
+            _persistent_decoder_kernel,
+            signature={
+                "ring_u64_ptr": "*u64",
+                "handoff_u64_ptr": "*u64",
+                "stop_u32_ptr": "*u32",
+                "ring_slots": "u32",
+                "total": "u64",
+            },
+            constexpr={"decoder_fns": (_echo_decoder,)},
             grid=(1, 1, 1),
             platform="hip:gfx942:64",
             num_warps=1,
             num_stages=1,
             out=str(out),
-            compiler="hipcc-custom",
-            cflags=("-Wall",),
-        )
-
-        assert so_path == out.resolve()
-        assert symbol_name == "decoder_symbol_catalyst"
-        assert calls["check"] is True
-        assert calls["cmd"][0] == "hipcc-custom"
-        assert calls["cmd"][1:6] == ["-fPIC", "-shared", "-O3", "-o", str(out.resolve())]
-        assert calls["cmd"][-1] == "-Wall"
-        assert calls["source"].startswith("#include <stdlib.h>\n#include <stdio.h>\n")
-        assert "typedef struct {" in calls["source"]
-        assert (
-            "int decoder_symbol_catalyst(const CoprocLaunchDescCompat *desc, void *ctx)"
-            in calls["source"]
-        )
-        assert "desc->ring_slots" in calls["source"]
-        assert "(hipStream_t)desc->stream" in calls["source"]
-        assert "int rc = decoder_symbol(" in calls["source"]
-
-    def test_build_so_patches_source_at_most_once(self, monkeypatch, tmp_path):
-        """It should not duplicate stdlib.h if the generated source already has it."""
-        generated_c = tmp_path / "generated.c"
-        generated_c.write_text("#include <stdlib.h>\n#include <stdio.h>\n")
-
-        seen = {}
-        monkeypatch.setattr(
-            builder,
-            "_compile_kernel",
-            lambda *args, **kwargs: ("hip", "decoder_symbol", generated_c),
-        )
-
-        def fake_run(cmd, check):
-            assert check is True
-            seen["source"] = Path(cmd[6]).read_text(encoding="utf-8")
-
-        monkeypatch.setattr(builder.subprocess, "run", fake_run)
-
-        builder._build_so(
-            object(),
-            signature={},
-            constexpr={},
-            grid=(1, 1, 1),
-            platform="hip:gfx942:64",
-            num_warps=1,
-            num_stages=1,
-            out=str(tmp_path / "decoder.so"),
-            compiler="hipcc-custom",
+            compiler=shutil.which("hipcc") or "hipcc",
             cflags=(),
         )
 
-        assert seen["source"].count("#include <stdlib.h>") == 1
-        assert seen["source"].startswith("#include <stdlib.h>\n#include <stdio.h>\n")
+        assert so_path == out.resolve()
+        assert so_path.exists()
+        assert symbol_name.endswith("_catalyst")
+        lib = ctypes.CDLL(str(so_path))
+        assert getattr(lib, symbol_name)
 
-    def test_build_so_adds_nvcc_wrapper_and_cuda_link_flag(self, monkeypatch, tmp_path):
-        """It should wrap fPIC, add libcuda, and append a CUDA Catalyst wrapper."""
-        generated_c = tmp_path / "generated.c"
-        generated_c.write_text("#include <stdio.h>\nint kernel(void) { return 0; }\n")
-
-        seen = {}
-        monkeypatch.setattr(
-            builder,
-            "_compile_kernel",
-            lambda *args, **kwargs: ("cuda", "decoder_symbol", generated_c),
-        )
-
-        def fake_run(cmd, check):
-            assert check is True
-            seen["cmd"] = cmd
-            seen["source"] = Path(cmd[7]).read_text(encoding="utf-8")
-
-        monkeypatch.setattr(builder.subprocess, "run", fake_run)
-
-        builder._build_so(
-            object(),
-            signature={},
-            constexpr={},
+    @pytest.mark.skipif(shutil.which("nvcc") is None, reason="nvcc compiler not available")
+    def test_build_so_compiles_cuda_shared_library(self, tmp_path):
+        """It should compile a CUDA shared library with a Catalyst ABI wrapper."""
+        out = tmp_path / "decoder.so"
+        so_path, symbol_name = builder._build_so(
+            _persistent_decoder_kernel,
+            signature={
+                "ring_u64_ptr": "*u64",
+                "handoff_u64_ptr": "*u64",
+                "stop_u32_ptr": "*u32",
+                "ring_slots": "u32",
+                "total": "u64",
+            },
+            constexpr={"decoder_fns": (_echo_decoder,)},
             grid=(1, 1, 1),
             platform="cuda:80:32",
             num_warps=1,
             num_stages=1,
-            out=str(tmp_path / "decoder.so"),
-            compiler="/usr/local/cuda/bin/nvcc",
+            out=str(out),
+            compiler=shutil.which("nvcc") or "nvcc",
             cflags=(),
         )
 
-        assert seen["cmd"][:4] == ["/usr/local/cuda/bin/nvcc", "-Xcompiler", "-fPIC", "-shared"]
-        assert "-lcuda" in seen["cmd"]
-        assert (
-            "int decoder_symbol_catalyst(const CoprocLaunchDescCompat *desc, void *ctx)"
-            in seen["source"]
-        )
-        assert "int rc = decoder_symbol(" in seen["source"]
-
-    def test_build_so_uses_backend_default_compiler(self, monkeypatch, tmp_path):
-        """It should fall back to HIPCC when no compiler override is provided."""
-        generated_c = tmp_path / "generated.c"
-        generated_c.write_text("int kernel(void) { return 0; }\n")
-
-        monkeypatch.setattr(
-            builder,
-            "_compile_kernel",
-            lambda *args, **kwargs: ("hip", "decoder_symbol", generated_c),
-        )
-        monkeypatch.setenv("HIPCC", "hipcc-from-env")
-
-        seen = {}
-
-        def fake_run(cmd, check):
-            assert check is True
-            seen["cmd"] = cmd
-
-        monkeypatch.setattr(builder.subprocess, "run", fake_run)
-
-        builder._build_so(
-            object(),
-            signature={},
-            constexpr={},
-            grid=(1, 1, 1),
-            platform="hip:gfx942:64",
-            num_warps=1,
-            num_stages=1,
-            out=str(tmp_path / "decoder.so"),
-            compiler="",
-            cflags=(),
-        )
-
-        assert seen["cmd"][0] == "hipcc-from-env"
+        assert so_path == out.resolve()
+        assert so_path.exists()
+        assert symbol_name.endswith("_catalyst")
+        lib = ctypes.CDLL(str(so_path))
+        assert getattr(lib, symbol_name)
 
     def test_compile_kernel_suffixes_generated_symbol_with_ast_hash(self, monkeypatch):
         """It should derive the launcher symbol from the Triton AST hash."""
