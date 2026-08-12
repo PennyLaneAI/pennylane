@@ -282,8 +282,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @property
     @override
     def wires(self):
-        if any(isinstance(w, AbstractWires) for w in (self.control_wires, self.target_wires)):
-            return AbstractWires(len(self.control_wires) + len(self.target_wires))
         return self.control_wires + self.target_wires
 
     @staticmethod
