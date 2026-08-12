@@ -25,17 +25,29 @@ import pytest
 triton = pytest.importorskip("triton")
 
 
-def _has_cuda_target() -> bool:
+def _current_target():
+    """Return the active Triton target when available."""
     try:
-        return triton.runtime.driver.active.get_current_target().backend == "cuda"
+        return triton.runtime.driver.active.get_current_target()
     except Exception:
-        return False
+        return None
 
 
-pytestmark = [
-    pytest.mark.gpu,
-    pytest.mark.skipif(not _has_cuda_target(), reason="Triton decoder tests require a CUDA device"),
-]
+def _has_backend_target(backend: str) -> bool:
+    """Return whether the active Triton target matches ``backend``."""
+    target = _current_target()
+    return target is not None and target.backend == backend
+
+
+def _platform_for_backend(backend: str, fallback_arch: str, fallback_warp_size: int) -> str:
+    """Build a platform string for the active target or a fallback value."""
+    target = _current_target()
+    if target is not None and target.backend == backend:
+        return f"{backend}:{target.arch}:{target.warp_size}"
+    return f"{backend}:{fallback_arch}:{fallback_warp_size}"
+
+
+pytestmark = [pytest.mark.gpu]
 
 from pennylane.backline.decoders.triton import triton_so_builder as builder
 from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
@@ -75,6 +87,9 @@ class TestBuildSo:
                 cflags=(),
             )
 
+    @pytest.mark.skipif(
+        not _has_backend_target("hip"), reason="Triton decoder tests require a HIP device"
+    )
     @pytest.mark.skipif(shutil.which("hipcc") is None, reason="hipcc compiler not available")
     def test_build_so_compiles_hip_shared_library(self, tmp_path):
         """It should compile a HIP shared library with a Catalyst ABI wrapper."""
@@ -90,7 +105,7 @@ class TestBuildSo:
             },
             constexpr={"decoder_fns": (_echo_decoder,)},
             grid=(1, 1, 1),
-            platform="hip:gfx942:64",
+            platform=_platform_for_backend("hip", fallback_arch="gfx942", fallback_warp_size=64),
             num_warps=1,
             num_stages=1,
             out=str(out),
@@ -104,6 +119,9 @@ class TestBuildSo:
         lib = ctypes.CDLL(str(so_path))
         assert getattr(lib, symbol_name)
 
+    @pytest.mark.skipif(
+        not _has_backend_target("cuda"), reason="Triton decoder CUDA tests require a CUDA device"
+    )
     @pytest.mark.skipif(shutil.which("nvcc") is None, reason="nvcc compiler not available")
     def test_build_so_compiles_cuda_shared_library(self, tmp_path):
         """It should compile a CUDA shared library with a Catalyst ABI wrapper."""
@@ -119,7 +137,7 @@ class TestBuildSo:
             },
             constexpr={"decoder_fns": (_echo_decoder,)},
             grid=(1, 1, 1),
-            platform="cuda:80:32",
+            platform=_platform_for_backend("cuda", fallback_arch="80", fallback_warp_size=32),
             num_warps=1,
             num_stages=1,
             out=str(out),
