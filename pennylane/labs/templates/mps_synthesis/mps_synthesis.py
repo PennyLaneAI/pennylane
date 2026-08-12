@@ -553,7 +553,7 @@ def bulk_sequential_step(cells, delta, aux_wires, phys_wires):
 
 
 @qp.QueuingManager.stop_recording()
-def mps_synthesis(mps_tensors, aux_wires, phys_wires):
+def mps_synthesis(mps_tensors, wires):
     r"""Synthesize a right-canonical matrix product state into a list of operations.
 
     The builder underlying :func:`mps_preparation`: it returns the flag circuit and the
@@ -562,9 +562,8 @@ def mps_synthesis(mps_tensors, aux_wires, phys_wires):
     Args:
         mps_tensors (Sequence[np.ndarray]): right-canonical MPS tensors, each of shape
             ``(chi_L, d, chi_R)`` (input bond, physical, output bond).
-        aux_wires (Sequence): auxiliary (bond) wires; ``ceil(log2(chi))`` of them, for
-            maximal bond dimension ``chi``.
-        phys_wires (Sequence): physical wires, one per tensor, in circuit order.
+        wires (Sequence): the full register — ``ceil(log2(chi))`` auxiliary (bond) wires
+            followed by the physical wires.
 
     Returns:
         tuple[list, complex]: ``(circuit, global_phase)`` — the operations (mostly
@@ -577,14 +576,12 @@ def mps_synthesis(mps_tensors, aux_wires, phys_wires):
     if not is_right_canonical(mps_tensors):
         raise ValueError("MPS tensors must be right-canonical")
 
-    aux_wires = list(aux_wires)
-    phys_wires = list(phys_wires)
+    chi = max(A.shape[0] for A in mps_tensors)  # maximum bond dimension
+    n_aux = int(qp.math.ceil_log2(chi))
 
-    # The synthesis helpers fix their qubit bit-ordering via ``sorted(wires)``, so the
-    # construction is only correct for a canonical labeling (physical wires ordered
-    # before the auxiliary wires, each ascending). Build the circuit on canonical
-    # integer labels and remap the resulting operators onto the user-provided wires at
-    # the end, so that any wire labels or orderings produce identical, correct results.
+    aux_wires = list(wires[:n_aux])
+    phys_wires = list(wires[n_aux:])
+
     phys_canon = list(range(len(phys_wires)))
     aux_canon = list(range(len(phys_wires), len(phys_wires) + len(aux_wires)))
     wire_map = dict(zip(phys_canon + aux_canon, phys_wires + aux_wires))
@@ -620,7 +617,7 @@ def mps_synthesis(mps_tensors, aux_wires, phys_wires):
     return circuit, global_phase
 
 
-def mps_preparation(mps_tensors, aux_wires, phys_wires):
+def mps_preparation(mps_tensors, wires):
     r"""Prepare a right-canonical matrix product state on a quantum register.
 
     Queues the flag circuit mapping :math:`\lvert 0 \rangle` to the state with amplitudes given
@@ -630,9 +627,8 @@ def mps_preparation(mps_tensors, aux_wires, phys_wires):
     Args:
         mps_tensors (Sequence[np.ndarray]): right-canonical MPS tensors, each of shape
             ``(chi_L, d, chi_R)`` (input bond, physical, output bond).
-        aux_wires (Sequence): auxiliary (bond) wires; ``ceil(log2(chi))`` of them, for maximal
-            bond dimension ``chi``.
-        phys_wires (Sequence): physical wires, one per tensor, in circuit order.
+        wires (Sequence): the full register — ``ceil(log2(chi))`` auxiliary (bond) wires
+            followed by the physical wires.
 
     Returns:
         complex: the global phase applied via :class:`~pennylane.GlobalPhase`.
@@ -642,22 +638,51 @@ def mps_preparation(mps_tensors, aux_wires, phys_wires):
 
     **Example**
 
-    Given right-canonical MPS tensors ``mps`` (each of shape ``(chi_L, d, chi_R)``), physical
-    wires ``phys`` (one per tensor), and ``ceil(log2(chi))`` auxiliary wires ``aux``:
+    Given right-canonical MPS tensors ``mps`` (each of shape ``(chi_L, d, chi_R)``) and a
+    combined ``wires`` register holding the ``ceil(log2(chi))`` auxiliary (bond) wires
+    followed by the physical wires:
 
     .. code-block:: python
 
-        dev = qp.device("default.qubit", wires=sorted(set(phys) | set(aux)))
+        import numpy as np
+
+        rng = np.random.default_rng(0)
+
+        def rc(chi_l, chi_r, d=2):
+            g = rng.standard_normal((d * chi_r, chi_l)) + 1j * rng.standard_normal((d * chi_r, chi_l))
+            q, _ = np.linalg.qr(g)
+            return q.conj().T.reshape(chi_l, d, chi_r)
+
+        # Right-canonical MPS with bond dimension chi = 2 (three tensors).
+        mps = [rc(1, 2), rc(2, 2), rc(2, 1)]
+
+        # ceil(log2(2)) = 1 bond (auxiliary) wire (label 2), listed first, then the two
+        # physical wires (labels 0, 1); the register length equals the number of tensors.
+        wires = [2, 0, 1]
+
+        dev = qp.device("default.qubit", wires=sorted(wires))
 
         @qp.qnode(dev)
         def circuit():
-            mps_preparation(mps, aux, phys)
+            mps_preparation(mps, wires)
             return qp.state()
+
+    .. details::
+        :title: Usage Details
+
+        **Wire register.** ``wires`` is a single register whose first
+        :math:`\lceil \log_2 \chi \rceil` entries are the bond (auxiliary) wires and whose
+        remaining entries are the physical wires, where :math:`\chi` is the maximal bond
+        dimension (inferred from ``mps_tensors``). Its total length equals the number of MPS
+        tensors. The synthesis is invariant to the choice of wire labels and their order:
+        operators are built on canonical labels internally and remapped onto ``wires`` only at
+        the end, so any labelling prepares the same state up to the corresponding relabelling.
+
     """
     # Build the circuit with queuing suspended: mps_synthesis instantiates many
     # intermediate operators that would otherwise auto-queue onto the tape.
     with qp.QueuingManager.stop_recording():
-        circuit, global_phase = mps_synthesis(mps_tensors, aux_wires, phys_wires)
+        circuit, global_phase = mps_synthesis(mps_tensors, wires)
     for op in circuit:
         qp.apply(op)
     qp.GlobalPhase(-qp.math.angle(global_phase))
