@@ -1347,6 +1347,7 @@ def _handle_single_excitation(op: SingleExcitation):
     return [(0.5, 1.0)]
 
 
+@parameter_frequencies.register
 def _handle_u2(op: U2):
     """Returns the parameter frequencies for a ``U2`` gate."""
     return [(1,), (1,)]

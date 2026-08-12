@@ -441,7 +441,8 @@ class TestSingleExcitationDecompositions:
 
         expected = qp.decomposition.Resources(
             {
-                qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 2,
+                qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
+                qp.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
             }
         )
         assert rule.compute_resources(**op.arguments) == expected
