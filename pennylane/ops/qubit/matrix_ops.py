@@ -188,7 +188,9 @@ class QubitUnitary(Operator2):
         )
 
     @staticmethod
-    def compute_matrix(U: TensorLike, wires: WiresLike, unitary_check: bool = False):  # pylint: disable=unused-argument
+    def compute_matrix(
+        U: TensorLike, wires: WiresLike, unitary_check: bool = False
+    ):  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -216,7 +218,9 @@ class QubitUnitary(Operator2):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike, wires: WiresLike, unitary_check: bool = False, format="csr"):  # pylint: disable=arguments-differ,unused-argument
+    def compute_sparse_matrix(
+        U: TensorLike, wires: WiresLike, unitary_check: bool = False, format="csr"
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -245,7 +249,9 @@ class QubitUnitary(Operator2):
         )
 
     @staticmethod
-    def compute_decomposition(U: TensorLike, wires: WiresLike, unitary_check: bool = False):  # pylint: disable=unused-argument
+    def compute_decomposition(
+        U: TensorLike, wires: WiresLike, unitary_check: bool = False
+    ):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

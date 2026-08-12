@@ -370,7 +370,7 @@ class QuantumMonteCarlo(Operation):
         return {
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q": self.hyperparameters["Q"],
+            "q": self.hyperparameters["q"],
         }
 
     def __init__(self, probs, func, target_wires, estimation_wires):
@@ -400,7 +400,11 @@ class QuantumMonteCarlo(Operation):
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
 
-        self._hyperparameters = {"estimation_wires": estimation_wires, "target_wires": target_wires, "Q": Q}
+        self._hyperparameters = {
+            "estimation_wires": estimation_wires,
+            "target_wires": target_wires,
+            "q": Q,
+        }
 
         super().__init__(A, R, Q, wires=wires)
 
@@ -420,7 +424,7 @@ class QuantumMonteCarlo(Operation):
 
     @staticmethod
     def compute_decomposition(
-        A, R, Q, wires, estimation_wires, target_wires
+        A, R, Q, wires, estimation_wires, target_wires, **_
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 

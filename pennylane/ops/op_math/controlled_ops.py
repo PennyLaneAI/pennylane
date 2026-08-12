@@ -29,7 +29,7 @@ from scipy.linalg import block_diag
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
-from pennylane.core.operator import abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -47,11 +47,11 @@ from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import Controlled2
+from pennylane.ops.op_math.controlled2 import Controlled2, _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, TensorLike, Wire, Complex
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .adjoint2 import _adjoint_abstract
@@ -147,7 +147,12 @@ class ControlledQubitUnitary(Controlled2):
     dynamic_argnames = ("base", "control_values")
     wire_argnames = ("wires", "work_wires")
     compilable_argnames = ("unitary_check", "work_wire_type")
-    arg_specs = {"base": Complex[-1, -1], "wires": Wire[-1], "control_values": Bool[-1], "work_wires": Wire[-1]}
+    arg_specs = {
+        "base": Complex[-1, -1],
+        "wires": Wire[-1],
+        "control_values": Bool[-1],
+        "work_wires": Wire[-1],
+    }
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -207,39 +212,49 @@ class ControlledQubitUnitary(Controlled2):
 
         self._name = "ControlledQubitUnitary"
 
-    # @property
-    # def resource_params(self) -> dict:
-    #     return {
-    #         "num_target_wires": len(self.base.wires),
-    #         "num_control_wires": len(self.control_wires),
-    #         "num_zero_control_values": len([val for val in self.control_values if not val]),
-    #         "num_work_wires": len(self.work_wires),
-    #         "work_wire_type": self.work_wire_type,
-    #     }
+    @property
+    @override
+    def base(self) -> Operator:
+        # For concrete operators ``__init__`` already wraps the matrix in a ``QubitUnitary``.
+        # For abstract operators ``_base`` is the raw unitary matrix (kept as a dynamic arg for
+        # ``arg_specs``/serialization), so expose it as an (abstract) ``QubitUnitary`` operator
+        # here to keep the symbolic ``Controlled2`` machinery (equality, ``arithmetic_depth``,
+        # ``target_wires``, etc.) working.
+        if isinstance(self._base, AbstractArray):
+            num_target_wires = int(qp.math.log2(self._base.shape[-1]))
+            return qp.QubitUnitary(
+                Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+            )
+        return self._base
 
 
-def _to_general_c_qu_resource(num_target_wires, **kwargs):
+def _to_general_c_qu_resource(wires, control_values, work_wires, work_wire_type, **_):
+    num_control_wires = len(control_values)
+    num_target_wires = len(wires) - num_control_wires
+    num_work_wires = len(work_wires)
     return {
-        resource_rep(
-            qp.ops.Controlled,
-            base_class=qp.QubitUnitary,
-            base_params={"num_wires": num_target_wires},
-            **kwargs,
+        _ctrl_abstract(
+            qp.QubitUnitary(
+                Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+            ),
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
         ): 1
     }
 
 
-@qp.register_condition(lambda num_target_wires, **_: num_target_wires > 2)
+@qp.register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
-def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_wire_type, **_):
+def _to_general_c_qu(base, wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
-    num_target_wires = len(wires) - len(control_wires)
+    num_target_wires = len(wires) - len(control_values)
     qp.ops.Controlled(
-        qp.QubitUnitary(U, wires=wires[-num_target_wires:]),
-        control_wires=control_wires,
+        qp.QubitUnitary(base, wires=wires[-num_target_wires:]),
+        control_wires=wires[:-num_target_wires],
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,

@@ -343,14 +343,10 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
-def _controlled_two_qubit_unitary_resource(
-    num_target_wires,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type,
-    **__,
-):
+def _controlled_two_qubit_unitary_resource(wires, control_values, work_wires, work_wire_type, **__):
+    num_control_wires = len(control_values)
+    num_target_wires = len(wires) - num_control_wires
+    num_work_wires = len(work_wires)
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
     gate_counts = {
         _ctrl_abstract(
@@ -361,12 +357,15 @@ def _controlled_two_qubit_unitary_resource(
         ): count
         for base_op_rep, count in base_resources.gate_counts.items()
     }
-    gate_counts[ops.X] = num_zero_control_values * 2
+    # The impl applies X gates in pairs to flip any zero control values, but with abstract
+    # inputs the concrete control values (and thus their count) are unknown, so these X gates
+    # cannot be counted here. This is acceptable because the rule is registered with exact=False.
+    gate_counts[ops.X] = 0
     return gate_counts
 
 
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_condition(lambda num_target_wires, **_: num_target_wires == 2)
+@register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) == 2)
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""

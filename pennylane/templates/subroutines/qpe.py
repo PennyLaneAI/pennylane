@@ -15,10 +15,6 @@
 Contains the QuantumPhaseEstimation template.
 """
 
-# pylint: disable=arguments-differ
-from pennylane.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.ops.op_math.pow2 import _pow_abstract
 import copy
 
 from pennylane import ops
@@ -32,6 +28,11 @@ from pennylane.decomposition import (
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import _pow_abstract
+
+# pylint: disable=arguments-differ
+from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
@@ -175,7 +176,7 @@ class QuantumPhaseEstimation(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "base": QubitUnitary(self.hyperparameters["unitary"]),
+            "base": QubitUnitary(self.hyperparameters["unitary"].matrix(), wires=self.target_wires),
             "num_estimation_wires": len(self.estimation_wires),
         }
 
@@ -284,12 +285,7 @@ def _qpe_decomp_resource(base, num_estimation_wires):
             base,
             2**i,
         )
-        gate_count[
-            _ctrl_abstract(
-                pow_rep,
-                control_wires=Wire[1]
-            )
-        ] = 1
+        gate_count[_ctrl_abstract(pow_rep, control_wires=Wire[1])] = 1
     return gate_count
 
 
