@@ -398,7 +398,7 @@ def _matrix_pow(U, z):
 
 @register_resources(_qubit_unitary_resource)
 def _pow_qubit_unitary(base, z, **_):
-    QubitUnitary(_matrix_pow(base.U, z), wires=wires)
+    QubitUnitary(_matrix_pow(base.U, z), wires=base.wires)
 
 
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
