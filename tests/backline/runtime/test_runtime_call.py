@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for :mod:`pennylane.runtime`.
+"""Tests for :mod:`pennylane.backline.runtime`.
 
 Declared symbols land in a process-wide registry that is never cleared, so every symbol declared
 here has a name of its own.
@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.runtime import CSignature, CType, operands
+from pennylane.backline.runtime import CSignature, CType, operands
 
 
 @pytest.fixture
@@ -95,8 +95,8 @@ class TestDeclare:
     def test_declare_then_look_up(self):
         """A declared signature is retrievable by symbol."""
         signature = qp.runtime_declare("declared_symbol", "(ptr) -> i64")
-        assert qp.runtime.signature_of("declared_symbol") is signature
-        assert "declared_symbol" in qp.runtime.declared_symbols()
+        assert qp.backline.runtime.signature_of("declared_symbol") is signature
+        assert "declared_symbol" in qp.backline.runtime.declared_symbols()
 
     def test_redeclaring_the_same_signature_is_allowed(self):
         """The same declaration twice is bookkeeping, not a conflict."""

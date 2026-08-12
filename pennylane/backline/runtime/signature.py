@@ -119,7 +119,7 @@ class CSignature:
 
     **Example**
 
-    >>> qp.runtime.CSignature.parse("example_run", "(ptr, u32) -> i32")
+    >>> qp.backline.runtime.CSignature.parse("example_run", "(ptr, u32) -> i32")
     CSignature('example_run', (ptr, u32) -> i32)
     """
 

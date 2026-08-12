@@ -31,7 +31,7 @@ the machine the runtime lives on.
 Types
 -----
 
-.. currentmodule:: pennylane.runtime
+.. currentmodule:: pennylane.backline.runtime
 
 .. autosummary::
     :toctree: api

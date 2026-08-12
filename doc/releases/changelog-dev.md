@@ -269,7 +269,7 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
-* A new `pennylane.runtime` module is added, it lets a compiled program call a runtime entry point
+* A new `pennylane.backline.runtime` module is added, it lets a compiled program call a runtime entry point
   directly, by its C symbol name. A symbol's signature is declared once with `qp.runtime_declare`
   and called with `qp.runtime_call` from inside a `qjit` program.
   [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
@@ -284,8 +284,7 @@
   ```
 
   Passing `address="host:port"` dispatches the call to executor on remote side, which invokes the
-  symbol on the machine the runtime lives on; without it the call is local. And `qp.runtime.CType`
-  lists what can cross the boundary
+  symbol on the machine the runtime lives on; without it the call is local. And `qp.backline.runtime.CType` lists what can cross the boundary
 
   And a new `qp.backline.decode` function is added to offload one syndrome to a coprocessor from inside a captured QNode and returns its correction, driving a single transport round: stage the syndrome, post it, collect the reply. The nodes are taken from the placement of the device being traced, so a round on a built backline is just `correction = qp.backline.decode(syndrome)`; pass `controller=` / `coprocessor=` to choose them explicitly, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 

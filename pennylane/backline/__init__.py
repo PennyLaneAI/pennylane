@@ -132,6 +132,7 @@ lives in the compiled runtime.
     ~register_transport
 """
 
+from . import runtime
 from .decode import decode
 from .device import HeterogeneousDevice, backline
 from .functions import CoprocessorFunction, css_decoder
@@ -139,6 +140,7 @@ from .placement import Controller, Coprocessor, ExecutorSpec, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
 backline.decode = decode
+backline.runtime = runtime
 
 __all__ = [
     "Node",
@@ -154,4 +156,5 @@ __all__ = [
     "Transport",
     "get_transport",
     "register_transport",
+    "runtime",
 ]

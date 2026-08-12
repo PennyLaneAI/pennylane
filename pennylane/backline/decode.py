@@ -26,9 +26,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from pennylane.runtime import runtime_call
-
 from .device import active_placement
+from .runtime import runtime_call
 
 # In-process ``__call`` adapters from TransportCAPI.h, named verbatim by a local runtime_call.
 _PREFIX = "__catalyst__transport__"
