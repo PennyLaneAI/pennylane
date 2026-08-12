@@ -269,7 +269,7 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
-* A new `pennylane.backline.runtime` module is added, it lets a compiled program call a runtime entry point directly, by its C symbol name. A symbol's signature is declared once with `qp.runtime_declare` and called with `qp.runtime_call` from inside a `qjit` program.
+* A new `pennylane.backline.runtime` module is added, adding the ability for a compiled program to call a runtime entry point directly via its C symbol name. A symbol's signature is declared once with `qp.runtime_declare` and called with `qp.runtime_call` from inside a `qjit` program.
   [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
 
   ```python
