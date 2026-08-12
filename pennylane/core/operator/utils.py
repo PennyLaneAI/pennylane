@@ -33,7 +33,53 @@ if TYPE_CHECKING:
 @singledispatch
 @QueuingManager.stop_recording()
 def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedResourceOp:
-    """Convert the provided value into an abstract type."""
+    """Convert the provided object into its abstract form.
+
+    Args:
+        val: The value to convert.
+
+    Returns:
+        The abstract version of the provided value.
+
+    **Example**
+
+    An abstract object in the context of this function is an object that stores only
+    the shape and type of any data whose concrete value would only be known at runtime.
+    For example, the corresponding abstract type of an float array of length 3 is an
+    ``AbstractArray`` with shape ``(3,)`` and type ``float64``:
+
+    >>> qp.core.abstractify(np.array([0.1, 0.2, 0.3]))
+    AbstractArray((3,), float64)
+
+    Similarly, concrete operators have concrete data and wire labels:
+
+    >>> op = qp.CRZ(0.5, wires=[0, 1])
+    >>> op
+    CRZ(0.5, wires=[0, 1])
+
+    The corresponding abstract object is an instance of the same operator with its dynamic
+    data and wires replaced with ``AbstractArray`` and ``AbstractWire`` instances:
+
+    >>> qp.core.abstractify(op)
+    CRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2))
+
+    For operators with fixed signatures (i.e., the shape and type of every argument is
+    statically known and specified in its ``arg_specs``), ``abstractify`` can be used with
+    the operator type and still returns the correct abstract instance:
+
+    >>> qp.core.abstractify(qp.CRZ)
+    CRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2))
+
+    Note that this currently does not work if the operator's signature is not fully fixed.
+    For example, ``PauliRot`` takes an arbitrary number of wires, so this fails:
+
+    >>> qp.core.abstractify(qp.PauliRot)
+    Traceback (most recent call last):
+        ...
+    TypeError: 'PauliRot' must set 'arg_specs' and cover all dynamic and wire arguments with fixed abstract types to be abstractified.
+
+
+    """
 
     # pylint: disable-next=import-outside-toplevel
     from .operator2 import Operator2
