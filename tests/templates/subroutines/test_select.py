@@ -826,7 +826,10 @@ class TestUnaryIterator:
         """Test that proper errors are raised"""
 
         wires = qp.registers({"target": num_ops, "control": control, "work": work})
-        ops = [qp.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
+        ops = [
+            qp.BasisEmbedding(qp.math.int_to_binary(i), wires=wires["target"])
+            for i in range(num_ops)
+        ]
 
         with pytest.raises(ValueError, match=msg_match):
             _select_decomp_unary(
