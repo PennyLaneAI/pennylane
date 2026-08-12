@@ -95,11 +95,8 @@ def _resolve_out_bytes(controller, out_bytes) -> int:
     )
 
 
-def _resolve_nodes(controller, coprocessor, decoder_id):
-    """Fill in whichever node the caller left out, from the built placement.
-
-    An explicit node always wins. ``decoder_id`` picks the coprocessor, since each one carries the
-    decoder of that id.
+def _resolve_nodes(controller, coprocessor):
+    """Fill in whichever node the caller left out, from the built placement. An explicit node always wins.
     """
     if controller is not None and coprocessor is not None:
         return controller, coprocessor
@@ -115,14 +112,7 @@ def _resolve_nodes(controller, coprocessor, decoder_id):
     if controller is None:
         controller = placement.controller
     if coprocessor is None:
-        coprocs = placement.coprocessors
-        if coprocs:
-            if decoder_id >= len(coprocs):
-                raise ValueError(
-                    f"decode: decoder_id {decoder_id} selects coprocessor {decoder_id}, but the "
-                    f"placement has {len(coprocs)}. Pass coprocessor= to choose one directly."
-                )
-            coprocessor = coprocs[decoder_id]
+        coprocessor = placement.coprocessors[0]
     return controller, coprocessor
 
 
@@ -171,7 +161,7 @@ def decode(  # pylint: disable=too-many-arguments
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :func:`~pennylane.backline`
     """
-    controller, coprocessor = _resolve_nodes(controller, coprocessor, decoder_id)
+    controller, coprocessor = _resolve_nodes(controller, coprocessor)
     key = _session_key(coprocessor)
     nbytes = _byte_count(syndrome) if in_bytes is None else int(in_bytes)
     reply_bytes = _resolve_out_bytes(controller, out_bytes)
