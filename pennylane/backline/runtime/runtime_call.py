@@ -53,16 +53,8 @@ def _get_runtime_call_prim():
 def runtime_call(target, *args, signature=None, out_bytes=0, address=None, library=None):
     r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
 
-    A symbol is declared once, then called by name:
-
-    .. code-block:: python
-
-        import pennylane as qp
-
-        qp.runtime_declare("example_call_rounds", "(ptr, u32) -> u64")
-
-        def program(session):  # the body of a qjit program
-            return qp.runtime_call("example_call_rounds", session, 100000, address="board:9000")
+    A symbol is declared once with :func:`~.runtime_declare`, then called by name from inside a
+    ``qjit`` program.
 
     Passing ``address`` dispatches the call: it is recorded into the program and sent to that
     executor, which invokes the symbol on the machine the runtime lives on. Omitting ``address``
@@ -83,6 +75,28 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     Returns:
         The symbol's declared result. A symbol with an ``out`` parameter returns
         ``(result, buffer)``. A local call to a ``void`` symbol returns ``None``.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        qp.runtime_declare("example_call_rounds", "(ptr, u32) -> u64")
+
+        def program(session):  # the body of a qjit program
+            return qp.runtime_call("example_call_rounds", session, 100000, address="board:9000")
+
+    A symbol that fills a buffer declares it as an ``out`` parameter. The caller does not pass one:
+    it asks for ``out_bytes=`` and gets the filled buffer back alongside the result.
+
+    .. code-block:: python
+
+        qp.runtime_declare("example_call_collect", "(ptr, out, u64) -> i32")
+
+        def collect(session):
+            status, reply = qp.runtime_call("example_call_collect", session, 64, out_bytes=64)
+            return reply
 
     .. seealso:: :func:`~.runtime_declare`
     """

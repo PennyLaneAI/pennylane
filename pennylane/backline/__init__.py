@@ -104,6 +104,18 @@ than constructed directly.
     ~backline
     ~Placement
 
+Decoding
+~~~~~~~~
+
+:func:`~.decode` drives one syndrome->correction round from inside a captured QNode: it stages the
+syndrome, posts it to a :class:`coprocessor <.Coprocessor>`, and returns the correction it replies
+with.
+
+.. autosummary::
+    :toctree: api
+
+    ~decode
+
 Device
 ~~~~~~
 

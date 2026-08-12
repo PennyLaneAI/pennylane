@@ -169,6 +169,45 @@ def decode(  # pylint: disable=too-many-arguments
         be called inside a ``@qjit`` program; calling it eagerly raises.
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :func:`~pennylane.backline`
+
+    **Example**
+
+    The nodes come from the placement of the device being traced, so a round on a built backline is
+    just ``qp.backline.decode(syndrome)``. Here the controller commits to an 8-byte correction, and
+    the coprocessor runs the decoder that produces it:
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        con = qp.Controller(
+            device=qp.device("lightning.qubit", wires=2),
+            remote=True,
+            executor_options={"host": "192.168.3.15"},
+            init_args={"out_bytes": 8},
+        )
+        coproc = qp.Coprocessor(
+            coprocessor_fn="decoder",
+            label="decoder-0",
+            backend="gpu_verbs",
+            comm_host="192.168.1.3",
+            oob_port=18590,
+        )
+        dev = qp.backline(controller=con, coprocessors=[coproc], transport="rdma")
+
+        @qp.qjit(capture=True)
+        @qp.qnode(dev)
+        def circuit(syndrome):
+            # one round: stage the syndrome, post it, wait for the correction
+            correction = qp.backline.decode(syndrome)
+            qp.cond(correction[0] == 1, qp.X)(0)
+            return qp.expval(qp.Z(0))
+
+    The round is resolved from the device being traced, so the program has to be captured
+    (``qp.qjit(capture=True)``). ``syndrome`` is sent by data pointer, so its byte length is fixed
+    by its shape and dtype at compile time; ``correction`` comes back as a ``uint8`` buffer of
+    ``out_bytes`` bytes. Pass ``controller=`` / ``coprocessor=`` to choose the nodes explicitly, and
+    ``decoder_id=`` to select which coprocessor-side decoder handles the round.
     """
     controller, coprocessor = _resolve_nodes(controller, coprocessor, decoder_id)
     key = _session_key(coprocessor)
