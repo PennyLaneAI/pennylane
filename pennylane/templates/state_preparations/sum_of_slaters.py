@@ -1090,7 +1090,16 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
 
 
 # pylint: disable-next=unused-argument
-def _sos_state_prep_work_wires(coefficients, wires, indices, **_):
+def _sos_state_prep_work_wires(
+    coefficients,
+    wires,
+    indices,
+    enumeration_wires=(),
+    identification_wires=(),
+    qrom_work_wires=(),
+    mcx_cache_wires=(),
+    **_,
+):
     """See SumOfSlatersPrep.required_register_sizes for details."""
     # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
@@ -1101,9 +1110,16 @@ def _sos_state_prep_work_wires(coefficients, wires, indices, **_):
     num_bits = len(selector_ids)
     num_wires = n
 
+    num_enum, num_id, num_qrom, num_mcx = (
+        len(enumeration_wires),
+        len(identification_wires),
+        len(qrom_work_wires),
+        len(mcx_cache_wires),
+    )
+
     # pylint: disable-next=protected-access
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
-    return {"zeroed": sum(sizes.values()) - num_wires}
+    return {"zeroed": sum(sizes.values()) - num_wires - num_enum - num_id - num_qrom - num_mcx}
 
 
 def _preprocess(v_bits, wires):
