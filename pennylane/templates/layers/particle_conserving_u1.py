@@ -318,22 +318,22 @@ class ParticleConservingU1(Operation):
         >>> from pprint import pprint
         >>> pprint(ops)
         [BasisState([0 1], wires=['a', 'b']),
-        CZ(wires=['a', 'b']),
-        CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
-        PhaseShift(-0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(-0.300..., wires=['a']),
-        CZ(wires=['b', 'a']),
-        CRot(0, tensor(2.), 0, wires=['b', 'a']),
-        CZ(wires=['a', 'b']),
-        CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=['a', 'b']),
-        PhaseShift(0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(-0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(0.300..., wires=['a'])]
+         CZ(wires=['a', 'b']),
+         CRot(-0.30000001192092896, 3.141592653589793, 0.30000001192092896, wires=['a', 'b']),
+         PhaseShift(-0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(-0.30000001192092896, wires=['a']),
+         CZ(wires=['b', 'a']),
+         CRot(0, 2.0, 0, wires=['b', 'a']),
+         CZ(wires=['a', 'b']),
+         CRot(0.30000001192092896, 3.141592653589793, -0.30000001192092896, wires=['a', 'b']),
+         PhaseShift(0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(-0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(0.30000001192092896, wires=['a'])]
 
         """
 
