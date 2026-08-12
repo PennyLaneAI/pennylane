@@ -31,7 +31,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import U2, U3, CRot, PauliRot, Prod, Rot, , SingleExcitation, prod
+from pennylane.ops import U2, U3, CRot, PauliRot, Prod, Rot, SingleExcitation, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
