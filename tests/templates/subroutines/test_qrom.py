@@ -599,24 +599,41 @@ class TestMeasurementQROM:
 
         basis_state_rep = resource_rep(qp.BasisState, num_wires=3)
 
-        res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
+        # Only data and target_wires are relevant
+        res_one = _qrom_measurement_resources(
+            data=Int[1, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+        )
         assert res_one[basis_state_rep] == 1
 
-        res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
+        # Only data and target_wires are relevant
+        res_two = _qrom_measurement_resources(
+            data=Int[2, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+        )
         assert res_two[basis_state_rep] == 1
         assert res_two[_ctrl_abstract(basis_state_rep, Wire[1])] == 1
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
-        res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
-        assert res[PauliMeasure] > 0
+        # Only data and target_wires are relevant
+        res = _qrom_measurement_resources(
+            data=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+        )
+
+        ppm_counts = sum(v for k, v in res.items() if isinstance(k, PauliMeasure))
+        assert ppm_counts > 0
         assert res[qp.CZ] > 0
 
-    def test_resources_from_base_params(self):
-        """Test that resources are extracted from ``base_params`` (Adjoint path)."""
-        base_params = {"num_bitstrings": 8, "num_target_wires": 3}
-        res_direct = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
-        res_base = _qrom_measurement_resources(base_params=base_params)
+    def test_resources_from_base(self):
+        """Test that resources are extracted from ``base`` (Adjoint path)."""
+        # Only data and target_wires are relevant
+        res_direct = _qrom_measurement_resources(
+            data=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+        )
+
+        base = qp.QROM(
+            data=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+        )
+        res_base = _qrom_measurement_resources(base=base)
         assert res_base == res_direct
 
     @pytest.mark.parametrize("n_extra", [2, 3, 4])
@@ -629,12 +646,18 @@ class TestMeasurementQROM:
         """
         n_active = 2  # ceil_log2(4)
         res_extra = _qrom_measurement_resources(
-            num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + n_extra
+            data=Int[4, 2],
+            control_wires=Wire[n_active + n_extra],
+            target_wires=Wire[2],
+            work_wires=Wire[1],
         )
         # A single extra wire builds the flag with X gates (no ANDs from folding), so its
         # TemporaryAND count is exactly the gated inner-iterator core; use it as the baseline.
         res_one = _qrom_measurement_resources(
-            num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
+            data=Int[4, 2],
+            control_wires=Wire[n_active + 1],
+            target_wires=Wire[2],
+            work_wires=Wire[1],
         )
         # The ladder is symmetric: as many forward ANDs as adjoints.
         assert res_extra[_adjoint_abstract(TemporaryAND)] == n_extra - 1

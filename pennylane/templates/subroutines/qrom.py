@@ -421,7 +421,7 @@ def _qrom_decomposition_resources(
 
 @register_resources(_qrom_decomposition_resources)
 def _qrom_decomposition(
-    data, control_wires, target_wires, work_wires, clean, **__
+    data, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         BasisEmbedding(data[0, :], wires=target_wires)
@@ -590,8 +590,8 @@ def _count_tempAND_in_measurement_qrom(k):
     return k - 2
 
 
-def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
-    num_bitstrings=None, num_target_wires=None, num_control_wires=None, base_params=None, **_
+def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-argument
+    data=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
 ):
     """Resource estimate for the measurement-based QROM decomposition.
 
@@ -601,10 +601,14 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
       - conditional X gates on work + targets
     """
     # When called for Adjoint(QROM), extract params from the base parameters
-    if base_params is not None:
-        num_bitstrings = base_params["num_bitstrings"]
-        num_target_wires = base_params["num_target_wires"]
-        num_control_wires = base_params.get("num_control_wires", num_control_wires)
+    if base is not None:
+        num_bitstrings = len(base.arguments["data"])
+        num_target_wires = len(base.target_wires)
+        num_control_wires = len(base.control_wires)
+    else:
+        num_bitstrings = len(data)
+        num_target_wires = len(target_wires)
+        num_control_wires = len(control_wires)
 
     n_extra = 0 if num_control_wires is None else num_control_wires - ceil_log2(num_bitstrings)
     # L = num_bitstrings
@@ -624,7 +628,6 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
     # it uses the flag-gated binary inner iterator, which needs ``L - 1`` AND gates.
     num_ands = L - 1 if n_extra > 0 else _count_tempAND_in_measurement_qrom(L)
-    num_measurements = 2 * num_ands  # X-type + Z per uncomputation
     num_cz = num_ands  # CZ correction per uncomputation
 
     # TemporaryAND counts are exact
@@ -632,7 +635,12 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     flag = _flag_resources(n_extra, num_target_wires)
     resources = {
         TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
-        PauliMeasure: num_measurements,
+        # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
+        # one X-type joint measurement on the work wire plus the target wires flipped by that
+        # bitstring. The joint measurement's size (``1 + len(x_wires)``) varies per bitstring, so
+        # the worst case (all ``num_target_wires`` flipped) is used for this approximate estimate.
+        PauliMeasure("Z", wires=Wire[1]): num_ands,
+        PauliMeasure("X" * (num_target_wires + 1), wires=Wire[num_target_wires + 1]): num_ands,
         CZ: num_cz,
         CNOT: L - 1,
         resource_rep(BasisState, num_wires=num_target_wires): L,
@@ -665,11 +673,11 @@ def _flag_resources(n_extra, num_target_wires):
 
 
 def _qrom_measurement_condition(
-    data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
-):  # pylint: disable=unused-argument
+    data=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
+):  # pylint: disable=too-many-arguments,unused-argument
 
     if base is not None:
-        num_bitstrings = len(base.data)
+        num_bitstrings = len(base.arguments["data"])
         num_work_wires = len(base.work_wires)
         num_control_wires = len(base.control_wires)
     else:
@@ -741,9 +749,9 @@ def _build_flag(extra_wires, work_wires):
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-many-branches
-    data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
-):
+def _qrom_measurement_decomposition(
+    data=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
+):  # pylint: disable=too-many-arguments,too-many-branches,unused-argument
     """QROM decomposition using measurement-based uncomputation.
 
     Uses L-3 (or L-2) TemporaryAND gates. All uncomputation is done via
@@ -755,7 +763,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     """
     # When called for Adjoint(QROM), extract params from the base operator
     if base is not None:
-        data = base.data[0]
+        data = base.arguments["data"][0]
         control_wires = base.control_wires
         target_wires = base.target_wires
         work_wires = base.work_wires
