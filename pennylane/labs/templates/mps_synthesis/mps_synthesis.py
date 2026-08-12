@@ -678,7 +678,7 @@ def mps_preparation(mps_tensors, wires):
         and the bulk, while it is prepared on the auxiliary wires for the right boundary.
 
         .. code-block::
-        
+
                      │          │          │          │          │  │ │ │  } physical
                 ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│  │ │ │  } state
            |0> ─┤   ├┘     │   ││     │   ││     │   ││     │   ││  │ │ │
