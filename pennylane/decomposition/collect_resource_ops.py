@@ -40,7 +40,6 @@ class CollectResourceOps(FlattenedInterpreter):
         self.state = {"ops": set()}
 
     def interpret_operation(self, op):
-
         self.state["ops"].add(abstractify(op))
 
         return op
