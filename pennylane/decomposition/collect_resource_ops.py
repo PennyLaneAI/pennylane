@@ -41,7 +41,6 @@ class CollectResourceOps(FlattenedInterpreter):
 
     def interpret_operation(self, op):
         self.state["ops"].add(abstractify(op))
-
         return op
 
     def interpret_measurement_eqn(self, eqn):
