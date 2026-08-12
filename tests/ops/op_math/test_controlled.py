@@ -1649,6 +1649,21 @@ class TestCtrl:
         assert q.queue[0] == qp.X(0)
         assert q.queue[1] == qp.Barrier()
 
+    def test_ctrl_u1_single_control(self):
+        """Test that qp.ctrl(U1) with a single, all-True control is eagerly lowered to
+        ControlledPhaseShift."""
+        op = qp.ctrl(qp.U1(0.5, wires=0), control=[1])
+        assert op == qp.ControlledPhaseShift(0.5, wires=[1, 0])
+
+    @pytest.mark.parametrize("control, control_values", [([1, 2], None), ([1], [False])])
+    def test_ctrl_u1_falls_back_to_controlled(self, control, control_values):
+        """Test that qp.ctrl(U1) falls back to a generic controlled operator instead of
+        being eagerly lowered when there is more than one control wire or a control value
+        of False."""
+        op = qp.ctrl(qp.U1(0.5, wires=0), control=control, control_values=control_values)
+        assert isinstance(op, qp.ops.ControlledOp2)
+        assert op.base == qp.U1(0.5, wires=0)
+
     @pytest.mark.parametrize("op, ctrl_wires, expected_op", custom_ctrl_ops)
     def test_custom_controlled_ops(self, op, ctrl_wires, expected_op):
         """Tests custom controlled operations are handled correctly."""
