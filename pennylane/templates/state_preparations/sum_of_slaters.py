@@ -1089,7 +1089,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     return resources
 
 
-# pylint: disable-next=unused-argument
+# pylint: disable-next=unused-argument,too-many-arguments
 def _sos_state_prep_work_wires(
     coefficients,
     wires,
