@@ -360,8 +360,8 @@ add_decomps(
 )
 
 
-def _qubit_unitary_resource(base_class, base_params, **_):
-    return {resource_rep(base_class, **base_params): 1}
+def _qubit_unitary_resource(base, **_):
+    return {abstractify(base): 1}
 
 
 @register_resources(_qubit_unitary_resource)
@@ -394,22 +394,14 @@ add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
 
 
 # pylint: disable=unused-argument
-def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
-    num_target_wires = base_params["num_wires"]
-    num_control_wires = kwargs["num_control_wires"]
+def _controlled_qubit_unitary_resource(base, **_):
     return {
-        qp.ControlledQubitUnitary(
-            Complex[2**num_target_wires, 2**num_target_wires],
-            wires=Wire[num_control_wires + num_target_wires],
-            control_values=Bool[num_control_wires],
-            work_wires=Wire[kwargs["num_work_wires"]],
-            work_wire_type=kwargs["work_wire_type"],
-        ): 1,
+        abstractify(base): 1,
     }
 
 
 @register_resources(_controlled_qubit_unitary_resource)
-def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wire_type, **__):
+def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wire_type, **_):
     qp.ControlledQubitUnitary(
         U,
         wires,
