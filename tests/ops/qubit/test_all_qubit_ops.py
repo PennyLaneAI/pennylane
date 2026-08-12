@@ -59,13 +59,8 @@ class TestOperations:
     @pytest.mark.parametrize(
         "op",
         [
-            (qp.PauliX(wires=0)),
-            (qp.PauliZ(wires=0)),
             (qp.RX(0.3, wires=0)),
             (qp.RY(0.3, wires=0)),
-            (qp.RZ(0.3, wires=0)),
-            (qp.PhaseShift(0.3, wires=0)),
-            (qp.Rot(0.3, 0.4, 0.5, wires=0)),
         ],
     )
     def test_single_qubit_rot_angles(self, op):

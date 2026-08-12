@@ -30,6 +30,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -351,20 +352,20 @@ class OutMultiplier(Operation):
 def _out_multiplier_with_qft_resources(
     num_output_wires, num_x_wires, num_y_wires, mod, output_wires_zeroed, **_
 ) -> dict:
-    qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
+    num_qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        compute_rep = resource_rep(Prod, resources={abstractify(H): qft_wires})
+        compute_rep = resource_rep(Prod, resources={abstractify(H): num_qft_wires})
     else:
-        compute_rep = resource_rep(QFT, num_wires=qft_wires)
+        compute_rep = QFT(Wire[num_qft_wires])
 
-    uncompute_rep = adjoint_resource_rep(QFT, base_params={"num_wires": qft_wires})
+    uncompute_rep = _adjoint_abstract(QFT(Wire[num_qft_wires]))
     target_rep = resource_rep(
         ControlledSequence,
         base_class=ControlledSequence,
         base_params={
             "base_class": PhaseAdder,
-            "base_params": {"num_x_wires": qft_wires, "mod": mod},
+            "base_params": {"num_x_wires": num_qft_wires, "mod": mod},
             "num_control_wires": num_x_wires,
         },
         num_control_wires=num_y_wires,

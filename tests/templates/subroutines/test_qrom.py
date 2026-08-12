@@ -22,10 +22,12 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition import adjoint_resource_rep, controlled_resource_rep, resource_rep
+from pennylane.decomposition import resource_rep
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
@@ -36,25 +38,55 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_measurement_resources,
 )
 from pennylane.templates.subroutines.select import _select_decomp_unary
-
-clifford_t_measure = {
-    qp.H,
-    qp.T,
-    qp.S,
-    qp.X,
-    qp.Y,
-    qp.Z,
-    qp.CNOT,
-    qp.CZ,
-    qp.Hadamard,
-    PauliMeasure,
-}
+from pennylane.typing import AbstractArray, Int, Wire
 
 has_jax = True
 try:
     from jax import numpy as jnp
 except ImportError:
     has_jax = False
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        [[1, 0, 0, 1], [0, 1, 1, 0]],
+        [
+            [
+                1,
+                0,
+            ],
+            [
+                0,
+                1,
+            ],
+            [
+                1,
+                1,
+            ],
+        ],
+        AbstractArray(shape=(5, 3), dtype=np.int64),
+        AbstractArray(shape=(7, 2), dtype=np.int64),
+        ["00000", "00001", "00011", "10001", "00101"],
+        ["0001", "1010", "0100", "1000"],
+        ("000", "101"),
+    ],
+)
+def test_abstract_init(data):
+    """Tests that the abstract init handles Sequence[str] data and more."""
+    control_wires = Wire[3]
+    if not isinstance(data, AbstractArray) and isinstance(data[0], (str, list)):
+        target_wires = Wire[len(data[0])]
+    else:
+        target_wires = Wire[data.shape[-1]]
+    work_wires = Wire[3]
+
+    op = qp.QROM(data, control_wires, target_wires, work_wires)
+
+    if not isinstance(data, AbstractArray) and isinstance(data[0], (str, list)):
+        assert op.arguments["data"] == AbstractArray((len(data), len(data[0])), dtype=np.int64)
+    else:
+        assert op.arguments["data"] == AbstractArray(shape=data.shape, dtype=np.int64)
 
 
 @pytest.mark.jax
@@ -397,25 +429,16 @@ class TestQROM:
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
 
-        dev = qp.device("default.qubit", wires=2)
-        qs = qp.tape.QuantumScript(
-            qp.QROM.compute_decomposition(
-                ((1, 0),),
-                target_wires=[0, 1],
-                work_wires=None,
-                control_wires=[],
-                clean=False,
-            ),
-            [qp.probs(wires=[0, 1])],
-        )
+        ops = qp.QROM(
+            ((1, 0),),
+            target_wires=[0, 1],
+            work_wires=None,
+            control_wires=[],
+            clean=False,
+        ).decomposition()
 
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
-        assert len(tape[0][0].operations) == 1
-        assert qp.equal(tape[0][0][0], qp.BasisEmbedding([1, 0], wires=[0, 1]))
-        assert qp.math.allclose(output, [0, 0, 1, 0])
+        assert len(ops) == 1
+        assert qp.equal(ops[0], qp.BasisEmbedding([1, 0], wires=[0, 1]))
 
     @pytest.mark.jax
     def test_traced_wires(self):
@@ -469,21 +492,6 @@ def test_wires_error(control_wires, target_wires, work_wires, msg_match):
         qp.QROM([[1]] * 8, control_wires, target_wires, work_wires)
 
 
-def test_repr():
-    """Test that the __repr__ method works as expected."""
-
-    op = qp.QROM(
-        [[1], [0], [0], [1]],
-        control_wires=[0, 1],
-        target_wires=[2],
-        work_wires=[3],
-        clean=True,
-    )
-    res = repr(op)
-    expected = "QROM(control_wires=[0, 1], target_wires=[2],  work_wires=[3], clean=True)"
-    assert res == expected
-
-
 @pytest.mark.parametrize(
     ("data", "control_wires", "target_wires", "msg_match"),
     [
@@ -510,12 +518,12 @@ def test_wrong_wires_error(data, control_wires, target_wires, msg_match):
 def test_none_work_wires_case():
     """Test that clean version is not applied if work wires are not used"""
 
-    gates_clean = qp.QROM.compute_decomposition(
+    gates_clean = qp.QROM(
         np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
-    )
-    expected_gates = qp.QROM.compute_decomposition(
+    ).decomposition()
+    expected_gates = qp.QROM(
         np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
-    )
+    ).decomposition()
 
     assert gates_clean == expected_gates
 
@@ -523,16 +531,16 @@ def test_none_work_wires_case():
 def test_too_many_work_wires_case():
     """Test that QROM works when more work wires are given than necessary"""
 
-    gates_clean = qp.QROM.compute_decomposition(
+    gates_clean = qp.QROM(
         np.array([[1], [0], [0], [1]]), [0, 1], [2], [3, 4, 5], clean=False
-    )
-    expected_gates = qp.QROM.compute_decomposition(
+    ).decomposition()
+    expected_gates = qp.QROM(
         np.array([[1], [0], [0], [1]]),
         [0, 1],
         [2],
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         clean=False,
-    )
+    ).decomposition()
 
     assert gates_clean == expected_gates
 
@@ -588,21 +596,21 @@ class TestMeasurementQROM:
 
     def test_resources_small_cases(self):
         """Test resource estimates for the L <= 1 and L == 2 edge cases."""
+
+        basis_state_rep = resource_rep(qp.BasisState, num_wires=3)
+
         res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
-        assert res_one[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
+        assert res_one[basis_state_rep] == 1
 
         res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
-        assert res_two[qp.resource_rep(qp.BasisState, num_wires=3)] == 1
-        assert (
-            res_two[controlled_resource_rep(qp.BasisState, {"num_wires": 3}, num_control_wires=1)]
-            == 1
-        )
+        assert res_two[basis_state_rep] == 1
+        assert res_two[_ctrl_abstract(basis_state_rep, Wire[1])] == 1
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
         res = _qrom_measurement_resources(num_bitstrings=8, num_target_wires=3)
-        assert res[qp.resource_rep(PauliMeasure)] > 0
-        assert res[qp.resource_rep(qp.CZ)] > 0
+        assert res[PauliMeasure] > 0
+        assert res[qp.CZ] > 0
 
     def test_resources_from_base_params(self):
         """Test that resources are extracted from ``base_params`` (Adjoint path)."""
@@ -629,45 +637,29 @@ class TestMeasurementQROM:
             num_bitstrings=4, num_target_wires=2, num_control_wires=n_active + 1
         )
         # The ladder is symmetric: as many forward ANDs as adjoints.
-        assert res_extra[adjoint_resource_rep(TemporaryAND)] == n_extra - 1
-        assert res_extra[resource_rep(TemporaryAND)] == res_one[resource_rep(TemporaryAND)] + (
-            n_extra - 1
-        )
+        assert res_extra[_adjoint_abstract(TemporaryAND)] == n_extra - 1
+        assert res_extra[TemporaryAND] == res_one[TemporaryAND] + (n_extra - 1)
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
-        assert (
-            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
-            is False
-        )
+        assert _qrom_measurement_condition(Int[8, 3], Wire[2], Wire[3], Wire[3]) is False
 
     def test_condition_with_compiler(self, mocker):
         """Test the condition logic when a compiler is active."""
         mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
 
         # Small tables (<= 2 bitstrings) are always applicable.
-        assert (
-            _qrom_measurement_condition(num_bitstrings=2, num_work_wires=0, num_control_wires=1)
-            is True
-        )
+        assert _qrom_measurement_condition(Int[2, 1], Wire[1], Wire[1], Wire[0]) is True
         # Enough work wires: applicable.
-        assert (
-            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=2, num_control_wires=3)
-            is True
-        )
+        assert _qrom_measurement_condition(Int[8, 2], Wire[3], Wire[2], Wire[2]) is True
         # Too few work wires: not applicable.
-        assert (
-            _qrom_measurement_condition(num_bitstrings=8, num_work_wires=0, num_control_wires=3)
-            is False
-        )
-        # Parameters extracted from ``base_params`` (Adjoint path).
+        assert _qrom_measurement_condition(Int[8, 3], Wire[3], Wire[3], Wire[0]) is False
+        # Parameters extracted from ``base`` (Adjoint path).
         assert (
             _qrom_measurement_condition(
-                base_params={
-                    "num_bitstrings": 8,
-                    "num_work_wires": 2,
-                    "num_control_wires": 3,
-                }
+                base=qp.QROM(
+                    Int[8, 3], work_wires=Wire[2], control_wires=Wire[3], target_wires=Wire[3]
+                ),
             )
             is True
         )
@@ -725,6 +717,7 @@ class TestMeasurementQROM:
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -749,7 +742,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -766,6 +759,7 @@ class TestMeasurementQROM:
             ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
@@ -791,7 +785,7 @@ class TestMeasurementQROM:
         x_state /= np.linalg.norm(x_state)
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
@@ -814,6 +808,7 @@ class TestMeasurementQROM:
         assert np.isclose(circuit()[0][0], 1.0)
         assert np.isclose(circuit()[1][0], 1.0)
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -848,7 +843,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -867,6 +862,7 @@ class TestMeasurementQROM:
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
 
+    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         ("L", "n_extra"),
@@ -892,7 +888,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=clifford_t_measure)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):

@@ -40,7 +40,7 @@ class TestWireResourceManager:
     )
 
     @pytest.mark.parametrize(
-        "wire_manager, attribute_tup", zip(wire_manager_quantities, wire_manager_parameters)
+        "wire_manager, attribute_tup", list(zip(wire_manager_quantities, wire_manager_parameters))
     )
     def test_init(self, wire_manager, attribute_tup):
         """Test that the WireResourceManager class is instantiated as expected."""
@@ -52,7 +52,7 @@ class TestWireResourceManager:
         assert wire_manager.tight_budget == tight_budget
 
     @pytest.mark.parametrize(
-        "wire_manager, attribute_tup", zip(wire_manager_quantities, wire_manager_parameters)
+        "wire_manager, attribute_tup", list(zip(wire_manager_quantities, wire_manager_parameters))
     )
     def test_equality(self, wire_manager, attribute_tup):
         """Test that the equality methods behaves as expected"""
@@ -77,7 +77,9 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize(
         "wire_manager, attribute_tup, algo_q",
-        zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires),
+        list(
+            zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires)
+        ),
     )
     def test_repr(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager representation is correct."""
@@ -94,7 +96,9 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize(
         "wire_manager, attribute_tup, algo_q",
-        zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires),
+        list(
+            zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires)
+        ),
     )
     def test_str(self, wire_manager, attribute_tup, algo_q):
         """Test that the WireResourceManager string is correct."""
@@ -110,7 +114,7 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize(
         "wire_manager, algo_q",
-        zip(copy.deepcopy(wire_manager_quantities), extra_wires),
+        list(zip(copy.deepcopy(wire_manager_quantities), extra_wires)),
     )
     def test_setting_algo_wires(self, wire_manager, algo_q):
         """Test that the logic wires are set correctly."""
@@ -120,7 +124,9 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize(
         "wire_manager, attribute_tup, algo_q",
-        zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires),
+        list(
+            zip(copy.deepcopy(wire_manager_quantities), wire_manager_parameters_algo, extra_wires)
+        ),
     )
     def test_total_wires(self, wire_manager, attribute_tup, algo_q):
         """Test that the total wires returned are correct."""

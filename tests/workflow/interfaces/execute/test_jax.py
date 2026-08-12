@@ -36,6 +36,13 @@ def get_device(device_name, seed):
     return qp.device(device_name, seed=seed)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Passing a QuantumScript containing an Operator2 directly through jax.jit traces "
+        "concrete wire labels as dynamic leaves."
+    ),
+)
 def test_jit_execution():
     """Test that qp.execute can be directly jitted."""
     dev = qp.device("default.qubit")
@@ -506,9 +513,9 @@ class TestJaxExecuteIntegration:
         with qp.decomposition.local_decomps():
 
             @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+            def _decomp(theta, phi, delta, wires):
+                qp.Rot(delta, theta, -delta, wires)
+                qp.PhaseShift(phi + delta, wires)
 
             qp.add_decomps(MyU3, _decomp)
 

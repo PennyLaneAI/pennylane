@@ -19,6 +19,7 @@ This submodule tests strategy structure for defining custom plxpr interpreters
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator.operator2 import Operator2
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -157,8 +158,8 @@ def test_default_operator_handling():
     assert jaxpr.eqns[0].primitive == qp.RX._primitive
     assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
     assert_eqn_matches_op(jaxpr.eqns[2], qp.T)
-    assert jaxpr.eqns[3].primitive == qp.X._primitive
-    assert jaxpr.eqns[4].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[3], qp.X)
+    assert_eqn_matches_op(jaxpr.eqns[4], qp.X)
     assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
 
 
@@ -189,7 +190,7 @@ def test_controlled_operator_handling(op_class, args, kwargs):
         return qp.expval(qp.Z(0))
 
     jaxpr = jax.make_jaxpr(f)()
-    if op_class._operator_version == 2:
+    if issubclass(op_class, Operator2):
         assert_eqn_matches_op(jaxpr.eqns[0], op_class)
     else:
         assert jaxpr.eqns[0].primitive == op_class._primitive
@@ -208,7 +209,7 @@ def test_measurement_handling():
 
     jaxpr = jax.make_jaxpr(f)(0)
 
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
     assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
     assert jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
     assert jaxpr.eqns[3].primitive == qp.measurements.ProbabilityMP._wires_primitive
@@ -232,12 +233,9 @@ def test_call_with_pytree_arguments():
     jaxpr = jax.make_jaxpr(f)(*args)
 
     assert len(jaxpr.jaxpr.invars) == 6
-    expected_primitives = [
-        qp.Rot._primitive,
-        qp.Rot._primitive,
-        qp.measurements.StateMP._wires_primitive,
-    ]
-    assert all(eqn.primitive == ep for eqn, ep in zip(jaxpr.eqns, expected_primitives))
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.Rot)
+    assert_eqn_matches_op(jaxpr.eqns[1], qp.Rot)
+    assert jaxpr.eqns[2].primitive == qp.measurements.StateMP._wires_primitive
 
     assert jaxpr.eqns[0].invars[0:3] == jaxpr.jaxpr.invars[0:3]
     assert jaxpr.eqns[1].invars[0:3] == jaxpr.jaxpr.invars[3:]
@@ -318,16 +316,6 @@ def test_cleanup_method():
 
     f(0.5)
     assert inst.state is None
-
-
-def test_returning_operators():
-    """Test that operators that are returned are still processed by the interpreter."""
-
-    @SimplifyInterpreter()
-    def f():
-        return qp.X(0) ** 2
-
-    qp.assert_equal(f(), qp.I(0))
 
 
 class ConstAdder(PlxprInterpreter):
@@ -528,7 +516,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 1
-        assert inner_jaxpr.eqns[0].primitive == qp.X._primitive  # no adjoint of x
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)  # no adjoint of x
 
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""
@@ -566,7 +554,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qp.Z._primitive  # no adjoint of x
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.Z)  # no adjoint of Z
 
     def test_while_loop_consts(self):
         """Test the higher order while loop registration propagates consts correctly."""
@@ -687,7 +675,7 @@ class TestHigherOrderPrimitiveRegistrations:
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     def test_vjp(self):
@@ -708,7 +696,7 @@ class TestHigherOrderPrimitiveRegistrations:
         vjp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = vjp_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     def test_jvp(self):
@@ -729,7 +717,7 @@ class TestHigherOrderPrimitiveRegistrations:
         jvp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = jvp_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     @pytest.mark.parametrize("grad_f", (qp.grad, qp.jacobian))

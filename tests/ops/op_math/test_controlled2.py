@@ -24,6 +24,7 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.operation import abstractify
+from pennylane.ops.functions.assert_valid import _check_eigendecomposition
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
@@ -273,6 +274,55 @@ class TestControlled2:
         assert op.diagonalizing_gates() == gates
         assert CH2.compute_diagonalizing_gates(**op.arguments) == gates
 
+    def test_custom_op_compute_methods_queuing(self):
+        """Tests the default compute methods for custom controlled ops doesn't queue extra ops."""
+
+        class CRX2(Controlled2):
+            """A new CRX2."""
+
+            dynamic_argnames = ("theta",)
+
+            wire_argnames = ("wires",)
+
+            wire_sizes = (2,)
+
+            def __init__(self, theta, wires):
+                super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
+
+        op = CRX2(0.5, wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            CRX2.compute_matrix(**op.arguments)
+            CRX2.compute_eigvals(**op.arguments)
+            CRX2.compute_sparse_matrix(**op.arguments)
+
+        assert q.queue == []
+
+    @pytest.mark.capture
+    def test_custom_op_compute_methods_capture(self):
+        """Tests the default compute methods custom controlled ops doesn't capture extra ops."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        class CH2(Controlled2):
+            """A new CH."""
+
+            wire_argnames = ("wires",)
+
+            wire_sizes = (2,)
+
+            def __init__(self, wires):
+                super().__init__(qp.H(wires[1]), wires[0])
+
+        op = CH2(wires=[0, 1])
+
+        def f():
+            CH2.compute_matrix(**op.arguments)
+            CH2.compute_eigvals(**op.arguments)
+            CH2.compute_sparse_matrix(**op.arguments)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 0
+
     def test_custom_controlled_op_own_compute_methods(self):
         """Tests when a custom controlled op override its own compute_xxx methods."""
 
@@ -363,6 +413,18 @@ class TestControlled2:
         simplified_op = op.simplify()
         qp.assert_equal(simplified_op, qp.ctrl(qp.MultiRZ(0.5, [0, 1, 2]), control=[3, 4, 5]))
 
+    @pytest.mark.parametrize("control_values", [None, [1, 1, 1], [0, 1, 0]])
+    def test_compute_eigvals_with_control_values(self, control_values):
+        """Tests that controlled operators with control values pass the eigvals test."""
+
+        op = qp.MultiControlledX([0, 1, 2, 3], control_values=control_values)
+        expected = Controlled2.compute_eigvals(qp.X(3), [0, 1, 2], control_values=control_values)
+        assert qp.math.allclose(op.eigvals(), expected)
+        _check_eigendecomposition(op)
+
+        op2 = qp.ctrl(qp.SWAP([0, 1]), control=[2, 3, 4], control_values=control_values)
+        _check_eigendecomposition(op2)
+
 
 class TestControlledOp2:
     """Tests the ControlledOp2 class."""
@@ -382,7 +444,7 @@ class TestControlledOp2:
         assert op.base == base
         assert op.wires == Wires([1, 2, 0])
         assert op.control_wires == Wires([1, 2])
-        assert op.control_values == [False, True]
+        assert op.control_values.tolist() == [False, True]
         assert op.target_wires == Wires([0])
         assert op.work_wires == Wires([3])
         assert op.work_wire_type == "zeroed"
@@ -431,7 +493,7 @@ class TestControlledOp2:
 
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1, 2])
-        assert op.control_values == [True, True]
+        assert op.control_values.tolist() == [True, True]
         assert op.work_wires == Wires([])
 
     def test_single_control_value(self):
@@ -439,7 +501,7 @@ class TestControlledOp2:
 
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1], control_values=0)
-        assert op.control_values == [False]
+        assert op.control_values.tolist() == [False]
 
     def test_comparison(self):
         """Tests comparing the equality of controlled operators."""
@@ -494,6 +556,7 @@ class TestControlledOp2:
         assert op.diagonalizing_gates() == gates
         assert ControlledOp2.compute_diagonalizing_gates(**op.arguments) == gates
 
+    @pytest.mark.pl2do("we'll come back to parameter batching later")
     def test_batching(self):
         """Tests parameter batching."""
 
@@ -557,6 +620,29 @@ class TestControlledOp2:
 
         op = ControlledOp2(DynOp(0.5, 0), control_wires=1)
         assert op == copy_fn(op)
+
+    @pytest.mark.capture
+    def test_control_values_traced(self):
+        """Tests that control values can be traced."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        def circ(cvals):
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=cvals)
+            qp.ctrl(qp.CH([0, 1]), control=[2, 3], control_values=cvals)
+            op = qp.ctrl(qp.H(0), control=[1, 2], control_values=cvals)
+            qp.ctrl(op, control=[3, 4], control_values=[0, 1])
+            op2 = qp.ctrl(qp.H(0), control=[1, 2], control_values=[1, 0])
+            qp.ctrl(op2, control=[3, 4], control_values=cvals)
+
+        jaxpr = jax.make_jaxpr(circ)(jax.numpy.array([True, False]))
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, jax.numpy.array([False, True]))
+        assert tape.operations == [
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[0, 1]),
+            qp.ctrl(qp.H(1), control=[2, 3, 0], control_values=[0, 1, 1]),
+            qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 0, 1]),
+            qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 1, 0]),
+        ]
 
     def test_old_decomp_integration(self):
         """Tests that ControlledOp2 is compatible with the old decomposition convention."""

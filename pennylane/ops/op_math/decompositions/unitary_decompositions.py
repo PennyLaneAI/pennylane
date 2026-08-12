@@ -32,6 +32,7 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
@@ -63,14 +64,14 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
     >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
     >>> pprint(decomp)
-    [RZ(np.float64(3.14159...), wires=[0]),
+    [RZ(3.14159..., wires=[0]),
      RY(np.float64(1.57079...), wires=[0]),
-     RZ(np.float64(0.0), wires=[0]),
+     RZ(0.0, wires=[0]),
      GlobalPhase(np.float64(-1.57079...), wires=[])]
     >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
     [RX(np.float64(1.57079...), wires=[0]),
-     RZ(np.float64(1.57079...), wires=[0]),
+     RZ(1.57079..., wires=[0]),
      RX(np.float64(1.57079...), wires=[0]),
      GlobalPhase(np.float64(-1.57079...), wires=[])]
     """
@@ -177,16 +178,16 @@ def two_qubit_decomposition(U, wires):
      QubitUnitary(array([[ 0.73465919-0.15696895j,  0.51629531-0.41118825j],
            [-0.51629531-0.41118825j,  0.73465919+0.15696895j]]), wires=[1]),
      CNOT(wires=[1, 0]),
-     RZ(np.float64(0.028408953417448358), wires=[0]),
-     RY(np.float64(0.6226823676455966), wires=[1]),
+     RZ(0.028408953417448358, wires=[0]),
+     RY(0.6226823676455966, wires=[1]),
      CNOT(wires=[0, 1]),
-     RY(np.float64(-0.7259987841675299), wires=[1]),
+     RY(-0.7259987841675299, wires=[1]),
      CNOT(wires=[1, 0]),
      QubitUnitary(array([[ 0.85429569-0.34743933j,  0.14569083+0.35810469j],
            [-0.14569083+0.35810469j,  0.85429569+0.34743933j]]), wires=[0]),
      QubitUnitary(array([[-0.30052527-0.4826478j ,  0.74833925-0.34164898j],
            [-0.74833925-0.34164898j, -0.30052527+0.4826478j ]]), wires=[1]),
-     GlobalPhase(np.float64(0.07394316416802127), wires=[])]
+     GlobalPhase(0.07394316416802127, wires=[])]
 
     """
 
@@ -204,7 +205,6 @@ def two_qubit_decomposition(U, wires):
         )
 
     with queuing.AnnotatedQueue() as q:
-
         U, phase = math.convert_to_su4(U)
 
         if _is_jax_jit(U):
@@ -320,11 +320,14 @@ def _su2_rot_resource():
 
 def _su2_rot_decomp(U, wires, **__):
     phi, theta, omega, alpha = zyz_rotation_angles(U)
-    ops.cond(
-        math.allclose(theta, 0.0),
-        lambda: ops.RZ((phi + omega) % (4 * np.pi), wires=wires[0]),
-        lambda: ops.Rot(phi, theta, omega, wires=wires[0]),
-    )()
+
+    def _true():
+        ops.RZ((phi + omega) % (4 * np.pi), wires=wires[0])
+
+    def _false():
+        ops.Rot(phi, theta, omega, wires=wires[0])
+
+    ops.cond(math.allclose(theta, 0.0), _true, _false)()
     return alpha
 
 
@@ -424,8 +427,18 @@ def two_qubit_decomp_rule(U, wires, **__):
 def _multi_qubit_decomp_resource(num_wires):
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
-        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 2,
-        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Y"): 1,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 2,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Y",
+        ): 1,
     }
 
 
@@ -446,7 +459,7 @@ def multi_qubit_decomp_rule(U, wires, **__):
     ops.QubitUnitary(v12_dagg, wires=wires[1:])
 
     templates.SelectPauliRot(
-        -2 * math.angle(diag_v),
+        math.cast(-2 * math.angle(diag_v), dtype=np.float64),
         target_wire=wires[0],
         control_wires=wires[1:],
         rot_axis="Z",
@@ -454,12 +467,17 @@ def multi_qubit_decomp_rule(U, wires, **__):
 
     ops.QubitUnitary(v11_dagg, wires=wires[1:])
 
-    templates.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y")
+    templates.SelectPauliRot(
+        math.cast(2 * theta, dtype=np.float64),
+        target_wire=wires[0],
+        control_wires=wires[1:],
+        rot_axis="Y",
+    )
 
     ops.QubitUnitary(u12, wires=wires[1:])
 
     templates.SelectPauliRot(
-        -2 * math.angle(diag_u),
+        math.cast(-2 * math.angle(diag_u), dtype=np.float64),
         target_wire=wires[0],
         control_wires=wires[1:],
         rot_axis="Z",
@@ -1103,7 +1121,6 @@ def _compute_udv(a, b):
 
 
 def _cossin_decomposition(U, p):
-
     # pylint: disable=import-outside-toplevel
     if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
@@ -1118,11 +1135,19 @@ def _cossin_decomposition(U, p):
 
         def cossin_decomposition(U, p):
             dtype = U.dtype
+            real_dtype = np.finfo(dtype).dtype
             U_flat = U.reshape(-1)
 
             def callback(U_flat):
-                return tuple(
-                    arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p)
+                u1, u2, theta, v1_dagg, v2_dagg = scipy_cossin_callback(np.asarray(U_flat), p)
+                return (
+                    u1.astype(dtype),
+                    u2.astype(dtype),
+                    # NOTE: According to https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cossin.html
+                    # theta is an array of real angles in radians.
+                    theta.astype(real_dtype),
+                    v1_dagg.astype(dtype),
+                    v2_dagg.astype(dtype),
                 )
 
             u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
@@ -1130,7 +1155,7 @@ def _cossin_decomposition(U, p):
                 result_shape_dtypes=(
                     jax.ShapeDtypeStruct((p, p), dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p,), dtype),
+                    jax.ShapeDtypeStruct((p,), real_dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
                 ),
