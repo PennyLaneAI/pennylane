@@ -423,7 +423,8 @@ def two_qubit_decomp_rule(U, wires, **__):
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
 
-def _multi_qubit_decomp_resource(num_wires):
+def _multi_qubit_decomp_resource(wires, **_):
+    num_wires = len(wires)
     return {
         ops.QubitUnitary(
             Complex[2 ** (num_wires - 1), 2 ** (num_wires - 1)], wires=Wire[num_wires - 1]
