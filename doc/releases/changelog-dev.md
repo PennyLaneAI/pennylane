@@ -106,12 +106,13 @@
 
   wires = [0, 1, 2]
   work_wires = [3, 4]
+  init_state = [0, 1, 0]  # binary representation of 2
 
   dev = device("default.qubit", wires=wires + work_wires)
 
   @qnode(dev, shots=1)
   def increment(wires, init_state, work_wires=None):
-      init_state_bin = qp.math.int_to_binary(2, len(wires))
+      init_state_bin = qp.math.int_to_binary(init_state, len(wires))
       BasisEmbedding(init_state_bin, wires)
       Incrementer(wires, work_wires)
       return sample()

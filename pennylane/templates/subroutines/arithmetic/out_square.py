@@ -87,9 +87,9 @@ class OutSquare(Operation):
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
             qp.H(wires["x"][0]) # Superposition between 0 and 4
-            qp.BasisState(3, wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
+            qp.BasisState(qp.math.int_to_binary(3, len(wires["x"][1:])), wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
             # Prepare initial state on output wires
-            qp.BasisState(5, wires=output_wires)
+            qp.BasisState(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
             # Square
             qp.OutSquare(wires["x"], output_wires, wires["work"])
             return qp.counts(wires=output_wires)
@@ -137,7 +137,7 @@ class OutSquare(Operation):
             @qp.decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
-                qp.BasisState(13, wires=x_wires)
+                qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
                 qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
                 return qp.counts(wires=output_wires)
 

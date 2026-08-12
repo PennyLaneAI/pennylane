@@ -96,8 +96,10 @@ class OutMultiplier(Operation):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisState(x_bin, wires=x_wires)
+            qp.BasisState(y_bin, wires=y_wires)
             qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
@@ -148,9 +150,12 @@ class OutMultiplier(Operation):
 
             @qp.qnode(dev, shots=1)
             def circuit():
-                qp.BasisEmbedding(x, wires=x_wires)
-                qp.BasisEmbedding(y, wires=y_wires)
-                qp.BasisEmbedding(z, wires=output_wires)
+                x_bin = qp.math.int_to_binary(x, len(x_wires))
+                qp.BasisState(x_bin, wires=x_wires)
+                y_bin = qp.math.int_to_binary(y, len(y_wires))
+                qp.BasisState(y_bin, wires=y_wires)
+                z_bin = qp.math.int_to_binary(z, len(output_wires))
+                qp.BasisState(z_bin, wires=output_wires)
                 qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
                 return qp.sample(wires=output_wires)
 
