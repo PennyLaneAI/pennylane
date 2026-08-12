@@ -297,18 +297,22 @@ def register_resources(
 
           qp.decomposition.enable_graph()
 
-          def _ops_fn(num_control_wires, **_):
+          def _condition_fn(control_wires, **_):
+              return len(control_wires) > 1
+
+          def _ops_fn(control_wires, **_):
               return {
-                  qp.ctrl(qp.X(Wire[1]), control=Wire[num_control_wires]): 2,
+                  qp.ctrl(qp.X(Wire[1]), control_wires): 2,
                   qp.CRot: 1
               }
 
-          @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+          @qp.register_condition(_condition_fn)
           @qp.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
-          def _controlled_rot_decomp(*params, wires, **_):
+          def _controlled_rot_decomp(base, control_wires, **_):
+              wires = control_wires + base.wires
               with allocate(1, state="zero", restored=True) as work_wires:
                   qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
-                  qp.CRot(*params, wires=[work_wires[0], wires[-1]])
+                  qp.CRot(**base.dynamic_args, wires=[work_wires[0], wires[-1]])
                   qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
