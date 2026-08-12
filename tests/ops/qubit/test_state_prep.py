@@ -52,8 +52,23 @@ def test_basis_state_input_cast_to_bool():
     assert op.state.dtype == bool
 
 
+def test_basis_state_custom_repr():
+    """Tests that the custom repr doesn't show booleans."""
+
+    op = qp.BasisState([1, 1], wires=range(2))
+    assert repr(op) == "BasisState([1 1], wires=[0, 1])"
+
+
 class TestInputs:
     """Test inputs and pre-processing."""
+
+    def test_integer_input_raises_error(self):
+        """Tests that an int as input raises an error."""
+
+        with pytest.raises(
+            ValueError, match=r"Integer states are not support.*qp.math.int_to_binary"
+        ):
+            _ = qp.BasisState(5, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "x, msg",
