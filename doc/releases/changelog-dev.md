@@ -112,8 +112,7 @@
 
   @qnode(dev, shots=1)
   def increment(wires, init_state, work_wires=None):
-      init_state_bin = qp.math.int_to_binary(init_state, len(wires))
-      BasisEmbedding(init_state_bin, wires)
+      BasisEmbedding(init_state, wires)
       Incrementer(wires, work_wires)
       return sample()
 
