@@ -62,6 +62,14 @@ def test_basis_state_custom_repr():
 class TestInputs:
     """Test inputs and pre-processing."""
 
+    def test_boolean_input(self):
+        """Tests that boolean arrays are fine as input."""
+
+        op_bool = qp.BasisState([True, False], range(2))
+        op_int = qp.BasisState([1, 0], range(2))
+
+        assert op_bool == op_int
+
     def test_integer_input_raises_error(self):
         """Tests that an int as input raises an error."""
 
