@@ -51,7 +51,7 @@ def get_runtime_call_prim():
 
 
 def runtime_call(target, *args, signature=None, out_bytes=0, address=None, library=None):
-    r"""Call a declared runtime symbol, in-process or on the executor it is addressed to, from within a backline-controlled QJIT function.
+    r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
 
     A symbol is declared once with :func:`~.runtime_declare`, then called by name from inside a
     ``qjit`` program.
@@ -60,6 +60,18 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     executor, which invokes the symbol on the machine the runtime lives on. Omitting ``address``
     makes the call **local**: the symbol is invoked in the process running the compiled program,
     through the ordinary in-process C ABI.
+
+    **Dispatched** (``address`` set):
+    A dispatched call is run by the Catalyst executor. The `dispatch-executor-targets` pass turns it
+    into an `executor.call`, which reaches `__catalyst__executor__call_wrapper` on the addressed
+    machine. That calls the symbol through LLVM ORC's wrapper convention. You need to have a
+    catalyst executor running on the addressed machine, which is provided in
+    `runtime/lib/executor/executor.cpp`.
+
+    **Local** (``address`` is ``None``):
+    A local call is run in the process running the compiled program. The symbol is resolved and
+    invoked through the ordinary C ABI. `library` is recorded on the compiled module so the driver
+    links the shared library that exports it.
 
     Args:
         target (str | CSignature): the symbol to call, or its signature
