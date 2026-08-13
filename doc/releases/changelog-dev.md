@@ -1141,7 +1141,7 @@
 
 * Fixed a bug where :meth:`~.LinearCombination.simplify` dropped wires used only by
   :class:`~.Identity` terms.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10007)](https://github.com/PennyLaneAI/pennylane/pull/10007)
 
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
