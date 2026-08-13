@@ -37,19 +37,23 @@ A backline device is built with :func:`~pennylane.backline` from a
     cpu_controller = qp.Controller(
         label="cpu-controller",
         backend="cpu_verbs",
-        remote=True,
-        executor_options={"host": "192.168.3.15"},
-        init_args={"config": "dev=mlx5_0;gid=1"},
+        executor_options={"host": "192.0.2.10", "port": 7810},
+        init_args={
+            "config": "dev=mlx5_0;gid=1",
+            "data_path": "cpu_verbs",
+            "in_bytes": 8,
+            "out_bytes": 8,
+        },
     )
 
     gpu_coprocessor = qp.Coprocessor(
         label="gpu-coprocessor",
         coprocessor_fn="decoder",
         backend="gpu_verbs",
-        comm_host="192.168.1.3",
-        oob_port=18590,
-        remote=False,
-        init_args={"config": "dev=mlx5_0;gid=3"},
+        comm_host="198.51.100.2",
+        oob_port=7760,
+        executor_options={"host": "192.0.2.11", "port": 7813},
+        init_args={"config": "dev=mlx5_0;gid=3", "data_path": "cpu_verbs"},
     )
 
     dev = qp.backline(
