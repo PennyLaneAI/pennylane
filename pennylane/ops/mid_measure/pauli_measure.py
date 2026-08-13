@@ -18,6 +18,7 @@ Implements the pauli measurement.
 import uuid
 from functools import lru_cache
 from importlib.util import find_spec
+from typing import override
 
 import numpy as np
 
@@ -25,8 +26,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operator2, abstractify
-from pennylane.typing import Wire
+from pennylane.core.operator import Operator2
 from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
@@ -65,6 +65,20 @@ class PauliMeasure(Operator2):
                 f"and {len(wires)} wires were given: {wires}."
             )
 
+    @override
+    def __abstract_init__(
+        self,
+        pauli_word: str,
+        wires: WiresLike,
+        postselect: int | None = None,
+        meas_uid: str | None = None,
+    ):  # pylint: disable=arguments-differ,unused-argument
+        # meas_uid is irrelevant to abstract operators and will be ignored
+        super().__abstract_init__(
+            pauli_word=pauli_word, wires=wires, postselect=postselect, meas_uid=None
+        )
+
+    @override
     def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
         """How the pauli-product measurement is represented in diagrams and drawings."""
         postselect = "" if self.postselect is None else ("₁" if self.postselect == 1 else "₀")
@@ -72,19 +86,9 @@ class PauliMeasure(Operator2):
             return f"┤↗{postselect}{self.pauli_word}├"
         return f"┤↗{postselect}{self.pauli_word[self.wires.index(wire)]}├"
 
+    @override
     def __repr__(self) -> str:
         return f"PauliMeasure('{self.pauli_word}', wires={self.wires})"
-
-
-@abstractify.register(PauliMeasure)
-def _abstractify_pauli_measure(op: PauliMeasure) -> PauliMeasure:
-    """Abstractify a :class:`~.PauliMeasure`, dropping its per-instance ``meas_uid``.
-
-    ``meas_uid`` is a unique identifier assigned to every measurement instance and is irrelevant
-    to the operator's resource/abstract identity. Excluding it lets identical PPMs share a single
-    abstract representation.
-    """
-    return PauliMeasure(op.pauli_word, wires=Wire[len(op.wires)], postselect=op.postselect)
 
 
 def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | None = None):
