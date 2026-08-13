@@ -26,6 +26,9 @@ from .transports import Transport, get_transport
 if TYPE_CHECKING:
     from pennylane.devices import Device
 
+# Wires given to the ``null.qubit`` device a :class:`~.Controller` falls back to.
+DEFAULT_WIRES = 32
+
 
 @dataclass(frozen=True, kw_only=True)
 class Node:
@@ -50,17 +53,12 @@ class Node:
     backend only has to be available to the compiler. Defaults to ``None``, letting the compiler pick
     its default. A ``"backend_lib"`` path in :attr:`init_args` takes precedence."""
 
-    remote: bool = False
-    """Whether the node runs on a separate host reached over the network (cross-compiled and
-    dispatched) rather than locally. Defaults to ``False``. A remote node needs an executor to
-    dispatch its compiled code to, which is created and attached by the compiler
-    using :attr:`executor_options`."""
-
     executor_options: dict | None = None
     """Options for the executor to launch for this node, passed to the compiler's executor
-    builder. ``None`` (the default) requests no executor; ``{}`` requests one with all defaults.
-    The launched executor also determines the node's cross-compilation target triple, detecting it
-    on the target host when not given explicitly. TODO: add what is recognized here"""
+    builder. ``None`` (the default) requests no executor, leaving the node in this process; ``{}``
+    requests one with all defaults. Asking for an executor is what makes a node :attr:`remote`. The
+    launched executor also determines the node's cross-compilation target triple, detecting it on
+    the target host when not given explicitly. TODO: add what is recognized here"""
 
     executor: object | None = None
     """The launched executor this node runs on. Created automatically by the compiler from
@@ -70,17 +68,13 @@ class Node:
     """Backend-specific initialization arguments; empty by default (never ``None``). TODO: add what is recognized here
     """
 
-    def _ensure_executor_spec(self) -> None:
-        """Wrap :attr:`executor_options` into an :class:`ExecutorSpec` for remote nodes."""
-        if self.remote and self.executor_options is not None and self.executor is None:
-            object.__setattr__(self, "executor", ExecutorSpec(options=dict(self.executor_options)))
-
-
-@dataclass(frozen=True)
-class ExecutorSpec:
-    """Unrealized executor request held on :attr:`~.Node.executor` until the compiler launches it."""
-
-    options: dict = field(default_factory=dict)
+    @property
+    def remote(self) -> bool:
+        """bool: Whether this node's code is dispatched to an executor rather than run in the 
+        present process, so that the libraries it loads live beside that executor rather than in 
+        this installation. A node is remote exactly when it has an executor to run on, whether still
+        requested through :attr:`executor_options` or already launched."""
+        return self.executor_options is not None or self.executor is not None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -102,12 +96,12 @@ class Controller(Node):
 
     device: "Device | None" = None
     """The PennyLane device the controller executes, e.g. one built with :func:`~pennylane.device`.
-    When ``None``, a ``null.qubit`` device is used."""
+    Defaults to ``None``, which builds a ``null.qubit`` over :data:`DEFAULT_WIRES` wires.
+    A controller needing more wires or an actual simulation, should pass a device of its own."""
 
     def __post_init__(self):
         if self.device is None:
-            object.__setattr__(self, "device", _make_device("null.qubit"))
-        self._ensure_executor_spec()
+            object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -179,6 +173,11 @@ class Placement:
     transport: str | Transport
     """How bytes move between nodes, by registry name (e.g. ``"rdma"``) or a :class:`~.Transport`. A
     name is resolved to a :class:`~.Transport` on construction with :func:`~.get_transport`."""
+
+    qec_code: str | None = None
+    """The quantum error-correcting code the circuit is encoded for, e.g. ``"steane"``. Naming it 
+    here lets the compiler encode the circuit, and no separate lowering step is needed. Defaults to ``None``,
+    which leaves the circuit unencoded."""
 
     def __post_init__(self):
         if not isinstance(self.coprocessors, tuple):
