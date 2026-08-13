@@ -17,7 +17,6 @@ from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -225,7 +224,7 @@ class SemiAdder(Operator2):
     wire_argnames = ("x_wires", "y_wires", "work_wires")
     arg_specs = {"x_wires": Wire[-1], "y_wires": Wire[-1], "work_wires": Wire[-1]}
 
-    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None):
+    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None = None):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -257,8 +256,8 @@ class SemiAdder(Operator2):
         super().__init__(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires)
 
     # pylint: disable=arguments-differ
-    def __abstract_init__(self, x_wires, y_wires, work_wires):
-        work_wires = work_wires if work_wires is not None else Wires([])
+    def __abstract_init__(self, x_wires, y_wires, work_wires=None):
+        work_wires = work_wires if work_wires is not None else []
         super().__abstract_init__(
             x_wires=Wire[len(x_wires)],
             y_wires=Wire[len(y_wires)],
@@ -285,7 +284,7 @@ def _semi_adder_resources(x_wires, y_wires, **_):
     crossover = min(num_y_wires - 1, num_x_wires)
     return {
         TemporaryAND: num_y_wires - 1,
-        _adjoint_abstract(TemporaryAND): num_y_wires - 1,
+        adjoint(TemporaryAND(Wire[3])): num_y_wires - 1,
         CNOT: 5 * crossover + num_y_wires - 5 + int(num_x_wires >= num_y_wires),
     }
 
@@ -366,7 +365,7 @@ def _controlled_semi_adder_resource(
     num_ctrl_cnots = num_y_wires + int(num_x_wires >= num_y_wires)
     return {
         TemporaryAND: num_y_wires - 1,
-        _adjoint_abstract(TemporaryAND): num_y_wires - 1,
+        adjoint(TemporaryAND(Wire[3])): num_y_wires - 1,
         CNOT: num_cnots,
         ctrl(
             CNOT(Wire[2]),
