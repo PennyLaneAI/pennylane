@@ -25,9 +25,10 @@ op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 
 op_params = tuple(zip(op_wires, op_repr))
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", (0.0, 1.0, -1.0))
 def test_global_phase_decompositions(phi):
+    """Tests that the decomposition rules of GlobalPhase are capture compatible."""
     op = GlobalPhase(phi)
     for rule in qp.list_decomps(GlobalPhase):
         _test_decomposition_rule(op, rule)
