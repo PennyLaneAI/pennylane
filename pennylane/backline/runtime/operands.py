@@ -39,6 +39,12 @@ SCALAR_SHAPE = (1,)
 STR_OPERAND_BYTES = 256
 
 
+def _narrows_64_bit() -> bool:
+    """Check whether JAX would narrow 64-bit values to 32-bit."""
+    # pylint: disable=import-outside-toplevel
+    import jax
+    return not jax.config.jax_enable_x64
+
 def check_width(ctype: CType, symbol: str, what: str) -> None:
     """Refuse a 64-bit value that JAX would quietly narrow to 32 bits.
 
@@ -53,14 +59,33 @@ def check_width(ctype: CType, symbol: str, what: str) -> None:
     dtype = ctype.dtype
     if dtype is None or dtype.itemsize < 8:
         return
-    # pylint: disable=import-outside-toplevel
-    import jax
-
-    if not jax.config.jax_enable_x64:
+    if _narrows_64_bit():
         raise TypeError(
             f"{symbol}: {what} is a {ctype}, which JAX would narrow to 32 bits because "
             f"jax_enable_x64 is off. Turn it on with "
             f"jax.config.update('jax_enable_x64', True), as Catalyst does."
+        )
+
+
+def check_buffer_width(value, symbol: str, position: int) -> None:
+    """Refuse a ``buf`` whose elements would be narrowed by JAX to 32 bits.
+
+    Args:
+        value: the buffer being passed
+        symbol (str): the symbol being called
+        position (int): the argument's position
+
+    Raises:
+        TypeError: if the buffer's elements would be narrowed by JAX to 32 bits
+    """
+    dtype = getattr(value, "dtype", None)
+    dtype = np.dtype(dtype) if dtype is not None else np.asarray(value).dtype
+    if dtype.itemsize < 8:
+        return
+    if _narrows_64_bit():
+        raise TypeError(
+            f"{symbol}: argument {position} is a buf of {dtype}, whose elements would be narrowed "
+            f"to 32 bits by JAX because jax_enable_x64 is off."
         )
 
 
@@ -129,6 +154,7 @@ def operand_for(ctype: CType, value, symbol: str, position: int):
         return jnp.frombuffer(text_bytes(ctype, value, symbol, position), dtype=jnp.uint8)
     if ctype is CType.BUF:
         # Local calls only; `operands_for` rejects buf for a dispatched call.
+        check_buffer_width(value, symbol, position)
         return jnp.asarray(value)
     if ctype.dtype is None:
         raise TypeError(f"{symbol}: argument {position} of type {ctype} cannot be passed")
