@@ -34,6 +34,7 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
@@ -598,13 +599,13 @@ def _check_bind_new_parameters(op):
 
 def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
-    new_dyn_args = {
-        k: math.cast_like(v * 0.0, v) for k, v in op.arguments.items() if k in op.dynamic_argnames
-    }
+    dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
+    new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
     new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
-        assert qp.math.allclose(new_data_op.arguments[name], val), failure_comment
+        op_to_check = new_data_op.base if isinstance(new_data_op, SymbolicOp2) else new_data_op
+        assert qp.math.allclose(op_to_check.arguments[name], val), failure_comment
 
 
 def _check_bind_new_parameters_symbolicop2(op):

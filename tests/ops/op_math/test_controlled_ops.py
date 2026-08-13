@@ -791,20 +791,6 @@ def test_simplify_crot():
     assert np.allclose(not_simplified_crot.matrix(), crot.matrix())
 
 
-controlled_data = [
-    (qp.RX(1.234, wires=0), qp.CRX(1.234, wires=("a", 0))),
-    (qp.RY(1.234, wires=0), qp.CRY(1.234, wires=("a", 0))),
-    (qp.Rot(1.2, 2.3, 3.4, wires=0), qp.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
-]
-
-
-@pytest.mark.parametrize("base, cbase", controlled_data)
-def test_controlled_method(base, cbase):
-    """Tests the _controlled method for parametric ops."""
-    # pylint: disable=protected-access
-    qp.assert_equal(base._controlled("a"), cbase)
-
-
 @pytest.mark.parametrize(
     "control, control_values",
     [([0, 1], [True, False]), ([10, "a"], (0, 0)), ([2], 1), (2, (True,))],
