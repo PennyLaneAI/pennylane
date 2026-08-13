@@ -972,7 +972,9 @@ class TestControlledDecompositions:
         graph = DecompositionGraph(
             operations=[op],
             gate_set={"ControlledPhaseShift", "PauliX"},
-            alt_decomps={"Adjoint(PauliX)": [self_adjoint]},
+            alt_decomps={
+                "Adjoint(PauliX)": [self_adjoint]
+            },  # this is necessary because all tests are patched with specific decompositions that dont include Adjoint(PauliX)
         )
         solution = graph.solve()
 
