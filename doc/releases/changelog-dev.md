@@ -1139,6 +1139,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :meth:`~.LinearCombination.simplify` dropped wires used only by
+  :class:`~.Identity` terms.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
@@ -1255,6 +1259,7 @@ Guillermo Alonso,
 Abdullah Al Omar Galib,
 Gabriel Bottrill,
 Astral Cai,
+Yuji Cao,
 Daniel Casota,
 Miguel Cárdenas,
 Yushao Chen,

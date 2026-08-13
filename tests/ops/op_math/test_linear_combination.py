@@ -690,6 +690,19 @@ class TestLinearCombination:
         old_H = old_H.simplify()
         qp.assert_equal(old_H, new_H)
 
+    @pytest.mark.parametrize(
+        ("ops", "expected_wires"),
+        [
+            ([qp.Identity("identity")], Wires(["identity"])),
+            ([qp.Identity("identity"), qp.X("x")], Wires(["identity", "x"])),
+        ],
+    )
+    def test_simplify_preserves_identity_wires(self, ops, expected_wires):
+        """Tests that simplify preserves wires used only by Identity terms."""
+        linear_combination = qp.ops.LinearCombination([1] * len(ops), ops)
+
+        assert linear_combination.simplify().wires == expected_wires
+
     def test_simplify_while_queueing(self):
         """Tests that simplifying a LinearCombination in a tape context
         queues the simplified LinearCombination."""

@@ -290,7 +290,7 @@ class LinearCombination(Sum):
 
     @staticmethod
     @QueuingManager.stop_recording()
-    def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
+    def _simplify_coeffs_ops(coeffs, ops, pr, wire_order, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
         Returns:
@@ -309,7 +309,7 @@ class LinearCombination(Sum):
             new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=pr.wires)
+                pw_op = pw.operation(wire_order=wire_order)
                 new_ops.append(pw_op)
                 new_coeffs.append(coeff)
 
@@ -324,7 +324,9 @@ class LinearCombination(Sum):
         return new_coeffs, new_ops, pr
 
     def simplify(self, cutoff=1.0e-12):
-        coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
+        coeffs, ops, pr = self._simplify_coeffs_ops(
+            self.coeffs, self.ops, self.pauli_rep, self.wires, cutoff
+        )
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
     def __matmul__(self, other: Operator) -> Operator:
