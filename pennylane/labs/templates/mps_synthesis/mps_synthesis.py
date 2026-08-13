@@ -59,37 +59,51 @@ def is_right_canonical(tensors, atol=1e-10):
 
 
 def split_mps(mps):
-    """
-    Split an MPS into contiguous ``(left, bulk, right)`` segments, preserving site order.
+    """Split an MPS into contiguous ``(left, bulk, right)`` segments, preserving site order.
 
     Segments are identified by their bond profile:
-        left  : chi_L < chi_R   (1 -> 2 -> ... -> chi)
+        left  : chi_L < chi_R   (1 -> 2 -> 4 -> ... -> chi)
         bulk  : chi_L == chi_R  (chi -> chi, maximal bond)
-        right : chi_L > chi_R   (chi -> ... -> 2 -> 1)
+        right : chi_L > chi_R   (chi -> ... -> 4 -> 2 -> 1)
 
-    Only a single unimodal profile is supported: all ``left`` sites, then all ``bulk``
-    sites, then all ``right`` sites (bond dimension non-decreasing then non-increasing).
-    A non-unimodal profile such as ``1 -> 2 -> 1 -> 2 -> 1`` is rejected with a
-    ``ValueError`` rather than being silently reordered.
+    Two conditions are required, each raising ``ValueError`` otherwise:
+
+    - a single unimodal profile (contiguous lefts, then bulks, then rights, i.e. bond
+      dimension non-decreasing then non-increasing); e.g. ``1 -> 2 -> 1 -> 2 -> 1`` is rejected;
+    - boundary bond dimensions that double at each step (``1 -> 2 -> 4 -> ... -> chi``, capped
+      at the maximal bond dimension ``chi``); slower growth such as ``1 -> 2 -> 3 -> 5`` is
+      rejected.
     """
-    # Phase index per site: left -> 0, bulk -> 1, right -> 2. A supported profile has a
-    # non-decreasing phase sequence, i.e. lefts, then bulks, then rights, contiguously.
-    phases = []
-    for A in mps:
-        chi_L, _, chi_R = A.shape
-        phases.append(0 if chi_R > chi_L else (1 if chi_R == chi_L else 2))
+    bonds = [A.shape[0] for A in mps] + [mps[-1].shape[2]]
 
+    # Phase per site from consecutive bonds: left (0) grows, bulk (1) keeps, right (2) shrinks.
+    # A supported profile is unimodal: contiguous lefts, then bulks, then rights.
+    phases = [0 if r > l else (1 if r == l else 2) for l, r in zip(bonds, bonds[1:])]
     if any(later < earlier for earlier, later in zip(phases, phases[1:])):
-        bond_profile = [A.shape[0] for A in mps] + [mps[-1].shape[2]]
         raise ValueError(
             "mps_synthesis only supports a single left/bulk/right bond profile "
             "(bond dimension non-decreasing then non-increasing). Got the non-unimodal "
-            f"bond profile {bond_profile}."
+            f"bond profile {bonds}."
         )
 
-    left = [A for A, phase in zip(mps, phases) if phase == 0]
-    bulk = [A for A, phase in zip(mps, phases) if phase == 1]
-    right = [A for A, phase in zip(mps, phases) if phase == 2]
+    left = [A for A, p in zip(mps, phases) if p == 0]
+    bulk = [A for A, p in zip(mps, phases) if p == 1]
+    right = [A for A, p in zip(mps, phases) if p == 2]
+
+    # Boundary bonds must double at each step (1, 2, 4, ..., chi); slower growth such as
+    # 1 -> 2 -> 3 -> 5 is unsupported and would otherwise fail obscurely downstream.
+    chi = max(bonds)
+    expected = [1]
+    while expected[-1] < chi:
+        expected.append(min(2 * expected[-1], chi))
+    left_bonds, right_bonds = bonds[: len(left) + 1], bonds[len(mps) - len(right) :]
+    if left_bonds != expected or right_bonds != expected[::-1]:
+        raise ValueError(
+            "mps_synthesis only supports boundary bond dimensions that double at each step "
+            f"(1 -> 2 -> 4 -> ... -> {chi}). Got boundary bonds {left_bonds} (left) and "
+            f"{right_bonds} (right); expected {expected} and {expected[::-1]}."
+        )
+
     return left, bulk, right
 
 
