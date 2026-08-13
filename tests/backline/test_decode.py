@@ -1,0 +1,290 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Tests for :func:`pennylane.backline.decode`."""
+
+import numpy as np
+import pytest
+
+import pennylane as qp
+from pennylane.backline.decode import (
+    ROLE_CONTROLLER,
+    _byte_count,
+    _resolve_nodes,
+    _resolve_out_bytes,
+    _session_key,
+    decode,
+)
+from pennylane.backline.runtime import operands
+
+TRANSPORT_CALLS = [
+    "__catalyst__transport__get_session__call",
+    "__catalyst__transport__stage_payload__call",
+    "__catalyst__transport__post__call",
+    "__catalyst__transport__collect__call",
+]
+
+
+@pytest.fixture(name="x64")
+def x64_fixture():
+    """Run a test with 64-bit values available, as Catalyst configures JAX."""
+    jax = pytest.importorskip("jax")
+    with jax.experimental.enable_x64():
+        yield jax
+
+
+def a_coprocessor(label=None):
+    """A coprocessor"""
+    return qp.Coprocessor(coprocessor_fn="decoder", label=label, comm_host="127.0.0.1")
+
+
+def a_device(coprocessors=(), out_bytes=8):
+    """A backline device whose controller needs ``out_bytes``-byte correction."""
+    controller = qp.Controller(
+        device=qp.device("null.qubit", wires=2), init_args={"out_bytes": out_bytes}
+    )
+    return qp.backline(controller=controller, coprocessors=coprocessors, transport="rdma")
+
+
+def a_round(jax, dev, syndrome=None, **kwargs):
+    """Trace a round on ``dev`` and return its jaxpr."""
+    syndrome = np.zeros(4, dtype=np.uint8) if syndrome is None else syndrome
+    with qp.capture.tracing_device(dev):
+        return jax.make_jaxpr(lambda s: decode(s, **kwargs))(syndrome)
+
+
+def calls_of(jaxpr):
+    """The transport calls."""
+    return [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+
+
+def scalars_of(jaxpr, call):
+    """The compile-time scalars a call was given."""
+    literals = {
+        eqn.outvars[0]: eqn.invars[0].val
+        for eqn in jaxpr.eqns
+        if str(eqn.primitive) == "reshape" and hasattr(eqn.invars[0], "val")
+    }
+    return [literals.get(var) for var in call.invars]
+
+
+def session_key_of(jaxpr):
+    """The session key."""
+    fields = [
+        np.asarray(const)
+        for const in jaxpr.consts
+        if np.asarray(const).shape == (operands.STR_OPERAND_BYTES,)
+    ]
+    assert len(fields) == 1, "expected exactly one str operand"
+    return bytes(fields[0]).rstrip(b"\x00").decode()
+
+
+class TestSessionKey:
+    """The session key."""
+
+    def test_a_placement_with_no_coprocessor_uses_the_controller_key(self):
+        """The only session is the controller's own."""
+        assert _session_key(None) == "controller"
+
+    def test_a_labelled_coprocessor_names_the_session(self):
+        """One session per coprocessor, by that coprocessor's label."""
+        assert _session_key(a_coprocessor(label="decoder-0")) == "decoder-0"
+
+    @pytest.mark.parametrize("label", [None, ""])
+    def test_an_unlabelled_coprocessor_falls_back(self, label):
+        """Without a label there is one conventional key."""
+        assert _session_key(a_coprocessor(label=label)) == "coprocessor.0"
+
+
+class TestByteCount:
+    """The byte count."""
+
+    @pytest.mark.parametrize(
+        "array, expected",
+        [
+            (np.zeros(4, dtype=np.uint8), 4),
+            (np.zeros((2, 3), dtype=np.float64), 48),
+            (np.zeros((), dtype=np.uint32), 4),
+            ([1.0, 2.0, 3.0], 24),
+        ],
+    )
+    def test_the_count_comes_from_shape_and_dtype(self, array, expected):
+        """The count comes from shape and dtype."""
+        assert _byte_count(array) == expected
+
+    def test_a_traced_syndrome_is_measured_by_its_aval(self, x64):
+        """The count is known at trace time."""
+        counted = []
+        x64.make_jaxpr(lambda s: counted.append(_byte_count(s)) or s)(
+            np.zeros((2, 8), dtype=np.uint16)
+        )
+        assert counted == [32]
+
+
+class TestOutBytes:
+    """The correction size."""
+
+    def test_an_explicit_size_wins(self):
+        """The call site's override wins."""
+        controller = qp.Controller(init_args={"out_bytes": 8})
+        assert _resolve_out_bytes(controller, 16) == 16
+
+    def test_the_committed_size_is_the_default(self):
+        """The committed size is the default."""
+        assert _resolve_out_bytes(qp.Controller(init_args={"out_bytes": 8}), None) == 8
+
+    @pytest.mark.parametrize("controller", [qp.Controller(), object()])
+    def test_an_unknown_size_is_refused(self, controller):
+        """An unknown size cannot be allocated."""
+        with pytest.raises(ValueError, match="could not determine the correction size"):
+            _resolve_out_bytes(controller, None)
+
+
+class TestNodeResolution:
+    """Which nodes a round runs between."""
+
+    def test_explicit_nodes_need_no_placement(self):
+        """Both nodes given are self-contained, so no device has to be traced."""
+        controller, coprocessor = qp.Controller(), a_coprocessor()
+        assert _resolve_nodes(controller, coprocessor, 0) == (controller, coprocessor)
+
+    def test_the_nodes_come_from_the_traced_device(self):
+        """The placement supplies both nodes."""
+        dev = a_device(coprocessors=[a_coprocessor(label="decoder-0")])
+        with qp.capture.tracing_device(dev):
+            controller, coprocessor = _resolve_nodes(None, None, 0)
+
+        assert controller is dev.placement.controller
+        assert coprocessor is dev.placement.coprocessors[0]
+
+    def test_decoder_id_selects_the_coprocessor(self):
+        """The id picks the node."""
+        coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+        with qp.capture.tracing_device(a_device(coprocessors=coprocs)):
+            _, coprocessor = _resolve_nodes(None, None, 1)
+
+        assert coprocessor is coprocs[1]
+
+    def test_a_decoder_id_out_of_range_is_refused(self):
+        """A bug selects a coprocessor that was never placed."""
+        with qp.capture.tracing_device(a_device(coprocessors=[a_coprocessor()])):
+            with pytest.raises(ValueError, match="but the placement has 1"):
+                _resolve_nodes(None, None, 3)
+
+    def test_a_placement_without_coprocessors_leaves_the_node_unset(self):
+        """A controller-only placement still resolves nodes."""
+        dev = a_device()
+        with qp.capture.tracing_device(dev):
+            controller, coprocessor = _resolve_nodes(None, None, 0)
+
+        assert controller is dev.placement.controller
+        assert coprocessor is None
+
+    @pytest.mark.parametrize("device", [None, qp.device("null.qubit", wires=1)])
+    def test_a_trace_with_no_placement_is_refused(self, device):
+        """A trace without a placement cannot resolve nodes."""
+        with qp.capture.tracing_device(device):
+            with pytest.raises(ValueError, match="this trace has none"):
+                _resolve_nodes(None, None, 0)
+
+
+class TestRecordedRound:
+    """The four transport calls a round is recorded as."""
+
+    def test_a_round_is_four_calls_in_order(self, x64):
+        """The calls are in order."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(label="decoder-0")]))
+        assert [call.params["symbol"] for call in calls_of(jaxpr)] == TRANSPORT_CALLS
+
+    def test_every_call_is_local(self, x64):
+        """The round is driven from the controller's own process."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]))
+        assert all(call.params["dispatch"] is None for call in calls_of(jaxpr))
+
+    def test_the_session_is_claimed_as_the_controller(self, x64):
+        """The controller is the data initiator."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(label="decoder-0")]))
+        role, _key = scalars_of(jaxpr, calls_of(jaxpr)[0])
+
+        assert role == ROLE_CONTROLLER
+        assert session_key_of(jaxpr) == "decoder-0"
+
+    @pytest.mark.parametrize(
+        "coprocessors, key",
+        [
+            ([a_coprocessor(label="decoder-1")], "decoder-1"),
+            ([a_coprocessor()], "coprocessor.0"),
+            ([], "controller"),
+        ],
+    )
+    def test_the_session_key_follows_the_placement(self, x64, coprocessors, key):
+        """The key follows the placement."""
+        jaxpr = a_round(x64, a_device(coprocessors=coprocessors))
+        assert session_key_of(jaxpr) == key
+
+    def test_the_staged_payload_carries_its_length_and_decoder(self, x64):
+        """The length and decoder are stamped alongside the payload."""
+        dev = a_device(coprocessors=[a_coprocessor(), a_coprocessor()])
+        jaxpr = a_round(x64, dev, syndrome=np.zeros(6, dtype=np.uint8), decoder_id=1)
+        _session, _src, nbytes, decoder_id = scalars_of(jaxpr, calls_of(jaxpr)[1])
+
+        assert nbytes == 6
+        assert decoder_id == 1
+
+    def test_in_bytes_sends_only_part_of_the_syndrome(self, x64):
+        """The committed bytes are sent."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]), in_bytes=2)
+        assert scalars_of(jaxpr, calls_of(jaxpr)[1])[2] == 2
+
+    def test_the_posted_work_item_is_the_one_asked_for(self, x64):
+        """The caller's choice, defaulting to the first."""
+        dev = a_device(coprocessors=[a_coprocessor()])
+
+        default = a_round(x64, dev)
+        assert scalars_of(default, calls_of(default)[2])[1] == 0
+
+        asked = a_round(x64, dev, work_item=3)
+        assert scalars_of(asked, calls_of(asked)[2])[1] == 3
+
+    def test_the_correction_is_the_committed_size(self, x64):
+        """The correction is the committed size."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()], out_bytes=16))
+        collect = calls_of(jaxpr)[3]
+
+        assert collect.params["out_bytes"] == (16,)
+        (correction,) = jaxpr.jaxpr.outvars
+        assert correction.aval.shape == (16,)
+        assert str(correction.aval.dtype) == "uint8"
+
+    def test_an_explicit_size_overrides_the_committed_one(self, x64):
+        """The call site's override wins."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]), out_bytes=32)
+        assert calls_of(jaxpr)[3].params["out_bytes"] == (32,)
+
+    def test_the_library_is_recorded_on_every_call(self, x64):
+        """The library is recorded once per call."""
+        dev = a_device(coprocessors=[a_coprocessor()])
+        jaxpr = a_round(x64, dev, library="/opt/librt_transport.so")
+
+        libraries = {call.params["library"] for call in calls_of(jaxpr)}
+        assert libraries == {"/opt/librt_transport.so"}
+
+    def test_a_round_outside_a_program_is_refused(self):
+        """A recorded call has nowhere to go without a trace."""
+        with pytest.raises(RuntimeError, match="outside a compiled program"):
+            decode(
+                np.zeros(4, dtype=np.uint8),
+                controller=qp.Controller(init_args={"out_bytes": 8}),
+                coprocessor=a_coprocessor(),
+            )
