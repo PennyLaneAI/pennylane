@@ -57,7 +57,9 @@ def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-neste
             row += (0.0,)
         check_to_var_msgs += (row,)
 
-    for _ in range(num_iters):
+    # Keep this loop dynamic because unrolling it with tl.static_range hurts performance.
+    # BUG: Triton 3.5 requies all 3 args explicitly provided to range on Python 3.14.
+    for _ in range(0, num_iters, 1):
         var_to_check_msgs = ()
         for c in tl.static_range(num_checks):
             row = ()
