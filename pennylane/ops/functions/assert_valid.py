@@ -34,6 +34,7 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
@@ -177,9 +178,11 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     for rule in qp.list_decomps(f"C({op.name})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
-            control_wires = [i + len(op.wires) for i in range(n_ctrl_wires)]
+            int_wires = [w for w in op.wires if isinstance(w, int)]
+            max_wire = max(int_wires) if int_wires else -1
+            control_wires = [i + max_wire + 1 for i in range(n_ctrl_wires)]
             control_values = [c_value] * n_ctrl_wires
-            work_wires = [i + len(op.wires) + n_ctrl_wires for i in range(n_workers)]
+            work_wires = [i + max(control_wires) + 1 for i in range(n_workers)]
             ctrl_op = ctrl(op, control_wires, control_values, work_wires)
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
@@ -419,7 +422,8 @@ def _check_eigendecomposition(op):
     if has_eigvals:
         assert qp.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
-    if has_eigvals and op.has_diagonalizing_gates:
+    if (eg is not None or compute_eg is not None) and op.has_diagonalizing_gates:
+        eg = eg if eg is not None else compute_eg
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
@@ -591,13 +595,13 @@ def _check_bind_new_parameters(op):
 
 def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
-    new_dyn_args = {
-        k: math.cast_like(v * 0.0, v) for k, v in op.arguments.items() if k in op.dynamic_argnames
-    }
+    dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
+    new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
     new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
-        assert qp.math.allclose(new_data_op.arguments[name], val), failure_comment
+        op_to_check = new_data_op.base if isinstance(new_data_op, SymbolicOp2) else new_data_op
+        assert qp.math.allclose(op_to_check.arguments[name], val), failure_comment
 
 
 def _check_differentiation(op):
@@ -660,6 +664,7 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -673,6 +678,7 @@ def _assert_valid_operator2(
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
+        skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` test will be skipped.
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -718,9 +724,11 @@ def _assert_valid_operator2(
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
                     skip_capture=skip_capture,
+                    skip_bind_new_parameters=skip_bind_new_parameters,
                 )
 
-    _check_bind_new_parameters_op2(op)
+    if not skip_bind_new_parameters:
+        _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
@@ -734,6 +742,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -753,6 +762,7 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_capture: If ``True``, the program capture tests will be skipped.
+        skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` tests will be skipped.
 
     **Examples:**
 
@@ -799,6 +809,7 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_capture,
+            skip_bind_new_parameters,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -808,7 +819,8 @@ def assert_valid(
             assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
             assert qp.math.allclose(d, p), "data and parameters must match."
 
-        _check_bind_new_parameters(op)
+        if not skip_bind_new_parameters:
+            _check_bind_new_parameters(op)
 
     _check_pytree(op)
     if len(op.wires) <= 26:
