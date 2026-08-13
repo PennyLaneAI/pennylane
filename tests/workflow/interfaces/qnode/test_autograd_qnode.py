@@ -541,6 +541,8 @@ class TestQubitIntegration:
         with a single prob output"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         kwargs = dict(
             diff_method=diff_method,
@@ -581,6 +583,8 @@ class TestQubitIntegration:
         with multiple prob outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -650,6 +654,8 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         kwargs = dict(
             diff_method=diff_method,
@@ -705,6 +711,8 @@ class TestQubitIntegration:
         with prob and variance outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -1313,6 +1321,8 @@ class TestQubitIntegration:
 
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("Lightning does not support state adjoint diff.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)

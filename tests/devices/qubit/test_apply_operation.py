@@ -956,7 +956,7 @@ class TestRXCalcGrad:
         state = torch.tensor(self.state)
 
         def f(phi):
-            op = qp.RX(phi, wires=0)
+            op = qp.RX(qp.math.cast(phi, "float64"), wires=0)
             return method(op, state)
 
         phi = torch.tensor(0.325, requires_grad=True)
