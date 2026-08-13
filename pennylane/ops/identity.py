@@ -20,12 +20,11 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -424,24 +423,34 @@ def _controlled_g_phase_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):  # pylint: disable=unused-argument
     num_control_wires = len(control_wires)
-    num_zero_control_values = int(qp.math.sum(qp.math.logical_not(control_values)))
     num_work_wires = len(work_wires)
-    if num_control_wires == 1 and num_zero_control_values == 1:
-        return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
-    if num_control_wires == 1:
-        return {qp.PhaseShift: 1}
+    resources = {}
+
+    if num_control_wires == 1:  # Worst-case we need a GlobalPhase if control on zero
+        resources[qp.PhaseShift] = 1
+        resources[qp.GlobalPhase] = 1
+        return resources
+
+    # NOTE: Take average case scenario for number of X required for zero control values
+    resources[qp.X] = num_control_wires
 
     if num_control_wires == 2:
-        return {qp.X: num_zero_control_values * 2, qp.ControlledPhaseShift: 1}
+        resources[qp.ControlledPhaseShift] = 1
+        return resources
 
-    return {
-        qp.X: num_zero_control_values * 2,
-        _ctrl_abstract(qp.PhaseShift, Wire[num_control_wires - 1], Wire[num_work_wires]): 1,
-    }
+    resources[
+        qp.ctrl(
+            abstractify(qp.PhaseShift),
+            control=Wire[num_control_wires - 1],
+            work_wires=Wire[num_work_wires],
+        )
+    ] = 1
+
+    return resources
 
 
-@register_resources(_controlled_g_phase_resource)
+@register_resources(_controlled_g_phase_resource, exact=False)
 def _controlled_g_phase_decomp(
     base,
     control_wires,
@@ -450,29 +459,29 @@ def _controlled_g_phase_decomp(
     work_wire_type,  # pylint: disable=unused-argument
 ):
     """The decomposition rule for a controlled global phase."""
-    wires = control_wires + base.wires
+    if len(control_wires) == 1:
 
-    if len(control_wires) == 1 and control_values[0]:
-        qp.PhaseShift(-base.phi, wires=control_wires[-1])
+        def _true():
+            qp.PhaseShift(-base.phi, wires=control_wires[-1])
+
+        def _false():
+            qp.PhaseShift(base.phi, wires=control_wires[-1])
+            qp.GlobalPhase(base.phi)
+
+        qp.cond(control_values[0], _true, _false)()
         return
 
-    if len(control_wires) == 1 and not control_values[0]:
-        qp.PhaseShift(base.phi, wires=control_wires[-1])
-        qp.GlobalPhase(base.phi)
-        return
+    @qp.for_loop(0, len(control_values))
+    def _x_flips(i):
+        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
-    zero_control_wires = [
-        w for w, val in zip(control_wires, control_values, strict=True) if not val
-    ]
-    for w in zero_control_wires:
-        qp.PauliX(w)
+    _x_flips()  # pylint: disable=no-value-for-parameter
     qp.ctrl(
-        qp.PhaseShift(-base.phi, wires=wires[len(control_wires) - 1]),
-        control=wires[: len(control_wires) - 1],
+        qp.PhaseShift(-base.phi, wires=control_wires[-1]),
+        control=control_wires[:-1],
         work_wires=work_wires,
     )
-    for w in zero_control_wires:
-        qp.PauliX(w)
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)

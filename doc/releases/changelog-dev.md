@@ -877,6 +877,7 @@
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
   [(#9964)](https://github.com/PennyLaneAI/pennylane/pull/9964)
+  [(#10006)](https://github.com/PennyLaneAI/pennylane/pull/10006)
   [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
   - Multi-qubit, parametric operators are ported:
