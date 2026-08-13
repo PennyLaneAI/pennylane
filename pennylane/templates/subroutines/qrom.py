@@ -223,9 +223,6 @@ class QROM(Operator2):
             data = math.array(data)
 
         work_wires = Wires(() if work_wires is None else work_wires)
-
-        # Skip overlap checks for AbstractWires (no concrete labels) and for JAX
-        # tracers (concrete values unavailable during tracing).
         _wires_are_abstract = any(
             isinstance(ws, AbstractWires) for ws in (control_wires, target_wires, work_wires)
         )

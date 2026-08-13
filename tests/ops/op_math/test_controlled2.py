@@ -198,11 +198,11 @@ class TestControlled2:
 
         op = CRot2(Float, 0.5, 0.2, wires=[0, 1])
         assert op.phi == Float
-        assert op.theta == Float
-        assert op.omega == Float
-        assert op.wires == Wire[2]
-        assert op.control_wires == Wire[1]
-        assert op.control_values == Bool[1]
+        assert op.theta == 0.5
+        assert op.omega == 0.2
+        assert op.wires == qp.wires.Wires((0, 1))
+        assert op.control_wires == qp.wires.Wires(0)
+        assert op.control_values == np.array([True])
 
     def test_custom_controlled_op_default_compute_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
@@ -595,7 +595,9 @@ class TestControlledOp2:
     def test_create_abstract_op(self):
         """Tests creating an abstract operator."""
 
-        op = ControlledOp2(OneWireDynOp, Wire[2])
+        op = ControlledOp2(
+            OneWireDynOp(Float, Wire), Wire[2], work_wires=Wire[0], control_values=Bool[2]
+        )
         assert op.control_wires == Wire[2]
         assert op.target_wires == Wire[1]
         assert op.control_values == Bool[2]
@@ -603,7 +605,7 @@ class TestControlledOp2:
         assert op.wires == Wire[3]
 
         op = ControlledOp2(OneWireDynOp, Wire[2], control_values=[0, 1])
-        assert op.control_values == Bool[2]
+        assert qp.math.allclose(op.control_values, [0, 1])
 
     def test_create_controlled_op2(self):
         """Tests qp.ctrl on Operator2 creates a ControlledOp2."""

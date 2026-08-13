@@ -22,6 +22,7 @@ import pickle
 from collections import defaultdict
 from functools import partial
 from string import ascii_lowercase
+from types import NoneType
 
 import numpy as np
 import scipy.sparse
@@ -36,6 +37,7 @@ from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 from .equal import assert_equal
@@ -698,6 +700,15 @@ def _assert_valid_operator2(
     ), "ndim_params must have the same length as dynamic_argnames"
 
     assert_equal(type(op)(**op.arguments), op)
+
+    # check abstractify
+    abstractified_op = abstractify(op)
+    leaves = flatten(op)[0]
+    for l in leaves:
+        if not isinstance(l, (AbstractArray, AbstractWires, NoneType)):
+            raise AssertionError(
+                f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
+            )
 
     for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
         # make sure that the bound args are not outside the allowed dimensions
