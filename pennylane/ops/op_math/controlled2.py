@@ -849,10 +849,14 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    return qp.ctrl(
+    # if control values are all zeroes, first see if we can dispatch to a special type
+    # then run abstractify to promote control values to being boolean if it wasn't
+    # turned into a special type.
+    op = qp.ctrl(
         op,
         control=control_wires,
-        control_values=Bool[len(control_wires)],
+        control_values=None if num_zero_control_values == 0 else Bool[len(control_wires)],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
+    return abstractify(op)
