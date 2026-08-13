@@ -64,7 +64,7 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
 
     **Dispatched** (``address`` set):
     A dispatched call is run by the Catalyst executor. The `dispatch-executor-targets` pass turns it
-    into an `executor.call`, which reaches `__catalyst__executor__call_wrapper` on the addressed
+    into an ``executor.call``, which reaches ``__catalyst__executor__call_wrapper`` on the addressed
     machine. That calls the symbol through LLVM ORC's wrapper convention. You need to have a
     catalyst executor running on the addressed machine, which can be enabled from within a
     backline-controlled QJIT function.
