@@ -880,13 +880,14 @@
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
-      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, 
+      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, `~.SumOfSlatersPrep`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  [(#9965)](https://github.com/PennyLaneAI/pennylane/pull/9965)
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
