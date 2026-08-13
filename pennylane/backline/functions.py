@@ -15,7 +15,6 @@
 """Coprocessor functions for backline placement."""
 
 from dataclasses import dataclass
-from importlib import import_module
 
 from numpy.typing import ArrayLike
 
@@ -98,14 +97,11 @@ def triton_decoder(
     ... )
     """
     try:
-        build_triton_decoder = getattr(
-            import_module("pennylane.backline.decoders.triton.decoder_frontend"),
-            "_build_triton_decoder",
-        )
+        from pennylane.backline.decoders.triton.decoder_frontend import _build_triton_decoder
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
-    so_path, symbol_name = build_triton_decoder(decoder_fns, **build_options)
+    so_path, symbol_name = _build_triton_decoder(decoder_fns, **build_options)
     return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))
 
 
@@ -171,14 +167,11 @@ def css_bp_decoder(
     ... )
     """
     try:
-        build_css_bp_decoder = getattr(
-            import_module("pennylane.backline.decoders.triton.decoder_frontend"),
-            "_build_css_bp_decoder",
-        )
+        from pennylane.backline.decoders.triton.decoder_frontend import _build_css_bp_decoder
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
-    so_path, symbol_name = build_css_bp_decoder(
+    so_path, symbol_name = _build_css_bp_decoder(
         Hx, Hz, postprocess=postprocess, num_iters=num_iters, prob=prob, **build_options
     )
     return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))
