@@ -145,7 +145,6 @@ class Coprocessor(Node):
                 )
             if not 1 <= self.oob_port <= 65535:
                 raise ValueError(f"oob_port must be in 1..65535, got {self.oob_port}")
-        self._ensure_executor_spec()
 
 
 @dataclass(frozen=True, kw_only=True)
