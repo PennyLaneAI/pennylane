@@ -156,11 +156,11 @@ def test_default_operator_handling():
     jaxpr = jax.make_jaxpr(f)(1.2)
 
     assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
-    assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
-    assert_eqn_matches_op(jaxpr.eqns[2], qp.T)
+    assert jaxpr.eqns[0].params["adjoint"] is True
+    assert_eqn_matches_op(jaxpr.eqns[1], qp.T)
+    assert_eqn_matches_op(jaxpr.eqns[2], qp.X)
     assert_eqn_matches_op(jaxpr.eqns[3], qp.X)
-    assert_eqn_matches_op(jaxpr.eqns[4], qp.X)
-    assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
+    assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
 
 
 @pytest.mark.parametrize(
@@ -429,10 +429,10 @@ class TestHigherOrderPrimitiveRegistrations:
         @SimplifyInterpreter()
         def f(x, control):
             def true_fn(y):
-                _ = qp.RY(y, 0) ** 2
+                qp.RY(y, 0) ** 2  # pylint: disable=expression-not-assigned
 
             def false_fn(y):
-                _ = qp.adjoint(qp.RX(y, 0))
+                qp.adjoint(qp.RX(y, 0))
 
             qp.cond(control, true_fn, false_fn)(x)
 
@@ -444,8 +444,8 @@ class TestHigherOrderPrimitiveRegistrations:
         assert branch1.eqns[1].primitive == qp.RY._primitive
 
         branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
-        assert len(branch2.eqns) == 2
-        assert_eqn_matches_op(branch2.eqns[1], qp.RX)
+        assert len(branch2.eqns) == 4
+        assert_eqn_matches_op(branch2.eqns[-1], qp.RX)
 
     def test_cond_no_false_branch(self):
         """Test transforming a cond HOP when no false branch exists."""
@@ -729,7 +729,7 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
                 exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                qp.RX(y, 0) ** exponent  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return grad_f(circuit)(x)

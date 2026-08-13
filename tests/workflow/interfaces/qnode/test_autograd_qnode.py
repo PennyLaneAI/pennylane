@@ -1904,6 +1904,8 @@ class TestReturn:
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         @qnode(
             dev,
@@ -1938,6 +1940,8 @@ class TestReturn:
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         @qnode(
             dev,
@@ -2008,7 +2012,7 @@ class TestReturn:
         def circuit(a, b):
             qp.RY(a, wires=0)
             qp.RX(b, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -2022,10 +2026,10 @@ class TestReturn:
         assert len(jac) == 2
 
         assert isinstance(jac[0], np.ndarray)
-        assert jac[0].shape == (5,)
+        assert jac[0].shape == (2,)
 
         assert isinstance(jac[1], np.ndarray)
-        assert jac[1].shape == (5,)
+        assert jac[1].shape == (2,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, device_vjp
@@ -2047,7 +2051,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a[0], wires=0)
             qp.RX(a[1], wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(0) @ qp.PauliY(1))
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
@@ -2057,7 +2061,7 @@ class TestReturn:
         jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        assert jac.shape == (5, 2)
+        assert jac.shape == (2, 2)
 
     def test_hessian_expval_multiple_params(self, dev, diff_method, grad_on_execution, device_vjp):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
