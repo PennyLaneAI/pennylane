@@ -67,7 +67,7 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments
         # PayloadSlot = 8 * uint64
         req = ring_u64_ptr + idx * PAYLOAD_SLOT_WORDS
         # little-endian: low32=decoder_id, high32=seq
-        metadata = tl.load(req + 1, volatile=True)
+        metadata = tl.load(req + 1, volatile=True, cache_modifier=".cv")
         seq = tl.cast(metadata >> 32, tl.uint32)
 
         nspins = tl.zeros((), dtype=tl.uint32)
@@ -75,15 +75,15 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments
         while (seq != expect) and (halt == 0):
             if (nspins % stop_poll_iters) == 0:
                 # check the stop flag only every stop_poll_iters iters
-                halt = tl.load(stop_u32_ptr, volatile=True) != 0
+                halt = tl.load(stop_u32_ptr, volatile=True, cache_modifier=".cv") != 0
             nspins += 1
-            metadata = tl.load(req + 1, volatile=True)
+            metadata = tl.load(req + 1, volatile=True, cache_modifier=".cv")
             seq = tl.cast(metadata >> 32, tl.uint32)
         decoder_id = tl.cast(metadata, tl.uint32)
 
         # return statements are unsupported so we need to check halt again
         if halt == 0:
-            syndrome = tl.load(req, volatile=True)
+            syndrome = tl.load(req, volatile=True, cache_modifier=".cv")
             correction = tl.cast(0, tl.uint64)
             # dispatch to the right decoder e.g., X/Z CSS code
             for i in tl.static_range(len(decoder_fns)):
