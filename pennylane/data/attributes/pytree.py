@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for PyTree types."""
 
+import json
 from typing import TypeVar
 
 import numpy as np
@@ -24,8 +25,16 @@ from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.math import get_interface
 from pennylane.pytrees import flatten, unflatten
+from pennylane.wires import Wires
 
 T = TypeVar("T")
+
+
+def _is_wires(obj) -> bool:
+    """Whether ``obj`` should be treated as a single (opaque) leaf when flattening, i.e. a
+    ``Wires`` object. This keeps wire labels out of the numeric leaves so they can be serialized
+    through the JSON path (see :func:`~.value_to_hdf5`)."""
+    return isinstance(obj, Wires)
 
 
 class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
@@ -38,10 +47,19 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
 
     def hdf5_to_value(self, bind: HDF5Group) -> T:
         with queuing.QueuingManager.stop_recording():
-            return unflatten(
-                AttributeTypeMapper(bind)["leaves"].get_value(),
-                serialization.pytree_structure_load(bind["treedef"][()].tobytes()),
-            )
+            structure = serialization.pytree_structure_load(bind["treedef"][()].tobytes())
+            leaves = list(AttributeTypeMapper(bind)["leaves"].get_value())
+
+            # HDF5 reads scalar leaves back as numpy scalars. Restore wire labels (the leaves that
+            # live under a ``Wires`` node) to native Python scalars so that, e.g., an integer wire
+            # ``0`` comes back as ``int`` rather than ``np.int64``. Parameters are left as numpy,
+            # which is their expected representation.
+            leaves = [
+                _to_python_scalar(leaf) if is_wire else leaf
+                for leaf, is_wire in zip(leaves, _wire_leaf_flags(structure), strict=True)
+            ]
+
+            return unflatten(leaves, structure)
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: T) -> HDF5Group:
         bind = bind_parent.create_group(key)
@@ -55,6 +73,33 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
             DatasetList(leaves, parent_and_key=(bind, "leaves"))
 
         return bind
+
+
+def _to_python_scalar(leaf):
+    """Convert a 0-d numpy leaf back to a native Python scalar, leaving other leaves untouched."""
+    if isinstance(leaf, (np.generic, np.ndarray)) and np.ndim(leaf) == 0:
+        return leaf.item()
+    return leaf
+
+
+def _wire_leaf_flags(structure) -> list:
+    """Return, in leaf order, whether each leaf is a wire label (i.e. lives under a ``Wires`` node).
+
+    The traversal order matches ``unflatten``'s depth-first consumption of the leaves, so the
+    returned flags line up one-to-one with the stored leaves.
+    """
+    flags: list = []
+
+    def _walk(node, in_wires: bool) -> None:
+        if node.is_leaf:
+            flags.append(in_wires)
+            return
+        in_wires = in_wires or node.type_ is Wires
+        for child in node.children:
+            _walk(child, in_wires)
+
+    _walk(structure, False)
+    return flags
 
 
 def _storable_as_array(leaves: list) -> bool:
