@@ -21,6 +21,7 @@ import itertools
 import pickle
 from collections import defaultdict
 from functools import partial
+from importlib.util import find_spec
 from string import ascii_lowercase
 
 import numpy as np
@@ -232,6 +233,9 @@ def _test_decomposition_rule(
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
     estimated_gate_counts = resources.gate_counts
+
+    if not skip_capture and find_spec("jax") is None:
+        skip_capture = True
 
     if not skip_capture:
         import jax  # pylint: disable=import-outside-toplevel
