@@ -410,9 +410,7 @@ def _out_multiplier_with_adder_resources(
             size = min(k - i, m + 1)
         else:
             size = k - i
-        resources[
-            _ctrl_abstract(SemiAdder(Wire[m], Wire[size], Wire[num_work_wires]), Wire[1])
-        ] += 1
+        resources[ctrl(SemiAdder(Wire[m], Wire[size], Wire[num_work_wires]), Wire[1])] += 1
     return dict(resources)
 
 

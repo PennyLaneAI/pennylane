@@ -18,7 +18,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -348,7 +347,12 @@ def _controlled_semi_adder_resource(
 
     if num_y_wires == 1:
         return {
-            _ctrl_abstract(CNOT, Wire[num_control_wires], Wire[num_work_wires], work_wire_type): 1
+            ctrl(
+                CNOT(Wire[2]),
+                Wire[num_control_wires],
+                work_wires=Wire[num_work_wires],
+                work_wire_type=work_wire_type,
+            ): 1
         }
 
     crossover = min(num_y_wires - 1, num_x_wires)
@@ -364,8 +368,11 @@ def _controlled_semi_adder_resource(
         TemporaryAND: num_y_wires - 1,
         _adjoint_abstract(TemporaryAND): num_y_wires - 1,
         CNOT: num_cnots,
-        _ctrl_abstract(
-            CNOT, Wire[num_control_wires], Wire[num_work_wires], work_wire_type
+        ctrl(
+            CNOT(Wire[2]),
+            Wire[num_control_wires],
+            work_wires=Wire[num_work_wires],
+            work_wire_type=work_wire_type,
         ): num_ctrl_cnots,
     }
 

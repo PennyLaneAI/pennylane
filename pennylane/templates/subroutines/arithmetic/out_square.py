@@ -320,7 +320,12 @@ def _out_square_with_adder_resources(
         num_out = min(m - i, n + 1) if output_wires_zeroed else m - i
         resources[CNOT] += 2
         add_base = SemiAdder(Wire[n], Wire[num_out], Wire[num_out - 1])
-        c_add_rep = _ctrl_abstract(add_base, Wire[1], Wire[num_work_wires - num_out], "zeroed")
+        c_add_rep = ctrl(
+            add_base,
+            Wire[1],
+            work_wires=Wire[num_work_wires - num_out],
+            work_wire_type="zeroed",
+        )
         resources[c_add_rep] += 1
     return dict(resources)
 
