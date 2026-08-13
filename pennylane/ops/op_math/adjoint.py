@@ -96,8 +96,8 @@ def adjoint(fn, lazy=True):
     ... def circuit2(y):
     ...     qp.adjoint(qp.RY(y, wires=0))
     ...     return qp.expval(qp.Z(0))
-    >>> print(qp.draw(circuit2)("y"))
-    0: ──RY(y)†─┤  <Z>
+    >>> print(qp.draw(circuit2)(0.1))
+    0: ──RY(0.10)†─┤  <Z>
     >>> print(qp.draw(circuit2, level="device")(0.1))
     0: ──RY(0.10)†─┤  <Z>
 

@@ -213,9 +213,9 @@ class RandomLayers(Operation):
         >>> from pprint import pprint
         >>> pprint(ops)
         [RX(tensor(0.1000), wires=['a']),
-        RY(tensor(-2.1000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        RX(tensor(1.4000), wires=['b'])]
+         RY(-2.0999..., wires=['b']),
+         CNOT(wires=['a', 'b']),
+         RX(tensor(1.4000), wires=['b'])]
 
         """
         wires = Wires(wires)
