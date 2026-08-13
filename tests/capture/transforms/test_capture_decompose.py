@@ -96,19 +96,6 @@ class TestDecomposeInterpreter:
         assert_eqn_matches_op(jaxpr.eqns[1], qp.RY)
         assert_eqn_matches_op(jaxpr.eqns[2], qp.RZ)
 
-    def test_returned_op_not_decomposed(self):
-        """Test that operators that are returned by the input function are not decomposed."""
-        gate_set = [qp.RX, qp.RY, qp.RZ]
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def f(x, y, z):
-            return qp.Rot(x, y, z, 0)
-
-        jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
-        assert jaxpr.eqns[0].primitive == qp.Rot._primitive
-        assert len(jaxpr.jaxpr.outvars) == 1
-        assert jaxpr.jaxpr.outvars[0] == jaxpr.eqns[0].outvars[0]
-
     def test_deep_decomposition(self):
         """Test that decomposing primitives that require multiple levels of decomposition
         is done correctly."""

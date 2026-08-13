@@ -982,7 +982,7 @@ add_decomps("Pow(PhaseShift)", pow_rotation2)
 add_decomps("C(PhaseShift)", flip_zero_control2(_controlled_phase_shift_decomp))
 
 
-class Rot(Operation):
+class Rot(Operator2):
     r"""
     Arbitrary single qubit rotation
 
@@ -1014,39 +1014,23 @@ class Rot(Operation):
         wires (Any, Wires): the wire the operation acts on
     """
 
-    num_wires = 1
-    num_params = 3
-    """int: Number of trainable parameters that the operator depends on."""
-
     ndim_params = (0, 0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    num_wires = 1
 
-    grad_method = "A"
-    parameter_frequencies = [(1,), (1,), (1,)]
+    num_params = 3
 
-    resource_keys = set()
+    dynamic_argnames = ("phi", "theta", "omega")
 
-    # pylint: disable=too-many-positional-arguments
-    def __init__(
-        self,
-        phi: TensorLike,
-        theta: TensorLike,
-        omega: TensorLike,
-        wires: WiresLike,
-    ):
+    arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike):
         super().__init__(phi, theta, omega, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike,
-        theta: TensorLike,
-        omega: TensorLike,
+    @override
+    def compute_matrix(  # pylint: disable=unused-argument
+        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike | None = None
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1106,45 +1090,11 @@ class Rot(Operation):
 
         return qp.math.stack([stack_last(row) for row in mat], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Rot.decomposition`.
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            theta (float): rotation angle :math:`\theta`
-            omega (float): rotation angle :math:`\omega`
-            wires (Any, Wires): the wire the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.Rot.compute_decomposition(1.2, 2.3, 3.4, wires=0)
-        [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
-
-        """
-        return [
-            RZ(phi, wires=wires),
-            RY(theta, wires=wires),
-            RZ(omega, wires=wires),
-        ]
-
+    @override
     def adjoint(self) -> "Rot":
-        phi, theta, omega = self.parameters
-        return Rot(-omega, -theta, -phi, wires=self.wires)
+        return Rot(-self.omega, -self.theta, -self.phi, wires=self.wires)
 
-    def _controlled(self, wire: WiresLike) -> "qp.CRot":
-        return qp.CRot(*self.parameters, wires=wire + self.wires)
-
+    @override
     def simplify(self) -> "Rot":
         """Simplifies into single-rotation gates or a Hadamard if possible.
 
@@ -1177,12 +1127,12 @@ def _ctrl_rot(base: Rot, control, control_values, *_):
     return NotImplemented
 
 
-def _rot_to_rz_ry_rz_resources():
+def _rot_to_rz_ry_rz_resources(**_):
     return {qp.RZ: 2, qp.RY: 1}
 
 
 @register_resources(_rot_to_rz_ry_rz_resources)
-def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
+def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
     RZ(phi, wires=wires)
     RY(theta, wires=wires)
     RZ(omega, wires=wires)
@@ -1192,31 +1142,33 @@ add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
 @register_resources({Rot: 1})
-def _adjoint_rot(phi, theta, omega, wires, **__):
-    Rot(-omega, -theta, -phi, wires=wires)
+def _adjoint_rot(base):
+    Rot(-base.omega, -base.theta, -base.phi, wires=base.wires)
 
 
 add_decomps("Adjoint(Rot)", _adjoint_rot)
 
 
-def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    if num_control_wires == 1:
+def _controlled_rot_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    if len(control_wires) == 1:
         return {qp.CRot: 1}
     return {
         qp.RZ: 3,
         qp.RY: 2,
         qp.MultiControlledX(
-            Wire[num_control_wires + 1],
-            work_wires=Wire[num_work_wires],
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 2,
     }
 
 
 @register_resources(_controlled_rot_resource)
-def _controlled_rot_decomp(
-    phi, theta, omega, wires, control_wires, work_wires, work_wire_type, **_
-):
+def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+
+    phi, theta, omega = base.phi, base.theta, base.omega
+    wires = control_wires + base.wires
+
     if len(control_wires) == 1:
         qp.CRot(phi, theta, omega, wires=wires)
         return
@@ -1230,7 +1182,7 @@ def _controlled_rot_decomp(
     qp.RZ(omega, wires=wires[-1])
 
 
-add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp))
+add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_decomp))
 
 
 class U1(Operator2):

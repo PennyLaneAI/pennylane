@@ -233,12 +233,9 @@ def test_call_with_pytree_arguments():
     jaxpr = jax.make_jaxpr(f)(*args)
 
     assert len(jaxpr.jaxpr.invars) == 6
-    expected_primitives = [
-        qp.Rot._primitive,
-        qp.Rot._primitive,
-        qp.measurements.StateMP._wires_primitive,
-    ]
-    assert all(eqn.primitive == ep for eqn, ep in zip(jaxpr.eqns, expected_primitives))
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.Rot)
+    assert_eqn_matches_op(jaxpr.eqns[1], qp.Rot)
+    assert jaxpr.eqns[2].primitive == qp.measurements.StateMP._wires_primitive
 
     assert jaxpr.eqns[0].invars[0:3] == jaxpr.jaxpr.invars[0:3]
     assert jaxpr.eqns[1].invars[0:3] == jaxpr.jaxpr.invars[3:]

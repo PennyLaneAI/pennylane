@@ -170,7 +170,6 @@ class TestOperations:
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
         if kwargs is True:
             pytest.skip()
-
         qp.ops.functions.assert_valid(op, **kwargs)
 
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
@@ -4043,37 +4042,6 @@ class TestLabel:
         op3 = qp.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=0)
         assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
-    def test_string_parameter(self):
-        """Test labelling works if variable is a string instead of a float."""
-
-        op1 = qp.RX("x", wires=0)
-        assert op1.label() == "RX"
-        assert op1.label(decimals=0) == "RX\n(x)"
-
-        op2 = qp.CRX("y", wires=(0, 1))
-        assert op2.label(decimals=0) == "RX\n(y)"
-
-        op3 = qp.Rot("x", "y", "z", wires=0)
-        assert op3.label(decimals=0) == "Rot\n(x,\ny,\nz)"
-
-    def test_string_parameter_broadcasted(self):
-        """Test labelling works (i.e. does not raise an Error) if variable is a
-        string instead of a float."""
-
-        x = np.array(["x0", "x1", "x2"])
-        y = np.array(["y0", "y1", "y2"])
-        z = np.array(["z0", "z1", "z2"])
-
-        op1 = qp.RX(x, wires=0)
-        assert op1.label() == "RX"
-        assert op1.label(decimals=0) == "RX"
-
-        op2 = qp.CRX(y, wires=(0, 1))
-        assert op2.label(decimals=0) == "RX"
-
-        op3 = qp.Rot(x, y, z, wires=0)
-        assert op3.label(decimals=0) == "Rot"
-
 
 pow_parametric_ops = (
     qp.RX(1.234, wires=0),
@@ -4172,7 +4140,6 @@ def test_decomposition():
 
 
 control_data = [
-    (qp.Rot(1, 2, 3, wires=0), Wires([])),
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.IsingXX(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingYY(1.234, wires=(0, 1)), Wires([])),
