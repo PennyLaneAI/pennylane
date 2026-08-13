@@ -407,16 +407,19 @@ class TestSupportedConfs:
             "Computing the gradient of circuits that return the state with the "
             "parameter-shift rule gradient transform is not supported."
         )
+        complex = return_type == "StateVector"
+
+        # with pytest.raises(ValueError, match=msg):
         circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
-        x = get_variable(interface, wire_specs)
+        x = get_variable(interface, wire_specs, complex=complex)
         if shots is not None and interface != "jax":
             with pytest.raises(DeviceError, match="not accepted with finite shots"):
-                compute_gradient(x, interface, circuit, return_type)
+                compute_gradient(x, interface, circuit, return_type, complex=complex)
         else:
             if interface == "torch" and return_type == "StateVector":
                 pytest.xfail(reason="see pytorch/pytorch/issues/94397")
             with pytest.raises(ValueError, match=msg):
-                compute_gradient(x, interface, circuit, return_type)
+                compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(

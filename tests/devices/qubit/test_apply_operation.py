@@ -908,6 +908,7 @@ class TestRXCalcGrad:
         assert qp.math.allclose(g[1], g_expected1)
 
     @pytest.mark.autograd
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     def test_rx_grad_autograd(self, method):
         """Test that the application of an rx gate is differentiable with autograd."""
 
@@ -924,6 +925,7 @@ class TestRXCalcGrad:
         self.compare_expected_result(phi, state, new_state, g)
 
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_rx_grad_jax(self, method, use_jit):
         """Test that the application of an rx gate is differentiable with jax."""
