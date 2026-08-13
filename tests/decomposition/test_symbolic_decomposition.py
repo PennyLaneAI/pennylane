@@ -906,8 +906,9 @@ class TestControlledDecomposition:
             qp.Toffoli([3, 1, 2]),
         ]
 
+        a_cop = abstractify(ControlledOp2(abstractify(OneWireDynOp), control_wires=Wire[1]))
         assert ctrl_rule.compute_resources(**op.arguments) == to_resources(
-            {ControlledOp2(OneWireDynOp, control_wires=Wire[1]): 3, qp.Toffoli: 2, qp.X: 1}
+            {a_cop: 3, qp.Toffoli: 2, qp.X: 1}
         )
 
     def test_flip_control_adjoint(self):
@@ -942,9 +943,8 @@ class TestControlledDecomposition:
             flip_control_adjoint2(**op.arguments)
 
         assert q.queue == [qp.adjoint(qp.ctrl(DynOp(0.5, wires=[0, 1]), 2))]
-        assert flip_control_adjoint2.compute_resources(**op.arguments) == Resources(
-            {Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])): 1}
-        )
+        aop = abstractify(Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])))
+        assert flip_control_adjoint2.compute_resources(**op.arguments) == Resources({aop: 1})
 
     def test_flip_zero_control(self):
         """Tests the `flip_zero_control` modifier."""
