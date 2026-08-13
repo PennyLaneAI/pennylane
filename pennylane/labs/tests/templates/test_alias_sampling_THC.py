@@ -18,125 +18,143 @@ Tests for the ``alias_sampling_thc`` quantum function.
 import numpy as np
 import pytest
 
-import pennylane as qml
-
-# Adjust this import to the module path once the file lands in the labs templates.
+import pennylane as qp
 from pennylane.labs.templates import (
+    SuperpositionTHC,
     _build_alias_tables,
     _build_qrom_data,
-    _first_arithmetic_op,
+    _compute_contiguous_register,
     alias_sampling_thc,
+    alias_sampling_thc_wires,
 )
+from pennylane.labs.templates.alias_sampling_thc import _build_thc_pairs
 
 
-def _wire_layout(M, N, n, aleph):
-    """mu / nu / work registers with the minimum required work-wire count."""
-    n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) / 2))) + 1
-    num_work = n_d + 2 * n + 3 * aleph + 5
+def _wire_layout(M, N, aleph):
+    """mu / nu / superposition-work / edge-flag / alias-work registers.
+
+    Register sizes come from ``alias_sampling_thc_wires``, so ``n`` is derived from
+    ``M`` rather than passed in. ``SuperpositionTHC`` prepares the input
+    superposition and its ``work_wires[3]`` carries the one-body sentinel flag that
+    ``alias_sampling_thc`` consumes as ``edge_flag``.
+    """
+    sizes = alias_sampling_thc_wires(M, N, aleph)
+    n = sizes["mu_wires"]
+    num_work = sizes["work_wires"]
     mu_wires = list(range(0, n))
     nu_wires = list(range(n, 2 * n))
-    work_wires = list(range(2 * n, 2 * n + num_work))
-    return mu_wires, nu_wires, work_wires
+    sup_work = list(range(2 * n, 2 * n + sizes["superposition_work_wires"]))
+    edge_flag = sup_work[3]
+
+    # SuperpositionTHC returns every work wire to |0> except its flags at indices
+    # 0, 3 and 6, so the remaining wires can be reused as alias-sampling scratch.
+    clean = [w for i, w in enumerate(sup_work) if i not in (0, 3, 6)]
+    start = sup_work[-1] + 1
+    fresh = list(range(start, start + max(0, num_work - len(clean))))
+    work_wires = (clean + fresh)[:num_work]
+    return mu_wires, nu_wires, sup_work, edge_flag, work_wires
 
 
-def _valid_pairs(M, N):
-    two_body = [(mu, nu) for nu in range(M) for mu in range(nu + 1)]
-    one_body = [(ell, M) for ell in range(N // 2)]
-    return two_body + one_body
+def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-arguments
+    """Exact distribution over |mu>|nu> prepared by ``alias_sampling_thc``.
 
+    This is the THC analogue of ``_reconstruct_amplitudes`` in
+    ``test_alias_sampling.py``: it plays the *same* integer alias tables the circuit
+    loads into the QROM back classically, so the comparison is exact (independent of
+    ``aleph``) rather than an approximation of the ideal target.
 
-def _input_vector(M, N, n):
-    """Uniform superposition over the valid pairs on the mu/nu registers."""
-    vec = np.zeros(2 ** (2 * n))
-    for a, b in _valid_pairs(M, N):
-        vec[a * 2**n + b] = 1.0
-    return vec
-
-
-def _symmetric_target(M, N, zeta, t_ell, n):
-    """The physical THC probability distribution over |mu>|nu>.
-
-    The two-body weight |zeta_{mu,nu}| is symmetric in (mu, nu) and, because the
-    routine symmetrizes the two-body block, lands on both (mu, nu) and (nu, mu).
-    The one-body weight |t_ell| lands only on the sentinel column (ell, M): the
-    ``edge_flag`` gate explicitly excludes the one-body block from the mu<->nu swap.
+    Each address keeps its original pair with probability ``(keep + 1) / 2 ** aleph``
+    (the circuit tests ``keep_thresh < sigma`` against a uniform ``aleph``-bit sample,
+    so ``keep`` values ``0 .. keep`` all pass), and routes the remaining mass to its
+    alternate. The symmetrization step then splits every two-body weight across the
+    two orderings ``(mu, nu)`` and ``(nu, mu)``, while the one-body sentinel column
+    ``nu = M`` is excluded from the swap and keeps its full weight.
     """
-    size = 2**n
+    entries, weights = _build_thc_pairs(M, N, zeta, t_ell)
+    probs = [abs(w) for w in weights]
+    alt, keep = _build_alias_tables(probs, aleph)
+
+    d = len(entries)
+    n_levels = 2**aleph
+    per_pair = {e: 0.0 for e in entries}
+    for i, entry in enumerate(entries):
+        keep_prob = (keep[i] + 1) / n_levels  # comparator "<" against uniform sample
+        per_pair[entry] += (1 / d) * keep_prob
+        per_pair[entries[alt[i]]] += (1 / d) * (1 - keep_prob)
+
+    size = 2 ** alias_sampling_thc_wires(M, N, aleph)["mu_wires"]
     P = np.zeros((size, size))
-    for mu in range(M):
-        for nu in range(M):
-            P[mu, nu] += abs(zeta[mu, nu])
-    for ell in range(N // 2):
-        P[ell, M] += abs(t_ell[ell])
-    return P / P.sum()
+    for (mu, nu), p in per_pair.items():
+        if nu == M:  # one-body block: excluded from the symmetrizing swap
+            P[mu, nu] += p
+        else:  # two-body block: split across both orderings
+            P[mu, nu] += p / 2.0
+            P[nu, mu] += p / 2.0
+    return P
 
 
-def _run(M, N, zeta, t_ell, n, aleph, device="lightning.qubit"):
-    mu_wires, nu_wires, work_wires = _wire_layout(M, N, n, aleph)
-    dev = qml.device(device, wires=2 * n + len(work_wires))
+def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable=too-many-arguments
+    mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
+    total = max(mu_wires + nu_wires + sup_work + work_wires) + 1
+    dev = qp.device(device, wires=total)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.StatePrep(_input_vector(M, N, n), normalize=True, wires=mu_wires + nu_wires)
-        alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, work_wires, aleph)
-        return qml.probs(wires=mu_wires + nu_wires)
+        SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
+        alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
+        return qp.probs(wires=mu_wires + nu_wires)
 
+    n = len(mu_wires)
     return np.asarray(circuit()).reshape((2**n, 2**n))
 
 
-# --------------------------------------------------------------------------- #
-# Classical preprocessing
-# --------------------------------------------------------------------------- #
 class TestClassicalTables:
     """Test the classical alias-table construction."""
 
     def test_table_size_and_normalization(self):
-        M, N = 3, 4
+        """The THC pair enumeration has one entry per valid pair with a valid keep."""
+        M, N, aleph = 3, 4, 6
         np.random.seed(0)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
         t_ell = np.random.randn(N // 2)
 
-        table = _build_alias_tables(M, N, zeta, t_ell)
+        entries, weights = _build_thc_pairs(M, N, zeta, t_ell)
         d = N // 2 + M * (M + 1) // 2
-        assert len(table) == d
+        assert len(entries) == d
+        assert len(weights) == d
 
-        # keep_prob is a valid probability for every entry.
-        for row in table:
-            assert 0.0 <= row["keep_prob"] <= 1.0
+        alt, keep = _build_alias_tables([abs(w) for w in weights], aleph)
+        assert all(0 <= a < d for a in alt)
+        assert all(0 <= k < 2**aleph for k in keep)
 
     def test_alias_reconstructs_target(self):
         """The (unquantized) alias tables reproduce the target distribution."""
-        M, N = 4, 2
+        M, N, aleph = 4, 2, 12
         np.random.seed(1)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
         t_ell = np.random.randn(N // 2)
 
-        table = _build_alias_tables(M, N, zeta, t_ell)
-        d = len(table)
+        entries, weights = _build_thc_pairs(M, N, zeta, t_ell)
+        d = len(entries)
+        probs = [abs(w) for w in weights]
+        tot = sum(probs)
 
-        # Target (per valid pair, before symmetrization).
-        weights = {}
-        for nu in range(M):
-            for mu in range(nu + 1):
-                w = zeta[mu, nu]
-                if mu == nu:
-                    w = w / 2.0
-                weights[(mu, nu)] = abs(w)
-        for ell in range(N // 2):
-            weights[(ell, M)] = abs(t_ell[ell])
-        tot = sum(weights.values())
+        alt, keep = _build_alias_tables(probs, aleph)
+        n_levels = 2**aleph
+        recon = {e: 0.0 for e in entries}
+        for i, entry in enumerate(entries):
+            keep_prob = keep[i] / n_levels
+            recon[entry] += (1 / d) * keep_prob
+            recon[entries[alt[i]]] += (1 / d) * (1 - keep_prob)
 
-        recon = {k: 0.0 for k in weights}
-        for row in table:
-            recon[(row["mu"], row["nu"])] += (1 / d) * row["keep_prob"]
-            recon[(row["mu_alt"], row["nu_alt"])] += (1 / d) * (1 - row["keep_prob"])
-
-        for k in weights:
-            assert np.isclose(recon[k], weights[k] / tot, atol=1e-6)
+        for entry, w in zip(entries, probs):
+            # mu-bit alias sampling reproduces the target up to the d / 2 ** aleph bound.
+            assert np.abs(recon[entry] - w / tot) <= float(d) / n_levels
 
     def test_qrom_data_shape(self):
+        """Each packed QROM row has the expected number of bits, all binary."""
         M, N, n, aleph = 3, 2, 3, 5
         np.random.seed(2)
         zeta = np.random.randn(M, M)
@@ -153,27 +171,22 @@ class TestClassicalTables:
             assert all(bit in (0, 1) for bit in row)
 
 
-# --------------------------------------------------------------------------- #
-# Arithmetic address computation
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize(
-    ("M", "N", "n"),
-    [(5, 2, 3), (3, 2, 2)],
-)
-def test_first_arithmetic_op_index(M, N, n):
-    """``_first_arithmetic_op`` computes s = mu + nu (nu + 1) / 2."""
-    n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) / 2))) + 1
+@pytest.mark.parametrize(("M", "N"), [(3, 2), (5, 2)])
+def test_compute_contiguous_register_index(M, N):
+    """``_compute_contiguous_register`` computes s = mu + nu (nu + 1) / 2."""
+    n = alias_sampling_thc_wires(M, N, aleph=1)["mu_wires"]
+    n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
     mu_wires = list(range(n))
     nu_wires = list(range(n, 2 * n))
     work_wires = list(range(2 * n, 2 * n + 2 * n_d + 5))
-    dev = qml.device("default.qubit", wires=2 * n + len(work_wires))
+    dev = qp.device("default.qubit", wires=2 * n + len(work_wires))
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(mu_val, nu_val):
-        qml.BasisState(mu_val, wires=mu_wires)
-        qml.BasisState(nu_val, wires=nu_wires)
-        _first_arithmetic_op(M, N, mu_wires, nu_wires, work_wires)
-        return qml.probs(wires=work_wires[:n_d])
+        qp.BasisState(mu_val, wires=mu_wires)
+        qp.BasisState(nu_val, wires=nu_wires)
+        _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
+        return qp.probs(wires=work_wires[:n_d])
 
     for nu in range(M):
         for mu in range(nu + 1):
@@ -181,64 +194,63 @@ def test_first_arithmetic_op_index(M, N, n):
             assert int(np.argmax(probs)) == mu + nu * (nu + 1) // 2
 
 
-# --------------------------------------------------------------------------- #
-# End-to-end preparation
-# --------------------------------------------------------------------------- #
 class TestAliasSamplingTHC:
     """Test the full alias-sampling PREPARE routine."""
 
-    @pytest.mark.parametrize(
-        ("M", "N", "n", "aleph"),
-        [
-            (2, 2, 2, 3),
-            (2, 2, 2, 4),
-        ],
-    )
-    def test_probabilities_normalized(self, M, N, n, aleph):
+    # Each instance below runs a full state-vector simulation whose wire count is
+    # 5 * n + 5 + (n_d + 3 * aleph + 4) with n = ceil(log2(M + 1)); memory and runtime
+    # grow as 2 ** wires, so only the small instances (< 40 s each) are enabled. Larger
+    # instances are kept commented out for reference -- uncomment to run them on a
+    # bigger machine.
+    _INSTANCES = [
+        (2, 2, 1),  # n = 2, 21 wires, ~1 s
+        (2, 2, 2),  # n = 2, 24 wires, ~5 s
+        (3, 2, 2),  # n = 2, 25 wires, ~12 s
+        # (2, 2, 3),
+        # (2, 2, 4),
+        # (5, 2, 5),
+    ]
+
+    @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
+    def test_probabilities_normalized(self, M, N, aleph):
+        """The prepared distribution sums to one."""
         np.random.seed(3)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
         t_ell = np.random.randn(N // 2)
-        probs = _run(M, N, zeta, t_ell, n, aleph)
+        probs = _run(M, N, zeta, t_ell, aleph)
         assert np.isclose(probs.sum(), 1.0)
 
-    def test_support_matches_symmetric_valid_set(self):
-        """All probability mass lands on the symmetrized valid support."""
-        M, N, n, aleph = 2, 2, 2, 4
+    @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
+    def test_marginal_matches_reconstruction(self, M, N, aleph):
+        """The prepared distribution matches the classical alias reconstruction exactly."""
         np.random.seed(3)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
         t_ell = np.random.randn(N // 2)
 
-        probs = _run(M, N, zeta, t_ell, n, aleph)
-        target = _symmetric_target(M, N, zeta, t_ell, n)
+        probs = _run(M, N, zeta, t_ell, aleph)
+        recon = _reconstruct_distribution(M, N, zeta, t_ell, aleph)
 
+        assert np.allclose(probs, recon, atol=1e-9)
+
+    @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
+    def test_support_matches_symmetric_valid_set(self, M, N, aleph):
+        """All probability mass lands on the symmetrized valid support."""
+        np.random.seed(3)
+        zeta = np.random.randn(M, M)
+        zeta = (zeta + zeta.T) / 2
+        t_ell = np.random.randn(N // 2)
+
+        probs = _run(M, N, zeta, t_ell, aleph)
+        recon = _reconstruct_distribution(M, N, zeta, t_ell, aleph)
+
+        n = alias_sampling_thc_wires(M, N, aleph)["mu_wires"]
         support = {(a, b) for a in range(2**n) for b in range(2**n) if probs[a, b] > 1e-9}
-        target_support = {
-            (a, b) for a in range(2**n) for b in range(2**n) if target[a, b] > 1e-9
-        }
+        target_support = {(a, b) for a in range(2**n) for b in range(2**n) if recon[a, b] > 1e-9}
         assert support == target_support
 
-    def test_approaches_target_distribution(self):
-        """The prepared distribution is close to the symmetrized target, with the
-        discretization error controlled by ``aleph``."""
-        M, N, n, aleph = 2, 2, 2, 4
-        np.random.seed(3)
-        zeta = np.random.randn(M, M)
-        zeta = (zeta + zeta.T) / 2
-        t_ell = np.random.randn(N // 2)
 
-        probs = _run(M, N, zeta, t_ell, n, aleph)
-        target = _symmetric_target(M, N, zeta, t_ell, n)
-
-        # Loose tolerance: reflects finite aleph plus a single amplitude-free
-        # alias round. Tightens as aleph grows (checked on larger simulators).
-        assert np.max(np.abs(probs - target)) < 0.1
-
-
-# --------------------------------------------------------------------------- #
-# Input validation
-# --------------------------------------------------------------------------- #
 class TestInputValidation:
     """Test the argument checks."""
 
@@ -248,27 +260,91 @@ class TestInputValidation:
         return zeta, t_ell
 
     def test_mismatched_registers(self):
+        """mu_wires and nu_wires of different lengths raise an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="same number of wires"):
-            alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3, 4], list(range(5, 40)), 3)
+            alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3, 4], 5, list(range(6, 40)), 3)
 
-    def test_index_register_too_small(self):
+    @pytest.mark.parametrize("n", [2, 5])
+    def test_index_register_wrong_size(self, n):
+        """Index registers not of size exactly ceil(log2(M + 1)) raise an error."""
+        # M = 8 needs ceil(log2(9)) = 4 wires per register: 2 is too few, 5 too many.
         zeta, t_ell = self._dummy(8, 2)
-        with pytest.raises(ValueError, match="at least ceil"):
-            alias_sampling_thc(8, 2, zeta, t_ell, [0, 1], [2, 3], list(range(4, 40)), 3)
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        with pytest.raises(ValueError, match="exactly ceil"):
+            alias_sampling_thc(
+                8, 2, zeta, t_ell, mu_wires, nu_wires, 2 * n, list(range(2 * n + 1, 60)), 3
+            )
 
     def test_not_enough_work_wires(self):
+        """Too few work wires raise an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="At least"):
-            alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], [4, 5, 6], 3)
+            alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, [5, 6, 7], 3)
 
-    def test_invalid_aleph(self):
+    @pytest.mark.parametrize("aleph", [0, -1, 2.0, 3.5, True, "3", None])
+    def test_invalid_aleph(self, aleph):
+        """A non-integer or non-positive aleph raises an error."""
         zeta, t_ell = self._dummy(2, 2)
-        with pytest.raises(ValueError, match="aleph"):
-            alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], list(range(4, 40)), 0)
+        with pytest.raises(ValueError, match="aleph must be a positive integer"):
+            alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), aleph)
 
     def test_bad_n_over_two(self):
+        """A value of N // 2 larger than M + 1 raises an error."""
         zeta = np.ones((2, 2))
         t_ell = np.ones(4)
-        with pytest.raises(ValueError, match="N / 2 must be"):
-            alias_sampling_thc(2, 8, zeta, t_ell, [0, 1], [2, 3], list(range(4, 40)), 3)
+        with pytest.raises(ValueError, match="N // 2 must be"):
+            alias_sampling_thc(2, 8, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
+
+    def test_odd_spin_orbitals_allowed(self):
+        """An odd N is floor-divided, matching ``SuperpositionTHC``: N = 5, M = 1 is valid."""
+        # ``N // 2 = 2 <= M + 1 = 2``, so the previous ``N / 2 = 2.5 > 2`` check was wrong.
+        zeta = np.ones((1, 1))
+        t_ell = np.ones(5 // 2)
+        sizes = alias_sampling_thc_wires(1, 5, aleph=3)
+        n = sizes["mu_wires"]
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+        # Queued without raising; the wire helper agrees with the template's own checks.
+        with qp.queuing.AnnotatedQueue():
+            alias_sampling_thc(1, 5, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, 3)
+
+
+class TestWiresHelper:
+    """Test ``alias_sampling_thc_wires``."""
+
+    def test_reported_sizes_are_accepted(self):
+        """The reported register sizes satisfy every check in ``alias_sampling_thc``."""
+        M, N, aleph = 5, 2, 4
+        sizes = alias_sampling_thc_wires(M, N, aleph)
+        n = sizes["mu_wires"]
+        assert n == sizes["nu_wires"] == int(np.ceil(np.log2(M + 1)))
+        assert sizes["superposition_work_wires"] == 3 * n + 5
+        n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
+        assert sizes["work_wires"] == n_d + 2 * n + 3 * aleph + 4
+
+        zeta = np.ones((M, M))
+        t_ell = np.ones(N // 2)
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+        with qp.queuing.AnnotatedQueue():
+            alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
+
+    @pytest.mark.parametrize(
+        ("M", "N", "aleph", "match"),
+        [
+            (0, 2, 3, "M must be a positive integer"),
+            (2.0, 2, 3, "M must be a positive integer"),
+            (2, 0, 3, "N must be a positive integer"),
+            (2, 2, 0, "aleph must be a positive integer"),
+            (2, 2, 1.5, "aleph must be a positive integer"),
+            (1, 8, 3, "N // 2 must be"),
+        ],
+    )
+    def test_invalid_arguments(self, M, N, aleph, match):
+        """Invalid arguments raise an error."""
+        with pytest.raises(ValueError, match=match):
+            alias_sampling_thc_wires(M, N, aleph)
