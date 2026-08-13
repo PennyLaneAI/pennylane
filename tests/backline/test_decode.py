@@ -104,7 +104,24 @@ class TestSessionKey:
     @pytest.mark.parametrize("label", [None, ""])
     def test_an_unlabelled_coprocessor_falls_back(self, label):
         """Without a label there is one conventional key."""
-        assert _session_key(a_coprocessor(label=label)) == "coprocessor.0"
+        coprocessor = a_coprocessor(label=label)
+        assert _session_key(coprocessor) == "coprocessor.0"
+        assert _session_key(coprocessor, [coprocessor]) == "coprocessor.0"
+
+    def test_an_unlabelled_coprocessor_among_several_is_refused(self):
+        """Unlabelled coprocessors among several cannot be routed."""
+        coprocessors = [a_coprocessor(), a_coprocessor()]
+        with pytest.raises(ValueError, match="no label, and the placement has 2"):
+            _session_key(coprocessors[1], coprocessors)
+
+    def test_a_label_is_enough_to_route_several(self):
+        """A label is enough to route several coprocessors."""
+        coprocessors = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+        assert _session_key(coprocessors[1], coprocessors) == "decoder-1"
+
+    def test_a_controller_only_placement_is_unaffected(self):
+        """A controller-only placement has no key to get wrong."""
+        assert _session_key(None, [a_coprocessor(), a_coprocessor()]) == "controller"
 
 
 class TestByteCount:
@@ -233,9 +250,16 @@ class TestRecordedRound:
         jaxpr = a_round(x64, a_device(coprocessors=coprocessors))
         assert session_key_of(jaxpr) == key
 
+    def test_a_second_decoder_needs_a_label(self, x64):
+        """A second decoder needs a label to choose it."""
+        dev = a_device(coprocessors=[a_coprocessor(), a_coprocessor()])
+        with pytest.raises(ValueError, match="no label, and the placement has 2"):
+            a_round(x64, dev, decoder_id=1)
+
     def test_the_staged_payload_carries_its_length_and_decoder(self, x64):
         """The length and decoder are stamped alongside the payload."""
-        dev = a_device(coprocessors=[a_coprocessor(), a_coprocessor()])
+        coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+        dev = a_device(coprocessors=coprocs)
         jaxpr = a_round(x64, dev, syndrome=np.zeros(6, dtype=np.uint8), decoder_id=1)
         _session, _src, nbytes, decoder_id = scalars_of(jaxpr, calls_of(jaxpr)[1])
 

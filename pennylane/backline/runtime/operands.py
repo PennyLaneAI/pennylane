@@ -43,7 +43,9 @@ def _narrows_64_bit() -> bool:
     """Check whether JAX would narrow 64-bit values to 32-bit."""
     # pylint: disable=import-outside-toplevel
     import jax
+
     return not jax.config.jax_enable_x64
+
 
 def check_width(ctype: CType, symbol: str, what: str) -> None:
     """Refuse a 64-bit value that JAX would quietly narrow to 32 bits.

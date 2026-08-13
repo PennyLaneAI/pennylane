@@ -49,17 +49,29 @@ ROLE_COPROCESSOR = 1
 _DEFAULT_WORK_ITEM = 0
 
 
-def _session_key(coprocessor) -> str:
+def _session_key(coprocessor, coprocessors=()) -> str:
     """The key the controller's session for this round is registered under.
 
     ``inject-transport-session`` keys one controller session per coprocessor by *that coprocessor's*
     ``label``, falling back to ``"coprocessor.0"``; a placement with no coprocessor is
-    ``"controller"``. Label the coprocessors to route a multi-coprocessor placement.
+    ``"controller"``. With several coprocessors that fallback would send every unlabelled one to the
+    same session, so a label is required.
+
+    Raises:
+        ValueError: if the round targets an unlabelled coprocessor and the placement holds more
+            than one, which no key can tell apart
     """
     if coprocessor is None:
         return "controller"
     label = getattr(coprocessor, "label", None)
-    return label if label else "coprocessor.0"
+    if label:
+        return label
+    if len(coprocessors) > 1:
+        raise ValueError(
+            f"decode: this round targets a coprocessor with no label, and the placement has "
+            f"{len(coprocessors)}. Pass coprocessor= to choose one directly."
+        )
+    return "coprocessor.0"
 
 
 def _byte_count(array) -> int:
@@ -163,6 +175,10 @@ def decode(  # pylint: disable=too-many-arguments
     Returns:
         The correction reply, as a ``uint8`` buffer of ``out_bytes`` bytes.
 
+    Raises:
+        ValueError: if the round targets an unlabelled coprocessor while the placement holds more
+        than one.
+
     .. warning::
 
         Backline is experimental and only usable through the Catalyst compiler. :func:`decode` must
@@ -210,7 +226,8 @@ def decode(  # pylint: disable=too-many-arguments
     ``decoder_id=`` to select which coprocessor-side decoder handles the round.
     """
     controller, coprocessor = _resolve_nodes(controller, coprocessor, decoder_id)
-    key = _session_key(coprocessor)
+    placement = active_placement()
+    key = _session_key(coprocessor, placement.coprocessors if placement is not None else ())
     nbytes = _byte_count(syndrome) if in_bytes is None else int(in_bytes)
     reply_bytes = _resolve_out_bytes(controller, out_bytes)
 

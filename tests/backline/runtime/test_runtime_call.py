@@ -265,7 +265,7 @@ class TestLocalCalls:
         jax = pytest.importorskip("jax")
         signature = CSignature.parse("sum_bytes_only", "(buf, u32) -> i32")
         with jax.experimental.disable_x64():
-            with pytest.raises(TypeError, match="reading past the end"):
+            with pytest.raises(TypeError, match="is a buf of .*narrowed to 32 bits"):
                 operands.operands_for(signature, (array, 32), local=True)
 
     @pytest.mark.parametrize("dtype", [np.uint8, np.uint32, np.float32])
