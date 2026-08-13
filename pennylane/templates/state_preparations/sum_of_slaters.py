@@ -674,7 +674,7 @@ class SumOfSlatersPrep(Operator2):
             that in ``coefficients``.
 
     The sizes for the numerous optional work wire registers can be computed with
-    ``SumOfSlatersPrep.required_register_sizes``.
+    ``SumOfSlatersPrep.required_register_sizes(indices, wires)``.
 
     .. warning::
 
