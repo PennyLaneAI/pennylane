@@ -1496,7 +1496,7 @@ class Operator2(metaclass=OperatorMeta):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
-        dynamic_args = tuple(self.dynamic_args.values())
+        dynamic_args = self.data
 
         ndims = tuple(math.ndim(arg) for arg in dynamic_args)
         if any(len(math.shape(arg)) >= 1 and math.shape(arg)[0] is None for arg in dynamic_args):

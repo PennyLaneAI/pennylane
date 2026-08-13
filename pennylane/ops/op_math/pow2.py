@@ -119,6 +119,11 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
+    def data(self):
+        return self.base.data
+
+    @property
+    @override
     def num_wires(self):
         """The number of wires this power op acts on."""
         return self.base.num_wires
