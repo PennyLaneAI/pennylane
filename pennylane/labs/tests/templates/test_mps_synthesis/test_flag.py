@@ -51,6 +51,26 @@ MATRICES = [
 ] + [random_unitary(2, seed) for seed in range(5)]
 
 
+@pytest.mark.parametrize(
+    "wires, control_values",
+    [
+        ([0], None),
+        ([0, 1], [[1]]),
+        ([0, 1, 2], [[0, 1], [1, 0]]),
+    ],
+)
+def test_partially_multiplexed_flag_assert_valid(wires, control_values):
+    """The ported ``Operator2`` satisfies the standard operator validity checks."""
+    num_patterns = len(control_values) if control_values is not None else 1
+    op = PartiallyMultiplexedFlag(
+        np.linspace(0.1, 0.9, num_patterns),
+        np.linspace(0.2, 0.8, num_patterns),
+        wires,
+        control_values=control_values,
+    )
+    qp.ops.functions.assert_valid(op, skip_capture=True, skip_differentiation=True)
+
+
 # ============================================================================
 # one_qubit_flag_decomp (d=1)
 # ============================================================================
@@ -76,7 +96,7 @@ def test_return_structure(matrix):
     assert isinstance(F[0], PartiallyMultiplexedFlag)
     assert F[0].wires.tolist() == ["a"]
     # A single-qubit flag has no control wires and one (rz, ry) angle pair.
-    assert F[0].hyperparameters["control_values"] == []
+    assert F[0].hyperparameters["control_values"] == ()
     assert len(F[0].parameters[0]) == 1 and len(F[0].parameters[1]) == 1
     assert np.shape(Delta) == (2,)
 
@@ -119,7 +139,7 @@ def test_d2_return_structure(matrix):
 
     assert isinstance(ops, list) and len(ops) == 1
     assert ops[0].wires.tolist() == ["a", "b"]
-    assert ops[0].hyperparameters["control_values"] == [[1]]
+    assert ops[0].hyperparameters["control_values"] == ((1,),)
     assert np.shape(controlled) == (4,)
 
 
