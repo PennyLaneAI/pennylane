@@ -1200,14 +1200,13 @@ class IsingXX(Operator2):
         return math.tensordot(c, eye, axes=0) + math.tensordot(js, rev_eye, axes=0)
 
     def adjoint(self) -> "IsingXX":
-        phi = self.arguments["phi"]
-        return IsingXX(-phi, wires=self.wires)
+        return IsingXX(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingXX(self.arguments["phi"] * z, wires=self.wires)]
+        return [IsingXX(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
-        phi = self.arguments["phi"] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1527,14 +1526,13 @@ class IsingZZ(Operator2):
         return math.exp(product)
 
     def adjoint(self) -> "IsingZZ":
-        phi = self.arguments["phi"]
-        return IsingZZ(-phi, wires=self.wires)
+        return IsingZZ(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingZZ(self.arguments["phi"] * z, wires=self.wires)]
+        return [IsingZZ(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
-        phi = self.arguments["phi"] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1732,14 +1730,13 @@ class IsingXY(Operator2):
         return math.exp(math.tensordot(0.5j * phi, signs, axes=0))
 
     def adjoint(self) -> "IsingXY":
-        phi = self.arguments["phi"]
-        return IsingXY(-phi, wires=self.wires)
+        return IsingXY(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingXY(self.arguments["phi"] * z, wires=self.wires)]
+        return [IsingXY(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
-        phi = self.arguments["phi"] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
