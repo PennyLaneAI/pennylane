@@ -15,8 +15,6 @@
 Contains the GQSP template.
 """
 
-from typing import override
-
 from pennylane import capture, ops
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
@@ -95,11 +93,6 @@ class GQSP(Operator2):
 
     def __init__(self, unitary, angles, control):
         super().__init__(unitary, angles, control)
-
-    @property
-    @override
-    def wires(self):
-        return self.control + self.unitary.wires
 
 
 def _GQSP_resources(unitary, angles, **_):
