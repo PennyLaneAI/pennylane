@@ -202,7 +202,7 @@ def cancel_inverses(
           - :class:`qp.SWAP <pennylane.SWAP>`
           - :class:`qp.Toffoli <pennylane.Toffoli>`
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qp.device("lightning.qubit", wires=1)
 
