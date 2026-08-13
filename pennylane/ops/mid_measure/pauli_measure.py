@@ -73,9 +73,9 @@ class PauliMeasure(Operator2):
         postselect: int | None = None,
         meas_uid: str | None = None,
     ):  # pylint: disable=arguments-differ,unused-argument
-        # meas_uid is irrelevant to abstract operators and will be ignored
+        # meas_uid and postselect are irrelevant to abstract operators and will be ignored
         super().__abstract_init__(
-            pauli_word=pauli_word, wires=wires, postselect=postselect, meas_uid=None
+            pauli_word=pauli_word, wires=wires, postselect=None, meas_uid=None
         )
 
     @override
