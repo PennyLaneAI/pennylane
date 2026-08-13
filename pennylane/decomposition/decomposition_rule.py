@@ -1137,4 +1137,4 @@ def _decomp_contains_mcm(rule, params):
     if not rule.is_applicable(**params):
         return False
     resources = rule.compute_resources(**params).gate_counts
-    return any(_resource_is_measurement(op) for op in resources)
+    return any(_is_measurement(resource_op) for resource_op in resources)
