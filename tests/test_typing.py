@@ -558,3 +558,31 @@ class TestAbstractWires:
 
         with pytest.raises(TypeError):
             _ = Wire[2] + 1
+
+    def test_iteration(self):
+        """Test that AbstractWires can't be iterated over."""
+
+        assert list(Wire[4]) == [Wire, Wire, Wire, Wire]
+
+    def test_indexing(self):
+        """Test indexing into AbstractWires."""
+
+        w8 = Wire[8]
+        assert w8[0] == Wire
+        assert w8[5] == Wire
+
+        with pytest.raises(IndexError, match="out of bounds"):
+            _ = w8[8]
+
+        with pytest.raises(IndexError, match="out of bounds"):
+            _ = w8[10]
+
+        assert w8[2:] == Wire[6]
+
+        assert w8[2:7:2] == Wire[3]
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractWires with"):
+            _ = w8[[1, 2, 3]]
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractWires with unknown"):
+            _ = Wire[-1][2]

@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
@@ -623,3 +624,21 @@ class TestWiresJax:
         wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+
+class TestAbstractWiresIntegration:
+    """test for integrating wires and AbstractWires."""
+
+    def test_pass_in_abstract_wires(self):
+        """Test that if AbstractWires is passed to Wires, it is returned unchanged."""
+
+        assert Wires(qp.typing.Wire[4]) == qp.typing.Wire[4]
+
+    def test_addition(self):
+        """Test for addition with AbstractWires."""
+
+        assert Wires([0]) + Wire[-1] == Wire[-1]
+        assert Wire[-1] + Wires([0]) == Wire[-1]
+
+        assert Wires([0]) + Wire[4] == Wire[5]
+        assert Wire[10] + Wires([0, 1]) == Wire[12]

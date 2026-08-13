@@ -524,12 +524,16 @@ class AbstractWires:
         return len(instance) == self.num_wires
 
     def __iter__(self):
-        raise IndexError("Cannot interate over an AbstractWires.")
+        # without this, list(Wire[4]) gives infinite loop
+        for _ in range(self.num_wires):
+            yield AbstractWires(1)
 
     def __getitem__(self, item):
         if self.num_wires < 0:
             raise IndexError("Cannot index into an AbstractWires with unknown number of wires.")
         if isinstance(item, int):
+            if item >= self.num_wires:
+                raise IndexError(f"{item} out of bounds for {self}.")
             return AbstractWires(1)
         if isinstance(item, slice):
             new_start_stop_step = item.indices(self.num_wires)

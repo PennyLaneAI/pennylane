@@ -715,11 +715,13 @@ class TestSpecsAbstractArrayIntegartion:
     def test_hybrid_op(self):
         """Test capturing a hybrid op."""
 
+        # pylint: disable=too-few-public-methods
         class HybridOp(qp.core.Operator2):
 
             hybrid_argnames = "op"
             wire_argnames = ()
 
+            # pylint: disable=useless-parent-delegation)
             def __init__(self, op):
                 super().__init__(op=op)
 
@@ -736,6 +738,7 @@ class TestSpecsAbstractArrayIntegartion:
     def test_pytree_input(self):
         """Test the input being in a pytree."""
 
+        # pylint: disable=too-few-public-methods
         class PytreeOp(qp.core.Operator2):
 
             hybrid_argnames = "a"
