@@ -76,7 +76,7 @@ def test_return_structure(matrix):
     assert isinstance(F[0], PartiallyMultiplexedFlag)
     assert F[0].wires.tolist() == ["a"]
     # A single-qubit flag has no control wires and one (rz, ry) angle pair.
-    assert F[0].hyperparameters["control_values"] == []
+    assert F[0].hyperparameters["control_values"] == ()
     assert len(F[0].parameters[0]) == 1 and len(F[0].parameters[1]) == 1
     assert np.shape(Delta) == (2,)
 
@@ -119,7 +119,7 @@ def test_d2_return_structure(matrix):
 
     assert isinstance(ops, list) and len(ops) == 1
     assert ops[0].wires.tolist() == ["a", "b"]
-    assert ops[0].hyperparameters["control_values"] == [[1]]
+    assert ops[0].hyperparameters["control_values"] == ((1,),)
     assert np.shape(controlled) == (4,)
 
 

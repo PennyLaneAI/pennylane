@@ -84,6 +84,9 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
             if control_wires and len(control_values) != num_patterns:
                 raise ValueError("len(control_values) must equal the number of patterns ")
 
+        # Store as a tuple of tuples so the hyperparameter is hashable.
+        control_values = tuple(tuple(int(b) for b in pattern) for pattern in control_values)
+
         self._hyperparameters = {
             "control_values": control_values,
         }

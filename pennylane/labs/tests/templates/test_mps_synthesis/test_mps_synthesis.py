@@ -26,28 +26,35 @@ from pennylane.labs.templates.mps_synthesis.mps_synthesis import (
 )
 
 # (chi, L, seed) test cases spanning power-of-two and non-power-of-two bond dims.
-# L=0 cases have no bulk tensors (left boundary abuts the right boundary directly).
+# L is the total number of tensors; the effective bond dim is min(chi, 2 ** (L // 2)),
+# so L == 2 * ceil(log2(chi_max)) means no bulk tensors (the boundaries abut directly).
+# The (5, 4) case is quirky: chi is capped to 4, so no tensor ever reaches chi = 5.
 CASES = [
-    (2, 1, 0),
-    (3, 1, 1),
-    (4, 2, 2),
-    (3, 2, 3),
-    (5, 1, 4),
-    (6, 2, 5),
-    (4, 3, 6),
-    (2, 0, 7),
-    (4, 0, 8),
-    (3, 0, 9),
+    (2, 3, 0),
+    (3, 5, 1),
+    (4, 6, 2),
+    (3, 6, 3),
+    (5, 7, 4),
+    (6, 8, 5),
+    (4, 7, 6),
+    (2, 2, 7),
+    (4, 4, 8),
+    (3, 4, 9),
+    (5, 4, 10),
 ]
 
 
 def random_mps(chi, L, d=2, seed=None):
     """Random right-canonical MPS split into left boundary, bulk, right boundary.
 
-    Bond profile (``chi`` need not be a power of two): the left boundary grows
-    ``1 -> 2 -> 4 -> ... -> chi`` (doubling, last step capped at ``chi``), the
-    bulk is ``L`` tensors of shape ``chi -> chi``, and the right boundary mirrors
-    the left. Each tensor ``A`` of shape ``(chi_L, d, chi_R)`` is right-canonical.
+    ``L`` is the total number of tensors in the chain. The effective bond dimension is
+    capped at ``chi_max = min(chi, 2 ** (L // 2))``: with only ``L`` tensors the bond can
+    at most double out from each open end, so a larger ``chi`` would only introduce
+    redundant, unreachable bond dimension (e.g. ``chi, L = 5, 4`` yields bonds
+    ``1 -> 2 -> 4 -> 2 -> 1``, never reaching 5). The left boundary grows
+    ``1 -> 2 -> 4 -> ... -> chi_max`` (doubling, last step capped at ``chi_max``), the right
+    boundary mirrors it, and the remaining tensors form the bulk of shape
+    ``chi_max -> chi_max``. Each tensor ``A`` of shape ``(chi_L, d, chi_R)`` is right-canonical.
     """
     rng = np.random.default_rng(seed)
 
@@ -57,23 +64,30 @@ def random_mps(chi, L, d=2, seed=None):
         Q, _ = np.linalg.qr(G)
         return Q.conj().T.reshape(cl, d, cr)
 
+    chi_max = min(chi, 2 ** (L // 2))
     S = [1]
-    while S[-1] < chi:
-        S.append(min(2 * S[-1], chi))
+    while S[-1] < chi_max:
+        S.append(min(2 * S[-1], chi_max))
     left_bonds, right_bonds = S, S[::-1]
 
+    n_boundary = len(S) - 1  # tensors per boundary = ceil(log2(chi_max))
+    n_bulk = L - 2 * n_boundary  # guaranteed >= 0 by the chi_max cap
+
     left = [rc_tensor(cl, cr) for cl, cr in zip(left_bonds[:-1], left_bonds[1:])]
-    bulk = [rc_tensor(chi, chi) for _ in range(L)]
+    bulk = [rc_tensor(chi_max, chi_max) for _ in range(n_bulk)]
     right = [rc_tensor(cl, cr) for cl, cr in zip(right_bonds[:-1], right_bonds[1:])]
     return left + bulk + right
 
 
 def mps_wires(chi, L):
     """Return the combined wire register (auxiliary wires followed by physical wires)
-    for ``random_mps(chi, L)``."""
-    n = int(np.ceil(np.log2(chi))) if chi > 1 else 0
-    phys_wires = list(range(n + L))  # n + L physical wires
-    aux_wires = list(range(n + L, 2 * n + L))  # n auxiliary (bond) wires
+    for ``random_mps(chi, L)``. ``L`` is the total number of tensors, so the register has
+    ``L`` wires: ``n = ceil(log2(chi_max))`` auxiliary wires and ``L - n`` physical wires,
+    where ``chi_max = min(chi, 2 ** (L // 2))`` is the effective bond dimension."""
+    chi_max = min(chi, 2 ** (L // 2))
+    n = int(np.ceil(np.log2(chi_max))) if chi_max > 1 else 0
+    phys_wires = list(range(L - n))  # L - n physical wires (left + bulk sites)
+    aux_wires = list(range(L - n, L))  # n auxiliary (bond) wires
     return aux_wires + phys_wires
 
 
@@ -125,7 +139,7 @@ def test_non_unimodal_profile_raises():
 
     # Bond profile 1 -> 2 -> 1 -> 2 -> 1 (each tensor right-canonical).
     mps = [rc_tensor(1, 2), rc_tensor(2, 1), rc_tensor(1, 2), rc_tensor(2, 1)]
-    wires = [0, 1]
+    wires = [0, 1, 2, 3]  # one wire per tensor, so the profile check is what triggers
 
     with pytest.raises(ValueError, match="single left/bulk/right bond profile"):
         mps_synthesis(mps, wires)

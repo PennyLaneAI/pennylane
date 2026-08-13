@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the CSD helpers ``shift_csd_one`` and ``synthesis_csd``."""
 
+# pylint: disable=too-few-public-methods
 import numpy as np
 import pytest
 from scipy.linalg import cossin
@@ -50,28 +51,30 @@ def random_phases(n, seed):
 ODD_DIMS = [3, 5, 7]
 
 
-@pytest.mark.parametrize("d", ODD_DIMS)
-def test_shift_csd_one_preserves_reconstruction(d):
-    """Relocating the uncoupled '1' leaves ``U @ CS @ V_H`` equal to the original unitary."""
-    V = random_unitary(d, seed=d)
-    p = d // 2
-    U, CS, V_H = cossin(V, p=p, q=p, separate=False)
+class TestShiftCSDOne:
+    """Tests for ``shift_csd_one``."""
 
-    for target in range(p, d):  # valid targets live in the second block [p, d)
-        U_c, CS_c, V_H_c = shift_csd_one(U, CS, V_H, target)
-        assert np.allclose(U_c @ CS_c @ V_H_c, V, atol=1e-8)
+    @pytest.mark.parametrize("d", ODD_DIMS)
+    def test_shift_csd_one_preserves_reconstruction(self, d):
+        """Relocating the uncoupled '1' leaves ``U @ CS @ V_H`` equal to the original unitary."""
+        V = random_unitary(d, seed=d)
+        p = d // 2
+        U, CS, V_H = cossin(V, p=p, q=p, separate=False)
 
+        for target in range(p, d):  # valid targets live in the second block [p, d)
+            U_c, CS_c, V_H_c = shift_csd_one(U, CS, V_H, target)
+            assert np.allclose(U_c @ CS_c @ V_H_c, V, atol=1e-8)
 
-@pytest.mark.parametrize("d", ODD_DIMS)
-def test_shift_csd_one_relocates_uncoupled_one(d):
-    """The uncoupled '1' ends up on the diagonal at exactly ``target_index``."""
-    V = random_unitary(d, seed=d + 100)
-    p = d // 2
-    U, CS, V_H = cossin(V, p=p, q=p, separate=False)
+    @pytest.mark.parametrize("d", ODD_DIMS)
+    def test_shift_csd_one_relocates_uncoupled_one(self, d):
+        """The uncoupled '1' ends up on the diagonal at exactly ``target_index``."""
+        V = random_unitary(d, seed=d + 100)
+        p = d // 2
+        U, CS, V_H = cossin(V, p=p, q=p, separate=False)
 
-    for target in range(p, d):
-        _, CS_c, _ = shift_csd_one(U, CS, V_H, target)
-        assert np.isclose(CS_c[target, target], 1.0, atol=1e-8)
+        for target in range(p, d):
+            _, CS_c, _ = shift_csd_one(U, CS, V_H, target)
+            assert np.isclose(CS_c[target, target], 1.0, atol=1e-8)
 
 
 # ============================================================================
@@ -91,22 +94,24 @@ FACTOR_CASES = [
 ]
 
 
-@pytest.mark.parametrize("d, shift", FACTOR_CASES)
-def test_synthesis_csd_raw_reconstruction(d, shift):
-    """The (possibly shifted) raw CSD factors reconstruct the input unitary."""
-    V = random_unitary(d, seed=d + (10 if shift else 0))
-    _, _, _, _, _, U, CS, V_H = synthesis_csd(V, shift=shift, return_all=True)
-    assert np.allclose(U @ CS @ V_H, V, atol=1e-8)
+class TestSynthesisCSD:
+    """Tests for ``synthesis_csd``."""
 
+    @pytest.mark.parametrize("d, shift", FACTOR_CASES)
+    def test_synthesis_csd_raw_reconstruction(self, d, shift):
+        """The (possibly shifted) raw CSD factors reconstruct the input unitary."""
+        V = random_unitary(d, seed=d + (10 if shift else 0))
+        _, _, _, _, _, U, CS, V_H = synthesis_csd(V, shift=shift, return_all=True)
+        assert np.allclose(U @ CS @ V_H, V, atol=1e-8)
 
-@pytest.mark.parametrize("d", [2, 4, 6])
-def test_synthesis_csd_shift_is_noop_for_even_dims(d):
-    """For even ``d`` (p == q) the shift has no effect on the separated outputs."""
-    V = random_unitary(d, seed=d + 7)
-    no_shift = synthesis_csd(V, shift=False)
-    with_shift = synthesis_csd(V, shift=True)
-    for a, b in zip(no_shift[:5], with_shift[:5]):  # K00, K01, theta, K10, K11
-        assert np.allclose(a, b, atol=1e-8)
+    @pytest.mark.parametrize("d", [2, 4, 6])
+    def test_synthesis_csd_shift_is_noop_for_even_dims(self, d):
+        """For even ``d`` (p == q) the shift has no effect on the separated outputs."""
+        V = random_unitary(d, seed=d + 7)
+        no_shift = synthesis_csd(V, shift=False)
+        with_shift = synthesis_csd(V, shift=True)
+        for a, b in zip(no_shift[:5], with_shift[:5]):  # K00, K01, theta, K10, K11
+            assert np.allclose(a, b, atol=1e-8)
 
 
 # ============================================================================
@@ -117,32 +122,34 @@ def test_synthesis_csd_shift_is_noop_for_even_dims(d):
 RZ_WIRES = [[0, 1], [0, 1, 2], [2, 0, 1]]
 
 
-@pytest.mark.parametrize("wires", RZ_WIRES)
-def test_split_rz_full_reconstruction(wires):
-    """``rz * remaining`` reproduces the diagonal when all control states are covered."""
-    n = len(wires)
-    full = random_phases(n, seed=n)
-    control_states = list(range(2 ** (n - 1)))
+class TestSplitDiagonalIntoPartiallyMultiplexedRz:
+    """Tests for ``split_diagonal_into_partially_multiplexed_rz``."""
 
-    angles, remaining, rz = split_diagonal_into_partially_multiplexed_rz(
-        full, wires, control_states
-    )
+    @pytest.mark.parametrize("wires", RZ_WIRES)
+    def test_split_rz_full_reconstruction(self, wires):
+        """``rz * remaining`` reproduces the diagonal when all control states are covered."""
+        n = len(wires)
+        full = random_phases(n, seed=n)
+        control_states = list(range(2 ** (n - 1)))
 
-    assert np.allclose(rz * remaining, full, atol=1e-8)
-    assert len(angles) == len(control_states)
-    assert np.allclose(np.abs(rz), 1.0, atol=1e-8)
+        angles, remaining, rz = split_diagonal_into_partially_multiplexed_rz(
+            full, wires, control_states
+        )
 
+        assert np.allclose(rz * remaining, full, atol=1e-8)
+        assert len(angles) == len(control_states)
+        assert np.allclose(np.abs(rz), 1.0, atol=1e-8)
 
-@pytest.mark.parametrize("wires", RZ_WIRES)
-def test_split_rz_partial_reconstruction(wires):
-    """``rz * remaining`` reproduces the diagonal for a partial set of control states."""
-    n = len(wires)
-    full = random_phases(n, seed=n + 50)
-    control_states = list(range(2 ** (n - 1)))[::2]  # every other pattern
+    @pytest.mark.parametrize("wires", RZ_WIRES)
+    def test_split_rz_partial_reconstruction(self, wires):
+        """``rz * remaining`` reproduces the diagonal for a partial set of control states."""
+        n = len(wires)
+        full = random_phases(n, seed=n + 50)
+        control_states = list(range(2 ** (n - 1)))[::2]  # every other pattern
 
-    _, remaining, rz = split_diagonal_into_partially_multiplexed_rz(full, wires, control_states)
+        _, remaining, rz = split_diagonal_into_partially_multiplexed_rz(full, wires, control_states)
 
-    assert np.allclose(rz * remaining, full, atol=1e-8)
+        assert np.allclose(rz * remaining, full, atol=1e-8)
 
 
 # ============================================================================
@@ -150,18 +157,21 @@ def test_split_rz_partial_reconstruction(wires):
 # ============================================================================
 
 
-@pytest.mark.parametrize("wires", [[0, 1], [0, 1, 2], [1, 0, 2]])
-def test_split_control_branches_reconstruction(wires):
-    """The |0>- and |1>-controlled diagonals multiply back to the original."""
-    n = len(wires)
-    diag = random_phases(n, seed=n + 7)
+class TestSplitDiagonalIntoControlBranches:
+    """Tests for ``split_diagonal_into_control_branches``."""
 
-    d0, d1, target_d0, target_d1 = split_diagonal_into_control_branches(diag, wires)
+    @pytest.mark.parametrize("wires", [[0, 1], [0, 1, 2], [1, 0, 2]])
+    def test_split_control_branches_reconstruction(self, wires):
+        """The |0>- and |1>-controlled diagonals multiply back to the original."""
+        n = len(wires)
+        diag = random_phases(n, seed=n + 7)
 
-    assert np.allclose(d0 * d1, diag, atol=1e-8)
-    assert d0.shape == (2**n,) and d1.shape == (2**n,)
-    assert len(target_d0) == 2 ** (n - 1)
-    assert len(target_d1) == 2 ** (n - 1)
+        d0, d1, target_d0, target_d1 = split_diagonal_into_control_branches(diag, wires)
+
+        assert np.allclose(d0 * d1, diag, atol=1e-8)
+        assert d0.shape == (2**n,) and d1.shape == (2**n,)
+        assert len(target_d0) == 2 ** (n - 1)
+        assert len(target_d1) == 2 ** (n - 1)
 
 
 # ============================================================================
@@ -172,64 +182,64 @@ def test_split_control_branches_reconstruction(wires):
 CTRL_CASES = [([0, 1], 1), ([0, 1, 2], 2)]
 
 
-@pytest.mark.parametrize("wires, n_target", CTRL_CASES)
-@pytest.mark.parametrize("control_value", [0, 1])
-def test_get_controlled_unitary_dense(wires, n_target, control_value):
-    """A dense target unitary is lifted to a controlled operation (matches ``qp.ctrl``)."""
-    U = random_unitary(2**n_target, seed=n_target + control_value)
+class TestGetControlledUnitaryMSQ:
+    """Tests for ``get_controlled_unitary_msq``."""
 
-    result = get_controlled_unitary_msq(U, wires, control_value)
-    expected = qp.matrix(
-        qp.ctrl(
-            qp.QubitUnitary(U, wires=wires[1:]),
-            control=wires[0],
-            control_values=control_value,
-        ),
-        wire_order=sorted(wires),
-    )
-    assert np.allclose(result, expected, atol=1e-8)
+    @pytest.mark.parametrize("wires, n_target", CTRL_CASES)
+    @pytest.mark.parametrize("control_value", [0, 1])
+    def test_get_controlled_unitary_dense(self, wires, n_target, control_value):
+        """A dense target unitary is lifted to a controlled operation (matches ``qp.ctrl``)."""
+        U = random_unitary(2**n_target, seed=n_target + control_value)
 
+        result = get_controlled_unitary_msq(U, wires, control_value)
+        expected = qp.matrix(
+            qp.ctrl(
+                qp.QubitUnitary(U, wires=wires[1:]),
+                control=wires[0],
+                control_values=control_value,
+            ),
+            wire_order=sorted(wires),
+        )
+        assert np.allclose(result, expected, atol=1e-8)
 
-@pytest.mark.parametrize("control_value", [0, 1])
-def test_get_controlled_unitary_diagonal(control_value):
-    """A 1D diagonal target returns a controlled diagonal (matches ``qp.ctrl``)."""
-    wires = [0, 1]
-    diag = random_phases(1, seed=control_value)  # length-2 target diagonal
+    @pytest.mark.parametrize("control_value", [0, 1])
+    def test_get_controlled_unitary_diagonal(self, control_value):
+        """A 1D diagonal target returns a controlled diagonal (matches ``qp.ctrl``)."""
+        wires = [0, 1]
+        diag = random_phases(1, seed=control_value)  # length-2 target diagonal
 
-    result = get_controlled_unitary_msq(diag, wires, control_value)
-    expected = qp.matrix(
-        qp.ctrl(
-            qp.DiagonalQubitUnitary(diag, wires=wires[1:]),
-            control=wires[0],
-            control_values=control_value,
-        ),
-        wire_order=sorted(wires),
-    )
-    assert result.ndim == 1
-    assert np.allclose(np.diag(result), expected, atol=1e-8)
+        result = get_controlled_unitary_msq(diag, wires, control_value)
+        expected = qp.matrix(
+            qp.ctrl(
+                qp.DiagonalQubitUnitary(diag, wires=wires[1:]),
+                control=wires[0],
+                control_values=control_value,
+            ),
+            wire_order=sorted(wires),
+        )
+        assert result.ndim == 1
+        assert np.allclose(np.diag(result), expected, atol=1e-8)
 
+    def test_get_controlled_unitary_active_indices_diagonal(self):
+        """Padding a smaller diagonal with ``active_indices`` matches passing the padded diagonal."""
+        wires, target_dim, active, cv = [0, 1, 2], 4, [1, 2, 3], 1
+        diag = random_phases(2, seed=11)[: len(active)]
 
-def test_get_controlled_unitary_active_indices_diagonal():
-    """Padding a smaller diagonal with ``active_indices`` matches passing the padded diagonal."""
-    wires, target_dim, active, cv = [0, 1, 2], 4, [1, 2, 3], 1
-    diag = random_phases(2, seed=11)[: len(active)]
+        padded = np.ones(target_dim, dtype=complex)
+        padded[active] = diag
 
-    padded = np.ones(target_dim, dtype=complex)
-    padded[active] = diag
+        res_padded = get_controlled_unitary_msq(diag, wires, cv, active_indices=active)
+        res_full = get_controlled_unitary_msq(padded, wires, cv)
+        assert np.allclose(res_padded, res_full, atol=1e-8)
 
-    res_padded = get_controlled_unitary_msq(diag, wires, cv, active_indices=active)
-    res_full = get_controlled_unitary_msq(padded, wires, cv)
-    assert np.allclose(res_padded, res_full, atol=1e-8)
+    def test_get_controlled_unitary_active_indices_dense(self):
+        """Padding a smaller unitary with ``active_indices`` matches passing the embedded unitary."""
+        wires, target_dim, active, cv = [0, 1, 2], 4, [1, 2, 3], 0
+        U = random_unitary(len(active), seed=12)
 
-
-def test_get_controlled_unitary_active_indices_dense():
-    """Padding a smaller unitary with ``active_indices`` matches passing the embedded unitary."""
-    wires, target_dim, active, cv = [0, 1, 2], 4, [1, 2, 3], 0
-    U = random_unitary(len(active), seed=12)
-
-    res_padded = get_controlled_unitary_msq(U, wires, cv, active_indices=active)
-    res_full = get_controlled_unitary_msq(embed_unitary(U, target_dim, active), wires, cv)
-    assert np.allclose(res_padded, res_full, atol=1e-8)
+        res_padded = get_controlled_unitary_msq(U, wires, cv, active_indices=active)
+        res_full = get_controlled_unitary_msq(embed_unitary(U, target_dim, active), wires, cv)
+        assert np.allclose(res_padded, res_full, atol=1e-8)
 
 
 # ============================================================================
@@ -244,24 +254,27 @@ PROPAGATE_CASES = [
 ]
 
 
-@pytest.mark.parametrize("wires, active", PROPAGATE_CASES)
-@pytest.mark.parametrize("control_val", [0, 1])
-def test_propagate_diagonal_invariant(wires, active, control_val):
-    """Absorbing the diagonal preserves ``controlled_U @ diag``: D then U == U' then D'."""
-    n = len(wires)
-    full_dim = 2**n
-    U = random_unitary(len(active), seed=len(active) + control_val)
-    full_diag = random_phases(n, seed=n + control_val + 3)
+class TestPropagateDiagonalThroughUnitary:
+    """Tests for ``propagate_diagonal_through_unitary``."""
 
-    new_U, new_full_diag, controlled_new_U = propagate_diagonal_through_unitary(
-        full_diag, U, wires, control_val, active
-    )
+    @pytest.mark.parametrize("wires, active", PROPAGATE_CASES)
+    @pytest.mark.parametrize("control_val", [0, 1])
+    def test_propagate_diagonal_invariant(self, wires, active, control_val):
+        """Absorbing the diagonal preserves ``controlled_U @ diag``: D then U == U' then D'."""
+        n = len(wires)
+        full_dim = 2**n
+        U = random_unitary(len(active), seed=len(active) + control_val)
+        full_diag = random_phases(n, seed=n + control_val + 3)
 
-    controlled_orig = get_controlled_unitary_msq(U, wires, control_val, active_indices=active)
-    lhs = controlled_orig @ np.diag(full_diag)
-    rhs = controlled_new_U @ np.diag(new_full_diag)
+        new_U, new_full_diag, controlled_new_U = propagate_diagonal_through_unitary(
+            full_diag, U, wires, control_val, active
+        )
 
-    assert np.allclose(lhs, rhs, atol=1e-8)
-    assert new_U.shape == U.shape
-    assert new_full_diag.shape == (full_dim,)
-    assert controlled_new_U.shape == (full_dim, full_dim)
+        controlled_orig = get_controlled_unitary_msq(U, wires, control_val, active_indices=active)
+        lhs = controlled_orig @ np.diag(full_diag)
+        rhs = controlled_new_U @ np.diag(new_full_diag)
+
+        assert np.allclose(lhs, rhs, atol=1e-8)
+        assert new_U.shape == U.shape
+        assert new_full_diag.shape == (full_dim,)
+        assert controlled_new_U.shape == (full_dim, full_dim)
