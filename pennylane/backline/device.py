@@ -31,7 +31,6 @@ class HeterogeneousDevice(Device):
     Rather than constructing this directly, build one with :func:`~pennylane.backline`::
 
         cpu_controller = qp.Controller(
-                device=qp.device("lightning.qubit", wires=4),
                 label="cpu-controller",
                 remote=True,
                 executor_options={"host": "192.168.3.15"},
@@ -149,7 +148,6 @@ def backline(
         import pennylane as qp
 
         con = qp.Controller(
-            device=qp.device("lightning.qubit", wires=4),
             label="cpu-controller",
             remote=True,
             executor_options={"host": "192.168.3.15"},

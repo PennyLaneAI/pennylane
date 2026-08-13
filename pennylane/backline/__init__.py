@@ -35,7 +35,6 @@ A backline device is built with :func:`~pennylane.backline` from a
     import pennylane as qp
 
     cpu_controller = qp.Controller(
-        device=qp.device("lightning.qubit", wires=4),
         label="cpu-controller",
         backend="cpu_verbs",
         remote=True,

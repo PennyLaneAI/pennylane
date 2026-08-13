@@ -26,6 +26,9 @@ from .transports import Transport, get_transport
 if TYPE_CHECKING:
     from pennylane.devices import Device
 
+# Wires given to the ``null.qubit`` device a :class:`~.Controller` falls back to.
+DEFAULT_WIRES = 32
+
 
 @dataclass(frozen=True, kw_only=True)
 class Node:
@@ -90,11 +93,12 @@ class Controller(Node):
 
     device: "Device | None" = None
     """The PennyLane device the controller executes, e.g. one built with :func:`~pennylane.device`.
-    When ``None``, a ``null.qubit`` device is used."""
+    Defaults to ``None``, which builds a ``null.qubit`` over :data:`DEFAULT_WIRES` wires.
+    A controller needing more wires or an actual simulation, should pass a device of its own."""
 
     def __post_init__(self):
         if self.device is None:
-            object.__setattr__(self, "device", _make_device("null.qubit"))
+            object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
 
 @dataclass(frozen=True, kw_only=True)
