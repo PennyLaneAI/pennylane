@@ -989,11 +989,12 @@ class TestControlledDecompositions:
 
         op = qp.ctrl(qp.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
 
-        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot"})
+        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot", "PauliX"})
         solution = graph.solve(num_work_wires=1)
         with qp.queuing.AnnotatedQueue() as q:
             rule = solution.decomposition(op, num_work_wires=1)
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(**op.arguments)
+
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
@@ -1002,7 +1003,7 @@ class TestControlledDecompositions:
             qp.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1}
+            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1, qp.X: 3}
         )
 
     def test_base_decomp_contains_mcms(self):

@@ -418,7 +418,6 @@ def custom_ctrl_op_to_base():
     return {
         qp.CRX: qp.RX,
         qp.CRY: qp.RY,
-        qp.CRot: qp.Rot,
     }
 
 
