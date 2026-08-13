@@ -511,8 +511,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     @pytest.mark.parametrize("cls, label", [(qp.GlobalPhase, "GlobalPhase"), (qp.Identity, "I")])
     def test_add_global_op(self, wires, wire_map, cls, label):
         """Test that adding a global op works as expected."""
-        num_params = 1 if cls is qp.GlobalPhase else 0
-        data = [0.5124][:num_params]
+        data = (0.5124,) if cls is qp.GlobalPhase else ()
         op = cls(*data, wires=wires)
         # Expected output does not depend on the wires of GlobalPhase but just
         # on the number of drawn wires as dictated by the config!
