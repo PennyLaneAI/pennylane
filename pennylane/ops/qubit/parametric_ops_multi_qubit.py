@@ -1139,7 +1139,6 @@ class IsingXX(Operator2):
     wires_argnames = ("wires",)
 
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -1277,7 +1276,6 @@ class IsingYY(Operator2):
     wires_argnames = ("wires",)
 
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -1425,7 +1423,6 @@ class IsingZZ(Operator2):
     wires_argnames = ("wires",)
 
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -1614,7 +1611,6 @@ class IsingXY(Operator2):
     wires_argnames = ("wires",)
 
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
