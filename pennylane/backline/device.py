@@ -88,6 +88,11 @@ class HeterogeneousDevice(Device):
         return self._placement.coprocessors
 
     @property
+    def qec_code(self):
+        """str | None: The quantum error-correcting code circuits on this device are encoded for."""
+        return self._placement.qec_code
+
+    @property
     def name(self):
         return self._device.name
 
