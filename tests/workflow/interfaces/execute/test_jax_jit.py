@@ -712,7 +712,7 @@ class TestVectorValuedJIT:
     )
     def test_shapes(self, execute_kwargs, ret_type, shape, expected_type):
         """Test the shape of the result of vector-valued QNodes."""
-        adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
+        adjoint = execute_kwargs.get("diff_method", "") == "adjoint"
         if adjoint:
             pytest.skip("The adjoint diff method doesn't support probabilities.")
 
@@ -778,12 +778,8 @@ class TestVectorValuedJIT:
 
         dev = qp.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
-        grad_meth = (
-            execute_kwargs["gradient_kwargs"]["method"]
-            if "gradient_kwargs" in execute_kwargs
-            else ""
-        )
-        if "adjoint" in grad_meth and any(
+        adjoint = execute_kwargs.get("diff_method", "") == "adjoint"
+        if adjoint and any(
             isinstance(
                 r,
                 (
@@ -869,7 +865,7 @@ class TestVectorValuedJIT:
     def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes with probability
         and expectation value computations."""
-        adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
+        adjoint = execute_kwargs.get("diff_method", "") == "adjoint"
         if adjoint:
             pytest.skip("The adjoint diff method doesn't support probabilities.")
 
