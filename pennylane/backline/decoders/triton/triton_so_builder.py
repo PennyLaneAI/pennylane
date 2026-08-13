@@ -62,9 +62,9 @@ except ImportError as exc:
 class _HashableConstexprTuple(tuple):
     """Tuple wrapper with a recursive Triton cache key.
 
-    This is needed because Triton's ``ASTSource.hash()`` only consults ``cache_key``
-    on the top-level constexpr object, so nested ``JITFunction`` values inside a
-    plain tuple fall back to ``str(...)`` and can collide.
+    This is needed because Triton caches compiled kernels using ``ASTSource.hash()``, which
+    only consults ``cache_key`` on the top-level constexpr object, so nested ``JITFunction``
+    values inside a plain tuple fall back to ``str(...)`` and can collide.
     """
 
     @property
@@ -181,8 +181,7 @@ def _build_so(  # pylint: disable=too-many-arguments
     Keyword Args:
         signature (dict[str, str]): Runtime signature for the kernel arguments.
         constexpr (dict[str, object]): Compile-time kernel arguments.
-        grid (tuple[int, int, int]): Launch grid baked into the generated
-            launcher source.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
         platform (str): Triton platform string of the form
             ``"backend:arch:warp_size"``.
         num_warps (int): Triton kernel launch warp count.
@@ -279,7 +278,7 @@ def _compile_kernel(  # pylint: disable=too-many-arguments
     Keyword Args:
         signature (dict[str, str]): Runtime signature for the kernel arguments.
         constexpr (dict[str, object]): Compile-time kernel arguments.
-        grid (tuple[int, int, int]): Launch grid baked into the launcher.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
         platform (str): Triton platform string of the form
             ``"backend:arch:warp_size"``.
         num_warps (int): Triton kernel launch warp count.

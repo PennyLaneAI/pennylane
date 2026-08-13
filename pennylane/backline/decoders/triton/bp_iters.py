@@ -30,19 +30,19 @@ def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-neste
     prob: tl.constexpr,
     num_iters: tl.constexpr,
 ):
-    """Compute posterior LLRs for one packed syndrome.
+    """Compute posterior log-likelihood ratios for one packed syndrome.
 
     Adapted from Pennylane Blog: https://pennylane.ai/demos/tutorial_bp_catalyst
 
     Args:
-        syndrome (u64): Packed syndrome bitmask. Bit ``i`` stores check ``i``.
-        H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
-            syndrome bit ``i``, and column ``j`` corresponds to qubit ``j``.
+        syndrome (int): Packed syndrome measurements as a 64-bit integer.
+        H (tuple[tuple[int]]): Binary parity-check matrix with rows and columns
+            corresponding to parity checks and qubits, respectively.
         prob (float): Prior error probability assigned to each qubit.
         num_iters (int): Number of belief-propagation iterations.
 
     Returns:
-        tuple[float]: Posterior LLRs, one per qubit.
+        tuple[float]: Posterior log-likelihood ratios, one per qubit.
     """
     prior_llr: tl.constexpr = _llr_from_p(prob)
     num_checks: tl.constexpr = len(H)
@@ -102,7 +102,7 @@ def _get_syndrome_signs(syndrome, num_checks: tl.constexpr):
     """Convert syndrome bits into bipolar check signs.
 
     Args:
-        syndrome (u64): Packed syndrome bitmask.
+        syndrome (int): Packed syndrome measurements as a 64-bit integer.
         num_checks (int): Number of checks to unpack from ``syndrome``.
 
     Returns:

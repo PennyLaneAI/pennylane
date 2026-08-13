@@ -20,8 +20,8 @@ try:
 except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
-PAYLOAD_SLOT_WORDS = tl.constexpr(8)  # sizeof(PayloadSlot) / sizeof(u64)
-HANDOFF_SLOT_WORDS = tl.constexpr(2)  # sizeof(HandoffSlot) / sizeof(u64)
+_PAYLOAD_SLOT_WORDS = tl.constexpr(8)  # sizeof(PayloadSlot) / sizeof(u64)
+_HANDOFF_SLOT_WORDS = tl.constexpr(2)  # sizeof(HandoffSlot) / sizeof(u64)
 
 
 @triton.jit
@@ -65,7 +65,7 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments
         expect = tl.cast(cursor + 1, tl.uint32)
 
         # PayloadSlot = 8 * uint64
-        req = ring_u64_ptr + idx * PAYLOAD_SLOT_WORDS
+        req = ring_u64_ptr + idx * _PAYLOAD_SLOT_WORDS
         # little-endian: low32=decoder_id, high32=seq
         metadata = tl.load(req + 1, volatile=True, cache_modifier=".cv")
         seq = tl.cast(metadata >> 32, tl.uint32)
@@ -90,7 +90,7 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments
                 if decoder_id == i:
                     correction = decoder_fns[i](syndrome)
 
-            out = handoff_u64_ptr + idx * HANDOFF_SLOT_WORDS
+            out = handoff_u64_ptr + idx * _HANDOFF_SLOT_WORDS
             tl.store(out, correction, cache_modifier=".wt")
             tl.atomic_xchg(
                 out + 1,

@@ -34,15 +34,15 @@ def _decode_one(
     """Decode one packed syndrome into a packed correction mask.
 
     Args:
-        syndrome (u64): Packed syndrome bitmask. Bit ``i`` stores check ``i``.
-        H (tuple[tuple[int]]): Binary parity-check matrix. Row ``i`` matches
-            syndrome bit ``i``, and column ``j`` matches correction bit ``j``.
+        syndrome (int): Packed syndrome measurements as a 64-bit integer.
+        H (tuple[tuple[int]]): Binary parity-check matrix with rows and columns
+            corresponding to parity checks and qubits, respectively.
         postprocess (str): Postprocessing rule to apply to the posterior LLRs.
         prob (float): Prior error probability assigned to each qubit.
         num_iters (int): Number of belief-propagation iterations.
 
     Returns:
-        u64: Packed correction mask. Bit ``j`` corresponds to qubit ``j``.
+        u64: Packed correction mask where bit ``j`` corresponds to qubit ``j``.
     """
     syndrome = tl.cast(syndrome, tl.uint64)
 
@@ -76,11 +76,12 @@ def _osd(posterior_llrs, syndrome):
 
     Args:
         posterior_llrs (tuple[float]): Posterior LLRs, one per qubit.
-        syndrome (u64): Packed syndrome bitmask.
+        syndrome (int): Packed syndrome measurements as a 64-bit integer.
 
     Returns:
-        u64: One-hot correction mask for the most likely qubit, or ``0`` when
-            the syndrome is zero.
+        u64: One-hot correction mask for the most likely qubit, or ``0`` if
+            no syndrome is detected.
+   
     """
     one = tl.cast(1, tl.uint64)
     zero = tl.cast(0, tl.uint64)

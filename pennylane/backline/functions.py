@@ -64,7 +64,7 @@ def triton_decoder(
     Keyword Args:
         platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
             For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
-        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
             Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
         num_stages (int): Triton pipeline stage count. Defaults to ``1``.
@@ -135,7 +135,7 @@ def css_bp_decoder(
         prob (float): Uniform prior error probability across qubits. Defaults to ``0.1``.
         platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
             For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
-        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
             Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
         num_stages (int): Triton pipeline stage count. Defaults to ``1``.

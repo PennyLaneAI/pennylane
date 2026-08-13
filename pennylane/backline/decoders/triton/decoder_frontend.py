@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Frontend helpers for building Triton decoder shared libraries.
-
-This module provides the public entry points for packaging Triton decoder
-kernels into shared libraries that can be loaded by backline devices.
-"""
+"""Frontend helpers for building Triton decoder shared libraries for backline devices."""
 
 from __future__ import annotations
 
@@ -52,13 +48,13 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
 
     Args:
         decoder_fns (tuple[object, ...]): Tuple of Triton decoder functions.
-            ``decoder_id`` selects the tuple index at runtime.
+            ``decoder_id`` is used to select the appropriate decoder function at runtime.
 
     Keyword Args:
         platform (str): Required Triton platform string of the form
             ``"backend:arch:warp_size"``. For example, ``"hip:gfx942:64"`` or
             ``"cuda:80:32"``.
-        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
             Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
         num_stages (int): Triton pipeline stage count. Defaults to ``1``.
@@ -67,7 +63,8 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
-            Catalyst-compatible exported launcher symbol. The caller owns the returned file.
+            Catalyst-compatible exported launcher symbol. The caller is responsible for the
+            returned shared library's lifetime and cleanup.
 
     Raises:
         ValueError: If the build options are invalid.
@@ -139,10 +136,8 @@ def _build_css_bp_decoder(  # pylint: disable=too-many-arguments
     decoders behind a single dispatcher selected by ``decoder_id`` at runtime.
 
     .. note::
-        The generated decoder consumes one packed syndrome bitmask and returns one packed
-        correction bitmask, each stored in a single ``u64``. Bit ``i`` corresponds
-        to check and qubit ``i`` in the syndrome and correction, respectively. This limits
-        the current implementation to at most 64 parity checks and qubits.
+        The decoder uses packed ``u64`` bitmasks for syndromes and corrections,
+        currently limiting to maximum 64 checks/qubits.
 
     Args:
         Hx (ArrayLike): X parity-check matrix.
@@ -156,7 +151,7 @@ def _build_css_bp_decoder(  # pylint: disable=too-many-arguments
         platform (str): Required Triton platform string of the form
             ``"backend:arch:warp_size"``. For example, ``"hip:gfx942:64"`` or
             ``"cuda:80:32"``.
-        grid (tuple[int, int, int]): Launch grid baked into the generated launcher source.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
             Defaults to ``(1, 1, 1)``.
         num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
         num_stages (int): Triton pipeline stage count. Defaults to ``1``.
@@ -165,7 +160,8 @@ def _build_css_bp_decoder(  # pylint: disable=too-many-arguments
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
-            Catalyst-compatible exported launcher symbol. The caller owns the returned file.
+            Catalyst-compatible exported launcher symbol. The caller is responsible for the
+            returned shared library's lifetime and cleanup.
 
     Raises:
         ValueError: If the decoder options or parity-check matrices are invalid.
@@ -211,7 +207,7 @@ def _to_numpy(H: ArrayLike) -> np.ndarray:
         H (ArrayLike): Candidate parity-check matrix.
 
     Returns:
-        np.ndarray: Binary parity-check matrix with two dimensions.
+        np.ndarray: Binary parity-check matrix.
 
     Raises:
         ValueError: If ``H`` is empty, non-binary, not two-dimensional, or

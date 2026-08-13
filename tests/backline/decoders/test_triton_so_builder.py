@@ -208,6 +208,8 @@ class TestBuildSo:
         )
 
         assert backend == "cuda"
+        # Verify that _compile_kernel uses the AST hash in the generated symbol,
+        # rather than only confirming that distinct kernels produce distinct hashes.
         assert func_name == "decoder_kernel_abcdef123456"
         assert func_name in generated_c.read_text(encoding="utf-8")
         generated_c.unlink(missing_ok=True)
