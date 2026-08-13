@@ -670,7 +670,6 @@ class PCPhase(Operator2):
     .. details::
         :title: Decomposition
 
-        **Decomposition:**
 
         In short, this decomposition relies on decomposing the generator (see :meth:`~.generator`)
         of the ``PCPhase`` gate into generators of multicontrolled :class:`~.PhaseShift` gates,
