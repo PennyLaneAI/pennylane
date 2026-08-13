@@ -418,9 +418,7 @@ class TestOpmath:
         assert_eqn_matches_op(base_eqn, qp.Y)
         assert base_eqn.params["n_ctrls"] == 3
 
-    @pytest.mark.pl2do(
-        reason="JAX thinks the wires aren't unique because they are abstract", strict=True
-    )
+    @pytest.mark.pl2do(reason="ArgInfo issue")
     def test_Controlled(self):
         """Test a nested control operation."""
 
