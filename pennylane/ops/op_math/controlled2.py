@@ -777,8 +777,10 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         return rule.is_applicable(**arguments)
 
     def _resource_fn(**arguments):
-        control_values = arguments.pop("control_values")
-        arguments["control_values"] = None
+        # Keep ``control_values`` intact: the wrapped rule's resource function derives
+        # ``num_control_wires`` from ``len(control_values)``, so it must retain its length
+        # (its actual values are irrelevant to the resource estimate).
+        control_values = arguments["control_values"]
         gate_counts = rule.compute_resources(**arguments).gate_counts
         base_x_count = gate_counts.get(qp.X, 0)
         gate_counts[qp.X] = base_x_count + len(control_values)
