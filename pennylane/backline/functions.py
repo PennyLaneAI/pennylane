@@ -91,7 +91,7 @@ def triton_decoder(
     ...     one = tl.cast(1, tl.uint64)
     ...     zero = tl.cast(0, tl.uint64)
     ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
-    >>> decoder = qp.backline.triton_decoder(
+    >>> decoder = qp.backline.triton_decoder(  # doctest: +SKIP
     ...     (steane_lookup, steane_lookup),
     ...     platform="hip:gfx942:64",
     ... )
@@ -158,7 +158,7 @@ def css_bp_decoder(
     ...     [0, 1, 1, 0, 0, 1, 1],
     ...     [0, 0, 0, 1, 1, 1, 1],
     ... ])
-    >>> decoder = qp.backline.css_bp_decoder(
+    >>> decoder = qp.backline.css_bp_decoder(  # doctest: +SKIP
     ...     Hx,
     ...     Hz,
     ...     postprocess="hard",

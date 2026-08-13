@@ -8,7 +8,8 @@
   :func:`~pennylane.backline.css_bp_decoder` builds a CSS belief-propagation decoder from X- and Z-type parity-check
   matrices. In both cases, syndromes and corrections are packed into ``u64`` bitmasks.
 
-  ```python
+  ```py
+  import numpy as np
   import pennylane as qp
   import triton
   import triton.language as tl

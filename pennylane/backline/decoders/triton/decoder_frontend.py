@@ -79,7 +79,7 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
     ...     one = tl.cast(1, tl.uint64)
     ...     zero = tl.cast(0, tl.uint64)
     ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
-    >>> so_path, symbol_name = _build_triton_decoder(
+    >>> so_path, symbol_name = _build_triton_decoder(  # doctest: +SKIP
     ...     (steane_lookup, steane_lookup),
     ...     platform="hip:gfx942:64",
     ... )
@@ -174,11 +174,12 @@ def _build_css_bp_decoder(  # pylint: disable=too-many-arguments
     ...     [0, 1, 1, 0, 0, 1, 1],
     ...     [0, 0, 0, 1, 1, 1, 1],
     ... ])
-    >>> so_path, symbol_name = _build_css_bp_decoder(
+    >>> so_path, symbol_name = _build_css_bp_decoder(  # doctest: +SKIP
     ...     Hx,
     ...     Hz,
     ...     postprocess="osd",
     ...     num_iters=10,
+    ...     prob=0.1,
     ...     platform="hip:gfx942:64",
     ... )
     """
