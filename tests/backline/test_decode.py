@@ -306,6 +306,7 @@ class TestRecordedRound:
 
     def test_a_round_outside_a_program_is_refused(self):
         """A recorded call has nowhere to go without a trace."""
+        pytest.importorskip("jax")
         with pytest.raises(RuntimeError, match="outside a compiled program"):
             decode(
                 np.zeros(4, dtype=np.uint8),
