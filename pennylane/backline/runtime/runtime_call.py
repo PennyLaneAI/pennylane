@@ -118,8 +118,8 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     * ``64`` is the ``u64``: this symbol's own argument for how many bytes it may write.
     * ``out_bytes=64`` says how big a buffer to give it. The number shows up twice because one is
       what you tell the symbol and the other is what you hand it, so keep the two in step.
-    * The call gives back two things: ``status``, the ``i32`` the symbol returned, and ``reply``,
-      the buffer it filled in, as a ``uint8`` array of ``out_bytes`` bytes.
+    * The call returns two results: ``status``, the ``i32`` the symbol returned, and ``reply``,
+      which corresponds to the ``out`` buffer it filled in, as a ``uint8`` array of ``out_bytes`` bytes.
 
     .. seealso:: :func:`~.runtime_declare`
     """
