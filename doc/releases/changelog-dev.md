@@ -318,7 +318,7 @@
       return qp.runtime_call("example_local_rounds", session, 100000)
   ```
 
-  Passing `address="host:port"` dispatches the call to executor on remote side, which invokes the
+  Passing `address="host:port"` dispatches the call to the executor on the remote side, which invokes the
   symbol on the machine the runtime lives on; without it the call is local. Meanwhile, `qp.backline.runtime.CType` lists what can cross the boundary.
 
   A symbol that fills a buffer declares it as an `out` parameter: the caller asks for `out_bytes=`
