@@ -705,7 +705,7 @@ def _assert_valid_operator2(
     abstractified_op = abstractify(op)
     leaves = flatten(abstractified_op)[0]
     for l in leaves:
-        if not isinstance(l, (AbstractArray, AbstractWires, NoneType)):
+        if not isinstance(l, (AbstractArray, AbstractWires, NoneType, CompressedResourceOp)):
             raise AssertionError(
                 f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
             )
