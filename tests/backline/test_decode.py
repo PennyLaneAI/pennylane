@@ -34,8 +34,8 @@ def x64():
         yield jax
 
 
-class TestDecodePacked:
-    """Checks for decode(..., packed=True)."""
+class TestDecodeBitpack:
+    """Checks for decode(..., bitpack=True)."""
 
     @staticmethod
     def _nodes():
@@ -43,12 +43,12 @@ class TestDecodePacked:
         coprocessor = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
         return controller, coprocessor
 
-    def test_packed_decode_returns_64_bits(self, x64):
+    def test_bitpack_decode_returns_64_bits(self, x64):
         """It should unpack the collected 8-byte reply into a 64-bit vector."""
         controller, coprocessor = self._nodes()
         jaxpr = x64.make_jaxpr(
             lambda a, b: decode_mod.decode(
-                (a, b), controller=controller, coprocessor=coprocessor, packed=True
+                (a, b), controller=controller, coprocessor=coprocessor, bitpack=True
             )
         )(np.uint8(1), np.uint8(0))
 
@@ -59,7 +59,7 @@ class TestDecodePacked:
         calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
         assert calls[-1].params["out_bytes"] == (8,)
 
-    def test_packed_decode_rejects_non_vector_input(self):
+    def test_bitpack_decode_rejects_non_vector_input(self):
         """It should require a 1D syndrome bit vector in packed mode."""
         controller, coprocessor = self._nodes()
 
@@ -68,10 +68,10 @@ class TestDecodePacked:
                 np.uint64(1),
                 controller=controller,
                 coprocessor=coprocessor,
-                packed=True,
+                bitpack=True,
             )
 
-    def test_packed_decode_rejects_vectors_longer_than_u64(self):
+    def test_bitpack_decode_rejects_vectors_longer_than_u64(self):
         """It should cap packed syndromes at 64 bits."""
         controller, coprocessor = self._nodes()
 
@@ -80,13 +80,13 @@ class TestDecodePacked:
                 np.ones(65, dtype=np.uint8),
                 controller=controller,
                 coprocessor=coprocessor,
-                packed=True,
+                bitpack=True,
             )
 
     @pytest.mark.parametrize(
         ("name", "kwargs"), [("in_bytes", {"in_bytes": 4}), ("out_bytes", {"out_bytes": 4})]
     )
-    def test_packed_decode_requires_u64_sized_buffers(self, name, kwargs):
+    def test_bitpack_decode_requires_u64_sized_buffers(self, name, kwargs):
         """It should refuse packed transport sizes other than one u64."""
         controller, coprocessor = self._nodes()
 
@@ -95,6 +95,6 @@ class TestDecodePacked:
                 np.array([1], dtype=np.uint8),
                 controller=controller,
                 coprocessor=coprocessor,
-                packed=True,
+                bitpack=True,
                 **kwargs,
             )

@@ -129,11 +129,11 @@ def _validate_packed(syndrome, in_bytes, out_bytes):
     """Validate packed decode inputs and transport sizes."""
     if in_bytes is not None and int(in_bytes) != _PACKED_U64_BYTES:
         raise ValueError(
-            f"decode: packed=True requires in_bytes={_PACKED_U64_BYTES}, got {int(in_bytes)}"
+            f"decode: bitpack=True requires in_bytes={_PACKED_U64_BYTES}, got {int(in_bytes)}"
         )
     if out_bytes is not None and int(out_bytes) != _PACKED_U64_BYTES:
         raise ValueError(
-            f"decode: packed=True requires out_bytes={_PACKED_U64_BYTES}, got {int(out_bytes)}"
+            f"decode: bitpack=True requires out_bytes={_PACKED_U64_BYTES}, got {int(out_bytes)}"
         )
 
     interface = (
@@ -192,7 +192,7 @@ def decode(  # pylint: disable=too-many-arguments
     in_bytes=None,
     decoder_id=0,
     work_item=_DEFAULT_WORK_ITEM,
-    packed=True,
+    bitpack=True,
     library=None,
 ):
     r"""Offload one syndrome to a coprocessor and return its correction (post & collect).
@@ -203,7 +203,7 @@ def decode(  # pylint: disable=too-many-arguments
 
     Args:
         syndrome: The syndrome to send. Passed by data pointer, so its byte length comes from its
-            shape and dtype at compile time. With ``packed=True``, this must be a 1D bit vector
+            shape and dtype at compile time. With ``bitpack=True``, this must be a 1D bit vector
             with at most 64 entries.
         controller (Controller): The :class:`~.Controller` whose session drives the round, and whose
             ``init_args`` supply the default reply size.
@@ -216,16 +216,15 @@ def decode(  # pylint: disable=too-many-arguments
             committed to carry. Defaults to ``syndrome``'s full byte length.
         decoder_id (int): Which coprocessor-side decoder handles this round. Defaults to ``0``.
         work_item (int): The committed work-item index to post. Defaults to ``0``.
-        packed (bool): When ``True``, pack a syndrome bit vector into the decoder's 8-byte payload
-            with ``packbits`` before sending it, and unpack the 8-byte reply back into a 64-entry
-            boolean bit vector with ``unpackbits``. Defaults to ``True``.
+        bitpack (bool): Pack syndrome bits into 8-byte payload and unpack reply to 64-bit vector.
+            Defaults to ``True``.
         library (str | None): Shared library exporting the transport symbols, recorded so the
             compiler links it. Defaults to ``None``, relying on ``librt_transport`` already being
             loaded.
 
     Returns:
         The correction reply, as a ``uint8`` buffer of ``out_bytes`` bytes, or a 64-entry boolean
-        bit vector when ``packed=True``.
+        bit vector when ``bitpack=True``.
 
     .. warning::
 
@@ -236,7 +235,7 @@ def decode(  # pylint: disable=too-many-arguments
     """
     controller, coprocessor = _resolve_nodes(controller, coprocessor)
     key = _session_key(coprocessor)
-    if packed:
+    if bitpack:
         syndrome = _pack(_validate_packed(syndrome, in_bytes, out_bytes))
         nbytes = _PACKED_U64_BYTES
         reply_bytes = _PACKED_U64_BYTES
@@ -272,4 +271,4 @@ def decode(  # pylint: disable=too-many-arguments
         out_bytes=reply_bytes,
         library=library,
     )
-    return _unpack(correction) if packed else correction
+    return _unpack(correction) if bitpack else correction
