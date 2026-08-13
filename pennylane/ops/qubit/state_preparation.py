@@ -28,15 +28,10 @@ from scipy.sparse import csr_array, csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operation, Operator, StatePrepBase
-from pennylane.decomposition import (
-    add_decomps,
-    pow_resource_rep,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -202,8 +197,8 @@ class BasisState(StatePrepBase):
 
 def _jax_jit_basis_state_resources(num_wires):
     resources = {
-        pow_resource_rep(qp.X, base_params={}, z=0): num_wires // 2,
-        pow_resource_rep(qp.X, base_params={}, z=1): num_wires - num_wires // 2,
+        qp.pow(qp.X(Wire[1]), z=0): num_wires // 2,
+        qp.pow(qp.X(Wire[1]), z=1): num_wires - num_wires // 2,
     }
     return resources
 

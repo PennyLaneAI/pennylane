@@ -21,7 +21,7 @@ from typing import override
 
 import numpy as np
 import pytest
-from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp, NonParametricOp
+from operator2_utils import CompilableOp, DynOp, FullOp, HybridOp, HybridWireOp, NonParametricOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
@@ -65,6 +65,35 @@ class TestInitSubclass:
         assert Op.hybrid_argnames == ("wires",)
         assert Op.wire_argnames == ("wires",)
         assert Op.compilable_argnames == ()
+
+    def test_sorting_argnames_order(self):
+        """Test that argnames are automatically sorted to be in signature order."""
+
+        class DummyOp(qp.core.Operator2):
+
+            wire_argnames = ("reg2", "reg1")
+            dynamic_argnames = ("b", "a")
+            static_argnames = ("s2", "s1")
+            hybrid_argnames = ("h2", "h1")
+
+            # pylint: disable=useless-parent-delegation, too-many-arguments
+            def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
+                super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
+
+        assert DummyOp.wire_argnames == ("reg1", "reg2")
+        assert DummyOp.dynamic_argnames == ("a", "b")
+        assert DummyOp.static_argnames == ("s1", "s2")
+        assert DummyOp.hybrid_argnames == ("h1", "h2")
+
+        class DummyOp2(qp.core.Operator2):
+
+            compilable_argnames = ("c3", "c2", "c1")
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, c1, wires, c2, c3):
+                super().__init__(c1, wires, c2, c3)
+
+        assert DummyOp2.compilable_argnames == ("c1", "c2", "c3")
 
     @pytest.mark.parametrize(
         "other_argnames",
@@ -533,7 +562,7 @@ class TestOperatorInit:
         inner = [DynOp(0.1, wires=7), DynOp(0.2, wires=8)]
         op = Composite(inner, [0, [1, 2], [3, 4]], [5, 6])
         # Wires are ordered using wire_argnames, so `wires` come before `pytree_wires`
-        assert op.wires == Wires([5, 6, 0, 1, 2, 3, 4, 7, 8])
+        assert op.wires == Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
 
     def test_non_hybrid_wire_arg_auto_wrapped_in_constructor(self):
         """Test that non-hybrid wire arguments are wrapped in ``Wires`` by the
@@ -659,6 +688,19 @@ class TestOperatorInit:
         with AnnotatedQueue() as q:
             op = DynOp(0.5, wires=0)
 
+        assert len(q) == 1
+        assert list(q.keys())[0].obj is op
+
+    def test_hybrid_operator_arguments_dequeued_on_init(self):
+        """Test that operator arguments to a hybrid op are removed from the queue,
+        for both ``Operator2`` and legacy ``Operator`` leaves."""
+
+        with AnnotatedQueue() as q:
+            op2_leaf = DynOp(0.5, wires=0)
+            op1_leaf = qp.PauliZ(1)
+            op = HybridOp([op2_leaf, op1_leaf], wires=[0, 1])
+
+        # Both operator leaves are dequeued, leaving only the hybrid op behind.
         assert len(q) == 1
         assert list(q.keys())[0].obj is op
 
@@ -842,7 +884,7 @@ class TestProperties:
                 super().__init__(Wires(wires), Wires(wires1))
 
         op = Op([0, 1], [2, 3, 4])
-        assert op.wires == Wires([2, 3, 4, 0, 1])
+        assert op.wires == Wires([0, 1, 2, 3, 4])
 
 
 class TestBroadcasting:
@@ -1095,6 +1137,12 @@ class TestHash:
         op1 = FullOp(phi=0.5, static="a", hybrid=[0, 1], wires=0)
         op2 = FullOp(phi=0.6, static="ab", hybrid=[1, 1], wires=1)
         assert hash(op1) != hash(op2)
+
+    @pytest.mark.parametrize("pytree_wires", ([Wire[1]], [[Wire[2]], [Wire[3]]]))
+    def test_op_is_hashable_with_abstract_wires_in_hybrid(self, pytree_wires):
+        """Test that ``Operator2`` is hashable when the wires are `AbstractWires` in hybrid args."""
+        op = HybridWireOp(pytree_wires)
+        assert isinstance(hash(op), int)
 
     def test_different_types_different_hash(self):
         """Test that operators of different types produce different hashes."""
@@ -1400,6 +1448,13 @@ class TestDunderMethods:
             assert getattr(op_deep, attr) == getattr(op, attr)
             # Deep copy so stored attributes must NOT be the same references
             assert getattr(op_deep, attr) is not getattr(op, attr)
+
+    def test_getattr(self):
+        """Test that an AttributeError is raised if trying to access an attribute that
+        does not exist."""
+        op = DynOp(1.5, 0)
+        with pytest.raises(AttributeError, match="'DynOp' object has no attribute"):
+            _ = op.non_existent_attr
 
 
 class TestPublicProperties:
@@ -2266,13 +2321,17 @@ class TestGraphDecomposition:
 
             @qp.register_resources({qp.RX: 1})
             def use_rx(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+                qp.RX(phi, wires=wires)
 
             qp.add_decomps(Op, use_rx)
 
             decomp = Op(0.5, wires=0).decomposition()
             assert len(decomp) == 1
             assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+            decomp2 = Op.compute_decomposition(0.5, wires=0)
+            assert len(decomp2) == 1
+            assert qp.equal(decomp2[0], qp.RX(0.5, wires=0))
 
     def test_rule_receives_full_argument_model(self):
         """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""

@@ -199,7 +199,7 @@ def _(op: qops.PauliRot):
 
 @_map_to_resource_op.register
 def _(op: qops.PCPhase):
-    dim = op.hyperparameters["dimension"][0]
+    dim = op.dim
     return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
 
 
@@ -412,7 +412,7 @@ def _(op: qtemps.QROM):
     return re_temps.QROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        restored=op.hyperparameters["clean"],
+        restored=op.clean,
         wires=op.wires,
     )
 
@@ -439,7 +439,7 @@ def _(op: qops.BasisState):
 
 @_map_to_resource_op.register
 def _(op: qtemps.BasisEmbedding):
-    return re_temps.BasisEmbedding(num_wires=len(op.wires), wires=op.wires)
+    return re_ops.BasisState(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
@@ -534,10 +534,10 @@ def _(op: qtemps.Reflection):
 
 @_map_to_resource_op.register
 def _(op: qtemps.GQSP):
-    be_op = op.hyperparameters["unitary"]
+    be_op = op.unitary
     mapped_be_op = _map_to_resource_op(be_op)
 
-    ctrl_wire = op.hyperparameters["control"]
+    ctrl_wire = op.control
     target_wires = mapped_be_op.wires
     total_wires = target_wires + Wires(ctrl_wire)
 

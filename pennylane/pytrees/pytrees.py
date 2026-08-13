@@ -243,10 +243,11 @@ def flatten(
     >>> op = qp.adjoint(qp.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
     >>> data
-    [1.2, 2.3, 3.4]
+    [1.2, 2.3, 3.4, 0]
 
     >>> structure
-    PyTreeStructure(AdjointOperation, (), (PyTreeStructure(Rot, (Wires([0]), ()), (PyTreeStructure(), PyTreeStructure(), PyTreeStructure())),))
+    PyTreeStructure(Adjoint2, (), (PyTreeStructure(list, None, ()), PyTreeStructure(list, None, ()), PyTreeStructure(list, None, (PyTreeStructure(Rot, (), (PyTreeStructure(list, None, (PyTreeStructure(), PyTreeStructure(), PyTreeStructure())), PyTreeStructure(list, None, (PyTreeStructure(Wires, (), (PyTreeStructure(),)),)), PyTreeStructure(list, None, ()))),))))
+
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
     # set the flag is_leaf_node if is_leaf argument is provided and returns true
@@ -282,8 +283,8 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
 
     >>> op = qp.adjoint(qp.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
-    >>> unflatten([-2, -3, -4], structure)
-    Adjoint(Rot(-2, -3, -4, wires=[0]))
+    >>> unflatten([-2, -3, -4, 1], structure)
+    Adjoint(Rot(-2, -3, -4, wires=[1]))
 
     """
     return _unflatten(iter(data), structure)

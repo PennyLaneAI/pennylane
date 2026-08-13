@@ -332,7 +332,7 @@ class TestHybridQRAM:
                 and op.name.startswith("C(X")
                 or name == "CH"
                 and op.name.startswith("C(H")
-                or name == "2C(SWAP)"
+                or name == "C(SWAP)"  # C(C(SWAPs are now merged
                 and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
                 or name == "CZ"
                 and op.name.startswith("C(Z")
@@ -515,7 +515,7 @@ class TestSelectOnlyQRAM:
                         ),
                         2,
                     ),
-                    GateCount(resource_rep(qre.BasisEmbedding, {"num_wires": 2}), 1),
+                    GateCount(resource_rep(qre.BasisState, {"num_wires": 2}), 1),
                 ],
             ),
         ),

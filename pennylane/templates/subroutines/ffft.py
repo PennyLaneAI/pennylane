@@ -22,8 +22,9 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operator
-from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import FermionicSWAP, PauliZ, pow
+from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.wires import WiresLike
 
 INV_SQRT2 = 1 / math.sqrt(2)
@@ -165,7 +166,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     def _count_one_recursive(wires, resources):
         if wires > 2:
             for mode in range(wires // 2):
-                resources[pow_resource_rep(PauliZ, {}, z=2 * mode / wires)] += 1
+                resources[_pow_abstract(PauliZ, z=2 * mode / wires)] += 1
             resources = _count_one_recursive(wires // 2, resources)
             resources = _count_one_recursive(wires // 2, resources)
         return resources

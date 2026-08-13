@@ -130,9 +130,30 @@ def seed(request):
 
 
 @pytest.fixture(scope="function")
-def enable_disable_plxpr():
+def enable_capture():
     """enable and disable capture around each test."""
     qp.capture.enable()
+    try:
+        yield
+    finally:
+        qp.capture.disable()
+
+
+@pytest.fixture(
+    params=[False, pytest.param(True, marks=[pytest.mark.jax, pytest.mark.capture])],
+    ids=["capture_disabled", "capture_enabled"],
+)
+def enable_and_disable_capture(request):
+    """
+    A fixture that parametrizes a test to run twice: once with program capture
+    disabled and once with it enabled (the enabled variant requires JAX).
+
+    It handles enabling capture before the test runs and always disabling it
+    afterwards.
+
+    """
+    if request.param:
+        qp.capture.enable()
     try:
         yield
     finally:
@@ -244,8 +265,24 @@ def interface(request):
 
 
 def pytest_collection_modifyitems(items, config):
+    custom_markers = {
+        "autograd",
+        "data",
+        "torch",
+        "jax",
+        "qchem",
+        "qcut",
+        "all_interfaces",
+        "finite-diff",
+        "param-shift",
+        "external",
+        "capture",
+        "catalyst",
+    }
     rootdir = pathlib.Path(config.rootdir)
+
     for item in items:
+        # Auto-assign the marker based on its file path
         rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
@@ -260,35 +297,38 @@ def pytest_collection_modifyitems(items, config):
             mark = getattr(pytest.mark, "data")
             item.add_marker(mark)
 
-    # Tests that do not have a specific suite marker are marked `core`
-    for item in items:
-        markers = {mark.name for mark in item.iter_markers()}
-        if (
-            not any(
-                elem
-                in [
-                    "autograd",
-                    "data",
-                    "torch",
-                    "jax",
-                    "qchem",
-                    "qcut",
-                    "all_interfaces",
-                    "finite-diff",
-                    "param-shift",
-                    "external",
-                    "capture",
-                    "catalyst",
-                ]
-                for elem in markers
-            )
-            or not markers
-        ):
+        # Get all markers on the item
+        item_markers = {mark.name for mark in item.iter_markers()}
+
+        # Default to the core marker if it's missing one of our markers
+        if not item_markers or not item_markers & custom_markers:
             item.add_marker(pytest.mark.core)
-        if "capture" in markers:
-            item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
-            if "jax" not in markers:
+
+        # Auto add jax marker if the item is marked under capture
+        has_capture_fixture = (
+            "enable_capture" in item.fixturenames
+            or "enable_and_disable_capture" in item.fixturenames
+        )
+        if "capture" in item_markers:
+            if not has_capture_fixture:
+                item.fixturenames = [*item.fixturenames, "enable_capture"]
+            if "jax" not in item_markers:
                 item.add_marker(pytest.mark.jax)
+
+        if pl2do_marker := item.get_closest_marker("pl2do"):
+            # Allow developers to set a custom reason if they wish
+            # either through positional or keyword argument
+            custom_reason = None
+            if pl2do_marker.args:
+                custom_reason = pl2do_marker.args[0]
+            elif "reason" in pl2do_marker.kwargs:
+                custom_reason = pl2do_marker.kwargs["reason"]
+
+            reason = (
+                custom_reason
+                or "PL 2.0: Feature is deprioritized and is scheduled to be re-visited."
+            )
+            item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
 
 
 def pytest_runtest_setup(item):

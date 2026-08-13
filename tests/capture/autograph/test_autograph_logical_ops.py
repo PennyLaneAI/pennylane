@@ -31,7 +31,7 @@ from pennylane.capture.autograph import run_autograph
 from tests.capture.capture_utils import extract_all_primitives
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestAnd:
     """Tests the logical AND operation."""
 
@@ -173,7 +173,7 @@ class TestAnd:
         ), f"Expected {expected}, got {result}"
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestOr:
     """Tests the logical OR operation."""
 
@@ -316,7 +316,7 @@ class TestOr:
         ), f"For input ({a}, {b}), expected {expected}, got {result}"
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestNot:
     """Tests the logical NOT operation."""
 
@@ -448,7 +448,7 @@ class TestNot:
         ), f"For input ({a}, {b}), expected {expected}, got {result}"
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
 def test_combined_operations(a, b):
     """Test how all of the logical operations coexist together."""

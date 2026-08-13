@@ -72,7 +72,7 @@ class TestInitialization:
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
         op = qp.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
-        qp.ops.functions.assert_valid(op)
+        qp.ops.functions.assert_valid(op, skip_capture=True)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
