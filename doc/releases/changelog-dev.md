@@ -160,8 +160,8 @@
   ```
 
   ```pycon
-  >>> specs_result = qp.specs(circuit, level=0)(5) # doctest: +SKIP
-  >>> print(specs_result) # doctest: +SKIP
+  >>> specs_result = qp.specs(circuit, level=0)(5) 
+  >>> print(specs_result) 
   Device: lightning.qubit
   Device wires: 1
   Shots: Shots(total=None)
@@ -182,8 +182,8 @@
   These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
 
   ```pycon
-  >>> res = specs_result.resources # doctest: +SKIP
-  >>> print(res.subs(a=5)) # doctest: +SKIP
+  >>> res = specs_result.resources 
+  >>> print(res.subs(a=5)) 
   Quantum operations:
   - Total: 7
     - Hadamard: 1
