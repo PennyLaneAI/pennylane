@@ -23,7 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Complex, Int, TensorLike, Wire, Bool
+from pennylane.typing import Bool, Complex, Int, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
