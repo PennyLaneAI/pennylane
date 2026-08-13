@@ -22,13 +22,27 @@ from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.wires import Wires
 
 
+def _num_index_wires(M):
+    r"""Number of wires per index register: exactly ``ceil(log2(M + 1))``."""
+    return int(qp.math.ceil_log2(M + 1))
+
+
+def _num_address_wires(M, N):
+    r"""Number of wires holding the contiguous QROM address ``s``."""
+    d = N // 2 + M * (M + 1) // 2
+    return int(qp.math.ceil_log2(d)) + 1
+
+
+# TODO: import ``_build_alias_tables`` from
+# ``pennylane.labs.templates.alias_sampling`` once #9913 is merged, and delete the
+# copy below. The two definitions are kept identical in the meantime.
 def _build_alias_tables(probs, mu):
     r"""Compute the classical alias-sampling tables ``alt`` and ``keep``.
 
     O(L) iterative matching (Walker/Vose) for the coherent alias sampling of
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_. Returns integers
     :math:`\mathrm{alt}_\ell \in [0, L)` and :math:`\mathrm{keep}_\ell \in [0, 2^\mu)`
-    satisfying the normalization constraint (Eq. requirekl):
+    satisfying the normalization constraint of Eq. (39) in that reference:
 
     .. math::
 
@@ -36,11 +50,11 @@ def _build_alias_tables(probs, mu):
         (2^\mu - \mathrm{keep}_k)}{2^\mu L} = \widetilde{\rho}_\ell .
 
     Args:
-        probs (Sequence[float]): non-negative weights (normalized internally).
-        mu (int): number of bits for ``keep`` and the ``sigma`` register.
+        probs (Sequence[float]): non-negative weights (normalized internally)
+        mu (int): number of bits for ``keep`` and the ``sigma`` register
 
     Returns:
-        tuple[list[int], list[int]]: ``(alt, keep)``, each of length ``L``.
+        tuple[list[int], list[int]]: ``(alt, keep)``, each of length ``L``
 
     .. note::
 
@@ -63,7 +77,11 @@ def _build_alias_tables(probs, mu):
     alt = list(range(L))
     keep = [n] * L  # default: self-aliased, full keep (covers leftover columns)
 
-    small_mask = scaled < 1.0
+    # Use this threshold instead of 1.0 to avoid floating-point issues when L is large and
+    # the scaled values are very close to 1.0. The threshold is set to 1.0 - 1.0/(2*n) to
+    # ensure that the scaled values are correct with respect to the mu bits of precision.
+    threshold = 1.0 - 1.0 / (2 * n)
+    small_mask = scaled < threshold
     small = np.where(small_mask)[0].tolist()
     large = np.where(~small_mask)[0].tolist()
 
@@ -73,7 +91,7 @@ def _build_alias_tables(probs, mu):
         keep[s] = int(round(scaled[s] * n))
         alt[s] = g
         scaled[g] += scaled[s] - 1.0
-        if scaled[g] < 1.0:
+        if scaled[g] < threshold:
             small.append(g)
         else:
             large.append(g)
@@ -97,14 +115,14 @@ def _build_thc_pairs(M, N, zeta, t_ell):
     :math:`\nu = M`).
 
     Args:
-        M (int): the THC rank.
-        N (int): the number of spin orbitals.
-        zeta (tensor_like): the THC central tensor, shape ``(M, M)``.
-        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``.
+        M (int): the THC rank
+        N (int): the number of spin orbitals
+        zeta (tensor_like): the THC central tensor, shape ``(M, M)``
+        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``
 
     Returns:
         tuple[list[tuple[int, int]], list[float]]: the pairs sorted lexicographically
-        by ``(mu, nu)`` and their (signed) weights, aligned index-by-index.
+        by ``(mu, nu)`` and their (signed) weights, aligned index-by-index
     """
     n_half = N // 2
     d = n_half + M * (M + 1) // 2
@@ -134,7 +152,7 @@ def _build_qrom_data(
     r"""Pack the alias tables into the bitstrings consumed by ``qp.QROM``.
 
     The QROM is addressed by the contiguous two-body index
-    ``s = mu + nu (nu + 1) / 2`` (matching :func:`_first_arithmetic_op`). Each
+    ``s = mu + nu (nu + 1) / 2`` (matching :func:`_compute_contiguous_register`). Each
     row concatenates, in order: ``sign``, ``alt_sign``, ``mu_alt`` (``num_index_wires``
     bits), ``nu_alt`` (``num_index_wires`` bits), the ``aleph``-bit keep threshold,
     and the ``alt_edge`` flag.
@@ -144,12 +162,15 @@ def _build_qrom_data(
     ``alt_edge`` sentinel are derived from the THC pair enumeration.
 
     Args:
-        M, N, zeta, t_ell: as in :func:`_build_thc_pairs`.
-        num_index_wires (int): number of wires per index register (``len(mu_wires)``).
-        aleph (int): number of bits used for the keep-probability comparison.
+        M (int): the THC rank
+        N (int): the number of spin orbitals
+        zeta (tensor_like): the THC central tensor, shape ``(M, M)``
+        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``
+        num_index_wires (int): number of wires per index register (``len(mu_wires)``)
+        aleph (int): number of bits used for the keep-probability comparison
 
     Returns:
-        list[list[int]]: the QROM data, one bitstring (list of ints) per address.
+        list[list[int]]: the QROM data, one bitstring (list of ints) per address
     """
     entries, weights = _build_thc_pairs(M, N, zeta, t_ell)
     probs = [abs(w) for w in weights]
@@ -175,20 +196,67 @@ def _build_qrom_data(
     return data
 
 
-def _first_arithmetic_op(M, N, mu_wires, nu_wires, work_wires):
+def _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires):
     r"""Compute the contiguous address ``s = mu + nu (nu + 1) / 2`` into ``work_wires``.
 
     Uses ``nu (nu + 1) / 2 = (nu^2 + nu) / 2`` via ``OutSquare`` (``nu^2``) followed by
     ``SemiAdder`` (``+ nu``), a right shift by one bit (division by two, implemented
     with SWAPs), and a final ``SemiAdder`` (``+ mu``). The result lands on the first
-    ``n_d`` work wires, which double as the QROM control register.
+    ``n_d`` work wires.
     """
-    n_d = int(np.ceil(np.log2(N // 2 + (M * (M + 1) / 2)))) + 1
+    n_d = _num_address_wires(M, N)
     OutSquare(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d], output_wires_zeroed=True)
     qp.SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
     for i in reversed(range(n_d - 1)):
         qp.SWAP(wires=[work_wires[i], work_wires[i + 1]])
     qp.SemiAdder(mu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
+
+
+def alias_sampling_thc_wires(M, N, aleph):
+    r"""Return the wire counts required by :func:`alias_sampling_thc`.
+
+    Args:
+        M (int): the THC rank
+        N (int): the number of spin orbitals. Requires ``N // 2 <= M + 1``
+        aleph (int): the number of bits used to encode the keep-probabilities
+
+    Returns:
+        dict: ``{"mu_wires": n, "nu_wires": n, "superposition_work_wires": 3 * n + 5,
+        "work_wires": n_d + 2 * n + 3 * aleph + 4}``, where
+        ``n = ceil(log2(M + 1))`` and
+        ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1``
+
+        * ``mu_wires`` / ``nu_wires``: the two index registers, exact
+        * ``superposition_work_wires``: the work register of
+          :class:`~pennylane.labs.templates.SuperpositionTHC`; its entry at index ``3``
+          is the one-body sentinel flag to pass as ``edge_flag``
+        * ``work_wires``: the minimum scratch register of :func:`alias_sampling_thc`.
+          Additional wires are forwarded to the internal ``qp.QROM``, which uses them
+          for a ``SelectSwap`` decomposition that lowers the T-gate count.
+
+    **Example**
+
+    >>> from pennylane.labs.templates import alias_sampling_thc_wires
+    >>> alias_sampling_thc_wires(M=2, N=2, aleph=6)
+    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 29}
+    """
+    if isinstance(M, bool) or not isinstance(M, int) or M < 1:
+        raise ValueError(f"M must be a positive integer, got {M!r}.")
+    if isinstance(N, bool) or not isinstance(N, int) or N < 1:
+        raise ValueError(f"N must be a positive integer, got {N!r}.")
+    if isinstance(aleph, bool) or not isinstance(aleph, int) or aleph < 1:
+        raise ValueError(f"aleph must be a positive integer, got {aleph!r}.")
+    if N // 2 > M + 1:
+        raise ValueError("N // 2 must be less than or equal to M + 1.")
+
+    n = _num_index_wires(M)
+    n_d = _num_address_wires(M, N)
+    return {
+        "mu_wires": n,
+        "nu_wires": n,
+        "superposition_work_wires": 3 * n + 5,
+        "work_wires": n_d + 2 * n + 3 * aleph + 4,
+    }
 
 
 def alias_sampling_thc(  # pylint: disable=too-many-arguments
@@ -226,22 +294,27 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
         one-body sentinel flag (its ``work_wires[3]``, true when :math:`\nu = M`)
         passed here as ``edge_flag``. This routine does not recompute that flag.
 
+
+    .. seealso:: :func:`~pennylane.labs.templates.alias_sampling_thc_wires`, which
+        returns every register size for a given ``(M, N, aleph)``.
+
     Args:
-        M (int): the THC rank.
-        N (int): the number of spin orbitals. Requires ``N / 2 <= M + 1``.
-        zeta (tensor_like): the THC central tensor, shape ``(M, M)``.
-        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``.
+        M (int): the THC rank
+        N (int): the number of spin orbitals. Requires ``N // 2 <= M + 1``
+        zeta (tensor_like): the THC central tensor, shape ``(M, M)``
+        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``
         mu_wires (Sequence[int]): the ``n`` wires storing the first THC index
-            :math:`\mu`. Requires ``M <= 2 ** n - 1``.
+            :math:`\mu`. Requires exactly ``n = ceil(log2(M + 1))`` wires
         nu_wires (Sequence[int]): the ``n`` wires storing the second THC index
-            :math:`\nu`. Must have the same length as ``mu_wires``.
+            :math:`\nu`. Must have the same length as ``mu_wires``
         edge_flag (Sequence[int]): the wire holding the one-body sentinel flag
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
-            produced by :class:`~pennylane.labs.templates.SuperpositionTHC`.
+            produced by :class:`~pennylane.labs.templates.SuperpositionTHC`
         work_wires (Sequence[int]): the auxiliary wires. At least
             ``n_d + 2 * n + 3 * aleph + 4`` zeroed work wires are required, where
-            ``n = len(mu_wires)`` and ``n_d = ceil(log2(N / 2 + M (M + 1) / 2)) + 1``.
-        aleph (int): the number of bits used to encode the keep-probabilities.
+            ``n = ceil(log2(M + 1))`` and
+            ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1``
+        aleph (int): the number of bits used to encode the keep-probabilities
 
     **Example**
 
@@ -249,24 +322,30 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
 
         import numpy as np
         import pennylane as qp
-        from pennylane.labs.templates import SuperpositionTHC, alias_sampling_thc
+        from pennylane.labs.templates import (
+            SuperpositionTHC,
+            alias_sampling_thc,
+            alias_sampling_thc_wires,
+        )
 
-        M, N, n, aleph = 2, 2, 2, 6
+        M, N, aleph = 2, 2, 6
         np.random.seed(3)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
         t_ell = np.random.randn(N // 2)
 
+        sizes = alias_sampling_thc_wires(M, N, aleph)
+        n = sizes["mu_wires"]
+
         mu_wires = list(range(n))
         nu_wires = list(range(n, 2 * n))
 
         # SuperpositionTHC prepares the uniform superposition and the one-body flag.
-        sup_work = list(range(2 * n, 2 * n + 3 * n + 5))
+        sup_work = list(range(2 * n, 2 * n + sizes["superposition_work_wires"]))
         edge_flag = sup_work[3]  # nu register in state |M>
 
-        n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) / 2))) + 1
-        num_work = n_d + 2 * n + 3 * aleph + 4
-        work_wires = list(range(sup_work[-1] + 1, sup_work[-1] + 1 + num_work))
+        start = sup_work[-1] + 1
+        work_wires = list(range(start, start + sizes["work_wires"]))
 
         dev = qp.device("lightning.qubit", wires=work_wires[-1] + 1)
 
@@ -288,17 +367,19 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
             f"mu_wires and nu_wires must contain the same number of wires, "
             f"but got {n} and {len(nu_wires)}."
         )
-    if N / 2 > M + 1:
-        raise ValueError("N / 2 must be less than or equal to M + 1.")
-    if M > 2**n - 1:
+    if N // 2 > M + 1:
+        raise ValueError("N // 2 must be less than or equal to M + 1.")
+    # The index registers must hold the one-body sentinel value ``M`` and nothing
+    # more, so their size is fixed at ``ceil(log2(M + 1))``.
+    if n != _num_index_wires(M):
         raise ValueError(
-            f"mu_wires and nu_wires each need at least ceil(log2(M + 1)) wires. "
-            f"Got M={M} with {n} wires, which allows M up to {2**n - 1}."
+            f"mu_wires and nu_wires must each contain exactly ceil(log2(M + 1)) wires. "
+            f"Got M={M} with {n} wires, but {_num_index_wires(M)} are required."
         )
-    if aleph < 1:
-        raise ValueError(f"aleph must be a positive integer, got {aleph}.")
+    if isinstance(aleph, bool) or not isinstance(aleph, int) or aleph < 1:
+        raise ValueError(f"aleph must be a positive integer, got {aleph!r}.")
 
-    n_d = int(np.ceil(np.log2(N // 2 + (M * (M + 1) / 2)))) + 1
+    n_d = _num_address_wires(M, N)
     min_work = n_d + 2 * n + 3 * aleph + 4
     if len(work_wires) < min_work:
         raise ValueError(
@@ -322,7 +403,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
     qrom_work = work_wires[b + 5 :]
 
     # 1. Compute the contiguous QROM address s = mu + nu (nu + 1) / 2.
-    _first_arithmetic_op(M, N, mu_wires, nu_wires, work_wires)
+    _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
 
     # 2. Load the alias data (signs, alternate indices, keep threshold, alt_edge).
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
