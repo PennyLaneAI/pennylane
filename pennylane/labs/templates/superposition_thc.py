@@ -16,6 +16,7 @@ hypercontraction (THC) qubitization."""
 
 import numpy as np
 
+import pennylane as qp
 from pennylane import adjoint, ctrl, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
@@ -26,8 +27,9 @@ from pennylane.decomposition import (
 )
 from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 from pennylane.ops import RY, BasisState, Controlled, GlobalPhase, Hadamard, MultiControlledX, X, Z
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -377,11 +379,10 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
     lqc = resource_rep(LeftQuantumComparator, num_y_wires=n, comparator="<=")
     basis = resource_rep(BasisState, num_wires=n)
-    mcx = resource_rep(
-        MultiControlledX,
-        num_control_wires=n,
-        num_zero_control_values=n,
-        num_work_wires=mcx_work,
+    mcx = MultiControlledX(
+        wires=Wire[n + 1],
+        control_values=Bool[n],
+        work_wires=Wire[mcx_work],
         work_wire_type="borrowed",
     )
 
@@ -390,8 +391,8 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
         Hadamard: 6 * n,
         X: 4 * n + 4,
         resource_rep(RY): 3,
-        _controlled_rep(X, 2, ctrl_work): 4,
-        _controlled_rep(X, 3, ctrl_work): 1,
+        _ctrl_abstract(X(Wire[1]), Wire[2], Wire[ctrl_work]): 4,
+        _ctrl_abstract(X(Wire[1]), Wire[3], Wire[ctrl_work]): 1,
         _controlled_z(3, ctrl_work): 1,
         _controlled_z(2 * n, ctrl_work): 1,
         # _left_inequalities applied twice in the forward direction
@@ -404,9 +405,13 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
         adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params): 2,
         adjoint_resource_rep(LeftQuantumComparator, lqc.params): 2,
         adjoint_resource_rep(BasisState, basis.params): 2,
-        mcx: 2,
-        adjoint_resource_rep(MultiControlledX, mcx.params): 1,
+        qp.adjoint(mcx): 1,
     }
+
+    if mcx in resources:
+        resources[mcx] += 2
+    else:
+        resources[mcx] = 2
 
     return resources
 
@@ -445,9 +450,9 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 3. Flag the valid index pairs, then mark the "success" subspace with a phase.
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
     ctrl(Z(work_wires[5]), control=work_wires[0:3], work_wires=extra_work)
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
 
     # 4. Uncompute the flags and the amplitude-marking rotation.
     adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires)
@@ -471,11 +476,9 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 6. Recompute the flags onto the output ancilla register (work_wires[5], work_wires[6]).
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
-    Controlled(
-        X(work_wires[6]), control_wires=work_wires[1:3] + work_wires[5:6], work_wires=extra_work
-    )
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[6]), control=work_wires[1:3] + work_wires[5:6], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
 
     X(wires=work_wires[5])
 
