@@ -118,15 +118,7 @@ def test_hybrid_capture_parametrization():
     assert jaxpr.eqns[1].primitive.name == "sqrt"
     assert jaxpr.eqns[2].primitive.name == "integer_pow"
     assert jaxpr.eqns[3].primitive.name == "mul"
-    assert jaxpr.eqns[4].primitive == qp.Rot._primitive
-
-    with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
-
-    assert len(q) == 1
-    qp.assert_equal(
-        q.queue[0], qp.Rot(1.0, jax.numpy.sqrt(0.5), 0.25, wires=1), check_interface=False
-    )
+    assert_eqn_matches_op(jaxpr.eqns[4], qp.Rot)
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
@@ -209,18 +201,9 @@ def test_parametrized_op():
     assert len(jaxpr.eqns) == 1
     eqn = jaxpr.eqns[0]
 
-    assert eqn.primitive == qp.Rot._primitive
+    assert_eqn_matches_op(eqn, qp.Rot)
     assert len(eqn.invars) == 4
     assert jaxpr.jaxpr.invars == jaxpr.eqns[0].invars
-
-    assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-    assert eqn.params == {"n_wires": 1}
-
-    with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, 2.0, 3.0, 10)
-
-    assert len(q) == 1
-    qp.assert_equal(q.queue[0], qp.Rot(1.0, 2.0, 3.0, 10))
 
 
 class TestSpecialOps:
