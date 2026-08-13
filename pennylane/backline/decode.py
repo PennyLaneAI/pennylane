@@ -25,6 +25,7 @@ come from the ``inject-transport-session`` pass; :func:`decode` only drives the 
 from __future__ import annotations
 
 import numpy as np
+
 from pennylane import math
 
 from .device import active_placement

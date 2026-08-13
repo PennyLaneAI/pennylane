@@ -81,7 +81,7 @@ def _osd(posterior_llrs, syndrome):
     Returns:
         u64: One-hot correction mask for the most likely qubit, or ``0`` if
             no syndrome is detected.
-   
+
     """
     one = tl.cast(1, tl.uint64)
     zero = tl.cast(0, tl.uint64)
